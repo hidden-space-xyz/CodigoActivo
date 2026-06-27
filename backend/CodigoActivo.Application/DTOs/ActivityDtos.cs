@@ -55,6 +55,31 @@ public record AssignmentStatusResponse(Guid Id, string Name);
 
 public record AssignRequest([Required] Guid ActivityRoleTypeId);
 
+/// <summary>
+/// Sign up several members of a household to the same activity at once, each
+/// with their own role. Targets must be the acting user or a minor in their care.
+/// </summary>
+public record AssignHouseholdRequest(
+    [Required] IReadOnlyList<HouseholdAssignmentRequest> Assignments
+);
+
+public record HouseholdAssignmentRequest(
+    [Required] Guid UserId,
+    [Required] Guid ActivityRoleTypeId
+);
+
+/// <summary>One household member's sign-up to an activity, including who they are.</summary>
+public record HouseholdMemberAssignmentResponse(
+    Guid ActivityId,
+    Guid UserId,
+    string FirstName,
+    string LastName,
+    Guid RoleTypeId,
+    string RoleName,
+    Guid StatusId,
+    string StatusName
+);
+
 public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId);
 
 public record OverlappingActivityResponse(

@@ -6,19 +6,17 @@
  * OpenAPI spec version: v1
  */
 
-export interface CreateUserRequest {
+export interface HouseholdMemberAssignmentResponse {
+  activityId?: string;
+  userId?: string;
   /** @nullable */
   firstName?: string | null;
   /** @nullable */
   lastName?: string | null;
+  roleTypeId?: string;
   /** @nullable */
-  email?: string | null;
+  roleName?: string | null;
+  statusId?: string;
   /** @nullable */
-  phone?: string | null;
-  /** @nullable */
-  password?: string | null;
-  birthDate?: string;
-  /** @nullable */
-  parentId?: string | null;
-  roleId?: string;
+  statusName?: string | null;
 }

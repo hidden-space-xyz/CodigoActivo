@@ -32,6 +32,7 @@ import type {
 import type {
   ActivityResponse,
   ActivityRoleTypeResponse,
+  AssignHouseholdRequest,
   AssignRequest,
   AssignedActivityResponse,
   AssignmentResponse,
@@ -40,6 +41,7 @@ import type {
   CreateActivityRequest,
   CreateActivityRoleTypeRequest,
   GetApiActivitiesAssignedParams,
+  HouseholdMemberAssignmentResponse,
   TimeOverlapResponse,
   UpdateActivityRequest,
   UpdateActivityRoleTypeRequest
@@ -329,7 +331,93 @@ export function usePostApiActivitiesEventId<TData = Awaited<ReturnType<typeof po
 
 
 
-export type getApiActivitiesEventIdActivityIdResponse200TextPlain = {
+export type getApiActivitiesEventIdHouseholdAssignmentsResponse200TextPlain = {
+  data: HouseholdMemberAssignmentResponse[]
+  status: 200
+}
+
+export type getApiActivitiesEventIdHouseholdAssignmentsResponse200ApplicationJson = {
+  data: HouseholdMemberAssignmentResponse[]
+  status: 200
+}
+
+export type getApiActivitiesEventIdHouseholdAssignmentsResponse200TextJson = {
+  data: HouseholdMemberAssignmentResponse[]
+  status: 200
+}
+
+export type getApiActivitiesEventIdHouseholdAssignmentsResponseSuccess = (getApiActivitiesEventIdHouseholdAssignmentsResponse200TextPlain | getApiActivitiesEventIdHouseholdAssignmentsResponse200ApplicationJson | getApiActivitiesEventIdHouseholdAssignmentsResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type getApiActivitiesEventIdHouseholdAssignmentsResponse = (getApiActivitiesEventIdHouseholdAssignmentsResponseSuccess)
+
+export const getGetApiActivitiesEventIdHouseholdAssignmentsUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/activities/${eventId}/household-assignments`
+}
+
+export const getApiActivitiesEventIdHouseholdAssignments = async (eventId: string, options?: RequestInit): Promise<getApiActivitiesEventIdHouseholdAssignmentsResponse> => {
+
+  return httpClient<getApiActivitiesEventIdHouseholdAssignmentsResponse>(getGetApiActivitiesEventIdHouseholdAssignmentsUrl(eventId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiActivitiesEventIdHouseholdAssignmentsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext> => {
+
+const mutationKey = ['getApiActivitiesEventIdHouseholdAssignments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, {eventId: string}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  getApiActivitiesEventIdHouseholdAssignments(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiActivitiesEventIdHouseholdAssignmentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>>
+
+    export type GetApiActivitiesEventIdHouseholdAssignmentsMutationError = unknown
+
+    export const useGetApiActivitiesEventIdHouseholdAssignments = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>,
+        TError,
+        {eventId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiActivitiesEventIdHouseholdAssignmentsMutationOptions(options), queryClient);
+    }
+    export type getApiActivitiesEventIdActivityIdResponse200TextPlain = {
   data: ActivityResponse
   status: 200
 }
@@ -689,6 +777,104 @@ export function usePatchApiActivitiesActivityIdUserIdAssign<TData = Awaited<Retu
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPatchApiActivitiesActivityIdUserIdAssignQueryOptions(activityId,userId,assignRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiActivitiesActivityIdAssignHouseholdResponse200TextPlain = {
+  data: AssignmentResponse[]
+  status: 200
+}
+
+export type postApiActivitiesActivityIdAssignHouseholdResponse200ApplicationJson = {
+  data: AssignmentResponse[]
+  status: 200
+}
+
+export type postApiActivitiesActivityIdAssignHouseholdResponse200TextJson = {
+  data: AssignmentResponse[]
+  status: 200
+}
+
+export type postApiActivitiesActivityIdAssignHouseholdResponseSuccess = (postApiActivitiesActivityIdAssignHouseholdResponse200TextPlain | postApiActivitiesActivityIdAssignHouseholdResponse200ApplicationJson | postApiActivitiesActivityIdAssignHouseholdResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type postApiActivitiesActivityIdAssignHouseholdResponse = (postApiActivitiesActivityIdAssignHouseholdResponseSuccess)
+
+export const getPostApiActivitiesActivityIdAssignHouseholdUrl = (activityId: string,) => {
+
+
+
+
+  return `/api/activities/${activityId}/assign-household`
+}
+
+export const postApiActivitiesActivityIdAssignHousehold = async (activityId: string,
+    assignHouseholdRequest?: AssignHouseholdRequest, options?: RequestInit): Promise<postApiActivitiesActivityIdAssignHouseholdResponse> => {
+
+  return httpClient<postApiActivitiesActivityIdAssignHouseholdResponse>(getPostApiActivitiesActivityIdAssignHouseholdUrl(activityId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assignHouseholdRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiActivitiesActivityIdAssignHouseholdQueryKey = (activityId: MaybeRef<string>,
+    assignHouseholdRequest?: MaybeRef<AssignHouseholdRequest>,) => {
+    return [
+    'POST', 'api','activities',activityId,'assign-household', assignHouseholdRequest
+    ] as const;
+    }
+
+
+export const getPostApiActivitiesActivityIdAssignHouseholdQueryOptions = <TData = Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError = unknown>(activityId: MaybeRef<string>,
+    assignHouseholdRequest?: MaybeRef<AssignHouseholdRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiActivitiesActivityIdAssignHouseholdQueryKey(activityId,assignHouseholdRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>> = ({ signal }) => postApiActivitiesActivityIdAssignHousehold(unref(activityId),unref(assignHouseholdRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(activityId) !== null && unref(activityId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError, TData>
+}
+
+export type PostApiActivitiesActivityIdAssignHouseholdQueryResult = NonNullable<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>>
+export type PostApiActivitiesActivityIdAssignHouseholdQueryError = unknown
+
+
+
+export function usePostApiActivitiesActivityIdAssignHousehold<TData = Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError = unknown>(
+ activityId: MaybeRef<string>,
+    assignHouseholdRequest?: MaybeRef<AssignHouseholdRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiActivitiesActivityIdAssignHouseholdQueryOptions(activityId,assignHouseholdRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

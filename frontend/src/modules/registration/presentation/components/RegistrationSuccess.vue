@@ -1,24 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import InputText from 'primevue/inputtext'
 
-import {
-  ROLE_LABELS,
-  roleRemindsAboutEvents,
-  type RegistrationRole,
-} from '@/modules/registration/domain/value-objects/registration-role'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 
 const props = defineProps<{
-  role: RegistrationRole
+  roleName: string
+  minorCount: number
   verificationCode: string | null
   isVerified: boolean
   isVerifying: boolean
 }>()
 const emit = defineEmits<{ reset: []; verify: [otp: string] }>()
-
-const roleTitle = computed(() => ROLE_LABELS[props.role])
-const remindsEvents = computed(() => roleRemindsAboutEvents(props.role))
 
 const otp = ref(props.verificationCode ?? '')
 
@@ -32,16 +25,21 @@ function submitVerify(): void {
     <div class="reg-success__check" aria-hidden="true">✓</div>
     <h2 class="reg-success__title">¡Registro completado!</h2>
     <p class="reg-success__role">
-      Te has registrado como <b>{{ roleTitle }}</b
+      Te has registrado como <b>{{ roleName }}</b
       >.
+    </p>
+    <p v-if="minorCount > 0" class="reg-success__role">
+      También has inscrito a
+      <b>{{ minorCount }} {{ minorCount === 1 ? 'menor' : 'menores' }}</b> a tu cargo.
     </p>
 
     <p class="reg-success__thanks">
       Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes
       posible para conocernos más.
     </p>
-    <p v-if="remindsEvents" class="reg-success__reminder">
-      Recuerda que puedes inscribirte al evento que quieras desde la sección de eventos.
+    <p class="reg-success__reminder">
+      Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la
+      sección de eventos.
     </p>
 
     <div v-if="isVerified" class="reg-success__verified">Tu cuenta ha sido verificada.</div>
@@ -57,9 +55,7 @@ function submitVerify(): void {
 
     <div class="reg-success__actions">
       <BaseButton :to="{ name: 'home' }" variant="primary"> Volver al inicio </BaseButton>
-      <BaseButton v-if="remindsEvents" :to="{ name: 'events' }" variant="ghost">
-        Ver eventos
-      </BaseButton>
+      <BaseButton :to="{ name: 'events' }" variant="ghost"> Ver eventos </BaseButton>
     </div>
 
     <BaseButton variant="link" class="reg-success__again" @click="emit('reset')">

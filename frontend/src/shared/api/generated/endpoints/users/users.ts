@@ -30,7 +30,11 @@ import type {
 } from 'vue';
 
 import type {
+  ChangePasswordRequest,
+  GetApiUsersRegistrationTypesParams,
   PatchApiUsersUserIdChangeTypeParams,
+  RegisterMinorRequest,
+  SetUserRoleRequest,
   UpdateUserRequest,
   UserResponse,
   UserStatusTypeResponse,
@@ -398,6 +402,376 @@ export function useDeleteApiUsersUserId<TData = Awaited<ReturnType<typeof delete
 
 
 
+export type getApiUsersUserIdChildrenResponse200TextPlain = {
+  data: UserResponse[]
+  status: 200
+}
+
+export type getApiUsersUserIdChildrenResponse200ApplicationJson = {
+  data: UserResponse[]
+  status: 200
+}
+
+export type getApiUsersUserIdChildrenResponse200TextJson = {
+  data: UserResponse[]
+  status: 200
+}
+
+export type getApiUsersUserIdChildrenResponseSuccess = (getApiUsersUserIdChildrenResponse200TextPlain | getApiUsersUserIdChildrenResponse200ApplicationJson | getApiUsersUserIdChildrenResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type getApiUsersUserIdChildrenResponse = (getApiUsersUserIdChildrenResponseSuccess)
+
+export const getGetApiUsersUserIdChildrenUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/children`
+}
+
+export const getApiUsersUserIdChildren = async (userId: string, options?: RequestInit): Promise<getApiUsersUserIdChildrenResponse> => {
+
+  return httpClient<getApiUsersUserIdChildrenResponse>(getGetApiUsersUserIdChildrenUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiUsersUserIdChildrenMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['getApiUsersUserIdChildren'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  getApiUsersUserIdChildren(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiUsersUserIdChildrenMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>>
+
+    export type GetApiUsersUserIdChildrenMutationError = unknown
+
+    export const useGetApiUsersUserIdChildren = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiUsersUserIdChildren>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiUsersUserIdChildrenMutationOptions(options), queryClient);
+    }
+    export type postApiUsersUserIdChildrenResponse200TextPlain = {
+  data: UserResponse
+  status: 200
+}
+
+export type postApiUsersUserIdChildrenResponse200ApplicationJson = {
+  data: UserResponse
+  status: 200
+}
+
+export type postApiUsersUserIdChildrenResponse200TextJson = {
+  data: UserResponse
+  status: 200
+}
+
+export type postApiUsersUserIdChildrenResponseSuccess = (postApiUsersUserIdChildrenResponse200TextPlain | postApiUsersUserIdChildrenResponse200ApplicationJson | postApiUsersUserIdChildrenResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type postApiUsersUserIdChildrenResponse = (postApiUsersUserIdChildrenResponseSuccess)
+
+export const getPostApiUsersUserIdChildrenUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/children`
+}
+
+export const postApiUsersUserIdChildren = async (userId: string,
+    registerMinorRequest?: RegisterMinorRequest, options?: RequestInit): Promise<postApiUsersUserIdChildrenResponse> => {
+
+  return httpClient<postApiUsersUserIdChildrenResponse>(getPostApiUsersUserIdChildrenUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registerMinorRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiUsersUserIdChildrenQueryKey = (userId: MaybeRef<string>,
+    registerMinorRequest?: MaybeRef<RegisterMinorRequest>,) => {
+    return [
+    'POST', 'api','users',userId,'children', registerMinorRequest
+    ] as const;
+    }
+
+
+export const getPostApiUsersUserIdChildrenQueryOptions = <TData = Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError = unknown>(userId: MaybeRef<string>,
+    registerMinorRequest?: MaybeRef<RegisterMinorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiUsersUserIdChildrenQueryKey(userId,registerMinorRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>> = ({ signal }) => postApiUsersUserIdChildren(unref(userId),unref(registerMinorRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError, TData>
+}
+
+export type PostApiUsersUserIdChildrenQueryResult = NonNullable<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>>
+export type PostApiUsersUserIdChildrenQueryError = unknown
+
+
+
+export function usePostApiUsersUserIdChildren<TData = Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError = unknown>(
+ userId: MaybeRef<string>,
+    registerMinorRequest?: MaybeRef<RegisterMinorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiUsersUserIdChildrenQueryOptions(userId,registerMinorRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type patchApiUsersUserIdRoleResponse200TextPlain = {
+  data: UserResponse
+  status: 200
+}
+
+export type patchApiUsersUserIdRoleResponse200ApplicationJson = {
+  data: UserResponse
+  status: 200
+}
+
+export type patchApiUsersUserIdRoleResponse200TextJson = {
+  data: UserResponse
+  status: 200
+}
+
+export type patchApiUsersUserIdRoleResponseSuccess = (patchApiUsersUserIdRoleResponse200TextPlain | patchApiUsersUserIdRoleResponse200ApplicationJson | patchApiUsersUserIdRoleResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type patchApiUsersUserIdRoleResponse = (patchApiUsersUserIdRoleResponseSuccess)
+
+export const getPatchApiUsersUserIdRoleUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/role`
+}
+
+export const patchApiUsersUserIdRole = async (userId: string,
+    setUserRoleRequest?: SetUserRoleRequest, options?: RequestInit): Promise<patchApiUsersUserIdRoleResponse> => {
+
+  return httpClient<patchApiUsersUserIdRoleResponse>(getPatchApiUsersUserIdRoleUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setUserRoleRequest)
+  }
+);}
+
+
+
+
+
+export const getPatchApiUsersUserIdRoleQueryKey = (userId: MaybeRef<string>,
+    setUserRoleRequest?: MaybeRef<SetUserRoleRequest>,) => {
+    return [
+    'PATCH', 'api','users',userId,'role', setUserRoleRequest
+    ] as const;
+    }
+
+
+export const getPatchApiUsersUserIdRoleQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError = unknown>(userId: MaybeRef<string>,
+    setUserRoleRequest?: MaybeRef<SetUserRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiUsersUserIdRoleQueryKey(userId,setUserRoleRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>> = ({ signal }) => patchApiUsersUserIdRole(unref(userId),unref(setUserRoleRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError, TData>
+}
+
+export type PatchApiUsersUserIdRoleQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>>
+export type PatchApiUsersUserIdRoleQueryError = unknown
+
+
+
+export function usePatchApiUsersUserIdRole<TData = Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError = unknown>(
+ userId: MaybeRef<string>,
+    setUserRoleRequest?: MaybeRef<SetUserRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiUsersUserIdRoleQueryOptions(userId,setUserRoleRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type patchApiUsersUserIdPasswordResponse200 = {
+  data: void
+  status: 200
+}
+
+export type patchApiUsersUserIdPasswordResponseSuccess = (patchApiUsersUserIdPasswordResponse200) & {
+  headers: Headers;
+};
+;
+
+export type patchApiUsersUserIdPasswordResponse = (patchApiUsersUserIdPasswordResponseSuccess)
+
+export const getPatchApiUsersUserIdPasswordUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/password`
+}
+
+export const patchApiUsersUserIdPassword = async (userId: string,
+    changePasswordRequest?: ChangePasswordRequest, options?: RequestInit): Promise<patchApiUsersUserIdPasswordResponse> => {
+
+  return httpClient<patchApiUsersUserIdPasswordResponse>(getPatchApiUsersUserIdPasswordUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(changePasswordRequest)
+  }
+);}
+
+
+
+
+
+export const getPatchApiUsersUserIdPasswordQueryKey = (userId: MaybeRef<string>,
+    changePasswordRequest?: MaybeRef<ChangePasswordRequest>,) => {
+    return [
+    'PATCH', 'api','users',userId,'password', changePasswordRequest
+    ] as const;
+    }
+
+
+export const getPatchApiUsersUserIdPasswordQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError = unknown>(userId: MaybeRef<string>,
+    changePasswordRequest?: MaybeRef<ChangePasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiUsersUserIdPasswordQueryKey(userId,changePasswordRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>> = ({ signal }) => patchApiUsersUserIdPassword(unref(userId),unref(changePasswordRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError, TData>
+}
+
+export type PatchApiUsersUserIdPasswordQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>>
+export type PatchApiUsersUserIdPasswordQueryError = unknown
+
+
+
+export function usePatchApiUsersUserIdPassword<TData = Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError = unknown>(
+ userId: MaybeRef<string>,
+    changePasswordRequest?: MaybeRef<ChangePasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiUsersUserIdPasswordQueryOptions(userId,changePasswordRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
 export type patchApiUsersUserIdChangeTypeResponse200TextPlain = {
   data: UserResponse
   status: 200
@@ -675,4 +1049,97 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiUsersTypesMutationOptions(options), queryClient);
+    }
+    export type getApiUsersRegistrationTypesResponse200TextPlain = {
+  data: UserTypeResponse[]
+  status: 200
+}
+
+export type getApiUsersRegistrationTypesResponse200ApplicationJson = {
+  data: UserTypeResponse[]
+  status: 200
+}
+
+export type getApiUsersRegistrationTypesResponse200TextJson = {
+  data: UserTypeResponse[]
+  status: 200
+}
+
+export type getApiUsersRegistrationTypesResponseSuccess = (getApiUsersRegistrationTypesResponse200TextPlain | getApiUsersRegistrationTypesResponse200ApplicationJson | getApiUsersRegistrationTypesResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type getApiUsersRegistrationTypesResponse = (getApiUsersRegistrationTypesResponseSuccess)
+
+export const getGetApiUsersRegistrationTypesUrl = (params?: GetApiUsersRegistrationTypesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/users/registration-types?${stringifiedParams}` : `/api/users/registration-types`
+}
+
+export const getApiUsersRegistrationTypes = async (params?: GetApiUsersRegistrationTypesParams, options?: RequestInit): Promise<getApiUsersRegistrationTypesResponse> => {
+
+  return httpClient<getApiUsersRegistrationTypesResponse>(getGetApiUsersRegistrationTypesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiUsersRegistrationTypesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersRegistrationTypes>>, TError,{params?: GetApiUsersRegistrationTypesParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersRegistrationTypes>>, TError,{params?: GetApiUsersRegistrationTypesParams}, TContext> => {
+
+const mutationKey = ['getApiUsersRegistrationTypes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersRegistrationTypes>>, {params?: GetApiUsersRegistrationTypesParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiUsersRegistrationTypes(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiUsersRegistrationTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersRegistrationTypes>>>
+
+    export type GetApiUsersRegistrationTypesMutationError = unknown
+
+    export const useGetApiUsersRegistrationTypes = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersRegistrationTypes>>, TError,{params?: GetApiUsersRegistrationTypesParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiUsersRegistrationTypes>>,
+        TError,
+        {params?: GetApiUsersRegistrationTypesParams},
+        TContext
+      > => {
+      return useMutation(getGetApiUsersRegistrationTypesMutationOptions(options), queryClient);
     }

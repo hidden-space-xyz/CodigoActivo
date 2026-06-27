@@ -76,63 +76,145 @@ public class AuthService(
         return user.ToResponse();
     }
 
-    public async Task<Result<CreateUserResponse>> RegisterAsync(
-        CreateUserRequest request,
+    public async Task<Result<RegisterResponse>> RegisterAsync(
+        RegisterRequest request,
         CancellationToken ct = default
     )
     {
+        // Only adults can self-register; minors are created as part of an adult's household.
+        if (request.BirthDate.IsMinor())
+        {
+            return Error.Validation();
+        }
+
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
 
+        // The very first user bootstraps the platform as Admin + Member; everyone
+        // else must pick a role that is visible and allowed for adults.
         if (!isFirstUser)
         {
-            if (request.RoleId == SeedIds.UserTypes.Admin)
+            var adultRole = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
+            if (adultRole is null)
+            {
+                return Error.NotFound();
+            }
+
+            if (adultRole.Hidden || !adultRole.IsAllowedForAdults)
+            {
+                return Error.Validation();
+            }
+        }
+
+        var email = request.Email.NormalizeOrNull();
+        var phone = request.Phone.NormalizeOrNull();
+        if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Error.Validation();
+        }
+
+        if (
+            await users.EmailExistsAsync(email, null, ct)
+            || await users.PhoneExistsAsync(phone, null, ct)
+        )
+        {
+            return Error.Validation();
+        }
+
+        // Validate every minor before creating anything so the whole household
+        // registration succeeds or fails as a unit.
+        var minorRequests = request.Minors ?? [];
+        foreach (var minor in minorRequests)
+        {
+            if (!minor.BirthDate.IsMinor())
             {
                 return Error.Validation();
             }
 
-            if (!await userTypes.ExistsAsync(ut => ut.Id == request.RoleId, ct))
+            var minorRole = await userTypes.FindAsync(ut => ut.Id == minor.RoleId, ct);
+            if (minorRole is null)
             {
                 return Error.NotFound();
             }
+
+            if (minorRole.Hidden || !minorRole.IsAllowedForMinors)
+            {
+                return Error.Validation();
+            }
         }
 
-        var user = new User
+        var now = DateTimeOffset.UtcNow;
+        var otp = Guid.NewGuid();
+
+        var adult = new User
         {
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             BirthDate = request.BirthDate,
-            CreatedAt = DateTimeOffset.UtcNow,
+            Email = email,
+            Phone = phone,
+            PasswordHash = hasher.Hash(request.Password),
+            UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+            OtpCode = otp,
+            OtpExpiresAt = now.AddMinutes(15),
+            CreatedAt = now,
         };
+        await users.AddAsync(adult, ct);
 
-        var configured = request.BirthDate.IsMinor()
-            ? await ConfigureMinorAsync(user, request, ct)
-            : await ConfigureAdultAsync(user, request, excludeUserId: null, ct);
-        if (configured.IsFailure)
-        {
-            return configured.Error!;
-        }
-
-        var roleIds = isFirstUser
+        var adultRoleIds = isFirstUser
             ? new[] { SeedIds.UserTypes.Admin, SeedIds.UserTypes.Member }
             : [request.RoleId];
-
-        await users.AddAsync(user, ct);
-        foreach (var roleId in roleIds)
+        foreach (var roleId in adultRoleIds)
         {
             await users.AddTypeAssignmentAsync(
                 new UserTypeAssignment
                 {
-                    UserId = user.Id,
+                    UserId = adult.Id,
                     UserTypeId = roleId,
-                    AssignedAt = DateTimeOffset.UtcNow,
+                    AssignedAt = now,
                 },
                 ct
             );
         }
+
+        var minorIds = new List<Guid>();
+        foreach (var minor in minorRequests)
+        {
+            var child = new User
+            {
+                FirstName = minor.FirstName.Trim(),
+                LastName = minor.LastName.Trim(),
+                BirthDate = minor.BirthDate,
+                ParentId = adult.Id,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+                CreatedAt = now,
+            };
+            await users.AddAsync(child, ct);
+            await users.AddTypeAssignmentAsync(
+                new UserTypeAssignment
+                {
+                    UserId = child.Id,
+                    UserTypeId = minor.RoleId,
+                    AssignedAt = now,
+                },
+                ct
+            );
+            minorIds.Add(child.Id);
+        }
+
         await uow.SaveChangesAsync(ct);
 
-        var created = await users.GetByIdWithDetailsAsync(user.Id, ct);
-        return new CreateUserResponse(created!.ToResponse(), configured.Value);
+        var createdAdult = await users.GetByIdWithDetailsAsync(adult.Id, ct);
+        var createdMinors = new List<UserResponse>();
+        foreach (var id in minorIds)
+        {
+            var created = await users.GetByIdWithDetailsAsync(id, ct);
+            if (created is not null)
+            {
+                createdMinors.Add(created.ToResponse());
+            }
+        }
+
+        return new RegisterResponse(createdAdult!.ToResponse(), createdMinors, otp);
     }
 
     public async Task<Result<UserResponse>> VerifyAsync(
@@ -167,134 +249,5 @@ public class AuthService(
 
         var updated = await users.GetByIdWithDetailsAsync(id, ct);
         return updated!.ToResponse();
-    }
-
-    private async Task<Result<Guid?>> ConfigureMinorAsync(
-        User user,
-        CreateUserRequest request,
-        CancellationToken ct
-    )
-    {
-        var rules = await ApplyMinorContactRulesAsync(
-            user,
-            request.ParentId,
-            excludeUserId: user.Id,
-            ct
-        );
-        if (rules.IsFailure)
-        {
-            return rules.Error!;
-        }
-
-        user.UserStatusTypeId = SeedIds.UserStatusTypes.Dependent;
-        return Result.Success<Guid?>(null);
-    }
-
-    private async Task<Result<Guid?>> ConfigureAdultAsync(
-        User user,
-        CreateUserRequest request,
-        Guid? excludeUserId,
-        CancellationToken ct
-    )
-    {
-        if (string.IsNullOrWhiteSpace(request.Password))
-        {
-            return Error.Validation();
-        }
-
-        var rules = await ApplyAdultContactRulesAsync(
-            user,
-            request.Email,
-            request.Phone,
-            request.ParentId,
-            excludeUserId,
-            ct
-        );
-        if (rules.IsFailure)
-        {
-            return rules.Error!;
-        }
-
-        user.PasswordHash = hasher.Hash(request.Password);
-        user.UserStatusTypeId = SeedIds.UserStatusTypes.Pending;
-
-        var otp = Guid.NewGuid();
-        user.OtpCode = otp;
-        user.OtpExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15);
-        return Result.Success<Guid?>(otp);
-    }
-
-    private async Task<Result> ApplyMinorContactRulesAsync(
-        User user,
-        Guid? parentId,
-        Guid? excludeUserId,
-        CancellationToken ct
-    )
-    {
-        if (parentId is not { } parent)
-        {
-            return Error.Validation();
-        }
-
-        if (parent == excludeUserId)
-        {
-            return Error.Validation();
-        }
-
-        var parentUser = await users.FindAsync(u => u.Id == parent, ct);
-        if (parentUser is null)
-        {
-            return Error.NotFound();
-        }
-
-        if (parentUser.BirthDate.IsMinor())
-        {
-            return Error.Validation();
-        }
-
-        user.ParentId = parent;
-        user.Email = null;
-        user.Phone = null;
-        user.PasswordHash = null;
-        user.OtpCode = null;
-        user.OtpExpiresAt = null;
-        return Result.Success();
-    }
-
-    private async Task<Result> ApplyAdultContactRulesAsync(
-        User user,
-        string? rawEmail,
-        string? rawPhone,
-        Guid? parentId,
-        Guid? excludeUserId,
-        CancellationToken ct
-    )
-    {
-        if (parentId is not null)
-        {
-            return Error.Validation();
-        }
-
-        var email = rawEmail.NormalizeOrNull();
-        var phone = rawPhone.NormalizeOrNull();
-        if (email is null || phone is null)
-        {
-            return Error.Validation();
-        }
-
-        if (await users.EmailExistsAsync(email, excludeUserId, ct))
-        {
-            return Error.Validation();
-        }
-
-        if (await users.PhoneExistsAsync(phone, excludeUserId, ct))
-        {
-            return Error.Validation();
-        }
-
-        user.ParentId = null;
-        user.Email = email;
-        user.Phone = phone;
-        return Result.Success();
     }
 }

@@ -3,6 +3,13 @@ export interface TimelineRole {
   name: string
 }
 
+export interface TimelineMemberAssignment {
+  userId: string
+  name: string
+  roleName: string
+  status: string
+}
+
 export interface TimelineActivity {
   id: string
   title: string
@@ -10,4 +17,5 @@ export interface TimelineActivity {
   end: Date | null
   roles: TimelineRole[]
   assignment: { status: string; roleName: string } | null
+  household: TimelineMemberAssignment[]
 }

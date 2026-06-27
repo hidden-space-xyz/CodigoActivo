@@ -2,6 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import { adminRoutes } from '@/features/admin/router/admin.routes'
 import { aboutRoutes } from '@/modules/about/presentation/routes'
+import { accountRoutes } from '@/modules/account/presentation/routes'
 import { announcementsRoutes } from '@/modules/announcements/presentation/routes'
 import { authRoutes } from '@/modules/auth/presentation/routes'
 import { eventsRoutes } from '@/modules/events/presentation/routes'
@@ -17,6 +18,7 @@ export const routes: readonly RouteRecordRaw[] = [
   ...announcementsRoutes,
   ...registrationRoutes,
   ...authRoutes,
+  ...accountRoutes,
   ...adminRoutes,
   {
     path: '/:pathMatch(.*)*',

@@ -39,6 +39,13 @@ function isActive(routeName: string): boolean {
           <RouterLink :to="{ name: 'admin-dashboard' }" class="header__link"
             >Administración</RouterLink
           >
+          <RouterLink
+            :to="{ name: 'account' }"
+            class="header__link"
+            :class="{ 'header__link--active': isActive('account') }"
+          >
+            Mi cuenta
+          </RouterLink>
           <span class="header__greeting">Hola, {{ displayName }}</span>
           <BaseButton variant="ghost" class="header__cta" @click="logout()">
             Cerrar sesión

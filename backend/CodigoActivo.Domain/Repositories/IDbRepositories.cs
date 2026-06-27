@@ -23,6 +23,16 @@ public interface IUserRepository : IDbRepository<User>
 
     Task<bool> HasTypeAssignmentAsync(Guid userId, Guid userTypeId, CancellationToken ct = default);
     Task AddTypeAssignmentAsync(UserTypeAssignment assignment, CancellationToken ct = default);
+
+    Task<IReadOnlyList<User>> ListChildrenWithDetailsAsync(
+        Guid parentId,
+        CancellationToken ct = default
+    );
+    Task<IReadOnlyList<UserTypeAssignment>> GetTypeAssignmentsAsync(
+        Guid userId,
+        CancellationToken ct = default
+    );
+    void RemoveTypeAssignment(UserTypeAssignment assignment);
 }
 
 public interface IEventRepository : IDbRepository<Event>
@@ -65,6 +75,12 @@ public interface IActivityRepository : IDbRepository<Activity>
         Guid userId,
         DateTimeOffset? startDate,
         DateTimeOffset? endDate,
+        CancellationToken ct = default
+    );
+
+    Task<IReadOnlyList<ActivityUserRoleAssignment>> GetAssignmentsForUsersByEventAsync(
+        IReadOnlyList<Guid> userIds,
+        Guid eventId,
         CancellationToken ct = default
     );
 }

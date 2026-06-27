@@ -109,4 +109,19 @@ public class ActivityRepository(CodigoActivoDbContext context)
             .OrderBy(x => x.Activity.ActivityStartsAt ?? DateTimeOffset.MaxValue)
             .ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<ActivityUserRoleAssignment>> GetAssignmentsForUsersByEventAsync(
+        IReadOnlyList<Guid> userIds,
+        Guid eventId,
+        CancellationToken ct = default
+    )
+    {
+        return await Context
+            .ActivityUserRoleAssignments.AsNoTracking()
+            .Include(x => x.User)
+            .Include(x => x.ActivityRoleType)
+            .Include(x => x.AssignmentStatus)
+            .Where(x => x.Activity.EventId == eventId && userIds.Contains(x.UserId))
+            .ToListAsync(ct);
+    }
 }

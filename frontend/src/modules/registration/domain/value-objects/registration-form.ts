@@ -1,36 +1,34 @@
-import type { RegistrationRole } from '@/modules/registration/domain/value-objects/registration-role'
-
-export interface GuardianDetails {
+export interface MinorForm {
   firstName: string
   lastName: string
-  email: string
-  phone: string
+  dateOfBirth: string
+  roleId: string
 }
 
 export interface RegistrationForm {
-  role: RegistrationRole
   firstName: string
   lastName: string
   email: string
   phone: string
   password: string
   dateOfBirth: string
-  guardian: GuardianDetails
+  roleId: string
+  minors: MinorForm[]
 }
 
-export function createEmptyGuardian(): GuardianDetails {
-  return { firstName: '', lastName: '', email: '', phone: '' }
+export function createEmptyMinor(): MinorForm {
+  return { firstName: '', lastName: '', dateOfBirth: '', roleId: '' }
 }
 
-export function createEmptyRegistrationForm(role: RegistrationRole): RegistrationForm {
+export function createEmptyRegistrationForm(): RegistrationForm {
   return {
-    role,
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     password: '',
     dateOfBirth: '',
-    guardian: createEmptyGuardian(),
+    roleId: '',
+    minors: [],
   }
 }

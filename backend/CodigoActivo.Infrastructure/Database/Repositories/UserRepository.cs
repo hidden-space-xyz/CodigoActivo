@@ -88,4 +88,33 @@ public class UserRepository(CodigoActivoDbContext context)
     {
         await Context.UserTypeAssignments.AddAsync(assignment, ct);
     }
+
+    public async Task<IReadOnlyList<User>> ListChildrenWithDetailsAsync(
+        Guid parentId,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.AsNoTracking()
+            .Include(u => u.UserStatusType)
+            .Include(u => u.TypeAssignments)
+            .ThenInclude(ta => ta.UserType)
+            .Where(u => u.ParentId == parentId)
+            .OrderBy(u => u.FirstName)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<UserTypeAssignment>> GetTypeAssignmentsAsync(
+        Guid userId,
+        CancellationToken ct = default
+    )
+    {
+        return await Context
+            .UserTypeAssignments.Where(a => a.UserId == userId)
+            .ToListAsync(ct);
+    }
+
+    public void RemoveTypeAssignment(UserTypeAssignment assignment)
+    {
+        Context.UserTypeAssignments.Remove(assignment);
+    }
 }

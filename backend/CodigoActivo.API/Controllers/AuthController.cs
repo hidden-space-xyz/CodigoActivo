@@ -32,19 +32,19 @@ public class AuthController(IAuthService auth) : ApiControllerBase
     [HttpPost("register")]
     [AllowAnonymous]
     [InvalidatesCache(nameof(DashboardSummaryResponse))]
-    public async Task<ActionResult<CreateUserResponse>> Register(
-        [FromBody] CreateUserRequest request,
+    public async Task<ActionResult<RegisterResponse>> Register(
+        [FromBody] RegisterRequest request,
         CancellationToken ct
     )
     {
         var result = await auth.RegisterAsync(request, ct);
         return result.IsFailure
-            ? (ActionResult<CreateUserResponse>)ToProblem(result.Error!)
-            : (ActionResult<CreateUserResponse>)
+            ? (ActionResult<RegisterResponse>)ToProblem(result.Error!)
+            : (ActionResult<RegisterResponse>)
                 CreatedAtAction(
                     nameof(UsersController.GetById),
                     "Users",
-                    new { userId = result.Value.User.Id },
+                    new { userId = result.Value.Adult.Id },
                     result.Value
                 );
     }
@@ -109,9 +109,11 @@ public class AuthController(IAuthService auth) : ApiControllerBase
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
         }
 
+        // Use the role's GUID as the role claim so authorization is independent of
+        // the role's (translatable) display name.
         foreach (var role in user.Roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+            claims.Add(new Claim(ClaimTypes.Role, role.Id.ToString()));
         }
 
         var identity = new ClaimsIdentity(

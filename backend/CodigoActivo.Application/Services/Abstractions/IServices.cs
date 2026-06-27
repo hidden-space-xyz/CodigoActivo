@@ -7,8 +7,8 @@ public interface IAuthService
 {
     Task<Result<UserResponse>> LoginAsync(LoginRequest request, CancellationToken ct = default);
     Task<Result<UserResponse>> GetCurrentAsync(Guid userId, CancellationToken ct = default);
-    Task<Result<CreateUserResponse>> RegisterAsync(
-        CreateUserRequest request,
+    Task<Result<RegisterResponse>> RegisterAsync(
+        RegisterRequest request,
         CancellationToken ct = default
     );
     Task<Result<UserResponse>> VerifyAsync(Guid id, string otp, CancellationToken ct = default);
@@ -30,11 +30,35 @@ public interface IUserService
         CancellationToken ct = default
     );
 
+    Task<IReadOnlyList<UserResponse>> GetChildrenAsync(
+        Guid parentId,
+        CancellationToken ct = default
+    );
+    Task<Result<UserResponse>> AddChildAsync(
+        Guid parentId,
+        RegisterMinorRequest request,
+        CancellationToken ct = default
+    );
+    Task<Result<UserResponse>> SetRoleAsync(
+        Guid userId,
+        Guid roleId,
+        CancellationToken ct = default
+    );
+    Task<Result> ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordRequest request,
+        CancellationToken ct = default
+    );
+
     Task<IReadOnlyList<UserStatusTypeResponse>> GetUserStatusTypesAsync(
         CancellationToken ct = default
     );
 
     Task<IReadOnlyList<UserTypeResponse>> GetUserTypesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<UserTypeResponse>> GetRegistrationTypesAsync(
+        bool forMinor,
+        CancellationToken ct = default
+    );
 }
 
 public interface IEventService
@@ -91,6 +115,12 @@ public interface IActivityService
         AssignRequest request,
         CancellationToken ct = default
     );
+    Task<Result<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
+        Guid activityId,
+        Guid actingUserId,
+        AssignHouseholdRequest request,
+        CancellationToken ct = default
+    );
     Task<Result> UnassignAsync(Guid activityId, Guid userId, CancellationToken ct = default);
     Task<Result<AssignmentResponse>> ChangeStatusAsync(
         Guid activityId,
@@ -108,6 +138,11 @@ public interface IActivityService
         Guid userId,
         DateTimeOffset? startDate,
         DateTimeOffset? endDate,
+        CancellationToken ct = default
+    );
+    Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> GetHouseholdAssignmentsAsync(
+        Guid actingUserId,
+        Guid eventId,
         CancellationToken ct = default
     );
 

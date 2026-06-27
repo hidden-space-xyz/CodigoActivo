@@ -2,32 +2,59 @@
 import { computed } from 'vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import Select from 'primevue/select'
 
-import type { RegistrationForm } from '@/modules/registration/domain/value-objects/registration-form'
-import { ROLE_LABELS } from '@/modules/registration/domain/value-objects/registration-role'
+import {
+  createEmptyMinor,
+  type RegistrationForm,
+} from '@/modules/registration/domain/value-objects/registration-form'
+import type { UserTypeResponse } from '@/shared/api/generated/models'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 
 const props = defineProps<{
   form: RegistrationForm
-  isUserMinor: boolean
+  adultRoles: UserTypeResponse[]
+  minorRoles: UserTypeResponse[]
   isSubmitting: boolean
 }>()
 
 const emit = defineEmits<{ submit: []; back: [] }>()
 
 const model = props.form
+
 const todayIso = computed(() => new Date().toISOString().slice(0, 10))
-const roleTitle = computed(() => ROLE_LABELS[model.role])
+// Latest birth date that still makes someone an adult (today minus 18 years).
+const adultThresholdIso = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 18)
+  return d.toISOString().slice(0, 10)
+})
+
+const adultRoleDescription = computed(
+  () => props.adultRoles.find((role) => role.id === model.roleId)?.description ?? '',
+)
+
+function minorRoleDescription(roleId: string): string {
+  return props.minorRoles.find((role) => role.id === roleId)?.description ?? ''
+}
+
+function addMinor(): void {
+  model.minors.push(createEmptyMinor())
+}
+
+function removeMinor(index: number): void {
+  model.minors.splice(index, 1)
+}
 </script>
 
 <template>
   <div class="reg">
     <div class="reg__head">
-      <BaseButton variant="link" @click="emit('back')">← Cambiar tipo de registro</BaseButton>
-      <span class="reg__role">{{ roleTitle }}</span>
+      <BaseButton variant="link" @click="emit('back')">← Volver</BaseButton>
     </div>
 
     <form class="reg__form" @submit.prevent="emit('submit')">
+      <h2 class="reg__section-title">Tus datos</h2>
       <div class="reg__grid">
         <div class="reg__field">
           <label class="reg__label" for="reg-firstname">Nombre</label>
@@ -63,50 +90,98 @@ const roleTitle = computed(() => ROLE_LABELS[model.role])
             v-model="model.dateOfBirth"
             type="date"
             class="reg__date"
-            :max="todayIso"
+            :max="adultThresholdIso"
             required
           />
         </div>
+        <div class="reg__field reg__field--full">
+          <label class="reg__label" for="reg-role">¿Cómo quieres participar?</label>
+          <Select
+            input-id="reg-role"
+            v-model="model.roleId"
+            :options="adultRoles"
+            option-label="name"
+            option-value="id"
+            placeholder="Selecciona un rol"
+            required
+            fluid
+          />
+          <p v-if="adultRoleDescription" class="reg__role-desc">{{ adultRoleDescription }}</p>
+        </div>
       </div>
 
-      <transition name="reg-fade">
-        <fieldset v-if="isUserMinor" class="reg__guardian">
-          <legend class="reg__guardian-legend">Datos del padre / madre / tutor legal</legend>
-          <p class="reg__guardian-note">
-            Eres menor de edad, así que necesitamos los datos de tu padre, madre o tutor legal.
-          </p>
-          <div class="reg__grid">
-            <div class="reg__field">
-              <label class="reg__label" for="reg-g-firstname">Nombre del responsable</label>
-              <InputText id="reg-g-firstname" v-model="model.guardian.firstName" required fluid />
+      <div class="reg__minors">
+        <div class="reg__minors-head">
+          <h2 class="reg__section-title">Menores a mi cargo</h2>
+          <BaseButton variant="ghost" type="button" @click="addMinor">+ Añadir menor</BaseButton>
+        </div>
+        <p class="reg__minors-note">
+          Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre, fecha de
+          nacimiento y cómo quieren participar.
+        </p>
+
+        <transition-group name="reg-fade" tag="div">
+          <fieldset v-for="(minor, index) in model.minors" :key="index" class="reg__minor">
+            <legend class="reg__minor-legend">Menor {{ index + 1 }}</legend>
+            <button
+              type="button"
+              class="reg__minor-remove"
+              aria-label="Quitar menor"
+              @click="removeMinor(index)"
+            >
+              ✕
+            </button>
+            <div class="reg__grid">
+              <div class="reg__field">
+                <label class="reg__label" :for="`minor-firstname-${index}`">Nombre</label>
+                <InputText
+                  :id="`minor-firstname-${index}`"
+                  v-model="minor.firstName"
+                  required
+                  fluid
+                />
+              </div>
+              <div class="reg__field">
+                <label class="reg__label" :for="`minor-lastname-${index}`">Apellidos</label>
+                <InputText
+                  :id="`minor-lastname-${index}`"
+                  v-model="minor.lastName"
+                  required
+                  fluid
+                />
+              </div>
+              <div class="reg__field">
+                <label class="reg__label" :for="`minor-dob-${index}`">Fecha de nacimiento</label>
+                <input
+                  :id="`minor-dob-${index}`"
+                  v-model="minor.dateOfBirth"
+                  type="date"
+                  class="reg__date"
+                  :min="adultThresholdIso"
+                  :max="todayIso"
+                  required
+                />
+              </div>
+              <div class="reg__field">
+                <label class="reg__label" :for="`minor-role-${index}`">¿Cómo participa?</label>
+                <Select
+                  :input-id="`minor-role-${index}`"
+                  v-model="minor.roleId"
+                  :options="minorRoles"
+                  option-label="name"
+                  option-value="id"
+                  placeholder="Selecciona un rol"
+                  required
+                  fluid
+                />
+                <p v-if="minorRoleDescription(minor.roleId)" class="reg__role-desc">
+                  {{ minorRoleDescription(minor.roleId) }}
+                </p>
+              </div>
             </div>
-            <div class="reg__field">
-              <label class="reg__label" for="reg-g-lastname">Apellidos del responsable</label>
-              <InputText id="reg-g-lastname" v-model="model.guardian.lastName" required fluid />
-            </div>
-            <div class="reg__field">
-              <label class="reg__label" for="reg-g-email">Correo del responsable</label>
-              <InputText
-                id="reg-g-email"
-                v-model="model.guardian.email"
-                type="email"
-                required
-                fluid
-              />
-            </div>
-            <div class="reg__field">
-              <label class="reg__label" for="reg-g-phone">Teléfono del responsable</label>
-              <InputText
-                id="reg-g-phone"
-                v-model="model.guardian.phone"
-                type="tel"
-                required
-                fluid
-              />
-            </div>
-          </div>
-        </fieldset>
-      </transition>
+          </fieldset>
+        </transition-group>
+      </div>
 
       <BaseButton type="submit" variant="primary" block :loading="isSubmitting" class="reg__submit">
         Completar registro
@@ -117,23 +192,7 @@ const roleTitle = computed(() => ROLE_LABELS[model.role])
 
 <style scoped>
 .reg__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.reg__role {
-  font-family: var(--ca-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ca-cyan);
-  background: rgba(45, 212, 217, 0.13);
-  padding: 6px 12px;
-  border-radius: 999px;
+  margin-bottom: 16px;
 }
 
 .reg__form {
@@ -141,6 +200,14 @@ const roleTitle = computed(() => ROLE_LABELS[model.role])
   border: 1px solid var(--ca-border-strong);
   border-radius: 18px;
   padding: 30px;
+}
+
+.reg__section-title {
+  font-family: var(--ca-font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--ca-text-bright);
+  margin-bottom: 16px;
 }
 
 .reg__grid {
@@ -152,6 +219,10 @@ const roleTitle = computed(() => ROLE_LABELS[model.role])
 .reg__field {
   display: flex;
   flex-direction: column;
+}
+
+.reg__field--full {
+  grid-column: 1 / -1;
 }
 
 .reg__label {
@@ -178,31 +249,72 @@ const roleTitle = computed(() => ROLE_LABELS[model.role])
   border-color: var(--ca-cyan);
 }
 
-.reg__guardian {
-  margin-top: 22px;
+.reg__role-desc {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+}
+
+.reg__minors {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--ca-border);
+}
+
+.reg__minors-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reg__minors-note {
+  margin: 6px 0 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ca-text-dim);
+}
+
+.reg__minor {
+  position: relative;
+  margin-top: 16px;
   padding: 22px;
   border: 1px solid var(--ca-border-strong);
   border-radius: 14px;
   background: var(--ca-surface);
 }
 
-.reg__guardian-legend {
+.reg__minor-legend {
   font-family: var(--ca-font-display);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--ca-text);
   padding: 0 8px;
 }
 
-.reg__guardian-note {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--ca-amber);
-  margin-bottom: 16px;
+.reg__minor-remove {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--ca-border-strong);
+  background: var(--ca-bg-elevated);
+  color: var(--ca-text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.reg__minor-remove:hover {
+  color: var(--ca-text-bright);
+  border-color: var(--ca-amber);
 }
 
 .reg__submit {
-  margin-top: 22px;
+  margin-top: 26px;
   width: 100%;
 }
 

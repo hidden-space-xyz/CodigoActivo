@@ -14,8 +14,15 @@ const props = defineProps<{
   busy: boolean
   authenticated: boolean
   signupOpen: boolean
+  hasHousehold: boolean
 }>()
-const emit = defineEmits<{ signup: [roleId: string]; unassign: []; login: [] }>()
+const emit = defineEmits<{
+  signup: [roleId: string]
+  unassign: []
+  unassignMember: [userId: string]
+  household: []
+  login: []
+}>()
 
 const selectedRoleId = ref(
   props.activity.roles.length === 1 ? (props.activity.roles[0]?.id ?? '') : '',
@@ -41,11 +48,11 @@ function onSignup(): void {
 </script>
 
 <template>
-  <article class="act" :class="{ 'act--mine': activity.assignment }">
+  <article class="act" :class="{ 'act--mine': activity.assignment || activity.household.length }">
     <div class="act__head">
       <h4 class="act__title">{{ activity.title }}</h4>
       <Tag
-        v-if="activity.assignment"
+        v-if="!hasHousehold && activity.assignment"
         :value="activity.assignment.status"
         :severity="statusSeverity(activity.assignment.status)"
       />
@@ -57,8 +64,55 @@ function onSignup(): void {
       <Tag v-for="role in activity.roles" :key="role.id" :value="role.name" severity="secondary" />
     </div>
 
+    <ul v-if="hasHousehold && activity.household.length" class="act__members">
+      <li v-for="member in activity.household" :key="member.userId" class="act__member">
+        <span class="act__member-info">
+          <b>{{ member.name }}</b> · {{ member.roleName || '—' }}
+          <Tag
+            :value="member.status"
+            :severity="statusSeverity(member.status)"
+            class="act__member-tag"
+          />
+        </span>
+        <button
+          type="button"
+          class="act__member-remove"
+          aria-label="Desapuntar"
+          :disabled="busy"
+          @click="emit('unassignMember', member.userId)"
+        >
+          ✕
+        </button>
+      </li>
+    </ul>
+
     <div class="act__actions">
-      <template v-if="activity.assignment">
+      <template v-if="!authenticated">
+        <BaseButton variant="ghost" @click="emit('login')">Inicia sesión para apuntarte</BaseButton>
+      </template>
+
+      <!-- Household flow: an adult with minors picks who to sign up and each role. -->
+      <template v-else-if="hasHousehold">
+        <template v-if="!signupOpen">
+          <span v-if="!activity.household.length" class="act__note">
+            La inscripción no está abierta.
+          </span>
+        </template>
+        <Button
+          v-else
+          :label="activity.household.length ? 'Apuntar a otro miembro' : 'Apuntar a mi familia'"
+          size="small"
+          :loading="busy"
+          :disabled="activity.roles.length === 0"
+          @click="emit('household')"
+        />
+        <span v-if="signupOpen && activity.roles.length === 0" class="act__note">
+          Sin roles disponibles
+        </span>
+      </template>
+
+      <!-- Solo flow: a user without minors signs themselves up. -->
+      <template v-else-if="activity.assignment">
         <span class="act__note">Inscrito como {{ activity.assignment.roleName || '—' }}</span>
         <Button
           label="Desapuntarme"
@@ -70,9 +124,6 @@ function onSignup(): void {
       </template>
       <template v-else-if="!signupOpen">
         <span class="act__note">La inscripción no está abierta.</span>
-      </template>
-      <template v-else-if="!authenticated">
-        <BaseButton variant="ghost" @click="emit('login')">Inicia sesión para apuntarte</BaseButton>
       </template>
       <template v-else>
         <Select
@@ -141,6 +192,64 @@ function onSignup(): void {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.act__members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.act__member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--ca-bg-elevated);
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--ca-text);
+}
+
+.act__member-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.act__member-tag {
+  transform: scale(0.85);
+  transform-origin: left center;
+}
+
+.act__member-remove {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid var(--ca-border-strong);
+  background: var(--ca-surface);
+  color: var(--ca-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.act__member-remove:hover:not(:disabled) {
+  color: var(--ca-text-bright);
+  border-color: var(--ca-amber);
+}
+
+.act__member-remove:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .act__actions {

@@ -5,16 +5,24 @@ import {
   getApiActivitiesActivityIdUserIdVerifyTimeOverlaps,
   getApiActivitiesAssigned,
   getApiActivitiesEventId,
+  getApiActivitiesEventIdHouseholdAssignments,
   patchApiActivitiesActivityIdUserIdAssign,
   patchApiActivitiesActivityIdUserIdUnassign,
+  postApiActivitiesActivityIdAssignHousehold,
 } from '@/shared/api/generated/endpoints/activities/activities'
-import type { TimeOverlapResponse } from '@/shared/api/generated/models'
+import { getApiUsersUserIdChildren } from '@/shared/api/generated/endpoints/users/users'
+import type { HouseholdAssignmentRequest, TimeOverlapResponse } from '@/shared/api/generated/models'
 import { useSessionStore } from '@/modules/auth/presentation/stores/session.store'
 
+export interface HouseholdMember {
+  id: string
+  name: string
+}
+
 /**
- * Public, volunteer-facing view of an event's activities: the activity list,
- * the current user's own assignments (status + role), and the actions to sign
- * up / drop out, including the time-overlap check.
+ * Public, volunteer-facing view of an event's activities: the activity list, the
+ * sign-ups of the current user's household (themselves + the minors in their
+ * care), and the actions to sign up / drop out, including the time-overlap check.
  */
 export function useEventActivities(eventId: () => string) {
   const session = useSessionStore()
@@ -25,6 +33,8 @@ export function useEventActivities(eventId: () => string) {
 
   const activitiesKey = computed(() => ['public', 'event-activities', eventId()] as const)
   const assignedKey = ['public', 'my-assignments'] as const
+  const childrenKey = ['public', 'my-children'] as const
+  const householdKey = computed(() => ['public', 'household-assignments', eventId()] as const)
 
   const activities = useQuery({
     queryKey: activitiesKey,
@@ -38,9 +48,37 @@ export function useEventActivities(eventId: () => string) {
     enabled: isAuthenticated,
   })
 
+  const children = useQuery({
+    queryKey: childrenKey,
+    queryFn: ({ signal }) => {
+      if (!userId.value) return Promise.resolve([])
+      return getApiUsersUserIdChildren(userId.value, { signal }).then((r) => r.data ?? [])
+    },
+    enabled: isAuthenticated,
+  })
+
+  const household = useQuery({
+    queryKey: householdKey,
+    queryFn: ({ signal }) =>
+      getApiActivitiesEventIdHouseholdAssignments(eventId(), { signal }).then((r) => r.data ?? []),
+    enabled: isAuthenticated,
+  })
+
+  const hasHousehold = computed(() => (children.data.value ?? []).length > 0)
+
+  const members = computed<HouseholdMember[]>(() => {
+    const self: HouseholdMember = { id: userId.value ?? '', name: session.user?.firstName ?? 'Yo' }
+    const kids = (children.data.value ?? []).map((child) => ({
+      id: child.id ?? '',
+      name: `${child.firstName ?? ''} ${child.lastName ?? ''}`.trim(),
+    }))
+    return [self, ...kids]
+  })
+
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: activitiesKey.value })
     void queryClient.invalidateQueries({ queryKey: assignedKey })
+    void queryClient.invalidateQueries({ queryKey: householdKey.value })
   }
 
   const assign = useMutation({
@@ -53,11 +91,17 @@ export function useEventActivities(eventId: () => string) {
     onSuccess: invalidate,
   })
 
+  const assignHousehold = useMutation({
+    mutationFn: (vars: { activityId: string; assignments: HouseholdAssignmentRequest[] }) =>
+      postApiActivitiesActivityIdAssignHousehold(vars.activityId, {
+        assignments: vars.assignments,
+      }).then((r) => r.data),
+    onSuccess: invalidate,
+  })
+
   const unassign = useMutation({
-    mutationFn: (activityId: string) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return patchApiActivitiesActivityIdUserIdUnassign(activityId, userId.value)
-    },
+    mutationFn: (vars: { activityId: string; userId: string }) =>
+      patchApiActivitiesActivityIdUserIdUnassign(vars.activityId, vars.userId),
     onSuccess: invalidate,
   })
 
@@ -71,7 +115,12 @@ export function useEventActivities(eventId: () => string) {
   return {
     activities,
     assigned,
+    household,
+    hasHousehold,
+    members,
+    userId,
     assign,
+    assignHousehold,
     unassign,
     verifyOverlaps,
     isAuthenticated,

@@ -14,6 +14,7 @@ public class ActivityService(
     IFileRepository files,
     IAssignmentStatusTypeRepository statuses,
     IActivityRoleTypeRepository roleTypes,
+    IUserRepository users,
     IUnitOfWork uow
 ) : IActivityService
 {
@@ -192,6 +193,92 @@ public class ActivityService(
         );
     }
 
+    public async Task<Result<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
+        Guid activityId,
+        Guid actingUserId,
+        AssignHouseholdRequest request,
+        CancellationToken ct = default
+    )
+    {
+        if (request.Assignments is null || request.Assignments.Count == 0)
+        {
+            return Error.Validation();
+        }
+
+        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
+        if (activity is null)
+        {
+            return Error.NotFound();
+        }
+
+        var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
+        if (ev is null)
+        {
+            return Error.NotFound();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        if (
+            (ev.SignupStartsAt is { } signupStart && now < signupStart)
+            || (ev.SignupEndsAt is { } signupEnd && now > signupEnd)
+        )
+        {
+            return Error.Validation();
+        }
+
+        // Each target must be the acting user or a minor in their care; the chosen
+        // role must be allowed by the activity; a person already signed up is
+        // skipped so re-submitting the household form is idempotent.
+        var created = new List<AssignmentResponse>();
+        foreach (var item in request.Assignments.DistinctBy(a => a.UserId))
+        {
+            if (item.UserId != actingUserId)
+            {
+                var target = await users.FindAsync(u => u.Id == item.UserId, ct);
+                if (target is null || target.ParentId != actingUserId)
+                {
+                    return Error.Forbidden();
+                }
+            }
+
+            if (!await activities.AllowedRoleExistsAsync(activityId, item.ActivityRoleTypeId, ct))
+            {
+                return Error.Validation();
+            }
+
+            if (await activities.GetAssignmentAsync(item.UserId, activityId, ct) is not null)
+            {
+                continue;
+            }
+
+            await activities.AddAssignmentAsync(
+                new ActivityUserRoleAssignment
+                {
+                    UserId = item.UserId,
+                    ActivityId = activityId,
+                    ActivityRoleTypeId = item.ActivityRoleTypeId,
+                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                },
+                ct
+            );
+            created.Add(
+                new AssignmentResponse(
+                    item.UserId,
+                    activityId,
+                    item.ActivityRoleTypeId,
+                    null,
+                    new AssignmentStatusResponse(
+                        SeedIds.AssignmentStatusTypes.Requested,
+                        nameof(SeedIds.AssignmentStatusTypes.Requested)
+                    )
+                )
+            );
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return Result.Success<IReadOnlyList<AssignmentResponse>>(created);
+    }
+
     public async Task<Result> UnassignAsync(
         Guid activityId,
         Guid userId,
@@ -295,6 +382,31 @@ public class ActivityService(
                     x.AssignmentStatusId,
                     x.AssignmentStatus?.Name ?? string.Empty
                 )
+            ))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> GetHouseholdAssignmentsAsync(
+        Guid actingUserId,
+        Guid eventId,
+        CancellationToken ct = default
+    )
+    {
+        var children = await users.ListChildrenWithDetailsAsync(actingUserId, ct);
+        var ids = new List<Guid> { actingUserId };
+        ids.AddRange(children.Select(child => child.Id));
+
+        var assignments = await activities.GetAssignmentsForUsersByEventAsync(ids, eventId, ct);
+        return assignments
+            .Select(x => new HouseholdMemberAssignmentResponse(
+                x.ActivityId,
+                x.UserId,
+                x.User.FirstName,
+                x.User.LastName,
+                x.ActivityRoleTypeId,
+                x.ActivityRoleType?.Name ?? string.Empty,
+                x.AssignmentStatusId,
+                x.AssignmentStatus?.Name ?? string.Empty
             ))
             .ToList();
     }

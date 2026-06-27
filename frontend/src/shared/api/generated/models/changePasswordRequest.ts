@@ -5,10 +5,10 @@
  * Backend API for CodigoActivo (cookie session auth + CSRF).
  * OpenAPI spec version: v1
  */
-import type { UserResponse } from './userResponse';
 
-export interface CreateUserResponse {
-  user?: UserResponse;
+export interface ChangePasswordRequest {
   /** @nullable */
-  verificationCode?: string | null;
+  currentPassword?: string | null;
+  /** @nullable */
+  newPassword?: string | null;
 }

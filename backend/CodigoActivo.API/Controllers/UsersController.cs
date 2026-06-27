@@ -45,6 +45,50 @@ public class UsersController(IUserService users) : ApiControllerBase
         return ToNoContent(await users.DeleteAsync(userId, ct));
     }
 
+    [HttpGet("{userId:guid}/children")]
+    [AllowOnlySelf]
+    public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetChildren(
+        Guid userId,
+        CancellationToken ct
+    )
+    {
+        return Ok(await users.GetChildrenAsync(userId, ct));
+    }
+
+    [HttpPost("{userId:guid}/children")]
+    [AllowOnlySelf]
+    [InvalidatesCache(nameof(DashboardSummaryResponse))]
+    public async Task<ActionResult<UserResponse>> AddChild(
+        Guid userId,
+        [FromBody] RegisterMinorRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await users.AddChildAsync(userId, request, ct));
+    }
+
+    [HttpPatch("{userId:guid}/role")]
+    [AllowOnlySelf]
+    public async Task<ActionResult<UserResponse>> SetRole(
+        Guid userId,
+        [FromBody] SetUserRoleRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await users.SetRoleAsync(userId, request.RoleId, ct));
+    }
+
+    [HttpPatch("{userId:guid}/password")]
+    [AllowOnlySelf]
+    public async Task<IActionResult> ChangePassword(
+        Guid userId,
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await users.ChangePasswordAsync(userId, request, ct));
+    }
+
     [HttpPatch("{userId:guid}/change-type")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<UserResponse>> ChangeType(
@@ -70,5 +114,15 @@ public class UsersController(IUserService users) : ApiControllerBase
     public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> GetTypes(CancellationToken ct)
     {
         return Ok(await users.GetUserTypesAsync(ct));
+    }
+
+    [HttpGet("registration-types")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> GetRegistrationTypes(
+        [FromQuery] bool minor,
+        CancellationToken ct
+    )
+    {
+        return Ok(await users.GetRegistrationTypesAsync(minor, ct));
     }
 }

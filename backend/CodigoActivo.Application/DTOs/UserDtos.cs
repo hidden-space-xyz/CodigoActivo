@@ -30,6 +30,13 @@ public record UpdateUserRequest(
     Guid? ParentId
 );
 
+public record SetUserRoleRequest(Guid RoleId);
+
+public record ChangePasswordRequest(
+    [Required] string CurrentPassword,
+    [Required, MinLength(8), MaxLength(128)] string NewPassword
+);
+
 public record UserStatusTypeResponse(Guid Id, string Name, string Description);
 
 public record UserTypeResponse(Guid Id, string Name, string Description);

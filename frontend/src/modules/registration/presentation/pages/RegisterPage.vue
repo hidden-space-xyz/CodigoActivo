@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { useRegistration } from '@/modules/registration/presentation/composables/useRegistration'
+import AgeGate from '@/modules/registration/presentation/components/AgeGate.vue'
 import RegistrationForm from '@/modules/registration/presentation/components/RegistrationForm.vue'
 import RegistrationSuccess from '@/modules/registration/presentation/components/RegistrationSuccess.vue'
-import RoleSelector from '@/modules/registration/presentation/components/RoleSelector.vue'
 import SectionEyebrow from '@/shared/ui/components/SectionEyebrow.vue'
 
 const {
   step,
   form,
-  isUserMinor,
-  submittedRole,
+  adultRoles,
+  minorRoles,
+  submittedRoleName,
+  submittedMinorCount,
   verificationCode,
   isVerified,
-  selectRole,
-  goBackToRoles,
+  confirmAdult,
+  backToGate,
   submit,
   verify,
   reset,
@@ -30,27 +32,29 @@ const {
         <SectionEyebrow text="// regístrate" color="var(--ca-cyan)" />
         <h1 class="register-head__title">Únete a Código Activo</h1>
         <p class="register-head__intro">
-          Cualquier persona puede registrarse. Primero, dinos cómo quieres participar.
+          Regístrate y, si tienes menores a tu cargo, inscríbelos a todos en un solo paso.
         </p>
       </div>
     </section>
 
     <section class="register-body">
       <div class="ca-container--narrow">
-        <RoleSelector v-if="step === 'role'" @select="selectRole" />
+        <AgeGate v-if="step === 'age-gate'" @confirm="confirmAdult" />
 
         <RegistrationForm
           v-else-if="step === 'form'"
           :form="form"
-          :is-user-minor="isUserMinor"
+          :adult-roles="adultRoles.data.value ?? []"
+          :minor-roles="minorRoles.data.value ?? []"
           :is-submitting="isSubmitting"
           @submit="submit"
-          @back="goBackToRoles"
+          @back="backToGate"
         />
 
         <RegistrationSuccess
-          v-else-if="step === 'success' && submittedRole"
-          :role="submittedRole"
+          v-else-if="step === 'success'"
+          :role-name="submittedRoleName"
+          :minor-count="submittedMinorCount"
           :verification-code="verificationCode"
           :is-verified="isVerified"
           :is-verifying="isVerifying"

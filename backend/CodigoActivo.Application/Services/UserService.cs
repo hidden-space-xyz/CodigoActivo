@@ -3,8 +3,10 @@ using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Services;
 
@@ -12,6 +14,7 @@ public class UserService(
     IUserRepository users,
     IUserTypeRepository userTypes,
     IUserStatusTypeRepository userStatusTypes,
+    IPasswordHasher hasher,
     IUnitOfWork uow
 ) : IUserService
 {
@@ -112,6 +115,177 @@ public class UserService(
 
         var updated = await users.GetByIdWithDetailsAsync(id, ct);
         return updated!.ToResponse();
+    }
+
+    public async Task<IReadOnlyList<UserResponse>> GetChildrenAsync(
+        Guid parentId,
+        CancellationToken ct = default
+    )
+    {
+        var children = await users.ListChildrenWithDetailsAsync(parentId, ct);
+        return children.Select(child => child.ToResponse()).ToList();
+    }
+
+    public async Task<Result<UserResponse>> AddChildAsync(
+        Guid parentId,
+        RegisterMinorRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var parent = await users.FindAsync(u => u.Id == parentId, ct);
+        if (parent is null)
+        {
+            return Error.NotFound();
+        }
+
+        if (parent.BirthDate.IsMinor())
+        {
+            return Error.Validation();
+        }
+
+        if (!request.BirthDate.IsMinor())
+        {
+            return Error.Validation();
+        }
+
+        var role = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
+        if (role is null)
+        {
+            return Error.NotFound();
+        }
+
+        if (role.Hidden || !role.IsAllowedForMinors)
+        {
+            return Error.Validation();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var child = new User
+        {
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            BirthDate = request.BirthDate,
+            ParentId = parentId,
+            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+            CreatedAt = now,
+        };
+        await users.AddAsync(child, ct);
+        await users.AddTypeAssignmentAsync(
+            new UserTypeAssignment
+            {
+                UserId = child.Id,
+                UserTypeId = request.RoleId,
+                AssignedAt = now,
+            },
+            ct
+        );
+        await uow.SaveChangesAsync(ct);
+
+        var created = await users.GetByIdWithDetailsAsync(child.Id, ct);
+        return created!.ToResponse();
+    }
+
+    public async Task<Result<UserResponse>> SetRoleAsync(
+        Guid userId,
+        Guid roleId,
+        CancellationToken ct = default
+    )
+    {
+        var user = await users.FindAsync(u => u.Id == userId, ct);
+        if (user is null)
+        {
+            return Error.NotFound();
+        }
+
+        var role = await userTypes.FindAsync(ut => ut.Id == roleId, ct);
+        if (role is null)
+        {
+            return Error.NotFound();
+        }
+
+        var allowed = user.BirthDate.IsMinor()
+            ? role.IsAllowedForMinors
+            : role.IsAllowedForAdults;
+        if (role.Hidden || !allowed)
+        {
+            return Error.Validation();
+        }
+
+        // Replace the user's "primary" role: drop every current role except Admin
+        // (so platform admins never lose their privileges) and except the chosen
+        // one, then assign the chosen role if it is not already present.
+        var assignments = await users.GetTypeAssignmentsAsync(userId, ct);
+        var alreadyHasRole = assignments.Any(a => a.UserTypeId == roleId);
+        foreach (
+            var assignment in assignments.Where(a =>
+                a.UserTypeId != SeedIds.UserTypes.Admin && a.UserTypeId != roleId
+            )
+        )
+        {
+            users.RemoveTypeAssignment(assignment);
+        }
+
+        if (!alreadyHasRole)
+        {
+            await users.AddTypeAssignmentAsync(
+                new UserTypeAssignment
+                {
+                    UserId = userId,
+                    UserTypeId = roleId,
+                    AssignedAt = DateTimeOffset.UtcNow,
+                },
+                ct
+            );
+        }
+
+        await uow.SaveChangesAsync(ct);
+
+        var updated = await users.GetByIdWithDetailsAsync(userId, ct);
+        return updated!.ToResponse();
+    }
+
+    public async Task<Result> ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var user = await users.FindAsync(u => u.Id == userId, ct);
+        if (user is null)
+        {
+            return Error.NotFound();
+        }
+
+        // Only adults have a password; minors are dependent accounts that cannot sign in.
+        if (string.IsNullOrEmpty(user.PasswordHash))
+        {
+            return Error.Validation();
+        }
+
+        if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            return Error.Validation();
+        }
+
+        user.PasswordHash = hasher.Hash(request.NewPassword);
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        users.Update(user);
+        await uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<IReadOnlyList<UserTypeResponse>> GetRegistrationTypesAsync(
+        bool forMinor,
+        CancellationToken ct = default
+    )
+    {
+        var list = await userTypes.GetAllAsync(ct);
+        return list.Where(type =>
+                !type.Hidden && (forMinor ? type.IsAllowedForMinors : type.IsAllowedForAdults)
+            )
+            .OrderBy(type => type.Name)
+            .Select(type => type.ToResponse())
+            .ToList();
     }
 
     public async Task<IReadOnlyList<UserStatusTypeResponse>> GetUserStatusTypesAsync(

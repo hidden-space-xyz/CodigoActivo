@@ -3,11 +3,16 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
 
 import { useEventActivities } from '@/modules/events/presentation/composables/useEventActivities'
 import ActivityTimelineCard from '@/modules/events/presentation/components/ActivityTimelineCard.vue'
-import type { TimelineActivity } from '@/modules/events/presentation/components/activity-timeline.types'
+import type {
+  TimelineActivity,
+  TimelineMemberAssignment,
+} from '@/modules/events/presentation/components/activity-timeline.types'
 import type { OverlappingActivityResponse } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDateTime } from '@/shared/utils/format'
@@ -16,8 +21,19 @@ const props = defineProps<{ eventId: string; signupOpen: boolean }>()
 
 const router = useRouter()
 const toast = useToast()
-const { activities, assigned, assign, unassign, verifyOverlaps, isAuthenticated } =
-  useEventActivities(() => props.eventId)
+const {
+  activities,
+  assigned,
+  household,
+  hasHousehold,
+  members,
+  userId,
+  assign,
+  assignHousehold,
+  unassign,
+  verifyOverlaps,
+  isAuthenticated,
+} = useEventActivities(() => props.eventId)
 
 interface Cluster {
   start: Date
@@ -34,6 +50,22 @@ const assignmentByActivity = computed(() => {
   return map
 })
 
+const householdByActivity = computed(() => {
+  const map = new Map<string, TimelineMemberAssignment[]>()
+  for (const a of household.data.value ?? []) {
+    if (!a.activityId) continue
+    const list = map.get(a.activityId) ?? []
+    list.push({
+      userId: a.userId ?? '',
+      name: `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim(),
+      roleName: a.roleName ?? '',
+      status: a.statusName ?? '',
+    })
+    map.set(a.activityId, list)
+  }
+  return map
+})
+
 const items = computed<TimelineActivity[]>(() =>
   (activities.data.value ?? []).map((a) => ({
     id: a.id ?? '',
@@ -44,6 +76,7 @@ const items = computed<TimelineActivity[]>(() =>
       .filter((r) => r.roleTypeId)
       .map((r) => ({ id: r.roleTypeId as string, name: r.roleTypeName ?? 'Rol' })),
     assignment: assignmentByActivity.value.get(a.id ?? '') ?? null,
+    household: householdByActivity.value.get(a.id ?? '') ?? [],
   })),
 )
 
@@ -84,6 +117,21 @@ const overlapDialog = reactive<{
   roleId: string
   overlaps: OverlappingActivityResponse[]
 }>({ visible: false, activity: null, roleId: '', overlaps: [] })
+
+interface HouseholdRow {
+  userId: string
+  name: string
+  alreadyAssigned: boolean
+  assignedRole: string
+  include: boolean
+  roleId: string
+}
+
+const householdDialog = reactive<{
+  visible: boolean
+  activity: TimelineActivity | null
+  rows: HouseholdRow[]
+}>({ visible: false, activity: null, rows: [] })
 
 function goLogin(): void {
   void router.push({ name: 'login', query: { redirect: `/events/${props.eventId}` } })
@@ -141,22 +189,95 @@ function doAssign(activityId: string, roleId: string): void {
   )
 }
 
-function onUnassign(activity: TimelineActivity): void {
-  busyId.value = activity.id
-  unassign.mutate(activity.id, {
-    onSuccess: () =>
-      toast.add({
-        severity: 'success',
-        summary: 'Te has desapuntado',
-        detail: `Ya no estás inscrito en "${activity.title}".`,
-        life: 3500,
-      }),
-    onError: (error) =>
-      toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(error), life: 4000 }),
-    onSettled: () => {
-      busyId.value = null
-    },
+function openHousehold(activity: TimelineActivity): void {
+  const defaultRole = activity.roles.length === 1 ? (activity.roles[0]?.id ?? '') : ''
+  householdDialog.activity = activity
+  householdDialog.rows = members.value.map((member) => {
+    const existing = activity.household.find((h) => h.userId === member.id)
+    return {
+      userId: member.id,
+      name: member.name,
+      alreadyAssigned: existing !== undefined,
+      assignedRole: existing?.roleName ?? '',
+      include: existing === undefined,
+      roleId: defaultRole,
+    }
   })
+  householdDialog.visible = true
+}
+
+const householdSelectable = computed(() =>
+  householdDialog.rows.filter((row) => !row.alreadyAssigned),
+)
+
+function confirmHousehold(): void {
+  const activity = householdDialog.activity
+  if (!activity) return
+  const assignments = householdDialog.rows
+    .filter((row) => row.include && !row.alreadyAssigned && row.roleId)
+    .map((row) => ({ userId: row.userId, activityRoleTypeId: row.roleId }))
+
+  if (assignments.length === 0) {
+    householdDialog.visible = false
+    return
+  }
+
+  busyId.value = activity.id
+  assignHousehold.mutate(
+    { activityId: activity.id, assignments },
+    {
+      onSuccess: () => {
+        householdDialog.visible = false
+        toast.add({
+          severity: 'success',
+          summary: 'Inscripción enviada',
+          detail: 'Habéis quedado apuntados a la actividad.',
+          life: 3500,
+        })
+      },
+      onError: (error) =>
+        toast.add({
+          severity: 'error',
+          summary: 'No se pudo apuntar',
+          detail: getErrorMessage(error),
+          life: 4000,
+        }),
+      onSettled: () => {
+        busyId.value = null
+      },
+    },
+  )
+}
+
+function onUnassignMember(activity: TimelineActivity, memberId: string): void {
+  busyId.value = activity.id
+  unassign.mutate(
+    { activityId: activity.id, userId: memberId },
+    {
+      onSuccess: () =>
+        toast.add({
+          severity: 'success',
+          summary: 'Inscripción cancelada',
+          detail: 'Se ha eliminado la inscripción.',
+          life: 3000,
+        }),
+      onError: (error) =>
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: getErrorMessage(error),
+          life: 4000,
+        }),
+      onSettled: () => {
+        busyId.value = null
+      },
+    },
+  )
+}
+
+function onUnassign(activity: TimelineActivity): void {
+  if (!userId.value) return
+  onUnassignMember(activity, userId.value)
 }
 </script>
 
@@ -194,9 +315,12 @@ function onUnassign(activity: TimelineActivity): void {
                 :activity="act"
                 :authenticated="isAuthenticated"
                 :signup-open="signupOpen"
+                :has-household="hasHousehold"
                 :busy="busyId === act.id"
                 @signup="onSignup(act, $event)"
+                @household="openHousehold(act)"
                 @unassign="onUnassign(act)"
+                @unassign-member="onUnassignMember(act, $event)"
                 @login="goLogin"
               />
             </div>
@@ -213,14 +337,72 @@ function onUnassign(activity: TimelineActivity): void {
             :activity="act"
             :authenticated="isAuthenticated"
             :signup-open="signupOpen"
+            :has-household="hasHousehold"
             :busy="busyId === act.id"
             @signup="onSignup(act, $event)"
+            @household="openHousehold(act)"
             @unassign="onUnassign(act)"
+            @unassign-member="onUnassignMember(act, $event)"
             @login="goLogin"
           />
         </div>
       </section>
     </template>
+
+    <!-- Household sign-up: choose who to enrol and each member's role. -->
+    <Dialog
+      v-model:visible="householdDialog.visible"
+      modal
+      header="¿A quién quieres apuntar?"
+      :style="{ width: '90vw', maxWidth: '560px' }"
+    >
+      <p class="household__lead">
+        Marca a las personas que quieras apuntar a
+        <b>{{ householdDialog.activity?.title }}</b> y elige el rol de cada una.
+      </p>
+      <ul class="household__list">
+        <li v-for="row in householdDialog.rows" :key="row.userId" class="household__row">
+          <div class="household__member">
+            <Checkbox
+              v-if="!row.alreadyAssigned"
+              v-model="row.include"
+              binary
+              :input-id="`hh-${row.userId}`"
+            />
+            <label :for="`hh-${row.userId}`" class="household__name">{{ row.name }}</label>
+          </div>
+          <span v-if="row.alreadyAssigned" class="household__already">
+            Ya inscrito como {{ row.assignedRole || '—' }}
+          </span>
+          <Select
+            v-else
+            v-model="row.roleId"
+            :options="householdDialog.activity?.roles ?? []"
+            option-label="name"
+            option-value="id"
+            placeholder="Elige un rol"
+            :disabled="!row.include"
+            class="household__role"
+          />
+        </li>
+      </ul>
+      <p v-if="householdSelectable.length === 0" class="household__note">
+        Toda tu familia ya está inscrita en esta actividad.
+      </p>
+      <template #footer>
+        <Button
+          label="Cancelar"
+          text
+          severity="secondary"
+          @click="householdDialog.visible = false"
+        />
+        <Button
+          label="Apuntar"
+          :disabled="householdSelectable.length === 0"
+          @click="confirmHousehold"
+        />
+      </template>
+    </Dialog>
 
     <Dialog
       v-model:visible="overlapDialog.visible"
@@ -241,12 +423,7 @@ function onUnassign(activity: TimelineActivity): void {
       </ul>
       <p class="overlap__q">¿Quieres apuntarte de todos modos?</p>
       <template #footer>
-        <Button
-          label="Cancelar"
-          text
-          severity="secondary"
-          @click="overlapDialog.visible = false"
-        />
+        <Button label="Cancelar" text severity="secondary" @click="overlapDialog.visible = false" />
         <Button label="Apuntarme igualmente" @click="confirmOverlapSignup" />
       </template>
     </Dialog>
@@ -351,6 +528,60 @@ function onUnassign(activity: TimelineActivity): void {
   font-weight: 600;
   color: var(--ca-text-bright);
   margin-bottom: 14px;
+}
+
+.household__lead {
+  color: var(--ca-text);
+  line-height: 1.55;
+  margin-bottom: 16px;
+}
+
+.household__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.household__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.household__member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.household__name {
+  font-weight: 600;
+  color: var(--ca-text-bright);
+  cursor: pointer;
+}
+
+.household__already {
+  font-size: 13px;
+  color: var(--ca-text-muted);
+}
+
+.household__role {
+  min-width: 170px;
+}
+
+.household__note {
+  margin-top: 14px;
+  font-size: 13.5px;
+  color: var(--ca-text-muted);
 }
 
 .overlap__lead {

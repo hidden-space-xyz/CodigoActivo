@@ -73,38 +73,42 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Description =
                     "Usuario con control total del sistema. Gestiona las cuentas, los eventos, los "
                     + "catálogos y la configuración general de la plataforma.",
+                Hidden = true,
+                IsAllowedForAdults = true,
+                IsAllowedForMinors = false,
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Member,
-                Name = "Miembro",
+                Name = "Socio",
                 Description =
-                    "Integrante registrado de la organización. Participa de forma habitual en las "
-                    + "actividades y tiene acceso a las secciones reservadas para miembros.",
+                    "Integrante registrado de la organización. Apoya a la asociación de forma "
+                    + "continua, participa en sus actividades y accede a las secciones reservadas a socios.",
+                Hidden = false,
+                IsAllowedForAdults = true,
+                IsAllowedForMinors = true,
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Volunteer,
-                Name = "Voluntario",
+                Name = "Voluntario puntual",
                 Description =
-                    "Persona que colabora de forma desinteresada apoyando en la organización y "
-                    + "ejecución de los eventos y actividades.",
-            },
-            new UserType
-            {
-                Id = SeedIds.UserTypes.Sponsor,
-                Name = "Patrocinador",
-                Description =
-                    "Entidad o persona que respalda con recursos económicos o materiales los eventos "
-                    + "y proyectos de la organización.",
+                    "Persona que echa una mano de forma desinteresada en eventos y talleres "
+                    + "concretos, colaborando en su organización y ejecución cuando puede.",
+                Hidden = false,
+                IsAllowedForAdults = true,
+                IsAllowedForMinors = true,
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Participant,
                 Name = "Participante",
                 Description =
-                    "Usuario que se inscribe y asiste a los eventos y actividades sin asumir un rol "
-                    + "organizativo permanente.",
+                    "Persona que se inscribe y asiste a los eventos y actividades para aprender y "
+                    + "disfrutar, sin asumir un rol organizativo.",
+                Hidden = false,
+                IsAllowedForAdults = false,
+                IsAllowedForMinors = true,
             },
         };
         foreach (var item in seed)

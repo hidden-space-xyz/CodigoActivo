@@ -34,6 +34,15 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         return Ok(await activities.ListByEventAsync(eventId, ct));
     }
 
+    [HttpGet("{eventId:guid}/household-assignments")]
+    [Authorize]
+    public async Task<
+        ActionResult<IReadOnlyList<HouseholdMemberAssignmentResponse>>
+    > GetHouseholdAssignments(Guid eventId, CancellationToken ct)
+    {
+        return Ok(await activities.GetHouseholdAssignmentsAsync(UserId, eventId, ct));
+    }
+
     [HttpGet("{eventId:guid}/{activityId:guid}")]
     [AllowAnonymous]
     [Cached(nameof(Activity))]
@@ -97,6 +106,17 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     )
     {
         return ToOk(await activities.AssignAsync(activityId, userId, request, ct));
+    }
+
+    [HttpPost("{activityId:guid}/assign-household")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<AssignmentResponse>>> AssignHousehold(
+        Guid activityId,
+        [FromBody] AssignHouseholdRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await activities.AssignHouseholdAsync(activityId, UserId, request, ct));
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/unassign")]

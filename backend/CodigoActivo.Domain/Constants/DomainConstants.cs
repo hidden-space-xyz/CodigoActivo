@@ -16,7 +16,6 @@ namespace CodigoActivo.Domain.Constants
             public static readonly Guid Admin = new("6a8fbafe-22da-4dcc-8b4f-e8b5f43528b2");
             public static readonly Guid Member = new("b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c");
             public static readonly Guid Volunteer = new("c26c7755-b5db-42fe-b349-e83a84481fea");
-            public static readonly Guid Sponsor = new("532dc126-9225-4266-8339-bb4f7eb6d08c");
             public static readonly Guid Participant = new("1c038ae8-306f-4785-a5f5-b9c25e5cc4aa");
         }
 

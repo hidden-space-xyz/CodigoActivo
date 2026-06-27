@@ -30,11 +30,11 @@ import type {
 } from 'vue';
 
 import type {
-  CreateUserRequest,
-  CreateUserResponse,
   CsrfTokenResponse,
   LoginRequest,
   PatchApiAuthUserIdVerifyParams,
+  RegisterRequest,
+  RegisterResponse,
   UserResponse
 } from '../../models';
 
@@ -132,17 +132,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getGetApiAuthCsrfMutationOptions(options), queryClient);
     }
     export type postApiAuthRegisterResponse200TextPlain = {
-  data: CreateUserResponse
+  data: RegisterResponse
   status: 200
 }
 
 export type postApiAuthRegisterResponse200ApplicationJson = {
-  data: CreateUserResponse
+  data: RegisterResponse
   status: 200
 }
 
 export type postApiAuthRegisterResponse200TextJson = {
-  data: CreateUserResponse
+  data: RegisterResponse
   status: 200
 }
 
@@ -161,14 +161,14 @@ export const getPostApiAuthRegisterUrl = () => {
   return `/api/auth/register`
 }
 
-export const postApiAuthRegister = async (createUserRequest?: CreateUserRequest, options?: RequestInit): Promise<postApiAuthRegisterResponse> => {
+export const postApiAuthRegister = async (registerRequest?: RegisterRequest, options?: RequestInit): Promise<postApiAuthRegisterResponse> => {
 
   return httpClient<postApiAuthRegisterResponse>(getPostApiAuthRegisterUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createUserRequest)
+    body: JSON.stringify(registerRequest)
   }
 );}
 
@@ -176,23 +176,23 @@ export const postApiAuthRegister = async (createUserRequest?: CreateUserRequest,
 
 
 
-export const getPostApiAuthRegisterQueryKey = (createUserRequest?: MaybeRef<CreateUserRequest>,) => {
+export const getPostApiAuthRegisterQueryKey = (registerRequest?: MaybeRef<RegisterRequest>,) => {
     return [
-    'POST', 'api','auth','register', createUserRequest
+    'POST', 'api','auth','register', registerRequest
     ] as const;
     }
 
 
-export const getPostApiAuthRegisterQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthRegister>>, TError = unknown>(createUserRequest?: MaybeRef<CreateUserRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export const getPostApiAuthRegisterQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthRegister>>, TError = unknown>(registerRequest?: MaybeRef<RegisterRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  getPostApiAuthRegisterQueryKey(createUserRequest);
+  const queryKey =  getPostApiAuthRegisterQueryKey(registerRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthRegister>>> = ({ signal }) => postApiAuthRegister(unref(createUserRequest), { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthRegister>>> = ({ signal }) => postApiAuthRegister(unref(registerRequest), { signal, ...requestOptions });
 
 
 
@@ -207,11 +207,11 @@ export type PostApiAuthRegisterQueryError = unknown
 
 
 export function usePostApiAuthRegister<TData = Awaited<ReturnType<typeof postApiAuthRegister>>, TError = unknown>(
- createUserRequest?: MaybeRef<CreateUserRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ registerRequest?: MaybeRef<RegisterRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPostApiAuthRegisterQueryOptions(createUserRequest,options)
+  const queryOptions = getPostApiAuthRegisterQueryOptions(registerRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
