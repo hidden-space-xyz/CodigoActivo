@@ -136,9 +136,28 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        if (!await activities.ExistsAsync(a => a.Id == activityId, ct))
+        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
+        if (activity is null)
         {
             return Error.NotFound();
+        }
+
+        var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
+        if (ev is null)
+        {
+            return Error.NotFound();
+        }
+
+        // Enforce the event's sign-up window (a missing bound means that side is
+        // unbounded; an event with no dates is always open). The user-facing
+        // guidance lives in the frontend — this is the tamper-proof safety net.
+        var now = DateTimeOffset.UtcNow;
+        if (
+            (ev.SignupStartsAt is { } signupStart && now < signupStart)
+            || (ev.SignupEndsAt is { } signupEnd && now > signupEnd)
+        )
+        {
+            return Error.Validation();
         }
 
         if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Toast from 'primevue/toast'
+
 import AppBackground from './AppBackground.vue'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
@@ -12,6 +14,7 @@ import AppHeader from './AppHeader.vue'
       <slot />
     </main>
     <AppFooter />
+    <Toast position="top-right" />
   </div>
 </template>
 

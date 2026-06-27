@@ -23,26 +23,34 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             new UserStatusType
             {
                 Id = SeedIds.UserStatusTypes.Pending,
-                Name = "Pending",
-                Description = "Account awaiting verification.",
+                Name = "Pendiente",
+                Description =
+                    "Cuenta registrada que aún no ha completado el proceso de verificación. "
+                    + "No puede acceder a las funciones de la plataforma hasta que un administrador la apruebe.",
             },
             new UserStatusType
             {
                 Id = SeedIds.UserStatusTypes.Active,
-                Name = "Active",
-                Description = "Active, verified account.",
+                Name = "Activo",
+                Description =
+                    "Cuenta verificada y habilitada. Tiene acceso completo a las funcionalidades "
+                    + "correspondientes a su tipo de usuario.",
             },
             new UserStatusType
             {
                 Id = SeedIds.UserStatusTypes.Blocked,
-                Name = "Blocked",
-                Description = "Blocked account.",
+                Name = "Bloqueado",
+                Description =
+                    "Cuenta suspendida por un administrador. El acceso queda restringido hasta que "
+                    + "se restablezca manualmente.",
             },
             new UserStatusType
             {
                 Id = SeedIds.UserStatusTypes.Dependent,
-                Name = "Dependent",
-                Description = "Account linked to a parent; cannot sign in on its own.",
+                Name = "Dependiente",
+                Description =
+                    "Cuenta vinculada a un tutor o cuenta principal. No puede iniciar sesión por sí "
+                    + "misma y se gestiona a través de la cuenta responsable.",
             },
         };
         foreach (var item in seed)
@@ -61,32 +69,42 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             new UserType
             {
                 Id = SeedIds.UserTypes.Admin,
-                Name = "Admin",
-                Description = "System administrator.",
+                Name = "Administrador",
+                Description =
+                    "Usuario con control total del sistema. Gestiona las cuentas, los eventos, los "
+                    + "catálogos y la configuración general de la plataforma.",
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Member,
-                Name = "Member",
-                Description = "Organization member.",
+                Name = "Miembro",
+                Description =
+                    "Integrante registrado de la organización. Participa de forma habitual en las "
+                    + "actividades y tiene acceso a las secciones reservadas para miembros.",
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Volunteer,
-                Name = "Volunteer",
-                Description = "Volunteer.",
+                Name = "Voluntario",
+                Description =
+                    "Persona que colabora de forma desinteresada apoyando en la organización y "
+                    + "ejecución de los eventos y actividades.",
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Sponsor,
-                Name = "Sponsor",
-                Description = "Sponsor.",
+                Name = "Patrocinador",
+                Description =
+                    "Entidad o persona que respalda con recursos económicos o materiales los eventos "
+                    + "y proyectos de la organización.",
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Participant,
-                Name = "Participant",
-                Description = "Participant.",
+                Name = "Participante",
+                Description =
+                    "Usuario que se inscribe y asiste a los eventos y actividades sin asumir un rol "
+                    + "organizativo permanente.",
             },
         };
         foreach (var item in seed)
@@ -105,20 +123,26 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Leader,
-                Name = "Leader",
-                Description = "Activity leader.",
+                Name = "Líder",
+                Description =
+                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas y "
+                    + "vela por el cumplimiento de los objetivos.",
             },
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Helper,
-                Name = "Helper",
-                Description = "Activity helper.",
+                Name = "Colaborador",
+                Description =
+                    "Apoya al líder durante la actividad asumiendo tareas de soporte para su correcto "
+                    + "desarrollo.",
             },
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Participant,
-                Name = "Participant",
-                Description = "Activity participant.",
+                Name = "Participante",
+                Description =
+                    "Asiste a la actividad como público o beneficiario, sin responsabilidades de "
+                    + "organización.",
             },
         };
         foreach (var item in seed)
@@ -137,20 +161,26 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             new AssignmentStatusType
             {
                 Id = SeedIds.AssignmentStatusTypes.Requested,
-                Name = "Requested",
-                Description = "Assignment requested.",
+                Name = "Solicitada",
+                Description =
+                    "La asignación ha sido solicitada y está pendiente de revisión por parte de un "
+                    + "responsable.",
             },
             new AssignmentStatusType
             {
                 Id = SeedIds.AssignmentStatusTypes.Confirmed,
-                Name = "Confirmed",
-                Description = "Assignment confirmed.",
+                Name = "Confirmada",
+                Description =
+                    "La asignación ha sido revisada y aprobada. La persona queda oficialmente "
+                    + "asignada a la actividad.",
             },
             new AssignmentStatusType
             {
                 Id = SeedIds.AssignmentStatusTypes.Denied,
-                Name = "Denied",
-                Description = "Assignment denied.",
+                Name = "Rechazada",
+                Description =
+                    "La asignación ha sido revisada y rechazada. La persona no participará en la "
+                    + "actividad bajo este rol.",
             },
         };
         foreach (var item in seed)

@@ -28,4 +28,5 @@ export interface EventDetail {
   readonly signupLabel: string
   readonly status: string
   readonly thumbnailId: string
+  readonly signupOpen: boolean
 }

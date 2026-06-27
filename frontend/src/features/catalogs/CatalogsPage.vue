@@ -8,7 +8,7 @@ const activityRoleTypes = useActivityRoleTypes()
 
 <template>
   <div>
-    <AdminPageHeader title="Catálogos" subtitle="Roles de actividad configurables del sistema" />
+    <AdminPageHeader title="Configuración" subtitle="Roles de actividad configurables del sistema" />
 
     <div class="catalogs-grid">
       <CatalogSection title="Roles de actividad" :controller="activityRoleTypes" />

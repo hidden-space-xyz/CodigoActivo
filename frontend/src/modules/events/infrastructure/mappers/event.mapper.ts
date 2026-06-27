@@ -24,6 +24,20 @@ function isSignupOpen(event: EventResponse): boolean {
   return start !== null || end !== null
 }
 
+/**
+ * Whether sign-ups are currently allowed for the event: each configured bound is
+ * enforced, and a missing bound means that side is unbounded (mirrors the
+ * backend validation in ActivityService.AssignAsync).
+ */
+function isSignupWindowOpen(event: EventResponse): boolean {
+  const now = Date.now()
+  const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
+  const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
+  if (start !== null && now < start) return false
+  if (end !== null && now > end) return false
+  return true
+}
+
 export function toUpcomingEvent(event: EventResponse): UpcomingEvent {
   const { day, month } = chip(event.eventStartsAt)
   return {
@@ -61,6 +75,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
     signupLabel,
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
     thumbnailId: event.thumbnailId ?? '',
+    signupOpen: isSignupWindowOpen(event),
   }
 }
 

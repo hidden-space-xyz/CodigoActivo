@@ -34,11 +34,6 @@ export const adminRoutes: readonly RouteRecordRaw[] = [
     () => import('@/features/events/EventDetailPage.vue'),
   ),
   adminRoute(
-    '/admin/assigned-activities',
-    'admin-assigned-activities',
-    () => import('@/features/activities/AssignedActivitiesPage.vue'),
-  ),
-  adminRoute(
     '/admin/announcements',
     'admin-announcements',
     () => import('@/features/announcements/AnnouncementsPage.vue'),

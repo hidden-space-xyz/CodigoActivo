@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useEventDetail } from '@/modules/events/presentation/composables/useEventDetail'
-import { useEventSignup } from '@/modules/events/presentation/composables/useEventSignup'
+import EventActivitiesTimeline from '@/modules/events/presentation/components/EventActivitiesTimeline.vue'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 import RichTextContent from '@/shared/ui/components/RichTextContent.vue'
 import { fileContentUrl } from '@/shared/utils/media'
@@ -11,8 +11,8 @@ import { isRichTextEmpty } from '@/shared/utils/richtext'
 const props = defineProps<{ eventId: string }>()
 
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
-const { signedUp, signUp } = useEventSignup(() => props.eventId)
 
+const tab = ref<'info' | 'activities'>('info')
 const accentColor = 'var(--ca-cyan)'
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
@@ -54,15 +54,31 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
         </div>
       </section>
 
-      <section class="detail-body">
+      <nav class="detail-tabs">
+        <div class="ca-container--narrow detail-tabs__inner">
+          <button
+            type="button"
+            class="detail-tab"
+            :class="{ 'detail-tab--active': tab === 'info' }"
+            @click="tab = 'info'"
+          >
+            Información
+          </button>
+          <button
+            type="button"
+            class="detail-tab"
+            :class="{ 'detail-tab--active': tab === 'activities' }"
+            @click="tab = 'activities'"
+          >
+            Actividades
+          </button>
+        </div>
+      </nav>
+
+      <section v-if="tab === 'info'" class="detail-body">
         <div class="ca-container--narrow detail-body__grid">
           <div class="detail-body__main">
-            <img
-              v-if="posterUrl"
-              :src="posterUrl"
-              :alt="event.title"
-              class="detail-body__poster"
-            />
+            <img v-if="posterUrl" :src="posterUrl" :alt="event.title" class="detail-body__poster" />
 
             <h2 class="detail-body__h2">Sobre el evento</h2>
             <RichTextContent v-if="hasDescription" :content="event.description" />
@@ -79,15 +95,17 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
                 <dd class="detail-panel__value">{{ row.value }}</dd>
               </div>
             </dl>
-            <div v-if="signedUp" class="detail-panel__signed">
-              <span class="detail-panel__check" aria-hidden="true">✓</span>
-              ¡Te has apuntado a {{ event.title }}!
-            </div>
-            <template v-else>
-              <p class="detail-panel__note">¿Quieres participar? Apúntate a este evento.</p>
-              <BaseButton variant="primary" block @click="signUp"> Apúntate </BaseButton>
-            </template>
+            <p class="detail-panel__note">Apúntate a las actividades de este evento.</p>
+            <BaseButton variant="primary" block @click="tab = 'activities'">
+              Ver actividades
+            </BaseButton>
           </aside>
+        </div>
+      </section>
+
+      <section v-else class="detail-body">
+        <div class="ca-container--narrow">
+          <EventActivitiesTimeline :event-id="eventId" :signup-open="event.signupOpen" />
         </div>
       </section>
     </template>
@@ -106,7 +124,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
 }
 
 .detail-head {
-  padding: 24px 24px 24px;
+  padding: 24px 24px 16px;
 }
 
 .detail-head__title {
@@ -125,8 +143,51 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   margin-top: 8px;
 }
 
+.detail-tabs {
+  padding: 0 24px;
+  border-bottom: 1px solid var(--ca-border);
+}
+
+.detail-tabs__inner {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-tab {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 12px 6px;
+  margin-right: 18px;
+  font-family: var(--ca-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ca-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.detail-tab:hover {
+  color: var(--ca-text);
+}
+
+.detail-tab--active {
+  color: var(--ca-text-bright);
+}
+
+.detail-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ca-cyan);
+}
+
 .detail-body {
-  padding: 24px 24px 80px;
+  padding: 28px 24px 80px;
 }
 
 .detail-body__grid {
@@ -211,25 +272,6 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--ca-text-dim);
-}
-
-.detail-panel__signed {
-  margin-top: 22px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: rgba(91, 229, 132, 0.12);
-  border: 1px solid var(--ca-green);
-  border-radius: 12px;
-  padding: 16px;
-  font-size: 14.5px;
-  line-height: 1.45;
-  color: var(--ca-text);
-}
-
-.detail-panel__check {
-  color: var(--ca-green);
-  font-weight: 700;
 }
 
 @media (max-width: 860px) {
