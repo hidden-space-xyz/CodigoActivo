@@ -7,7 +7,6 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
 
 import ThumbnailField from '@/features/files/ThumbnailField.vue'
 import { deleteThumbnail, uploadThumbnail } from '@/features/files/useThumbnail'
@@ -19,6 +18,8 @@ import type {
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDateTime } from '@/shared/utils/format'
 import ListThumbnail from '@/shared/ui/components/ListThumbnail.vue'
+import RichTextEditor from '@/shared/ui/components/RichTextEditor.vue'
+import { EMPTY_DOC_JSON } from '@/shared/utils/richtext'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -88,7 +89,7 @@ async function save(): Promise<void> {
   const body: ContentRequest = {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
-    description: form.description.trim() || null,
+    description: form.description.trim() ? form.description : EMPTY_DOC_JSON,
   }
   uploading.value = true
   try {
@@ -236,7 +237,8 @@ function confirmDelete(item: ContentItem): void {
       v-model:visible="dialogVisible"
       modal
       :header="editing ? `Editar ${entityLabel}` : newLabel"
-      :style="{ width: '520px' }"
+      :style="{ width: '94vw', maxWidth: '920px' }"
+      :content-style="{ maxHeight: '78vh' }"
     >
       <form class="form" @submit.prevent="save">
         <div class="form__field">
@@ -249,7 +251,7 @@ function confirmDelete(item: ContentItem): void {
         </div>
         <div class="form__field">
           <label>Descripción</label>
-          <Textarea v-model="form.description" rows="4" auto-resize fluid />
+          <RichTextEditor v-model="form.description" />
         </div>
         <div class="form__field">
           <label>Imagen</label>

@@ -1,4 +1,5 @@
 @import './variables.css';
+@import './richtext.css';
 
 /* Layer order so our (unlayered) component styles always win over PrimeVue. */
 @layer theme, base, primevue;

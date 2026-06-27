@@ -13,8 +13,7 @@ const { resources, isLoading } = useResources()
         <SectionEyebrow text="// recursos" color="var(--ca-green)" />
         <h1 class="resources-head__title">Aprende por tu cuenta</h1>
         <p class="resources-head__intro">
-          Material de nuestros talleres, abierto y gratuito. Empieza por donde quieras: del primer
-          bloque de Scratch a tu propio chatbot con IA.
+          Material de nuestros talleres, abierto y gratuito.
         </p>
       </div>
     </section>

@@ -4,7 +4,9 @@ import { computed } from 'vue'
 import { useEventDetail } from '@/modules/events/presentation/composables/useEventDetail'
 import { useEventSignup } from '@/modules/events/presentation/composables/useEventSignup'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
+import RichTextContent from '@/shared/ui/components/RichTextContent.vue'
 import { fileContentUrl } from '@/shared/utils/media'
+import { isRichTextEmpty } from '@/shared/utils/richtext'
 
 const props = defineProps<{ eventId: string }>()
 
@@ -12,6 +14,8 @@ const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 const { signedUp, signUp } = useEventSignup(() => props.eventId)
 
 const accentColor = 'var(--ca-cyan)'
+
+const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
 const infoRows = computed(() =>
   event.value
@@ -61,7 +65,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
             />
 
             <h2 class="detail-body__h2">Sobre el evento</h2>
-            <p v-if="event.description" class="detail-body__p">{{ event.description }}</p>
+            <RichTextContent v-if="hasDescription" :content="event.description" />
             <p v-else class="detail-body__p detail-body__p--muted">
               Este evento todavía no tiene una descripción.
             </p>

@@ -3,13 +3,16 @@ import { computed } from 'vue'
 
 import { useResourceDetail } from '@/modules/resources/presentation/composables/useResources'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
+import RichTextContent from '@/shared/ui/components/RichTextContent.vue'
 import { fileContentUrl } from '@/shared/utils/media'
+import { isRichTextEmpty } from '@/shared/utils/richtext'
 
 const props = defineProps<{ resourceId: string }>()
 
 const { resource, isLoading, notFound } = useResourceDetail(() => props.resourceId)
 
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
+const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
 </script>
 
 <template>
@@ -33,7 +36,7 @@ const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 
         <img v-if="posterUrl" :src="posterUrl" :alt="resource.title" class="detail__poster" />
 
-        <p v-if="resource.description" class="detail__body">{{ resource.description }}</p>
+        <RichTextContent v-if="hasDescription" :content="resource.description" class="detail__body" />
         <p v-else class="detail__body detail__body--muted">
           Este recurso todavía no tiene una descripción.
         </p>

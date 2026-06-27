@@ -4,7 +4,6 @@ import Button from 'primevue/button'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 
 import ThumbnailField from '@/features/files/ThumbnailField.vue'
 import { uploadThumbnail } from '@/features/files/useThumbnail'
@@ -14,6 +13,8 @@ import type {
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
+import RichTextEditor from '@/shared/ui/components/RichTextEditor.vue'
+import { EMPTY_DOC_JSON } from '@/shared/utils/richtext'
 
 const props = defineProps<{ visible: boolean; event: EventResponse | null; saving: boolean }>()
 
@@ -80,7 +81,7 @@ async function save(): Promise<void> {
   const body: CreateEventRequest = {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
-    description: form.description.trim() || null,
+    description: form.description.trim() ? form.description : EMPTY_DOC_JSON,
     eventStartsAt: form.eventStartsAt ? form.eventStartsAt.toISOString() : null,
     eventEndsAt: form.eventEndsAt ? form.eventEndsAt.toISOString() : null,
     signupStartsAt: form.signupStartsAt ? form.signupStartsAt.toISOString() : null,
@@ -107,7 +108,8 @@ async function save(): Promise<void> {
     :visible="visible"
     modal
     :header="event ? 'Editar evento' : 'Nuevo evento'"
-    :style="{ width: '560px' }"
+    :style="{ width: '94vw', maxWidth: '920px' }"
+    :content-style="{ maxHeight: '78vh' }"
     @update:visible="close"
   >
     <form class="form" @submit.prevent="save">
@@ -121,7 +123,7 @@ async function save(): Promise<void> {
       </div>
       <div class="form__field">
         <label>Descripción</label>
-        <Textarea v-model="form.description" rows="3" auto-resize fluid />
+        <RichTextEditor v-model="form.description" />
       </div>
       <div class="form__row">
         <div class="form__field">
