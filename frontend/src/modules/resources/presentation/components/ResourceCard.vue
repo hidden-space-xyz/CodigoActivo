@@ -11,7 +11,6 @@ defineProps<{ resource: LearningResource }>()
     </div>
 
     <h3 class="resource-card__title">{{ resource.title }}</h3>
-    <p class="resource-card__desc">{{ resource.description }}</p>
 
     <div class="resource-card__footer">
       <span class="resource-card__type">{{ resource.type }}</span>
@@ -67,19 +66,11 @@ defineProps<{ resource: LearningResource }>()
   color: var(--ca-text);
 }
 
-.resource-card__desc {
-  margin-top: 8px;
-  font-size: 14.5px;
-  line-height: 1.55;
-  color: var(--ca-text-muted);
-  flex: 1;
-}
-
 .resource-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 18px;
+  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--ca-border);
 }

@@ -13,7 +13,6 @@ defineProps<{ event: UpcomingEvent }>()
 
         <h2 class="featured__title">{{ event.title }}</h2>
         <div class="featured__slogan">«{{ event.slogan }}»</div>
-        <p class="featured__desc">{{ event.description }}</p>
 
         <div class="featured__meta">
           <div class="featured__meta-item">
@@ -88,14 +87,6 @@ defineProps<{ event: UpcomingEvent }>()
   font-size: 21px;
   margin-top: 8px;
   color: var(--ca-cyan);
-}
-
-.featured__desc {
-  margin-top: 16px;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #c4cad6;
-  max-width: 440px;
 }
 
 .featured__meta {

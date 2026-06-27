@@ -15,7 +15,6 @@ defineProps<{ event: UpcomingEvent }>()
 
     <h3 class="event-card__title">{{ event.title }}</h3>
     <div class="event-card__slogan">«{{ event.slogan }}»</div>
-    <p class="event-card__desc">{{ event.description }}</p>
 
     <div class="event-card__footer">
       <span class="event-card__status">{{ event.status }}</span>
@@ -93,19 +92,11 @@ defineProps<{ event: UpcomingEvent }>()
   color: var(--ca-cyan);
 }
 
-.event-card__desc {
-  margin-top: 12px;
-  font-size: 14.5px;
-  line-height: 1.55;
-  color: var(--ca-text-muted);
-  flex: 1;
-}
-
 .event-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16px;
+  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--ca-border);
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AboutPreview from '@/modules/about/presentation/components/AboutPreview.vue'
+import AnnouncementsSection from '@/modules/announcements/presentation/components/AnnouncementsSection.vue'
 import { useEventBoard } from '@/modules/events/presentation/composables/useEventBoard'
 import { useFeaturedEvent } from '@/modules/events/presentation/composables/useFeaturedEvent'
 import EventBoard from '@/modules/events/presentation/components/EventBoard.vue'
@@ -22,6 +23,8 @@ const { boardEvents } = useEventBoard()
         <FeaturedEventCard :event="featuredEvent" />
       </div>
     </section>
+
+    <AnnouncementsSection />
 
     <section class="home-board">
       <div class="ca-container">

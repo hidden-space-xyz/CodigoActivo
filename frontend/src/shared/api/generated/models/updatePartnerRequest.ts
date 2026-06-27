@@ -7,21 +7,11 @@
  */
 
 export interface UpdatePartnerRequest {
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  name: string;
+  /** @nullable */
+  name?: string | null;
   fromDate?: string;
-  /**
-     * @minimum 0
-     * @maximum 2147483647
-     */
   tier?: number;
-  /**
-     * @maxLength 500
-     * @nullable
-     */
+  /** @nullable */
   website?: string | null;
   thumbnailId?: string;
 }

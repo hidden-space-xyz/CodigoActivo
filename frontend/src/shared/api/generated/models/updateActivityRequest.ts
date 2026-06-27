@@ -8,13 +8,10 @@
 import type { ActivityAllowedRoleRequest } from './activityAllowedRoleRequest';
 
 export interface UpdateActivityRequest {
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  title: string;
-  /** @minLength 1 */
-  description: string;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  description?: string | null;
   /** @nullable */
   activityStartsAt?: string | null;
   /** @nullable */

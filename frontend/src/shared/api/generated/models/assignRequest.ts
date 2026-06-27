@@ -7,5 +7,5 @@
  */
 
 export interface AssignRequest {
-  activityRoleTypeId: string;
+  activityRoleTypeId?: string;
 }

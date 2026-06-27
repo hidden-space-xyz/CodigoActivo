@@ -7,31 +7,15 @@
  */
 
 export interface CreateUserRequest {
-  /**
-     * @minLength 1
-     * @maxLength 120
-     */
-  firstName: string;
-  /**
-     * @minLength 1
-     * @maxLength 120
-     */
-  lastName: string;
-  /**
-     * @maxLength 256
-     * @nullable
-     */
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
   email?: string | null;
-  /**
-     * @maxLength 40
-     * @nullable
-     */
+  /** @nullable */
   phone?: string | null;
-  /**
-     * @minLength 8
-     * @maxLength 128
-     * @nullable
-     */
+  /** @nullable */
   password?: string | null;
   birthDate?: string;
   /** @nullable */

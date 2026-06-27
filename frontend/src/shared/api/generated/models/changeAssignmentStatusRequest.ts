@@ -7,5 +7,5 @@
  */
 
 export interface ChangeAssignmentStatusRequest {
-  assignmentStatusId: string;
+  assignmentStatusId?: string;
 }

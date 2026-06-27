@@ -7,16 +7,10 @@
  */
 
 export interface UpdateResourceRequest {
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  title: string;
-  /**
-     * @minLength 1
-     * @maxLength 300
-     */
-  subtitle: string;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  subtitle?: string | null;
   /** @nullable */
   description?: string | null;
   thumbnailId?: string;

@@ -3,12 +3,18 @@
 /* Layer order so our (unlayered) component styles always win over PrimeVue. */
 @layer theme, base, primevue;
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* The global reset lives in the `base` layer (below `primevue`) so it does NOT
+   strip PrimeVue's own component padding/margins (dialog content/footer,
+   buttons, paginator, …). Our bespoke component styles are unlayered, so they
+   still win over both this reset and PrimeVue. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html,

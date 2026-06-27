@@ -7,8 +7,8 @@
  */
 
 export interface LoginRequest {
-  /** @minLength 1 */
-  identifier: string;
-  /** @minLength 1 */
-  password: string;
+  /** @nullable */
+  identifier?: string | null;
+  /** @nullable */
+  password?: string | null;
 }
