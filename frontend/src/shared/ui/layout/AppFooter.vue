@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { CONTACT } from '@/shared/constants/app.constants'
-import { PRIMARY_NAV } from '@/shared/constants/navigation'
 import BrandLogo from '@/shared/ui/components/BrandLogo.vue'
 
 const currentYear = new Date().getFullYear()
@@ -14,20 +13,6 @@ const currentYear = new Date().getFullYear()
         <p class="footer__tagline">
           Programación para tod@s. Asociación sin ánimo de lucro · León · desde 2018.
         </p>
-      </div>
-
-      <div class="footer__col">
-        <div class="footer__heading">Navega</div>
-        <nav class="footer__links">
-          <RouterLink
-            v-for="item in PRIMARY_NAV"
-            :key="item.routeName"
-            :to="{ name: item.routeName }"
-            class="footer__link"
-          >
-            {{ item.label }}
-          </RouterLink>
-        </nav>
       </div>
 
       <div class="footer__col">
@@ -77,7 +62,7 @@ const currentYear = new Date().getFullYear()
   max-width: var(--ca-container);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr;
   gap: 36px;
 }
 

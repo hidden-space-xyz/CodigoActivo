@@ -36,6 +36,7 @@ export function toUpcomingEvent(event: EventResponse, featured = false): Upcomin
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
     description: event.description ?? '',
     featured,
+    thumbnailId: event.thumbnailId ?? '',
   }
 }
 
@@ -70,5 +71,6 @@ export function toPastEvent(event: EventResponse): PastEvent {
     title: event.title ?? '',
     eventName: event.subtitle ?? '',
     year,
+    thumbnailId: event.thumbnailId ?? '',
   }
 }

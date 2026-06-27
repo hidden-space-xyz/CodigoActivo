@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import type { UpcomingEvent } from '@/modules/events/domain/entities/event.entity'
+import ListThumbnail from '@/shared/ui/components/ListThumbnail.vue'
 
 defineProps<{ event: UpcomingEvent }>()
 </script>
 
 <template>
   <RouterLink :to="{ name: 'event-detail', params: { eventId: event.id } }" class="event-card">
-    <div class="event-card__top">
-      <div class="event-card__date">
-        <span class="event-card__day">{{ event.dayLabel }}</span>
-        <span class="event-card__month">{{ event.monthLabel }}</span>
-      </div>
-    </div>
+    <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
 
     <h3 class="event-card__title">{{ event.title }}</h3>
-    <div class="event-card__slogan">«{{ event.slogan }}»</div>
+    <div v-if="event.slogan" class="event-card__slogan">«{{ event.slogan }}»</div>
 
     <div class="event-card__footer">
       <span class="event-card__status">{{ event.status }}</span>
@@ -27,10 +23,11 @@ defineProps<{ event: UpcomingEvent }>()
 .event-card {
   display: flex;
   flex-direction: column;
+  gap: 14px;
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -44,40 +41,6 @@ defineProps<{ event: UpcomingEvent }>()
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.event-card__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.event-card__date {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
-  border: 1px solid var(--ca-cyan);
-  background: rgba(45, 212, 217, 0.14);
-}
-
-.event-card__day {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 20px;
-  line-height: 1;
-  color: var(--ca-cyan);
-}
-
-.event-card__month {
-  font-family: var(--ca-font-mono);
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  color: var(--ca-cyan);
-}
-
 .event-card__title {
   font-family: var(--ca-font-display);
   font-weight: 600;
@@ -88,7 +51,7 @@ defineProps<{ event: UpcomingEvent }>()
 
 .event-card__slogan {
   font-size: 15px;
-  margin-top: 4px;
+  margin-top: -6px;
   color: var(--ca-cyan);
 }
 
@@ -97,7 +60,7 @@ defineProps<{ event: UpcomingEvent }>()
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid var(--ca-border);
 }
 

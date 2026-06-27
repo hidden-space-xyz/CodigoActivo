@@ -10,7 +10,10 @@ import { ApiError } from '@/shared/api/http-client'
 export class HttpAnnouncementRepository implements AnnouncementRepository {
   async getAll(): Promise<readonly Announcement[]> {
     const response = await getApiAnnouncements()
-    return (response.data ?? []).map(toAnnouncement)
+    return (response.data ?? [])
+      .slice()
+      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+      .map(toAnnouncement)
   }
 
   async getById(id: string): Promise<Announcement | null> {

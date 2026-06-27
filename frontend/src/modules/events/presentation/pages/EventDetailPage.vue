@@ -134,8 +134,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
 
 .detail-body__poster {
   width: 100%;
-  height: 320px;
-  object-fit: cover;
+  height: auto;
   border-radius: 18px;
   border: 1px solid var(--ca-border);
   margin-bottom: 28px;

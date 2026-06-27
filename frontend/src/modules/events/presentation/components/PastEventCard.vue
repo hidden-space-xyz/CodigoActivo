@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { PastEvent } from '@/modules/events/domain/entities/event.entity'
+import ListThumbnail from '@/shared/ui/components/ListThumbnail.vue'
 
 defineProps<{ event: PastEvent }>()
 </script>
 
 <template>
-  <article class="past-card">
-    <div class="past-card__photo" aria-hidden="true">foto · galería</div>
+  <RouterLink
+    :to="{ name: 'event-detail', params: { eventId: event.id } }"
+    class="past-card"
+  >
+    <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
     <div class="past-card__body">
       <div class="past-card__top">
         <span class="past-card__year">{{ event.year }}</span>
@@ -14,15 +18,18 @@ defineProps<{ event: PastEvent }>()
       <h3 class="past-card__title">{{ event.title }}</h3>
       <div class="past-card__event">{{ event.eventName }}</div>
     </div>
-  </article>
+  </RouterLink>
 </template>
 
 <style scoped>
 .past-card {
+  display: block;
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
   border-radius: 16px;
-  overflow: hidden;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
   transition:
     transform 0.16s ease,
     border-color 0.16s ease;
@@ -33,26 +40,15 @@ defineProps<{ event: PastEvent }>()
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.past-card__photo {
-  height: 172px;
-  background: repeating-linear-gradient(135deg, #171b25, #171b25 11px, #13161e 11px, #13161e 22px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--ca-font-mono);
-  color: var(--ca-text-ghost);
-  font-size: 12px;
-}
-
 .past-card__body {
-  padding: 20px;
+  padding: 14px 4px 4px;
 }
 
 .past-card__top {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .past-card__year {

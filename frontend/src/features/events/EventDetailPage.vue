@@ -26,6 +26,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDateTime } from '@/shared/utils/format'
+import ListThumbnail from '@/shared/ui/components/ListThumbnail.vue'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -249,6 +250,15 @@ function confirmUnassign(item: AssignmentReportItemResponse): void {
         empty-text="Este evento aún no tiene actividades."
       >
         <DataTable :value="activities.list.data.value" data-key="id" striped-rows>
+          <Column header="Imagen" style="width: 110px">
+            <template #body="{ data }">
+              <ListThumbnail
+                :thumbnail-id="data.thumbnailId"
+                :alt="data.title"
+                style="width: 88px"
+              />
+            </template>
+          </Column>
           <Column field="title" header="Título" />
           <Column header="Horario">
             <template #body="{ data }">

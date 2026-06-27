@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LearningResource } from '@/modules/resources/domain/entities/learning-resource.entity'
+import ListThumbnail from '@/shared/ui/components/ListThumbnail.vue'
 
 defineProps<{ resource: LearningResource }>()
 </script>
@@ -9,9 +10,7 @@ defineProps<{ resource: LearningResource }>()
     :to="{ name: 'resource-detail', params: { resourceId: resource.id } }"
     class="resource-card"
   >
-    <div class="resource-card__top">
-      <div class="resource-card__icon">&lt;/&gt;</div>
-    </div>
+    <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 
     <h3 class="resource-card__title">{{ resource.title }}</h3>
 
@@ -27,9 +26,10 @@ defineProps<{ resource: LearningResource }>()
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
   border-radius: 16px;
-  padding: 26px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
+  gap: 14px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -41,27 +41,6 @@ defineProps<{ resource: LearningResource }>()
 .resource-card:hover {
   transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.2);
-}
-
-.resource-card__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.resource-card__icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--ca-font-mono);
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--ca-cyan);
-  background: rgba(45, 212, 217, 0.14);
 }
 
 .resource-card__title {
@@ -76,7 +55,7 @@ defineProps<{ resource: LearningResource }>()
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid var(--ca-border);
 }
 

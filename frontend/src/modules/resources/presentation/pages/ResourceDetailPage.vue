@@ -77,8 +77,7 @@ const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 
 .detail__poster {
   width: 100%;
-  max-height: 420px;
-  object-fit: cover;
+  height: auto;
   border-radius: 18px;
   border: 1px solid var(--ca-border);
   margin: 28px 0;

@@ -8,6 +8,7 @@ export interface UpcomingEvent {
   readonly status: string
   readonly description: string
   readonly featured: boolean
+  readonly thumbnailId: string
 }
 
 export interface PastEvent {
@@ -15,6 +16,7 @@ export interface PastEvent {
   readonly title: string
   readonly eventName: string
   readonly year: string
+  readonly thumbnailId: string
 }
 
 export interface EventDetail {

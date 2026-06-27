@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { useAnnouncements } from '@/modules/announcements/presentation/composables/useAnnouncements'
-import AnnouncementCard from '@/modules/announcements/presentation/components/AnnouncementCard.vue'
-import FeaturedAnnouncementCard from '@/modules/announcements/presentation/components/FeaturedAnnouncementCard.vue'
+import { useHomeEvents } from '@/modules/events/presentation/composables/useHomeEvents'
+import EventCard from '@/modules/events/presentation/components/EventCard.vue'
+import FeaturedEventCard from '@/modules/events/presentation/components/FeaturedEventCard.vue'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 import SectionEyebrow from '@/shared/ui/components/SectionEyebrow.vue'
 
-const { announcements, isLoading } = useAnnouncements()
-
-const featured = computed(() => announcements.value?.[0] ?? null)
-const recent = computed(() => (announcements.value ?? []).slice(1, 4))
+const { featured, items, isLoading } = useHomeEvents()
 </script>
 
 <template>
@@ -18,23 +13,17 @@ const recent = computed(() => (announcements.value ?? []).slice(1, 4))
     <div class="ca-container">
       <div class="home-section__head">
         <div>
-          <SectionEyebrow text="// anuncios" color="var(--ca-amber)" />
-          <h2 class="home-section__title">Anuncios</h2>
+          <SectionEyebrow text="// eventos" color="var(--ca-cyan)" />
+          <h2 class="home-section__title">Eventos</h2>
         </div>
-        <BaseButton variant="link" :to="{ name: 'announcements' }">
-          Ver todas las noticias →
-        </BaseButton>
+        <BaseButton variant="link" :to="{ name: 'events' }"> Ver todos los eventos → </BaseButton>
       </div>
 
       <p v-if="isLoading" class="home-section__loading">Cargando…</p>
       <template v-else-if="featured">
-        <FeaturedAnnouncementCard :announcement="featured" />
-        <div v-if="recent.length" class="home-section__grid">
-          <AnnouncementCard
-            v-for="announcement in recent"
-            :key="announcement.id"
-            :announcement="announcement"
-          />
+        <FeaturedEventCard :event="featured" />
+        <div v-if="items.length" class="home-section__grid">
+          <EventCard v-for="event in items" :key="event.id" :event="event" />
         </div>
       </template>
     </div>

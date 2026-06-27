@@ -23,6 +23,29 @@ function startsAt(event: EventResponse): number | null {
   return event.eventStartsAt ? new Date(event.eventStartsAt).getTime() : null
 }
 
+/** Upcoming OR ongoing: the event has not finished yet. */
+function isUpcomingOrOngoing(event: EventResponse): boolean {
+  const end = event.eventEndsAt ? new Date(event.eventEndsAt).getTime() : null
+  if (end !== null) return end >= Date.now()
+  const start = startsAt(event)
+  if (start !== null) return start >= startOfToday()
+  return true
+}
+
+function isFinished(event: EventResponse): boolean {
+  const end = event.eventEndsAt ? new Date(event.eventEndsAt).getTime() : null
+  if (end !== null) return end < Date.now()
+  const start = startsAt(event)
+  if (start !== null) return start < startOfToday()
+  return false
+}
+
+const byStartAscending = (a: EventResponse, b: EventResponse): number =>
+  (startsAt(a) ?? Infinity) - (startsAt(b) ?? Infinity)
+
+const byStartDescending = (a: EventResponse, b: EventResponse): number =>
+  (startsAt(b) ?? 0) - (startsAt(a) ?? 0)
+
 export class HttpEventRepository implements EventRepository {
   private async fetchAll(): Promise<EventResponse[]> {
     const response = await getApiEvents()
@@ -30,25 +53,17 @@ export class HttpEventRepository implements EventRepository {
   }
 
   async getUpcoming(): Promise<readonly UpcomingEvent[]> {
-    const today = startOfToday()
-    const upcoming = (await this.fetchAll())
-      .filter((event) => {
-        const start = startsAt(event)
-        return start === null || start >= today
-      })
-      .sort((a, b) => (startsAt(a) ?? Infinity) - (startsAt(b) ?? Infinity))
+    const upcoming = (await this.fetchAll()).filter(isUpcomingOrOngoing).sort(byStartAscending)
     return upcoming.map((event, index) => toUpcomingEvent(event, index === 0))
   }
 
   async getPast(): Promise<readonly PastEvent[]> {
-    const today = startOfToday()
-    return (await this.fetchAll())
-      .filter((event) => {
-        const start = startsAt(event)
-        return start !== null && start < today
-      })
-      .sort((a, b) => (startsAt(b) ?? 0) - (startsAt(a) ?? 0))
-      .map(toPastEvent)
+    return (await this.fetchAll()).filter(isFinished).sort(byStartDescending).map(toPastEvent)
+  }
+
+  async getMostRecentPast(): Promise<UpcomingEvent | null> {
+    const finished = (await this.fetchAll()).filter(isFinished).sort(byStartDescending)
+    return finished[0] ? toUpcomingEvent(finished[0]) : null
   }
 
   async getById(id: string): Promise<EventDetail | null> {

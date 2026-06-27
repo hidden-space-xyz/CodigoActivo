@@ -15,6 +15,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDate } from '@/shared/utils/format'
+import ListThumbnail from '@/shared/ui/components/ListThumbnail.vue'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -97,6 +98,11 @@ function confirmDelete(partner: PartnerResponse): void {
       empty-text="Aún no hay socios. Crea el primero."
     >
       <DataTable :value="list.data.value" data-key="id" striped-rows>
+        <Column header="Logo" style="width: 110px">
+          <template #body="{ data }">
+            <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.name" style="width: 88px" />
+          </template>
+        </Column>
         <Column field="name" header="Nombre" />
         <Column field="tier" header="Nivel" style="width: 90px" />
         <Column header="Sitio web">

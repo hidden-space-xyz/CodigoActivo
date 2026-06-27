@@ -1,37 +1,39 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { UpcomingEvent } from '@/modules/events/domain/entities/event.entity'
+import type { Announcement } from '@/modules/announcements/domain/entities/announcement.entity'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 import { fileContentUrl } from '@/shared/utils/media'
 
-const props = defineProps<{ event: UpcomingEvent }>()
+const props = defineProps<{ announcement: Announcement }>()
 
-const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
+const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
 </script>
 
 <template>
   <div class="featured">
     <div class="featured__grid">
       <div class="featured__body">
-        <span class="featured__badge"> ★ Evento destacado </span>
+        <span class="featured__badge"> ★ Anuncio destacado </span>
 
-        <h2 class="featured__title">{{ event.title }}</h2>
-        <div class="featured__slogan">«{{ event.slogan }}»</div>
+        <h2 class="featured__title">{{ announcement.title }}</h2>
+        <div v-if="announcement.subtitle" class="featured__slogan">
+          {{ announcement.subtitle }}
+        </div>
 
-        <div class="featured__meta">
+        <div v-if="announcement.date" class="featured__meta">
           <div class="featured__meta-item">
-            <span class="featured__meta-label">Fecha</span>
-            <span class="featured__meta-value">{{ event.date }}</span>
+            <span class="featured__meta-label">Publicado</span>
+            <span class="featured__meta-value">{{ announcement.date }}</span>
           </div>
         </div>
 
         <BaseButton
-          :to="{ name: 'event-detail', params: { eventId: event.id } }"
+          :to="{ name: 'announcement-detail', params: { announcementId: announcement.id } }"
           variant="light"
           class="featured__cta"
         >
-          Ver detalles →
+          Leer más →
         </BaseButton>
       </div>
 
@@ -39,7 +41,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
         <img
           v-if="posterUrl"
           :src="posterUrl"
-          :alt="event.title"
+          :alt="announcement.title"
           class="featured__poster-img"
         />
       </div>
@@ -52,8 +54,8 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  border: 1px solid var(--ca-cyan);
-  background: rgba(45, 212, 217, 0.14);
+  border: 1px solid var(--ca-amber);
+  background: rgba(255, 194, 75, 0.12);
 }
 
 .featured__grid {
@@ -73,7 +75,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--ca-cyan);
+  color: var(--ca-amber);
   background: rgba(12, 14, 19, 0.45);
   padding: 5px 11px;
   border-radius: 999px;
@@ -93,7 +95,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   font-family: var(--ca-font-display);
   font-size: 21px;
   margin-top: 8px;
-  color: var(--ca-cyan);
+  color: var(--ca-amber);
 }
 
 .featured__meta {
