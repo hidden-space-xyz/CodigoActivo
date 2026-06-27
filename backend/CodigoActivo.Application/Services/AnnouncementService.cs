@@ -99,6 +99,22 @@ public class AnnouncementService(
         return Result.Success();
     }
 
+    public async Task<Result<AnnouncementResponse>> SetFeaturedAsync(
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        if (!await announcements.ExistsAsync(a => a.Id == id, ct))
+        {
+            return Error.NotFound();
+        }
+
+        await announcements.SetFeaturedAsync(id, ct);
+
+        var announcement = await announcements.FindAsync(a => a.Id == id, ct);
+        return announcement!.ToResponse();
+    }
+
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))

@@ -13,7 +13,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     icon: 'pi pi-check-square',
   },
   { label: 'Anuncios', routeName: 'admin-announcements', icon: 'pi pi-megaphone' },
-  { label: 'Socios', routeName: 'admin-partners', icon: 'pi pi-building' },
+  { label: 'Patrocinadores', routeName: 'admin-partners', icon: 'pi pi-building' },
   { label: 'Recursos', routeName: 'admin-resources', icon: 'pi pi-book' },
   { label: 'Usuarios', routeName: 'admin-users', icon: 'pi pi-users' },
   { label: 'Catálogos', routeName: 'admin-catalogs', icon: 'pi pi-tags' },

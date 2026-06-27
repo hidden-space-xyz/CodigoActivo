@@ -14,6 +14,7 @@ public class AnnouncementConfiguration : IEntityTypeConfiguration<Announcement>
         builder.Property(a => a.Subtitle).IsRequired();
         builder.Property(a => a.Description).HasColumnType("jsonb").IsRequired();
         builder.Property(a => a.CreatedAt).IsRequired();
+        builder.Property(a => a.Featured).HasDefaultValue(false);
 
         builder
             .HasOne(a => a.Thumbnail)

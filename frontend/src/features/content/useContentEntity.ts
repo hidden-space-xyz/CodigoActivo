@@ -8,6 +8,7 @@ export interface ContentItem {
   thumbnailId?: string
   createdAt?: string
   updatedAt?: string | null
+  featured?: boolean
 }
 
 export interface ContentRequest {
@@ -24,6 +25,8 @@ export interface ContentApi {
   create: (body: ContentRequest) => Promise<unknown>
   update: (id: string, body: ContentRequest) => Promise<unknown>
   remove: (id: string) => Promise<unknown>
+  /** When provided, the list exposes a "feature" action (only one item featured at a time). */
+  feature?: (id: string) => Promise<unknown>
 }
 
 export function useContentEntity(api: ContentApi) {
@@ -47,7 +50,20 @@ export function useContentEntity(api: ContentApi) {
 
   const remove = useMutation({ mutationFn: (id: string) => api.remove(id), onSuccess: invalidate })
 
-  return { list, create, update, remove, fetchOne: api.fetchOne }
+  const feature = useMutation({
+    mutationFn: (id: string) => api.feature?.(id) ?? Promise.resolve(),
+    onSuccess: invalidate,
+  })
+
+  return {
+    list,
+    create,
+    update,
+    remove,
+    feature,
+    canFeature: !!api.feature,
+    fetchOne: api.fetchOne,
+  }
 }
 
 export type ContentController = ReturnType<typeof useContentEntity>

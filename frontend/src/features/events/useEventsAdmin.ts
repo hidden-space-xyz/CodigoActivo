@@ -6,6 +6,7 @@ import {
   deleteApiEventsEventId,
   getApiEvents,
   getApiEventsEventId,
+  patchApiEventsEventIdFeature,
   postApiEvents,
   putApiEventsEventId,
 } from '@/shared/api/generated/endpoints/events/events'
@@ -37,7 +38,12 @@ export function useEventsAdmin() {
     onSuccess: invalidate,
   })
 
-  return { list, create, update, remove }
+  const feature = useMutation({
+    mutationFn: (id: string) => patchApiEventsEventIdFeature(id).then((r) => r.data),
+    onSuccess: invalidate,
+  })
+
+  return { list, create, update, remove, feature }
 }
 
 export function useEvent(eventId: MaybeRefOrGetter<string>) {

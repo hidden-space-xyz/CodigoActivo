@@ -15,7 +15,8 @@ public record EventResponse(
     DateTimeOffset? UpdatedAt,
     Guid CreatedBy,
     Guid? UpdatedBy,
-    Guid ThumbnailId
+    Guid ThumbnailId,
+    bool Featured
 );
 
 public record CreateEventRequest(

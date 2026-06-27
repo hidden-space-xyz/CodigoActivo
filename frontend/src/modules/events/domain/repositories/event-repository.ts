@@ -7,6 +7,6 @@ import type {
 export interface EventRepository {
   getUpcoming(): Promise<readonly UpcomingEvent[]>
   getPast(): Promise<readonly PastEvent[]>
-  getMostRecentPast(): Promise<UpcomingEvent | null>
+  getFeatured(): Promise<UpcomingEvent | null>
   getById(id: string): Promise<EventDetail | null>
 }

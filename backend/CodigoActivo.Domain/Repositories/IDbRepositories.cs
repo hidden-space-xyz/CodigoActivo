@@ -35,6 +35,9 @@ public interface IEventRepository : IDbRepository<Event>
     );
 
     Task<Event?> GetWithActivitiesAndAssignmentsAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Marks the given event as featured and clears the flag on every other event.</summary>
+    Task SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IActivityRepository : IDbRepository<Activity>
@@ -68,7 +71,11 @@ public interface IActivityRepository : IDbRepository<Activity>
 
 public interface IResourceRepository : IDbRepository<Resource>;
 
-public interface IAnnouncementRepository : IDbRepository<Announcement>;
+public interface IAnnouncementRepository : IDbRepository<Announcement>
+{
+    /// <summary>Marks the given announcement as featured and clears the flag on every other one.</summary>
+    Task SetFeaturedAsync(Guid id, CancellationToken ct = default);
+}
 
 public interface IPartnerRepository : IDbRepository<Partner>;
 

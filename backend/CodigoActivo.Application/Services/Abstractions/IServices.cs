@@ -57,6 +57,7 @@ public interface IEventService
         CancellationToken ct = default
     );
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<Result<EventResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IActivityService
@@ -163,6 +164,7 @@ public interface IAnnouncementService
         CancellationToken ct = default
     );
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<Result<AnnouncementResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IPartnerService

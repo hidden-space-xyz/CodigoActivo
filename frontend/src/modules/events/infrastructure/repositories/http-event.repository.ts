@@ -54,16 +54,22 @@ export class HttpEventRepository implements EventRepository {
 
   async getUpcoming(): Promise<readonly UpcomingEvent[]> {
     const upcoming = (await this.fetchAll()).filter(isUpcomingOrOngoing).sort(byStartAscending)
-    return upcoming.map((event, index) => toUpcomingEvent(event, index === 0))
+    return upcoming.map(toUpcomingEvent)
   }
 
   async getPast(): Promise<readonly PastEvent[]> {
     return (await this.fetchAll()).filter(isFinished).sort(byStartDescending).map(toPastEvent)
   }
 
-  async getMostRecentPast(): Promise<UpcomingEvent | null> {
-    const finished = (await this.fetchAll()).filter(isFinished).sort(byStartDescending)
-    return finished[0] ? toUpcomingEvent(finished[0]) : null
+  async getFeatured(): Promise<UpcomingEvent | null> {
+    const all = await this.fetchAll()
+    const flagged = all.find((event) => event.featured)
+    if (flagged) return toUpcomingEvent(flagged)
+    // Fallback: the most recently created event when none is explicitly featured.
+    const mostRecent = all
+      .slice()
+      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0]
+    return mostRecent ? toUpcomingEvent(mostRecent) : null
   }
 
   async getById(id: string): Promise<EventDetail | null> {

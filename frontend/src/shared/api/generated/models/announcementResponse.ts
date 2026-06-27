@@ -21,4 +21,5 @@ export interface AnnouncementResponse {
   /** @nullable */
   updatedBy?: string | null;
   thumbnailId?: string;
+  featured?: boolean;
 }

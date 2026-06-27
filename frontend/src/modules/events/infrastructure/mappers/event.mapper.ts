@@ -24,7 +24,7 @@ function isSignupOpen(event: EventResponse): boolean {
   return start !== null || end !== null
 }
 
-export function toUpcomingEvent(event: EventResponse, featured = false): UpcomingEvent {
+export function toUpcomingEvent(event: EventResponse): UpcomingEvent {
   const { day, month } = chip(event.eventStartsAt)
   return {
     id: event.id ?? '',
@@ -35,7 +35,7 @@ export function toUpcomingEvent(event: EventResponse, featured = false): Upcomin
     monthLabel: month,
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
     description: event.description ?? '',
-    featured,
+    featured: event.featured ?? false,
     thumbnailId: event.thumbnailId ?? '',
   }
 }

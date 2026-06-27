@@ -7,6 +7,11 @@ export class HttpSponsorRepository implements SponsorRepository {
     const response = await getApiPartners()
     return (response.data ?? [])
       .filter((partner) => partner.id && partner.name)
-      .map((partner) => ({ id: partner.id ?? '', name: partner.name ?? '' }))
+      .map((partner) => ({
+        id: partner.id ?? '',
+        name: partner.name ?? '',
+        website: partner.website ?? '',
+        thumbnailId: partner.thumbnailId ?? '',
+      }))
   }
 }

@@ -5,4 +5,5 @@ export interface Announcement {
   readonly description: string
   readonly date: string
   readonly thumbnailId: string
+  readonly featured: boolean
 }

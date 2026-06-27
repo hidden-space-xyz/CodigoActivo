@@ -49,7 +49,8 @@ public static class MappingExtensions
             @event.UpdatedAt,
             @event.CreatedBy,
             @event.UpdatedBy,
-            @event.ThumbnailId
+            @event.ThumbnailId,
+            @event.Featured
         );
     }
 
@@ -106,7 +107,8 @@ public static class MappingExtensions
             announcement.UpdatedAt,
             announcement.CreatedBy,
             announcement.UpdatedBy,
-            announcement.ThumbnailId
+            announcement.ThumbnailId,
+            announcement.Featured
         );
     }
 

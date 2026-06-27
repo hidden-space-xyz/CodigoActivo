@@ -89,7 +89,7 @@ async function save(): Promise<void> {
   <Dialog
     :visible="visible"
     modal
-    :header="partner ? 'Editar socio' : 'Nuevo socio'"
+    :header="partner ? 'Editar patrocinador' : 'Nuevo patrocinador'"
     :style="{ width: '460px' }"
     @update:visible="close"
   >

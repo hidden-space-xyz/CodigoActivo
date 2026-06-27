@@ -108,6 +108,22 @@ public class EventService(IEventRepository events, IFileRepository files, IUnitO
         return Result.Success();
     }
 
+    public async Task<Result<EventResponse>> SetFeaturedAsync(
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        if (!await events.ExistsAsync(e => e.Id == id, ct))
+        {
+            return Error.NotFound();
+        }
+
+        await events.SetFeaturedAsync(id, ct);
+
+        var ev = await events.GetWithThumbnailAsync(id, ct);
+        return ev!.ToResponse();
+    }
+
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))

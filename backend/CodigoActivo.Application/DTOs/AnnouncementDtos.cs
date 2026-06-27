@@ -11,7 +11,8 @@ public record AnnouncementResponse(
     DateTimeOffset? UpdatedAt,
     Guid CreatedBy,
     Guid? UpdatedBy,
-    Guid ThumbnailId
+    Guid ThumbnailId,
+    bool Featured
 );
 
 public record CreateAnnouncementRequest(

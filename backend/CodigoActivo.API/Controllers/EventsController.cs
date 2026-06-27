@@ -66,4 +66,12 @@ public class EventsController(IEventService events) : ApiControllerBase
     {
         return ToNoContent(await events.DeleteAsync(eventId, ct));
     }
+
+    [HttpPatch("{eventId:guid}/feature")]
+    [AllowOnlyAdmin]
+    [InvalidatesCache(nameof(Event))]
+    public async Task<ActionResult<EventResponse>> Feature(Guid eventId, CancellationToken ct)
+    {
+        return ToOk(await events.SetFeaturedAsync(eventId, ct));
+    }
 }

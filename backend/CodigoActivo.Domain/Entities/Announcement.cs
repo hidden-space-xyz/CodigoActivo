@@ -9,6 +9,8 @@ public class Announcement : AuditableEntity
 
     public string Description { get; set; } = "{}";
 
+    public bool Featured { get; set; }
+
     public Guid ThumbnailId { get; set; }
     public FileEntity Thumbnail { get; set; } = null!;
 }

@@ -9,8 +9,15 @@ import SectionEyebrow from '@/shared/ui/components/SectionEyebrow.vue'
 
 const { announcements, isLoading } = useAnnouncements()
 
-const featured = computed(() => announcements.value?.[0] ?? null)
-const recent = computed(() => (announcements.value ?? []).slice(1, 4))
+// Highlighted announcement: the admin-selected one, else the most recent (the
+// list comes sorted by date descending), then the next 3 excluding it.
+const featured = computed(() => {
+  const list = announcements.value ?? []
+  return list.find((announcement) => announcement.featured) ?? list[0] ?? null
+})
+const recent = computed(() =>
+  (announcements.value ?? []).filter((a) => a.id !== featured.value?.id).slice(0, 3),
+)
 </script>
 
 <template>

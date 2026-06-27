@@ -10,5 +10,6 @@ export function toAnnouncement(response: AnnouncementResponse): Announcement {
     description: response.description ?? '',
     date: response.createdAt ? formatDate(response.createdAt) : '',
     thumbnailId: response.thumbnailId ?? '',
+    featured: response.featured ?? false,
   }
 }

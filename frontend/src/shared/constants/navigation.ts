@@ -5,7 +5,7 @@ export interface NavItem {
 
 export const PRIMARY_NAV: readonly NavItem[] = [
   { routeName: 'home', label: 'Inicio' },
-  { routeName: 'announcements', label: 'Noticias' },
+  { routeName: 'announcements', label: 'Anuncios' },
   { routeName: 'events', label: 'Eventos' },
   { routeName: 'resources', label: 'Recursos' },
   { routeName: 'about', label: 'Nosotros' },

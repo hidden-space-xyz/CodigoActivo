@@ -9,8 +9,10 @@ export interface HomeEvents {
 }
 
 export async function getHomeEvents(repository: EventRepository): Promise<HomeEvents> {
-  const upcoming = await repository.getUpcoming()
-  const featured = upcoming[0] ?? (await repository.getMostRecentPast())
+  const [featured, upcoming] = await Promise.all([
+    repository.getFeatured(),
+    repository.getUpcoming(),
+  ])
   const items = upcoming.filter((event) => event.id !== featured?.id).slice(0, 3)
   return { featured, items }
 }

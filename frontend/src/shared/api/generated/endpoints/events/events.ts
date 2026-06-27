@@ -498,3 +498,97 @@ export function useDeleteApiEventsEventId<TData = Awaited<ReturnType<typeof dele
 
 
 
+export type patchApiEventsEventIdFeatureResponse200TextPlain = {
+  data: EventResponse
+  status: 200
+}
+
+export type patchApiEventsEventIdFeatureResponse200ApplicationJson = {
+  data: EventResponse
+  status: 200
+}
+
+export type patchApiEventsEventIdFeatureResponse200TextJson = {
+  data: EventResponse
+  status: 200
+}
+
+export type patchApiEventsEventIdFeatureResponseSuccess = (patchApiEventsEventIdFeatureResponse200TextPlain | patchApiEventsEventIdFeatureResponse200ApplicationJson | patchApiEventsEventIdFeatureResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type patchApiEventsEventIdFeatureResponse = (patchApiEventsEventIdFeatureResponseSuccess)
+
+export const getPatchApiEventsEventIdFeatureUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}/feature`
+}
+
+export const patchApiEventsEventIdFeature = async (eventId: string, options?: RequestInit): Promise<patchApiEventsEventIdFeatureResponse> => {
+
+  return httpClient<patchApiEventsEventIdFeatureResponse>(getPatchApiEventsEventIdFeatureUrl(eventId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getPatchApiEventsEventIdFeatureQueryKey = (eventId: MaybeRef<string>,) => {
+    return [
+    'PATCH', 'api','events',eventId,'feature'
+    ] as const;
+    }
+
+
+export const getPatchApiEventsEventIdFeatureQueryOptions = <TData = Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>, TError = unknown>(eventId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiEventsEventIdFeatureQueryKey(eventId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>> = ({ signal }) => patchApiEventsEventIdFeature(unref(eventId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(eventId) !== null && unref(eventId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>, TError, TData>
+}
+
+export type PatchApiEventsEventIdFeatureQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>>
+export type PatchApiEventsEventIdFeatureQueryError = unknown
+
+
+
+export function usePatchApiEventsEventIdFeature<TData = Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>, TError = unknown>(
+ eventId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiEventsEventIdFeature>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiEventsEventIdFeatureQueryOptions(eventId,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+

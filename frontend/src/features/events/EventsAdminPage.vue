@@ -4,6 +4,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
+import Tag from 'primevue/tag'
 
 import { deleteThumbnail } from '@/features/files/useThumbnail'
 import EventFormDialog from '@/features/events/EventFormDialog.vue'
@@ -20,9 +21,17 @@ import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
 
-const { list, create, update, remove } = useEventsAdmin()
+const { list, create, update, remove, feature } = useEventsAdmin()
 const feedback = useCrudFeedback()
 const confirm = useConfirm()
+
+function onFeature(event: EventResponse): void {
+  if (!event.id || event.featured) return
+  feature.mutate(event.id, {
+    onSuccess: () => feedback.success('Evento destacado.'),
+    onError: (error) => feedback.error(getErrorMessage(error)),
+  })
+}
 
 const dialogVisible = ref(false)
 const selected = ref<EventResponse | null>(null)
@@ -103,7 +112,14 @@ function confirmDelete(event: EventResponse): void {
             <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
           </template>
         </Column>
-        <Column field="title" header="Título" />
+        <Column header="Título">
+          <template #body="{ data }">
+            <span class="title-cell">
+              {{ data.title }}
+              <Tag v-if="data.featured" value="Destacado" severity="warn" />
+            </span>
+          </template>
+        </Column>
         <Column header="Inicio">
           <template #body="{ data }">{{ formatDateTime(data.eventStartsAt) }}</template>
         </Column>
@@ -112,9 +128,18 @@ function confirmDelete(event: EventResponse): void {
             {{ formatDateTime(data.signupStartsAt) }} – {{ formatDateTime(data.signupEndsAt) }}
           </template>
         </Column>
-        <Column header="Acciones" style="width: 200px">
+        <Column header="Acciones" style="width: 230px">
           <template #body="{ data }">
             <div class="row-actions">
+              <Button
+                :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
+                text
+                rounded
+                :aria-label="data.featured ? 'Evento destacado' : 'Destacar evento'"
+                :disabled="data.featured || feature.isPending.value"
+                :class="{ 'is-featured': data.featured }"
+                @click="onFeature(data)"
+              />
               <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: data.id } }">
                 <Button icon="pi pi-cog" text rounded aria-label="Gestionar" />
               </RouterLink>
@@ -153,5 +178,15 @@ function confirmDelete(event: EventResponse): void {
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.title-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.is-featured:deep(.p-button-icon) {
+  color: var(--ca-amber);
 }
 </style>

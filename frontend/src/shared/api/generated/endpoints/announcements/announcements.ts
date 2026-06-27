@@ -490,3 +490,97 @@ export function useDeleteApiAnnouncementsAnnouncementId<TData = Awaited<ReturnTy
 
 
 
+export type patchApiAnnouncementsAnnouncementIdFeatureResponse200TextPlain = {
+  data: AnnouncementResponse
+  status: 200
+}
+
+export type patchApiAnnouncementsAnnouncementIdFeatureResponse200ApplicationJson = {
+  data: AnnouncementResponse
+  status: 200
+}
+
+export type patchApiAnnouncementsAnnouncementIdFeatureResponse200TextJson = {
+  data: AnnouncementResponse
+  status: 200
+}
+
+export type patchApiAnnouncementsAnnouncementIdFeatureResponseSuccess = (patchApiAnnouncementsAnnouncementIdFeatureResponse200TextPlain | patchApiAnnouncementsAnnouncementIdFeatureResponse200ApplicationJson | patchApiAnnouncementsAnnouncementIdFeatureResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type patchApiAnnouncementsAnnouncementIdFeatureResponse = (patchApiAnnouncementsAnnouncementIdFeatureResponseSuccess)
+
+export const getPatchApiAnnouncementsAnnouncementIdFeatureUrl = (announcementId: string,) => {
+
+
+
+
+  return `/api/announcements/${announcementId}/feature`
+}
+
+export const patchApiAnnouncementsAnnouncementIdFeature = async (announcementId: string, options?: RequestInit): Promise<patchApiAnnouncementsAnnouncementIdFeatureResponse> => {
+
+  return httpClient<patchApiAnnouncementsAnnouncementIdFeatureResponse>(getPatchApiAnnouncementsAnnouncementIdFeatureUrl(announcementId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getPatchApiAnnouncementsAnnouncementIdFeatureQueryKey = (announcementId: MaybeRef<string>,) => {
+    return [
+    'PATCH', 'api','announcements',announcementId,'feature'
+    ] as const;
+    }
+
+
+export const getPatchApiAnnouncementsAnnouncementIdFeatureQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>, TError = unknown>(announcementId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiAnnouncementsAnnouncementIdFeatureQueryKey(announcementId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>> = ({ signal }) => patchApiAnnouncementsAnnouncementIdFeature(unref(announcementId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(announcementId) !== null && unref(announcementId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>, TError, TData>
+}
+
+export type PatchApiAnnouncementsAnnouncementIdFeatureQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>>
+export type PatchApiAnnouncementsAnnouncementIdFeatureQueryError = unknown
+
+
+
+export function usePatchApiAnnouncementsAnnouncementIdFeature<TData = Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>, TError = unknown>(
+ announcementId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAnnouncementsAnnouncementIdFeature>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiAnnouncementsAnnouncementIdFeatureQueryOptions(announcementId,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+

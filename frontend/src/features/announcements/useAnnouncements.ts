@@ -2,6 +2,7 @@ import {
   deleteApiAnnouncementsAnnouncementId,
   getApiAnnouncements,
   getApiAnnouncementsAnnouncementId,
+  patchApiAnnouncementsAnnouncementIdFeature,
   postApiAnnouncements,
   putApiAnnouncementsAnnouncementId,
 } from '@/shared/api/generated/endpoints/announcements/announcements'
@@ -16,5 +17,6 @@ export function useAnnouncements() {
     create: (body) => postApiAnnouncements(body),
     update: (id, body) => putApiAnnouncementsAnnouncementId(id, body),
     remove: (id) => deleteApiAnnouncementsAnnouncementId(id),
+    feature: (id) => patchApiAnnouncementsAnnouncementIdFeature(id),
   })
 }

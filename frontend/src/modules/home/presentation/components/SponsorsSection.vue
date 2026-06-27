@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSponsorCarousel } from '@/modules/home/presentation/composables/useSponsorCarousel'
 import { useSponsors } from '@/modules/home/presentation/composables/useSponsors'
+import { fileContentUrl } from '@/shared/utils/media'
 
 const { sponsors } = useSponsors()
 const { cards, next, prev, pause, resume } = useSponsorCarousel(sponsors)
@@ -28,6 +29,10 @@ function initials(name: string): string {
   return (words[0] ?? '').slice(0, 2)
 }
 
+function logoUrl(thumbnailId: string): string {
+  return fileContentUrl(thumbnailId)
+}
+
 function distanceOf(offset: number): number {
   return Math.min(Math.abs(offset), 3)
 }
@@ -50,19 +55,34 @@ function distanceOf(offset: number): number {
 
         <div class="sponsors__viewport">
           <div class="sponsors__track">
-            <div
+            <component
+              :is="card.sponsor.website ? 'a' : 'div'"
               v-for="card in cards"
               :key="card.sponsor.id"
+              :href="card.sponsor.website || null"
+              :target="card.sponsor.website ? '_blank' : null"
+              :rel="card.sponsor.website ? 'noopener' : null"
               class="sponsor"
               :class="`sponsor--d${distanceOf(card.offset)}`"
               :style="{ '--offset': String(card.offset) }"
               :aria-hidden="distanceOf(card.offset) === 3 ? 'true' : undefined"
             >
-              <div class="sponsor__logo" :style="{ '--logo-color': colorFor(card.sponsor.id) }">
-                {{ initials(card.sponsor.name).toUpperCase() }}
+              <div
+                class="sponsor__logo"
+                :class="{ 'sponsor__logo--color': !logoUrl(card.sponsor.thumbnailId) }"
+                :style="{ '--logo-color': colorFor(card.sponsor.id) }"
+              >
+                <img
+                  v-if="logoUrl(card.sponsor.thumbnailId)"
+                  :src="logoUrl(card.sponsor.thumbnailId)"
+                  :alt="card.sponsor.name"
+                  class="sponsor__logo-img"
+                  loading="lazy"
+                />
+                <span v-else>{{ initials(card.sponsor.name).toUpperCase() }}</span>
               </div>
               <div class="sponsor__name">{{ card.sponsor.name }}</div>
-            </div>
+            </component>
           </div>
         </div>
 
@@ -145,6 +165,8 @@ function distanceOf(offset: number): number {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  color: inherit;
   transform: translate(-50%, -50%) translateX(calc(var(--offset) * var(--step))) scale(var(--scale));
   transition:
     transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
@@ -159,16 +181,30 @@ function distanceOf(offset: number): number {
   width: 82px;
   height: 82px;
   border-radius: 18px;
+  overflow: hidden;
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-border-soft);
   font-family: var(--ca-font-display);
   font-weight: 700;
   font-size: 28px;
   color: var(--ca-bg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.sponsor__logo--color {
+  border: none;
   background: linear-gradient(
     140deg,
     var(--logo-color),
     color-mix(in srgb, var(--logo-color) 55%, #ffffff)
   );
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.sponsor__logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .sponsor__name {

@@ -69,4 +69,15 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
     {
         return ToNoContent(await announcements.DeleteAsync(announcementId, ct));
     }
+
+    [HttpPatch("{announcementId:guid}/feature")]
+    [AllowOnlyAdmin]
+    [InvalidatesCache(nameof(Announcement))]
+    public async Task<ActionResult<AnnouncementResponse>> Feature(
+        Guid announcementId,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await announcements.SetFeaturedAsync(announcementId, ct));
+    }
 }

@@ -53,4 +53,12 @@ public class EventRepository(CodigoActivoDbContext context)
             .ThenInclude(a => a.AllowedRoleTypes)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
+
+    public async Task SetFeaturedAsync(Guid id, CancellationToken ct = default)
+    {
+        await Set.Where(e => e.Featured && e.Id != id)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, false), ct);
+        await Set.Where(e => e.Id == id)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, true), ct);
+    }
 }

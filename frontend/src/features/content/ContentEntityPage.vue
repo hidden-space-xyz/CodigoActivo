@@ -6,6 +6,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 
 import ThumbnailField from '@/features/files/ThumbnailField.vue'
@@ -125,6 +126,14 @@ async function save(): Promise<void> {
   })
 }
 
+function onFeature(item: ContentItem): void {
+  if (!item.id || item.featured) return
+  props.controller.feature.mutate(item.id, {
+    onSuccess: () => feedback.success('Destacado actualizado.'),
+    onError: (error) => feedback.error(getErrorMessage(error)),
+  })
+}
+
 function confirmDelete(item: ContentItem): void {
   confirm.require({
     header: `Eliminar ${props.entityLabel}`,
@@ -173,14 +182,35 @@ function confirmDelete(item: ContentItem): void {
             <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
           </template>
         </Column>
-        <Column field="title" header="Título" />
+        <Column header="Título">
+          <template #body="{ data }">
+            <span class="title-cell">
+              {{ data.title }}
+              <Tag
+                v-if="controller.canFeature && data.featured"
+                value="Destacado"
+                severity="warn"
+              />
+            </span>
+          </template>
+        </Column>
         <Column field="subtitle" header="Subtítulo" />
         <Column header="Creado">
           <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
         </Column>
-        <Column header="Acciones" style="width: 130px">
+        <Column header="Acciones" style="width: 170px">
           <template #body="{ data }">
             <div class="row-actions">
+              <Button
+                v-if="controller.canFeature"
+                :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
+                text
+                rounded
+                :aria-label="data.featured ? 'Destacado' : 'Destacar'"
+                :disabled="data.featured || controller.feature.isPending.value"
+                :class="{ 'is-featured': data.featured }"
+                @click="onFeature(data)"
+              />
               <Button
                 icon="pi pi-pencil"
                 text
@@ -252,6 +282,16 @@ function confirmDelete(item: ContentItem): void {
 .row-actions {
   display: flex;
   gap: 2px;
+}
+
+.title-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.is-featured:deep(.p-button-icon) {
+  color: var(--ca-amber);
 }
 
 .form {

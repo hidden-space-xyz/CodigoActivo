@@ -44,7 +44,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
       { id: selected.value.id, body: body as UpdatePartnerRequest },
       {
         onSuccess: () => {
-          feedback.success('Socio actualizado.')
+          feedback.success('Patrocinador actualizado.')
           dialogVisible.value = false
         },
         onError: (error) => feedback.error(getErrorMessage(error)),
@@ -54,7 +54,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
   }
   create.mutate(body as CreatePartnerRequest, {
     onSuccess: () => {
-      feedback.success('Socio creado.')
+      feedback.success('Patrocinador creado.')
       dialogVisible.value = false
     },
     onError: (error) => feedback.error(getErrorMessage(error)),
@@ -63,7 +63,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
 
 function confirmDelete(partner: PartnerResponse): void {
   confirm.require({
-    header: 'Eliminar socio',
+    header: 'Eliminar patrocinador',
     message: `¿Seguro que quieres eliminar a "${partner.name}"? Esta acción no se puede deshacer.`,
     icon: 'pi pi-exclamation-triangle',
     acceptLabel: 'Eliminar',
@@ -73,7 +73,7 @@ function confirmDelete(partner: PartnerResponse): void {
       if (!partner.id) return
       remove.mutate(partner.id, {
         onSuccess: () => {
-          feedback.success('Socio eliminado.')
+          feedback.success('Patrocinador eliminado.')
           void deleteThumbnail(partner.thumbnailId)
         },
         onError: (error) => feedback.error(getErrorMessage(error)),
@@ -85,9 +85,9 @@ function confirmDelete(partner: PartnerResponse): void {
 
 <template>
   <div>
-    <AdminPageHeader title="Socios" subtitle="Empresas y entidades colaboradoras">
+    <AdminPageHeader title="Patrocinadores" subtitle="Empresas y entidades colaboradoras">
       <template #actions>
-        <Button label="Nuevo socio" icon="pi pi-plus" @click="openCreate" />
+        <Button label="Nuevo patrocinador" icon="pi pi-plus" @click="openCreate" />
       </template>
     </AdminPageHeader>
 
@@ -95,7 +95,7 @@ function confirmDelete(partner: PartnerResponse): void {
       :loading="list.isLoading.value"
       :error="list.isError.value"
       :empty="(list.data.value?.length ?? 0) === 0"
-      empty-text="Aún no hay socios. Crea el primero."
+      empty-text="Aún no hay patrocinadores. Crea el primero."
     >
       <DataTable :value="list.data.value" data-key="id" striped-rows>
         <Column header="Logo" style="width: 110px">
