@@ -8,4 +8,5 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { routeName: 'about', label: 'Nosotros' },
   { routeName: 'events', label: 'Eventos' },
   { routeName: 'resources', label: 'Recursos' },
+  { routeName: 'announcements', label: 'Anuncios' },
 ]

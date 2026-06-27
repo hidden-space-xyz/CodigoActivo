@@ -5,7 +5,10 @@ defineProps<{ resource: LearningResource }>()
 </script>
 
 <template>
-  <article class="resource-card">
+  <RouterLink
+    :to="{ name: 'resource-detail', params: { resourceId: resource.id } }"
+    class="resource-card"
+  >
     <div class="resource-card__top">
       <div class="resource-card__icon">&lt;/&gt;</div>
     </div>
@@ -16,7 +19,7 @@ defineProps<{ resource: LearningResource }>()
       <span class="resource-card__type">{{ resource.type }}</span>
       <span class="resource-card__open">Abrir →</span>
     </div>
-  </article>
+  </RouterLink>
 </template>
 
 <style scoped>
@@ -28,6 +31,8 @@ defineProps<{ resource: LearningResource }>()
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
   transition:
     transform 0.16s ease,
     border-color 0.16s ease;

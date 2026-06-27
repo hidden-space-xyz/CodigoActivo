@@ -1,8 +1,3 @@
-export interface EventAgendaItem {
-  readonly time: string
-  readonly description: string
-}
-
 export interface UpcomingEvent {
   readonly id: string
   readonly title: string
@@ -20,4 +15,15 @@ export interface PastEvent {
   readonly title: string
   readonly eventName: string
   readonly year: string
+}
+
+export interface EventDetail {
+  readonly id: string
+  readonly title: string
+  readonly subtitle: string
+  readonly description: string
+  readonly dateLabel: string
+  readonly signupLabel: string
+  readonly status: string
+  readonly thumbnailId: string
 }

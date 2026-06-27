@@ -20,7 +20,7 @@ const stats = [
         </h1>
         <p class="hero__subtitle">
           Acercamos el código y el pensamiento computacional a niñas, niños y jóvenes de 8 a 18
-          años. Gratis, divertido y desde Boñar (León).
+          años. Gratis, divertido y desde León.
         </p>
 
         <div class="hero__actions">

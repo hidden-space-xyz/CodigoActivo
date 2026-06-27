@@ -7,6 +7,8 @@ export function toAnnouncement(response: AnnouncementResponse): Announcement {
     id: response.id ?? '',
     title: response.title ?? '',
     subtitle: response.subtitle ?? '',
+    description: response.description ?? '',
     date: response.createdAt ? formatDate(response.createdAt) : '',
+    thumbnailId: response.thumbnailId ?? '',
   }
 }

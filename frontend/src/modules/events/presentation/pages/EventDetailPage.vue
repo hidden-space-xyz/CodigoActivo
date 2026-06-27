@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import { useEventDetail } from '@/modules/events/presentation/composables/useEventDetail'
 import { useEventSignup } from '@/modules/events/presentation/composables/useEventSignup'
-import EventAgenda from '@/modules/events/presentation/components/EventAgenda.vue'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
+import { fileContentUrl } from '@/shared/utils/media'
 
 const props = defineProps<{ eventId: string }>()
 
@@ -16,11 +16,14 @@ const accentColor = 'var(--ca-cyan)'
 const infoRows = computed(() =>
   event.value
     ? [
-        { label: 'Fecha', value: event.value.date },
+        { label: 'Fecha', value: event.value.dateLabel },
+        { label: 'Inscripción', value: event.value.signupLabel },
         { label: 'Estado', value: event.value.status },
       ]
     : [],
 )
+
+const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
 </script>
 
 <template>
@@ -41,8 +44,8 @@ const infoRows = computed(() =>
       <section class="detail-head">
         <div class="ca-container--narrow">
           <h1 class="detail-head__title">{{ event.title }}</h1>
-          <div class="detail-head__slogan" :style="{ color: accentColor }">
-            «{{ event.slogan }}»
+          <div v-if="event.subtitle" class="detail-head__slogan" :style="{ color: accentColor }">
+            «{{ event.subtitle }}»
           </div>
         </div>
       </section>
@@ -50,20 +53,18 @@ const infoRows = computed(() =>
       <section class="detail-body">
         <div class="ca-container--narrow detail-body__grid">
           <div class="detail-body__main">
-            <div class="detail-body__poster" aria-hidden="true">
-              cartel / foto del evento<br />1600 × 900
-            </div>
+            <img
+              v-if="posterUrl"
+              :src="posterUrl"
+              :alt="event.title"
+              class="detail-body__poster"
+            />
 
             <h2 class="detail-body__h2">Sobre el evento</h2>
-            <p class="detail-body__p">{{ event.description }}</p>
-            <p class="detail-body__p">
-              Una jornada pensada para aprender haciendo: retos por equipos, mentores que te
-              acompañan y tu propio proyecto al final del día. No necesitas experiencia previa, solo
-              ganas de crear.
+            <p v-if="event.description" class="detail-body__p">{{ event.description }}</p>
+            <p v-else class="detail-body__p detail-body__p--muted">
+              Este evento todavía no tiene una descripción.
             </p>
-
-            <h2 class="detail-body__h2 detail-body__h2--spaced">El día, paso a paso</h2>
-            <EventAgenda :accent-color="accentColor" />
           </div>
 
           <aside class="detail-body__panel">
@@ -132,18 +133,13 @@ const infoRows = computed(() =>
 }
 
 .detail-body__poster {
-  height: 300px;
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
   border-radius: 18px;
-  background: repeating-linear-gradient(135deg, #171b25, #171b25 11px, #13161e 11px, #13161e 22px);
   border: 1px solid var(--ca-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--ca-font-mono);
-  color: var(--ca-text-ghost);
-  font-size: 13px;
-  text-align: center;
   margin-bottom: 28px;
+  display: block;
 }
 
 .detail-body__h2 {
@@ -153,16 +149,17 @@ const infoRows = computed(() =>
   color: var(--ca-text-bright);
 }
 
-.detail-body__h2--spaced {
-  margin-top: 32px;
-  margin-bottom: 18px;
-}
-
 .detail-body__p {
   margin-top: 12px;
   font-size: 16.5px;
   line-height: 1.7;
   color: #b6bdca;
+  white-space: pre-line;
+}
+
+.detail-body__p--muted {
+  color: var(--ca-text-dim);
+  font-style: italic;
 }
 
 .detail-body__panel {

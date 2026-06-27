@@ -2,4 +2,5 @@ import type { Announcement } from '@/modules/announcements/domain/entities/annou
 
 export interface AnnouncementRepository {
   getAll(): Promise<readonly Announcement[]>
+  getById(id: string): Promise<Announcement | null>
 }

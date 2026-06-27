@@ -3,4 +3,5 @@ export interface LearningResource {
   readonly title: string
   readonly type: string
   readonly description: string
+  readonly thumbnailId: string
 }

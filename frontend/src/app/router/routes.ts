@@ -2,6 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import { adminRoutes } from '@/features/admin/router/admin.routes'
 import { aboutRoutes } from '@/modules/about/presentation/routes'
+import { announcementsRoutes } from '@/modules/announcements/presentation/routes'
 import { authRoutes } from '@/modules/auth/presentation/routes'
 import { eventsRoutes } from '@/modules/events/presentation/routes'
 import { homeRoutes } from '@/modules/home/presentation/routes'
@@ -13,6 +14,7 @@ export const routes: readonly RouteRecordRaw[] = [
   ...aboutRoutes,
   ...eventsRoutes,
   ...resourcesRoutes,
+  ...announcementsRoutes,
   ...registrationRoutes,
   ...authRoutes,
   ...adminRoutes,

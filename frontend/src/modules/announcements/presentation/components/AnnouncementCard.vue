@@ -5,14 +5,17 @@ defineProps<{ announcement: Announcement }>()
 </script>
 
 <template>
-  <article class="announcement-card">
+  <RouterLink
+    :to="{ name: 'announcement-detail', params: { announcementId: announcement.id } }"
+    class="announcement-card"
+  >
     <span class="announcement-card__icon" aria-hidden="true">📣</span>
     <div class="announcement-card__body">
       <h3 class="announcement-card__title">{{ announcement.title }}</h3>
       <p class="announcement-card__subtitle">{{ announcement.subtitle }}</p>
     </div>
     <time v-if="announcement.date" class="announcement-card__date">{{ announcement.date }}</time>
-  </article>
+  </RouterLink>
 </template>
 
 <style scoped>
@@ -24,6 +27,8 @@ defineProps<{ announcement: Announcement }>()
   border: 1px solid var(--ca-border-soft);
   border-radius: 16px;
   padding: 20px 22px;
+  text-decoration: none;
+  color: inherit;
   transition:
     transform 0.16s ease,
     border-color 0.16s ease;

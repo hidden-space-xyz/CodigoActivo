@@ -2,4 +2,5 @@ import type { LearningResource } from '@/modules/resources/domain/entities/learn
 
 export interface ResourceRepository {
   getAll(): Promise<readonly LearningResource[]>
+  getById(id: string): Promise<LearningResource | null>
 }

@@ -12,7 +12,7 @@ const currentYear = new Date().getFullYear()
       <div class="footer__brandcol">
         <BrandLogo size="sm" />
         <p class="footer__tagline">
-          Programación para tod@s. Asociación sin ánimo de lucro · Boñar, León · desde 2018.
+          Programación para tod@s. Asociación sin ánimo de lucro · León · desde 2018.
         </p>
       </div>
 

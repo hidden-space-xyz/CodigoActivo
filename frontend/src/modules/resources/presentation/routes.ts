@@ -6,4 +6,10 @@ export const resourcesRoutes: readonly RouteRecordRaw[] = [
     name: 'resources',
     component: () => import('@/modules/resources/presentation/pages/ResourcesPage.vue'),
   },
+  {
+    path: '/resources/:resourceId',
+    name: 'resource-detail',
+    component: () => import('@/modules/resources/presentation/pages/ResourceDetailPage.vue'),
+    props: true,
+  },
 ]

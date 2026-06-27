@@ -7,5 +7,6 @@ export function toLearningResource(response: ResourceResponse): LearningResource
     title: response.title ?? '',
     type: response.subtitle ?? '',
     description: response.description ?? '',
+    thumbnailId: response.thumbnailId ?? '',
   }
 }

@@ -1,6 +1,14 @@
-import type { PastEvent, UpcomingEvent } from '@/modules/events/domain/entities/event.entity'
+import type {
+  EventDetail,
+  PastEvent,
+  UpcomingEvent,
+} from '@/modules/events/domain/entities/event.entity'
 import type { EventRepository } from '@/modules/events/domain/repositories/event-repository'
-import { toPastEvent, toUpcomingEvent } from '@/modules/events/infrastructure/mappers/event.mapper'
+import {
+  toEventDetail,
+  toPastEvent,
+  toUpcomingEvent,
+} from '@/modules/events/infrastructure/mappers/event.mapper'
 import { getApiEvents, getApiEventsEventId } from '@/shared/api/generated/endpoints/events/events'
 import { ApiError } from '@/shared/api/http-client'
 import type { EventResponse } from '@/shared/api/generated/models'
@@ -43,10 +51,10 @@ export class HttpEventRepository implements EventRepository {
       .map(toPastEvent)
   }
 
-  async getById(id: string): Promise<UpcomingEvent | null> {
+  async getById(id: string): Promise<EventDetail | null> {
     try {
       const response = await getApiEventsEventId(id)
-      return toUpcomingEvent(response.data)
+      return toEventDetail(response.data)
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return null
       throw error

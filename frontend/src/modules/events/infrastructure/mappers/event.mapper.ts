@@ -1,6 +1,10 @@
-import type { PastEvent, UpcomingEvent } from '@/modules/events/domain/entities/event.entity'
+import type {
+  EventDetail,
+  PastEvent,
+  UpcomingEvent,
+} from '@/modules/events/domain/entities/event.entity'
 import type { EventResponse } from '@/shared/api/generated/models'
-import { formatDate } from '@/shared/utils/format'
+import { formatDate, formatDateTime } from '@/shared/utils/format'
 
 const MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
 
@@ -32,6 +36,30 @@ export function toUpcomingEvent(event: EventResponse, featured = false): Upcomin
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
     description: event.description ?? '',
     featured,
+  }
+}
+
+export function toEventDetail(event: EventResponse): EventDetail {
+  const start = event.eventStartsAt
+  const end = event.eventEndsAt
+  const dateLabel = start
+    ? end
+      ? `${formatDateTime(start)} – ${formatDateTime(end)}`
+      : formatDateTime(start)
+    : 'Próximamente'
+  const signupLabel =
+    event.signupStartsAt || event.signupEndsAt
+      ? `${formatDate(event.signupStartsAt)} – ${formatDate(event.signupEndsAt)}`
+      : '—'
+  return {
+    id: event.id ?? '',
+    title: event.title ?? '',
+    subtitle: event.subtitle ?? '',
+    description: event.description ?? '',
+    dateLabel,
+    signupLabel,
+    status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
+    thumbnailId: event.thumbnailId ?? '',
   }
 }
 
