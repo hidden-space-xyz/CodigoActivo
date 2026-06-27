@@ -1,0 +1,107 @@
+using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Extensions;
+using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Repositories;
+
+namespace CodigoActivo.Application.Services;
+
+public class PartnerService(
+    IPartnerRepository partners,
+    IFileRepository files,
+    IUnitOfWork uow
+) : IPartnerService
+{
+    public async Task<IReadOnlyList<PartnerResponse>> ListAsync(CancellationToken ct = default)
+    {
+        var items = await partners.GetAllAsync(ct);
+        return items
+            .OrderBy(p => p.Tier)
+            .ThenByDescending(p => p.FromDate)
+            .Select(p => p.ToResponse())
+            .ToList();
+    }
+
+    public async Task<Result<PartnerResponse>> CreateAsync(
+        CreatePartnerRequest request,
+        Guid userId,
+        CancellationToken ct = default
+    )
+    {
+        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        if (thumbnail.IsFailure)
+        {
+            return thumbnail.Error!;
+        }
+
+        var partner = new Partner
+        {
+            Name = request.Name.Trim(),
+            FromDate = request.FromDate,
+            Tier = request.Tier,
+            Web = request.Website.NormalizeOrNull(),
+            ThumbnailId = request.ThumbnailId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = userId,
+        };
+        await partners.AddAsync(partner, ct);
+        await uow.SaveChangesAsync(ct);
+        return partner.ToResponse();
+    }
+
+    public async Task<Result<PartnerResponse>> UpdateAsync(
+        Guid id,
+        UpdatePartnerRequest request,
+        Guid userId,
+        CancellationToken ct = default
+    )
+    {
+        var partner = await partners.FindAsync(p => p.Id == id, ct);
+        if (partner is null)
+        {
+            return Error.NotFound();
+        }
+
+        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        if (thumbnail.IsFailure)
+        {
+            return thumbnail.Error!;
+        }
+
+        partner.Name = request.Name.Trim();
+        partner.FromDate = request.FromDate;
+        partner.Tier = request.Tier;
+        partner.Web = request.Website.NormalizeOrNull();
+        partner.ThumbnailId = request.ThumbnailId;
+        partner.UpdatedAt = DateTimeOffset.UtcNow;
+        partner.UpdatedBy = userId;
+
+        partners.Update(partner);
+        await uow.SaveChangesAsync(ct);
+        return partner.ToResponse();
+    }
+
+    public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        if (!await partners.ExistsAsync(p => p.Id == id, ct))
+        {
+            return Error.NotFound();
+        }
+
+        await partners.RemoveAsync(p => p.Id == id, ct);
+        await uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
+    {
+        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
+        {
+            return Error.Validation();
+        }
+
+        return Result.Success();
+    }
+}

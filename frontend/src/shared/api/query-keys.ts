@@ -1,0 +1,18 @@
+export const queryKeys = {
+  dashboard: ['dashboard'] as const,
+  partners: ['partners'] as const,
+  announcements: ['announcements'] as const,
+  resources: ['resources'] as const,
+  events: ['events'] as const,
+  event: (eventId: string) => ['events', eventId] as const,
+  users: ['users'] as const,
+  user: (userId: string) => ['users', userId] as const,
+  userTypes: ['user-types'] as const,
+  userStatusTypes: ['user-status-types'] as const,
+  activityRoleTypes: ['activity-role-types'] as const,
+  assignmentStatusTypes: ['assignment-status-types'] as const,
+  activitiesByEvent: (eventId: string) => ['activities', 'event', eventId] as const,
+  assignedActivities: ['activities', 'assigned'] as const,
+  eventSummary: (eventId: string) => ['reports', 'event-summary', eventId] as const,
+  eventAssignments: (eventId: string) => ['reports', 'event-assignments', eventId] as const,
+}

@@ -1,0 +1,187 @@
+root = true
+
+[*.cs]
+
+# Roslynator: all default-enabled rules as warnings
+dotnet_analyzer_diagnostic.category-roslynator.severity = warning
+
+# .NET analyzers: raise default-enabled rules in these categories to warning
+dotnet_analyzer_diagnostic.category-Security.severity = warning
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
+dotnet_analyzer_diagnostic.category-Reliability.severity = warning
+
+# Security (opt-in rules, disabled by default) - injection / tainted data flow
+dotnet_diagnostic.CA2100.severity = warning
+dotnet_diagnostic.CA3001.severity = warning
+dotnet_diagnostic.CA3002.severity = warning
+dotnet_diagnostic.CA3003.severity = warning
+dotnet_diagnostic.CA3004.severity = warning
+dotnet_diagnostic.CA3005.severity = warning
+dotnet_diagnostic.CA3006.severity = warning
+dotnet_diagnostic.CA3007.severity = warning
+dotnet_diagnostic.CA3008.severity = warning
+dotnet_diagnostic.CA3009.severity = warning
+dotnet_diagnostic.CA3010.severity = warning
+dotnet_diagnostic.CA3011.severity = warning
+dotnet_diagnostic.CA3012.severity = warning
+
+# Security - XML processing
+dotnet_diagnostic.CA3075.severity = warning
+dotnet_diagnostic.CA3076.severity = warning
+dotnet_diagnostic.CA3077.severity = warning
+dotnet_diagnostic.CA3147.severity = warning
+
+# Security - insecure deserialization
+dotnet_diagnostic.CA2300.severity = warning
+dotnet_diagnostic.CA2301.severity = warning
+dotnet_diagnostic.CA2302.severity = warning
+dotnet_diagnostic.CA2305.severity = warning
+dotnet_diagnostic.CA2310.severity = warning
+dotnet_diagnostic.CA2311.severity = warning
+dotnet_diagnostic.CA2312.severity = warning
+dotnet_diagnostic.CA2315.severity = warning
+dotnet_diagnostic.CA2321.severity = warning
+dotnet_diagnostic.CA2322.severity = warning
+dotnet_diagnostic.CA2326.severity = warning
+dotnet_diagnostic.CA2327.severity = warning
+dotnet_diagnostic.CA2328.severity = warning
+dotnet_diagnostic.CA2329.severity = warning
+dotnet_diagnostic.CA2330.severity = warning
+
+# Security - cryptography & transport
+dotnet_diagnostic.CA5350.severity = warning
+dotnet_diagnostic.CA5351.severity = warning
+dotnet_diagnostic.CA5358.severity = warning
+dotnet_diagnostic.CA5359.severity = warning
+dotnet_diagnostic.CA5360.severity = warning
+dotnet_diagnostic.CA5363.severity = warning
+dotnet_diagnostic.CA5364.severity = warning
+dotnet_diagnostic.CA5365.severity = warning
+dotnet_diagnostic.CA5369.severity = warning
+dotnet_diagnostic.CA5370.severity = warning
+dotnet_diagnostic.CA5371.severity = warning
+dotnet_diagnostic.CA5372.severity = warning
+dotnet_diagnostic.CA5373.severity = warning
+dotnet_diagnostic.CA5379.severity = warning
+dotnet_diagnostic.CA5384.severity = warning
+dotnet_diagnostic.CA5385.severity = warning
+dotnet_diagnostic.CA5386.severity = warning
+dotnet_diagnostic.CA5387.severity = warning
+dotnet_diagnostic.CA5388.severity = warning
+dotnet_diagnostic.CA5389.severity = warning
+dotnet_diagnostic.CA5390.severity = warning
+dotnet_diagnostic.CA5391.severity = warning
+dotnet_diagnostic.CA5392.severity = warning
+dotnet_diagnostic.CA5393.severity = warning
+dotnet_diagnostic.CA5394.severity = warning
+dotnet_diagnostic.CA5395.severity = warning
+dotnet_diagnostic.CA5396.severity = warning
+dotnet_diagnostic.CA5397.severity = warning
+dotnet_diagnostic.CA5398.severity = warning
+dotnet_diagnostic.CA5399.severity = warning
+dotnet_diagnostic.CA5400.severity = warning
+dotnet_diagnostic.CA5401.severity = warning
+dotnet_diagnostic.CA5403.severity = warning
+
+# Performance (opt-in rules, disabled by default)
+dotnet_diagnostic.CA1812.severity = warning
+dotnet_diagnostic.CA1851.severity = warning
+dotnet_diagnostic.CA1852.severity = warning
+dotnet_diagnostic.CA1859.severity = warning
+dotnet_diagnostic.CA1860.severity = warning
+dotnet_diagnostic.CA1863.severity = warning
+dotnet_diagnostic.CA1864.severity = warning
+dotnet_diagnostic.CA1865.severity = warning
+dotnet_diagnostic.CA1866.severity = warning
+dotnet_diagnostic.CA1867.severity = warning
+dotnet_diagnostic.CA1868.severity = warning
+dotnet_diagnostic.CA1869.severity = warning
+dotnet_diagnostic.CA1870.severity = warning
+
+# Reliability / correctness (opt-in)
+dotnet_diagnostic.CA2016.severity = warning
+dotnet_diagnostic.CA2201.severity = warning
+dotnet_diagnostic.CA2208.severity = warning
+dotnet_diagnostic.CA2245.severity = warning
+dotnet_diagnostic.CA2249.severity = warning
+
+# Design (opt-in)
+dotnet_diagnostic.CA1068.severity = warning
+dotnet_diagnostic.CA1069.severity = warning
+
+# Naming conventions (types, members, variables) - all as warnings
+dotnet_diagnostic.IDE1006.severity = warning
+
+# Naming styles
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.camel_case.capitalization = camel_case
+dotnet_naming_style.i_prefixed.capitalization = pascal_case
+dotnet_naming_style.i_prefixed.required_prefix = I
+dotnet_naming_style.t_prefixed.capitalization = pascal_case
+dotnet_naming_style.t_prefixed.required_prefix = T
+
+# Interfaces -> IPascalCase
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+dotnet_naming_rule.interfaces_rule.symbols = interfaces
+dotnet_naming_rule.interfaces_rule.style = i_prefixed
+dotnet_naming_rule.interfaces_rule.severity = warning
+
+# Type parameters -> TPascalCase
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_rule.type_parameters_rule.symbols = type_parameters
+dotnet_naming_rule.type_parameters_rule.style = t_prefixed
+dotnet_naming_rule.type_parameters_rule.severity = warning
+
+# Types and namespaces -> PascalCase
+dotnet_naming_symbols.types.applicable_kinds = namespace, class, struct, interface, enum, delegate
+dotnet_naming_symbols.types.applicable_accessibilities = *
+dotnet_naming_rule.types_rule.symbols = types
+dotnet_naming_rule.types_rule.style = pascal_case
+dotnet_naming_rule.types_rule.severity = warning
+
+# Methods, properties, events -> PascalCase
+dotnet_naming_symbols.members.applicable_kinds = method, property, event
+dotnet_naming_symbols.members.applicable_accessibilities = *
+dotnet_naming_rule.members_rule.symbols = members
+dotnet_naming_rule.members_rule.style = pascal_case
+dotnet_naming_rule.members_rule.severity = warning
+
+# Constants -> PascalCase
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_rule.constants_rule.symbols = constants
+dotnet_naming_rule.constants_rule.style = pascal_case
+dotnet_naming_rule.constants_rule.severity = warning
+
+# Static fields -> PascalCase
+dotnet_naming_symbols.static_fields.applicable_kinds = field
+dotnet_naming_symbols.static_fields.applicable_accessibilities = *
+dotnet_naming_symbols.static_fields.required_modifiers = static
+dotnet_naming_rule.static_fields_rule.symbols = static_fields
+dotnet_naming_rule.static_fields_rule.style = pascal_case
+dotnet_naming_rule.static_fields_rule.severity = warning
+
+# Non-private fields -> PascalCase
+dotnet_naming_symbols.non_private_fields.applicable_kinds = field
+dotnet_naming_symbols.non_private_fields.applicable_accessibilities = public, internal, protected, protected_internal, private_protected
+dotnet_naming_rule.non_private_fields_rule.symbols = non_private_fields
+dotnet_naming_rule.non_private_fields_rule.style = pascal_case
+dotnet_naming_rule.non_private_fields_rule.severity = warning
+
+# Private instance fields -> camelCase (no leading underscore)
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_rule.private_fields_rule.symbols = private_fields
+dotnet_naming_rule.private_fields_rule.style = camel_case
+dotnet_naming_rule.private_fields_rule.severity = warning
+
+# Locals and parameters -> camelCase (no leading underscore)
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = local, parameter
+dotnet_naming_rule.locals_and_parameters_rule.symbols = locals_and_parameters
+dotnet_naming_rule.locals_and_parameters_rule.style = camel_case
+dotnet_naming_rule.locals_and_parameters_rule.severity = warning
+
+[**/Migrations/*.cs]
+generated_code = true
