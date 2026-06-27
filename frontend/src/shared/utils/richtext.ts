@@ -34,7 +34,7 @@ export function richTextExtensions(): AnyExtension[] {
       autolink: true,
       HTMLAttributes: { rel: 'noopener nofollow', target: '_blank' },
     }),
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    TextAlign.configure({ types: ['heading', 'paragraph', 'image'] }),
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,

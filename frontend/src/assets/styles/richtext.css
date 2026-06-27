@@ -79,6 +79,26 @@
   margin: 10px 0;
 }
 
+/* Image alignment: TextAlign writes a `text-align` style onto the image node,
+   which we translate into block + auto margins so the image itself is aligned. */
+.rich-text :where(img[style*='text-align: center'], img[style*='text-align:center']) {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rich-text :where(img[style*='text-align: right'], img[style*='text-align:right']) {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.rich-text :where(img[style*='text-align: left'], img[style*='text-align:left']) {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
+}
+
 .rich-text :where(code) {
   font-family: var(--ca-font-mono);
   font-size: 0.9em;
