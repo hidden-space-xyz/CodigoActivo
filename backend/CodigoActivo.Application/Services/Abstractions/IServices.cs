@@ -129,6 +129,13 @@ public interface IActivityService
         CancellationToken ct = default
     );
 
+    Task<Result<AssignmentResponse>> ChangeRoleAsync(
+        Guid activityId,
+        Guid userId,
+        ChangeAssignmentRoleRequest request,
+        CancellationToken ct = default
+    );
+
     Task<Result<TimeOverlapResponse>> VerifyTimeOverlapsAsync(
         Guid activityId,
         Guid userId,
@@ -244,6 +251,10 @@ public interface IReportService
     );
     Task<Result<EventAssignmentsReportResponse>> GetEventAssignmentsAsync(
         Guid eventId,
+        CancellationToken ct = default
+    );
+    Task<Result<ActivityAssignmentsReportResponse>> GetActivityAssignmentsAsync(
+        Guid activityId,
         CancellationToken ct = default
     );
     Task<DashboardSummaryResponse> GetDashboardSummaryAsync(CancellationToken ct = default);

@@ -93,6 +93,88 @@ public class ReportService(
         return new EventAssignmentsReportResponse(ev.Id, ev.Title, items);
     }
 
+    public async Task<Result<ActivityAssignmentsReportResponse>> GetActivityAssignmentsAsync(
+        Guid activityId,
+        CancellationToken ct = default
+    )
+    {
+        var activity = await activities.GetWithAssignmentsAndUsersAsync(activityId, ct);
+        if (activity is null)
+        {
+            return Error.NotFound();
+        }
+
+        var signedUpUserIds = activity.Assignments.Select(a => a.UserId).ToHashSet();
+
+        var rows = activity
+            .Assignments.Select(a => new ActivityAssignmentRowResponse(
+                a.User.Id,
+                a.User.FirstName,
+                a.User.LastName,
+                a.User.Email,
+                a.User.Phone,
+                a.User.ParentId,
+                true,
+                a.ActivityRoleTypeId,
+                a.ActivityRoleType.Name,
+                a.AssignmentStatusId,
+                a.AssignmentStatus.Name
+            ))
+            .ToList();
+
+        // Include the parents of signed-up users even when the parent has no assignment of its
+        // own, so the list can be grouped under them.
+        var addedParents = new HashSet<Guid>();
+        foreach (var assignment in activity.Assignments)
+        {
+            var parent = assignment.User.Parent;
+            if (
+                parent is null
+                || signedUpUserIds.Contains(parent.Id)
+                || !addedParents.Add(parent.Id)
+            )
+            {
+                continue;
+            }
+
+            rows.Add(
+                new ActivityAssignmentRowResponse(
+                    parent.Id,
+                    parent.FirstName,
+                    parent.LastName,
+                    parent.Email,
+                    parent.Phone,
+                    parent.ParentId,
+                    false,
+                    null,
+                    null,
+                    null,
+                    null
+                )
+            );
+        }
+
+        var roleTypeBreakdown = activity
+            .AllowedRoleTypes.Select(ar => new ActivityRoleTypeSummaryResponse(
+                ar.ActivityRoleTypeId,
+                ar.ActivityRoleType.Name,
+                activity.Assignments.Count(a =>
+                    a.ActivityRoleTypeId == ar.ActivityRoleTypeId
+                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                )
+            ))
+            .OrderBy(r => r.RoleTypeName)
+            .ToList();
+
+        return new ActivityAssignmentsReportResponse(
+            activity.Id,
+            activity.Title,
+            activity.Assignments.Count,
+            roleTypeBreakdown,
+            rows
+        );
+    }
+
     public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(
         CancellationToken ct = default
     )

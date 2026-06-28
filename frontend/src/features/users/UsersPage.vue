@@ -14,6 +14,7 @@ import { useUsers } from '@/features/users/useUsers'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDate } from '@/shared/utils/format'
+import { groupByParent } from '@/shared/utils/group-by-parent'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -32,41 +33,13 @@ const selectedRoleId = ref<string | null>(null)
 
 // Orders the users so each parent is immediately followed by its descendants,
 // keeping every family group together to make the hierarchy easy to read.
-const grouped = computed(() => {
-  const all = list.data.value ?? []
-  const ids = new Set(all.map((user) => user.id).filter((id): id is string => Boolean(id)))
-  const childrenByParent = new Map<string, UserResponse[]>()
-  const roots: UserResponse[] = []
-  for (const user of all) {
-    if (user.parentId && ids.has(user.parentId)) {
-      const siblings = childrenByParent.get(user.parentId) ?? []
-      siblings.push(user)
-      childrenByParent.set(user.parentId, siblings)
-    } else {
-      roots.push(user)
-    }
-  }
-  const rows: UserResponse[] = []
-  const depthById = new Map<string, number>()
-  const visited = new Set<string>()
-  const visit = (user: UserResponse, depth: number): void => {
-    if (user.id) {
-      if (visited.has(user.id)) return // guard against parentId cycles
-      visited.add(user.id)
-      depthById.set(user.id, depth)
-    }
-    rows.push(user)
-    for (const child of childrenByParent.get(user.id ?? '') ?? []) {
-      visit(child, depth + 1)
-    }
-  }
-  for (const root of roots) visit(root, 0)
-  // Safety net: surface any user trapped in a cycle so no row is ever hidden.
-  for (const user of all) {
-    if (user.id && !visited.has(user.id)) rows.push(user)
-  }
-  return { rows, depthById, childrenByParent }
-})
+const grouped = computed(() =>
+  groupByParent(
+    list.data.value ?? [],
+    (user) => user.id,
+    (user) => user.parentId,
+  ),
+)
 
 function userDepth(user: UserResponse): number {
   return user.id ? (grouped.value.depthById.get(user.id) ?? 0) : 0

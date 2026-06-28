@@ -16,6 +16,7 @@ import type {
 } from '@tanstack/vue-query';
 
 import type {
+  ActivityAssignmentsReportResponse,
   DashboardSummaryResponse,
   EventAssignmentsReportResponse,
   EventSummaryResponse
@@ -199,6 +200,92 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiReportsEventEventIdAssignmentsMutationOptions(options), queryClient);
+    }
+    export type getApiReportsActivityActivityIdAssignmentsResponse200TextPlain = {
+  data: ActivityAssignmentsReportResponse
+  status: 200
+}
+
+export type getApiReportsActivityActivityIdAssignmentsResponse200ApplicationJson = {
+  data: ActivityAssignmentsReportResponse
+  status: 200
+}
+
+export type getApiReportsActivityActivityIdAssignmentsResponse200TextJson = {
+  data: ActivityAssignmentsReportResponse
+  status: 200
+}
+
+export type getApiReportsActivityActivityIdAssignmentsResponseSuccess = (getApiReportsActivityActivityIdAssignmentsResponse200TextPlain | getApiReportsActivityActivityIdAssignmentsResponse200ApplicationJson | getApiReportsActivityActivityIdAssignmentsResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type getApiReportsActivityActivityIdAssignmentsResponse = (getApiReportsActivityActivityIdAssignmentsResponseSuccess)
+
+export const getGetApiReportsActivityActivityIdAssignmentsUrl = (activityId: string,) => {
+
+
+
+
+  return `/api/reports/activity/${activityId}/assignments`
+}
+
+export const getApiReportsActivityActivityIdAssignments = async (activityId: string, options?: RequestInit): Promise<getApiReportsActivityActivityIdAssignmentsResponse> => {
+
+  return httpClient<getApiReportsActivityActivityIdAssignmentsResponse>(getGetApiReportsActivityActivityIdAssignmentsUrl(activityId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiReportsActivityActivityIdAssignmentsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsActivityActivityIdAssignments>>, TError,{activityId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsActivityActivityIdAssignments>>, TError,{activityId: string}, TContext> => {
+
+const mutationKey = ['getApiReportsActivityActivityIdAssignments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsActivityActivityIdAssignments>>, {activityId: string}> = (props) => {
+          const {activityId} = props ?? {};
+
+          return  getApiReportsActivityActivityIdAssignments(activityId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiReportsActivityActivityIdAssignmentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsActivityActivityIdAssignments>>>
+
+    export type GetApiReportsActivityActivityIdAssignmentsMutationError = unknown
+
+    export const useGetApiReportsActivityActivityIdAssignments = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsActivityActivityIdAssignments>>, TError,{activityId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiReportsActivityActivityIdAssignments>>,
+        TError,
+        {activityId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiReportsActivityActivityIdAssignmentsMutationOptions(options), queryClient);
     }
     export type getApiReportsDashboardSummaryCountersResponse200TextPlain = {
   data: DashboardSummaryResponse

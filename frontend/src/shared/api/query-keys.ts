@@ -15,4 +15,6 @@ export const queryKeys = {
   assignedActivities: ['activities', 'assigned'] as const,
   eventSummary: (eventId: string) => ['reports', 'event-summary', eventId] as const,
   eventAssignments: (eventId: string) => ['reports', 'event-assignments', eventId] as const,
+  activityAssignments: (activityId: string) =>
+    ['reports', 'activity-assignments', activityId] as const,
 }

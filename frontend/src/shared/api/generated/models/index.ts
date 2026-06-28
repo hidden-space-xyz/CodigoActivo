@@ -8,8 +8,11 @@
 
 export * from './activityAllowedRoleRequest';
 export * from './activityAllowedRoleResponse';
+export * from './activityAssignmentRowResponse';
+export * from './activityAssignmentsReportResponse';
 export * from './activityResponse';
 export * from './activityRoleTypeResponse';
+export * from './activityRoleTypeSummaryResponse';
 export * from './announcementResponse';
 export * from './assignedActivityResponse';
 export * from './assignedActivityRoleResponse';
@@ -20,6 +23,7 @@ export * from './assignmentResponse';
 export * from './assignmentStatusResponse';
 export * from './assignmentStatusTypeResponse';
 export * from './assignRequest';
+export * from './changeAssignmentRoleRequest';
 export * from './changeAssignmentStatusRequest';
 export * from './changePasswordRequest';
 export * from './createActivityRequest';

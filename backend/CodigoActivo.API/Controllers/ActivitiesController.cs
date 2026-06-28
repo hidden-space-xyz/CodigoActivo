@@ -139,6 +139,18 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         return ToOk(await activities.ChangeStatusAsync(activityId, userId, request, ct));
     }
 
+    [HttpPatch("{activityId:guid}/{userId:guid}/change-role")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<AssignmentResponse>> ChangeRole(
+        Guid activityId,
+        Guid userId,
+        [FromBody] ChangeAssignmentRoleRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await activities.ChangeRoleAsync(activityId, userId, request, ct));
+    }
+
     [HttpGet("{activityId:guid}/{userId:guid}/verifyTimeOverlaps")]
     [Authorize]
     [AllowOnlySelf]

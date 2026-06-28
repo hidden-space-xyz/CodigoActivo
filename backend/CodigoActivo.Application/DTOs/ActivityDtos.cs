@@ -82,6 +82,8 @@ public record HouseholdMemberAssignmentResponse(
 
 public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId);
 
+public record ChangeAssignmentRoleRequest([Required] Guid ActivityRoleTypeId);
+
 public record OverlappingActivityResponse(
     Guid ActivityId,
     string Title,

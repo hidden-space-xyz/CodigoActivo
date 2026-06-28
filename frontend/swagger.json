@@ -582,6 +582,74 @@
         }
       }
     },
+    "/api/activities/{activityId}/{userId}/change-role": {
+      "patch": {
+        "tags": [
+          "Activities"
+        ],
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAssignmentRoleRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAssignmentRoleRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAssignmentRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/activities/{activityId}/{userId}/verifyTimeOverlaps": {
       "get": {
         "tags": [
@@ -1985,6 +2053,46 @@
         }
       }
     },
+    "/api/reports/activity/{activityId}/assignments": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityAssignmentsReportResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityAssignmentsReportResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityAssignmentsReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/reports/dashboard/summary-counters": {
       "get": {
         "tags": [
@@ -2787,6 +2895,90 @@
         },
         "additionalProperties": false
       },
+      "ActivityAssignmentRowResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "signedUp": {
+            "type": "boolean"
+          },
+          "roleTypeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "roleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivityAssignmentsReportResponse": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalSignups": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roleTypeBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityRoleTypeSummaryResponse"
+            },
+            "nullable": true
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityAssignmentRowResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ActivityResponse": {
         "type": "object",
         "properties": {
@@ -2862,6 +3054,24 @@
           "description": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivityRoleTypeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "roleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvedAssignments": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -3089,6 +3299,16 @@
           "description": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeAssignmentRoleRequest": {
+        "type": "object",
+        "properties": {
+          "activityRoleTypeId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false

@@ -327,6 +327,45 @@ public class ActivityService(
         );
     }
 
+    public async Task<Result<AssignmentResponse>> ChangeRoleAsync(
+        Guid activityId,
+        Guid userId,
+        ChangeAssignmentRoleRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
+        if (assignment is null)
+        {
+            return Error.NotFound();
+        }
+
+        if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))
+        {
+            return Error.Validation();
+        }
+
+        var role = await roleTypes.FindAsync(r => r.Id == request.ActivityRoleTypeId, ct);
+        if (role is null)
+        {
+            return Error.NotFound();
+        }
+
+        assignment.ActivityRoleTypeId = role.Id;
+        await uow.SaveChangesAsync(ct);
+
+        return new AssignmentResponse(
+            userId,
+            activityId,
+            role.Id,
+            role.Name,
+            new AssignmentStatusResponse(
+                assignment.AssignmentStatusId,
+                assignment.AssignmentStatus?.Name ?? string.Empty
+            )
+        );
+    }
+
     public async Task<Result<TimeOverlapResponse>> VerifyTimeOverlapsAsync(
         Guid activityId,
         Guid userId,

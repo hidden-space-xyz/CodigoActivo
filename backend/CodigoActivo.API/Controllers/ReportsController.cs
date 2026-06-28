@@ -31,6 +31,16 @@ public class ReportsController(IReportService reports) : ApiControllerBase
         return ToOk(await reports.GetEventAssignmentsAsync(eventId, ct));
     }
 
+    [HttpGet("activity/{activityId:guid}/assignments")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<ActivityAssignmentsReportResponse>> ActivityAssignments(
+        Guid activityId,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await reports.GetActivityAssignmentsAsync(activityId, ct));
+    }
+
     [HttpGet("dashboard/summary-counters")]
     [AllowAnonymous]
     [Cached(nameof(DashboardSummaryResponse))]

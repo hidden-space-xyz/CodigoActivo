@@ -37,6 +37,7 @@ import type {
   AssignedActivityResponse,
   AssignmentResponse,
   AssignmentStatusTypeResponse,
+  ChangeAssignmentRoleRequest,
   ChangeAssignmentStatusRequest,
   CreateActivityRequest,
   CreateActivityRoleTypeRequest,
@@ -1067,6 +1068,109 @@ export function usePatchApiActivitiesActivityIdUserIdChangeStatus<TData = Awaite
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPatchApiActivitiesActivityIdUserIdChangeStatusQueryOptions(activityId,userId,changeAssignmentStatusRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextPlain = {
+  data: AssignmentResponse
+  status: 200
+}
+
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200ApplicationJson = {
+  data: AssignmentResponse
+  status: 200
+}
+
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextJson = {
+  data: AssignmentResponse
+  status: 200
+}
+
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponseSuccess = (patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextPlain | patchApiActivitiesActivityIdUserIdChangeRoleResponse200ApplicationJson | patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextJson) & {
+  headers: Headers;
+};
+;
+
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponse = (patchApiActivitiesActivityIdUserIdChangeRoleResponseSuccess)
+
+export const getPatchApiActivitiesActivityIdUserIdChangeRoleUrl = (activityId: string,
+    userId: string,) => {
+
+
+
+
+  return `/api/activities/${activityId}/${userId}/change-role`
+}
+
+export const patchApiActivitiesActivityIdUserIdChangeRole = async (activityId: string,
+    userId: string,
+    changeAssignmentRoleRequest?: ChangeAssignmentRoleRequest, options?: RequestInit): Promise<patchApiActivitiesActivityIdUserIdChangeRoleResponse> => {
+
+  return httpClient<patchApiActivitiesActivityIdUserIdChangeRoleResponse>(getPatchApiActivitiesActivityIdUserIdChangeRoleUrl(activityId,userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(changeAssignmentRoleRequest)
+  }
+);}
+
+
+
+
+
+export const getPatchApiActivitiesActivityIdUserIdChangeRoleQueryKey = (activityId: MaybeRef<string>,
+    userId: MaybeRef<string>,
+    changeAssignmentRoleRequest?: MaybeRef<ChangeAssignmentRoleRequest>,) => {
+    return [
+    'PATCH', 'api','activities',activityId,userId,'change-role', changeAssignmentRoleRequest
+    ] as const;
+    }
+
+
+export const getPatchApiActivitiesActivityIdUserIdChangeRoleQueryOptions = <TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError = unknown>(activityId: MaybeRef<string>,
+    userId: MaybeRef<string>,
+    changeAssignmentRoleRequest?: MaybeRef<ChangeAssignmentRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiActivitiesActivityIdUserIdChangeRoleQueryKey(activityId,userId,changeAssignmentRoleRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>> = ({ signal }) => patchApiActivitiesActivityIdUserIdChangeRole(unref(activityId),unref(userId),unref(changeAssignmentRoleRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(activityId) !== null && unref(activityId) !== undefined && unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError, TData>
+}
+
+export type PatchApiActivitiesActivityIdUserIdChangeRoleQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>>
+export type PatchApiActivitiesActivityIdUserIdChangeRoleQueryError = unknown
+
+
+
+export function usePatchApiActivitiesActivityIdUserIdChangeRole<TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError = unknown>(
+ activityId: MaybeRef<string>,
+    userId: MaybeRef<string>,
+    changeAssignmentRoleRequest?: MaybeRef<ChangeAssignmentRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiActivitiesActivityIdUserIdChangeRoleQueryOptions(activityId,userId,changeAssignmentRoleRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

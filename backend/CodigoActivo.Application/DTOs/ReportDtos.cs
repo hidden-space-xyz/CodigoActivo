@@ -28,6 +28,34 @@ public record AssignmentReportItemResponse(
     string? StatusName
 );
 
+public record ActivityRoleTypeSummaryResponse(
+    Guid RoleTypeId,
+    string? RoleTypeName,
+    int ApprovedAssignments
+);
+
+public record ActivityAssignmentRowResponse(
+    Guid UserId,
+    string? FirstName,
+    string? LastName,
+    string? Email,
+    string? Phone,
+    Guid? ParentId,
+    bool SignedUp,
+    Guid? RoleTypeId,
+    string? RoleTypeName,
+    Guid? StatusId,
+    string? StatusName
+);
+
+public record ActivityAssignmentsReportResponse(
+    Guid ActivityId,
+    string Title,
+    int TotalSignups,
+    IReadOnlyList<ActivityRoleTypeSummaryResponse> RoleTypeBreakdown,
+    IReadOnlyList<ActivityAssignmentRowResponse> Rows
+);
+
 public record EventAssignmentsReportResponse(
     Guid EventId,
     string Title,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -29,6 +29,7 @@ import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
 
 const route = useRoute()
+const router = useRouter()
 const eventId = computed(() => String(route.params.eventId))
 
 const feedback = useCrudFeedback()
@@ -59,6 +60,14 @@ const activitySaving = computed(
 function openCreateActivity(): void {
   selectedActivity.value = null
   activityDialogVisible.value = true
+}
+
+function openActivityAssignments(activity: ActivityResponse): void {
+  if (!activity.id) return
+  void router.push({
+    name: 'admin-activity-detail',
+    params: { eventId: eventId.value, activityId: activity.id },
+  })
 }
 
 async function openEditActivity(activity: ActivityResponse): Promise<void> {
@@ -207,9 +216,16 @@ function onAssignSubmit(payload: {
               <span v-if="(data.allowedRoleTypes ?? []).length === 0">—</span>
             </template>
           </Column>
-          <Column header="Acciones" style="width: 120px">
+          <Column header="Acciones" style="width: 160px">
             <template #body="{ data }">
               <div class="row-actions">
+                <Button
+                  icon="pi pi-users"
+                  text
+                  rounded
+                  aria-label="Ver asignaciones"
+                  @click="openActivityAssignments(data)"
+                />
                 <Button
                   icon="pi pi-pencil"
                   text
