@@ -1,29 +1,26 @@
-<div align="center">
+<p align="center">
+<img alt=".NET" src="https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
+<img alt="Vue" src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" />
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+<img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
+<img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
+<img alt="License" src="https://img.shields.io/badge/GPL--3.0-red?style=for-the-badge" />
+</p>
 
-# Código Activo
+# 🌐 &lt;Codigoactivo/&gt;
 
-**Management platform for nonprofit associations**
-
-[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-
-</div>
-
----
+**Source code of the official website of `<Codigoactivo/>`, a nonprofit association.**
 
 ## 📖 Overview
 
-**Código Activo** is a full-stack web platform for running the day-to-day of a community
-association. It is split into two cleanly separated surfaces served by a single backend:
+This repository holds the source code of the **official website of `<Codigoactivo/>`**, a real
+nonprofit association. It is a single full-stack web app with two clearly separated surfaces:
 
-- A **public-facing site** where visitors browse events and activities, read announcements
-  and resources, meet partners, and register as members (adults can register dependent
-  minors under their own account).
-- An **admin back-office** where staff manage users, publish content, configure catalogs,
-  and review who is assigned to which activity and in which role.
+- A **public-facing site** where visitors and members discover the association's events and
+  activities, read its announcements and resources, meet its partners, and sign up — adults
+  can register dependent minors under their own account.
+- An **admin back-office** where the association's team manages members, publishes content,
+  configures catalogs, and reviews who is assigned to which activity and in which role.
 
 ## 🧰 Tech Stack
 
@@ -153,3 +150,7 @@ npm run build        # typecheck (vue-tsc) + production build
 npm run lint         # ESLint   ·   npm run format → Prettier
 npm run api:generate # regenerate the typed API client from swagger.json (Orval)
 ```
+
+## 📝 License
+
+Released under the [GNU General Public License v3.0](LICENSE).
