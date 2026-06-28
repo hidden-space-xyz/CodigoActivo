@@ -12,4 +12,6 @@ export interface UserStatusTypeResponse {
   name?: string | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  color?: string | null;
 }

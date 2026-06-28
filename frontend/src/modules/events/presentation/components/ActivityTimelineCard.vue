@@ -60,9 +60,7 @@ function onSignup(): void {
 
     <div class="act__time"><i class="pi pi-clock" /> {{ scheduleLabel() }}</div>
 
-    <div v-if="activity.roles.length" class="act__roles">
-      <Tag v-for="role in activity.roles" :key="role.id" :value="role.name" severity="secondary" />
-    </div>
+    <p v-if="activity.description" class="act__desc">{{ activity.description }}</p>
 
     <ul v-if="hasHousehold && activity.household.length" class="act__members">
       <li v-for="member in activity.household" :key="member.userId" class="act__member">
@@ -189,10 +187,12 @@ function onSignup(): void {
   color: var(--ca-text-muted);
 }
 
-.act__roles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.act__desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ca-text);
+  white-space: pre-line;
 }
 
 .act__members {

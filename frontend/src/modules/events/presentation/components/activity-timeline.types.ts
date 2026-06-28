@@ -13,6 +13,7 @@ export interface TimelineMemberAssignment {
 export interface TimelineActivity {
   id: string
   title: string
+  description: string
   start: Date | null
   end: Date | null
   roles: TimelineRole[]

@@ -17,9 +17,9 @@ public record UserResponse(
     IReadOnlyList<UserRoleResponse> Roles
 );
 
-public record UserStatusResponse(Guid Id, string Name);
+public record UserStatusResponse(Guid Id, string Name, string Color);
 
-public record UserRoleResponse(Guid Id, string Name);
+public record UserRoleResponse(Guid Id, string Name, string Color);
 
 public record UpdateUserRequest(
     [Required, MaxLength(120)] string FirstName,
@@ -37,6 +37,6 @@ public record ChangePasswordRequest(
     [Required, MinLength(8), MaxLength(128)] string NewPassword
 );
 
-public record UserStatusTypeResponse(Guid Id, string Name, string Description);
+public record UserStatusTypeResponse(Guid Id, string Name, string Description, string Color);
 
-public record UserTypeResponse(Guid Id, string Name, string Description);
+public record UserTypeResponse(Guid Id, string Name, string Description, string Color);

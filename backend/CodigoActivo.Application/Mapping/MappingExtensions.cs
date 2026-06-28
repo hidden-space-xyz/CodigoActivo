@@ -9,12 +9,14 @@ public static class MappingExtensions
     {
         var status = new UserStatusResponse(
             user.UserStatusTypeId,
-            user.UserStatusType?.Name ?? string.Empty
+            user.UserStatusType?.Name ?? string.Empty,
+            user.UserStatusType?.Color ?? string.Empty
         );
         var roles =
             user.TypeAssignments?.Select(assignment => new UserRoleResponse(
                     assignment.UserTypeId,
-                    assignment.UserType?.Name ?? string.Empty
+                    assignment.UserType?.Name ?? string.Empty,
+                    assignment.UserType?.Color ?? string.Empty
                 ))
                 .ToList() ?? [];
 
@@ -135,12 +137,12 @@ public static class MappingExtensions
 
     public static UserStatusTypeResponse ToResponse(this UserStatusType statusType)
     {
-        return new(statusType.Id, statusType.Name, statusType.Description);
+        return new(statusType.Id, statusType.Name, statusType.Description, statusType.Color);
     }
 
     public static UserTypeResponse ToResponse(this UserType userType)
     {
-        return new(userType.Id, userType.Name, userType.Description);
+        return new(userType.Id, userType.Name, userType.Description, userType.Color);
     }
 
     public static ActivityRoleTypeResponse ToResponse(this ActivityRoleType roleType)
@@ -150,6 +152,6 @@ public static class MappingExtensions
 
     public static AssignmentStatusTypeResponse ToResponse(this AssignmentStatusType statusType)
     {
-        return new(statusType.Id, statusType.Name, statusType.Description);
+        return new(statusType.Id, statusType.Name, statusType.Description, statusType.Color);
     }
 }

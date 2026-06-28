@@ -4,6 +4,9 @@ namespace CodigoActivo.Domain.Entities;
 
 public class UserType : NamedEntity
 {
+    /// <summary>Hex color (e.g. <c>#F97316</c>) used to render this type's tag in the UI.</summary>
+    public string Color { get; set; } = null!;
+
     /// <summary>Hidden from the public frontend (e.g. the Admin role).</summary>
     public bool Hidden { get; set; }
 

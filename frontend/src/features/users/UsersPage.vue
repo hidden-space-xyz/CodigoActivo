@@ -15,6 +15,7 @@ import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/mod
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDate } from '@/shared/utils/format'
 import { groupByParent } from '@/shared/utils/group-by-parent'
+import ColorTag from '@/shared/ui/components/ColorTag.vue'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -59,10 +60,6 @@ function rowClass(user: UserResponse): string {
 
 function fullName(user: UserResponse): string {
   return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—'
-}
-
-function roleNames(user: UserResponse): string[] {
-  return (user.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0)
 }
 
 function ageFrom(value?: string | null): number | null {
@@ -193,14 +190,20 @@ function confirmDelete(user: UserResponse): void {
         </Column>
         <Column header="Estado">
           <template #body="{ data }">
-            <Tag v-if="data.status?.name" :value="data.status.name" severity="info" />
+            <ColorTag v-if="data.status?.name" :value="data.status.name" :color="data.status.color" />
             <span v-else>—</span>
           </template>
         </Column>
         <Column header="Tipos">
           <template #body="{ data }">
-            <span v-if="roleNames(data).length === 0">—</span>
-            <Tag v-for="role in roleNames(data)" :key="role" :value="role" class="user-role-tag" />
+            <span v-if="(data.roles ?? []).length === 0">—</span>
+            <ColorTag
+              v-for="role in data.roles ?? []"
+              :key="role.id"
+              :value="role.name ?? ''"
+              :color="role.color"
+              class="user-role-tag"
+            />
           </template>
         </Column>
         <Column header="Acciones" style="width: 180px">

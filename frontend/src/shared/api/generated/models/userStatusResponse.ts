@@ -10,4 +10,6 @@ export interface UserStatusResponse {
   id?: string;
   /** @nullable */
   name?: string | null;
+  /** @nullable */
+  color?: string | null;
 }

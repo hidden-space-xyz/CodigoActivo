@@ -14,6 +14,7 @@ import { useAssignmentStatusTypesList } from '@/features/catalogs/catalogs'
 import type { ActivityAssignmentRowResponse } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { groupByParent } from '@/shared/utils/group-by-parent'
+import ColorTag from '@/shared/ui/components/ColorTag.vue'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -62,17 +63,17 @@ function rowClass(row: ActivityAssignmentRowResponse): string {
   return isChild(row) ? 'assignment-row--child' : ''
 }
 
-function statusSeverity(name?: string | null): string {
-  switch (name) {
-    case 'Confirmada':
-      return 'success'
-    case 'Rechazada':
-      return 'danger'
-    case 'Solicitada':
-      return 'warn'
-    default:
-      return 'info'
+// Status tags are tinted with the color stored on each AssignmentStatusType, looked up by id.
+const statusColorById = computed(() => {
+  const map = new Map<string, string>()
+  for (const status of statusTypes.data.value ?? []) {
+    if (status.id) map.set(status.id, status.color ?? '')
   }
+  return map
+})
+
+function statusColor(row: ActivityAssignmentRowResponse): string | null {
+  return row.statusId ? (statusColorById.value.get(row.statusId) ?? null) : null
 }
 
 const statusDialogVisible = ref(false)
@@ -213,10 +214,10 @@ function submitChangeRole(): void {
           </Column>
           <Column header="Estado">
             <template #body="{ data }">
-              <Tag
+              <ColorTag
                 v-if="data.signedUp"
                 :value="data.statusName || '—'"
-                :severity="statusSeverity(data.statusName)"
+                :color="statusColor(data)"
               />
               <Tag v-else value="No apuntado" severity="secondary" />
             </template>

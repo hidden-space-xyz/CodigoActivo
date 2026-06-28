@@ -70,6 +70,7 @@ const items = computed<TimelineActivity[]>(() =>
   (activities.data.value ?? []).map((a) => ({
     id: a.id ?? '',
     title: a.title ?? 'Actividad',
+    description: a.description ?? '',
     start: a.activityStartsAt ? new Date(a.activityStartsAt) : null,
     end: a.activityEndsAt ? new Date(a.activityEndsAt) : null,
     roles: (a.allowedRoleTypes ?? [])

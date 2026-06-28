@@ -12,4 +12,6 @@ export interface AssignmentStatusTypeResponse {
   name?: string | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  color?: string | null;
 }

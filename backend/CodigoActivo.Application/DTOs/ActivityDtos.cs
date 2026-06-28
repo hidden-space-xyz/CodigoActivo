@@ -117,4 +117,4 @@ public record CreateActivityRoleTypeRequest(string Name, string Description);
 
 public record UpdateActivityRoleTypeRequest(string Name, string Description);
 
-public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description);
+public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color);
