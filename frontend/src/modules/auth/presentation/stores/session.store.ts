@@ -3,6 +3,9 @@ import { defineStore } from 'pinia'
 
 import type { UserResponse } from '@/shared/api/generated/models'
 
+// Mirrors SeedIds.UserTypes.Admin in the backend (DomainConstants.cs).
+const ADMIN_ROLE_ID = '6a8fbafe-22da-4dcc-8b4f-e8b5f43528b2'
+
 export const useSessionStore = defineStore('session', () => {
   const user = ref<UserResponse | null>(null)
 
@@ -11,6 +14,7 @@ export const useSessionStore = defineStore('session', () => {
   const roleNames = computed(() =>
     (user.value?.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0),
   )
+  const isAdmin = computed(() => (user.value?.roles ?? []).some((role) => role.id === ADMIN_ROLE_ID))
 
   function setUser(value: UserResponse | null): void {
     user.value = value
@@ -20,5 +24,5 @@ export const useSessionStore = defineStore('session', () => {
     user.value = null
   }
 
-  return { user, isAuthenticated, displayName, roleNames, setUser, clear }
+  return { user, isAuthenticated, displayName, roleNames, isAdmin, setUser, clear }
 })

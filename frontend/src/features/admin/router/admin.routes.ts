@@ -1,6 +1,6 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
-import { requireAuth } from '@/modules/auth/presentation/guards'
+import { requireAdmin } from '@/modules/auth/presentation/guards'
 
 function adminRoute(
   path: string,
@@ -12,7 +12,7 @@ function adminRoute(
     name,
     component,
     meta: { layout: 'admin' },
-    beforeEnter: (to: RouteLocationNormalized) => requireAuth(to),
+    beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
   } as RouteRecordRaw
 }
 

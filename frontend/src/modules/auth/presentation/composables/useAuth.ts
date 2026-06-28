@@ -7,7 +7,7 @@ import { useSessionStore } from '@/modules/auth/presentation/stores/session.stor
 
 export function useAuth() {
   const session = useSessionStore()
-  const { user, isAuthenticated, displayName, roleNames } = storeToRefs(session)
+  const { user, isAuthenticated, isAdmin, displayName, roleNames } = storeToRefs(session)
   const router = useRouter()
 
   async function bootstrap(): Promise<void> {
@@ -28,5 +28,5 @@ export function useAuth() {
     await router.push({ name: 'login' })
   }
 
-  return { user, isAuthenticated, displayName, roleNames, bootstrap, logout }
+  return { user, isAuthenticated, isAdmin, displayName, roleNames, bootstrap, logout }
 }

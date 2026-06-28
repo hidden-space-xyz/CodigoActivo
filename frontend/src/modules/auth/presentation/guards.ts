@@ -8,7 +8,7 @@ export function redirectIfAuthenticated(): RouteLocationRaw | true {
   return session.isAuthenticated ? { name: 'home' } : true
 }
 
-export async function requireAuth(to: RouteLocationNormalized): Promise<RouteLocationRaw | true> {
+async function ensureSession(): Promise<boolean> {
   const session = useSessionStore()
   if (session.isAuthenticated) return true
   try {
@@ -16,6 +16,18 @@ export async function requireAuth(to: RouteLocationNormalized): Promise<RouteLoc
     session.setUser(response.data)
     return true
   } catch {
+    return false
+  }
+}
+
+export async function requireAuth(to: RouteLocationNormalized): Promise<RouteLocationRaw | true> {
+  if (await ensureSession()) return true
+  return { name: 'login', query: { redirect: to.fullPath } }
+}
+
+export async function requireAdmin(to: RouteLocationNormalized): Promise<RouteLocationRaw | true> {
+  if (!(await ensureSession())) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
+  return useSessionStore().isAdmin ? true : { name: 'home' }
 }

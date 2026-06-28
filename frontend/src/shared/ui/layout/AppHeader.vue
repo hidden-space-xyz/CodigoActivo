@@ -7,7 +7,7 @@ import BaseButton from '@/shared/ui/components/BaseButton.vue'
 import BrandLogo from '@/shared/ui/components/BrandLogo.vue'
 
 const route = useRoute()
-const { isAuthenticated, displayName, logout } = useAuth()
+const { isAuthenticated, isAdmin, displayName, logout } = useAuth()
 
 function isActive(routeName: string): boolean {
   if (route.name === routeName) return true
@@ -36,7 +36,7 @@ function isActive(routeName: string): boolean {
         </RouterLink>
 
         <template v-if="isAuthenticated">
-          <RouterLink :to="{ name: 'admin-dashboard' }" class="header__link"
+          <RouterLink v-if="isAdmin" :to="{ name: 'admin-dashboard' }" class="header__link"
             >Administración</RouterLink
           >
           <RouterLink

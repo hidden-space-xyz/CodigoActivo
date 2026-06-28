@@ -20,7 +20,7 @@ export function useLogin() {
       session.setUser(response.data)
       resetCsrfToken()
       const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
-      void router.push(redirect ?? { name: 'admin-dashboard' })
+      void router.push(redirect ?? { name: 'home' })
     },
   })
 
