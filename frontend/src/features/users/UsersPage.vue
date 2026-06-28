@@ -32,8 +32,6 @@ const typeDialogVisible = ref(false)
 const typeUser = ref<UserResponse | null>(null)
 const selectedRoleId = ref<string | null>(null)
 
-// Orders the users so each parent is immediately followed by its descendants,
-// keeping every family group together to make the hierarchy easy to read.
 const grouped = computed(() =>
   groupByParent(
     list.data.value ?? [],

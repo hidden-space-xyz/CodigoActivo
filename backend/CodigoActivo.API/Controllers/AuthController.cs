@@ -109,8 +109,6 @@ public class AuthController(IAuthService auth) : ApiControllerBase
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
         }
 
-        // Use the role's GUID as the role claim so authorization is independent of
-        // the role's (translatable) display name.
         foreach (var role in user.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role.Id.ToString()));

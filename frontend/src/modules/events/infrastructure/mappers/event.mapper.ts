@@ -24,11 +24,6 @@ function isSignupOpen(event: EventResponse): boolean {
   return start !== null || end !== null
 }
 
-/**
- * Whether sign-ups are currently allowed for the event: each configured bound is
- * enforced, and a missing bound means that side is unbounded (mirrors the
- * backend validation in ActivityService.AssignAsync).
- */
 function isSignupWindowOpen(event: EventResponse): boolean {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null

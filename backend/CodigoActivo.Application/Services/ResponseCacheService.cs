@@ -24,9 +24,6 @@ public sealed class ResponseCacheService(IMemoryCache cache) : IResponseCacheSer
             return cached;
         }
 
-        // Single-flight: only the first request for a missing key runs the factory;
-        // concurrent callers wait on the gate and reuse the value it stores, so an
-        // expiry or group invalidation never lets a stampede hit the data source.
         var gate = GateFor(key);
         await gate.WaitAsync();
         try
@@ -56,9 +53,6 @@ public sealed class ResponseCacheService(IMemoryCache cache) : IResponseCacheSer
         {
             if (groupTokens.TryRemove(group, out var cts))
             {
-                // Not disposed on purpose: a Store running concurrently may still be
-                // reading this source's token. Cancelling expires its entries, and the
-                // GC reclaims it afterwards (no unmanaged handle is ever allocated).
                 cts.Cancel();
             }
         }

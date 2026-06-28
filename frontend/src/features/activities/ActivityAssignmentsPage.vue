@@ -37,8 +37,6 @@ const summaryCards = computed(() => {
   return cards
 })
 
-// Group the sign-ups by parentId so each parent is shown with its children, even
-// when the parent did not sign up to this activity (those rows arrive with signedUp=false).
 const grouped = computed(() =>
   groupByParent(
     report.data.value?.rows ?? [],
@@ -63,7 +61,6 @@ function rowClass(row: ActivityAssignmentRowResponse): string {
   return isChild(row) ? 'assignment-row--child' : ''
 }
 
-// Status tags are tinted with the color stored on each AssignmentStatusType, looked up by id.
 const statusColorById = computed(() => {
   const map = new Map<string, string>()
   for (const status of statusTypes.data.value ?? []) {
@@ -106,7 +103,6 @@ function submitChangeStatus(): void {
   )
 }
 
-// Role options are the activity's allowed role types, which the summary breakdown already lists.
 const roleOptions = computed(() => report.data.value?.roleTypeBreakdown ?? [])
 
 const roleDialogVisible = ref(false)

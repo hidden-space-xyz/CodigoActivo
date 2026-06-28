@@ -184,7 +184,6 @@ function savePassword(): void {
       </div>
     </dl>
 
-    <!-- Edit data -->
     <Dialog
       v-model:visible="editVisible"
       modal
@@ -225,7 +224,6 @@ function savePassword(): void {
       </form>
     </Dialog>
 
-    <!-- Change role -->
     <Dialog
       v-model:visible="roleVisible"
       modal
@@ -257,7 +255,6 @@ function savePassword(): void {
       </div>
     </Dialog>
 
-    <!-- Change password -->
     <Dialog
       v-model:visible="passwordVisible"
       modal

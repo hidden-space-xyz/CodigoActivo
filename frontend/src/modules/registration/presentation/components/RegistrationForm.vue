@@ -23,7 +23,6 @@ const emit = defineEmits<{ submit: []; back: [] }>()
 const model = props.form
 
 const todayIso = computed(() => new Date().toISOString().slice(0, 10))
-// Latest birth date that still makes someone an adult (today minus 18 years).
 const adultThresholdIso = computed(() => {
   const d = new Date()
   d.setFullYear(d.getFullYear() - 18)

@@ -19,8 +19,6 @@ const editor = useEditor({
   onUpdate: ({ editor }) => emit('update:modelValue', serializeRichText(editor.getJSON())),
 })
 
-// Re-sync when the bound value changes from outside (e.g. loading a record),
-// while ignoring the echoes of our own onUpdate emits.
 watch(
   () => props.modelValue,
   (value) => {

@@ -1,13 +1,8 @@
 @import './variables.css';
 @import './richtext.css';
 
-/* Layer order so our (unlayered) component styles always win over PrimeVue. */
 @layer theme, base, primevue;
 
-/* The global reset lives in the `base` layer (below `primevue`) so it does NOT
-   strip PrimeVue's own component padding/margins (dialog content/footer,
-   buttons, paginator, …). Our bespoke component styles are unlayered, so they
-   still win over both this reset and PrimeVue. */
 @layer base {
   *,
   *::before,
@@ -44,7 +39,6 @@ a {
   color: #06121a;
 }
 
-/* ---- Layout containers (replace repeated inline max-width wrappers) ---- */
 .ca-container {
   max-width: var(--ca-container);
   margin: 0 auto;
@@ -56,7 +50,6 @@ a {
   margin: 0 auto;
 }
 
-/* ---- Shared keyframes from the original template ---- */
 @keyframes ca-blink {
   0%,
   49% {

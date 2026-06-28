@@ -2,10 +2,6 @@
 import { computed } from 'vue'
 import Tag from 'primevue/tag'
 
-// Renders a PrimeVue Tag tinted with a hex color stored in the backend (UserType,
-// UserStatusType, AssignmentStatusType). Text color is chosen for contrast, and very
-// light tints get a subtle border so they stay visible on light surfaces. Falls back
-// to the neutral "secondary" tag when no valid color is provided.
 const props = defineProps<{
   value: string
   color?: string | null

@@ -2,9 +2,7 @@ import type { UpcomingEvent } from '@/modules/events/domain/entities/event.entit
 import type { EventRepository } from '@/modules/events/domain/repositories/event-repository'
 
 export interface HomeEvents {
-  /** Highlighted event: nearest upcoming/ongoing, or the most recent past one. */
   readonly featured: UpcomingEvent | null
-  /** Up to 3 nearest upcoming/ongoing events, excluding the featured one. */
   readonly items: readonly UpcomingEvent[]
 }
 

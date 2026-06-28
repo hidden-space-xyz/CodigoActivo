@@ -81,7 +81,6 @@ public class AuthService(
         CancellationToken ct = default
     )
     {
-        // Only adults can self-register; minors are created as part of an adult's household.
         if (request.BirthDate.IsMinor())
         {
             return Error.Validation();
@@ -89,8 +88,6 @@ public class AuthService(
 
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
 
-        // The very first user bootstraps the platform as Admin + Member; everyone
-        // else must pick a role that is visible and allowed for adults.
         if (!isFirstUser)
         {
             var adultRole = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
@@ -120,8 +117,6 @@ public class AuthService(
             return Error.Validation();
         }
 
-        // Validate every minor before creating anything so the whole household
-        // registration succeeds or fails as a unit.
         var minorRequests = request.Minors ?? [];
         foreach (var minor in minorRequests)
         {

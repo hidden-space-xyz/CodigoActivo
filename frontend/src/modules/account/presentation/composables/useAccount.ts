@@ -19,11 +19,6 @@ import type {
 } from '@/shared/api/generated/models'
 import { useSessionStore } from '@/modules/auth/presentation/stores/session.store'
 
-/**
- * Self-service account area: the signed-in adult's own profile plus the minors
- * in their care, with the actions to edit data, change roles and password, and
- * add or remove minors.
- */
 export function useAccount() {
   const session = useSessionStore()
   const queryClient = useQueryClient()

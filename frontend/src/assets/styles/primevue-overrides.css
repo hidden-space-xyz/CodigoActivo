@@ -1,18 +1,4 @@
-/**
- * PrimeVue overrides — kept SMALL on purpose.
- *
- * The cyan primary palette is configured in `app/providers/primevue.ts` via a
- * preset. This file only nudges the form controls used in the registration form
- * so they match the bespoke dark inputs from the template. If you find yourself
- * writing large amounts of CSS here, prefer extending the preset instead.
- *
- * Two strategies are combined for resilience across PrimeVue patch releases:
- *   1. design-token CSS variables (the supported way to theme), and
- *   2. a few class selectors as a fallback (our styles are unlayered, so they
- *      win over PrimeVue's `primevue` cascade layer).
- */
 :root {
-  /* Text inputs */
   --p-inputtext-background: var(--ca-input-bg);
   --p-inputtext-color: var(--ca-text);
   --p-inputtext-border-color: var(--ca-border-strong);
@@ -20,12 +6,10 @@
   --p-inputtext-focus-border-color: var(--ca-cyan);
   --p-inputtext-placeholder-color: var(--ca-text-faint);
   --p-inputtext-border-radius: 10px;
-  /* Roomier fields, matching the original template (12px / 14px, 15px text). */
   --p-inputtext-padding-y: 12px;
   --p-inputtext-padding-x: 14px;
   --p-inputtext-font-size: 15px;
 
-  /* Textarea */
   --p-textarea-background: var(--ca-input-bg);
   --p-textarea-color: var(--ca-text);
   --p-textarea-border-color: var(--ca-border-strong);
@@ -35,13 +19,11 @@
   --p-textarea-padding-x: 14px;
   --p-textarea-font-size: 15px;
 
-  /* Checkbox */
   --p-checkbox-background: var(--ca-input-bg);
   --p-checkbox-border-color: var(--ca-border-strong);
   --p-checkbox-checked-background: var(--ca-cyan);
   --p-checkbox-checked-border-color: var(--ca-cyan);
 
-  /* Buttons: dark label on the cyan primary, matching the template CTAs */
   --p-button-primary-color: var(--ca-bg);
   --p-button-primary-background: var(--ca-cyan);
   --p-button-primary-border-color: var(--ca-cyan);
@@ -50,7 +32,6 @@
   --p-button-border-radius: 11px;
 }
 
-/* Class-level fallback in case token names shift between PrimeVue versions. */
 .p-inputtext,
 .p-textarea {
   background: var(--ca-input-bg);
@@ -70,27 +51,12 @@
   font-weight: 600;
 }
 
-/* Password wraps its input; ensure both span the full field width. */
 .p-password,
 .p-password .p-password-input {
   width: 100%;
 }
 
-/* ===========================================================================
- * Admin panel cohesion (DataTable, Dialog, Tag, Select, MultiSelect,
- * DatePicker, Paginator, Button severities).
- *
- * The Aura components all derive from a handful of SEMANTIC design tokens
- * (`content.*`, `overlay.*`, `list.*`, `form.field.*`, `text.*`, `highlight.*`,
- * `surface.*`). Remapping those semantic `--p-*` variables to our `--ca-*`
- * tokens themes every admin component in one pass, so this stays small and
- * version-resilient. Scoped under `.ca-dark` (PrimeVue's dark selector, set on
- * <html>) so it only touches the dark theme. A few component-level tokens are
- * added afterwards for fonts / radius that have no semantic equivalent.
- * ======================================================================== */
 .ca-dark {
-  /* Generic content surfaces — drive DataTable cells, DatePicker panel,
-     Paginator, and any list/menu content. */
   --p-content-background: var(--ca-surface);
   --p-content-hover-background: var(--ca-bg-elevated);
   --p-content-border-color: var(--ca-border);
@@ -98,19 +64,16 @@
   --p-content-hover-color: var(--ca-text-bright);
   --p-content-border-radius: 14px;
 
-  /* Text */
   --p-text-color: var(--ca-text);
   --p-text-hover-color: var(--ca-text-bright);
   --p-text-muted-color: var(--ca-text-muted);
   --p-text-hover-muted-color: var(--ca-text);
 
-  /* Selected / highlighted rows + options: cyan tint with readable text */
   --p-highlight-background: rgba(45, 212, 217, 0.14);
   --p-highlight-focus-background: rgba(45, 212, 217, 0.22);
   --p-highlight-color: var(--ca-cyan);
   --p-highlight-focus-color: var(--ca-cyan);
 
-  /* Form field triggers (Select / MultiSelect / DatePicker / InputNumber) */
   --p-form-field-background: var(--ca-input-bg);
   --p-form-field-disabled-background: var(--ca-bg-deep);
   --p-form-field-filled-background: var(--ca-input-bg);
@@ -126,28 +89,23 @@
   --p-form-field-icon-color: var(--ca-text-muted);
   --p-form-field-border-radius: 10px;
 
-  /* Overlay panels (Select / MultiSelect dropdowns) */
   --p-overlay-select-background: var(--ca-bg-elevated);
   --p-overlay-select-border-color: var(--ca-border-strong);
   --p-overlay-select-color: var(--ca-text);
   --p-overlay-select-border-radius: 14px;
 
-  /* Overlay popovers (DatePicker panel chrome) */
   --p-overlay-popover-background: var(--ca-bg-elevated);
   --p-overlay-popover-border-color: var(--ca-border-strong);
   --p-overlay-popover-color: var(--ca-text);
   --p-overlay-popover-border-radius: 14px;
 
-  /* Overlay modal (Dialog / ConfirmDialog) */
   --p-overlay-modal-background: var(--ca-bg-elevated);
   --p-overlay-modal-border-color: var(--ca-border-strong);
   --p-overlay-modal-color: var(--ca-text);
   --p-overlay-modal-border-radius: 16px;
 
-  /* Dim mask behind dialogs */
   --p-mask-background: rgba(8, 10, 14, 0.66);
 
-  /* List options inside overlays */
   --p-list-option-color: var(--ca-text);
   --p-list-option-focus-background: var(--ca-surface);
   --p-list-option-focus-color: var(--ca-text-bright);
@@ -157,7 +115,6 @@
   --p-list-option-selected-focus-color: var(--ca-cyan);
   --p-list-option-border-radius: 8px;
 
-  /* ----- DataTable specifics ----- */
   --p-datatable-border-color: var(--ca-border);
   --p-datatable-header-cell-background: var(--ca-bg-elevated);
   --p-datatable-header-cell-color: var(--ca-text-muted);
@@ -173,7 +130,6 @@
   --p-datatable-paginator-top-border-color: var(--ca-border);
   --p-datatable-paginator-bottom-border-color: var(--ca-border);
 
-  /* ----- Paginator specifics ----- */
   --p-paginator-background: var(--ca-surface);
   --p-paginator-color: var(--ca-text-muted);
   --p-paginator-nav-button-color: var(--ca-text-muted);
@@ -183,14 +139,11 @@
   --p-paginator-nav-button-selected-color: var(--ca-cyan);
   --p-paginator-current-page-report-color: var(--ca-text-muted);
 
-  /* ----- Dialog font / title ----- */
   --p-dialog-title-font-size: 1.15rem;
   --p-dialog-title-font-weight: 700;
 
-  /* ----- Tag: subtle, app-consistent chips ----- */
   --p-tag-font-weight: 600;
   --p-tag-border-radius: 8px;
-  /* info = cyan-tinted to match the brand identity */
   --p-tag-info-background: rgba(45, 212, 217, 0.14);
   --p-tag-info-color: var(--ca-cyan);
   --p-tag-secondary-background: var(--ca-surface);
@@ -202,8 +155,6 @@
   --p-tag-danger-background: rgba(255, 107, 94, 0.14);
   --p-tag-danger-color: var(--ca-coral);
 
-  /* ----- Button severities (primary already themed above) ----- */
-  /* Secondary: subtle surface with soft outline */
   --p-button-secondary-background: var(--ca-surface);
   --p-button-secondary-border-color: var(--ca-border-strong);
   --p-button-secondary-color: var(--ca-text);
@@ -211,18 +162,15 @@
   --p-button-secondary-hover-border-color: var(--ca-border-strong-2);
   --p-button-secondary-hover-color: var(--ca-text-bright);
   --p-button-secondary-active-background: var(--ca-bg-elevated);
-  /* Text-secondary (used by "Cancelar" buttons) */
   --p-button-text-secondary-color: var(--ca-text-muted);
   --p-button-text-secondary-hover-background: var(--ca-surface);
   --p-button-text-secondary-hover-color: var(--ca-text-bright);
-  /* Danger: coral, readable on dark */
   --p-button-danger-background: var(--ca-coral);
   --p-button-danger-border-color: var(--ca-coral);
   --p-button-danger-color: var(--ca-bg);
   --p-button-danger-hover-background: #ff8278;
   --p-button-danger-hover-border-color: #ff8278;
   --p-button-danger-hover-color: var(--ca-bg);
-  /* Danger text/outlined (icon delete buttons in tables) */
   --p-button-text-danger-color: var(--ca-coral);
   --p-button-text-danger-hover-background: rgba(255, 107, 94, 0.12);
   --p-button-text-danger-hover-color: var(--ca-coral);
@@ -231,8 +179,6 @@
   --p-button-outlined-danger-hover-background: rgba(255, 107, 94, 0.12);
 }
 
-/* Class-level fallbacks for the few headings/fonts that have no design token.
-   Our stylesheet is unlayered, so these win over PrimeVue's `primevue` layer. */
 .p-datatable-header-cell,
 .p-datatable-column-title {
   font-family: var(--ca-font-display);

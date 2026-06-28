@@ -89,8 +89,6 @@ const scheduled = computed(() =>
 
 const unscheduled = computed(() => items.value.filter((a) => a.start === null))
 
-// Group activities that overlap in time into the same timeline node so that
-// simultaneous activities are shown side by side.
 const clusters = computed<Cluster[]>(() => {
   const result: Cluster[] = []
   let current: Cluster | null = null
@@ -350,7 +348,6 @@ function onUnassign(activity: TimelineActivity): void {
       </section>
     </template>
 
-    <!-- Household sign-up: choose who to enrol and each member's role. -->
     <Dialog
       v-model:visible="householdDialog.visible"
       modal

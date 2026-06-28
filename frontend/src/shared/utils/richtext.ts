@@ -14,14 +14,9 @@ import StarterKit from '@tiptap/starter-kit'
 
 export type { JSONContent }
 
-/** An empty TipTap document — the canonical "no content" value for the jsonb column. */
 export const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
 export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 
-/**
- * Shared extension set used by both the editor and the read-only renderer.
- * Must stay identical on both sides so stored documents render the same way.
- */
 export function richTextExtensions(): AnyExtension[] {
   return [
     StarterKit,
@@ -43,7 +38,6 @@ export function richTextExtensions(): AnyExtension[] {
   ]
 }
 
-/** Parse the stored jsonb string into a TipTap document, tolerating legacy/empty values. */
 export function parseRichText(value?: string | null): JSONContent {
   if (!value) return { type: 'doc', content: [] }
   try {
@@ -53,7 +47,6 @@ export function parseRichText(value?: string | null): JSONContent {
     }
     return { type: 'doc', content: [] }
   } catch {
-    // Legacy plain-text content stored before the rich editor existed.
     return {
       type: 'doc',
       content: [{ type: 'paragraph', content: [{ type: 'text', text: value }] }],
@@ -65,7 +58,6 @@ export function serializeRichText(json: JSONContent): string {
   return JSON.stringify(json)
 }
 
-/** True when the document has no meaningful content (empty or a single blank paragraph). */
 export function isRichTextEmpty(value?: string | null): boolean {
   const doc = parseRichText(value)
   if (!doc.content || doc.content.length === 0) return true

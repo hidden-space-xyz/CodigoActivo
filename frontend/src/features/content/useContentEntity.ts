@@ -25,7 +25,6 @@ export interface ContentApi {
   create: (body: ContentRequest) => Promise<unknown>
   update: (id: string, body: ContentRequest) => Promise<unknown>
   remove: (id: string) => Promise<unknown>
-  /** When provided, the list exposes a "feature" action (only one item featured at a time). */
   feature?: (id: string) => Promise<unknown>
 }
 

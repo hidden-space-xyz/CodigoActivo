@@ -90,7 +90,6 @@ function onSignup(): void {
         <BaseButton variant="ghost" @click="emit('login')">Inicia sesión para apuntarte</BaseButton>
       </template>
 
-      <!-- Household flow: an adult with minors picks who to sign up and each role. -->
       <template v-else-if="hasHousehold">
         <template v-if="!signupOpen">
           <span v-if="!activity.household.length" class="act__note">
@@ -110,7 +109,6 @@ function onSignup(): void {
         </span>
       </template>
 
-      <!-- Solo flow: a user without minors signs themselves up. -->
       <template v-else-if="activity.assignment">
         <span class="act__note">Inscrito como {{ activity.assignment.roleName || '—' }}</span>
         <Button

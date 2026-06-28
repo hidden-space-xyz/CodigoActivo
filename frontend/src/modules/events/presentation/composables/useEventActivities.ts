@@ -19,11 +19,6 @@ export interface HouseholdMember {
   name: string
 }
 
-/**
- * Public, volunteer-facing view of an event's activities: the activity list, the
- * sign-ups of the current user's household (themselves + the minors in their
- * care), and the actions to sign up / drop out, including the time-overlap check.
- */
 export function useEventActivities(eventId: () => string) {
   const session = useSessionStore()
   const queryClient = useQueryClient()

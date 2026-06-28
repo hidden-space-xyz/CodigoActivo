@@ -1,8 +1,3 @@
-/**
- * Shared styling for TipTap rich-text content — used both by the editor
- * (admin) and the read-only renderer (public detail views). Unlayered on
- * purpose so it wins over the global reset (which lives in @layer base).
- */
 .rich-text {
   color: var(--ca-text);
   font-size: 16px;
@@ -79,8 +74,6 @@
   margin: 10px 0;
 }
 
-/* Image alignment: TextAlign writes a `text-align` style onto the image node,
-   which we translate into block + auto margins so the image itself is aligned. */
 .rich-text :where(img[style*='text-align: center'], img[style*='text-align:center']) {
   display: block;
   margin-left: auto;
@@ -131,7 +124,6 @@
   border-radius: 3px;
 }
 
-/* Tables (shared by editor + read-only renderer) */
 .rich-text :where(table) {
   width: 100%;
   margin: 0 0 14px;
@@ -154,7 +146,6 @@
   color: var(--ca-text-bright);
 }
 
-/* ProseMirror table editing chrome (only present in the editor) */
 .rich-text .tableWrapper {
   overflow-x: auto;
 }

@@ -1,10 +1,4 @@
-/**
- * Design tokens extracted from the original template. Single source of truth for
- * colours, fonts and layout widths. Components reference these variables and
- * never hard-code raw hex values.
- */
 :root {
-  /* Surfaces (dark, from darkest to most elevated) */
   --ca-bg: #0c0e13;
   --ca-bg-deep: #0a0c10;
   --ca-surface-2: #10131a;
@@ -12,13 +6,11 @@
   --ca-surface: #161a23;
   --ca-input-bg: #0f1218;
 
-  /* Borders (increasing opacity) */
   --ca-border: rgba(255, 255, 255, 0.07);
   --ca-border-soft: rgba(255, 255, 255, 0.08);
   --ca-border-strong: rgba(255, 255, 255, 0.12);
   --ca-border-strong-2: rgba(255, 255, 255, 0.14);
 
-  /* Text (brightest to faintest) */
   --ca-text-bright: #f4f6fa;
   --ca-text: #eef1f6;
   --ca-text-muted: #9ba3b4;
@@ -27,7 +19,6 @@
   --ca-text-faint: #6a7283;
   --ca-text-ghost: #5b6273;
 
-  /* Brand accents */
   --ca-cyan: #2dd4d9;
   --ca-purple: #a78bfa;
   --ca-green: #5be584;
@@ -35,12 +26,10 @@
   --ca-amber: #ffc24b;
   --ca-blue: #5b8def;
 
-  /* Typography */
   --ca-font-display: 'Space Grotesk', system-ui, sans-serif;
   --ca-font-body: 'Hanken Grotesk', system-ui, sans-serif;
   --ca-font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Layout */
   --ca-container: 1200px;
   --ca-container-narrow: 1100px;
 }

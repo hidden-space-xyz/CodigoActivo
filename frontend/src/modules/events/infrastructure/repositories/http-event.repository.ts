@@ -23,7 +23,6 @@ function startsAt(event: EventResponse): number | null {
   return event.eventStartsAt ? new Date(event.eventStartsAt).getTime() : null
 }
 
-/** Upcoming OR ongoing: the event has not finished yet. */
 function isUpcomingOrOngoing(event: EventResponse): boolean {
   const end = event.eventEndsAt ? new Date(event.eventEndsAt).getTime() : null
   if (end !== null) return end >= Date.now()
@@ -65,7 +64,6 @@ export class HttpEventRepository implements EventRepository {
     const all = await this.fetchAll()
     const flagged = all.find((event) => event.featured)
     if (flagged) return toUpcomingEvent(flagged)
-    // Fallback: the most recently created event when none is explicitly featured.
     const mostRecent = all
       .slice()
       .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0]

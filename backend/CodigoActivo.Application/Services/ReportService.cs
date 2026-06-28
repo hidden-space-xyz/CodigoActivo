@@ -122,8 +122,6 @@ public class ReportService(
             ))
             .ToList();
 
-        // Include the parents of signed-up users even when the parent has no assignment of its
-        // own, so the list can be grouped under them.
         var addedParents = new HashSet<Guid>();
         foreach (var assignment in activity.Assignments)
         {

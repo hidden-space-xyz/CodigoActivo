@@ -149,9 +149,6 @@ public class ActivityService(
             return Error.NotFound();
         }
 
-        // Enforce the event's sign-up window (a missing bound means that side is
-        // unbounded; an event with no dates is always open). The user-facing
-        // guidance lives in the frontend — this is the tamper-proof safety net.
         var now = DateTimeOffset.UtcNow;
         if (
             (ev.SignupStartsAt is { } signupStart && now < signupStart)
@@ -226,9 +223,6 @@ public class ActivityService(
             return Error.Validation();
         }
 
-        // Each target must be the acting user or a minor in their care; the chosen
-        // role must be allowed by the activity; a person already signed up is
-        // skipped so re-submitting the household form is idempotent.
         var created = new List<AssignmentResponse>();
         foreach (var item in request.Assignments.DistinctBy(a => a.UserId))
         {

@@ -11,7 +11,7 @@ export async function deleteThumbnail(id?: string | null): Promise<void> {
   try {
     await deleteApiFilesFileId(id)
   } catch {
-    /* best-effort cleanup: ignore if the file is already gone or still referenced */
+    void 0
   }
 }
 

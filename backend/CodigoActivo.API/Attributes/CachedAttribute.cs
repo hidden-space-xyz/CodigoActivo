@@ -38,8 +38,6 @@ public sealed class CachedAttribute(string group) : Attribute, IAsyncActionFilte
             }
         );
 
-        // When the action did not run in this request (cache hit, or another request
-        // filled the entry while we waited), replay the stored payload as the response.
         if (!ranHere && value is not null)
         {
             context.Result = new ObjectResult(value) { StatusCode = StatusCodes.Status200OK };

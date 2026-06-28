@@ -42,7 +42,6 @@ export function useRegistration() {
   const submittedMinorCount = ref(0)
   const isVerified = ref(false)
 
-  // Selectable roles come from the backend, already filtered by age + visibility.
   const adultRoles = useQuery({
     queryKey: ['registration-types', 'adult'],
     queryFn: ({ signal }) =>

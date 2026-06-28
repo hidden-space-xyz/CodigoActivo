@@ -211,9 +211,6 @@ public class UserService(
             return Error.Validation();
         }
 
-        // Replace the user's "primary" role: drop every current role except Admin
-        // (so platform admins never lose their privileges) and except the chosen
-        // one, then assign the chosen role if it is not already present.
         var assignments = await users.GetTypeAssignmentsAsync(userId, ct);
         var alreadyHasRole = assignments.Any(a => a.UserTypeId == roleId);
         foreach (
@@ -256,7 +253,6 @@ public class UserService(
             return Error.NotFound();
         }
 
-        // Only adults have a password; minors are dependent accounts that cannot sign in.
         if (string.IsNullOrEmpty(user.PasswordHash))
         {
             return Error.Validation();

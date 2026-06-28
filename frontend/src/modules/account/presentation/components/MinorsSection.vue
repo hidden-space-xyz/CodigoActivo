@@ -187,7 +187,6 @@ function confirmDelete(): void {
       </li>
     </ul>
 
-    <!-- Add / edit minor -->
     <Dialog
       v-model:visible="dialogVisible"
       modal
@@ -239,7 +238,6 @@ function confirmDelete(): void {
       </form>
     </Dialog>
 
-    <!-- Delete confirmation -->
     <Dialog
       :visible="deleteTarget !== null"
       modal

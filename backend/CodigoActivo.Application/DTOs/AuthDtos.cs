@@ -9,11 +9,6 @@ public record LoginRequest(
 
 public record CsrfTokenResponse(string Token, string HeaderName);
 
-/// <summary>
-/// Household registration: an adult registers themselves and, optionally, the
-/// minors in their care. One <c>User</c> is created per person; minors are
-/// linked to the adult via <c>ParentId</c>.
-/// </summary>
 public record RegisterRequest(
     [Required, MaxLength(120)] string FirstName,
     [Required, MaxLength(120)] string LastName,
