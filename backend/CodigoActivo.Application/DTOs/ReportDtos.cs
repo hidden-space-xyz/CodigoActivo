@@ -8,7 +8,14 @@ public record EventSummaryResponse(
     int RequestedAssignments,
     int ConfirmedAssignments,
     int DeniedAssignments,
-    int DistinctVolunteers
+    int DistinctVolunteers,
+    IReadOnlyList<EventRoleTypeSummaryResponse> RoleTypeBreakdown
+);
+
+public record EventRoleTypeSummaryResponse(
+    Guid RoleTypeId,
+    string? RoleTypeName,
+    int ApprovedAssignments
 );
 
 public record AssignmentReportItemResponse(

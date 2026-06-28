@@ -3410,6 +3410,24 @@
         },
         "additionalProperties": false
       },
+      "EventRoleTypeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "roleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvedAssignments": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "EventSummaryResponse": {
         "type": "object",
         "properties": {
@@ -3444,6 +3462,13 @@
           "distinctVolunteers": {
             "type": "integer",
             "format": "int32"
+          },
+          "roleTypeBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventRoleTypeSummaryResponse"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

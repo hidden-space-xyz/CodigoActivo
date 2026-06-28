@@ -30,6 +30,25 @@ public class ReportService(
 
         var assignments = ev.Activities.SelectMany(a => a.Assignments).ToList();
 
+        var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
+
+        var approvedByRole = assignments
+            .Where(a => a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed)
+            .GroupBy(a => a.ActivityRoleTypeId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var roleTypeBreakdown = ev
+            .Activities.SelectMany(a => a.AllowedRoleTypes)
+            .Select(r => r.ActivityRoleTypeId)
+            .Distinct()
+            .Select(id => new EventRoleTypeSummaryResponse(
+                id,
+                roleNames.GetValueOrDefault(id),
+                approvedByRole.GetValueOrDefault(id, 0)
+            ))
+            .OrderBy(r => r.RoleTypeName)
+            .ToList();
+
         return new EventSummaryResponse(
             ev.Id,
             ev.Title,
@@ -38,7 +57,8 @@ public class ReportService(
             assignments.Count(a => a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested),
             assignments.Count(a => a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed),
             assignments.Count(a => a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Denied),
-            assignments.Select(a => a.UserId).Distinct().Count()
+            assignments.Select(a => a.UserId).Distinct().Count(),
+            roleTypeBreakdown
         );
     }
 

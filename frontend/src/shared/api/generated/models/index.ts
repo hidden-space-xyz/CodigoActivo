@@ -32,6 +32,7 @@ export * from './csrfTokenResponse';
 export * from './dashboardSummaryResponse';
 export * from './eventAssignmentsReportResponse';
 export * from './eventResponse';
+export * from './eventRoleTypeSummaryResponse';
 export * from './eventSummaryResponse';
 export * from './fileResponse';
 export * from './getApiActivitiesAssignedParams';

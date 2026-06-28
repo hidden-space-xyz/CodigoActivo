@@ -129,24 +129,21 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = SeedIds.ActivityRoleTypes.Leader,
                 Name = "Líder",
                 Description =
-                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas y "
-                    + "vela por el cumplimiento de los objetivos.",
+                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas y vela por el cumplimiento de los objetivos.",
             },
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Helper,
                 Name = "Colaborador",
                 Description =
-                    "Apoya al líder durante la actividad asumiendo tareas de soporte para su correcto "
-                    + "desarrollo.",
+                    "Apoya al líder durante la actividad asumiendo tareas de soporte para su correcto desarrollo.",
             },
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Participant,
                 Name = "Participante",
                 Description =
-                    "Asiste a la actividad como público o beneficiario, sin responsabilidades de "
-                    + "organización.",
+                    "Asiste a la actividad como público o beneficiario, sin responsabilidades de organización.",
             },
         };
         foreach (var item in seed)

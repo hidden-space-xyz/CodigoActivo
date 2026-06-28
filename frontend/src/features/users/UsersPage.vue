@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -13,6 +13,7 @@ import UserFormDialog from '@/features/users/UserFormDialog.vue'
 import { useUsers } from '@/features/users/useUsers'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/utils/api-error'
+import { formatDate } from '@/shared/utils/format'
 import AdminPageHeader from '@/shared/ui/admin/AdminPageHeader.vue'
 import DataState from '@/shared/ui/admin/DataState.vue'
 import { useCrudFeedback } from '@/shared/ui/admin/use-crud-feedback'
@@ -29,12 +30,84 @@ const typeDialogVisible = ref(false)
 const typeUser = ref<UserResponse | null>(null)
 const selectedRoleId = ref<string | null>(null)
 
+// Orders the users so each parent is immediately followed by its descendants,
+// keeping every family group together to make the hierarchy easy to read.
+const grouped = computed(() => {
+  const all = list.data.value ?? []
+  const ids = new Set(all.map((user) => user.id).filter((id): id is string => Boolean(id)))
+  const childrenByParent = new Map<string, UserResponse[]>()
+  const roots: UserResponse[] = []
+  for (const user of all) {
+    if (user.parentId && ids.has(user.parentId)) {
+      const siblings = childrenByParent.get(user.parentId) ?? []
+      siblings.push(user)
+      childrenByParent.set(user.parentId, siblings)
+    } else {
+      roots.push(user)
+    }
+  }
+  const rows: UserResponse[] = []
+  const depthById = new Map<string, number>()
+  const visited = new Set<string>()
+  const visit = (user: UserResponse, depth: number): void => {
+    if (user.id) {
+      if (visited.has(user.id)) return // guard against parentId cycles
+      visited.add(user.id)
+      depthById.set(user.id, depth)
+    }
+    rows.push(user)
+    for (const child of childrenByParent.get(user.id ?? '') ?? []) {
+      visit(child, depth + 1)
+    }
+  }
+  for (const root of roots) visit(root, 0)
+  // Safety net: surface any user trapped in a cycle so no row is ever hidden.
+  for (const user of all) {
+    if (user.id && !visited.has(user.id)) rows.push(user)
+  }
+  return { rows, depthById, childrenByParent }
+})
+
+function userDepth(user: UserResponse): number {
+  return user.id ? (grouped.value.depthById.get(user.id) ?? 0) : 0
+}
+
+function isChild(user: UserResponse): boolean {
+  return userDepth(user) > 0
+}
+
+function childCount(user: UserResponse): number {
+  return user.id ? (grouped.value.childrenByParent.get(user.id)?.length ?? 0) : 0
+}
+
+function rowClass(user: UserResponse): string {
+  return isChild(user) ? 'user-row--child' : ''
+}
+
 function fullName(user: UserResponse): string {
   return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—'
 }
 
 function roleNames(user: UserResponse): string[] {
   return (user.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0)
+}
+
+function ageFrom(value?: string | null): number | null {
+  if (!value) return null
+  const birth = new Date(value)
+  if (Number.isNaN(birth.getTime())) return null
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  const monthDiff = now.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) age--
+  return age
+}
+
+function birthDateWithAge(user: UserResponse): string {
+  const formatted = formatDate(user.birthDate)
+  if (formatted === '—') return '—'
+  const age = ageFrom(user.birthDate)
+  return age === null ? formatted : `${formatted} (${age})`
 }
 
 async function openEdit(user: UserResponse): Promise<void> {
@@ -109,12 +182,41 @@ function confirmDelete(user: UserResponse): void {
       :empty="(list.data.value?.length ?? 0) === 0"
       empty-text="No hay usuarios."
     >
-      <DataTable :value="list.data.value" data-key="id" striped-rows paginator :rows="10">
+      <DataTable
+        :value="grouped.rows"
+        :row-class="rowClass"
+        data-key="id"
+        striped-rows
+        paginator
+        :rows="10"
+      >
         <Column header="Nombre">
-          <template #body="{ data }">{{ fullName(data) }}</template>
+          <template #body="{ data }">
+            <div
+              class="user-name"
+              :class="{ 'user-name--child': isChild(data) }"
+              :style="{ paddingLeft: userDepth(data) * 22 + 'px' }"
+            >
+              <i v-if="isChild(data)" class="pi pi-angle-right user-name__child-icon" />
+              <span>{{ fullName(data) }}</span>
+              <Tag
+                v-if="childCount(data) > 0"
+                :value="String(childCount(data))"
+                icon="pi pi-users"
+                severity="secondary"
+                class="user-name__count"
+              />
+            </div>
+          </template>
         </Column>
         <Column field="email" header="Correo">
           <template #body="{ data }">{{ data.email || '—' }}</template>
+        </Column>
+        <Column field="phone" header="Teléfono">
+          <template #body="{ data }">{{ data.phone || '—' }}</template>
+        </Column>
+        <Column header="Nacimiento">
+          <template #body="{ data }">{{ birthDateWithAge(data) }}</template>
         </Column>
         <Column header="Estado">
           <template #body="{ data }">
@@ -210,6 +312,29 @@ function confirmDelete(user: UserResponse): void {
 
 .user-role-tag {
   margin-right: 4px;
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name--child {
+  color: var(--ca-text-muted);
+}
+
+.user-name__child-icon {
+  font-size: 12px;
+  color: var(--ca-text-muted);
+}
+
+.user-name__count {
+  font-size: 11px;
+}
+
+:deep(.user-row--child) > td:first-child {
+  border-left: 2px solid var(--ca-border-soft);
 }
 
 .form__field {

@@ -5,6 +5,7 @@
  * Backend API for CodigoActivo (cookie session auth + CSRF).
  * OpenAPI spec version: v1
  */
+import type { EventRoleTypeSummaryResponse } from './eventRoleTypeSummaryResponse';
 
 export interface EventSummaryResponse {
   eventId?: string;
@@ -16,4 +17,6 @@ export interface EventSummaryResponse {
   confirmedAssignments?: number;
   deniedAssignments?: number;
   distinctVolunteers?: number;
+  /** @nullable */
+  roleTypeBreakdown?: EventRoleTypeSummaryResponse[] | null;
 }

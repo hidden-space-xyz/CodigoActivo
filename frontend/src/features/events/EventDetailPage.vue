@@ -5,8 +5,6 @@ import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 
 import ActivityFormDialog from '@/features/activities/ActivityFormDialog.vue'
@@ -14,13 +12,12 @@ import AssignVolunteerDialog from '@/features/activities/AssignVolunteerDialog.v
 import { useActivities } from '@/features/activities/useActivities'
 import { useAssignments } from '@/features/activities/useAssignments'
 import { deleteThumbnail } from '@/features/files/useThumbnail'
-import { useActivityRoleTypes, useAssignmentStatusTypesList } from '@/features/catalogs/catalogs'
+import { useActivityRoleTypes } from '@/features/catalogs/catalogs'
 import { useEvent } from '@/features/events/useEventsAdmin'
-import { useEventAssignments, useEventSummary } from '@/features/events/useEventReports'
+import { useEventSummary } from '@/features/events/useEventReports'
 import { useUsers } from '@/features/users/useUsers'
 import type {
   ActivityResponse,
-  AssignmentReportItemResponse,
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
@@ -39,31 +36,18 @@ const confirm = useConfirm()
 
 const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
-const assignmentsReport = useEventAssignments(eventId)
 const activities = useActivities(eventId)
 const assignments = useAssignments(eventId.value)
 const roleTypes = useActivityRoleTypes()
-const statusTypes = useAssignmentStatusTypesList()
 const users = useUsers()
-
-const userNameById = computed(() => {
-  const map = new Map<string, string>()
-  for (const user of users.list.data.value ?? []) {
-    if (user.id) map.set(user.id, `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim())
-  }
-  return map
-})
 
 const summaryCards = computed(() => {
   const data = summary.data.value
-  return [
-    { label: 'Actividades', value: data?.activitiesCount ?? 0 },
-    { label: 'Asignaciones', value: data?.totalAssignments ?? 0 },
-    { label: 'Solicitadas', value: data?.requestedAssignments ?? 0 },
-    { label: 'Confirmadas', value: data?.confirmedAssignments ?? 0 },
-    { label: 'Rechazadas', value: data?.deniedAssignments ?? 0 },
-    { label: 'Voluntarios', value: data?.distinctVolunteers ?? 0 },
-  ]
+  const cards = [{ label: 'Actividades', value: data?.activitiesCount ?? 0 }]
+  for (const role of data?.roleTypeBreakdown ?? []) {
+    cards.push({ label: role.roleTypeName ?? '—', value: role.approvedAssignments ?? 0 })
+  }
+  return cards
 })
 
 const activityDialogVisible = ref(false)
@@ -154,60 +138,6 @@ function onAssignSubmit(payload: {
       onError: (error) => feedback.error(getErrorMessage(error)),
     },
   )
-}
-
-const statusDialogVisible = ref(false)
-const statusTarget = ref<AssignmentReportItemResponse | null>(null)
-const selectedStatusId = ref<string | null>(null)
-
-function openChangeStatus(item: AssignmentReportItemResponse): void {
-  statusTarget.value = item
-  selectedStatusId.value = item.statusId ?? null
-  statusDialogVisible.value = true
-}
-
-function submitChangeStatus(): void {
-  if (!statusTarget.value?.activityId || !statusTarget.value.userId || !selectedStatusId.value)
-    return
-  assignments.changeStatus.mutate(
-    {
-      activityId: statusTarget.value.activityId,
-      userId: statusTarget.value.userId,
-      body: { assignmentStatusId: selectedStatusId.value },
-    },
-    {
-      onSuccess: () => {
-        feedback.success('Estado actualizado.')
-        statusDialogVisible.value = false
-        void summary.refetch()
-      },
-      onError: (error) => feedback.error(getErrorMessage(error)),
-    },
-  )
-}
-
-function confirmUnassign(item: AssignmentReportItemResponse): void {
-  confirm.require({
-    header: 'Quitar asignación',
-    message: '¿Seguro que quieres quitar esta asignación?',
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Quitar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
-    accept: () => {
-      if (!item.activityId || !item.userId) return
-      assignments.unassign.mutate(
-        { activityId: item.activityId, userId: item.userId },
-        {
-          onSuccess: () => {
-            feedback.success('Asignación eliminada.')
-            void summary.refetch()
-          },
-          onError: (error) => feedback.error(getErrorMessage(error)),
-        },
-      )
-    },
-  })
 }
 </script>
 
@@ -302,50 +232,6 @@ function confirmUnassign(item: AssignmentReportItemResponse): void {
       </DataState>
     </section>
 
-    <section class="block">
-      <h2 class="block__title">Asignaciones</h2>
-      <DataState
-        :loading="assignmentsReport.isLoading.value"
-        :error="assignmentsReport.isError.value"
-        :empty="(assignmentsReport.data.value?.items?.length ?? 0) === 0"
-        empty-text="Todavía no hay voluntarios asignados."
-      >
-        <DataTable :value="assignmentsReport.data.value?.items ?? []" striped-rows>
-          <Column field="activityTitle" header="Actividad" />
-          <Column header="Voluntario">
-            <template #body="{ data }">{{ userNameById.get(data.userId) || data.userId }}</template>
-          </Column>
-          <Column field="roleTypeName" header="Rol" />
-          <Column header="Estado">
-            <template #body="{ data }">
-              <Tag :value="data.statusName || '—'" severity="info" />
-            </template>
-          </Column>
-          <Column header="Acciones" style="width: 130px">
-            <template #body="{ data }">
-              <div class="row-actions">
-                <Button
-                  icon="pi pi-sync"
-                  text
-                  rounded
-                  aria-label="Cambiar estado"
-                  @click="openChangeStatus(data)"
-                />
-                <Button
-                  icon="pi pi-user-minus"
-                  text
-                  rounded
-                  severity="danger"
-                  aria-label="Quitar"
-                  @click="confirmUnassign(data)"
-                />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
-      </DataState>
-    </section>
-
     <ActivityFormDialog
       v-model:visible="activityDialogVisible"
       :activity="selectedActivity"
@@ -362,40 +248,6 @@ function confirmUnassign(item: AssignmentReportItemResponse): void {
       :verify-overlaps="assignments.verifyOverlaps"
       @submit="onAssignSubmit"
     />
-
-    <Dialog
-      v-model:visible="statusDialogVisible"
-      modal
-      header="Cambiar estado"
-      :style="{ width: '400px' }"
-    >
-      <div class="form__field">
-        <label>Estado</label>
-        <Select
-          v-model="selectedStatusId"
-          :options="statusTypes.data.value ?? []"
-          option-label="name"
-          option-value="id"
-          placeholder="Selecciona un estado"
-          fluid
-        />
-      </div>
-      <template #footer>
-        <Button
-          label="Cancelar"
-          text
-          severity="secondary"
-          :disabled="assignments.changeStatus.isPending.value"
-          @click="statusDialogVisible = false"
-        />
-        <Button
-          label="Aplicar"
-          :loading="assignments.changeStatus.isPending.value"
-          :disabled="!selectedStatusId"
-          @click="submitChangeStatus"
-        />
-      </template>
-    </Dialog>
   </div>
 </template>
 
@@ -457,17 +309,5 @@ function confirmUnassign(item: AssignmentReportItemResponse): void {
 .row-actions {
   display: flex;
   gap: 2px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 </style>
