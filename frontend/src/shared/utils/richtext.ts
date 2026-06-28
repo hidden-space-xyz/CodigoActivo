@@ -19,7 +19,7 @@ export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 
 export function richTextExtensions(): AnyExtension[] {
   return [
-    StarterKit,
+    StarterKit.configure({ link: false, underline: false }),
     TextStyle,
     Color,
     Highlight.configure({ multicolor: true }),

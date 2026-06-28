@@ -14,7 +14,7 @@ const editor = useEditor({
 
 watch(
   () => props.content,
-  (value) => editor.value?.commands.setContent(parseRichText(value), false),
+  (value) => editor.value?.commands.setContent(parseRichText(value), { emitUpdate: false }),
 )
 
 onBeforeUnmount(() => editor.value?.destroy())

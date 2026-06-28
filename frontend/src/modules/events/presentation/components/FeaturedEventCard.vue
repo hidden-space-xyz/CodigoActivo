@@ -36,12 +36,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
       </div>
 
       <div class="featured__poster">
-        <img
-          v-if="posterUrl"
-          :src="posterUrl"
-          :alt="event.title"
-          class="featured__poster-img"
-        />
+        <img v-if="posterUrl" :src="posterUrl" :alt="event.title" class="featured__poster-img" />
       </div>
     </div>
   </div>

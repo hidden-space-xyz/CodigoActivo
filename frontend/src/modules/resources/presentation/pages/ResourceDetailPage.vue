@@ -36,7 +36,11 @@ const hasDescription = computed(() => !isRichTextEmpty(resource.value?.descripti
 
         <img v-if="posterUrl" :src="posterUrl" :alt="resource.title" class="detail__poster" />
 
-        <RichTextContent v-if="hasDescription" :content="resource.description" class="detail__body" />
+        <RichTextContent
+          v-if="hasDescription"
+          :content="resource.description"
+          class="detail__body"
+        />
         <p v-else class="detail__body detail__body--muted">
           Este recurso todavía no tiene una descripción.
         </p>

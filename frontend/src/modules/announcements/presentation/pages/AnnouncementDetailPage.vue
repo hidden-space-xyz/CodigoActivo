@@ -39,7 +39,11 @@ const hasDescription = computed(() => !isRichTextEmpty(announcement.value?.descr
 
         <img v-if="posterUrl" :src="posterUrl" :alt="announcement.title" class="detail__poster" />
 
-        <RichTextContent v-if="hasDescription" :content="announcement.description" class="detail__body" />
+        <RichTextContent
+          v-if="hasDescription"
+          :content="announcement.description"
+          class="detail__body"
+        />
       </article>
     </template>
   </div>

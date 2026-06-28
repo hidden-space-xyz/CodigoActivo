@@ -46,11 +46,7 @@ export function useAssignments(eventId: string) {
   })
 
   const changeRole = useMutation({
-    mutationFn: (vars: {
-      activityId: string
-      userId: string
-      body: ChangeAssignmentRoleRequest
-    }) =>
+    mutationFn: (vars: { activityId: string; userId: string; body: ChangeAssignmentRoleRequest }) =>
       patchApiActivitiesActivityIdUserIdChangeRole(vars.activityId, vars.userId, vars.body).then(
         (r) => r.data,
       ),

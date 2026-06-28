@@ -6,10 +6,7 @@ defineProps<{ event: PastEvent }>()
 </script>
 
 <template>
-  <RouterLink
-    :to="{ name: 'event-detail', params: { eventId: event.id } }"
-    class="past-card"
-  >
+  <RouterLink :to="{ name: 'event-detail', params: { eventId: event.id } }" class="past-card">
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
     <div class="past-card__body">
       <div class="past-card__top">

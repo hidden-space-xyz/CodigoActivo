@@ -26,7 +26,7 @@ watch(
     if (!instance) return
     const incoming = serializeRichText(parseRichText(value))
     if (incoming !== serializeRichText(instance.getJSON())) {
-      instance.commands.setContent(parseRichText(value), false)
+      instance.commands.setContent(parseRichText(value), { emitUpdate: false })
     }
   },
 )

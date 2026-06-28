@@ -278,7 +278,12 @@ function submitChangeRole(): void {
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="roleDialogVisible" modal header="Cambiar rol" :style="{ width: '400px' }">
+    <Dialog
+      v-model:visible="roleDialogVisible"
+      modal
+      header="Cambiar rol"
+      :style="{ width: '400px' }"
+    >
       <div class="form__field">
         <label>Rol</label>
         <Select

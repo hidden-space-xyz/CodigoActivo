@@ -14,7 +14,9 @@ export const useSessionStore = defineStore('session', () => {
   const roleNames = computed(() =>
     (user.value?.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0),
   )
-  const isAdmin = computed(() => (user.value?.roles ?? []).some((role) => role.id === ADMIN_ROLE_ID))
+  const isAdmin = computed(() =>
+    (user.value?.roles ?? []).some((role) => role.id === ADMIN_ROLE_ID),
+  )
 
   function setUser(value: UserResponse | null): void {
     user.value = value

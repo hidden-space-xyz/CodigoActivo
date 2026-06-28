@@ -75,13 +75,10 @@ function populate(): void {
   }
 }
 
-watch(
-  [() => props.visible, () => props.activity],
-  ([open]) => {
-    if (!open) return
-    populate()
-  },
-)
+watch([() => props.visible, () => props.activity], ([open]) => {
+  if (!open) return
+  populate()
+})
 
 function roleLabel(id: string): string {
   return props.roleTypes.find((role) => role.id === id)?.name ?? id

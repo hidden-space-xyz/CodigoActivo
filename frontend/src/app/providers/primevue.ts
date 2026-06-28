@@ -1,5 +1,5 @@
-import Aura from '@primevue/themes/aura'
-import { definePreset } from '@primevue/themes'
+import Aura from '@primeuix/themes/aura'
+import { definePreset } from '@primeuix/themes'
 import type { PrimeVueConfiguration } from 'primevue/config'
 import PrimeVue from 'primevue/config'
 

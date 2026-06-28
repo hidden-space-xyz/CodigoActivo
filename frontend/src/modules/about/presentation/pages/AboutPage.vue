@@ -18,9 +18,9 @@ const { values, activities } = useOrganizationContent()
           Hacemos que programar<br />sea de <span style="color: #a78bfa">tod@s</span>
         </h1>
         <p class="about-hero__lead">
-          Código Activo es una asociación sin ánimo de lucro nacida en 2018 en León.
-          Llevamos la programación y el pensamiento computacional a quienes muchas veces quedan más
-          lejos de la tecnología: el mundo rural, las familias y las nuevas generaciones.
+          Código Activo es una asociación sin ánimo de lucro nacida en 2018 en León. Llevamos la
+          programación y el pensamiento computacional a quienes muchas veces quedan más lejos de la
+          tecnología: el mundo rural, las familias y las nuevas generaciones.
         </p>
       </div>
     </section>

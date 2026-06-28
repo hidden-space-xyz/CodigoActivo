@@ -188,7 +188,11 @@ function confirmDelete(user: UserResponse): void {
         </Column>
         <Column header="Estado">
           <template #body="{ data }">
-            <ColorTag v-if="data.status?.name" :value="data.status.name" :color="data.status.color" />
+            <ColorTag
+              v-if="data.status?.name"
+              :value="data.status.name"
+              :color="data.status.color"
+            />
             <span v-else>—</span>
           </template>
         </Column>
