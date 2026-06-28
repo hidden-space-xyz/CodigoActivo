@@ -289,21 +289,42 @@ onBeforeUnmount(() => editor.value?.destroy())
 
     <div v-if="editor && editor.isActive('table')" class="rt__toolbar rt__toolbar--table">
       <span class="rt__table-label">Tabla:</span>
-      <button type="button" class="rt__btn" @click="editor.chain().focus().addColumnAfter().run()">
+      <button
+        type="button"
+        class="rt__btn"
+        title="Añadir columna"
+        @click="editor.chain().focus().addColumnAfter().run()"
+      >
         + Columna
       </button>
-      <button type="button" class="rt__btn" @click="editor.chain().focus().deleteColumn().run()">
+      <button
+        type="button"
+        class="rt__btn"
+        title="Eliminar columna"
+        @click="editor.chain().focus().deleteColumn().run()"
+      >
         − Columna
       </button>
-      <button type="button" class="rt__btn" @click="editor.chain().focus().addRowAfter().run()">
+      <button
+        type="button"
+        class="rt__btn"
+        title="Añadir fila"
+        @click="editor.chain().focus().addRowAfter().run()"
+      >
         + Fila
       </button>
-      <button type="button" class="rt__btn" @click="editor.chain().focus().deleteRow().run()">
+      <button
+        type="button"
+        class="rt__btn"
+        title="Eliminar fila"
+        @click="editor.chain().focus().deleteRow().run()"
+      >
         − Fila
       </button>
       <button
         type="button"
         class="rt__btn"
+        title="Alternar fila de cabecera"
         @click="editor.chain().focus().toggleHeaderRow().run()"
       >
         Cabecera

@@ -60,6 +60,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'info' }"
+            title="Ver información"
             @click="tab = 'info'"
           >
             Información
@@ -68,6 +69,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'activities' }"
+            title="Ver actividades"
             @click="tab = 'activities'"
           >
             Actividades

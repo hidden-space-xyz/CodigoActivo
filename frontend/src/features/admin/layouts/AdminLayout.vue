@@ -31,7 +31,9 @@ const { displayName, logout } = useAuth()
         <RouterLink :to="{ name: 'home' }" class="admin__home">← Ir al sitio</RouterLink>
         <div class="admin__user">
           <span class="admin__username">{{ displayName }}</span>
-          <button type="button" class="admin__logout" @click="logout()">Cerrar sesión</button>
+          <button type="button" class="admin__logout" title="Cerrar sesión" @click="logout()">
+            Cerrar sesión
+          </button>
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/shared/ui/components/AppButton.vue'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 
@@ -78,6 +78,7 @@ function onSignup(): void {
           type="button"
           class="act__member-remove"
           aria-label="Desapuntar"
+          title="Desapuntar"
           :disabled="busy"
           @click="emit('unassignMember', member.userId)"
         >

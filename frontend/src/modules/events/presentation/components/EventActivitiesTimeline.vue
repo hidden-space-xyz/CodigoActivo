@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import Button from 'primevue/button'
+import Button from '@/shared/ui/components/AppButton.vue'
 import Checkbox from 'primevue/checkbox'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'

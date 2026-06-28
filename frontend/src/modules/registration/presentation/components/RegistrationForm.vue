@@ -127,6 +127,7 @@ function removeMinor(index: number): void {
               type="button"
               class="reg__minor-remove"
               aria-label="Quitar menor"
+              title="Quitar menor"
               @click="removeMinor(index)"
             >
               ✕

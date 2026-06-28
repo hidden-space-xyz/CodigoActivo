@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/shared/ui/components/AppButton.vue'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'

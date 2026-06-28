@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/shared/ui/components/AppButton.vue'
 
 import { loadThumbnailPreview } from '@/features/files/useThumbnail'
 

@@ -26,6 +26,7 @@ function labelFor(year: string): string {
       class="year-filter__pill"
       :class="{ 'year-filter__pill--active': year === selected }"
       :aria-pressed="year === selected"
+      :title="`Filtrar por ${labelFor(year)}`"
       @click="emit('select', year)"
     >
       {{ labelFor(year) }}

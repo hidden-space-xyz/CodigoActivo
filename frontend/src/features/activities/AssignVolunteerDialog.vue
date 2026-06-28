@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/shared/ui/components/AppButton.vue'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import Select from 'primevue/select'

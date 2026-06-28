@@ -48,6 +48,7 @@ function distanceOf(offset: number): number {
           type="button"
           class="sponsors__arrow"
           aria-label="Patrocinador anterior"
+          title="Patrocinador anterior"
           @click="prev"
         >
           ‹
@@ -90,6 +91,7 @@ function distanceOf(offset: number): number {
           type="button"
           class="sponsors__arrow"
           aria-label="Patrocinador siguiente"
+          title="Patrocinador siguiente"
           @click="next"
         >
           ›

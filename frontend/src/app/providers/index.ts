@@ -1,6 +1,7 @@
 import type { App } from 'vue'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
+import Tooltip from 'primevue/tooltip'
 
 import { primevue } from './primevue'
 import { pinia } from './pinia'
@@ -16,4 +17,5 @@ export function registerProviders(app: App): void {
   app.use(ConfirmationService)
   app.use(VueQueryPlugin, { queryClient })
   app.use(router)
+  app.directive('tooltip', Tooltip)
 }
