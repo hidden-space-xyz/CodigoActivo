@@ -6,25 +6,24 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 
 import { useAccount } from '@/modules/account/presentation/composables/useAccount'
-import type { UserResponse } from '@/shared/api/generated/models'
+import type { AccountChild } from '@/modules/account/domain/entities/account-child.entity'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDate, toDateInput } from '@/shared/utils/format'
 
 const toast = useToast()
-const { userId, children, minorRoles, addChild, updateChild, changeChildRole, deleteChild } =
-  useAccount()
+const { children, minorRoles, addChild, updateChild, changeChildRole, deleteChild } = useAccount()
 
 const items = computed(() => children.data.value ?? [])
 
-function roleNames(child: UserResponse): string {
+function roleNames(child: AccountChild): string {
   return (child.roles ?? [])
     .map((role) => role.name ?? '')
     .filter((name) => name.length > 0)
     .join(', ')
 }
 
-function currentRoleId(child: UserResponse): string {
+function currentRoleId(child: AccountChild): string {
   const options = minorRoles.data.value ?? []
   return (
     (child.roles ?? []).find((role) => options.some((option) => option.id === role.id))?.id ?? ''
@@ -59,7 +58,7 @@ function openAdd(): void {
   dialogVisible.value = true
 }
 
-function openEdit(child: UserResponse): void {
+function openEdit(child: AccountChild): void {
   mode.value = 'edit'
   editingId.value = child.id ?? null
   form.firstName = child.firstName ?? ''
@@ -104,11 +103,10 @@ function save(): void {
   updateChild.mutate(
     {
       childId,
-      request: {
+      input: {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         birthDate: form.birthDate,
-        parentId: userId.value,
       },
     },
     {
@@ -140,7 +138,7 @@ function finishEdit(): void {
   })
 }
 
-const deleteTarget = ref<UserResponse | null>(null)
+const deleteTarget = ref<AccountChild | null>(null)
 
 function confirmDelete(): void {
   const id = deleteTarget.value?.id
@@ -220,7 +218,7 @@ function confirmDelete(): void {
             <Select
               input-id="m-role"
               v-model="form.roleId"
-              :options="minorRoles.data.value ?? []"
+              :options="[...(minorRoles.data.value ?? [])]"
               option-label="name"
               option-value="id"
               placeholder="Selecciona un rol"

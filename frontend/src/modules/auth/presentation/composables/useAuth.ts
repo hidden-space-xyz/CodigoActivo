@@ -1,8 +1,9 @@
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
-import { getApiAuthMe, postApiAuthLogout } from '@/shared/api/generated/endpoints/auth/auth'
-import { resetCsrfToken } from '@/shared/api/http-client'
+import { getCurrentUser } from '@/modules/auth/application/use-cases/get-current-user.use-case'
+import { logout as logoutUseCase } from '@/modules/auth/application/use-cases/logout.use-case'
+import { authRepository } from '@/modules/auth/infrastructure/repositories/auth-repository.provider'
 import { useSessionStore } from '@/modules/auth/presentation/stores/session.store'
 
 export function useAuth() {
@@ -11,21 +12,16 @@ export function useAuth() {
   const router = useRouter()
 
   async function bootstrap(): Promise<void> {
-    try {
-      const response = await getApiAuthMe()
-      session.setUser(response.data)
-    } catch {
-      session.clear()
-    }
+    session.setUser(await getCurrentUser(authRepository))
   }
 
   async function logout(): Promise<void> {
     try {
-      await postApiAuthLogout()
-    } catch {}
-    session.clear()
-    resetCsrfToken()
-    await router.push({ name: 'login' })
+      await logoutUseCase(authRepository)
+    } finally {
+      session.clear()
+      await router.push({ name: 'login' })
+    }
   }
 
   return { user, isAuthenticated, isAdmin, displayName, roleNames, bootstrap, logout }

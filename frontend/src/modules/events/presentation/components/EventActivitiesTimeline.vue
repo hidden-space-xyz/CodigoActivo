@@ -13,7 +13,7 @@ import type {
   TimelineActivity,
   TimelineMemberAssignment,
 } from '@/modules/events/presentation/components/activity-timeline.types'
-import type { OverlappingActivityResponse } from '@/shared/api/generated/models'
+import type { ActivityOverlap } from '@/modules/events/domain/entities/activity.entity'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDateTime } from '@/shared/utils/format'
 
@@ -44,7 +44,7 @@ const assignmentByActivity = computed(() => {
   const map = new Map<string, { status: string; roleName: string }>()
   for (const a of assigned.data.value ?? []) {
     if (a.activityId) {
-      map.set(a.activityId, { status: a.status?.name ?? '—', roleName: a.roleType?.name ?? '' })
+      map.set(a.activityId, { status: a.status, roleName: a.roleName })
     }
   }
   return map
@@ -56,10 +56,10 @@ const householdByActivity = computed(() => {
     if (!a.activityId) continue
     const list = map.get(a.activityId) ?? []
     list.push({
-      userId: a.userId ?? '',
-      name: `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim(),
-      roleName: a.roleName ?? '',
-      status: a.statusName ?? '',
+      userId: a.userId,
+      name: a.name,
+      roleName: a.roleName,
+      status: a.status,
     })
     map.set(a.activityId, list)
   }
@@ -68,16 +68,14 @@ const householdByActivity = computed(() => {
 
 const items = computed<TimelineActivity[]>(() =>
   (activities.data.value ?? []).map((a) => ({
-    id: a.id ?? '',
-    title: a.title ?? 'Actividad',
-    description: a.description ?? '',
-    start: a.activityStartsAt ? new Date(a.activityStartsAt) : null,
-    end: a.activityEndsAt ? new Date(a.activityEndsAt) : null,
-    roles: (a.allowedRoleTypes ?? [])
-      .filter((r) => r.roleTypeId)
-      .map((r) => ({ id: r.roleTypeId as string, name: r.roleTypeName ?? 'Rol' })),
-    assignment: assignmentByActivity.value.get(a.id ?? '') ?? null,
-    household: householdByActivity.value.get(a.id ?? '') ?? [],
+    id: a.id,
+    title: a.title,
+    description: a.description,
+    start: a.startsAt ? new Date(a.startsAt) : null,
+    end: a.endsAt ? new Date(a.endsAt) : null,
+    roles: a.roles.map((r) => ({ id: r.id, name: r.name })),
+    assignment: assignmentByActivity.value.get(a.id) ?? null,
+    household: householdByActivity.value.get(a.id) ?? [],
   })),
 )
 
@@ -114,7 +112,7 @@ const overlapDialog = reactive<{
   visible: boolean
   activity: TimelineActivity | null
   roleId: string
-  overlaps: OverlappingActivityResponse[]
+  overlaps: readonly ActivityOverlap[]
 }>({ visible: false, activity: null, roleId: '', overlaps: [] })
 
 interface HouseholdRow {
@@ -214,7 +212,7 @@ function confirmHousehold(): void {
   if (!activity) return
   const assignments = householdDialog.rows
     .filter((row) => row.include && !row.alreadyAssigned && row.roleId)
-    .map((row) => ({ userId: row.userId, activityRoleTypeId: row.roleId }))
+    .map((row) => ({ userId: row.userId, roleId: row.roleId }))
 
   if (assignments.length === 0) {
     householdDialog.visible = false

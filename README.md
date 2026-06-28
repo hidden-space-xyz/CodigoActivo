@@ -35,16 +35,11 @@ Two independent apps live side by side, each with its own conventions.
 
 ```
 CodigoActivo/
-├── backend/    ASP.NET Core Web API — Clean Architecture, 5 projects
-└── frontend/   Vue 3 + Vite SPA — generated API client
+├── backend/    ASP.NET Core Web API
+└── frontend/   Vue 3 + Vite SPA
 ```
 
-### Backend — strict dependency direction
-
-```
-API ──> Composition ──> Application ──> Domain
-                    └──> Infrastructure ─> Domain
-```
+### Backend
 
 | Project              | Responsibility                                                                  |
 | -------------------- | ------------------------------------------------------------------------------- |
@@ -55,14 +50,14 @@ API ──> Composition ──> Application ──> Domain
 | **API**              | Controllers, middleware, auth attributes. References **Composition** only.       |
 
 
-### Frontend — two areas, two styles
+### Frontend
 
-| Area              | Purpose            | Style                                                                |
-| ----------------- | ------------------ | ------------------------------------------------------------------- |
-| **`src/modules`** | Public-facing site | Clean Architecture per module (`domain` / `application` / `infrastructure` / `presentation`). |
-| **`src/features`**| Admin area         | Deliberately flat — `XPage.vue` + `XFormDialog.vue` + `useX.ts` calling generated query hooks. |
-| **`src/shared`**  | Cross-cutting      | Generated API client, fetch mutator (cookie + CSRF), env config.    |
-| **`src/app`**     | Bootstrap          | `main.ts`, providers (Pinia, PrimeVue, TanStack Query), router.     |
+| Area              | Responsibility            |
+| ----------------- | ------------------ |
+| **`src/modules`** | Public-facing site |
+| **`src/features`**| Admin area         |
+| **`src/shared`**  | Cross-cutting      |
+| **`src/app`**     | Bootstrap          |
 
 ## 🚀 Getting Started
 

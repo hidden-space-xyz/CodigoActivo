@@ -7,7 +7,7 @@ import Password from 'primevue/password'
 import Select from 'primevue/select'
 
 import { useAccount } from '@/modules/account/presentation/composables/useAccount'
-import type { UpdateUserRequest } from '@/shared/api/generated/models'
+import type { UpdateProfileInput } from '@/modules/account/domain/value-objects/account-inputs'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 import { getErrorMessage } from '@/shared/utils/api-error'
 import { formatDate, toDateInput } from '@/shared/utils/format'
@@ -39,13 +39,12 @@ function openEdit(): void {
 }
 
 function saveEdit(): void {
-  const request: UpdateUserRequest = {
+  const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
     lastName: editForm.lastName.trim(),
     email: editForm.email.trim(),
     phone: editForm.phone.trim(),
     birthDate: editForm.birthDate,
-    parentId: null,
   }
   updateProfile.mutate(request, {
     onSuccess: () => {
@@ -180,7 +179,7 @@ function savePassword(): void {
       </div>
       <div class="acc-info__row">
         <dt>Estado</dt>
-        <dd>{{ user.status?.name || '—' }}</dd>
+        <dd>{{ user.statusName || '—' }}</dd>
       </div>
     </dl>
 
@@ -235,7 +234,7 @@ function savePassword(): void {
         <Select
           input-id="p-role"
           v-model="selectedRoleId"
-          :options="adultRoles.data.value ?? []"
+          :options="[...(adultRoles.data.value ?? [])]"
           option-label="name"
           option-value="id"
           placeholder="Selecciona un rol"

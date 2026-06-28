@@ -1,113 +1,115 @@
 import { computed } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
-import {
-  deleteApiUsersUserId,
-  getApiUsersRegistrationTypes,
-  getApiUsersUserIdChildren,
-  patchApiUsersUserIdPassword,
-  patchApiUsersUserIdRole,
-  postApiUsersUserIdChildren,
-  putApiUsersUserId,
-} from '@/shared/api/generated/endpoints/users/users'
+import { addAccountChild } from '@/modules/account/application/use-cases/add-account-child.use-case'
+import { changeAccountPassword } from '@/modules/account/application/use-cases/change-account-password.use-case'
+import { changeAccountRole } from '@/modules/account/application/use-cases/change-account-role.use-case'
+import { changeChildRole as changeChildRoleUseCase } from '@/modules/account/application/use-cases/change-child-role.use-case'
+import { deleteAccountChild } from '@/modules/account/application/use-cases/delete-account-child.use-case'
+import { getAccountChildren } from '@/modules/account/application/use-cases/get-account-children.use-case'
+import { getAccountProfile } from '@/modules/account/application/use-cases/get-account-profile.use-case'
+import { getRegistrationTypes } from '@/modules/account/application/use-cases/get-registration-types.use-case'
+import { updateAccountChild } from '@/modules/account/application/use-cases/update-account-child.use-case'
+import { updateAccountProfile } from '@/modules/account/application/use-cases/update-account-profile.use-case'
+import type { AccountProfile } from '@/modules/account/domain/entities/account-profile.entity'
 import type {
-  ChangePasswordRequest,
-  RegisterMinorRequest,
-  UpdateUserRequest,
-  UserResponse,
-} from '@/shared/api/generated/models'
+  AddMinorInput,
+  ChangePasswordInput,
+  UpdateMinorInput,
+  UpdateProfileInput,
+} from '@/modules/account/domain/value-objects/account-inputs'
+import { accountRepository } from '@/modules/account/infrastructure/repositories/account-repository.provider'
+import { useAuth } from '@/modules/auth/presentation/composables/useAuth'
 import { useSessionStore } from '@/modules/auth/presentation/stores/session.store'
 
 export function useAccount() {
   const session = useSessionStore()
+  const { bootstrap } = useAuth()
   const queryClient = useQueryClient()
 
   const userId = computed(() => session.user?.id ?? null)
-
+  const profileKey = ['account', 'me'] as const
   const childrenKey = ['account', 'children'] as const
 
   const profile = useQuery({
-    queryKey: ['account', 'me'],
-    queryFn: ({ signal }) => getApiAuthMe({ signal }).then((r) => r.data),
-    initialData: () => session.user ?? undefined,
+    queryKey: profileKey,
+    queryFn: () => getAccountProfile(accountRepository),
   })
 
   const children = useQuery({
     queryKey: childrenKey,
-    queryFn: ({ signal }) => {
-      if (!userId.value) return Promise.resolve([] as UserResponse[])
-      return getApiUsersUserIdChildren(userId.value, { signal }).then((r) => r.data ?? [])
+    queryFn: () => {
+      if (!userId.value) return Promise.resolve([])
+      return getAccountChildren(accountRepository, userId.value)
     },
     enabled: computed(() => userId.value !== null),
   })
 
   const adultRoles = useQuery({
     queryKey: ['registration-types', 'adult'],
-    queryFn: ({ signal }) =>
-      getApiUsersRegistrationTypes({ minor: false }, { signal }).then((r) => r.data ?? []),
+    queryFn: () => getRegistrationTypes(accountRepository, false),
   })
   const minorRoles = useQuery({
     queryKey: ['registration-types', 'minor'],
-    queryFn: ({ signal }) =>
-      getApiUsersRegistrationTypes({ minor: true }, { signal }).then((r) => r.data ?? []),
+    queryFn: () => getRegistrationTypes(accountRepository, true),
   })
 
   function invalidateChildren(): void {
     void queryClient.invalidateQueries({ queryKey: childrenKey })
   }
 
+  function syncProfile(updated: AccountProfile): void {
+    queryClient.setQueryData(profileKey, updated)
+    void bootstrap()
+  }
+
   const updateProfile = useMutation({
-    mutationFn: (request: UpdateUserRequest) => {
+    mutationFn: (input: UpdateProfileInput) => {
       if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return putApiUsersUserId(userId.value, request).then((r) => r.data)
+      return updateAccountProfile(accountRepository, userId.value, input)
     },
-    onSuccess: (updated) => {
-      session.setUser(updated)
-      void queryClient.invalidateQueries({ queryKey: ['account', 'me'] })
-    },
+    onSuccess: syncProfile,
   })
 
   const changeOwnRole = useMutation({
     mutationFn: (roleId: string) => {
       if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return patchApiUsersUserIdRole(userId.value, { roleId }).then((r) => r.data)
+      return changeAccountRole(accountRepository, userId.value, roleId)
     },
-    onSuccess: (updated) => {
-      session.setUser(updated)
-      void queryClient.invalidateQueries({ queryKey: ['account', 'me'] })
-    },
+    onSuccess: syncProfile,
   })
 
   const changePassword = useMutation({
-    mutationFn: (request: ChangePasswordRequest) => {
+    mutationFn: (input: ChangePasswordInput) => {
       if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return patchApiUsersUserIdPassword(userId.value, request)
+      return changeAccountPassword(accountRepository, userId.value, input)
     },
   })
 
   const addChild = useMutation({
-    mutationFn: (request: RegisterMinorRequest) => {
+    mutationFn: (input: AddMinorInput) => {
       if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return postApiUsersUserIdChildren(userId.value, request).then((r) => r.data)
+      return addAccountChild(accountRepository, userId.value, input)
     },
     onSuccess: invalidateChildren,
   })
 
   const updateChild = useMutation({
-    mutationFn: (vars: { childId: string; request: UpdateUserRequest }) =>
-      putApiUsersUserId(vars.childId, vars.request).then((r) => r.data),
+    mutationFn: (vars: { childId: string; input: UpdateMinorInput }) => {
+      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      return updateAccountChild(accountRepository, vars.childId, userId.value, vars.input)
+    },
     onSuccess: invalidateChildren,
   })
 
   const changeChildRole = useMutation({
     mutationFn: (vars: { childId: string; roleId: string }) =>
-      patchApiUsersUserIdRole(vars.childId, { roleId: vars.roleId }).then((r) => r.data),
+      changeChildRoleUseCase(accountRepository, vars.childId, vars.roleId),
     onSuccess: invalidateChildren,
   })
 
   const deleteChild = useMutation({
-    mutationFn: (childId: string) => deleteApiUsersUserId(childId),
+    mutationFn: (childId: string) => deleteAccountChild(accountRepository, childId),
     onSuccess: invalidateChildren,
   })
 

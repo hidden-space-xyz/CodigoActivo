@@ -8,13 +8,13 @@ import {
   createEmptyMinor,
   type RegistrationForm,
 } from '@/modules/registration/domain/value-objects/registration-form'
-import type { UserTypeResponse } from '@/shared/api/generated/models'
+import type { RegistrationType } from '@/modules/registration/domain/entities/registration-type.entity'
 import BaseButton from '@/shared/ui/components/BaseButton.vue'
 
 const props = defineProps<{
   form: RegistrationForm
-  adultRoles: UserTypeResponse[]
-  minorRoles: UserTypeResponse[]
+  adultRoles: readonly RegistrationType[]
+  minorRoles: readonly RegistrationType[]
   isSubmitting: boolean
 }>()
 
@@ -98,7 +98,7 @@ function removeMinor(index: number): void {
           <Select
             input-id="reg-role"
             v-model="model.roleId"
-            :options="adultRoles"
+            :options="[...adultRoles]"
             option-label="name"
             option-value="id"
             placeholder="Selecciona un rol"
@@ -167,7 +167,7 @@ function removeMinor(index: number): void {
                 <Select
                   :input-id="`minor-role-${index}`"
                   v-model="minor.roleId"
-                  :options="minorRoles"
+                  :options="[...minorRoles]"
                   option-label="name"
                   option-value="id"
                   placeholder="Selecciona un rol"

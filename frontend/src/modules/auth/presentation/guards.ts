@@ -1,6 +1,7 @@
 import type { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'
 
-import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
+import { getCurrentUser } from '@/modules/auth/application/use-cases/get-current-user.use-case'
+import { authRepository } from '@/modules/auth/infrastructure/repositories/auth-repository.provider'
 import { useSessionStore } from '@/modules/auth/presentation/stores/session.store'
 
 export function redirectIfAuthenticated(): RouteLocationRaw | true {
@@ -11,13 +12,9 @@ export function redirectIfAuthenticated(): RouteLocationRaw | true {
 async function ensureSession(): Promise<boolean> {
   const session = useSessionStore()
   if (session.isAuthenticated) return true
-  try {
-    const response = await getApiAuthMe()
-    session.setUser(response.data)
-    return true
-  } catch {
-    return false
-  }
+  const user = await getCurrentUser(authRepository)
+  session.setUser(user)
+  return user !== null
 }
 
 export async function requireAuth(to: RouteLocationNormalized): Promise<RouteLocationRaw | true> {

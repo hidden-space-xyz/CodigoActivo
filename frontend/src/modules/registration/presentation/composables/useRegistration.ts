@@ -1,37 +1,17 @@
 import { reactive, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 
+import { getRegistrationTypes } from '@/modules/registration/application/use-cases/get-registration-types.use-case'
+import { register as registerUseCase } from '@/modules/registration/application/use-cases/register.use-case'
+import { verifyRegistration } from '@/modules/registration/application/use-cases/verify-registration.use-case'
 import {
   createEmptyRegistrationForm,
   type RegistrationForm,
 } from '@/modules/registration/domain/value-objects/registration-form'
-import {
-  patchApiAuthUserIdVerify,
-  postApiAuthRegister,
-} from '@/shared/api/generated/endpoints/auth/auth'
-import { getApiUsersRegistrationTypes } from '@/shared/api/generated/endpoints/users/users'
-import type { RegisterRequest } from '@/shared/api/generated/models'
+import { registrationRepository } from '@/modules/registration/infrastructure/repositories/registration-repository.provider'
 import { scrollToTop } from '@/shared/utils/scroll'
 
 export type RegistrationStep = 'age-gate' | 'form' | 'success'
-
-function toRegisterRequest(form: RegistrationForm): RegisterRequest {
-  return {
-    firstName: form.firstName.trim(),
-    lastName: form.lastName.trim(),
-    email: form.email.trim(),
-    phone: form.phone.trim(),
-    password: form.password,
-    birthDate: form.dateOfBirth,
-    roleId: form.roleId,
-    minors: form.minors.map((minor) => ({
-      firstName: minor.firstName.trim(),
-      lastName: minor.lastName.trim(),
-      birthDate: minor.dateOfBirth,
-      roleId: minor.roleId,
-    })),
-  }
-}
 
 export function useRegistration() {
   const step = ref<RegistrationStep>('age-gate')
@@ -44,23 +24,21 @@ export function useRegistration() {
 
   const adultRoles = useQuery({
     queryKey: ['registration-types', 'adult'],
-    queryFn: ({ signal }) =>
-      getApiUsersRegistrationTypes({ minor: false }, { signal }).then((r) => r.data ?? []),
+    queryFn: () => getRegistrationTypes(registrationRepository, false),
   })
   const minorRoles = useQuery({
     queryKey: ['registration-types', 'minor'],
-    queryFn: ({ signal }) =>
-      getApiUsersRegistrationTypes({ minor: true }, { signal }).then((r) => r.data ?? []),
+    queryFn: () => getRegistrationTypes(registrationRepository, true),
   })
 
   const mutation = useMutation({
-    mutationFn: (payload: RegisterRequest) => postApiAuthRegister(payload).then((r) => r.data),
-    onSuccess: (data) => {
-      createdUserId.value = data.adult?.id ?? null
-      verificationCode.value = data.verificationCode ?? null
+    mutationFn: (payload: RegistrationForm) => registerUseCase(registrationRepository, payload),
+    onSuccess: (result) => {
+      createdUserId.value = result.adultId
+      verificationCode.value = result.verificationCode
       submittedRoleName.value =
         (adultRoles.data.value ?? []).find((role) => role.id === form.roleId)?.name ?? ''
-      submittedMinorCount.value = data.minors?.length ?? form.minors.length
+      submittedMinorCount.value = result.minorCount || form.minors.length
       step.value = 'success'
       scrollToTop()
     },
@@ -69,7 +47,7 @@ export function useRegistration() {
   const verifyMutation = useMutation({
     mutationFn: (otp: string) => {
       if (!createdUserId.value) throw new Error('missing user id')
-      return patchApiAuthUserIdVerify(createdUserId.value, { otp }).then((r) => r.data)
+      return verifyRegistration(registrationRepository, createdUserId.value, otp)
     },
     onSuccess: () => {
       isVerified.value = true
@@ -87,7 +65,7 @@ export function useRegistration() {
   }
 
   function submit(): void {
-    mutation.mutate(toRegisterRequest(form))
+    mutation.mutate({ ...form })
   }
 
   function verify(otp: string): void {

@@ -1,23 +1,18 @@
 import { computed } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import {
-  getApiActivitiesActivityIdUserIdVerifyTimeOverlaps,
-  getApiActivitiesAssigned,
-  getApiActivitiesEventId,
-  getApiActivitiesEventIdHouseholdAssignments,
-  patchApiActivitiesActivityIdUserIdAssign,
-  patchApiActivitiesActivityIdUserIdUnassign,
-  postApiActivitiesActivityIdAssignHousehold,
-} from '@/shared/api/generated/endpoints/activities/activities'
-import { getApiUsersUserIdChildren } from '@/shared/api/generated/endpoints/users/users'
-import type { HouseholdAssignmentRequest, TimeOverlapResponse } from '@/shared/api/generated/models'
+import { assignActivity } from '@/modules/events/application/use-cases/assign-activity.use-case'
+import { assignHousehold as assignHouseholdUseCase } from '@/modules/events/application/use-cases/assign-household.use-case'
+import { getEventActivities } from '@/modules/events/application/use-cases/get-event-activities.use-case'
+import { getHouseholdAssignments } from '@/modules/events/application/use-cases/get-household-assignments.use-case'
+import { getHouseholdMembers } from '@/modules/events/application/use-cases/get-household-members.use-case'
+import { getMyAssignments } from '@/modules/events/application/use-cases/get-my-assignments.use-case'
+import { unassignActivity } from '@/modules/events/application/use-cases/unassign-activity.use-case'
+import { verifyOverlaps as verifyOverlapsUseCase } from '@/modules/events/application/use-cases/verify-overlaps.use-case'
+import type { HouseholdMember, OverlapCheck } from '@/modules/events/domain/entities/activity.entity'
+import type { HouseholdAssignmentInput } from '@/modules/events/domain/value-objects/household-assignment-input'
+import { activityRepository } from '@/modules/events/infrastructure/repositories/activity-repository.provider'
 import { useSessionStore } from '@/modules/auth/presentation/stores/session.store'
-
-export interface HouseholdMember {
-  id: string
-  name: string
-}
 
 export function useEventActivities(eventId: () => string) {
   const session = useSessionStore()
@@ -28,46 +23,40 @@ export function useEventActivities(eventId: () => string) {
 
   const activitiesKey = computed(() => ['public', 'event-activities', eventId()] as const)
   const assignedKey = ['public', 'my-assignments'] as const
-  const childrenKey = ['public', 'my-children'] as const
+  const membersKey = ['public', 'my-children'] as const
   const householdKey = computed(() => ['public', 'household-assignments', eventId()] as const)
 
   const activities = useQuery({
     queryKey: activitiesKey,
-    queryFn: ({ signal }) =>
-      getApiActivitiesEventId(eventId(), { signal }).then((r) => r.data ?? []),
+    queryFn: () => getEventActivities(activityRepository, eventId()),
   })
 
   const assigned = useQuery({
     queryKey: assignedKey,
-    queryFn: ({ signal }) => getApiActivitiesAssigned({}, { signal }).then((r) => r.data ?? []),
+    queryFn: () => getMyAssignments(activityRepository),
     enabled: isAuthenticated,
   })
 
-  const children = useQuery({
-    queryKey: childrenKey,
-    queryFn: ({ signal }) => {
-      if (!userId.value) return Promise.resolve([])
-      return getApiUsersUserIdChildren(userId.value, { signal }).then((r) => r.data ?? [])
+  const householdMembers = useQuery({
+    queryKey: membersKey,
+    queryFn: () => {
+      if (!userId.value) return Promise.resolve<readonly HouseholdMember[]>([])
+      return getHouseholdMembers(activityRepository, userId.value)
     },
     enabled: isAuthenticated,
   })
 
   const household = useQuery({
     queryKey: householdKey,
-    queryFn: ({ signal }) =>
-      getApiActivitiesEventIdHouseholdAssignments(eventId(), { signal }).then((r) => r.data ?? []),
+    queryFn: () => getHouseholdAssignments(activityRepository, eventId()),
     enabled: isAuthenticated,
   })
 
-  const hasHousehold = computed(() => (children.data.value ?? []).length > 0)
+  const hasHousehold = computed(() => (householdMembers.data.value ?? []).length > 0)
 
   const members = computed<HouseholdMember[]>(() => {
     const self: HouseholdMember = { id: userId.value ?? '', name: session.user?.firstName ?? 'Yo' }
-    const kids = (children.data.value ?? []).map((child) => ({
-      id: child.id ?? '',
-      name: `${child.firstName ?? ''} ${child.lastName ?? ''}`.trim(),
-    }))
-    return [self, ...kids]
+    return [self, ...(householdMembers.data.value ?? [])]
   })
 
   function invalidate(): void {
@@ -79,32 +68,26 @@ export function useEventActivities(eventId: () => string) {
   const assign = useMutation({
     mutationFn: (vars: { activityId: string; activityRoleTypeId: string }) => {
       if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return patchApiActivitiesActivityIdUserIdAssign(vars.activityId, userId.value, {
-        activityRoleTypeId: vars.activityRoleTypeId,
-      }).then((r) => r.data)
+      return assignActivity(activityRepository, vars.activityId, userId.value, vars.activityRoleTypeId)
     },
     onSuccess: invalidate,
   })
 
   const assignHousehold = useMutation({
-    mutationFn: (vars: { activityId: string; assignments: HouseholdAssignmentRequest[] }) =>
-      postApiActivitiesActivityIdAssignHousehold(vars.activityId, {
-        assignments: vars.assignments,
-      }).then((r) => r.data),
+    mutationFn: (vars: { activityId: string; assignments: HouseholdAssignmentInput[] }) =>
+      assignHouseholdUseCase(activityRepository, vars.activityId, vars.assignments),
     onSuccess: invalidate,
   })
 
   const unassign = useMutation({
     mutationFn: (vars: { activityId: string; userId: string }) =>
-      patchApiActivitiesActivityIdUserIdUnassign(vars.activityId, vars.userId),
+      unassignActivity(activityRepository, vars.activityId, vars.userId),
     onSuccess: invalidate,
   })
 
-  function verifyOverlaps(activityId: string): Promise<TimeOverlapResponse | undefined> {
+  function verifyOverlaps(activityId: string): Promise<OverlapCheck | undefined> {
     if (!userId.value) return Promise.resolve(undefined)
-    return getApiActivitiesActivityIdUserIdVerifyTimeOverlaps(activityId, userId.value).then(
-      (r) => r.data,
-    )
+    return verifyOverlapsUseCase(activityRepository, activityId, userId.value)
   }
 
   return {

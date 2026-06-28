@@ -3,8 +3,8 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AdminLayout from '@/features/admin/layouts/AdminLayout.vue'
+import DefaultLayout from '@/app/layouts/DefaultLayout.vue'
 import { useAuth } from '@/modules/auth/presentation/composables/useAuth'
-import DefaultLayout from '@/shared/ui/layout/DefaultLayout.vue'
 
 const route = useRoute()
 const { bootstrap } = useAuth()
