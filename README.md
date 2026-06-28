@@ -13,8 +13,7 @@
 
 ## 📖 Overview
 
-This repository holds the source code of the **official website of `<Codigoactivo/>`**, a real
-nonprofit association. It is a single full-stack web app with two clearly separated surfaces:
+This repository holds a single full-stack web app with two clearly separated surfaces:
 
 - A **public-facing site** where visitors and members discover the association's events and
   activities, read its announcements and resources, meet its partners, and sign up — adults
