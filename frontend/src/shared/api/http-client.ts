@@ -1,4 +1,4 @@
-import { env } from '@/shared/config/env'
+import { env } from '@/shared/config'
 
 const UNSAFE_METHODS: ReadonlySet<string> = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 

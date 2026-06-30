@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CONTACT } from '@/shared/constants/app.constants'
-import BrandLogo from '@/shared/ui/components/BrandLogo.vue'
+import { CONTACT } from '@/shared/config'
+import { BrandLogo } from '@/shared/ui'
 
 const currentYear = new Date().getFullYear()
 </script>

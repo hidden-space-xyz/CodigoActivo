@@ -51,17 +51,23 @@ API ──> Composition ──> Application ──> Domain
 - Dev server: `npm run dev` → http://localhost:5173. Vite proxies `/api` to `VITE_API_PROXY_TARGET` (default `https://localhost:5001`; set it to the backend you're running, e.g. `https://localhost:7039`).
 - Build (includes typecheck): `npm run build`. Typecheck only: `npm run typecheck`.
 - Lint: `npm run lint` / `npm run lint:fix`. Format: `npm run format`.
+- **FSD architecture lint:** `npm run lint:fsd` (Steiger, config in `steiger.config.ts`). Enforces the Feature-Sliced Design rules (layer import direction, public API per slice, `@x` cross-imports). `generated/` is ignored and `fsd/insignificant-slice` is intentionally disabled. Must stay green.
 - **Regenerate the API client:** `npm run api:generate` (Orval reads `frontend/swagger.json`). After a backend API change, refresh `swagger.json` from the running backend first, then regenerate. Never hand-edit anything under `src/shared/api/generated/` — it's overwritten and is excluded from ESLint.
 
-### Architecture — two top-level areas, two different styles
+### Architecture — Feature-Sliced Design (FSD)
 
-- **`src/modules/`** — the **public-facing site**, organized in Clean Architecture per module (`domain/`, `application/`, `infrastructure/`, `presentation/`). Domain defines entities + repository interfaces; infrastructure provides `Http*Repository` implementations that wrap the generated client and map responses to domain entities; application holds use-cases; presentation holds pages/components/composables/`routes.ts`.
-- **`src/features/`** — the **admin area**, deliberately flat: each feature is roughly a `XPage.vue` + `XFormDialog.vue` + `useX.ts` composable that calls the generated vue-query hooks directly (no domain/infrastructure layering). Admin routes (`src/features/admin/router/admin.routes.ts`) use `meta.layout: 'admin'` and are guarded by `requireAdmin`.
-- **`src/shared/`** — `api/generated/` (Orval output: vue-query endpoints + models), `api/http-client.ts` (the fetch mutator), `config/env.ts`.
-- **`src/app/`** — bootstrap: `main.ts`, `providers/` (Pinia, PrimeVue, TanStack Query client), and the router. All module/feature route arrays are aggregated in `src/app/router/routes.ts`.
+The whole app follows FSD. Layers, top→bottom, import only downward (`app → pages → widgets → features → entities → shared`); slices in the same layer never import each other (use `@x` cross-import for genuine entity↔entity type deps). Each slice exposes a public API (`index.ts`) and is consumed only through it — never deep-import another slice's internals.
+
+- **`src/shared/`** — reusable, app-agnostic base. Segments: `api/` (`generated/` Orval output + `http-client.ts` mutator), `ui/` (PrimeVue-based kit, flat components), `lib/` (formatting, richtext, media, `use-crud-feedback`, …), `config/` (`env`, app constants, nav config). Stays free of any upward (`entities`) import.
+- **`src/entities/`** — business entities (`event`, `activity`, `announcement`, `resource`, `partner`, `user`, `account`, `session`, `catalog`, `file`, `organization`). Segments: `model/` (domain types, value-objects, Pinia stores, query keys), `api/` (request functions that wrap the generated client + map responses + read vue-query hooks; mapper is internal), `ui/` (entity cards). The Clean Architecture ceremony (repo interfaces, providers, one-line use-cases) was removed — composables call the `api` functions directly.
+- **`src/features/`** — user interactions: `auth`, `register`, `account`, and admin CRUD `manage-{events,activities,partners,users,catalogs}` (`model/` composables with vue-query mutations + invalidation, `ui/` form dialogs). Features compose entities, never other features.
+- **`src/widgets/`** — composite cross-page blocks. Currently `content-entity-page` (generic admin CRUD page used by the announcements & resources admin pages).
+- **`src/pages/`** — one slice per route (`ui/` page + optional `model/`). Public pages at the top level; admin pages grouped under `pages/admin/`. Page-only sections (home sections, the event-detail activity timeline) live inside their page's `ui/`/`model/`, not as widgets.
+- **`src/app/`** — bootstrap: `main.ts`, `App.vue`, `providers/`, `router/` (all routes centralized in `router/routes.ts`, lazy-importing pages via their public API and guarded by `@/features/auth` guards), and `layouts/` (`DefaultLayout`, `AdminLayout`, header/footer chrome).
 
 ### Key patterns
 
 - **Generated client + mutator.** Orval is configured (`orval.config.ts`) for `client: 'vue-query'` with `httpClient` as the mutator. `http-client.ts` is where cross-cutting HTTP behavior lives: `credentials: 'include'` for the session cookie, lazy fetch + cache of the CSRF token (re-fetched and the request retried once on 400/403), and `ApiError` shaping from ProblemDetails responses. Consume the generated `useXxx` hooks; put shared HTTP concerns in the mutator.
+- **Query keys live with their entity.** Each entity owns its TanStack Query keys in `entities/<x>/api/query-keys.ts` (e.g. `eventQueryKeys`); there is no central `query-keys.ts`. Report/dashboard keys that don't map to an entity are inlined in the feature/page that uses them.
 - **No i18n.** UI strings are in Spanish and written inline; there is no translation layer.
 - **Rich text** (event/announcement/resource descriptions) uses TipTap and is stored as TipTap JSON; editor images upload to the files API and only the URL is persisted.

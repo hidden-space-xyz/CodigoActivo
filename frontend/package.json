@@ -13,6 +13,7 @@
     "typecheck": "vue-tsc --build --force",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:fsd": "steiger ./src",
     "format": "prettier --write \"src/**/*.{ts,vue,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,vue,css}\"",
     "api:generate": "orval --config ./orval.config.ts"
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@feature-sliced/steiger-plugin": "^0.6.0",
     "@types/node": "^26.0.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/eslint-config-typescript": "^14.9.0",
@@ -52,6 +54,7 @@
     "globals": "^17.7.0",
     "orval": "^8.19.0",
     "prettier": "^3.9.1",
+    "steiger": "^0.5.13",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.62.0",
     "vite": "^8.1.0",

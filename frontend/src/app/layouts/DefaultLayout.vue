@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Toast from 'primevue/toast'
 
-import AppBackground from './AppBackground.vue'
+import { AppBackground } from '@/shared/ui'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 </script>

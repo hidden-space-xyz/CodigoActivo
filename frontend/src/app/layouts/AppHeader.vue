@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 
-import { useAuth } from '@/modules/auth/presentation/composables/useAuth'
-import { PRIMARY_NAV } from '@/shared/constants/navigation'
-import BaseButton from '@/shared/ui/components/BaseButton.vue'
-import BrandLogo from '@/shared/ui/components/BrandLogo.vue'
+import { useAuth } from '@/features/auth'
+import { PRIMARY_NAV } from '@/shared/config'
+import { BaseButton, BrandLogo } from '@/shared/ui'
 
 const route = useRoute()
 const { isAuthenticated, isAdmin, displayName, logout } = useAuth()
