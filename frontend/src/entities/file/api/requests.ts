@@ -24,7 +24,7 @@ export async function uploadThumbnail(file: File, existingId?: string | null): P
   return response.data.id ?? ''
 }
 
-export interface ThumbnailPreview {
+interface ThumbnailPreview {
   url: string
   name: string
 }

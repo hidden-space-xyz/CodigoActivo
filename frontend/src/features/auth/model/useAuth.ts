@@ -5,7 +5,7 @@ import { getCurrentUserRequest, logoutRequest, useSessionStore } from '@/entitie
 
 export function useAuth() {
   const session = useSessionStore()
-  const { user, isAuthenticated, isAdmin, displayName, roleNames } = storeToRefs(session)
+  const { isAuthenticated, isAdmin, displayName } = storeToRefs(session)
   const router = useRouter()
 
   async function bootstrap(): Promise<void> {
@@ -21,5 +21,5 @@ export function useAuth() {
     }
   }
 
-  return { user, isAuthenticated, isAdmin, displayName, roleNames, bootstrap, logout }
+  return { isAuthenticated, isAdmin, displayName, bootstrap, logout }
 }

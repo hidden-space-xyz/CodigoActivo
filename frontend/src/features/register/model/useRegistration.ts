@@ -99,8 +99,6 @@ export function useRegistration() {
     verify,
     reset,
     isSubmitting: mutation.isPending,
-    isError: mutation.isError,
     isVerifying: verifyMutation.isPending,
-    verifyError: verifyMutation.isError,
   }
 }

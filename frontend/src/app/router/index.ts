@@ -10,5 +10,3 @@ export const router = createRouter({
     return { top: 0, behavior: 'smooth' }
   },
 })
-
-export { routes }

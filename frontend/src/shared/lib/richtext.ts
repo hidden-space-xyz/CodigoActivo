@@ -14,7 +14,7 @@ import StarterKit from '@tiptap/starter-kit'
 
 export type { JSONContent }
 
-export const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
+const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
 export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 
 export function richTextExtensions(): AnyExtension[] {

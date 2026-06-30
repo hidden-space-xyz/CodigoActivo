@@ -3,15 +3,6 @@ import { formatDate, formatDateTime } from '@/shared/lib'
 
 import type { EventDetail, PastEvent, UpcomingEvent } from '../model/types'
 
-const MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
-
-function chip(startsAt?: string | null): { day: string; month: string } {
-  if (!startsAt) return { day: '∞', month: 'ONLINE' }
-  const date = new Date(startsAt)
-  if (Number.isNaN(date.getTime())) return { day: '∞', month: 'ONLINE' }
-  return { day: String(date.getDate()).padStart(2, '0'), month: MONTHS[date.getMonth()] ?? '' }
-}
-
 function isSignupOpen(event: EventResponse): boolean {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
@@ -31,17 +22,12 @@ function isSignupWindowOpen(event: EventResponse): boolean {
 }
 
 export function toUpcomingEvent(event: EventResponse): UpcomingEvent {
-  const { day, month } = chip(event.eventStartsAt)
   return {
     id: event.id ?? '',
     title: event.title ?? '',
     slogan: event.subtitle ?? '',
     date: event.eventStartsAt ? formatDate(event.eventStartsAt) : 'Próximamente',
-    dayLabel: day,
-    monthLabel: month,
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
-    description: event.description ?? '',
-    featured: event.featured ?? false,
     thumbnailId: event.thumbnailId ?? '',
   }
 }

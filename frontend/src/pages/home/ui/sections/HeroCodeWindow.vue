@@ -105,7 +105,4 @@
 .t-coral {
   color: var(--ca-coral);
 }
-.t-faint {
-  color: var(--ca-text-faint);
-}
 </style>

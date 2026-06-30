@@ -18,7 +18,7 @@ export interface ContentRequest {
   thumbnailId?: string
 }
 
-export interface ContentApi {
+interface ContentApi {
   queryKey: readonly unknown[]
   fetchAll: (signal: AbortSignal) => Promise<ContentItem[]>
   fetchOne: (id: string) => Promise<ContentItem>

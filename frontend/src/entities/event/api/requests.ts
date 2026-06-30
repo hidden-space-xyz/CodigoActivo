@@ -51,7 +51,7 @@ export async function getPastEventsRequest(): Promise<readonly PastEvent[]> {
   return (await fetchAll()).filter(isFinished).sort(byStartDescending).map(toPastEvent)
 }
 
-export async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
+async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
   const all = await fetchAll()
   const flagged = all.find((event) => event.featured)
   if (flagged) return toUpcomingEvent(flagged)

@@ -4,10 +4,7 @@ import {
   getApiActivitiesAssignmentStatusTypes,
   getApiActivitiesRoleTypes,
 } from '@/shared/api/generated/endpoints/activities/activities'
-import {
-  getApiUsersStatusTypes,
-  getApiUsersTypes,
-} from '@/shared/api/generated/endpoints/users/users'
+import { getApiUsersTypes } from '@/shared/api/generated/endpoints/users/users'
 
 import { catalogQueryKeys } from './query-keys'
 
@@ -15,13 +12,6 @@ export function useUserTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.userTypes,
     queryFn: ({ signal }) => getApiUsersTypes({ signal }).then((r) => r.data ?? []),
-  })
-}
-
-export function useUserStatusTypesList() {
-  return useQuery({
-    queryKey: catalogQueryKeys.userStatusTypes,
-    queryFn: ({ signal }) => getApiUsersStatusTypes({ signal }).then((r) => r.data ?? []),
   })
 }
 

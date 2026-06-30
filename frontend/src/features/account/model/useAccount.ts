@@ -113,7 +113,6 @@ export function useAccount() {
   })
 
   return {
-    userId,
     profile,
     children,
     adultRoles,

@@ -1,4 +1,4 @@
-export interface TimelineRole {
+interface TimelineRole {
   id: string
   name: string
 }

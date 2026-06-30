@@ -1,10 +1,6 @@
 export type { HouseholdAssignmentInput } from './model/household-assignment-input'
 export type {
-  ActivityAssignment,
   ActivityOverlap,
-  ActivityRole,
-  EventActivity,
-  HouseholdActivityAssignment,
   HouseholdMember,
   OverlapCheck,
 } from './model/types'

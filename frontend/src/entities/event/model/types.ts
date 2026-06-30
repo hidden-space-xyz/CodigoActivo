@@ -3,11 +3,7 @@ export interface UpcomingEvent {
   readonly title: string
   readonly slogan: string
   readonly date: string
-  readonly dayLabel: string
-  readonly monthLabel: string
   readonly status: string
-  readonly description: string
-  readonly featured: boolean
   readonly thumbnailId: string
 }
 

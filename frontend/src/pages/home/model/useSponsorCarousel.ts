@@ -68,5 +68,5 @@ export function useSponsorCarousel(source: MaybeRefOrGetter<readonly Sponsor[] |
   onMounted(start)
   onUnmounted(stop)
 
-  return { cards, next, prev, pause, resume, count }
+  return { cards, next, prev, pause, resume }
 }
