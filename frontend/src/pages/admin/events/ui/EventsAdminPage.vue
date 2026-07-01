@@ -114,8 +114,10 @@ function confirmDelete(event: EventResponse): void {
             </span>
           </template>
         </Column>
-        <Column header="Inicio">
-          <template #body="{ data }">{{ formatDate(data.eventStartsAt) }}</template>
+        <Column header="Duración">
+          <template #body="{ data }">
+            {{ formatDate(data.eventStartsAt) }} – {{ formatDate(data.eventEndsAt) }}
+          </template>
         </Column>
         <Column header="Inscripción">
           <template #body="{ data }">

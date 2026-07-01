@@ -5,7 +5,6 @@ import { useConfirm } from 'primevue/useconfirm'
 import { AdminPageHeader, AppButton as Button, DataState, ListThumbnail } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import Tag from 'primevue/tag'
 
 import { ActivityFormDialog, AssignVolunteerDialog, useActivities, useAssignments } from '@/features/manage-activities'
 import { deleteThumbnail } from '@/entities/file'
@@ -41,6 +40,10 @@ const summaryCards = computed(() => {
   }
   return cards
 })
+
+function roleNames(activity: ActivityResponse): string {
+  return (activity.allowedRoleTypes ?? []).map((role) => role.roleTypeName).join(', ') || '—'
+}
 
 const activityDialogVisible = ref(false)
 const selectedActivity = ref<ActivityResponse | null>(null)
@@ -198,13 +201,7 @@ function onAssignSubmit(payload: {
           </Column>
           <Column header="Roles">
             <template #body="{ data }">
-              <Tag
-                v-for="role in data.allowedRoleTypes ?? []"
-                :key="role.roleTypeId"
-                :value="role.roleTypeName"
-                class="role-tag"
-              />
-              <span v-if="(data.allowedRoleTypes ?? []).length === 0">—</span>
+              {{ roleNames(data) }}
             </template>
           </Column>
           <Column header="Acciones" style="width: 160px">
@@ -309,10 +306,6 @@ function onAssignSubmit(payload: {
   font-weight: 600;
   color: var(--ca-text-bright);
   margin-bottom: 14px;
-}
-
-.role-tag {
-  margin-right: 4px;
 }
 
 .row-actions {

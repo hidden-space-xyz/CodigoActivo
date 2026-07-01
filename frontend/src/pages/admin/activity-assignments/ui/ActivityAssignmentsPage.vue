@@ -194,12 +194,7 @@ function submitChangeRole(): void {
           </Column>
           <Column header="Rol">
             <template #body="{ data }">
-              <Tag
-                v-if="data.signedUp && data.roleTypeName"
-                :value="data.roleTypeName"
-                severity="secondary"
-              />
-              <span v-else>—</span>
+              {{ data.signedUp && data.roleTypeName ? data.roleTypeName : '—' }}
             </template>
           </Column>
           <Column header="Estado">
