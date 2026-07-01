@@ -46,9 +46,44 @@ const uploadError = ref('')
 
 const missingThumbnail = computed(() => !pickedFile.value && !props.event?.thumbnailId)
 
+// Signup dates carry a time; event dates are date-only ("un evento no tiene horas").
 function parse(value?: string | null): Date | null {
   return value ? new Date(value) : null
 }
+
+function parseDateOnly(value?: string | null): Date | null {
+  if (!value) return null
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+function toDateOnly(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const eventStartMissing = computed(() => !form.eventStartsAt)
+const eventEndMissing = computed(() => !form.eventEndsAt)
+const eventOrderInvalid = computed(
+  () => !!form.eventStartsAt && !!form.eventEndsAt && form.eventEndsAt < form.eventStartsAt,
+)
+const signupStartMissing = computed(() => !form.signupStartsAt)
+const signupEndMissing = computed(() => !form.signupEndsAt)
+const signupOrderInvalid = computed(
+  () => !!form.signupStartsAt && !!form.signupEndsAt && form.signupEndsAt <= form.signupStartsAt,
+)
+const datesValid = computed(
+  () =>
+    !eventStartMissing.value &&
+    !eventEndMissing.value &&
+    !eventOrderInvalid.value &&
+    !signupStartMissing.value &&
+    !signupEndMissing.value &&
+    !signupOrderInvalid.value,
+)
 
 watch(
   () => props.visible,
@@ -60,8 +95,8 @@ watch(
     form.title = props.event?.title ?? ''
     form.subtitle = props.event?.subtitle ?? ''
     form.description = props.event?.description ?? ''
-    form.eventStartsAt = parse(props.event?.eventStartsAt)
-    form.eventEndsAt = parse(props.event?.eventEndsAt)
+    form.eventStartsAt = parseDateOnly(props.event?.eventStartsAt)
+    form.eventEndsAt = parseDateOnly(props.event?.eventEndsAt)
     form.signupStartsAt = parse(props.event?.signupStartsAt)
     form.signupEndsAt = parse(props.event?.signupEndsAt)
   },
@@ -74,15 +109,19 @@ function close(): void {
 async function save(): Promise<void> {
   submitted.value = true
   uploadError.value = ''
-  if (!form.title.trim() || !form.subtitle.trim() || missingThumbnail.value) return
+  if (!form.title.trim() || !form.subtitle.trim() || missingThumbnail.value || !datesValid.value) {
+    return
+  }
+  const { eventStartsAt, eventEndsAt, signupStartsAt, signupEndsAt } = form
+  if (!eventStartsAt || !eventEndsAt || !signupStartsAt || !signupEndsAt) return
   const body: CreateEventRequest = {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
     description: form.description.trim() ? form.description : EMPTY_DOC_JSON,
-    eventStartsAt: form.eventStartsAt ? form.eventStartsAt.toISOString() : null,
-    eventEndsAt: form.eventEndsAt ? form.eventEndsAt.toISOString() : null,
-    signupStartsAt: form.signupStartsAt ? form.signupStartsAt.toISOString() : null,
-    signupEndsAt: form.signupEndsAt ? form.signupEndsAt.toISOString() : null,
+    eventStartsAt: toDateOnly(eventStartsAt),
+    eventEndsAt: toDateOnly(eventEndsAt),
+    signupStartsAt: signupStartsAt.toISOString(),
+    signupEndsAt: signupEndsAt.toISOString(),
   }
   uploading.value = true
   try {
@@ -127,21 +166,29 @@ async function save(): Promise<void> {
           <label>Inicio del evento</label>
           <DatePicker
             v-model="form.eventStartsAt"
-            show-time
-            hour-format="24"
             date-format="dd/mm/yy"
+            :invalid="submitted && eventStartMissing"
             fluid
           />
+          <small v-if="submitted && eventStartMissing" class="form__error"
+            >La fecha de inicio es obligatoria.</small
+          >
         </div>
         <div class="form__field">
           <label>Fin del evento</label>
           <DatePicker
             v-model="form.eventEndsAt"
-            show-time
-            hour-format="24"
             date-format="dd/mm/yy"
+            :min-date="form.eventStartsAt ?? undefined"
+            :invalid="submitted && (eventEndMissing || eventOrderInvalid)"
             fluid
           />
+          <small v-if="submitted && eventEndMissing" class="form__error"
+            >La fecha de fin es obligatoria.</small
+          >
+          <small v-else-if="submitted && eventOrderInvalid" class="form__error"
+            >El fin no puede ser anterior al inicio.</small
+          >
         </div>
       </div>
       <div class="form__row">
@@ -152,8 +199,12 @@ async function save(): Promise<void> {
             show-time
             hour-format="24"
             date-format="dd/mm/yy"
+            :invalid="submitted && signupStartMissing"
             fluid
           />
+          <small v-if="submitted && signupStartMissing" class="form__error"
+            >La apertura de inscripción es obligatoria.</small
+          >
         </div>
         <div class="form__field">
           <label>Cierre de inscripción</label>
@@ -162,8 +213,16 @@ async function save(): Promise<void> {
             show-time
             hour-format="24"
             date-format="dd/mm/yy"
+            :min-date="form.signupStartsAt ?? undefined"
+            :invalid="submitted && (signupEndMissing || signupOrderInvalid)"
             fluid
           />
+          <small v-if="submitted && signupEndMissing" class="form__error"
+            >El cierre de inscripción es obligatorio.</small
+          >
+          <small v-else-if="submitted && signupOrderInvalid" class="form__error"
+            >El cierre debe ser posterior a la apertura.</small
+          >
         </div>
       </div>
       <div class="form__field">

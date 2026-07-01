@@ -51,9 +51,20 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        if (!await events.ExistsAsync(e => e.Id == eventId, ct))
+        var ev = await events.FindAsync(e => e.Id == eventId, ct);
+        if (ev is null)
         {
             return Error.NotFound();
+        }
+
+        var schedule = ValidateActivitySchedule(
+            ev,
+            request.ActivityStartsAt,
+            request.ActivityEndsAt
+        );
+        if (schedule.IsFailure)
+        {
+            return schedule.Error!;
         }
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
@@ -66,8 +77,8 @@ public class ActivityService(
         {
             Title = request.Title.Trim(),
             Description = request.Description,
-            ActivityStartsAt = request.ActivityStartsAt,
-            ActivityEndsAt = request.ActivityEndsAt,
+            ActivityStartsAt = schedule.Value.StartsAt,
+            ActivityEndsAt = schedule.Value.EndsAt,
             EventId = eventId,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -95,6 +106,22 @@ public class ActivityService(
             return Error.NotFound();
         }
 
+        var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
+        if (ev is null)
+        {
+            return Error.NotFound();
+        }
+
+        var schedule = ValidateActivitySchedule(
+            ev,
+            request.ActivityStartsAt,
+            request.ActivityEndsAt
+        );
+        if (schedule.IsFailure)
+        {
+            return schedule.Error!;
+        }
+
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
         if (thumbnail.IsFailure)
         {
@@ -103,8 +130,8 @@ public class ActivityService(
 
         activity.Title = request.Title.Trim();
         activity.Description = request.Description;
-        activity.ActivityStartsAt = request.ActivityStartsAt;
-        activity.ActivityEndsAt = request.ActivityEndsAt;
+        activity.ActivityStartsAt = schedule.Value.StartsAt;
+        activity.ActivityEndsAt = schedule.Value.EndsAt;
         activity.ThumbnailId = request.ThumbnailId;
         activity.UpdatedAt = DateTimeOffset.UtcNow;
         activity.UpdatedBy = userId;
@@ -134,6 +161,7 @@ public class ActivityService(
         Guid activityId,
         Guid userId,
         AssignRequest request,
+        bool isAdmin,
         CancellationToken ct = default
     )
     {
@@ -149,11 +177,7 @@ public class ActivityService(
             return Error.NotFound();
         }
 
-        var now = DateTimeOffset.UtcNow;
-        if (
-            (ev.SignupStartsAt is { } signupStart && now < signupStart)
-            || (ev.SignupEndsAt is { } signupEnd && now > signupEnd)
-        )
+        if (!isAdmin && !IsSignupOpen(ev, DateTimeOffset.UtcNow))
         {
             return Error.Validation();
         }
@@ -194,6 +218,7 @@ public class ActivityService(
         Guid activityId,
         Guid actingUserId,
         AssignHouseholdRequest request,
+        bool isAdmin,
         CancellationToken ct = default
     )
     {
@@ -214,11 +239,7 @@ public class ActivityService(
             return Error.NotFound();
         }
 
-        var now = DateTimeOffset.UtcNow;
-        if (
-            (ev.SignupStartsAt is { } signupStart && now < signupStart)
-            || (ev.SignupEndsAt is { } signupEnd && now > signupEnd)
-        )
+        if (!isAdmin && !IsSignupOpen(ev, DateTimeOffset.UtcNow))
         {
             return Error.Validation();
         }
@@ -276,6 +297,7 @@ public class ActivityService(
     public async Task<Result> UnassignAsync(
         Guid activityId,
         Guid userId,
+        bool isAdmin,
         CancellationToken ct = default
     )
     {
@@ -283,6 +305,26 @@ public class ActivityService(
         if (assignment is null)
         {
             return Error.NotFound();
+        }
+
+        if (!isAdmin)
+        {
+            var activity = await activities.FindAsync(a => a.Id == activityId, ct);
+            if (activity is null)
+            {
+                return Error.NotFound();
+            }
+
+            var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
+            if (ev is null)
+            {
+                return Error.NotFound();
+            }
+
+            if (!IsSignupOpen(ev, DateTimeOffset.UtcNow))
+            {
+                return Error.Validation();
+            }
         }
 
         activities.RemoveAssignment(assignment);
@@ -469,13 +511,41 @@ public class ActivityService(
 
     private static bool Overlaps(Activity a, Activity b)
     {
-        return a.ActivityStartsAt is { } aStart
-            && a.ActivityEndsAt is { } aEnd
-            && b.ActivityStartsAt is { } bStart
-            && b.ActivityEndsAt is { } bEnd
-            && aStart < bEnd
-            && bStart < aEnd;
+        return a.ActivityStartsAt < b.ActivityEndsAt && b.ActivityStartsAt < a.ActivityEndsAt;
     }
+
+    private static bool IsSignupOpen(Event ev, DateTimeOffset now)
+    {
+        return now >= ev.SignupStartsAt && now <= ev.SignupEndsAt;
+    }
+
+    private static Result<ActivitySchedule> ValidateActivitySchedule(
+        Event ev,
+        DateTimeOffset? startsAt,
+        DateTimeOffset? endsAt
+    )
+    {
+        if (startsAt is not { } start || endsAt is not { } end)
+        {
+            return Error.Validation();
+        }
+
+        if (end <= start)
+        {
+            return Error.Validation();
+        }
+
+        var startDate = DateOnly.FromDateTime(start.UtcDateTime);
+        var endDate = DateOnly.FromDateTime(end.UtcDateTime);
+        if (startDate < ev.EventStartsAt || endDate > ev.EventEndsAt)
+        {
+            return Error.Validation();
+        }
+
+        return new ActivitySchedule(start, end);
+    }
+
+    private readonly record struct ActivitySchedule(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
 
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {

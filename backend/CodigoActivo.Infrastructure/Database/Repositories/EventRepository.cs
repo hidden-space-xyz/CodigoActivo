@@ -27,18 +27,17 @@ public class EventRepository(CodigoActivoDbContext context)
 
         if (startDate.HasValue)
         {
-            query = query.Where(e => e.EventEndsAt == null || e.EventEndsAt >= startDate);
+            var start = DateOnly.FromDateTime(startDate.Value.UtcDateTime);
+            query = query.Where(e => e.EventEndsAt >= start);
         }
 
         if (endDate.HasValue)
         {
-            query = query.Where(e => e.EventStartsAt == null || e.EventStartsAt <= endDate);
+            var end = DateOnly.FromDateTime(endDate.Value.UtcDateTime);
+            query = query.Where(e => e.EventStartsAt <= end);
         }
 
-        return await query
-            .OrderBy(e => e.EventStartsAt ?? DateTimeOffset.MaxValue)
-            .ThenBy(e => e.Title)
-            .ToListAsync(ct);
+        return await query.OrderBy(e => e.EventStartsAt).ThenBy(e => e.Title).ToListAsync(ct);
     }
 
     public async Task<Event?> GetWithActivitiesAndAssignmentsAsync(

@@ -22,6 +22,8 @@ const props = defineProps<{
   activity: ActivityResponse | null
   roleTypes: ActivityRoleTypeResponse[]
   saving: boolean
+  eventStart?: string | null
+  eventEnd?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -52,6 +54,52 @@ const uploading = ref(false)
 const uploadError = ref('')
 
 const missingThumbnail = computed(() => !pickedFile.value && !props.activity?.thumbnailId)
+
+// The event has no time-of-day, so an activity is bounded by the event's calendar days.
+function parseDateOnly(value?: string | null): Date | null {
+  if (!value) return null
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+// The backend compares the activity's UTC calendar day (DateOnly.FromDateTime(UtcDateTime))
+// against the event's date-only bounds; mirror that exactly so the layers never disagree.
+function utcDay(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+const eventStartDate = computed(() => parseDateOnly(props.eventStart))
+const eventEndDate = computed(() => parseDateOnly(props.eventEnd))
+const minDate = computed(() => eventStartDate.value ?? undefined)
+const maxDate = computed(() => {
+  const end = eventEndDate.value
+  return end
+    ? new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999)
+    : undefined
+})
+
+const startMissing = computed(() => !form.activityStartsAt)
+const endMissing = computed(() => !form.activityEndsAt)
+const orderInvalid = computed(
+  () =>
+    !!form.activityStartsAt &&
+    !!form.activityEndsAt &&
+    form.activityEndsAt <= form.activityStartsAt,
+)
+const outsideEvent = computed(() => {
+  const start = form.activityStartsAt
+  const end = form.activityEndsAt
+  if (!start || !end) return false
+  const eventStart = props.eventStart?.slice(0, 10)
+  const eventEnd = props.eventEnd?.slice(0, 10)
+  if (eventStart && utcDay(start) < eventStart) return true
+  if (eventEnd && utcDay(end) > eventEnd) return true
+  return false
+})
+const datesValid = computed(
+  () => !startMissing.value && !endMissing.value && !orderInvalid.value && !outsideEvent.value,
+)
 
 function populate(): void {
   submitted.value = false
@@ -90,12 +138,21 @@ function close(): void {
 async function save(): Promise<void> {
   submitted.value = true
   uploadError.value = ''
-  if (!form.title.trim() || !form.description.trim() || missingThumbnail.value) return
+  if (
+    !form.title.trim() ||
+    !form.description.trim() ||
+    missingThumbnail.value ||
+    !datesValid.value
+  ) {
+    return
+  }
+  const { activityStartsAt, activityEndsAt } = form
+  if (!activityStartsAt || !activityEndsAt) return
   const body: CreateActivityRequest = {
     title: form.title.trim(),
     description: form.description.trim(),
-    activityStartsAt: form.activityStartsAt ? form.activityStartsAt.toISOString() : null,
-    activityEndsAt: form.activityEndsAt ? form.activityEndsAt.toISOString() : null,
+    activityStartsAt: activityStartsAt.toISOString(),
+    activityEndsAt: activityEndsAt.toISOString(),
     allowedRoleTypes: form.roleIds.map((id) => ({
       activityRoleTypeId: id,
       desiredSignups: form.desired[id] ?? null,
@@ -148,8 +205,14 @@ async function save(): Promise<void> {
             show-time
             hour-format="24"
             date-format="dd/mm/yy"
+            :min-date="minDate"
+            :max-date="maxDate"
+            :invalid="submitted && (startMissing || outsideEvent)"
             fluid
           />
+          <small v-if="submitted && startMissing" class="form__error"
+            >La fecha y hora de inicio son obligatorias.</small
+          >
         </div>
         <div class="form__field">
           <label>Fin</label>
@@ -158,10 +221,22 @@ async function save(): Promise<void> {
             show-time
             hour-format="24"
             date-format="dd/mm/yy"
+            :min-date="form.activityStartsAt ?? minDate"
+            :max-date="maxDate"
+            :invalid="submitted && (endMissing || orderInvalid || outsideEvent)"
             fluid
           />
+          <small v-if="submitted && endMissing" class="form__error"
+            >La fecha y hora de fin son obligatorias.</small
+          >
+          <small v-else-if="submitted && orderInvalid" class="form__error"
+            >El fin debe ser posterior al inicio.</small
+          >
         </div>
       </div>
+      <small v-if="submitted && outsideEvent" class="form__error"
+        >La actividad debe estar dentro de las fechas del evento.</small
+      >
       <div class="form__field">
         <label>Roles permitidos</label>
         <MultiSelect

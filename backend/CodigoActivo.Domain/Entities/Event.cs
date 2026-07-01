@@ -9,10 +9,10 @@ public class Event : AuditableEntity
 
     public string Description { get; set; } = "{}";
 
-    public DateTimeOffset? EventStartsAt { get; set; }
-    public DateTimeOffset? EventEndsAt { get; set; }
-    public DateTimeOffset? SignupStartsAt { get; set; }
-    public DateTimeOffset? SignupEndsAt { get; set; }
+    public DateOnly EventStartsAt { get; set; }
+    public DateOnly EventEndsAt { get; set; }
+    public DateTimeOffset SignupStartsAt { get; set; }
+    public DateTimeOffset SignupEndsAt { get; set; }
 
     public bool Featured { get; set; }
 

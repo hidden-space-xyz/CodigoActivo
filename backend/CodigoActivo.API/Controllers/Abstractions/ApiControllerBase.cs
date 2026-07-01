@@ -10,6 +10,8 @@ public abstract class ApiControllerBase : ControllerBase
         User.GetUserId()
         ?? throw new InvalidOperationException("No authenticated user on this request.");
 
+    protected bool IsAdmin => User.IsAdmin();
+
     protected ActionResult<T> ToOk<T>(Result<T> result)
     {
         return result.IsSuccess ? Ok(result.Value) : ToProblem(result.Error!);

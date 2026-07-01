@@ -105,7 +105,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         CancellationToken ct
     )
     {
-        return ToOk(await activities.AssignAsync(activityId, userId, request, ct));
+        return ToOk(await activities.AssignAsync(activityId, userId, request, IsAdmin, ct));
     }
 
     [HttpPost("{activityId:guid}/assign-household")]
@@ -116,7 +116,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         CancellationToken ct
     )
     {
-        return ToOk(await activities.AssignHouseholdAsync(activityId, UserId, request, ct));
+        return ToOk(await activities.AssignHouseholdAsync(activityId, UserId, request, IsAdmin, ct));
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/unassign")]
@@ -124,7 +124,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     [AllowOnlySelf]
     public async Task<IActionResult> Unassign(Guid activityId, Guid userId, CancellationToken ct)
     {
-        return ToNoContent(await activities.UnassignAsync(activityId, userId, ct));
+        return ToNoContent(await activities.UnassignAsync(activityId, userId, IsAdmin, ct));
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/change-status")]

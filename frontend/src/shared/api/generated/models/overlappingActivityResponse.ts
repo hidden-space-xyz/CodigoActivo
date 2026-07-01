@@ -10,8 +10,6 @@ export interface OverlappingActivityResponse {
   activityId?: string;
   /** @nullable */
   title?: string | null;
-  /** @nullable */
-  startsAt?: string | null;
-  /** @nullable */
-  endsAt?: string | null;
+  startsAt?: string;
+  endsAt?: string;
 }

@@ -57,6 +57,13 @@ public interface IActivityRepository : IDbRepository<Activity>
 
     Task<Activity?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
+    Task<bool> AnyOutsideRangeAsync(
+        Guid eventId,
+        DateTimeOffset lowerInclusive,
+        DateTimeOffset upperExclusive,
+        CancellationToken ct = default
+    );
+
     Task<bool> AllowedRoleExistsAsync(
         Guid activityId,
         Guid activityRoleTypeId,

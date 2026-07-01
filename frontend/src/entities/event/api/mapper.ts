@@ -16,9 +16,9 @@ function isSignupWindowOpen(event: EventResponse): boolean {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
   const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
-  if (start !== null && now < start) return false
-  if (end !== null && now > end) return false
-  return true
+  // A defined window is required (matches backend IsSignupOpen: now within [start, end]).
+  if (start === null || end === null) return false
+  return now >= start && now <= end
 }
 
 export function toUpcomingEvent(event: EventResponse): UpcomingEvent {
@@ -37,12 +37,12 @@ export function toEventDetail(event: EventResponse): EventDetail {
   const end = event.eventEndsAt
   const dateLabel = start
     ? end
-      ? `${formatDateTime(start)} – ${formatDateTime(end)}`
-      : formatDateTime(start)
+      ? `${formatDate(start)} – ${formatDate(end)}`
+      : formatDate(start)
     : 'Próximamente'
   const signupLabel =
     event.signupStartsAt || event.signupEndsAt
-      ? `${formatDate(event.signupStartsAt)} – ${formatDate(event.signupEndsAt)}`
+      ? `${formatDateTime(event.signupStartsAt)} – ${formatDateTime(event.signupEndsAt)}`
       : '—'
   return {
     id: event.id ?? '',

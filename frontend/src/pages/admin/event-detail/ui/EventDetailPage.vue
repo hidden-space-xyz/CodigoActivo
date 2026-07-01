@@ -244,6 +244,8 @@ function onAssignSubmit(payload: {
       :activity="selectedActivity"
       :role-types="roleTypes.data.value ?? []"
       :saving="activitySaving"
+      :event-start="event.data.value?.eventStartsAt ?? null"
+      :event-end="event.data.value?.eventEndsAt ?? null"
       @submit="onActivitySubmit"
     />
 

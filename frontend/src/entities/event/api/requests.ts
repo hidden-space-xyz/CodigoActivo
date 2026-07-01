@@ -11,12 +11,23 @@ function startOfToday(): number {
   return now.getTime()
 }
 
+// Event dates are bare "yyyy-mm-dd" (no time); interpret them on the local calendar so an
+// event stays "ongoing" through the end of its last local day, not until UTC midnight.
+function dateOnlyMs(value?: string | null, endOfDay = false): number | null {
+  if (!value) return null
+  const year = Number(value.slice(0, 4))
+  const month = Number(value.slice(5, 7)) - 1
+  const day = Number(value.slice(8, 10))
+  const date = endOfDay ? new Date(year, month, day, 23, 59, 59, 999) : new Date(year, month, day)
+  return Number.isNaN(date.getTime()) ? null : date.getTime()
+}
+
 function startsAt(event: EventResponse): number | null {
-  return event.eventStartsAt ? new Date(event.eventStartsAt).getTime() : null
+  return dateOnlyMs(event.eventStartsAt)
 }
 
 function isUpcomingOrOngoing(event: EventResponse): boolean {
-  const end = event.eventEndsAt ? new Date(event.eventEndsAt).getTime() : null
+  const end = dateOnlyMs(event.eventEndsAt, true)
   if (end !== null) return end >= Date.now()
   const start = startsAt(event)
   if (start !== null) return start >= startOfToday()
@@ -24,7 +35,7 @@ function isUpcomingOrOngoing(event: EventResponse): boolean {
 }
 
 function isFinished(event: EventResponse): boolean {
-  const end = event.eventEndsAt ? new Date(event.eventEndsAt).getTime() : null
+  const end = dateOnlyMs(event.eventEndsAt, true)
   if (end !== null) return end < Date.now()
   const start = startsAt(event)
   if (start !== null) return start < startOfToday()

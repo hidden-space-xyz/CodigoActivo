@@ -12,8 +12,8 @@ public record ActivityResponse(
     Guid Id,
     string Title,
     string Description,
-    DateTimeOffset? ActivityStartsAt,
-    DateTimeOffset? ActivityEndsAt,
+    DateTimeOffset ActivityStartsAt,
+    DateTimeOffset ActivityEndsAt,
     Guid EventId,
     Guid ThumbnailId,
     DateTimeOffset CreatedAt,
@@ -28,8 +28,8 @@ public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId, int? DesiredSi
 public record CreateActivityRequest(
     [Required, MaxLength(200)] string Title,
     [Required] string Description,
-    DateTimeOffset? ActivityStartsAt,
-    DateTimeOffset? ActivityEndsAt,
+    [Required] DateTimeOffset? ActivityStartsAt,
+    [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
     IReadOnlyList<ActivityAllowedRoleRequest>? AllowedRoleTypes
 );
@@ -37,8 +37,8 @@ public record CreateActivityRequest(
 public record UpdateActivityRequest(
     [Required, MaxLength(200)] string Title,
     [Required] string Description,
-    DateTimeOffset? ActivityStartsAt,
-    DateTimeOffset? ActivityEndsAt,
+    [Required] DateTimeOffset? ActivityStartsAt,
+    [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
     IReadOnlyList<ActivityAllowedRoleRequest>? AllowedRoleTypes
 );
@@ -82,8 +82,8 @@ public record ChangeAssignmentRoleRequest([Required] Guid ActivityRoleTypeId);
 public record OverlappingActivityResponse(
     Guid ActivityId,
     string Title,
-    DateTimeOffset? StartsAt,
-    DateTimeOffset? EndsAt
+    DateTimeOffset StartsAt,
+    DateTimeOffset EndsAt
 );
 
 public record TimeOverlapResponse(
@@ -95,8 +95,8 @@ public record AssignedActivityResponse(
     Guid ActivityId,
     string Title,
     string Description,
-    DateTimeOffset? ActivityStartsAt,
-    DateTimeOffset? ActivityEndsAt,
+    DateTimeOffset ActivityStartsAt,
+    DateTimeOffset ActivityEndsAt,
     Guid EventId,
     AssignedActivityRoleResponse RoleType,
     AssignedActivityStatusResponse Status

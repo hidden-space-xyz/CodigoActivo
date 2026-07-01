@@ -8,8 +8,8 @@ public class Activity : AuditableEntity
 
     public string Description { get; set; } = null!;
 
-    public DateTimeOffset? ActivityStartsAt { get; set; }
-    public DateTimeOffset? ActivityEndsAt { get; set; }
+    public DateTimeOffset ActivityStartsAt { get; set; }
+    public DateTimeOffset ActivityEndsAt { get; set; }
 
     public Guid EventId { get; set; }
     public Event Event { get; set; } = null!;

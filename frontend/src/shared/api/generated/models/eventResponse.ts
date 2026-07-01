@@ -14,14 +14,10 @@ export interface EventResponse {
   subtitle?: string | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  eventStartsAt?: string | null;
-  /** @nullable */
-  eventEndsAt?: string | null;
-  /** @nullable */
-  signupStartsAt?: string | null;
-  /** @nullable */
-  signupEndsAt?: string | null;
+  eventStartsAt?: string;
+  eventEndsAt?: string;
+  signupStartsAt?: string;
+  signupEndsAt?: string;
   createdAt?: string;
   /** @nullable */
   updatedAt?: string | null;

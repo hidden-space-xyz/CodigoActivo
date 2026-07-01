@@ -14,10 +14,8 @@ export interface AssignedActivityResponse {
   title?: string | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  activityStartsAt?: string | null;
-  /** @nullable */
-  activityEndsAt?: string | null;
+  activityStartsAt?: string;
+  activityEndsAt?: string;
   eventId?: string;
   roleType?: AssignedActivityRoleResponse;
   status?: AssignedActivityStatusResponse;

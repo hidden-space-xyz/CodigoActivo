@@ -20,7 +20,7 @@ public class ActivityRepository(CodigoActivoDbContext context)
             .Include(a => a.AllowedRoleTypes)
             .ThenInclude(ar => ar.ActivityRoleType)
             .Where(a => a.EventId == eventId)
-            .OrderBy(a => a.ActivityStartsAt ?? DateTimeOffset.MaxValue)
+            .OrderBy(a => a.ActivityStartsAt)
             .ThenBy(a => a.Title)
             .ToListAsync(ct);
     }
@@ -56,6 +56,21 @@ public class ActivityRepository(CodigoActivoDbContext context)
     public async Task<Activity?> GetForEditAsync(Guid id, CancellationToken ct = default)
     {
         return await Set.Include(a => a.AllowedRoleTypes).FirstOrDefaultAsync(a => a.Id == id, ct);
+    }
+
+    public Task<bool> AnyOutsideRangeAsync(
+        Guid eventId,
+        DateTimeOffset lowerInclusive,
+        DateTimeOffset upperExclusive,
+        CancellationToken ct = default
+    )
+    {
+        return Set.AnyAsync(
+            a =>
+                a.EventId == eventId
+                && (a.ActivityStartsAt < lowerInclusive || a.ActivityEndsAt >= upperExclusive),
+            ct
+        );
     }
 
     public Task<bool> AllowedRoleExistsAsync(
@@ -111,21 +126,15 @@ public class ActivityRepository(CodigoActivoDbContext context)
 
         if (startDate.HasValue)
         {
-            query = query.Where(x =>
-                x.Activity.ActivityEndsAt == null || x.Activity.ActivityEndsAt >= startDate
-            );
+            query = query.Where(x => x.Activity.ActivityEndsAt >= startDate.Value);
         }
 
         if (endDate.HasValue)
         {
-            query = query.Where(x =>
-                x.Activity.ActivityStartsAt == null || x.Activity.ActivityStartsAt <= endDate
-            );
+            query = query.Where(x => x.Activity.ActivityStartsAt <= endDate.Value);
         }
 
-        return await query
-            .OrderBy(x => x.Activity.ActivityStartsAt ?? DateTimeOffset.MaxValue)
-            .ToListAsync(ct);
+        return await query.OrderBy(x => x.Activity.ActivityStartsAt).ToListAsync(ct);
     }
 
     public async Task<IReadOnlyList<ActivityUserRoleAssignment>> GetAssignmentsForUsersByEventAsync(

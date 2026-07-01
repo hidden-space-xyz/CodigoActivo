@@ -2996,13 +2996,11 @@
           },
           "activityStartsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "activityEndsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "eventId": {
             "type": "string",
@@ -3163,13 +3161,11 @@
           },
           "activityStartsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "activityEndsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "eventId": {
             "type": "string",
@@ -3429,12 +3425,12 @@
           },
           "eventStartsAt": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
           "eventEndsAt": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
           "signupStartsAt": {
@@ -3588,23 +3584,19 @@
           },
           "eventStartsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date"
           },
           "eventEndsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date"
           },
           "signupStartsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "signupEndsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "createdAt": {
             "type": "string",
@@ -3802,13 +3794,11 @@
           },
           "startsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           },
           "endsAt": {
             "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -4103,12 +4093,12 @@
           },
           "eventStartsAt": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
           "eventEndsAt": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
           "signupStartsAt": {

@@ -113,15 +113,22 @@ public interface IActivityService
         Guid activityId,
         Guid userId,
         AssignRequest request,
+        bool isAdmin,
         CancellationToken ct = default
     );
     Task<Result<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
         Guid activityId,
         Guid actingUserId,
         AssignHouseholdRequest request,
+        bool isAdmin,
         CancellationToken ct = default
     );
-    Task<Result> UnassignAsync(Guid activityId, Guid userId, CancellationToken ct = default);
+    Task<Result> UnassignAsync(
+        Guid activityId,
+        Guid userId,
+        bool isAdmin,
+        CancellationToken ct = default
+    );
     Task<Result<AssignmentResponse>> ChangeStatusAsync(
         Guid activityId,
         Guid userId,

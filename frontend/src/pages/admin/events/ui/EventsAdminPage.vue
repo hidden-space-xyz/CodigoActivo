@@ -13,7 +13,7 @@ import type {
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTime, getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { formatDate, formatDateTime, getErrorMessage, useCrudFeedback } from '@/shared/lib'
 
 const { list, create, update, remove, feature } = useEventsAdmin()
 const feedback = useCrudFeedback()
@@ -115,7 +115,7 @@ function confirmDelete(event: EventResponse): void {
           </template>
         </Column>
         <Column header="Inicio">
-          <template #body="{ data }">{{ formatDateTime(data.eventStartsAt) }}</template>
+          <template #body="{ data }">{{ formatDate(data.eventStartsAt) }}</template>
         </Column>
         <Column header="Inscripción">
           <template #body="{ data }">

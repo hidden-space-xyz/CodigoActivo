@@ -246,6 +246,7 @@ function confirmHousehold(): void {
 }
 
 function onUnassignMember(activity: TimelineActivity, memberId: string): void {
+  if (!props.signupOpen) return
   busyId.value = activity.id
   unassign.mutate(
     { activityId: activity.id, userId: memberId },

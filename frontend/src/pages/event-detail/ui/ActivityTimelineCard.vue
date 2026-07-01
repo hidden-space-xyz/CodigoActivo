@@ -72,6 +72,7 @@ function onSignup(): void {
           />
         </span>
         <button
+          v-if="signupOpen"
           type="button"
           class="act__member-remove"
           aria-label="Desapuntar"
@@ -111,12 +112,14 @@ function onSignup(): void {
       <template v-else-if="activity.assignment">
         <span class="act__note">Inscrito como {{ activity.assignment.roleName || '—' }}</span>
         <Button
+          v-if="signupOpen"
           label="Desapuntarme"
           severity="secondary"
           size="small"
           :loading="busy"
           @click="emit('unassign')"
         />
+        <span v-else class="act__note">El periodo de inscripción ha finalizado.</span>
       </template>
       <template v-else-if="!signupOpen">
         <span class="act__note">La inscripción no está abierta.</span>
