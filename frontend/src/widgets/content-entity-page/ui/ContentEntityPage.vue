@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useConfirm } from 'primevue/useconfirm'
-import { AdminPageHeader, AppButton as Button, ListThumbnail, RichTextEditor } from '@/shared/ui'
+import {
+  AdminPageHeader,
+  AppButton as Button,
+  ColumnSearch,
+  ListThumbnail,
+  RichTextEditor,
+} from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
@@ -168,12 +174,9 @@ function confirmDelete(item: ContentItem): void {
       :rows-per-page-options="[25, 50, 100]"
       :sort-field="table.sortField.value"
       :sort-order="table.sortOrder.value"
-      v-model:filters="table.filters.value"
-      filter-display="row"
       removable-sort
       @page="table.onPage"
       @sort="table.onSort"
-      @filter="table.onFilter"
     >
       <template #empty>
         <span v-if="table.isError.value">No se pudieron cargar los registros.</span>
@@ -185,29 +188,29 @@ function confirmDelete(item: ContentItem): void {
           <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
         </template>
       </Column>
-      <Column field="title" header="Título" sortable :show-filter-menu="false">
+      <Column field="title" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('title').value"
+            label="Título"
+            placeholder="Buscar título"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           <span class="title-cell">
             {{ data.title }}
             <Tag v-if="controller.canFeature && data.featured" value="Destacado" severity="warn" />
           </span>
         </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            placeholder="Buscar título"
-            fluid
-            @input="filterCallback()"
-          />
-        </template>
       </Column>
-      <Column field="subtitle" header="Subtítulo" sortable :show-filter-menu="false">
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
+      <Column field="subtitle" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('subtitle').value"
+            label="Subtítulo"
             placeholder="Buscar subtítulo"
-            fluid
-            @input="filterCallback()"
+            @apply="table.onFilter"
           />
         </template>
       </Column>

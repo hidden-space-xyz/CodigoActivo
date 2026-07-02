@@ -174,3 +174,38 @@ export function buildFilterClause(
       return literal.startsWith("'") ? `contains(${field},${literal})` : `${field} eq ${literal}`
   }
 }
+
+const ACCENTED_VOWELS: Record<string, string> = { á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u' }
+
+export function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[áéíóú]/g, (char) => ACCENTED_VOWELS[char] ?? char)
+}
+
+const TEXT_FOLD_MATCH_MODES = new Set([
+  'contains',
+  'notContains',
+  'startsWith',
+  'endsWith',
+  'equals',
+  'notEquals',
+])
+
+export function buildColumnFilter(
+  field: string,
+  type: ODataFieldType,
+  matchMode: string | undefined,
+  value: unknown,
+): string | undefined {
+  if (type === 'text' && (matchMode === undefined || TEXT_FOLD_MATCH_MODES.has(matchMode))) {
+    if (value === null || value === undefined || value === '') return undefined
+    const literal = `'${normalizeSearchText(String(value)).replace(/'/g, "''")}'`
+    return buildFilterClause(`deaccent(tolower(${field}))`, matchMode ?? 'contains', literal)
+  }
+
+  const literal = formatODataValue(value, type)
+  if (literal === null) return undefined
+  return buildFilterClause(field, matchMode, literal)
+}

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useConfirm } from 'primevue/useconfirm'
-import { AdminPageHeader, AppButton as Button, ListThumbnail } from '@/shared/ui'
+import { AdminPageHeader, AppButton as Button, ColumnSearch, ListThumbnail } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import InputText from 'primevue/inputtext'
 
 import { deleteThumbnail } from '@/entities/file'
 import { PartnerFormDialog, usePartners } from '@/features/manage-partners'
@@ -99,12 +98,9 @@ function confirmDelete(partner: PartnerResponse): void {
       :rows-per-page-options="[25, 50, 100]"
       :sort-field="table.sortField.value"
       :sort-order="table.sortOrder.value"
-      v-model:filters="table.filters.value"
-      filter-display="row"
       removable-sort
       @page="table.onPage"
       @sort="table.onSort"
-      @filter="table.onFilter"
     >
       <template #empty>
         <span v-if="table.isError.value">No se pudieron cargar los patrocinadores.</span>
@@ -116,41 +112,41 @@ function confirmDelete(partner: PartnerResponse): void {
           <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.name" style="width: 88px" />
         </template>
       </Column>
-      <Column field="name" header="Nombre" sortable :show-filter-menu="false">
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
+      <Column field="name" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('name').value"
+            label="Nombre"
             placeholder="Buscar nombre"
-            fluid
-            @input="filterCallback()"
+            @apply="table.onFilter"
           />
         </template>
       </Column>
-      <Column field="tier" header="Nivel" sortable :show-filter-menu="false" style="width: 130px">
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            type="number"
+      <Column field="tier" sortable style="width: 130px">
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('tier').value"
+            label="Nivel"
             placeholder="Nivel"
-            fluid
-            @input="filterCallback()"
+            input-type="number"
+            @apply="table.onFilter"
           />
         </template>
       </Column>
-      <Column field="website" header="Sitio web" sortable :show-filter-menu="false">
+      <Column field="website" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('website').value"
+            label="Sitio web"
+            placeholder="Buscar sitio"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           <a v-if="data.website" :href="data.website" target="_blank" rel="noopener" class="link">{{
             data.website
           }}</a>
           <span v-else>—</span>
-        </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            placeholder="Buscar sitio"
-            fluid
-            @input="filterCallback()"
-          />
         </template>
       </Column>
       <Column field="fromDate" header="Alta" sortable style="width: 160px">

@@ -1,17 +1,15 @@
 import { computed, ref, type Ref } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import type {
-  DataTableFilterMeta,
   DataTableFilterMetaData,
   DataTablePageEvent,
   DataTableSortEvent,
 } from 'primevue/datatable'
 
 import {
-  buildFilterClause,
+  buildColumnFilter,
   combineFilters,
   fetchODataList,
-  formatODataValue,
   type ODataFieldType,
   type ODataPage,
   type ODataQuery,
@@ -41,8 +39,10 @@ const DEFAULT_MATCH_MODE: Record<ODataFieldType, string> = {
   guid: 'equals',
 }
 
-function initialFilters(columns: Record<string, ODataColumn>): DataTableFilterMeta {
-  const filters: DataTableFilterMeta = {}
+function initialFilters(
+  columns: Record<string, ODataColumn>,
+): Record<string, DataTableFilterMetaData> {
+  const filters: Record<string, DataTableFilterMetaData> = {}
   for (const [key, column] of Object.entries(columns)) {
     filters[key] = { value: null, matchMode: column.matchMode ?? DEFAULT_MATCH_MODE[column.type] }
   }
@@ -55,7 +55,7 @@ export function useODataTable<T>(options: UseODataTableOptions) {
   const rows = ref(options.rows ?? 25)
   const sortField = ref<string | undefined>(options.defaultSort?.field)
   const sortOrder = ref<number>(options.defaultSort?.order ?? 1)
-  const filters = ref<DataTableFilterMeta>(initialFilters(columns))
+  const filters = ref<Record<string, DataTableFilterMetaData>>(initialFilters(columns))
 
   const resolvedBaseFilter = computed(() =>
     typeof options.baseFilter === 'function' ? options.baseFilter() : options.baseFilter?.value,
@@ -67,9 +67,14 @@ export function useODataTable<T>(options: UseODataTableOptions) {
     for (const [key, column] of Object.entries(columns)) {
       const meta = filters.value[key] as DataTableFilterMetaData | undefined
       if (!meta) continue
-      const literal = formatODataValue(meta.value, column.type)
-      if (literal === null) continue
-      clauses.push(buildFilterClause(column.field ?? key, meta.matchMode ?? undefined, literal))
+      clauses.push(
+        buildColumnFilter(
+          column.field ?? key,
+          column.type,
+          meta.matchMode ?? undefined,
+          meta.value,
+        ),
+      )
     }
 
     const orderBy = sortField.value
@@ -109,6 +114,14 @@ export function useODataTable<T>(options: UseODataTableOptions) {
     first.value = 0
   }
 
+  function columnFilter(key: string): DataTableFilterMetaData {
+    const existing = filters.value[key]
+    if (existing) return existing
+    const meta: DataTableFilterMetaData = { value: null, matchMode: undefined }
+    filters.value[key] = meta
+    return meta
+  }
+
   return {
     items: computed(() => page.value.items),
     total: computed(() => page.value.total),
@@ -119,6 +132,7 @@ export function useODataTable<T>(options: UseODataTableOptions) {
     sortField,
     sortOrder,
     filters,
+    columnFilter,
     onPage,
     onSort,
     onFilter,

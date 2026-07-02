@@ -6,12 +6,15 @@ using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.OData.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCodigoActivo(builder.Configuration);
+
+DeaccentFilterBinder.EnsureFunctionRegistered();
 
 builder
     .Services.AddControllers()
@@ -23,7 +26,11 @@ builder
             .Expand()
             .Count()
             .SetMaxTop(1000)
-            .AddRouteComponents("api/odata", EdmModelBuilder.Build())
+            .AddRouteComponents(
+                "api/odata",
+                EdmModelBuilder.Build(),
+                services => services.AddSingleton<IFilterBinder, DeaccentFilterBinder>()
+            )
     );
 
 builder.Services.AddAntiforgery(options =>
