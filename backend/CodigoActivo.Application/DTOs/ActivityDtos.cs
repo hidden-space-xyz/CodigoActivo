@@ -8,9 +8,12 @@ public record ActivityResponse(
     Guid Id,
     string Title,
     string Description,
+    string Location,
     DateTimeOffset ActivityStartsAt,
     DateTimeOffset ActivityEndsAt,
     Guid EventId,
+    Guid ModalityId,
+    string ModalityName,
     Guid ThumbnailId,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
@@ -24,9 +27,12 @@ public record ActivityResponse(
             default,
             "",
             "",
+            "",
             default,
             default,
             default,
+            default,
+            "",
             default,
             default,
             null,
@@ -41,6 +47,8 @@ public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId);
 public record CreateActivityRequest(
     [Required, MaxLength(200)] string Title,
     [Required] string Description,
+    [Required, MaxLength(200)] string Location,
+    [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
@@ -50,6 +58,8 @@ public record CreateActivityRequest(
 public record UpdateActivityRequest(
     [Required, MaxLength(200)] string Title,
     [Required] string Description,
+    [Required, MaxLength(200)] string Location,
+    [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
@@ -137,4 +147,10 @@ public record AssignmentStatusTypeResponse(Guid Id, string Name, string Descript
 {
     public AssignmentStatusTypeResponse()
         : this(default, "", "", "") { }
+}
+
+public record ActivityModalityTypeResponse(Guid Id, string Name)
+{
+    public ActivityModalityTypeResponse()
+        : this(default, "") { }
 }

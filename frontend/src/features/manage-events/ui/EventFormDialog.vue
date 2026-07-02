@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { AppButton as Button, RichTextEditor } from '@/shared/ui'
+import { useQueryClient } from '@tanstack/vue-query'
+import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
+import ColorPicker from 'primevue/colorpicker'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import MultiSelect from 'primevue/multiselect'
 
 import { ThumbnailField, uploadThumbnail } from '@/entities/file'
+import { catalogQueryKeys, useEventCategoryTypesList } from '@/entities/catalog'
+import { postApiEventsCategoryType } from '@/shared/api/generated/endpoints/events/events'
 import type {
   CreateEventRequest,
+  EventCategoryTypeResponse,
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
@@ -24,6 +30,7 @@ interface EventForm {
   title: string
   subtitle: string
   description: string
+  categoryIds: string[]
   eventStartsAt: Date | null
   eventEndsAt: Date | null
   signupStartsAt: Date | null
@@ -34,6 +41,7 @@ const form = reactive<EventForm>({
   title: '',
   subtitle: '',
   description: '',
+  categoryIds: [],
   eventStartsAt: null,
   eventEndsAt: null,
   signupStartsAt: null,
@@ -43,6 +51,55 @@ const submitted = ref(false)
 const pickedFile = ref<File | null>(null)
 const uploading = ref(false)
 const uploadError = ref('')
+
+const categoriesQuery = useEventCategoryTypesList()
+const queryClient = useQueryClient()
+const localCategories = ref<EventCategoryTypeResponse[]>([])
+const categoryOptions = computed<EventCategoryTypeResponse[]>(() => {
+  const fetched = categoriesQuery.data.value ?? []
+  const extra = localCategories.value.filter((cat) => !fetched.some((f) => f.id === cat.id))
+  return [...fetched, ...extra]
+})
+const categoriesMissing = computed(() => form.categoryIds.length === 0)
+
+const catDialogVisible = ref(false)
+const catSubmitted = ref(false)
+const creatingCat = ref(false)
+const catError = ref('')
+const newCat = reactive<{ name: string; color: string }>({ name: '', color: '6366F1' })
+const newCatHex = computed(() => `#${newCat.color.replace(/^#/, '')}`)
+
+function openNewCategory(): void {
+  newCat.name = ''
+  newCat.color = '6366F1'
+  catSubmitted.value = false
+  catError.value = ''
+  catDialogVisible.value = true
+}
+
+async function createCategory(): Promise<void> {
+  catSubmitted.value = true
+  catError.value = ''
+  if (!newCat.name.trim()) return
+  creatingCat.value = true
+  try {
+    const response = await postApiEventsCategoryType({
+      name: newCat.name.trim(),
+      color: newCatHex.value,
+    })
+    const created = response.data
+    if (created.id) {
+      localCategories.value.push(created)
+      if (!form.categoryIds.includes(created.id)) form.categoryIds.push(created.id)
+    }
+    void queryClient.invalidateQueries({ queryKey: catalogQueryKeys.eventCategoryTypes })
+    catDialogVisible.value = false
+  } catch (error) {
+    catError.value = getErrorMessage(error, 'No se pudo crear la categoría.')
+  } finally {
+    creatingCat.value = false
+  }
+}
 
 const missingThumbnail = computed(() => !pickedFile.value && !props.event?.thumbnailId)
 
@@ -94,6 +151,10 @@ watch(
     form.title = props.event?.title ?? ''
     form.subtitle = props.event?.subtitle ?? ''
     form.description = props.event?.description ?? ''
+    form.categoryIds = (props.event?.categories ?? [])
+      .map((cat) => cat.categoryTypeId)
+      .filter((id): id is string => !!id)
+    localCategories.value = []
     form.eventStartsAt = parseDateOnly(props.event?.eventStartsAt)
     form.eventEndsAt = parseDateOnly(props.event?.eventEndsAt)
     form.signupStartsAt = parse(props.event?.signupStartsAt)
@@ -108,7 +169,13 @@ function close(): void {
 async function save(): Promise<void> {
   submitted.value = true
   uploadError.value = ''
-  if (!form.title.trim() || !form.subtitle.trim() || missingThumbnail.value || !datesValid.value) {
+  if (
+    !form.title.trim() ||
+    !form.subtitle.trim() ||
+    missingThumbnail.value ||
+    !datesValid.value ||
+    categoriesMissing.value
+  ) {
     return
   }
   const { eventStartsAt, eventEndsAt, signupStartsAt, signupEndsAt } = form
@@ -117,6 +184,7 @@ async function save(): Promise<void> {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
     description: form.description.trim() ? form.description : EMPTY_DOC_JSON,
+    categoryTypeIds: form.categoryIds,
     eventStartsAt: toDateOnly(eventStartsAt),
     eventEndsAt: toDateOnly(eventEndsAt),
     signupStartsAt: signupStartsAt.toISOString(),
@@ -155,6 +223,25 @@ async function save(): Promise<void> {
       <div class="form__field">
         <label>Subtítulo</label>
         <InputText v-model="form.subtitle" :invalid="submitted && !form.subtitle.trim()" fluid />
+      </div>
+      <div class="form__field">
+        <label>Categorías</label>
+        <div class="form__cats">
+          <MultiSelect
+            v-model="form.categoryIds"
+            :options="categoryOptions"
+            option-label="name"
+            option-value="id"
+            placeholder="Selecciona categorías"
+            :invalid="submitted && categoriesMissing"
+            filter
+            class="form__cats-select"
+          />
+          <Button label="Nueva" icon="pi pi-plus" text size="small" @click="openNewCategory" />
+        </div>
+        <small v-if="submitted && categoriesMissing" class="form__error"
+          >Selecciona al menos una categoría.</small
+        >
       </div>
       <div class="form__field">
         <label>Descripción</label>
@@ -249,6 +336,39 @@ async function save(): Promise<void> {
       <Button label="Guardar" :loading="saving || uploading" @click="save" />
     </template>
   </Dialog>
+
+  <Dialog
+    v-model:visible="catDialogVisible"
+    modal
+    header="Nueva categoría"
+    :style="{ width: '380px' }"
+  >
+    <form class="form" @submit.prevent="createCategory">
+      <div class="form__field">
+        <label>Nombre</label>
+        <InputText v-model="newCat.name" :invalid="catSubmitted && !newCat.name.trim()" fluid />
+      </div>
+      <div class="form__field">
+        <label>Color</label>
+        <div class="form__cat-color">
+          <ColorPicker v-model="newCat.color" />
+          <ColorTag :value="newCat.name.trim() || 'Ejemplo'" :color="newCatHex" />
+          <span class="form__hex">{{ newCatHex }}</span>
+        </div>
+      </div>
+      <small v-if="catError" class="form__error">{{ catError }}</small>
+    </form>
+    <template #footer>
+      <Button
+        label="Cancelar"
+        text
+        severity="secondary"
+        :disabled="creatingCat"
+        @click="catDialogVisible = false"
+      />
+      <Button label="Crear" :loading="creatingCat" @click="createCategory" />
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -274,6 +394,29 @@ async function save(): Promise<void> {
 .form__field label {
   font-size: 13px;
   font-weight: 600;
+  color: var(--ca-text-muted);
+}
+
+.form__cats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form__cats-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.form__cat-color {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form__hex {
+  font-family: var(--ca-font-mono);
+  font-size: 13px;
   color: var(--ca-text-muted);
 }
 

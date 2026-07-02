@@ -20,6 +20,10 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<ActivityUserRoleAssignment> ActivityUserRoleAssignments =>
         Set<ActivityUserRoleAssignment>();
     public DbSet<AssignmentStatusType> AssignmentStatusTypes => Set<AssignmentStatusType>();
+    public DbSet<ActivityModalityType> ActivityModalityTypes => Set<ActivityModalityType>();
+
+    public DbSet<EventCategoryType> EventCategoryTypes => Set<EventCategoryType>();
+    public DbSet<EventCategory> EventCategories => Set<EventCategory>();
 
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<Announcement> Announcements => Set<Announcement>();

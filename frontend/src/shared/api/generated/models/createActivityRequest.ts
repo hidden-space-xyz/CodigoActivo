@@ -13,6 +13,9 @@ export interface CreateActivityRequest {
   /** @nullable */
   description?: string | null;
   /** @nullable */
+  location?: string | null;
+  activityModalityTypeId?: string;
+  /** @nullable */
   activityStartsAt?: string | null;
   /** @nullable */
   activityEndsAt?: string | null;

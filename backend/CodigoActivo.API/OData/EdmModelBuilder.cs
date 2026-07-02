@@ -18,6 +18,7 @@ public static class EdmModelBuilder
         builder.ComplexType<UserStatusResponse>();
         builder.ComplexType<UserRoleResponse>();
         builder.ComplexType<ActivityAllowedRoleResponse>();
+        builder.ComplexType<EventCategoryResponse>();
         builder.ComplexType<AssignedActivityRoleResponse>();
         builder.ComplexType<AssignedActivityStatusResponse>();
 
@@ -45,6 +46,8 @@ public static class EdmModelBuilder
         builder.EntitySet<UserTypeResponse>("UserTypes");
         builder.EntitySet<UserStatusTypeResponse>("UserStatusTypes");
         builder.EntitySet<RegistrationTypeResponse>("RegistrationTypes");
+        builder.EntitySet<EventCategoryTypeResponse>("EventCategoryTypes");
+        builder.EntitySet<ActivityModalityTypeResponse>("ActivityModalityTypes");
 
         builder
             .EntitySet<AssignedActivityResponse>("AssignedActivities")

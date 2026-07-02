@@ -30,6 +30,19 @@ public class EventRepository(CodigoActivoDbContext context)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
+    public async Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default)
+    {
+        return await Set.Include(e => e.Categories).FirstOrDefaultAsync(e => e.Id == id, ct);
+    }
+
+    public async Task<Event?> GetWithCategoriesAsync(Guid id, CancellationToken ct = default)
+    {
+        return await Set.AsNoTracking()
+            .Include(e => e.Categories)
+                .ThenInclude(c => c.EventCategoryType)
+            .FirstOrDefaultAsync(e => e.Id == id, ct);
+    }
+
     public async Task SetFeaturedAsync(Guid id, CancellationToken ct = default)
     {
         await Set.Where(e => e.Featured && e.Id != id)

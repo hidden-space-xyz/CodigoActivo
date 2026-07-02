@@ -13,9 +13,14 @@ export interface ActivityResponse {
   title?: string | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  location?: string | null;
   activityStartsAt?: string;
   activityEndsAt?: string;
   eventId?: string;
+  modalityId?: string;
+  /** @nullable */
+  modalityName?: string | null;
   thumbnailId?: string;
   createdAt?: string;
   /** @nullable */

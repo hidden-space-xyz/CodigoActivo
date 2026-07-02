@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20260702184721_InitialCreate")]
+    [Migration("20260702195803_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -36,6 +36,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("activity_ends_at");
 
+                    b.Property<Guid>("ActivityModalityTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("activity_modality_type_id");
+
                     b.Property<DateTimeOffset>("ActivityStartsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("activity_starts_at");
@@ -57,6 +61,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("event_id");
 
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("location");
+
                     b.Property<Guid>("ThumbnailId")
                         .HasColumnType("uuid")
                         .HasColumnName("thumbnail_id");
@@ -76,6 +85,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_activities");
+
+                    b.HasIndex("ActivityModalityTypeId")
+                        .HasDatabaseName("ix_activities_activity_modality_type_id");
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_activities_created_by");
@@ -109,6 +121,28 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_activity_allowed_role_types_activity_role_type_id");
 
                     b.ToTable("activity_allowed_role_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityModalityType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_activity_modality_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_activity_modality_types_name");
+
+                    b.ToTable("activity_modality_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleType", b =>
@@ -344,6 +378,53 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_events_updated_by");
 
                     b.ToTable("events", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategory", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("EventCategoryTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_category_type_id");
+
+                    b.HasKey("EventId", "EventCategoryTypeId")
+                        .HasName("pk_event_categories");
+
+                    b.HasIndex("EventCategoryTypeId")
+                        .HasDatabaseName("ix_event_categories_event_category_type_id");
+
+                    b.ToTable("event_categories", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_category_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_category_types_name");
+
+                    b.ToTable("event_category_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
@@ -680,6 +761,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
                 {
+                    b.HasOne("CodigoActivo.Domain.Entities.ActivityModalityType", "ActivityModalityType")
+                        .WithMany("Activities")
+                        .HasForeignKey("ActivityModalityTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_activities_activity_modality_types_activity_modality_type_id");
+
                     b.HasOne("CodigoActivo.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedBy")
@@ -706,6 +794,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_activities_users_updated_by");
+
+                    b.Navigation("ActivityModalityType");
 
                     b.Navigation("Event");
 
@@ -822,6 +912,27 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Thumbnail");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategory", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.EventCategoryType", "EventCategoryType")
+                        .WithMany("Events")
+                        .HasForeignKey("EventCategoryTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_categories_event_category_types_event_category_type_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
+                        .WithMany("Categories")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_categories_events_event_id");
+
+                    b.Navigation("Event");
+
+                    b.Navigation("EventCategoryType");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Entities.User", null)
@@ -930,6 +1041,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Assignments");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityModalityType", b =>
+                {
+                    b.Navigation("Activities");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleType", b =>
                 {
                     b.Navigation("AllowedInActivities");
@@ -945,6 +1061,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
                 {
                     b.Navigation("Activities");
+
+                    b.Navigation("Categories");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>
+                {
+                    b.Navigation("Events");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>

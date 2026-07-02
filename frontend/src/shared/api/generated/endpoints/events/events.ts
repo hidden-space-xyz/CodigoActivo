@@ -26,8 +26,11 @@ import type {
 } from 'vue';
 
 import type {
+  CreateEventCategoryTypeRequest,
   CreateEventRequest,
+  EventCategoryTypeResponse,
   EventResponse,
+  UpdateEventCategoryTypeRequest,
   UpdateEventRequest
 } from '../../models';
 
@@ -365,6 +368,262 @@ export function usePatchApiEventsEventIdFeature<TData = Awaited<ReturnType<typeo
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPatchApiEventsEventIdFeatureQueryOptions(eventId,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiEventsCategoryTypeResponse200 = {
+  data: EventCategoryTypeResponse
+  status: 200
+}
+
+export type postApiEventsCategoryTypeResponseSuccess = (postApiEventsCategoryTypeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiEventsCategoryTypeResponse = (postApiEventsCategoryTypeResponseSuccess)
+
+export const getPostApiEventsCategoryTypeUrl = () => {
+
+
+
+
+  return `/api/events/categoryType`
+}
+
+export const postApiEventsCategoryType = async (createEventCategoryTypeRequest?: CreateEventCategoryTypeRequest, options?: RequestInit): Promise<postApiEventsCategoryTypeResponse> => {
+
+  return httpClient<postApiEventsCategoryTypeResponse>(getPostApiEventsCategoryTypeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createEventCategoryTypeRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiEventsCategoryTypeQueryKey = (createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>,) => {
+    return [
+    'POST', 'api','events','categoryType', createEventCategoryTypeRequest
+    ] as const;
+    }
+
+
+export const getPostApiEventsCategoryTypeQueryOptions = <TData = Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError = unknown>(createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiEventsCategoryTypeQueryKey(createEventCategoryTypeRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEventsCategoryType>>> = ({ signal }) => postApiEventsCategoryType(unref(createEventCategoryTypeRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>
+}
+
+export type PostApiEventsCategoryTypeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEventsCategoryType>>>
+export type PostApiEventsCategoryTypeQueryError = unknown
+
+
+
+export function usePostApiEventsCategoryType<TData = Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError = unknown>(
+ createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiEventsCategoryTypeQueryOptions(createEventCategoryTypeRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type putApiEventsCategoryTypeEventCategoryTypeIdResponse200 = {
+  data: EventCategoryTypeResponse
+  status: 200
+}
+
+export type putApiEventsCategoryTypeEventCategoryTypeIdResponseSuccess = (putApiEventsCategoryTypeEventCategoryTypeIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type putApiEventsCategoryTypeEventCategoryTypeIdResponse = (putApiEventsCategoryTypeEventCategoryTypeIdResponseSuccess)
+
+export const getPutApiEventsCategoryTypeEventCategoryTypeIdUrl = (eventCategoryTypeId: string,) => {
+
+
+
+
+  return `/api/events/categoryType/${eventCategoryTypeId}`
+}
+
+export const putApiEventsCategoryTypeEventCategoryTypeId = async (eventCategoryTypeId: string,
+    updateEventCategoryTypeRequest?: UpdateEventCategoryTypeRequest, options?: RequestInit): Promise<putApiEventsCategoryTypeEventCategoryTypeIdResponse> => {
+
+  return httpClient<putApiEventsCategoryTypeEventCategoryTypeIdResponse>(getPutApiEventsCategoryTypeEventCategoryTypeIdUrl(eventCategoryTypeId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateEventCategoryTypeRequest)
+  }
+);}
+
+
+
+
+
+export const getPutApiEventsCategoryTypeEventCategoryTypeIdQueryKey = (eventCategoryTypeId: MaybeRef<string>,
+    updateEventCategoryTypeRequest?: MaybeRef<UpdateEventCategoryTypeRequest>,) => {
+    return [
+    'PUT', 'api','events','categoryType',eventCategoryTypeId, updateEventCategoryTypeRequest
+    ] as const;
+    }
+
+
+export const getPutApiEventsCategoryTypeEventCategoryTypeIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>, TError = unknown>(eventCategoryTypeId: MaybeRef<string>,
+    updateEventCategoryTypeRequest?: MaybeRef<UpdateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPutApiEventsCategoryTypeEventCategoryTypeIdQueryKey(eventCategoryTypeId,updateEventCategoryTypeRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>> = ({ signal }) => putApiEventsCategoryTypeEventCategoryTypeId(unref(eventCategoryTypeId),unref(updateEventCategoryTypeRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(eventCategoryTypeId) !== null && unref(eventCategoryTypeId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>, TError, TData>
+}
+
+export type PutApiEventsCategoryTypeEventCategoryTypeIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>>
+export type PutApiEventsCategoryTypeEventCategoryTypeIdQueryError = unknown
+
+
+
+export function usePutApiEventsCategoryTypeEventCategoryTypeId<TData = Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>, TError = unknown>(
+ eventCategoryTypeId: MaybeRef<string>,
+    updateEventCategoryTypeRequest?: MaybeRef<UpdateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiEventsCategoryTypeEventCategoryTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPutApiEventsCategoryTypeEventCategoryTypeIdQueryOptions(eventCategoryTypeId,updateEventCategoryTypeRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type deleteApiEventsCategoryTypeEventCategoryTypeIdResponse200 = {
+  data: void
+  status: 200
+}
+
+export type deleteApiEventsCategoryTypeEventCategoryTypeIdResponseSuccess = (deleteApiEventsCategoryTypeEventCategoryTypeIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteApiEventsCategoryTypeEventCategoryTypeIdResponse = (deleteApiEventsCategoryTypeEventCategoryTypeIdResponseSuccess)
+
+export const getDeleteApiEventsCategoryTypeEventCategoryTypeIdUrl = (eventCategoryTypeId: string,) => {
+
+
+
+
+  return `/api/events/categoryType/${eventCategoryTypeId}`
+}
+
+export const deleteApiEventsCategoryTypeEventCategoryTypeId = async (eventCategoryTypeId: string, options?: RequestInit): Promise<deleteApiEventsCategoryTypeEventCategoryTypeIdResponse> => {
+
+  return httpClient<deleteApiEventsCategoryTypeEventCategoryTypeIdResponse>(getDeleteApiEventsCategoryTypeEventCategoryTypeIdUrl(eventCategoryTypeId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteApiEventsCategoryTypeEventCategoryTypeIdQueryKey = (eventCategoryTypeId: MaybeRef<string>,) => {
+    return [
+    'DELETE', 'api','events','categoryType',eventCategoryTypeId
+    ] as const;
+    }
+
+
+export const getDeleteApiEventsCategoryTypeEventCategoryTypeIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>, TError = unknown>(eventCategoryTypeId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getDeleteApiEventsCategoryTypeEventCategoryTypeIdQueryKey(eventCategoryTypeId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>> = ({ signal }) => deleteApiEventsCategoryTypeEventCategoryTypeId(unref(eventCategoryTypeId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(eventCategoryTypeId) !== null && unref(eventCategoryTypeId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>, TError, TData>
+}
+
+export type DeleteApiEventsCategoryTypeEventCategoryTypeIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>>
+export type DeleteApiEventsCategoryTypeEventCategoryTypeIdQueryError = unknown
+
+
+
+export function useDeleteApiEventsCategoryTypeEventCategoryTypeId<TData = Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>, TError = unknown>(
+ eventCategoryTypeId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiEventsCategoryTypeEventCategoryTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteApiEventsCategoryTypeEventCategoryTypeIdQueryOptions(eventCategoryTypeId,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -62,6 +62,18 @@ public interface IEventService
     );
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
     Task<Result<EventResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
+
+    IQueryable<EventCategoryTypeResponse> QueryCategoryTypes();
+    Task<EventCategoryTypeResponse> CreateCategoryTypeAsync(
+        CreateEventCategoryTypeRequest request,
+        CancellationToken ct = default
+    );
+    Task<Result<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
+        Guid id,
+        UpdateEventCategoryTypeRequest request,
+        CancellationToken ct = default
+    );
+    Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IActivityService
@@ -72,6 +84,7 @@ public interface IActivityService
 
     IQueryable<ActivityRoleTypeResponse> QueryRoleTypes();
     IQueryable<AssignmentStatusTypeResponse> QueryAssignmentStatusTypes();
+    IQueryable<ActivityModalityTypeResponse> QueryModalityTypes();
 
     Task<Result<ActivityResponse>> CreateAsync(
         Guid eventId,

@@ -14,6 +14,7 @@ public class ActivityRepository(CodigoActivoDbContext context)
     {
         return await Set.AsNoTracking()
             .Include(a => a.Thumbnail)
+            .Include(a => a.ActivityModalityType)
             .Include(a => a.AllowedRoleTypes)
                 .ThenInclude(ar => ar.ActivityRoleType)
             .Include(a => a.Assignments)

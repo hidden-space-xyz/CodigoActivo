@@ -12,6 +12,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "activity_modality_types",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_activity_modality_types", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "activity_role_types",
                 columns: table => new
                 {
@@ -36,6 +48,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_assignment_status_types", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "event_category_types",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    color = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_event_category_types", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -313,9 +338,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     title = table.Column<string>(type: "text", nullable: false),
                     description = table.Column<string>(type: "text", nullable: false),
+                    location = table.Column<string>(type: "text", nullable: false),
                     activity_starts_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     activity_ends_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    activity_modality_type_id = table.Column<Guid>(type: "uuid", nullable: false),
                     thumbnail_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -325,6 +352,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_activities", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_activities_activity_modality_types_activity_modality_type_id",
+                        column: x => x.activity_modality_type_id,
+                        principalTable: "activity_modality_types",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "fk_activities_events_event_id",
                         column: x => x.event_id,
@@ -349,6 +382,30 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "event_categories",
+                columns: table => new
+                {
+                    event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    event_category_type_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_event_categories", x => new { x.event_id, x.event_category_type_id });
+                    table.ForeignKey(
+                        name: "fk_event_categories_event_category_types_event_category_type_id",
+                        column: x => x.event_category_type_id,
+                        principalTable: "event_category_types",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_event_categories_events_event_id",
+                        column: x => x.event_id,
+                        principalTable: "events",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -414,6 +471,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "ix_activities_activity_modality_type_id",
+                table: "activities",
+                column: "activity_modality_type_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_activities_created_by",
                 table: "activities",
                 column: "created_by");
@@ -437,6 +499,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_activity_allowed_role_types_activity_role_type_id",
                 table: "activity_allowed_role_types",
                 column: "activity_role_type_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_activity_modality_types_name",
+                table: "activity_modality_types",
+                column: "name",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_activity_role_types_name",
@@ -477,6 +545,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             migrationBuilder.CreateIndex(
                 name: "ix_assignment_status_types_name",
                 table: "assignment_status_types",
+                column: "name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_categories_event_category_type_id",
+                table: "event_categories",
+                column: "event_category_type_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_category_types_name",
+                table: "event_category_types",
                 column: "name",
                 unique: true);
 
@@ -583,6 +662,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "announcements");
 
             migrationBuilder.DropTable(
+                name: "event_categories");
+
+            migrationBuilder.DropTable(
                 name: "partners");
 
             migrationBuilder.DropTable(
@@ -601,7 +683,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "assignment_status_types");
 
             migrationBuilder.DropTable(
+                name: "event_category_types");
+
+            migrationBuilder.DropTable(
                 name: "user_types");
+
+            migrationBuilder.DropTable(
+                name: "activity_modality_types");
 
             migrationBuilder.DropTable(
                 name: "events");

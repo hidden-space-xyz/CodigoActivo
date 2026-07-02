@@ -21,6 +21,11 @@ export interface RegistrationTypeResponse {
   readonly isAllowedForAdults: boolean
 }
 
+export interface ActivityModalityTypeResponse {
+  readonly id: string
+  readonly name: string
+}
+
 interface AssignedActivityRoleResponse {
   readonly id: string
   readonly name: string

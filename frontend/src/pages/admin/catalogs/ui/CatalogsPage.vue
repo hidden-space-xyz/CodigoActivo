@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { CatalogSection, useActivityRoleTypes } from '@/features/manage-catalogs'
+import {
+  CatalogSection,
+  EventCategoriesSection,
+  useActivityRoleTypes,
+} from '@/features/manage-catalogs'
 import { AdminPageHeader } from '@/shared/ui'
 
 const activityRoleTypes = useActivityRoleTypes()
@@ -7,13 +11,11 @@ const activityRoleTypes = useActivityRoleTypes()
 
 <template>
   <div>
-    <AdminPageHeader
-      title="Configuración"
-      subtitle="Roles de actividad configurables del sistema"
-    />
+    <AdminPageHeader title="Configuración" subtitle="Catálogos configurables del sistema" />
 
     <div class="catalogs-grid">
       <CatalogSection title="Roles de actividad" :controller="activityRoleTypes" />
+      <EventCategoriesSection />
     </div>
   </div>
 </template>

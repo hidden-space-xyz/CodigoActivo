@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import type { UpcomingEvent } from '../model/types'
-import { BaseButton } from '@/shared/ui'
+import { BaseButton, ColorTag } from '@/shared/ui'
 import { fileContentUrl } from '@/shared/lib'
 
 const props = defineProps<{ event: UpcomingEvent }>()
@@ -18,6 +18,15 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
 
         <h2 class="featured__title">{{ event.title }}</h2>
         <div class="featured__slogan">«{{ event.slogan }}»</div>
+
+        <div v-if="event.categories.length" class="featured__cats">
+          <ColorTag
+            v-for="cat in event.categories"
+            :key="cat.id"
+            :value="cat.name"
+            :color="cat.color"
+          />
+        </div>
 
         <div class="featured__meta">
           <div class="featured__meta-item">
@@ -89,6 +98,13 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   font-size: 21px;
   margin-top: 8px;
   color: var(--ca-cyan);
+}
+
+.featured__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
 }
 
 .featured__meta {

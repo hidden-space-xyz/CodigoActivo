@@ -22,4 +22,6 @@ export interface UpdateEventRequest {
   /** @nullable */
   signupEndsAt?: string | null;
   thumbnailId?: string;
+  /** @nullable */
+  categoryTypeIds?: string[] | null;
 }

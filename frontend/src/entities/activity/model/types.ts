@@ -7,6 +7,8 @@ export interface EventActivity {
   readonly id: string
   readonly title: string
   readonly description: string
+  readonly location: string
+  readonly modality: string
   readonly startsAt: string | null
   readonly endsAt: string | null
   readonly roles: readonly ActivityRole[]

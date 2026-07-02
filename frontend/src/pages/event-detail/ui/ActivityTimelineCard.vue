@@ -59,6 +59,11 @@ function onSignup(): void {
 
     <div class="act__time"><i class="pi pi-clock" /> {{ scheduleLabel() }}</div>
 
+    <div v-if="activity.modality || activity.location" class="act__meta">
+      <i class="pi pi-map-marker" />
+      <span>{{ [activity.modality, activity.location].filter(Boolean).join(' · ') }}</span>
+    </div>
+
     <p v-if="activity.description" class="act__desc">{{ activity.description }}</p>
 
     <ul v-if="hasHousehold && activity.household.length" class="act__members">
@@ -184,6 +189,14 @@ function onSignup(): void {
   gap: 7px;
   font-family: var(--ca-font-mono);
   font-size: 12.5px;
+  color: var(--ca-text-muted);
+}
+
+.act__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
   color: var(--ca-text-muted);
 }
 

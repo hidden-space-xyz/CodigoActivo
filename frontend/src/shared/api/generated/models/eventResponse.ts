@@ -5,6 +5,7 @@
  * Backend API for CodigoActivo (cookie session auth + CSRF).
  * OpenAPI spec version: v1
  */
+import type { EventCategoryResponse } from './eventCategoryResponse';
 
 export interface EventResponse {
   id?: string;
@@ -26,4 +27,6 @@ export interface EventResponse {
   updatedBy?: string | null;
   thumbnailId?: string;
   featured?: boolean;
+  /** @nullable */
+  categories?: EventCategoryResponse[] | null;
 }

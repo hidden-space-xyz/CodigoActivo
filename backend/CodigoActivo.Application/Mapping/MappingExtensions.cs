@@ -39,6 +39,16 @@ public static class MappingExtensions
 
     public static EventResponse ToResponse(this Event @event)
     {
+        var categories =
+            @event
+                .Categories?.Select(category => new EventCategoryResponse(
+                    category.EventCategoryTypeId,
+                    category.EventCategoryType?.Name ?? string.Empty,
+                    category.EventCategoryType?.Color ?? string.Empty
+                ))
+                .ToList()
+            ?? [];
+
         return new(
             @event.Id,
             @event.Title,
@@ -53,7 +63,8 @@ public static class MappingExtensions
             @event.CreatedBy,
             @event.UpdatedBy,
             @event.ThumbnailId,
-            @event.Featured
+            @event.Featured,
+            categories
         );
     }
 
@@ -72,9 +83,12 @@ public static class MappingExtensions
             activity.Id,
             activity.Title,
             activity.Description,
+            activity.Location,
             activity.ActivityStartsAt,
             activity.ActivityEndsAt,
             activity.EventId,
+            activity.ActivityModalityTypeId,
+            activity.ActivityModalityType?.Name ?? string.Empty,
             activity.ThumbnailId,
             activity.CreatedAt,
             activity.UpdatedAt,
@@ -139,5 +153,10 @@ public static class MappingExtensions
     public static ActivityRoleTypeResponse ToResponse(this ActivityRoleType roleType)
     {
         return new(roleType.Id, roleType.Name, roleType.Description);
+    }
+
+    public static EventCategoryTypeResponse ToResponse(this EventCategoryType categoryType)
+    {
+        return new(categoryType.Id, categoryType.Name, categoryType.Color);
     }
 }

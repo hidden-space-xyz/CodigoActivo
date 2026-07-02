@@ -67,6 +67,8 @@ const items = computed<TimelineActivity[]>(() =>
     id: a.id,
     title: a.title,
     description: a.description,
+    location: a.location,
+    modality: a.modality,
     start: a.startsAt ? new Date(a.startsAt) : null,
     end: a.endsAt ? new Date(a.endsAt) : null,
     roles: a.roles.map((r) => ({ id: r.id, name: r.name })),

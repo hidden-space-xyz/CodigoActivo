@@ -5,6 +5,7 @@ import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
+import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 
 import { ThumbnailField, uploadThumbnail } from '@/entities/file'
@@ -14,12 +15,14 @@ import type {
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
+import type { ActivityModalityTypeResponse } from '@/shared/api'
 import { getErrorMessage } from '@/shared/lib'
 
 const props = defineProps<{
   visible: boolean
   activity: ActivityResponse | null
   roleTypes: ActivityRoleTypeResponse[]
+  modalityTypes: ActivityModalityTypeResponse[]
   saving: boolean
   eventStart?: string | null
   eventEnd?: string | null
@@ -33,6 +36,8 @@ const emit = defineEmits<{
 interface ActivityForm {
   title: string
   description: string
+  location: string
+  modalityId: string
   activityStartsAt: Date | null
   activityEndsAt: Date | null
   roleIds: string[]
@@ -41,6 +46,8 @@ interface ActivityForm {
 const form = reactive<ActivityForm>({
   title: '',
   description: '',
+  location: '',
+  modalityId: '',
   activityStartsAt: null,
   activityEndsAt: null,
   roleIds: [],
@@ -94,6 +101,8 @@ const outsideEvent = computed(() => {
 const datesValid = computed(
   () => !startMissing.value && !endMissing.value && !orderInvalid.value && !outsideEvent.value,
 )
+const locationMissing = computed(() => !form.location.trim())
+const modalityMissing = computed(() => !form.modalityId)
 
 function populate(): void {
   submitted.value = false
@@ -101,6 +110,8 @@ function populate(): void {
   uploadError.value = ''
   form.title = props.activity?.title ?? ''
   form.description = props.activity?.description ?? ''
+  form.location = props.activity?.location ?? ''
+  form.modalityId = props.activity?.modalityId ?? ''
   form.activityStartsAt = props.activity?.activityStartsAt
     ? new Date(props.activity.activityStartsAt)
     : null
@@ -129,6 +140,8 @@ async function save(): Promise<void> {
   if (
     !form.title.trim() ||
     !form.description.trim() ||
+    locationMissing.value ||
+    modalityMissing.value ||
     missingThumbnail.value ||
     !datesValid.value
   ) {
@@ -139,6 +152,8 @@ async function save(): Promise<void> {
   const body: CreateActivityRequest = {
     title: form.title.trim(),
     description: form.description.trim(),
+    location: form.location.trim(),
+    activityModalityTypeId: form.modalityId,
     activityStartsAt: activityStartsAt.toISOString(),
     activityEndsAt: activityEndsAt.toISOString(),
     allowedRoleTypes: form.roleIds.map((id) => ({ activityRoleTypeId: id })),
@@ -181,6 +196,30 @@ async function save(): Promise<void> {
           auto-resize
           fluid
         />
+      </div>
+      <div class="form__row">
+        <div class="form__field">
+          <label>Modalidad</label>
+          <Select
+            v-model="form.modalityId"
+            :options="modalityTypes"
+            option-label="name"
+            option-value="id"
+            placeholder="Presencial / Online"
+            :invalid="submitted && modalityMissing"
+            fluid
+          />
+          <small v-if="submitted && modalityMissing" class="form__error"
+            >La modalidad es obligatoria.</small
+          >
+        </div>
+        <div class="form__field">
+          <label>Ubicación o plataforma</label>
+          <InputText v-model="form.location" :invalid="submitted && locationMissing" fluid />
+          <small v-if="submitted && locationMissing" class="form__error"
+            >La ubicación es obligatoria.</small
+          >
+        </div>
       </div>
       <div class="form__row">
         <div class="form__field">

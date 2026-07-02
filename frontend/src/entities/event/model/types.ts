@@ -1,3 +1,9 @@
+export interface EventCategoryTag {
+  readonly id: string
+  readonly name: string
+  readonly color: string
+}
+
 export interface UpcomingEvent {
   readonly id: string
   readonly title: string
@@ -5,6 +11,7 @@ export interface UpcomingEvent {
   readonly date: string
   readonly status: string
   readonly thumbnailId: string
+  readonly categories: readonly EventCategoryTag[]
 }
 
 export interface PastEvent {
@@ -13,6 +20,7 @@ export interface PastEvent {
   readonly eventName: string
   readonly year: string
   readonly thumbnailId: string
+  readonly categories: readonly EventCategoryTag[]
 }
 
 export interface EventDetail {
@@ -25,6 +33,7 @@ export interface EventDetail {
   readonly status: string
   readonly thumbnailId: string
   readonly signupOpen: boolean
+  readonly categories: readonly EventCategoryTag[]
 }
 
 export interface HomeEvents {

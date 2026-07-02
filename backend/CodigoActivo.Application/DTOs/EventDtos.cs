@@ -16,7 +16,8 @@ public record EventResponse(
     Guid CreatedBy,
     Guid? UpdatedBy,
     Guid ThumbnailId,
-    bool Featured
+    bool Featured,
+    IReadOnlyList<EventCategoryResponse> Categories
 )
 {
     public EventResponse()
@@ -34,9 +35,12 @@ public record EventResponse(
             default,
             null,
             default,
-            false
+            false,
+            []
         ) { }
 }
+
+public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);
 
 public record CreateEventRequest(
     [Required, MaxLength(200)] string Title,
@@ -46,7 +50,8 @@ public record CreateEventRequest(
     [Required] DateOnly? EventEndsAt,
     [Required] DateTimeOffset? SignupStartsAt,
     [Required] DateTimeOffset? SignupEndsAt,
-    Guid ThumbnailId
+    Guid ThumbnailId,
+    IReadOnlyList<Guid>? CategoryTypeIds
 );
 
 public record UpdateEventRequest(
@@ -57,5 +62,22 @@ public record UpdateEventRequest(
     [Required] DateOnly? EventEndsAt,
     [Required] DateTimeOffset? SignupStartsAt,
     [Required] DateTimeOffset? SignupEndsAt,
-    Guid ThumbnailId
+    Guid ThumbnailId,
+    IReadOnlyList<Guid>? CategoryTypeIds
+);
+
+public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
+{
+    public EventCategoryTypeResponse()
+        : this(default, "", "") { }
+}
+
+public record CreateEventCategoryTypeRequest(
+    [Required, MaxLength(120)] string Name,
+    [Required, MaxLength(9)] string Color
+);
+
+public record UpdateEventCategoryTypeRequest(
+    [Required, MaxLength(120)] string Name,
+    [Required, MaxLength(9)] string Color
 );

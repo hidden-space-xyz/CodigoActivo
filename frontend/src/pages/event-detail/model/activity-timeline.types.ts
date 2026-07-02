@@ -14,6 +14,8 @@ export interface TimelineActivity {
   id: string
   title: string
   description: string
+  location: string
+  modality: string
   start: Date | null
   end: Date | null
   roles: TimelineRole[]

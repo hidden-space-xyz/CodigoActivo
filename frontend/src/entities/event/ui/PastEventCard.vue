@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PastEvent } from '../model/types'
-import { ListThumbnail } from '@/shared/ui'
+import { ColorTag, ListThumbnail } from '@/shared/ui'
 
 defineProps<{ event: PastEvent }>()
 </script>
@@ -14,6 +14,14 @@ defineProps<{ event: PastEvent }>()
       </div>
       <h3 class="past-card__title">{{ event.title }}</h3>
       <div class="past-card__event">{{ event.eventName }}</div>
+      <div v-if="event.categories.length" class="past-card__cats">
+        <ColorTag
+          v-for="cat in event.categories"
+          :key="cat.id"
+          :value="cat.name"
+          :color="cat.color"
+        />
+      </div>
     </div>
   </RouterLink>
 </template>
@@ -67,5 +75,12 @@ defineProps<{ event: PastEvent }>()
   font-size: 14px;
   color: var(--ca-text-dim);
   margin-top: 5px;
+}
+
+.past-card__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
 }
 </style>

@@ -13,6 +13,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
         await SeedUserTypesAsync(ct);
         await SeedActivityRoleTypesAsync(ct);
         await SeedAssignmentStatusTypesAsync(ct);
+        await SeedActivityModalityTypesAsync(ct);
         await context.SaveChangesAsync(ct);
     }
 
@@ -200,6 +201,26 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             if (!await context.AssignmentStatusTypes.AnyAsync(x => x.Id == item.Id, ct))
             {
                 context.AssignmentStatusTypes.Add(item);
+            }
+        }
+    }
+
+    private async Task SeedActivityModalityTypesAsync(CancellationToken ct)
+    {
+        var seed = new[]
+        {
+            new ActivityModalityType
+            {
+                Id = SeedIds.ActivityModalityTypes.Presencial,
+                Name = "Presencial",
+            },
+            new ActivityModalityType { Id = SeedIds.ActivityModalityTypes.Online, Name = "Online" },
+        };
+        foreach (var item in seed)
+        {
+            if (!await context.ActivityModalityTypes.AnyAsync(x => x.Id == item.Id, ct))
+            {
+                context.ActivityModalityTypes.Add(item);
             }
         }
     }

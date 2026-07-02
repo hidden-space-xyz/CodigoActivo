@@ -50,4 +50,35 @@ public class EventCommandsController(IEventService events) : CommandControllerBa
     {
         return ToOk(await events.SetFeaturedAsync(eventId, ct));
     }
+
+    [HttpPost("categoryType")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryType(
+        [FromBody] CreateEventCategoryTypeRequest request,
+        CancellationToken ct
+    )
+    {
+        return Ok(await events.CreateCategoryTypeAsync(request, ct));
+    }
+
+    [HttpPut("categoryType/{eventCategoryTypeId:guid}")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryType(
+        Guid eventCategoryTypeId,
+        [FromBody] UpdateEventCategoryTypeRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await events.UpdateCategoryTypeAsync(eventCategoryTypeId, request, ct));
+    }
+
+    [HttpDelete("categoryType/{eventCategoryTypeId:guid}")]
+    [AllowOnlyAdmin]
+    public async Task<IActionResult> DeleteCategoryType(
+        Guid eventCategoryTypeId,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await events.DeleteCategoryTypeAsync(eventCategoryTypeId, ct));
+    }
 }

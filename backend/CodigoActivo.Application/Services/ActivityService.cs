@@ -14,6 +14,7 @@ public class ActivityService(
     IFileRepository files,
     IAssignmentStatusTypeRepository statuses,
     IActivityRoleTypeRepository roleTypes,
+    IActivityModalityTypeRepository modalityTypes,
     IUserRepository users,
     IUnitOfWork uow
 ) : IActivityService
@@ -39,6 +40,11 @@ public class ActivityService(
     public IQueryable<AssignmentStatusTypeResponse> QueryAssignmentStatusTypes()
     {
         return statuses.Query().Select(Projections.AssignmentStatusType);
+    }
+
+    public IQueryable<ActivityModalityTypeResponse> QueryModalityTypes()
+    {
+        return modalityTypes.Query().Select(Projections.ActivityModalityType);
     }
 
     public async Task<Result<ActivityResponse>> CreateAsync(
@@ -70,10 +76,17 @@ public class ActivityService(
             return thumbnail.Error!;
         }
 
+        if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
+        {
+            return Error.Validation();
+        }
+
         var activity = new Activity
         {
             Title = request.Title.Trim(),
             Description = request.Description,
+            Location = request.Location.Trim(),
+            ActivityModalityTypeId = request.ActivityModalityTypeId,
             ActivityStartsAt = schedule.Value.StartsAt,
             ActivityEndsAt = schedule.Value.EndsAt,
             EventId = eventId,
@@ -125,8 +138,15 @@ public class ActivityService(
             return thumbnail.Error!;
         }
 
+        if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
+        {
+            return Error.Validation();
+        }
+
         activity.Title = request.Title.Trim();
         activity.Description = request.Description;
+        activity.Location = request.Location.Trim();
+        activity.ActivityModalityTypeId = request.ActivityModalityTypeId;
         activity.ActivityStartsAt = schedule.Value.StartsAt;
         activity.ActivityEndsAt = schedule.Value.EndsAt;
         activity.ThumbnailId = request.ThumbnailId;

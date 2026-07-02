@@ -1,7 +1,17 @@
 import type { EventResponse } from '@/shared/api/generated/models'
 import { formatDate, formatDateTime } from '@/shared/lib'
 
-import type { EventDetail, PastEvent, UpcomingEvent } from '../model/types'
+import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
+
+function toCategoryTags(event: EventResponse): EventCategoryTag[] {
+  return (event.categories ?? [])
+    .filter((category) => category.categoryTypeId)
+    .map((category) => ({
+      id: category.categoryTypeId as string,
+      name: category.name ?? '',
+      color: category.color ?? '',
+    }))
+}
 
 function isSignupOpen(event: EventResponse): boolean {
   const now = Date.now()
@@ -28,6 +38,7 @@ export function toUpcomingEvent(event: EventResponse): UpcomingEvent {
     date: event.eventStartsAt ? formatDate(event.eventStartsAt) : 'Próximamente',
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
     thumbnailId: event.thumbnailId ?? '',
+    categories: toCategoryTags(event),
   }
 }
 
@@ -53,6 +64,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
     thumbnailId: event.thumbnailId ?? '',
     signupOpen: isSignupWindowOpen(event),
+    categories: toCategoryTags(event),
   }
 }
 
@@ -64,5 +76,6 @@ export function toPastEvent(event: EventResponse): PastEvent {
     eventName: event.subtitle ?? '',
     year,
     thumbnailId: event.thumbnailId ?? '',
+    categories: toCategoryTags(event),
   }
 }

@@ -24,6 +24,8 @@ export function toEventActivity(activity: ActivityResponse): EventActivity {
     id: activity.id ?? '',
     title: activity.title ?? 'Actividad',
     description: activity.description ?? '',
+    location: activity.location ?? '',
+    modality: activity.modalityName ?? '',
     startsAt: activity.activityStartsAt ?? null,
     endsAt: activity.activityEndsAt ?? null,
     roles,

@@ -35,6 +35,10 @@ public interface IEventRepository : IDbRepository<Event>
 
     Task<Event?> GetWithActivitiesAndAssignmentsAsync(Guid id, CancellationToken ct = default);
 
+    Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default);
+
+    Task<Event?> GetWithCategoriesAsync(Guid id, CancellationToken ct = default);
+
     Task SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
@@ -100,3 +104,7 @@ public interface IUserStatusTypeRepository : IDbRepository<UserStatusType>;
 public interface IActivityRoleTypeRepository : IDbRepository<ActivityRoleType>;
 
 public interface IAssignmentStatusTypeRepository : IDbRepository<AssignmentStatusType>;
+
+public interface IEventCategoryTypeRepository : IDbRepository<EventCategoryType>;
+
+public interface IActivityModalityTypeRepository : IDbRepository<ActivityModalityType>;

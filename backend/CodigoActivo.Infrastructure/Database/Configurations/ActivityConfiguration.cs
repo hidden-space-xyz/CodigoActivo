@@ -12,6 +12,7 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
 
         builder.Property(a => a.Title).IsRequired();
         builder.Property(a => a.Description).IsRequired();
+        builder.Property(a => a.Location).IsRequired();
         builder.Property(a => a.CreatedAt).IsRequired();
 
         builder
@@ -19,6 +20,12 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .WithMany(e => e.Activities)
             .HasForeignKey(a => a.EventId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(a => a.ActivityModalityType)
+            .WithMany(t => t.Activities)
+            .HasForeignKey(a => a.ActivityModalityTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasOne(a => a.Thumbnail)

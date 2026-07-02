@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 import { useEventDetail } from '@/entities/event'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
-import { BaseButton, RichTextContent } from '@/shared/ui'
+import { BaseButton, ColorTag, RichTextContent } from '@/shared/ui'
 import { fileContentUrl, isRichTextEmpty } from '@/shared/lib'
 
 const props = defineProps<{ eventId: string }>()
@@ -48,6 +48,14 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
           <h1 class="detail-head__title">{{ event.title }}</h1>
           <div v-if="event.subtitle" class="detail-head__slogan" :style="{ color: accentColor }">
             «{{ event.subtitle }}»
+          </div>
+          <div v-if="event.categories.length" class="detail-head__cats">
+            <ColorTag
+              v-for="cat in event.categories"
+              :key="cat.id"
+              :value="cat.name"
+              :color="cat.color"
+            />
           </div>
         </div>
       </section>
@@ -141,6 +149,13 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   font-family: var(--ca-font-display);
   font-size: 23px;
   margin-top: 8px;
+}
+
+.detail-head__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .detail-tabs {

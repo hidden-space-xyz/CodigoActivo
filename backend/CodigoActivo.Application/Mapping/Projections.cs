@@ -23,6 +23,13 @@ public static class Projections
             UpdatedBy = @event.UpdatedBy,
             ThumbnailId = @event.ThumbnailId,
             Featured = @event.Featured,
+            Categories = @event
+                .Categories.Select(category => new EventCategoryResponse(
+                    category.EventCategoryTypeId,
+                    category.EventCategoryType.Name,
+                    category.EventCategoryType.Color
+                ))
+                .ToList(),
         };
 
     public static readonly Expression<Func<Announcement, AnnouncementResponse>> Announcement =
@@ -75,9 +82,12 @@ public static class Projections
             Id = activity.Id,
             Title = activity.Title,
             Description = activity.Description,
+            Location = activity.Location,
             ActivityStartsAt = activity.ActivityStartsAt,
             ActivityEndsAt = activity.ActivityEndsAt,
             EventId = activity.EventId,
+            ModalityId = activity.ActivityModalityTypeId,
+            ModalityName = activity.ActivityModalityType.Name,
             ThumbnailId = activity.ThumbnailId,
             CreatedAt = activity.CreatedAt,
             UpdatedAt = activity.UpdatedAt,
@@ -134,6 +144,23 @@ public static class Projections
         Name = statusType.Name,
         Description = statusType.Description,
         Color = statusType.Color,
+    };
+
+    public static readonly Expression<
+        Func<EventCategoryType, EventCategoryTypeResponse>
+    > EventCategoryType = categoryType => new EventCategoryTypeResponse
+    {
+        Id = categoryType.Id,
+        Name = categoryType.Name,
+        Color = categoryType.Color,
+    };
+
+    public static readonly Expression<
+        Func<ActivityModalityType, ActivityModalityTypeResponse>
+    > ActivityModalityType = modalityType => new ActivityModalityTypeResponse
+    {
+        Id = modalityType.Id,
+        Name = modalityType.Name,
     };
 
     public static readonly Expression<Func<UserStatusType, UserStatusTypeResponse>> UserStatusType =

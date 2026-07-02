@@ -790,6 +790,94 @@
         }
       }
     },
+    "/api/events/categoryType": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventCategoryTypeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCategoryTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/categoryType/{eventCategoryTypeId}": {
+      "put": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventCategoryTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventCategoryTypeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCategoryTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventCategoryTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/files": {
       "post": {
         "tags": [
@@ -1310,6 +1398,10 @@
             "type": "string",
             "nullable": true
           },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
           "activityStartsAt": {
             "type": "string",
             "format": "date-time"
@@ -1321,6 +1413,14 @@
           "eventId": {
             "type": "string",
             "format": "uuid"
+          },
+          "modalityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modalityName": {
+            "type": "string",
+            "nullable": true
           },
           "thumbnailId": {
             "type": "string",
@@ -1526,6 +1626,14 @@
             "type": "string",
             "nullable": true
           },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "activityModalityTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "activityStartsAt": {
             "type": "string",
             "format": "date-time",
@@ -1586,6 +1694,20 @@
         },
         "additionalProperties": false
       },
+      "CreateEventCategoryTypeRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateEventRequest": {
         "type": "object",
         "properties": {
@@ -1624,6 +1746,14 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          },
+          "categoryTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1690,6 +1820,42 @@
         },
         "additionalProperties": false
       },
+      "EventCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "categoryTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventCategoryTypeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "EventResponse": {
         "type": "object",
         "properties": {
@@ -1749,6 +1915,13 @@
           },
           "featured": {
             "type": "boolean"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventCategoryResponse"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1994,6 +2167,14 @@
             "type": "string",
             "nullable": true
           },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "activityModalityTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "activityStartsAt": {
             "type": "string",
             "format": "date-time",
@@ -2054,6 +2235,20 @@
         },
         "additionalProperties": false
       },
+      "UpdateEventCategoryTypeRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateEventRequest": {
         "type": "object",
         "properties": {
@@ -2092,6 +2287,14 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          },
+          "categoryTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

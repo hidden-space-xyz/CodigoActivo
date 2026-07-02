@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UpcomingEvent } from '../model/types'
-import { ListThumbnail } from '@/shared/ui'
+import { ColorTag, ListThumbnail } from '@/shared/ui'
 
 defineProps<{ event: UpcomingEvent }>()
 </script>
@@ -11,6 +11,10 @@ defineProps<{ event: UpcomingEvent }>()
 
     <h3 class="event-card__title">{{ event.title }}</h3>
     <div v-if="event.slogan" class="event-card__slogan">«{{ event.slogan }}»</div>
+
+    <div v-if="event.categories.length" class="event-card__cats">
+      <ColorTag v-for="cat in event.categories" :key="cat.id" :value="cat.name" :color="cat.color" />
+    </div>
 
     <div class="event-card__footer">
       <span class="event-card__status">{{ event.status }}</span>
@@ -53,6 +57,12 @@ defineProps<{ event: UpcomingEvent }>()
   font-size: 15px;
   margin-top: -6px;
   color: var(--ca-cyan);
+}
+
+.event-card__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .event-card__footer {

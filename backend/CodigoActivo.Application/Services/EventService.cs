@@ -11,6 +11,7 @@ public class EventService(
     IEventRepository events,
     IActivityRepository activities,
     IFileRepository files,
+    IEventCategoryTypeRepository categoryTypes,
     IUnitOfWork uow
 ) : IEventService
 {
@@ -42,6 +43,12 @@ public class EventService(
             return thumbnail.Error!;
         }
 
+        var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
+        if (categories.IsFailure)
+        {
+            return categories.Error!;
+        }
+
         var ev = new Event
         {
             Title = request.Title.Trim(),
@@ -55,11 +62,13 @@ public class EventService(
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = userId,
         };
+        ApplyCategories(ev, request.CategoryTypeIds!);
 
         await events.AddAsync(ev, ct);
         await uow.SaveChangesAsync(ct);
 
-        return ev.ToResponse();
+        var created = await events.GetWithCategoriesAsync(ev.Id, ct);
+        return created!.ToResponse();
     }
 
     public async Task<Result<EventResponse>> UpdateAsync(
@@ -80,7 +89,13 @@ public class EventService(
             return schedule.Error!;
         }
 
-        var ev = await events.FindAsync(e => e.Id == id, ct);
+        var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
+        if (categories.IsFailure)
+        {
+            return categories.Error!;
+        }
+
+        var ev = await events.GetForEditAsync(id, ct);
         if (ev is null)
         {
             return Error.NotFound();
@@ -112,10 +127,13 @@ public class EventService(
         ev.UpdatedAt = DateTimeOffset.UtcNow;
         ev.UpdatedBy = userId;
 
-        events.Update(ev);
+        ev.Categories.Clear();
+        ApplyCategories(ev, request.CategoryTypeIds!);
+
         await uow.SaveChangesAsync(ct);
 
-        return ev.ToResponse();
+        var updated = await events.GetWithCategoriesAsync(id, ct);
+        return updated!.ToResponse();
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -146,6 +164,57 @@ public class EventService(
         return ev!.ToResponse();
     }
 
+    public IQueryable<EventCategoryTypeResponse> QueryCategoryTypes()
+    {
+        return categoryTypes.Query().Select(Projections.EventCategoryType);
+    }
+
+    public async Task<EventCategoryTypeResponse> CreateCategoryTypeAsync(
+        CreateEventCategoryTypeRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var categoryType = new EventCategoryType
+        {
+            Name = request.Name.Trim(),
+            Color = request.Color.Trim(),
+        };
+        await categoryTypes.AddAsync(categoryType, ct);
+        await uow.SaveChangesAsync(ct);
+        return categoryType.ToResponse();
+    }
+
+    public async Task<Result<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
+        Guid id,
+        UpdateEventCategoryTypeRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var categoryType = await categoryTypes.FindAsync(x => x.Id == id, ct);
+        if (categoryType is null)
+        {
+            return Error.NotFound();
+        }
+
+        categoryType.Name = request.Name.Trim();
+        categoryType.Color = request.Color.Trim();
+        categoryTypes.Update(categoryType);
+        await uow.SaveChangesAsync(ct);
+        return categoryType.ToResponse();
+    }
+
+    public async Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default)
+    {
+        if (!await categoryTypes.ExistsAsync(x => x.Id == id, ct))
+        {
+            return Error.NotFound();
+        }
+
+        await categoryTypes.RemoveAsync(x => x.Id == id, ct);
+        await uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
@@ -154,6 +223,36 @@ public class EventService(
         }
 
         return Result.Success();
+    }
+
+    private async Task<Result> EnsureCategoriesAsync(
+        IReadOnlyList<Guid>? categoryTypeIds,
+        CancellationToken ct
+    )
+    {
+        if (categoryTypeIds is null || categoryTypeIds.Count == 0)
+        {
+            return Error.Validation();
+        }
+
+        var distinct = categoryTypeIds.Distinct().ToList();
+        var existing = await categoryTypes.CountAsync(c => distinct.Contains(c.Id), ct);
+        if (existing != distinct.Count)
+        {
+            return Error.Validation();
+        }
+
+        return Result.Success();
+    }
+
+    private static void ApplyCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)
+    {
+        foreach (var categoryTypeId in categoryTypeIds.Distinct())
+        {
+            ev.Categories.Add(
+                new EventCategory { EventId = ev.Id, EventCategoryTypeId = categoryTypeId }
+            );
+        }
     }
 
     private static Result<EventSchedule> ValidateSchedule(

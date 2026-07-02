@@ -58,6 +58,8 @@ public static class DependencyInjection
         services.AddScoped<IUserStatusTypeRepository, UserStatusTypeRepository>();
         services.AddScoped<IActivityRoleTypeRepository, ActivityRoleTypeRepository>();
         services.AddScoped<IAssignmentStatusTypeRepository, AssignmentStatusTypeRepository>();
+        services.AddScoped<IEventCategoryTypeRepository, EventCategoryTypeRepository>();
+        services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
     }
 
     private static void AddFileStorage(IServiceCollection services, IConfiguration configuration)

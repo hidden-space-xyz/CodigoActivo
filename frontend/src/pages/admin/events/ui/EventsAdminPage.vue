@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useConfirm } from 'primevue/useconfirm'
-import { AdminPageHeader, AppButton as Button, ColumnSearch, ListThumbnail } from '@/shared/ui'
+import {
+  AdminPageHeader,
+  AppButton as Button,
+  ColorTag,
+  ColumnSearch,
+  ListThumbnail,
+} from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Tag from 'primevue/tag'
@@ -137,6 +143,19 @@ function confirmDelete(event: EventResponse): void {
           </span>
         </template>
       </Column>
+      <Column header="Categorías">
+        <template #body="{ data }">
+          <div class="cats-cell">
+            <ColorTag
+              v-for="cat in data.categories ?? []"
+              :key="cat.categoryTypeId"
+              :value="cat.name ?? ''"
+              :color="cat.color"
+            />
+            <span v-if="!(data.categories?.length)">—</span>
+          </div>
+        </template>
+      </Column>
       <Column field="eventStartsAt" header="Duración" sortable>
         <template #body="{ data }">
           {{ formatDate(data.eventStartsAt) }} – {{ formatDate(data.eventEndsAt) }}
@@ -196,6 +215,12 @@ function confirmDelete(event: EventResponse): void {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.cats-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .is-featured:deep(.p-button-icon) {

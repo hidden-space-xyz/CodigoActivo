@@ -20,4 +20,5 @@ public class Event : AuditableEntity
     public FileEntity Thumbnail { get; set; } = null!;
 
     public ICollection<Activity> Activities { get; set; } = [];
+    public ICollection<EventCategory> Categories { get; set; } = [];
 }

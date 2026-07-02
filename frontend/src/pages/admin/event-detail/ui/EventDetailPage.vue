@@ -13,7 +13,7 @@ import {
   useAssignments,
 } from '@/features/manage-activities'
 import { deleteThumbnail } from '@/entities/file'
-import { useActivityRoleTypesList } from '@/entities/catalog'
+import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
 import { useUsers } from '@/features/manage-users'
 import type {
@@ -35,6 +35,7 @@ const summary = useEventSummary(eventId)
 const activities = useActivities(eventId)
 const assignments = useAssignments(eventId.value)
 const roleTypes = useActivityRoleTypesList()
+const modalityTypes = useActivityModalityTypesList()
 const users = useUsers()
 
 const summaryCards = computed(() => {
@@ -205,6 +206,14 @@ function onAssignSubmit(payload: {
               {{ formatDateTime(data.activityEndsAt) }}
             </template>
           </Column>
+          <Column header="Modalidad">
+            <template #body="{ data }">
+              <div class="modality-cell">
+                <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>
+                <span v-if="data.location" class="modality-cell__loc">{{ data.location }}</span>
+              </div>
+            </template>
+          </Column>
           <Column header="Roles">
             <template #body="{ data }">
               {{ roleNames(data) }}
@@ -246,6 +255,7 @@ function onAssignSubmit(payload: {
       v-model:visible="activityDialogVisible"
       :activity="selectedActivity"
       :role-types="roleTypes.data.value ?? []"
+      :modality-types="modalityTypes.data.value ?? []"
       :saving="activitySaving"
       :event-start="event.data.value?.eventStartsAt ?? null"
       :event-end="event.data.value?.eventEndsAt ?? null"
@@ -317,5 +327,20 @@ function onAssignSubmit(payload: {
 .row-actions {
   display: flex;
   gap: 2px;
+}
+
+.modality-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modality-cell__type {
+  font-weight: 600;
+}
+
+.modality-cell__loc {
+  font-size: 12.5px;
+  color: var(--ca-text-muted);
 }
 </style>
