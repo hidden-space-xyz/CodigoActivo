@@ -143,6 +143,9 @@ function confirmDelete(event: EventResponse): void {
           </span>
         </template>
       </Column>
+      <Column field="subtitle" header="Subtítulo" sortable>
+        <template #body="{ data }">{{ data.subtitle || '—' }}</template>
+      </Column>
       <Column header="Categorías">
         <template #body="{ data }">
           <div class="cats-cell">
