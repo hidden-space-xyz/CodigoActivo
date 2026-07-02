@@ -1,0 +1,3 @@
+# Generated code — EF Core migrations are auto-generated and marked generated_code in .editorconfig.
+# Mirrors the frontend's .prettierignore exclusion of generated sources.
+**/Migrations/

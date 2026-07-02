@@ -185,9 +185,7 @@ public class UserService(
             return Error.NotFound();
         }
 
-        var allowed = user.BirthDate.IsMinor()
-            ? role.IsAllowedForMinors
-            : role.IsAllowedForAdults;
+        var allowed = user.BirthDate.IsMinor() ? role.IsAllowedForMinors : role.IsAllowedForAdults;
         if (role.Hidden || !allowed)
         {
             return Error.Validation();

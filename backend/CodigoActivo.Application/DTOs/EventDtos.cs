@@ -20,7 +20,22 @@ public record EventResponse(
 )
 {
     public EventResponse()
-        : this(default, "", "", "", default, default, default, default, default, null, default, null, default, false) { }
+        : this(
+            default,
+            "",
+            "",
+            "",
+            default,
+            default,
+            default,
+            default,
+            default,
+            null,
+            default,
+            null,
+            default,
+            false
+        ) { }
 }
 
 public record CreateEventRequest(

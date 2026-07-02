@@ -31,7 +31,8 @@ export function useUsers() {
   })
 
   const changeType = useMutation({
-    mutationFn: (vars: { id: string; roleId: string }) => changeUserTypeRequest(vars.id, vars.roleId),
+    mutationFn: (vars: { id: string; roleId: string }) =>
+      changeUserTypeRequest(vars.id, vars.roleId),
     onSuccess: invalidate,
   })
 

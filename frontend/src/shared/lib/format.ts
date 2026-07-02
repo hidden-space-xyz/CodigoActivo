@@ -11,7 +11,11 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 // (new Date("yyyy-mm-dd") would parse as UTC and shift a day west of UTC). Full datetimes pass through.
 function parseDisplayDate(value: string): Date {
   if (DATE_ONLY.test(value)) {
-    return new Date(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1, Number(value.slice(8, 10)))
+    return new Date(
+      Number(value.slice(0, 4)),
+      Number(value.slice(5, 7)) - 1,
+      Number(value.slice(8, 10)),
+    )
   }
   return new Date(value)
 }

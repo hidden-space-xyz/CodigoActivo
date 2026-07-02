@@ -2,10 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CodigoActivo.Application.DTOs;
 
-public record LoginRequest(
-    [Required] string Identifier,
-    [Required] string Password
-);
+public record LoginRequest([Required] string Identifier, [Required] string Password);
 
 public record CsrfTokenResponse(string Token, string HeaderName);
 

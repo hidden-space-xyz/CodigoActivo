@@ -36,7 +36,9 @@ import {
 const ACTIVITIES = 'Activities'
 const ASSIGNED_ACTIVITIES = 'AssignedActivities'
 
-export async function getEventActivitiesRequest(eventId: string): Promise<readonly EventActivity[]> {
+export async function getEventActivitiesRequest(
+  eventId: string,
+): Promise<readonly EventActivity[]> {
   const { items } = await fetchODataList<ActivityResponse>(ACTIVITIES, {
     filter: `eventId eq ${odataGuid(eventId)}`,
     orderBy: 'activityStartsAt asc',
@@ -65,9 +67,7 @@ export async function listEventActivitiesRequest(eventId: string): Promise<Activ
 }
 
 // Single activity by id (admin edit dialog); null on 404.
-export async function getActivityByIdRequest(
-  activityId: string,
-): Promise<ActivityResponse | null> {
+export async function getActivityByIdRequest(activityId: string): Promise<ActivityResponse | null> {
   return fetchODataEntity<ActivityResponse>(ACTIVITIES, activityId)
 }
 
@@ -81,7 +81,9 @@ export async function getHouseholdAssignmentsRequest(
   return rows.map(toHouseholdActivityAssignment)
 }
 
-export async function getHouseholdMembersRequest(userId: string): Promise<readonly HouseholdMember[]> {
+export async function getHouseholdMembersRequest(
+  userId: string,
+): Promise<readonly HouseholdMember[]> {
   const { items } = await fetchODataList<UserResponse>('Users', {
     filter: `parentId eq ${odataGuid(userId)}`,
     orderBy: 'firstName asc',

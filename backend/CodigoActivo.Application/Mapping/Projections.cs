@@ -18,8 +18,8 @@ namespace CodigoActivo.Application.Mapping;
 /// </summary>
 public static class Projections
 {
-    public static readonly Expression<Func<Event, EventResponse>> Event = @event =>
-        new EventResponse
+    public static readonly Expression<Func<Event, EventResponse>> Event =
+        @event => new EventResponse
         {
             Id = @event.Id,
             Title = @event.Title,
@@ -38,23 +38,22 @@ public static class Projections
         };
 
     public static readonly Expression<Func<Announcement, AnnouncementResponse>> Announcement =
-        announcement =>
-            new AnnouncementResponse
-            {
-                Id = announcement.Id,
-                Title = announcement.Title,
-                Subtitle = announcement.Subtitle,
-                Description = announcement.Description,
-                CreatedAt = announcement.CreatedAt,
-                UpdatedAt = announcement.UpdatedAt,
-                CreatedBy = announcement.CreatedBy,
-                UpdatedBy = announcement.UpdatedBy,
-                ThumbnailId = announcement.ThumbnailId,
-                Featured = announcement.Featured,
-            };
+        announcement => new AnnouncementResponse
+        {
+            Id = announcement.Id,
+            Title = announcement.Title,
+            Subtitle = announcement.Subtitle,
+            Description = announcement.Description,
+            CreatedAt = announcement.CreatedAt,
+            UpdatedAt = announcement.UpdatedAt,
+            CreatedBy = announcement.CreatedBy,
+            UpdatedBy = announcement.UpdatedBy,
+            ThumbnailId = announcement.ThumbnailId,
+            Featured = announcement.Featured,
+        };
 
-    public static readonly Expression<Func<Resource, ResourceResponse>> Resource = resource =>
-        new ResourceResponse
+    public static readonly Expression<Func<Resource, ResourceResponse>> Resource =
+        resource => new ResourceResponse
         {
             Id = resource.Id,
             Title = resource.Title,
@@ -67,8 +66,8 @@ public static class Projections
             ThumbnailId = resource.ThumbnailId,
         };
 
-    public static readonly Expression<Func<Partner, PartnerResponse>> Partner = partner =>
-        new PartnerResponse
+    public static readonly Expression<Func<Partner, PartnerResponse>> Partner =
+        partner => new PartnerResponse
         {
             Id = partner.Id,
             Name = partner.Name,
@@ -82,8 +81,8 @@ public static class Projections
             ThumbnailId = partner.ThumbnailId,
         };
 
-    public static readonly Expression<Func<Activity, ActivityResponse>> Activity = activity =>
-        new ActivityResponse
+    public static readonly Expression<Func<Activity, ActivityResponse>> Activity =
+        activity => new ActivityResponse
         {
             Id = activity.Id,
             Title = activity.Title,
@@ -105,46 +104,53 @@ public static class Projections
                 .ToList(),
         };
 
-    public static readonly Expression<Func<User, UserResponse>> User = user =>
-        new UserResponse
-        {
-            Id = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Phone = user.Phone,
-            BirthDate = user.BirthDate,
-            LastLoginAt = user.LastLoginAt,
-            CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt,
-            ParentId = user.ParentId,
-            Status = new UserStatusResponse(
-                user.UserStatusTypeId,
-                user.UserStatusType.Name,
-                user.UserStatusType.Color
-            ),
-            Roles = user.TypeAssignments.Select(assignment => new UserRoleResponse(
-                    assignment.UserTypeId,
-                    assignment.UserType.Name,
-                    assignment.UserType.Color
-                ))
-                .ToList(),
-        };
+    public static readonly Expression<Func<User, UserResponse>> User = user => new UserResponse
+    {
+        Id = user.Id,
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Email = user.Email,
+        Phone = user.Phone,
+        BirthDate = user.BirthDate,
+        LastLoginAt = user.LastLoginAt,
+        CreatedAt = user.CreatedAt,
+        UpdatedAt = user.UpdatedAt,
+        ParentId = user.ParentId,
+        Status = new UserStatusResponse(
+            user.UserStatusTypeId,
+            user.UserStatusType.Name,
+            user.UserStatusType.Color
+        ),
+        Roles = user
+            .TypeAssignments.Select(assignment => new UserRoleResponse(
+                assignment.UserTypeId,
+                assignment.UserType.Name,
+                assignment.UserType.Color
+            ))
+            .ToList(),
+    };
 
     public static readonly Expression<
         Func<ActivityRoleType, ActivityRoleTypeResponse>
-    > ActivityRoleType = roleType =>
-        new ActivityRoleTypeResponse
-        {
-            Id = roleType.Id,
-            Name = roleType.Name,
-            Description = roleType.Description,
-        };
+    > ActivityRoleType = roleType => new ActivityRoleTypeResponse
+    {
+        Id = roleType.Id,
+        Name = roleType.Name,
+        Description = roleType.Description,
+    };
 
     public static readonly Expression<
         Func<AssignmentStatusType, AssignmentStatusTypeResponse>
-    > AssignmentStatusType = statusType =>
-        new AssignmentStatusTypeResponse
+    > AssignmentStatusType = statusType => new AssignmentStatusTypeResponse
+    {
+        Id = statusType.Id,
+        Name = statusType.Name,
+        Description = statusType.Description,
+        Color = statusType.Color,
+    };
+
+    public static readonly Expression<Func<UserStatusType, UserStatusTypeResponse>> UserStatusType =
+        statusType => new UserStatusTypeResponse
         {
             Id = statusType.Id,
             Name = statusType.Name,
@@ -152,19 +158,8 @@ public static class Projections
             Color = statusType.Color,
         };
 
-    public static readonly Expression<
-        Func<UserStatusType, UserStatusTypeResponse>
-    > UserStatusType = statusType =>
-        new UserStatusTypeResponse
-        {
-            Id = statusType.Id,
-            Name = statusType.Name,
-            Description = statusType.Description,
-            Color = statusType.Color,
-        };
-
-    public static readonly Expression<Func<UserType, UserTypeResponse>> UserType = userType =>
-        new UserTypeResponse
+    public static readonly Expression<Func<UserType, UserTypeResponse>> UserType =
+        userType => new UserTypeResponse
         {
             Id = userType.Id,
             Name = userType.Name,
@@ -172,10 +167,8 @@ public static class Projections
             Color = userType.Color,
         };
 
-    public static readonly Expression<
-        Func<UserType, RegistrationTypeResponse>
-    > RegistrationType = userType =>
-        new RegistrationTypeResponse
+    public static readonly Expression<Func<UserType, RegistrationTypeResponse>> RegistrationType =
+        userType => new RegistrationTypeResponse
         {
             Id = userType.Id,
             Name = userType.Name,
@@ -187,22 +180,21 @@ public static class Projections
 
     public static readonly Expression<
         Func<ActivityUserRoleAssignment, AssignedActivityResponse>
-    > AssignedActivity = assignment =>
-        new AssignedActivityResponse
-        {
-            ActivityId = assignment.ActivityId,
-            Title = assignment.Activity.Title,
-            Description = assignment.Activity.Description,
-            ActivityStartsAt = assignment.Activity.ActivityStartsAt,
-            ActivityEndsAt = assignment.Activity.ActivityEndsAt,
-            EventId = assignment.Activity.EventId,
-            RoleType = new AssignedActivityRoleResponse(
-                assignment.ActivityRoleTypeId,
-                assignment.ActivityRoleType.Name
-            ),
-            Status = new AssignedActivityStatusResponse(
-                assignment.AssignmentStatusId,
-                assignment.AssignmentStatus.Name
-            ),
-        };
+    > AssignedActivity = assignment => new AssignedActivityResponse
+    {
+        ActivityId = assignment.ActivityId,
+        Title = assignment.Activity.Title,
+        Description = assignment.Activity.Description,
+        ActivityStartsAt = assignment.Activity.ActivityStartsAt,
+        ActivityEndsAt = assignment.Activity.ActivityEndsAt,
+        EventId = assignment.Activity.EventId,
+        RoleType = new AssignedActivityRoleResponse(
+            assignment.ActivityRoleTypeId,
+            assignment.ActivityRoleType.Name
+        ),
+        Status = new AssignedActivityStatusResponse(
+            assignment.AssignmentStatusId,
+            assignment.AssignmentStatus.Name
+        ),
+    };
 }

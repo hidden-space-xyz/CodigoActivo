@@ -5,11 +5,7 @@ import type {
   UserResponse,
 } from '@/shared/api/generated/models'
 
-import type {
-  AddMinorInput,
-  UpdateMinorInput,
-  UpdateProfileInput,
-} from '../model/account-inputs'
+import type { AddMinorInput, UpdateMinorInput, UpdateProfileInput } from '../model/account-inputs'
 import type { AccountChild, AccountProfile, AccountRole, RegistrationType } from '../model/types'
 
 function toRoles(user: UserResponse): AccountRole[] {

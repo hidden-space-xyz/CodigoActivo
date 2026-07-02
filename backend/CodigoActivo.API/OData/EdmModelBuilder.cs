@@ -57,9 +57,9 @@ public static class EdmModelBuilder
         builder.EntitySet<RegistrationTypeResponse>("RegistrationTypes");
 
         // The assignment projection is keyed by the activity within the caller's own scope.
-        builder.EntitySet<AssignedActivityResponse>("AssignedActivities").EntityType.HasKey(x =>
-            x.ActivityId
-        );
+        builder
+            .EntitySet<AssignedActivityResponse>("AssignedActivities")
+            .EntityType.HasKey(x => x.ActivityId);
 
         RegisterFunctions(builder);
 

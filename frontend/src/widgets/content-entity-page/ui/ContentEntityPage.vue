@@ -9,11 +9,7 @@ import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
 
 import { deleteThumbnail, ThumbnailField, uploadThumbnail } from '@/entities/file'
-import type {
-  ContentController,
-  ContentItem,
-  ContentRequest,
-} from '../model/use-content-entity'
+import type { ContentController, ContentItem, ContentRequest } from '../model/use-content-entity'
 import { EMPTY_DOC_JSON, formatDateTime, getErrorMessage, useCrudFeedback } from '@/shared/lib'
 
 const props = defineProps<{
@@ -193,11 +189,7 @@ function confirmDelete(item: ContentItem): void {
         <template #body="{ data }">
           <span class="title-cell">
             {{ data.title }}
-            <Tag
-              v-if="controller.canFeature && data.featured"
-              value="Destacado"
-              severity="warn"
-            />
+            <Tag v-if="controller.canFeature && data.featured" value="Destacado" severity="warn" />
           </span>
         </template>
         <template #filter="{ filterModel, filterCallback }">
@@ -235,13 +227,7 @@ function confirmDelete(item: ContentItem): void {
               :class="{ 'is-featured': data.featured }"
               @click="onFeature(data)"
             />
-            <Button
-              icon="pi pi-pencil"
-              text
-              rounded
-              aria-label="Editar"
-              @click="openEdit(data)"
-            />
+            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
             <Button
               icon="pi pi-trash"
               text

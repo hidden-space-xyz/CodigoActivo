@@ -8,11 +8,8 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Services;
 
-public class PartnerService(
-    IPartnerRepository partners,
-    IFileRepository files,
-    IUnitOfWork uow
-) : IPartnerService
+public class PartnerService(IPartnerRepository partners, IFileRepository files, IUnitOfWork uow)
+    : IPartnerService
 {
     public IQueryable<PartnerResponse> Query()
     {

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { AnnouncementCard, FeaturedAnnouncementCard, useHomeAnnouncements } from '@/entities/announcement'
+import {
+  AnnouncementCard,
+  FeaturedAnnouncementCard,
+  useHomeAnnouncements,
+} from '@/entities/announcement'
 import { BaseButton, SectionEyebrow } from '@/shared/ui'
 
 const { featured, items: recent, isLoading } = useHomeAnnouncements()

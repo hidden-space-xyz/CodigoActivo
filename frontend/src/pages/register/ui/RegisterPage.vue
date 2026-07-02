@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { AgeGate, RegistrationForm, RegistrationSuccess, useRegistration } from '@/features/register'
+import {
+  AgeGate,
+  RegistrationForm,
+  RegistrationSuccess,
+  useRegistration,
+} from '@/features/register'
 import { SectionEyebrow } from '@/shared/ui'
 
 const {

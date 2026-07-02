@@ -15,7 +15,7 @@ public class ActivityRepository(CodigoActivoDbContext context)
         return await Set.AsNoTracking()
             .Include(a => a.Thumbnail)
             .Include(a => a.AllowedRoleTypes)
-            .ThenInclude(ar => ar.ActivityRoleType)
+                .ThenInclude(ar => ar.ActivityRoleType)
             .Include(a => a.Assignments)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
@@ -27,14 +27,14 @@ public class ActivityRepository(CodigoActivoDbContext context)
     {
         return await Set.AsNoTracking()
             .Include(a => a.AllowedRoleTypes)
-            .ThenInclude(ar => ar.ActivityRoleType)
+                .ThenInclude(ar => ar.ActivityRoleType)
             .Include(a => a.Assignments)
-            .ThenInclude(asg => asg.User)
-            .ThenInclude(u => u.Parent)
+                .ThenInclude(asg => asg.User)
+                    .ThenInclude(u => u.Parent)
             .Include(a => a.Assignments)
-            .ThenInclude(asg => asg.ActivityRoleType)
+                .ThenInclude(asg => asg.ActivityRoleType)
             .Include(a => a.Assignments)
-            .ThenInclude(asg => asg.AssignmentStatus)
+                .ThenInclude(asg => asg.AssignmentStatus)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 

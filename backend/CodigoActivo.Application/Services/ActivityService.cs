@@ -430,11 +430,9 @@ public class ActivityService(
         return new TimeOverlapResponse(overlaps.Count > 0, overlaps);
     }
 
-    public async Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> GetHouseholdAssignmentsAsync(
-        Guid actingUserId,
-        Guid eventId,
-        CancellationToken ct = default
-    )
+    public async Task<
+        IReadOnlyList<HouseholdMemberAssignmentResponse>
+    > GetHouseholdAssignmentsAsync(Guid actingUserId, Guid eventId, CancellationToken ct = default)
     {
         var children = await users.ListChildrenWithDetailsAsync(actingUserId, ct);
         var ids = new List<Guid> { actingUserId };

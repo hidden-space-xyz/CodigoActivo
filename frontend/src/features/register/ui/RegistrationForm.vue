@@ -4,10 +4,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Select from 'primevue/select'
 
-import {
-  createEmptyMinor,
-  type RegistrationForm,
-} from '../model/registration-form'
+import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
 import type { RegistrationType } from '../model/types'
 import { BaseButton } from '@/shared/ui'
 

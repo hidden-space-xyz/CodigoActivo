@@ -18,7 +18,11 @@ function adminRoute(
 
 export const routes: readonly RouteRecordRaw[] = [
   { path: '/', name: 'home', component: () => import('@/pages/home').then((m) => m.HomePage) },
-  { path: '/about', name: 'about', component: () => import('@/pages/about').then((m) => m.AboutPage) },
+  {
+    path: '/about',
+    name: 'about',
+    component: () => import('@/pages/about').then((m) => m.AboutPage),
+  },
   {
     path: '/events',
     name: 'events',

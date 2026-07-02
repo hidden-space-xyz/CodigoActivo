@@ -116,9 +116,7 @@ builder.Services.AddSwaggerGen(c =>
     };
     c.TagActionsBy(api =>
         api.ActionDescriptor is ControllerActionDescriptor descriptor
-            ? [
-                tagOverrides.GetValueOrDefault(descriptor.ControllerName, descriptor.ControllerName),
-            ]
+            ? [tagOverrides.GetValueOrDefault(descriptor.ControllerName, descriptor.ControllerName)]
             : [api.GroupName ?? "default"]
     );
 

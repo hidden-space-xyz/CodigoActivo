@@ -8,7 +8,8 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/announcements")]
-public class AnnouncementCommandsController(IAnnouncementService announcements) : CommandControllerBase
+public class AnnouncementCommandsController(IAnnouncementService announcements)
+    : CommandControllerBase
 {
     [HttpPost]
     [AllowOnlyAdmin]

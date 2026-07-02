@@ -38,7 +38,9 @@ export async function getAccountProfileRequest(): Promise<AccountProfile | null>
   }
 }
 
-export async function getAccountChildrenRequest(parentId: string): Promise<readonly AccountChild[]> {
+export async function getAccountChildrenRequest(
+  parentId: string,
+): Promise<readonly AccountChild[]> {
   const { items } = await fetchODataList<UserResponse>('Users', {
     filter: `parentId eq ${odataGuid(parentId)}`,
     orderBy: 'firstName asc',

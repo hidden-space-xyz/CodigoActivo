@@ -139,14 +139,9 @@ function confirmDelete(partner: PartnerResponse): void {
       </Column>
       <Column field="website" header="Sitio web" sortable :show-filter-menu="false">
         <template #body="{ data }">
-          <a
-            v-if="data.website"
-            :href="data.website"
-            target="_blank"
-            rel="noopener"
-            class="link"
-            >{{ data.website }}</a
-          >
+          <a v-if="data.website" :href="data.website" target="_blank" rel="noopener" class="link">{{
+            data.website
+          }}</a>
           <span v-else>—</span>
         </template>
         <template #filter="{ filterModel, filterCallback }">
@@ -164,13 +159,7 @@ function confirmDelete(partner: PartnerResponse): void {
       <Column header="Acciones" style="width: 130px">
         <template #body="{ data }">
           <div class="row-actions">
-            <Button
-              icon="pi pi-pencil"
-              text
-              rounded
-              aria-label="Editar"
-              @click="openEdit(data)"
-            />
+            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
             <Button
               icon="pi pi-trash"
               text

@@ -6,9 +6,7 @@ import { SectionEyebrow, YearFilter } from '@/shared/ui'
 
 const { years, selectedYear, setYear, announcements, isLoading } = useAnnouncements()
 
-const isEmpty = computed(
-  () => !isLoading.value && (announcements.value?.length ?? 0) === 0,
-)
+const isEmpty = computed(() => !isLoading.value && (announcements.value?.length ?? 0) === 0)
 </script>
 
 <template>

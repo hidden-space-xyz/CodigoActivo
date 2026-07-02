@@ -7,11 +7,8 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Services;
 
-public class ResourceService(
-    IResourceRepository resources,
-    IFileRepository files,
-    IUnitOfWork uow
-) : IResourceService
+public class ResourceService(IResourceRepository resources, IFileRepository files, IUnitOfWork uow)
+    : IResourceService
 {
     public IQueryable<ResourceResponse> Query()
     {

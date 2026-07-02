@@ -24,7 +24,20 @@ public record ActivityResponse(
 )
 {
     public ActivityResponse()
-        : this(default, "", "", default, default, default, default, default, null, default, null, []) { }
+        : this(
+            default,
+            "",
+            "",
+            default,
+            default,
+            default,
+            default,
+            default,
+            null,
+            default,
+            null,
+            []
+        ) { }
 }
 
 public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId, int? DesiredSignups);

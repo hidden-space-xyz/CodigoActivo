@@ -9,10 +9,7 @@ import Select from 'primevue/select'
 
 import { useEventActivities } from '../model/useEventActivities'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
-import type {
-  TimelineActivity,
-  TimelineMemberAssignment,
-} from '../model/activity-timeline.types'
+import type { TimelineActivity, TimelineMemberAssignment } from '../model/activity-timeline.types'
 import type { ActivityOverlap } from '@/entities/activity'
 import { formatDateTime, getErrorMessage } from '@/shared/lib'
 

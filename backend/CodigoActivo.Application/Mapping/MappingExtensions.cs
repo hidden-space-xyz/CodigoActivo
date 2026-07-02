@@ -18,7 +18,8 @@ public static class MappingExtensions
                     assignment.UserType?.Name ?? string.Empty,
                     assignment.UserType?.Color ?? string.Empty
                 ))
-                .ToList() ?? [];
+                .ToList()
+            ?? [];
 
         return new UserResponse(
             user.Id,
@@ -65,7 +66,8 @@ public static class MappingExtensions
                     role.ActivityRoleType?.Name,
                     role.DesiredSignups
                 ))
-                .ToList() ?? [];
+                .ToList()
+            ?? [];
 
         return new ActivityResponse(
             activity.Id,

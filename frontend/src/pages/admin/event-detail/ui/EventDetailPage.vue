@@ -6,7 +6,12 @@ import { AdminPageHeader, AppButton as Button, DataState, ListThumbnail } from '
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
-import { ActivityFormDialog, AssignVolunteerDialog, useActivities, useAssignments } from '@/features/manage-activities'
+import {
+  ActivityFormDialog,
+  AssignVolunteerDialog,
+  useActivities,
+  useAssignments,
+} from '@/features/manage-activities'
 import { deleteThumbnail } from '@/entities/file'
 import { useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'

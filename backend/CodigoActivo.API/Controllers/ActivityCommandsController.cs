@@ -67,7 +67,9 @@ public class ActivityCommandsController(IActivityService activities) : CommandCo
         CancellationToken ct
     )
     {
-        return ToOk(await activities.AssignHouseholdAsync(activityId, UserId, request, IsAdmin, ct));
+        return ToOk(
+            await activities.AssignHouseholdAsync(activityId, UserId, request, IsAdmin, ct)
+        );
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/unassign")]
