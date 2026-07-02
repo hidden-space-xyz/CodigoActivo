@@ -48,7 +48,6 @@ public interface IUserService
     IQueryable<UserStatusTypeResponse> QueryStatusTypes();
     IQueryable<UserTypeResponse> QueryUserTypes();
 
-    /// <summary>Registration-eligible user types (server-side base filter: not hidden).</summary>
     IQueryable<RegistrationTypeResponse> QueryRegistrationTypes();
 }
 
@@ -74,7 +73,6 @@ public interface IActivityService
 {
     IQueryable<ActivityResponse> QueryActivities();
 
-    /// <summary>Activities the given user is assigned to (server-side base filter: UserId == caller).</summary>
     IQueryable<AssignedActivityResponse> QueryAssigned(Guid userId);
 
     IQueryable<ActivityRoleTypeResponse> QueryRoleTypes();

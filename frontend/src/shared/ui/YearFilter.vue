@@ -5,7 +5,6 @@ const props = withDefaults(
   defineProps<{
     years: readonly string[]
     selected: string
-    /** When true a year is always selected, so the "all" pill is hidden. */
     forced?: boolean
     allValue?: string
     allLabel?: string

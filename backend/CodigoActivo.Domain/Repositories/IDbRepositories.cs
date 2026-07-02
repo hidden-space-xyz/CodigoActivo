@@ -84,7 +84,6 @@ public interface IActivityRepository : IDbRepository<Activity>
         CancellationToken ct = default
     );
 
-    /// <summary>Non-tracked, non-materialized query over the assignment join set, for OData reads.</summary>
     IQueryable<ActivityUserRoleAssignment> QueryAssignments();
 }
 

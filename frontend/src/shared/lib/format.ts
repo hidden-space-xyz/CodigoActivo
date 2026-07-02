@@ -7,8 +7,6 @@ const dateFormatter = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
-// Parse a bare "yyyy-mm-dd" as local midnight so it renders on the intended calendar day
-// (new Date("yyyy-mm-dd") would parse as UTC and shift a day west of UTC). Full datetimes pass through.
 function parseDisplayDate(value: string): Date {
   if (DATE_ONLY.test(value)) {
     return new Date(

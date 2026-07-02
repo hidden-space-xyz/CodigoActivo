@@ -91,8 +91,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     );
 
-    // OData read endpoints are consumed by a hand-written query layer on the frontend, not by
-    // the generated client, so keep them out of the OpenAPI document (and the Orval output).
     c.DocInclusionPredicate(
         (_, apiDescription) =>
             !(apiDescription.RelativePath ?? string.Empty).StartsWith(
@@ -101,9 +99,6 @@ builder.Services.AddSwaggerGen(c =>
             )
     );
 
-    // The write controllers were renamed to *CommandsController to free the entity-set names for
-    // the OData read controllers. Restore the original Swagger tags so the generated client keeps
-    // its stable file layout (endpoints/events/…, etc.).
     var tagOverrides = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["EventCommands"] = "Events",

@@ -46,7 +46,6 @@ const uploadError = ref('')
 
 const missingThumbnail = computed(() => !pickedFile.value && !props.event?.thumbnailId)
 
-// Signup dates carry a time; event dates are date-only ("un evento no tiene horas").
 function parse(value?: string | null): Date | null {
   return value ? new Date(value) : null
 }

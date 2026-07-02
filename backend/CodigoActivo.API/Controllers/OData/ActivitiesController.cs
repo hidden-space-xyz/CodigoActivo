@@ -26,10 +26,6 @@ public class ActivitiesController(IActivityService activities) : ODataController
         return result is null ? NotFound() : Ok(result);
     }
 
-    /// <summary>
-    /// Computed reads (formerly REST GETs on ActivityCommandsController), now unbound OData
-    /// functions: an overlap check for a user's assignments and the caller's household assignments.
-    /// </summary>
     [HttpGet("api/odata/VerifyTimeOverlaps(activityId={activityId},userId={userId})")]
     [AllowOnlySelf]
     public async Task<ActionResult<TimeOverlapResponse>> VerifyTimeOverlaps(

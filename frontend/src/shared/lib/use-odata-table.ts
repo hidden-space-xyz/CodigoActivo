@@ -18,21 +18,15 @@ import {
 } from '@/shared/api'
 
 export interface ODataColumn {
-  /** OData field path used in $filter/$orderby (defaults to the map key). */
   readonly field?: string
   readonly type: ODataFieldType
-  /** Default PrimeVue match mode; sensible per-type default when omitted. */
   readonly matchMode?: string
 }
 
 interface UseODataTableOptions {
-  /** OData entity set name, e.g. "Events". */
   readonly resource: string
-  /** TanStack Query key prefix; the live table state is appended automatically. */
   readonly queryKey: readonly unknown[]
-  /** Filterable/typed columns, keyed by the PrimeVue column field. */
   readonly columns?: Record<string, ODataColumn> | undefined
-  /** Fixed server-side-style filter written in the front (added to every request). */
   readonly baseFilter?: Ref<string | undefined> | (() => string | undefined) | undefined
   readonly defaultSort?: { readonly field: string; readonly order?: 1 | -1 } | undefined
   readonly rows?: number | undefined

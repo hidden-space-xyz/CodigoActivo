@@ -7,11 +7,6 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 
 namespace CodigoActivo.API.Controllers.OData;
 
-/// <summary>
-/// Server-computed reports exposed as unbound OData functions (registered in
-/// <see cref="OData.EdmModelBuilder"/>). They are reads, so they belong on an OData controller,
-/// but they are aggregates rather than entity collections, hence functions instead of entity sets.
-/// </summary>
 public class ReportsController(IReportService reports) : ODataController
 {
     [HttpGet("api/odata/EventSummary(eventId={eventId})")]

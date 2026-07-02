@@ -6,8 +6,6 @@ import { toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
 const EVENTS = 'Events'
 
-// Event dates are bare "yyyy-MM-dd" (Edm.Date). Anchor comparisons to the local calendar day so an
-// event stays "ongoing" through the end of its last local day.
 function today(): string {
   const now = new Date()
   const year = now.getFullYear()
@@ -16,7 +14,6 @@ function today(): string {
   return `${year}-${month}-${day}`
 }
 
-// Upcoming/ongoing = ends today or later, nearest first.
 export async function getUpcomingEventsRequest(): Promise<readonly UpcomingEvent[]> {
   const { items } = await fetchODataList<EventResponse>(EVENTS, {
     filter: `eventEndsAt ge ${today()}`,
@@ -26,7 +23,6 @@ export async function getUpcomingEventsRequest(): Promise<readonly UpcomingEvent
   return items.map(toUpcomingEvent)
 }
 
-// Distinct years that have finished events, numeric-descending (most recent first).
 export async function getPastEventYearsRequest(): Promise<readonly string[]> {
   const { items } = await fetchODataList<EventResponse>(EVENTS, {
     filter: `eventEndsAt lt ${today()}`,
@@ -38,14 +34,11 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
     items
       .map((event) => event.eventStartsAt)
       .filter((value): value is string => Boolean(value))
-      // eventStartsAt is a bare Edm.Date ("yyyy-MM-dd"); take the calendar year straight from the
-      // string so it matches the server-side `year(eventStartsAt)` filter (no local-timezone shift).
       .map((value) => value.slice(0, 4)),
   )
   return [...years].sort((a, b) => Number(b) - Number(a))
 }
 
-// Past events for a given year, most-recent first (nearest-to-now first).
 export async function getPastEventsRequest(year: string): Promise<readonly PastEvent[]> {
   const { items } = await fetchODataList<EventResponse>(EVENTS, {
     filter: combineFilters(`eventEndsAt lt ${today()}`, `year(eventStartsAt) eq ${odataInt(year)}`),

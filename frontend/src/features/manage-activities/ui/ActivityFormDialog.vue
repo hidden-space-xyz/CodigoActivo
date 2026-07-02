@@ -55,7 +55,6 @@ const uploadError = ref('')
 
 const missingThumbnail = computed(() => !pickedFile.value && !props.activity?.thumbnailId)
 
-// The event has no time-of-day, so an activity is bounded by the event's calendar days.
 function parseDateOnly(value?: string | null): Date | null {
   if (!value) return null
   const [year, month, day] = value.slice(0, 10).split('-').map(Number)
@@ -63,8 +62,6 @@ function parseDateOnly(value?: string | null): Date | null {
   return new Date(year, month - 1, day)
 }
 
-// The backend compares the activity's UTC calendar day (DateOnly.FromDateTime(UtcDateTime))
-// against the event's date-only bounds; mirror that exactly so the layers never disagree.
 function utcDay(date: Date): string {
   return date.toISOString().slice(0, 10)
 }

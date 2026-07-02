@@ -16,7 +16,6 @@ function isSignupWindowOpen(event: EventResponse): boolean {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
   const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
-  // A defined window is required (matches backend IsSignupOpen: now within [start, end]).
   if (start === null || end === null) return false
   return now >= start && now <= end
 }

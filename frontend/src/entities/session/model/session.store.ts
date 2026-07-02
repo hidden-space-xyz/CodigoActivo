@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 
 import type { AuthUser } from './types'
 
-// Mirrors SeedIds.UserTypes.Admin in the backend (DomainConstants.cs).
 const ADMIN_ROLE_ID = '6a8fbafe-22da-4dcc-8b4f-e8b5f43528b2'
 
 export const useSessionStore = defineStore('session', () => {

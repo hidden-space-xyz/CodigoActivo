@@ -48,7 +48,6 @@ export async function getEventActivitiesRequest(
 }
 
 export async function getMyAssignmentsRequest(): Promise<readonly ActivityAssignment[]> {
-  // The backend scopes AssignedActivities to the authenticated caller automatically.
   const { items } = await fetchODataList<AssignedActivityResponse>(ASSIGNED_ACTIVITIES, {
     orderBy: 'activityStartsAt asc',
     top: 1000,
@@ -56,7 +55,6 @@ export async function getMyAssignmentsRequest(): Promise<readonly ActivityAssign
   return items.map(toActivityAssignment)
 }
 
-// Raw activity list of an event, ordered chronologically (admin table + assign dialog).
 export async function listEventActivitiesRequest(eventId: string): Promise<ActivityResponse[]> {
   const { items } = await fetchODataList<ActivityResponse>(ACTIVITIES, {
     filter: `eventId eq ${odataGuid(eventId)}`,
@@ -66,7 +64,6 @@ export async function listEventActivitiesRequest(eventId: string): Promise<Activ
   return items
 }
 
-// Single activity by id (admin edit dialog); null on 404.
 export async function getActivityByIdRequest(activityId: string): Promise<ActivityResponse | null> {
   return fetchODataEntity<ActivityResponse>(ACTIVITIES, activityId)
 }

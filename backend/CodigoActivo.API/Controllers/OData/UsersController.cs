@@ -16,9 +16,6 @@ public class UsersController(IUserService users) : ODataController
     [EnableQuery(PageSize = 1000)]
     public IQueryable<UserResponse> Get()
     {
-        // Admins query the whole directory; everyone else is scoped server-side to their own
-        // household (themselves plus their minors). This lets a parent read their children via
-        // $filter=parentId eq {ownId} without being able to enumerate any other user.
         if (User.IsAdmin())
         {
             return users.QueryUsers();

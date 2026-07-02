@@ -20,11 +20,8 @@ export interface ContentRequest {
 }
 
 interface ContentApi {
-  /** OData entity set name, e.g. "Announcements" | "Resources". */
   resource: string
-  /** TanStack Query key prefix; live table state is appended by the table. */
   queryKey: readonly unknown[]
-  /** Typed, filterable column map keyed by the PrimeVue column field. */
   columns: Record<string, ODataColumn>
   defaultSort?: { readonly field: string; readonly order?: 1 | -1 }
   fetchOne: (id: string) => Promise<ContentItem>
@@ -36,7 +33,6 @@ interface ContentApi {
 
 export function useContentEntity(api: ContentApi) {
   const queryClient = useQueryClient()
-  // Invalidate the whole entity prefix so every paged/filtered table variant refreshes.
   const invalidate = () => queryClient.invalidateQueries({ queryKey: api.queryKey })
 
   const table = useODataTable<ContentItem>({

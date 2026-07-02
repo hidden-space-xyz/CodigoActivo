@@ -12,7 +12,6 @@ import type {
 } from '@/shared/api/generated/models'
 import { useODataTable } from '@/shared/lib'
 
-/** List cache prefix shared by the admin table and any public sponsor queries. */
 const partnersListKey = ['partners'] as const
 
 export function usePartners() {

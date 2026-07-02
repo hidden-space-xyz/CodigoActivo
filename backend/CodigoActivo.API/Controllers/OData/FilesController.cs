@@ -6,11 +6,6 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 
 namespace CodigoActivo.API.Controllers.OData;
 
-/// <summary>
-/// All file reads. Metadata is a normal OData entity read (<c>Files({key})</c>); the raw content
-/// download stays a plain binary GET (it returns a stream, not queryable data) but lives here so
-/// every read sits on an OData controller. File mutations are on <c>FileCommandsController</c>.
-/// </summary>
 [AllowAnonymous]
 public class FilesController(IFileService files) : ODataController
 {

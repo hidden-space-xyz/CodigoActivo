@@ -4,18 +4,6 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Mapping;
 
-/// <summary>
-/// EF-translatable projections from entities to their read DTOs. Unlike the
-/// <see cref="MappingExtensions"/> methods (which run on materialized entities for
-/// write-return paths), these are expression trees composed into an <see cref="IQueryable{T}"/>
-/// and translated to SQL. Every OData read endpoint uses these.
-/// <para>
-/// The outer DTO is built with a member initializer (not the positional constructor) so EF Core
-/// can compose the OData query options ($filter/$orderby/$top/$skip, which include an auto key
-/// ordering for stable paging) on top of the projection. EF cannot see through a constructor
-/// projection for those composed operators, hence the object-initializer form.
-/// </para>
-/// </summary>
 public static class Projections
 {
     public static readonly Expression<Func<Event, EventResponse>> Event =

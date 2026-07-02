@@ -1,9 +1,3 @@
-/**
- * Read-model types for OData endpoints whose DTOs are no longer part of the generated client
- * (they were only ever returned by the now-removed REST GET actions). Shapes mirror the backend
- * response records exactly (camelCase JSON).
- */
-
 export interface UserTypeResponse {
   readonly id: string
   readonly name: string
@@ -47,8 +41,6 @@ export interface AssignedActivityResponse {
   readonly roleType: AssignedActivityRoleResponse
   readonly status: AssignedActivityStatusResponse
 }
-
-// --- Computed reads (OData unbound functions) ---
 
 interface EventRoleTypeSummaryResponse {
   readonly roleTypeId: string

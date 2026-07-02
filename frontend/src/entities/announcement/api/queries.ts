@@ -9,10 +9,6 @@ import {
   getHomeAnnouncementsRequest,
 } from './requests'
 
-/**
- * Public announcements model: a forced year filter (by year of `createdAt`), defaulting to the
- * latest year with data, showing that year's announcements newest-first with no pagination.
- */
 export function useAnnouncements() {
   const yearsQuery = useQuery({
     queryKey: announcementQueryKeys.years(),
@@ -22,7 +18,6 @@ export function useAnnouncements() {
   const years = computed(() => yearsQuery.data.value ?? [])
   const selectedYear = ref('')
 
-  // Default to the latest year with data once it loads (and keep a valid selection).
   watch(
     years,
     (list) => {
@@ -59,7 +54,6 @@ export function useAnnouncements() {
   }
 }
 
-/** Home block: one featured announcement plus up to three other recent ones. */
 export function useHomeAnnouncements() {
   const query = useQuery({
     queryKey: announcementQueryKeys.home(),

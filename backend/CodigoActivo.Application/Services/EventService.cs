@@ -86,8 +86,6 @@ public class EventService(
             return Error.NotFound();
         }
 
-        // An activity may never fall outside its event's days. Reject a date change that
-        // would leave an existing activity orphaned (dates compared, hours ignored).
         var (lowerInclusive, upperExclusive) = DayBounds(
             schedule.Value.EventStartsAt,
             schedule.Value.EventEndsAt
@@ -188,8 +186,6 @@ public class EventService(
         DateOnly eventEnd
     )
     {
-        // UTC-day bounds [lowerInclusive, upperExclusive) covering the event's calendar days,
-        // matching ActivityService's DateOnly.FromDateTime(UtcDateTime) comparison.
         var lower = new DateTimeOffset(eventStart.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         var upperExclusive = new DateTimeOffset(
             eventEnd.AddDays(1).ToDateTime(TimeOnly.MinValue),
