@@ -6,12 +6,12 @@ export interface CatalogItem {
   description?: string | null
 }
 
-export interface CatalogRequest {
+interface CatalogRequest {
   name?: string | null
   description?: string | null
 }
 
-export interface CatalogApi {
+interface CatalogApi {
   queryKey: readonly unknown[]
   fetchAll: (signal: AbortSignal) => Promise<CatalogItem[]>
   create: (body: CatalogRequest) => Promise<unknown>

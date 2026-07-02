@@ -103,5 +103,3 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
 export const httpClient = <T>(url: string, init: RequestInit = {}): Promise<T> => {
   return request<T>(url, init, true)
 }
-
-export default httpClient

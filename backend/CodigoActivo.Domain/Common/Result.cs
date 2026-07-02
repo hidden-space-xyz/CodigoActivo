@@ -24,11 +24,6 @@ public class Result
         return new(value);
     }
 
-    public static Result Failure(Error error)
-    {
-        return new(false, error);
-    }
-
     public static implicit operator Result(Error error) => new(false, error);
 }
 

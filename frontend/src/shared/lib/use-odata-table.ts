@@ -25,7 +25,7 @@ export interface ODataColumn {
   readonly matchMode?: string
 }
 
-export interface UseODataTableOptions {
+interface UseODataTableOptions {
   /** OData entity set name, e.g. "Events". */
   readonly resource: string
   /** TanStack Query key prefix; the live table state is appended automatically. */

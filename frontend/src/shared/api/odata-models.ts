@@ -27,12 +27,12 @@ export interface RegistrationTypeResponse {
   readonly isAllowedForAdults: boolean
 }
 
-export interface AssignedActivityRoleResponse {
+interface AssignedActivityRoleResponse {
   readonly id: string
   readonly name: string
 }
 
-export interface AssignedActivityStatusResponse {
+interface AssignedActivityStatusResponse {
   readonly id: string
   readonly name: string
 }
@@ -50,7 +50,7 @@ export interface AssignedActivityResponse {
 
 // --- Computed reads (OData unbound functions) ---
 
-export interface EventRoleTypeSummaryResponse {
+interface EventRoleTypeSummaryResponse {
   readonly roleTypeId: string
   readonly roleTypeName: string | null
   readonly approvedAssignments: number
@@ -68,7 +68,7 @@ export interface EventSummaryResponse {
   readonly roleTypeBreakdown: EventRoleTypeSummaryResponse[]
 }
 
-export interface ActivityRoleTypeSummaryResponse {
+interface ActivityRoleTypeSummaryResponse {
   readonly roleTypeId: string
   readonly roleTypeName: string | null
   readonly approvedAssignments: number
@@ -105,7 +105,7 @@ export interface DashboardSummaryResponse {
   readonly users: number
 }
 
-export interface OverlappingActivityResponse {
+interface OverlappingActivityResponse {
   readonly activityId: string
   readonly title: string
   readonly startsAt: string

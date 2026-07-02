@@ -10,7 +10,7 @@ import { ApiError, httpClient } from './http-client'
 const ODATA_BASE = '/api/odata'
 
 /** Raw OData collection envelope. */
-export interface ODataList<T> {
+interface ODataList<T> {
   readonly value: T[]
   readonly '@odata.count'?: number
 }
@@ -32,7 +32,7 @@ export interface ODataQuery {
 
 export type ODataFieldType = 'text' | 'numeric' | 'boolean' | 'date' | 'datetime' | 'guid'
 
-export function buildODataQueryString(query: ODataQuery): string {
+function buildODataQueryString(query: ODataQuery): string {
   const params: string[] = []
   if (query.filter) params.push(`$filter=${encodeURIComponent(query.filter)}`)
   if (query.orderBy) params.push(`$orderby=${encodeURIComponent(query.orderBy)}`)

@@ -1,4 +1,4 @@
-export interface NavItem {
+interface NavItem {
   readonly routeName: string
   readonly label: string
 }

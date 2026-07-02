@@ -2,7 +2,7 @@ import { computed, onMounted, onUnmounted, ref, toValue, watch, type MaybeRefOrG
 
 import type { Sponsor } from '@/entities/partner'
 
-export interface SponsorCard {
+interface SponsorCard {
   readonly sponsor: Sponsor
   readonly offset: number
 }

@@ -17,29 +17,6 @@ public class EventRepository(CodigoActivoDbContext context)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
-    public async Task<IReadOnlyList<Event>> ListAsync(
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        CancellationToken ct = default
-    )
-    {
-        var query = Set.AsNoTracking().Include(e => e.Thumbnail).AsQueryable();
-
-        if (startDate.HasValue)
-        {
-            var start = DateOnly.FromDateTime(startDate.Value.UtcDateTime);
-            query = query.Where(e => e.EventEndsAt >= start);
-        }
-
-        if (endDate.HasValue)
-        {
-            var end = DateOnly.FromDateTime(endDate.Value.UtcDateTime);
-            query = query.Where(e => e.EventStartsAt <= end);
-        }
-
-        return await query.OrderBy(e => e.EventStartsAt).ThenBy(e => e.Title).ToListAsync(ct);
-    }
-
     public async Task<Event?> GetWithActivitiesAndAssignmentsAsync(
         Guid id,
         CancellationToken ct = default

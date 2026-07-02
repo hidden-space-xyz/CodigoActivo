@@ -41,7 +41,7 @@ export async function getAnnouncementsByYearRequest(
 }
 
 /** The featured announcement, falling back to the most recent one; null when there are none. */
-export async function getFeaturedAnnouncementRequest(): Promise<Announcement | null> {
+async function getFeaturedAnnouncementRequest(): Promise<Announcement | null> {
   const featured = await fetchODataList<AnnouncementResponse>(RESOURCE, {
     filter: 'featured eq true',
     orderBy: 'createdAt desc',

@@ -10,21 +10,6 @@ public class ActivityRepository(CodigoActivoDbContext context)
     : Repository<Activity>(context),
         IActivityRepository
 {
-    public async Task<IReadOnlyList<Activity>> ListByEventAsync(
-        Guid eventId,
-        CancellationToken ct = default
-    )
-    {
-        return await Set.AsNoTracking()
-            .Include(a => a.Thumbnail)
-            .Include(a => a.AllowedRoleTypes)
-            .ThenInclude(ar => ar.ActivityRoleType)
-            .Where(a => a.EventId == eventId)
-            .OrderBy(a => a.ActivityStartsAt)
-            .ThenBy(a => a.Title)
-            .ToListAsync(ct);
-    }
-
     public async Task<Activity?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
     {
         return await Set.AsNoTracking()

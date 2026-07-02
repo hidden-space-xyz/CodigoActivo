@@ -19,16 +19,6 @@ public class UserRepository(CodigoActivoDbContext context)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
-    public async Task<IReadOnlyList<User>> ListWithDetailsAsync(CancellationToken ct = default)
-    {
-        return await Set.AsNoTracking()
-            .Include(u => u.UserStatusType)
-            .Include(u => u.TypeAssignments)
-            .ThenInclude(ta => ta.UserType)
-            .OrderByDescending(u => u.CreatedAt)
-            .ToListAsync(ct);
-    }
-
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
         return await Set.Include(u => u.UserStatusType)

@@ -1,4 +1,4 @@
-export interface AdminNavItem {
+interface AdminNavItem {
   readonly label: string
   readonly routeName: string
   readonly icon: string

@@ -5,7 +5,6 @@ namespace CodigoActivo.Domain.Repositories;
 public interface IUserRepository : IDbRepository<User>
 {
     Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<User>> ListWithDetailsAsync(CancellationToken ct = default);
 
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<User?> GetByPhoneAsync(string phone, CancellationToken ct = default);
@@ -38,11 +37,6 @@ public interface IUserRepository : IDbRepository<User>
 public interface IEventRepository : IDbRepository<Event>
 {
     Task<Event?> GetWithThumbnailAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<Event>> ListAsync(
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        CancellationToken ct = default
-    );
 
     Task<Event?> GetWithActivitiesAndAssignmentsAsync(Guid id, CancellationToken ct = default);
 
@@ -51,7 +45,6 @@ public interface IEventRepository : IDbRepository<Event>
 
 public interface IActivityRepository : IDbRepository<Activity>
 {
-    Task<IReadOnlyList<Activity>> ListByEventAsync(Guid eventId, CancellationToken ct = default);
     Task<Activity?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
     Task<Activity?> GetWithAssignmentsAndUsersAsync(Guid id, CancellationToken ct = default);
 

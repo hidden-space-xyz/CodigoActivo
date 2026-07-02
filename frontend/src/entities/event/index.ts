@@ -1,4 +1,4 @@
-export type { PastEvent, UpcomingEvent } from './model/types'
+export type { UpcomingEvent } from './model/types'
 export { useEventDetail, useHomeEvents, usePastEvents, useUpcomingEvents } from './api/queries'
 export { eventQueryKeys } from './api/query-keys'
 export { default as EventCard } from './ui/EventCard.vue'

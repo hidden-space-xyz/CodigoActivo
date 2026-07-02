@@ -1,4 +1,4 @@
-export interface MinorForm {
+interface MinorForm {
   firstName: string
   lastName: string
   dateOfBirth: string

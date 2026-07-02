@@ -12,7 +12,7 @@ namespace CodigoActivo.API.Attributes;
 )]
 public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilter
 {
-    public string RouteKey { get; set; } = "userId";
+    private const string RouteKey = "userId";
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {

@@ -32,10 +32,5 @@ namespace CodigoActivo.Domain.Constants
             public static readonly Guid Confirmed = new("3c172c13-d238-4f0b-a61b-0a5ffc6a53ba");
             public static readonly Guid Denied = new("714c9041-5536-420a-8176-bf745957d80e");
         }
-
-        public static class Files
-        {
-            public static readonly Guid Placeholder = new("e68b34cf-37d6-44c4-99a3-e6d191b161bd");
-        }
     }
 }

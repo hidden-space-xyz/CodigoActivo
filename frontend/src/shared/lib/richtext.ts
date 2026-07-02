@@ -12,8 +12,6 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import Underline from '@tiptap/extension-underline'
 import StarterKit from '@tiptap/starter-kit'
 
-export type { JSONContent }
-
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
 export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 

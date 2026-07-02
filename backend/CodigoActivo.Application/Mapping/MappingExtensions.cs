@@ -135,23 +135,8 @@ public static class MappingExtensions
         return new(file.Id, file.Name, file.Extension, file.UploadedAt, file.UploadedBy);
     }
 
-    public static UserStatusTypeResponse ToResponse(this UserStatusType statusType)
-    {
-        return new(statusType.Id, statusType.Name, statusType.Description, statusType.Color);
-    }
-
-    public static UserTypeResponse ToResponse(this UserType userType)
-    {
-        return new(userType.Id, userType.Name, userType.Description, userType.Color);
-    }
-
     public static ActivityRoleTypeResponse ToResponse(this ActivityRoleType roleType)
     {
         return new(roleType.Id, roleType.Name, roleType.Description);
-    }
-
-    public static AssignmentStatusTypeResponse ToResponse(this AssignmentStatusType statusType)
-    {
-        return new(statusType.Id, statusType.Name, statusType.Description, statusType.Color);
     }
 }

@@ -1,4 +1,4 @@
-export interface ParentGrouping<T> {
+interface ParentGrouping<T> {
   rows: T[]
   depthById: Map<string, number>
   childrenByParent: Map<string, T[]>

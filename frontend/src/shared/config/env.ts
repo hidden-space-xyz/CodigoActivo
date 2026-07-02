@@ -1,4 +1,4 @@
-export interface AppEnv {
+interface AppEnv {
   readonly apiBaseUrl: string
 }
 
