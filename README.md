@@ -26,7 +26,7 @@ This repository holds a single full-stack web app with two clearly separated sur
 | Layer        | Technologies                                                                            |
 | ------------ | --------------------------------------------------------------------------------------- |
 | **Backend**  | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · Swashbuckle (OpenAPI)          |
-| **Frontend** | Vue 3 · Vite · TypeScript · PrimeVue · Pinia · TanStack Query · TipTap · Orval           |
+| **Frontend** | Vue 3 · Vite · TypeScript · PrimeVue · TanStack Query · TipTap · Orval · OData (reads)   |
 | **Quality**  | Roslynator analyzers (build-enforced) · ESLint · Prettier · `vue-tsc` typecheck · Steiger (FSD lint) |
 
 ## 🏗️ Architecture
@@ -58,7 +58,7 @@ CodigoActivo/
 | **`src/pages`**   | One slice per route (public pages + admin under `pages/admin/`)           |
 | **`src/widgets`** | Composite cross-page UI blocks                                            |
 | **`src/features`**| User interactions (auth, register, account, admin `manage-*` CRUD)        |
-| **`src/entities`**| Business entities — `model` (types/stores), `api` (requests), `ui` (cards) |
+| **`src/entities`**| Business entities — `model` (types, reactive session state), `api` (requests), `ui` (cards) |
 | **`src/shared`**  | Reusable base: API client, UI kit, lib helpers, config                    |
 
 ## 🚀 Getting Started
