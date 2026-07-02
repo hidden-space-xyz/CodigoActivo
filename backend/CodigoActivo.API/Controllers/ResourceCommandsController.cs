@@ -8,7 +8,7 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/resources")]
-public class ResourceCommandsController(IResourceService resources) : ApiControllerBase
+public class ResourceCommandsController(IResourceService resources) : CommandControllerBase
 {
     [HttpPost]
     [AllowOnlyAdmin]

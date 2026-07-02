@@ -1,13 +1,13 @@
 import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
 import {
   deleteApiUsersUserId,
-  getApiUsersUserIdChildren,
   patchApiUsersUserIdPassword,
   patchApiUsersUserIdRole,
   postApiUsersUserIdChildren,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import { ApiError, fetchODataList } from '@/shared/api'
+import type { UserResponse } from '@/shared/api/generated/models'
+import { ApiError, fetchODataList, odataGuid } from '@/shared/api'
 import type { RegistrationTypeResponse } from '@/shared/api'
 
 import type {
@@ -39,8 +39,12 @@ export async function getAccountProfileRequest(): Promise<AccountProfile | null>
 }
 
 export async function getAccountChildrenRequest(parentId: string): Promise<readonly AccountChild[]> {
-  const response = await getApiUsersUserIdChildren(parentId)
-  return (response.data ?? []).map(toAccountChild)
+  const { items } = await fetchODataList<UserResponse>('Users', {
+    filter: `parentId eq ${odataGuid(parentId)}`,
+    orderBy: 'firstName asc',
+    top: 1000,
+  })
+  return items.map(toAccountChild)
 }
 
 export async function getRegistrationTypesRequest(

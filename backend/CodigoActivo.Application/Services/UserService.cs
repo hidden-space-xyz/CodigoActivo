@@ -23,14 +23,6 @@ public class UserService(
         return users.Query().Select(Projections.User);
     }
 
-    public async Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        var user = await users.GetByIdWithDetailsAsync(id, ct);
-        var response = user?.ToResponse();
-
-        return response is null ? Error.NotFound() : Result.Success(response);
-    }
-
     public async Task<Result<UserResponse>> UpdateAsync(
         Guid id,
         UpdateUserRequest request,
@@ -114,15 +106,6 @@ public class UserService(
 
         var updated = await users.GetByIdWithDetailsAsync(id, ct);
         return updated!.ToResponse();
-    }
-
-    public async Task<IReadOnlyList<UserResponse>> GetChildrenAsync(
-        Guid parentId,
-        CancellationToken ct = default
-    )
-    {
-        var children = await users.ListChildrenWithDetailsAsync(parentId, ct);
-        return children.Select(child => child.ToResponse()).ToList();
     }
 
     public async Task<Result<UserResponse>> AddChildAsync(

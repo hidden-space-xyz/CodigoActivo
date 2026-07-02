@@ -1,7 +1,6 @@
-import { fetchODataList } from '@/shared/api'
+import { ApiError, fetchODataEntity, fetchODataList } from '@/shared/api'
 import {
   deleteApiUsersUserId,
-  getApiUsersUserId,
   patchApiUsersUserIdChangeType,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
@@ -13,8 +12,10 @@ export function getUsersRequest() {
   )
 }
 
-export function getUserRequest(id: string) {
-  return getApiUsersUserId(id).then((r) => r.data)
+export async function getUserRequest(id: string): Promise<UserResponse> {
+  const user = await fetchODataEntity<UserResponse>('Users', id)
+  if (!user) throw new ApiError(404, 'Usuario no encontrado', null)
+  return user
 }
 
 export function updateUserRequest(id: string, body: UpdateUserRequest) {

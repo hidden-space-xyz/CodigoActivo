@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import {
-  getApiActivitiesActivityIdUserIdVerifyTimeOverlaps,
   patchApiActivitiesActivityIdUserIdAssign,
   patchApiActivitiesActivityIdUserIdChangeRole,
   patchApiActivitiesActivityIdUserIdChangeStatus,
@@ -12,6 +11,7 @@ import type {
   ChangeAssignmentRoleRequest,
   ChangeAssignmentStatusRequest,
 } from '@/shared/api/generated/models'
+import { verifyOverlapsRequest } from '@/entities/activity'
 
 export function useAssignments(eventId: string) {
   const queryClient = useQueryClient()
@@ -53,9 +53,7 @@ export function useAssignments(eventId: string) {
   })
 
   function verifyOverlaps(activityId: string, userId: string) {
-    return getApiActivitiesActivityIdUserIdVerifyTimeOverlaps(activityId, userId).then(
-      (r) => r.data,
-    )
+    return verifyOverlapsRequest(activityId, userId)
   }
 
   return { assign, unassign, changeStatus, changeRole, verifyOverlaps }

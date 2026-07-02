@@ -1,14 +1,21 @@
 import {
-  getApiActivitiesActivityIdUserIdVerifyTimeOverlaps,
-  getApiActivitiesEventIdHouseholdAssignments,
   patchApiActivitiesActivityIdUserIdAssign,
   patchApiActivitiesActivityIdUserIdUnassign,
   postApiActivitiesActivityIdAssignHousehold,
 } from '@/shared/api/generated/endpoints/activities/activities'
-import { getApiUsersUserIdChildren } from '@/shared/api/generated/endpoints/users/users'
-import type { ActivityResponse } from '@/shared/api/generated/models'
-import type { AssignedActivityResponse } from '@/shared/api'
-import { fetchODataEntity, fetchODataList, odataGuid } from '@/shared/api'
+import type { ActivityResponse, UserResponse } from '@/shared/api/generated/models'
+import type {
+  AssignedActivityResponse,
+  HouseholdMemberAssignmentResponse,
+  TimeOverlapResponse,
+} from '@/shared/api'
+import {
+  fetchODataEntity,
+  fetchODataFunction,
+  fetchODataFunctionList,
+  fetchODataList,
+  odataGuid,
+} from '@/shared/api'
 
 import type { HouseholdAssignmentInput } from '../model/household-assignment-input'
 import type {
@@ -67,21 +74,31 @@ export async function getActivityByIdRequest(
 export async function getHouseholdAssignmentsRequest(
   eventId: string,
 ): Promise<readonly HouseholdActivityAssignment[]> {
-  const response = await getApiActivitiesEventIdHouseholdAssignments(eventId)
-  return (response.data ?? []).map(toHouseholdActivityAssignment)
+  const rows = await fetchODataFunctionList<HouseholdMemberAssignmentResponse>(
+    'HouseholdAssignments',
+    { eventId: odataGuid(eventId) },
+  )
+  return rows.map(toHouseholdActivityAssignment)
 }
 
 export async function getHouseholdMembersRequest(userId: string): Promise<readonly HouseholdMember[]> {
-  const response = await getApiUsersUserIdChildren(userId)
-  return (response.data ?? []).map(toHouseholdMember)
+  const { items } = await fetchODataList<UserResponse>('Users', {
+    filter: `parentId eq ${odataGuid(userId)}`,
+    orderBy: 'firstName asc',
+    top: 1000,
+  })
+  return items.map(toHouseholdMember)
 }
 
 export async function verifyOverlapsRequest(
   activityId: string,
   userId: string,
 ): Promise<OverlapCheck> {
-  const response = await getApiActivitiesActivityIdUserIdVerifyTimeOverlaps(activityId, userId)
-  return toOverlapCheck(response.data)
+  const overlap = await fetchODataFunction<TimeOverlapResponse>('VerifyTimeOverlaps', {
+    activityId: odataGuid(activityId),
+    userId: odataGuid(userId),
+  })
+  return toOverlapCheck(overlap)
 }
 
 export async function assignActivityRequest(

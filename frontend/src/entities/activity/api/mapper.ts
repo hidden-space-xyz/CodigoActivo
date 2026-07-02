@@ -1,10 +1,9 @@
+import type { ActivityResponse, UserResponse } from '@/shared/api/generated/models'
 import type {
-  ActivityResponse,
+  AssignedActivityResponse,
   HouseholdMemberAssignmentResponse,
   TimeOverlapResponse,
-  UserResponse,
-} from '@/shared/api/generated/models'
-import type { AssignedActivityResponse } from '@/shared/api'
+} from '@/shared/api'
 
 import type {
   ActivityAssignment,

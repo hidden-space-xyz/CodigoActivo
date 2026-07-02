@@ -9,29 +9,8 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/activities")]
-public class ActivityCommandsController(IActivityService activities) : ApiControllerBase
+public class ActivityCommandsController(IActivityService activities) : CommandControllerBase
 {
-    [HttpGet("{eventId:guid}/household-assignments")]
-    [Authorize]
-    public async Task<
-        ActionResult<IReadOnlyList<HouseholdMemberAssignmentResponse>>
-    > GetHouseholdAssignments(Guid eventId, CancellationToken ct)
-    {
-        return Ok(await activities.GetHouseholdAssignmentsAsync(UserId, eventId, ct));
-    }
-
-    [HttpGet("{activityId:guid}/{userId:guid}/verifyTimeOverlaps")]
-    [Authorize]
-    [AllowOnlySelf]
-    public async Task<ActionResult<TimeOverlapResponse>> VerifyTimeOverlaps(
-        Guid activityId,
-        Guid userId,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await activities.VerifyTimeOverlapsAsync(activityId, userId, ct));
-    }
-
     [HttpPost("{eventId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<ActivityResponse>> Create(

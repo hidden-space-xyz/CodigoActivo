@@ -8,7 +8,7 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class EventCommandsController(IEventService events) : ApiControllerBase
+public class EventCommandsController(IEventService events) : CommandControllerBase
 {
     [HttpPost]
     [AllowOnlyAdmin]

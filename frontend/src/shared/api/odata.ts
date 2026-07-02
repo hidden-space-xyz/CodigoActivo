@@ -70,6 +70,41 @@ export async function fetchODataEntity<T>(resource: string, key: string): Promis
   }
 }
 
+/** Serialize unbound-function parameters as `p1=v1,p2=v2`. Values are spliced raw (OData v4 leaves
+ *  guids/numbers unquoted), so callers must pass pre-validated literals (e.g. via `odataGuid`). */
+function buildFunctionParams(params: Record<string, string | number>): string {
+  return Object.entries(params)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(',')
+}
+
+/**
+ * Invoke an unbound OData function returning a single value: `GET /api/odata/Name(p1=v1,...)`.
+ * A single complex/entity result is serialized at the top level (next to `@odata.context`), so the
+ * parsed body already IS the value.
+ */
+export async function fetchODataFunction<T>(
+  name: string,
+  params: Record<string, string | number> = {},
+): Promise<T> {
+  const url = `${ODATA_BASE}/${name}(${buildFunctionParams(params)})`
+  const response = await httpClient<{ data: T }>(url)
+  return response.data
+}
+
+/**
+ * Invoke an unbound OData function returning a collection: `GET /api/odata/Name(p1=v1,...)`.
+ * The result is the OData envelope `{ value: T[] }`; this unwraps it to the array (empty if absent).
+ */
+export async function fetchODataFunctionList<T>(
+  name: string,
+  params: Record<string, string | number> = {},
+): Promise<T[]> {
+  const url = `${ODATA_BASE}/${name}(${buildFunctionParams(params)})`
+  const response = await httpClient<{ data: { value?: T[] } }>(url)
+  return response.data?.value ?? []
+}
+
 /** Combine filter clauses with `and`, dropping empties. */
 export function combineFilters(...clauses: Array<string | null | undefined>): string | undefined {
   const parts = clauses.filter((clause): clause is string => Boolean(clause))

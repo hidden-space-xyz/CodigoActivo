@@ -10,15 +10,8 @@ namespace CodigoActivo.API.Controllers;
 [ApiController]
 [Route("api/users")]
 [Authorize]
-public class UserCommandsController(IUserService users) : ApiControllerBase
+public class UserCommandsController(IUserService users) : CommandControllerBase
 {
-    [HttpGet("{userId:guid}")]
-    [AllowOnlySelf]
-    public async Task<ActionResult<UserResponse>> GetById(Guid userId, CancellationToken ct)
-    {
-        return ToOk(await users.GetByIdAsync(userId, ct));
-    }
-
     [HttpPut("{userId:guid}")]
     [AllowOnlySelf]
     public async Task<ActionResult<UserResponse>> Update(
@@ -35,16 +28,6 @@ public class UserCommandsController(IUserService users) : ApiControllerBase
     public async Task<IActionResult> Delete(Guid userId, CancellationToken ct)
     {
         return ToNoContent(await users.DeleteAsync(userId, ct));
-    }
-
-    [HttpGet("{userId:guid}/children")]
-    [AllowOnlySelf]
-    public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetChildren(
-        Guid userId,
-        CancellationToken ct
-    )
-    {
-        return Ok(await users.GetChildrenAsync(userId, ct));
     }
 
     [HttpPost("{userId:guid}/children")]

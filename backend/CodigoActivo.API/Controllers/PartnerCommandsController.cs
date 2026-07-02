@@ -8,7 +8,7 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/partners")]
-public class PartnerCommandsController(IPartnerService partners) : ApiControllerBase
+public class PartnerCommandsController(IPartnerService partners) : CommandControllerBase
 {
     [HttpPost]
     [AllowOnlyAdmin]

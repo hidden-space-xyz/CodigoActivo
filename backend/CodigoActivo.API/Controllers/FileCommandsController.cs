@@ -3,37 +3,15 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/files")]
-public class FilesController(IFileService files) : ApiControllerBase
+public class FileCommandsController(IFileService files) : CommandControllerBase
 {
     private const long MaxUploadBytes = 10 * 1024 * 1024;
-
-    [HttpGet("{fileId:guid}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<FileResponse>> GetById(Guid fileId, CancellationToken ct)
-    {
-        return ToOk(await files.GetByIdAsync(fileId, ct));
-    }
-
-    [HttpGet("{fileId:guid}/content")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetContent(Guid fileId, CancellationToken ct)
-    {
-        var result = await files.GetContentAsync(fileId, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
-
-        var content = result.Value;
-        return File(content.Content, content.ContentType);
-    }
 
     [HttpPost]
     [AllowOnlyAdmin]
@@ -51,7 +29,7 @@ public class FilesController(IFileService files) : ApiControllerBase
         return result.IsFailure
             ? (ActionResult<FileResponse>)ToProblem(result.Error!)
             : (ActionResult<FileResponse>)
-                CreatedAtAction(nameof(GetById), new { fileId = result.Value.Id }, result.Value);
+                Created($"/api/odata/Files({result.Value.Id})", result.Value);
     }
 
     [HttpPut("{fileId:guid}")]

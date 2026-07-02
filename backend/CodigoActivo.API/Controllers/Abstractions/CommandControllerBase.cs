@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers.Abstractions;
 
-public abstract class ApiControllerBase : ControllerBase
+public abstract class CommandControllerBase : ControllerBase
 {
     protected Guid UserId =>
         User.GetUserId()

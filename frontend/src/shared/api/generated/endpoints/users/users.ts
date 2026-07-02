@@ -6,17 +6,13 @@
  * OpenAPI spec version: v1
  */
 import {
-  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -45,83 +41,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiUsersUserIdResponse200 = {
-  data: UserResponse
-  status: 200
-}
-
-export type getApiUsersUserIdResponseSuccess = (getApiUsersUserIdResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiUsersUserIdResponse = (getApiUsersUserIdResponseSuccess)
-
-export const getGetApiUsersUserIdUrl = (userId: string,) => {
-
-
-
-
-  return `/api/users/${userId}`
-}
-
-export const getApiUsersUserId = async (userId: string, options?: RequestInit): Promise<getApiUsersUserIdResponse> => {
-
-  return httpClient<getApiUsersUserIdResponse>(getGetApiUsersUserIdUrl(userId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiUsersUserIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserId>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserId>>, TError,{userId: string}, TContext> => {
-
-const mutationKey = ['getApiUsersUserId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersUserId>>, {userId: string}> = (props) => {
-          const {userId} = props ?? {};
-
-          return  getApiUsersUserId(userId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiUsersUserIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersUserId>>>
-
-    export type GetApiUsersUserIdMutationError = unknown
-
-    export const useGetApiUsersUserId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserId>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiUsersUserId>>,
-        TError,
-        {userId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiUsersUserIdMutationOptions(options), queryClient);
-    }
-    export type putApiUsersUserIdResponse200 = {
+export type putApiUsersUserIdResponse200 = {
   data: UserResponse
   status: 200
 }
@@ -293,83 +213,7 @@ export function useDeleteApiUsersUserId<TData = Awaited<ReturnType<typeof delete
 
 
 
-export type getApiUsersUserIdChildrenResponse200 = {
-  data: UserResponse[]
-  status: 200
-}
-
-export type getApiUsersUserIdChildrenResponseSuccess = (getApiUsersUserIdChildrenResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiUsersUserIdChildrenResponse = (getApiUsersUserIdChildrenResponseSuccess)
-
-export const getGetApiUsersUserIdChildrenUrl = (userId: string,) => {
-
-
-
-
-  return `/api/users/${userId}/children`
-}
-
-export const getApiUsersUserIdChildren = async (userId: string, options?: RequestInit): Promise<getApiUsersUserIdChildrenResponse> => {
-
-  return httpClient<getApiUsersUserIdChildrenResponse>(getGetApiUsersUserIdChildrenUrl(userId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiUsersUserIdChildrenMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, TError,{userId: string}, TContext> => {
-
-const mutationKey = ['getApiUsersUserIdChildren'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, {userId: string}> = (props) => {
-          const {userId} = props ?? {};
-
-          return  getApiUsersUserIdChildren(userId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiUsersUserIdChildrenMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>>
-
-    export type GetApiUsersUserIdChildrenMutationError = unknown
-
-    export const useGetApiUsersUserIdChildren = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserIdChildren>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiUsersUserIdChildren>>,
-        TError,
-        {userId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiUsersUserIdChildrenMutationOptions(options), queryClient);
-    }
-    export type postApiUsersUserIdChildrenResponse200 = {
+export type postApiUsersUserIdChildrenResponse200 = {
   data: UserResponse
   status: 200
 }

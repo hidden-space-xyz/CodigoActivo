@@ -5,18 +5,15 @@ import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 
-import type {
-  ActivityResponse,
-  TimeOverlapResponse,
-  UserResponse,
-} from '@/shared/api/generated/models'
+import type { ActivityResponse, UserResponse } from '@/shared/api/generated/models'
+import type { OverlapCheck } from '@/entities/activity'
 
 const props = defineProps<{
   visible: boolean
   activities: ActivityResponse[]
   users: UserResponse[]
   saving: boolean
-  verifyOverlaps: (activityId: string, userId: string) => Promise<TimeOverlapResponse>
+  verifyOverlaps: (activityId: string, userId: string) => Promise<OverlapCheck>
 }>()
 
 const emit = defineEmits<{
@@ -27,7 +24,7 @@ const emit = defineEmits<{
 const activityId = ref<string | null>(null)
 const userId = ref<string | null>(null)
 const roleId = ref<string | null>(null)
-const overlap = ref<TimeOverlapResponse | null>(null)
+const overlap = ref<OverlapCheck | null>(null)
 
 const roleOptions = computed(() => {
   const activity = props.activities.find((item) => item.id === activityId.value)

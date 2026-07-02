@@ -6,78 +6,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/activities/{eventId}/household-assignments": {
-      "get": {
-        "tags": [
-          "Activities"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HouseholdMemberAssignmentResponse"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/activities/{activityId}/{userId}/verifyTimeOverlaps": {
-      "get": {
-        "tags": [
-          "Activities"
-        ],
-        "parameters": [
-          {
-            "name": "activityId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TimeOverlapResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/activities/{eventId}": {
       "post": {
         "tags": [
@@ -862,22 +790,31 @@
         }
       }
     },
-    "/api/files/{fileId}": {
-      "get": {
+    "/api/files": {
+      "post": {
         "tags": [
           "Files"
         ],
-        "parameters": [
-          {
-            "name": "fileId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "file": {
+                  "style": "form"
+                }
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -890,7 +827,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/files/{fileId}": {
       "put": {
         "tags": [
           "Files"
@@ -984,45 +923,6 @@
         }
       }
     },
-    "/api/files": {
-      "post": {
-        "tags": [
-          "Files"
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              },
-              "encoding": {
-                "file": {
-                  "style": "form"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/partners": {
       "post": {
         "tags": [
@@ -1107,115 +1007,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/reports/event/{eventId}/summary": {
-      "get": {
-        "tags": [
-          "Reports"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventSummaryResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/reports/event/{eventId}/assignments": {
-      "get": {
-        "tags": [
-          "Reports"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventAssignmentsReportResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/reports/activity/{activityId}/assignments": {
-      "get": {
-        "tags": [
-          "Reports"
-        ],
-        "parameters": [
-          {
-            "name": "activityId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ActivityAssignmentsReportResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/reports/dashboard/summary-counters": {
-      "get": {
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DashboardSummaryResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -1309,34 +1100,6 @@
       }
     },
     "/api/users/{userId}": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "put": {
         "tags": [
           "Users"
@@ -1397,37 +1160,6 @@
       }
     },
     "/api/users/{userId}/children": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserResponse"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Users"
@@ -1612,90 +1344,6 @@
         },
         "additionalProperties": false
       },
-      "ActivityAssignmentRowResponse": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "firstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "parentId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "signedUp": {
-            "type": "boolean"
-          },
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "statusId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "statusName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "ActivityAssignmentsReportResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "totalSignups": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "roleTypeBreakdown": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityRoleTypeSummaryResponse"
-            },
-            "nullable": true
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityAssignmentRowResponse"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "ActivityResponse": {
         "type": "object",
         "properties": {
@@ -1773,24 +1421,6 @@
         },
         "additionalProperties": false
       },
-      "ActivityRoleTypeSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "approvedAssignments": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
       "AnnouncementResponse": {
         "type": "object",
         "properties": {
@@ -1857,40 +1487,6 @@
           "activityRoleTypeId": {
             "type": "string",
             "format": "uuid"
-          }
-        },
-        "additionalProperties": false
-      },
-      "AssignmentReportItemResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "activityTitle": {
-            "type": "string",
-            "nullable": true
-          },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "statusId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "statusName": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -2143,57 +1739,6 @@
         },
         "additionalProperties": false
       },
-      "DashboardSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "events": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "activities": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "resources": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "announcements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "partners": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "users": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventAssignmentsReportResponse": {
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AssignmentReportItemResponse"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "EventResponse": {
         "type": "object",
         "properties": {
@@ -2257,69 +1802,6 @@
         },
         "additionalProperties": false
       },
-      "EventRoleTypeSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "approvedAssignments": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "activitiesCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalAssignments": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "requestedAssignments": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "confirmedAssignments": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "deniedAssignments": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "distinctVolunteers": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "roleTypeBreakdown": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventRoleTypeSummaryResponse"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "FileResponse": {
         "type": "object",
         "properties": {
@@ -2360,44 +1842,6 @@
         },
         "additionalProperties": false
       },
-      "HouseholdMemberAssignmentResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "firstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleName": {
-            "type": "string",
-            "nullable": true
-          },
-          "statusId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "statusName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "LoginRequest": {
         "type": "object",
         "properties": {
@@ -2408,28 +1852,6 @@
           "password": {
             "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "OverlappingActivityResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "startsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "endsAt": {
-            "type": "string",
-            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -2616,22 +2038,6 @@
           "roleId": {
             "type": "string",
             "format": "uuid"
-          }
-        },
-        "additionalProperties": false
-      },
-      "TimeOverlapResponse": {
-        "type": "object",
-        "properties": {
-          "hasOverlaps": {
-            "type": "boolean"
-          },
-          "overlaps": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OverlappingActivityResponse"
-            },
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -2943,9 +2349,6 @@
     },
     {
       "name": "Partners"
-    },
-    {
-      "name": "Reports"
     },
     {
       "name": "Resources"

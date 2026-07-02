@@ -10,7 +10,7 @@ import Tag from 'primevue/tag'
 
 import { useActivityAssignments, useAssignments } from '@/features/manage-activities'
 import { useAssignmentStatusTypesList } from '@/entities/catalog'
-import type { ActivityAssignmentRowResponse } from '@/shared/api/generated/models'
+import type { ActivityAssignmentRowResponse } from '@/shared/api'
 import { getErrorMessage, groupByParent, useCrudFeedback } from '@/shared/lib'
 
 const route = useRoute()

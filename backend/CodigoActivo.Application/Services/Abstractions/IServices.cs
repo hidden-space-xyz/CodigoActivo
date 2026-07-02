@@ -17,7 +17,6 @@ public interface IAuthService
 public interface IUserService
 {
     IQueryable<UserResponse> QueryUsers();
-    Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Result<UserResponse>> UpdateAsync(
         Guid id,
         UpdateUserRequest request,
@@ -30,10 +29,6 @@ public interface IUserService
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<UserResponse>> GetChildrenAsync(
-        Guid parentId,
-        CancellationToken ct = default
-    );
     Task<Result<UserResponse>> AddChildAsync(
         Guid parentId,
         RegisterMinorRequest request,

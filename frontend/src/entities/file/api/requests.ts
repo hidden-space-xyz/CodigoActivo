@@ -1,10 +1,11 @@
 import {
   deleteApiFilesFileId,
-  getApiFilesFileId,
   getApiFilesFileIdContent,
   postApiFiles,
   putApiFilesFileId,
 } from '@/shared/api/generated/endpoints/files/files'
+import type { FileResponse } from '@/shared/api/generated/models'
+import { fetchODataEntity } from '@/shared/api'
 
 export async function deleteThumbnail(id?: string | null): Promise<void> {
   if (!id) return
@@ -31,9 +32,7 @@ interface ThumbnailPreview {
 
 export async function loadThumbnailPreview(id: string): Promise<ThumbnailPreview> {
   const [meta, content] = await Promise.all([
-    getApiFilesFileId(id)
-      .then((r) => r.data)
-      .catch(() => null),
+    fetchODataEntity<FileResponse>('Files', id).catch(() => null),
     getApiFilesFileIdContent(id).then((r) => r.data as unknown as Blob),
   ])
   return {

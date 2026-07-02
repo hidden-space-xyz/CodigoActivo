@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/vue-query'
 
-import { getApiReportsDashboardSummaryCounters } from '@/shared/api/generated/endpoints/reports/reports'
+import { fetchODataFunction } from '@/shared/api'
+import type { DashboardSummaryResponse } from '@/shared/api'
 
 export function useDashboardSummary() {
   return useQuery({
     queryKey: ['dashboard'] as const,
-    queryFn: ({ signal }) =>
-      getApiReportsDashboardSummaryCounters({ signal }).then((response) => response.data),
+    queryFn: () => fetchODataFunction<DashboardSummaryResponse>('DashboardSummary'),
   })
 }

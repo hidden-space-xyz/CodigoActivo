@@ -112,6 +112,7 @@ builder.Services.AddSwaggerGen(c =>
         ["PartnerCommands"] = "Partners",
         ["ActivityCommands"] = "Activities",
         ["UserCommands"] = "Users",
+        ["FileCommands"] = "Files",
     };
     c.TagActionsBy(api =>
         api.ActionDescriptor is ControllerActionDescriptor descriptor
