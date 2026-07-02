@@ -20,10 +20,10 @@ import type {
   UpdateMinorInput,
   UpdateProfileInput,
 } from '@/entities/account'
-import { getCurrentUserRequest, logoutRequest, useSessionStore } from '@/entities/session'
+import { getCurrentUserRequest, logoutRequest, useSession } from '@/entities/session'
 
 export function useAccount() {
-  const session = useSessionStore()
+  const session = useSession()
   const queryClient = useQueryClient()
   const router = useRouter()
 

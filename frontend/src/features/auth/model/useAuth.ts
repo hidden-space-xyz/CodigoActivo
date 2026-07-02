@@ -1,11 +1,11 @@
-import { storeToRefs } from 'pinia'
+import { toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getCurrentUserRequest, logoutRequest, useSessionStore } from '@/entities/session'
+import { getCurrentUserRequest, logoutRequest, useSession } from '@/entities/session'
 
 export function useAuth() {
-  const session = useSessionStore()
-  const { isAuthenticated, isAdmin, displayName } = storeToRefs(session)
+  const session = useSession()
+  const { isAuthenticated, isAdmin, displayName } = toRefs(session)
   const router = useRouter()
 
   async function bootstrap(): Promise<void> {

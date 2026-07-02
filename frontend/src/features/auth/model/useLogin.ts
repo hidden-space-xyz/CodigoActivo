@@ -2,11 +2,11 @@ import { reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMutation } from '@tanstack/vue-query'
 
-import { createEmptyCredentials, loginRequest, useSessionStore } from '@/entities/session'
+import { createEmptyCredentials, loginRequest, useSession } from '@/entities/session'
 import type { Credentials } from '@/entities/session'
 
 export function useLogin() {
-  const session = useSessionStore()
+  const session = useSession()
   const router = useRouter()
   const route = useRoute()
 

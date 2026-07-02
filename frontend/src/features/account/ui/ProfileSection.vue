@@ -7,12 +7,12 @@ import Password from 'primevue/password'
 
 import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
-import { useSessionStore } from '@/entities/session'
+import { useSession } from '@/entities/session'
 import { BaseButton } from '@/shared/ui'
 import { formatDate, getErrorMessage, toDateInput } from '@/shared/lib'
 
 const toast = useToast()
-const session = useSessionStore()
+const session = useSession()
 const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
 
 const user = computed(() => profile.data.value ?? null)

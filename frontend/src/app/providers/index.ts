@@ -4,14 +4,12 @@ import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
 import { primevue } from './primevue'
-import { pinia } from './pinia'
 import { queryClient } from './query-client'
 import { router } from '@/app/router'
 
 import { VueQueryPlugin } from '@tanstack/vue-query'
 
 export function registerProviders(app: App): void {
-  app.use(pinia)
   app.use(primevue.plugin, primevue.options)
   app.use(ToastService)
   app.use(ConfirmationService)

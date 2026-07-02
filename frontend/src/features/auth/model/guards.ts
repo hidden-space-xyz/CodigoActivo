@@ -1,14 +1,14 @@
 import type { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'
 
-import { getCurrentUserRequest, useSessionStore } from '@/entities/session'
+import { getCurrentUserRequest, useSession } from '@/entities/session'
 
 export function redirectIfAuthenticated(): RouteLocationRaw | true {
-  const session = useSessionStore()
+  const session = useSession()
   return session.isAuthenticated ? { name: 'home' } : true
 }
 
 async function ensureSession(): Promise<boolean> {
-  const session = useSessionStore()
+  const session = useSession()
   if (session.isAuthenticated) return true
   const user = await getCurrentUserRequest()
   session.setUser(user)
@@ -24,5 +24,5 @@ export async function requireAdmin(to: RouteLocationNormalized): Promise<RouteLo
   if (!(await ensureSession())) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
-  return useSessionStore().isAdmin ? true : { name: 'home' }
+  return useSession().isAdmin ? true : { name: 'home' }
 }

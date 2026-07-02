@@ -12,10 +12,10 @@ import {
   verifyOverlapsRequest,
 } from '@/entities/activity'
 import type { HouseholdAssignmentInput, HouseholdMember, OverlapCheck } from '@/entities/activity'
-import { useSessionStore } from '@/entities/session'
+import { useSession } from '@/entities/session'
 
 export function useEventActivities(eventId: () => string) {
-  const session = useSessionStore()
+  const session = useSession()
   const queryClient = useQueryClient()
 
   const userId = computed(() => session.user?.id ?? null)
