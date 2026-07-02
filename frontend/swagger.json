@@ -1198,45 +1198,6 @@
         }
       }
     },
-    "/api/users/{userId}/role": {
-      "patch": {
-        "tags": [
-          "Users"
-        ],
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetUserRoleRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/users/{userId}/password": {
       "patch": {
         "tags": [
@@ -1316,11 +1277,6 @@
           "activityRoleTypeId": {
             "type": "string",
             "format": "uuid"
-          },
-          "desiredSignups": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1334,11 +1290,6 @@
           },
           "roleTypeName": {
             "type": "string",
-            "nullable": true
-          },
-          "desiredSignups": {
-            "type": "integer",
-            "format": "int32",
             "nullable": true
           }
         },
@@ -2026,16 +1977,6 @@
             "nullable": true
           },
           "thumbnailId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "additionalProperties": false
-      },
-      "SetUserRoleRequest": {
-        "type": "object",
-        "properties": {
-          "roleId": {
             "type": "string",
             "format": "uuid"
           }

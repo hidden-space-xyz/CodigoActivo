@@ -69,6 +69,11 @@ public class UserService(
             return Error.NotFound();
         }
 
+        if (await users.HasTypeAssignmentAsync(id, SeedIds.UserTypes.Admin, ct))
+        {
+            return Error.Forbidden();
+        }
+
         await users.RemoveAsync(u => u.Id == id, ct);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
@@ -165,60 +170,6 @@ public class UserService(
 
         var created = await users.GetByIdWithDetailsAsync(child.Id, ct);
         return created!.ToResponse();
-    }
-
-    public async Task<Result<UserResponse>> SetRoleAsync(
-        Guid userId,
-        Guid roleId,
-        CancellationToken ct = default
-    )
-    {
-        var user = await users.FindAsync(u => u.Id == userId, ct);
-        if (user is null)
-        {
-            return Error.NotFound();
-        }
-
-        var role = await userTypes.FindAsync(ut => ut.Id == roleId, ct);
-        if (role is null)
-        {
-            return Error.NotFound();
-        }
-
-        var allowed = user.BirthDate.IsMinor() ? role.IsAllowedForMinors : role.IsAllowedForAdults;
-        if (role.Hidden || !allowed)
-        {
-            return Error.Validation();
-        }
-
-        var assignments = await users.GetTypeAssignmentsAsync(userId, ct);
-        var alreadyHasRole = assignments.Any(a => a.UserTypeId == roleId);
-        foreach (
-            var assignment in assignments.Where(a =>
-                a.UserTypeId != SeedIds.UserTypes.Admin && a.UserTypeId != roleId
-            )
-        )
-        {
-            users.RemoveTypeAssignment(assignment);
-        }
-
-        if (!alreadyHasRole)
-        {
-            await users.AddTypeAssignmentAsync(
-                new UserTypeAssignment
-                {
-                    UserId = userId,
-                    UserTypeId = roleId,
-                    AssignedAt = DateTimeOffset.UtcNow,
-                },
-                ct
-            );
-        }
-
-        await uow.SaveChangesAsync(ct);
-
-        var updated = await users.GetByIdWithDetailsAsync(userId, ct);
-        return updated!.ToResponse();
     }
 
     public async Task<Result> ChangePasswordAsync(

@@ -11,7 +11,7 @@ import { BaseButton } from '@/shared/ui'
 import { formatDate, getErrorMessage, toDateInput } from '@/shared/lib'
 
 const toast = useToast()
-const { children, minorRoles, addChild, updateChild, changeChildRole, deleteChild } = useAccount()
+const { children, minorRoles, addChild, updateChild, deleteChild } = useAccount()
 
 const items = computed(() => children.data.value ?? [])
 
@@ -22,17 +22,9 @@ function roleNames(child: AccountChild): string {
     .join(', ')
 }
 
-function currentRoleId(child: AccountChild): string {
-  const options = minorRoles.data.value ?? []
-  return (
-    (child.roles ?? []).find((role) => options.some((option) => option.id === role.id))?.id ?? ''
-  )
-}
-
 const dialogVisible = ref(false)
 const mode = ref<'add' | 'edit'>('add')
 const editingId = ref<string | null>(null)
-const initialRoleId = ref('')
 const form = reactive({ firstName: '', lastName: '', birthDate: '', roleId: '' })
 
 const todayIso = computed(() => new Date().toISOString().slice(0, 10))
@@ -42,14 +34,11 @@ const adultThresholdIso = computed(() => {
   return d.toISOString().slice(0, 10)
 })
 
-const saving = computed(
-  () => addChild.isPending.value || updateChild.isPending.value || changeChildRole.isPending.value,
-)
+const saving = computed(() => addChild.isPending.value || updateChild.isPending.value)
 
 function openAdd(): void {
   mode.value = 'add'
   editingId.value = null
-  initialRoleId.value = ''
   form.firstName = ''
   form.lastName = ''
   form.birthDate = ''
@@ -63,8 +52,7 @@ function openEdit(child: AccountChild): void {
   form.firstName = child.firstName ?? ''
   form.lastName = child.lastName ?? ''
   form.birthDate = toDateInput(child.birthDate)
-  form.roleId = currentRoleId(child)
-  initialRoleId.value = form.roleId
+  form.roleId = ''
   dialogVisible.value = true
 }
 
@@ -109,19 +97,7 @@ function save(): void {
       },
     },
     {
-      onSuccess: () => {
-        if (form.roleId && form.roleId !== initialRoleId.value) {
-          changeChildRole.mutate(
-            { childId, roleId: form.roleId },
-            {
-              onSuccess: () => finishEdit(),
-              onError: notifyError,
-            },
-          )
-        } else {
-          finishEdit()
-        }
-      },
+      onSuccess: () => finishEdit(),
       onError: notifyError,
     },
   )
@@ -212,7 +188,7 @@ function confirmDelete(): void {
               required
             />
           </div>
-          <div class="acc-form__field">
+          <div v-if="mode === 'add'" class="acc-form__field">
             <label for="m-role">¿Cómo participa?</label>
             <Select
               input-id="m-role"

@@ -470,7 +470,6 @@ public class ActivityService(
                 {
                     ActivityId = activity.Id,
                     ActivityRoleTypeId = role.ActivityRoleTypeId,
-                    DesiredSignups = role.DesiredSignups,
                 }
             );
         }

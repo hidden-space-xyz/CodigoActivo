@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20260701161538_EnforceEventActivityDates")]
-    partial class EnforceEventActivityDates
+    [Migration("20260702184721_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -101,10 +101,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<Guid>("ActivityRoleTypeId")
                         .HasColumnType("uuid")
                         .HasColumnName("activity_role_type_id");
-
-                    b.Property<int?>("DesiredSignups")
-                        .HasColumnType("integer")
-                        .HasColumnName("desired_signups");
 
                     b.HasKey("ActivityId", "ActivityRoleTypeId")
                         .HasName("pk_activity_allowed_role_types");
@@ -891,7 +887,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Entities.User", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_users_users_parent_id");
 
                     b.HasOne("CodigoActivo.Domain.Entities.UserStatusType", "UserStatusType")

@@ -34,11 +34,6 @@ public interface IUserService
         RegisterMinorRequest request,
         CancellationToken ct = default
     );
-    Task<Result<UserResponse>> SetRoleAsync(
-        Guid userId,
-        Guid roleId,
-        CancellationToken ct = default
-    );
     Task<Result> ChangePasswordAsync(
         Guid userId,
         ChangePasswordRequest request,

@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import Select from 'primevue/select'
 
 import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
+import { useSessionStore } from '@/entities/session'
 import { BaseButton } from '@/shared/ui'
 import { formatDate, getErrorMessage, toDateInput } from '@/shared/lib'
 
 const toast = useToast()
-const { profile, adultRoles, updateProfile, changeOwnRole, changePassword } = useAccount()
+const session = useSessionStore()
+const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
 
 const user = computed(() => profile.data.value ?? null)
 const roleNames = computed(() =>
@@ -52,42 +53,6 @@ function saveEdit(): void {
         severity: 'success',
         summary: 'Datos actualizados',
         detail: 'Tu información se ha guardado.',
-        life: 3000,
-      })
-    },
-    onError: (error) =>
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: getErrorMessage(error),
-        life: 4000,
-      }),
-  })
-}
-
-const roleVisible = ref(false)
-const selectedRoleId = ref('')
-
-watch(
-  () => [user.value, adultRoles.data.value] as const,
-  () => {
-    const options = adultRoles.data.value ?? []
-    selectedRoleId.value =
-      (user.value?.roles ?? []).find((role) => options.some((option) => option.id === role.id))
-        ?.id ?? ''
-  },
-  { immediate: true },
-)
-
-function saveRole(): void {
-  if (!selectedRoleId.value) return
-  changeOwnRole.mutate(selectedRoleId.value, {
-    onSuccess: () => {
-      roleVisible.value = false
-      toast.add({
-        severity: 'success',
-        summary: 'Rol actualizado',
-        detail: 'Tu rol se ha cambiado.',
         life: 3000,
       })
     },
@@ -141,6 +106,20 @@ function savePassword(): void {
     },
   )
 }
+
+const deleteVisible = ref(false)
+
+function confirmDeleteAccount(): void {
+  deleteOwnAccount.mutate(undefined, {
+    onError: (error) =>
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: getErrorMessage(error),
+        life: 4000,
+      }),
+  })
+}
 </script>
 
 <template>
@@ -149,8 +128,10 @@ function savePassword(): void {
       <h2 class="acc-card__title">Mis datos</h2>
       <div class="acc-card__actions">
         <BaseButton variant="ghost" @click="openEdit">Editar datos</BaseButton>
-        <BaseButton variant="ghost" @click="roleVisible = true">Cambiar rol</BaseButton>
         <BaseButton variant="ghost" @click="openPassword">Cambiar contraseña</BaseButton>
+        <BaseButton v-if="!session.isAdmin" variant="ghost" @click="deleteVisible = true">
+          Eliminar mi cuenta
+        </BaseButton>
       </div>
     </div>
 
@@ -223,37 +204,6 @@ function savePassword(): void {
     </Dialog>
 
     <Dialog
-      v-model:visible="roleVisible"
-      modal
-      header="Cambiar mi rol"
-      :style="{ width: '90vw', maxWidth: '460px' }"
-    >
-      <div class="acc-form__field">
-        <label for="p-role">Rol</label>
-        <Select
-          input-id="p-role"
-          v-model="selectedRoleId"
-          :options="[...(adultRoles.data.value ?? [])]"
-          option-label="name"
-          option-value="id"
-          placeholder="Selecciona un rol"
-          fluid
-        />
-      </div>
-      <div class="acc-form__actions">
-        <BaseButton variant="link" type="button" @click="roleVisible = false">Cancelar</BaseButton>
-        <BaseButton
-          variant="primary"
-          :disabled="!selectedRoleId"
-          :loading="changeOwnRole.isPending.value"
-          @click="saveRole"
-        >
-          Guardar
-        </BaseButton>
-      </div>
-    </Dialog>
-
-    <Dialog
       v-model:visible="passwordVisible"
       modal
       header="Cambiar contraseña"
@@ -303,6 +253,28 @@ function savePassword(): void {
           </BaseButton>
         </div>
       </form>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="deleteVisible"
+      modal
+      header="Eliminar mi cuenta"
+      :style="{ width: '90vw', maxWidth: '460px' }"
+    >
+      <p class="acc-confirm">
+        ¿Seguro que quieres eliminar tu cuenta? Se eliminarán también los menores a tu cargo y todas
+        tus inscripciones. Esta acción no se puede deshacer.
+      </p>
+      <div class="acc-form__actions">
+        <BaseButton variant="link" type="button" @click="deleteVisible = false">Cancelar</BaseButton>
+        <BaseButton
+          variant="primary"
+          :loading="deleteOwnAccount.isPending.value"
+          @click="confirmDeleteAccount"
+        >
+          Eliminar
+        </BaseButton>
+      </div>
     </Dialog>
   </section>
 </template>
@@ -408,6 +380,12 @@ function savePassword(): void {
   color: var(--ca-amber);
   font-size: 13.5px;
   margin: 0 0 10px;
+}
+
+.acc-confirm {
+  color: var(--ca-text);
+  line-height: 1.6;
+  margin: 0 0 16px;
 }
 
 @media (max-width: 620px) {

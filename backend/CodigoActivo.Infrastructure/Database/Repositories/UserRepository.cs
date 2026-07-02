@@ -92,17 +92,4 @@ public class UserRepository(CodigoActivoDbContext context)
             .OrderBy(u => u.FirstName)
             .ToListAsync(ct);
     }
-
-    public async Task<IReadOnlyList<UserTypeAssignment>> GetTypeAssignmentsAsync(
-        Guid userId,
-        CancellationToken ct = default
-    )
-    {
-        return await Context.UserTypeAssignments.Where(a => a.UserId == userId).ToListAsync(ct);
-    }
-
-    public void RemoveTypeAssignment(UserTypeAssignment assignment)
-    {
-        Context.UserTypeAssignments.Remove(assignment);
-    }
 }

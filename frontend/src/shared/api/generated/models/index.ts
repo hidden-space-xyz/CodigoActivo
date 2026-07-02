@@ -38,7 +38,6 @@ export * from './registerMinorRequest';
 export * from './registerRequest';
 export * from './registerResponse';
 export * from './resourceResponse';
-export * from './setUserRoleRequest';
 export * from './updateActivityRequest';
 export * from './updateActivityRoleTypeRequest';
 export * from './updateAnnouncementRequest';

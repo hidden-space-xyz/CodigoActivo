@@ -41,17 +41,6 @@ public class UserCommandsController(IUserService users) : CommandControllerBase
         return ToOk(await users.AddChildAsync(userId, request, ct));
     }
 
-    [HttpPatch("{userId:guid}/role")]
-    [AllowOnlySelf]
-    public async Task<ActionResult<UserResponse>> SetRole(
-        Guid userId,
-        [FromBody] SetUserRoleRequest request,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await users.SetRoleAsync(userId, request.RoleId, ct));
-    }
-
     [HttpPatch("{userId:guid}/password")]
     [AllowOnlySelf]
     public async Task<IActionResult> ChangePassword(

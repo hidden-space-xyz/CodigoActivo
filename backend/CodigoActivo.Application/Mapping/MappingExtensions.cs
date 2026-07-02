@@ -63,8 +63,7 @@ public static class MappingExtensions
             activity
                 .AllowedRoleTypes?.Select(role => new ActivityAllowedRoleResponse(
                     role.ActivityRoleTypeId,
-                    role.ActivityRoleType?.Name,
-                    role.DesiredSignups
+                    role.ActivityRoleType?.Name
                 ))
                 .ToList()
             ?? [];

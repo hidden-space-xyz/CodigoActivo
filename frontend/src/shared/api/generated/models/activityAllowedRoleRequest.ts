@@ -8,6 +8,4 @@
 
 export interface ActivityAllowedRoleRequest {
   activityRoleTypeId?: string;
-  /** @nullable */
-  desiredSignups?: number | null;
 }

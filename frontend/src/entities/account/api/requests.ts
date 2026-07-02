@@ -2,7 +2,6 @@ import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
 import {
   deleteApiUsersUserId,
   patchApiUsersUserIdPassword,
-  patchApiUsersUserIdRole,
   postApiUsersUserIdChildren,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
@@ -68,12 +67,8 @@ export async function updateAccountProfileRequest(
   return toAccountProfile(response.data)
 }
 
-export async function changeAccountRoleRequest(
-  userId: string,
-  roleId: string,
-): Promise<AccountProfile> {
-  const response = await patchApiUsersUserIdRole(userId, { roleId })
-  return toAccountProfile(response.data)
+export async function deleteAccountRequest(userId: string): Promise<void> {
+  await deleteApiUsersUserId(userId)
 }
 
 export async function changeAccountPasswordRequest(
@@ -100,14 +95,6 @@ export async function updateAccountChildRequest(
   input: UpdateMinorInput,
 ): Promise<AccountChild> {
   const response = await putApiUsersUserId(childId, toUpdateMinorRequest(input, parentId))
-  return toAccountChild(response.data)
-}
-
-export async function changeAccountChildRoleRequest(
-  childId: string,
-  roleId: string,
-): Promise<AccountChild> {
-  const response = await patchApiUsersUserIdRole(childId, { roleId })
   return toAccountChild(response.data)
 }
 

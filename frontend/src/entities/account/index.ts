@@ -7,10 +7,9 @@ export type {
 export type { AccountChild, AccountProfile } from './model/types'
 export {
   addAccountChildRequest,
-  changeAccountChildRoleRequest,
   changeAccountPasswordRequest,
-  changeAccountRoleRequest,
   deleteAccountChildRequest,
+  deleteAccountRequest,
   getAccountChildrenRequest,
   getAccountProfileRequest,
   getRegistrationTypesRequest,

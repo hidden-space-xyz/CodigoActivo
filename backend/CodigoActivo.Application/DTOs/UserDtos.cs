@@ -34,8 +34,6 @@ public record UpdateUserRequest(
     Guid? ParentId
 );
 
-public record SetUserRoleRequest(Guid RoleId);
-
 public record ChangePasswordRequest(
     [Required] string CurrentPassword,
     [Required, MinLength(8), MaxLength(128)] string NewPassword

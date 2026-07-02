@@ -1,12 +1,12 @@
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
   addAccountChildRequest,
-  changeAccountChildRoleRequest,
   changeAccountPasswordRequest,
-  changeAccountRoleRequest,
   deleteAccountChildRequest,
+  deleteAccountRequest,
   getAccountChildrenRequest,
   getAccountProfileRequest,
   getRegistrationTypesRequest,
@@ -20,11 +20,12 @@ import type {
   UpdateMinorInput,
   UpdateProfileInput,
 } from '@/entities/account'
-import { getCurrentUserRequest, useSessionStore } from '@/entities/session'
+import { getCurrentUserRequest, logoutRequest, useSessionStore } from '@/entities/session'
 
 export function useAccount() {
   const session = useSessionStore()
   const queryClient = useQueryClient()
+  const router = useRouter()
 
   const userId = computed(() => session.user?.id ?? null)
   const profileKey = ['account', 'me'] as const
@@ -44,10 +45,6 @@ export function useAccount() {
     enabled: computed(() => userId.value !== null),
   })
 
-  const adultRoles = useQuery({
-    queryKey: ['registration-types', 'adult'],
-    queryFn: () => getRegistrationTypesRequest(false),
-  })
   const minorRoles = useQuery({
     queryKey: ['registration-types', 'minor'],
     queryFn: () => getRegistrationTypesRequest(true),
@@ -66,14 +63,6 @@ export function useAccount() {
     mutationFn: (input: UpdateProfileInput) => {
       if (!userId.value) return Promise.reject(new Error('No autenticado'))
       return updateAccountProfileRequest(userId.value, input)
-    },
-    onSuccess: syncProfile,
-  })
-
-  const changeOwnRole = useMutation({
-    mutationFn: (roleId: string) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
-      return changeAccountRoleRequest(userId.value, roleId)
     },
     onSuccess: syncProfile,
   })
@@ -101,28 +90,36 @@ export function useAccount() {
     onSuccess: invalidateChildren,
   })
 
-  const changeChildRole = useMutation({
-    mutationFn: (vars: { childId: string; roleId: string }) =>
-      changeAccountChildRoleRequest(vars.childId, vars.roleId),
-    onSuccess: invalidateChildren,
-  })
-
   const deleteChild = useMutation({
     mutationFn: (childId: string) => deleteAccountChildRequest(childId),
     onSuccess: invalidateChildren,
   })
 
+  const deleteOwnAccount = useMutation({
+    mutationFn: () => {
+      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      return deleteAccountRequest(userId.value)
+    },
+    onSuccess: async () => {
+      try {
+        await logoutRequest()
+      } finally {
+        session.clear()
+        queryClient.clear()
+        await router.push({ name: 'home' })
+      }
+    },
+  })
+
   return {
     profile,
     children,
-    adultRoles,
     minorRoles,
     updateProfile,
-    changeOwnRole,
     changePassword,
     addChild,
     updateChild,
-    changeChildRole,
     deleteChild,
+    deleteOwnAccount,
   }
 }

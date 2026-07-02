@@ -27,11 +27,6 @@ public interface IUserRepository : IDbRepository<User>
         Guid parentId,
         CancellationToken ct = default
     );
-    Task<IReadOnlyList<UserTypeAssignment>> GetTypeAssignmentsAsync(
-        Guid userId,
-        CancellationToken ct = default
-    );
-    void RemoveTypeAssignment(UserTypeAssignment assignment);
 }
 
 public interface IEventRepository : IDbRepository<Event>

@@ -28,6 +28,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasOne(u => u.Parent)
             .WithMany(u => u.Children)
             .HasForeignKey(u => u.ParentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

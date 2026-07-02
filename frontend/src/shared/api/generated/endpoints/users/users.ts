@@ -29,7 +29,6 @@ import type {
   ChangePasswordRequest,
   PatchApiUsersUserIdChangeTypeParams,
   RegisterMinorRequest,
-  SetUserRoleRequest,
   UpdateUserRequest,
   UserResponse
 } from '../../models';
@@ -288,94 +287,6 @@ export function usePostApiUsersUserIdChildren<TData = Awaited<ReturnType<typeof 
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPostApiUsersUserIdChildrenQueryOptions(userId,registerMinorRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type patchApiUsersUserIdRoleResponse200 = {
-  data: UserResponse
-  status: 200
-}
-
-export type patchApiUsersUserIdRoleResponseSuccess = (patchApiUsersUserIdRoleResponse200) & {
-  headers: Headers;
-};
-;
-
-export type patchApiUsersUserIdRoleResponse = (patchApiUsersUserIdRoleResponseSuccess)
-
-export const getPatchApiUsersUserIdRoleUrl = (userId: string,) => {
-
-
-
-
-  return `/api/users/${userId}/role`
-}
-
-export const patchApiUsersUserIdRole = async (userId: string,
-    setUserRoleRequest?: SetUserRoleRequest, options?: RequestInit): Promise<patchApiUsersUserIdRoleResponse> => {
-
-  return httpClient<patchApiUsersUserIdRoleResponse>(getPatchApiUsersUserIdRoleUrl(userId),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(setUserRoleRequest)
-  }
-);}
-
-
-
-
-
-export const getPatchApiUsersUserIdRoleQueryKey = (userId: MaybeRef<string>,
-    setUserRoleRequest?: MaybeRef<SetUserRoleRequest>,) => {
-    return [
-    'PATCH', 'api','users',userId,'role', setUserRoleRequest
-    ] as const;
-    }
-
-
-export const getPatchApiUsersUserIdRoleQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError = unknown>(userId: MaybeRef<string>,
-    setUserRoleRequest?: MaybeRef<SetUserRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiUsersUserIdRoleQueryKey(userId,setUserRoleRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>> = ({ signal }) => patchApiUsersUserIdRole(unref(userId),unref(setUserRoleRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError, TData>
-}
-
-export type PatchApiUsersUserIdRoleQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>>
-export type PatchApiUsersUserIdRoleQueryError = unknown
-
-
-
-export function usePatchApiUsersUserIdRole<TData = Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError = unknown>(
- userId: MaybeRef<string>,
-    setUserRoleRequest?: MaybeRef<SetUserRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiUsersUserIdRoleQueryOptions(userId,setUserRoleRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

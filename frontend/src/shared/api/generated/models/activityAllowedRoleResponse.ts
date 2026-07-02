@@ -10,6 +10,4 @@ export interface ActivityAllowedRoleResponse {
   roleTypeId?: string;
   /** @nullable */
   roleTypeName?: string | null;
-  /** @nullable */
-  desiredSignups?: number | null;
 }

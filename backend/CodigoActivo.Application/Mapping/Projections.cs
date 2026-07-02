@@ -86,8 +86,7 @@ public static class Projections
             AllowedRoleTypes = activity
                 .AllowedRoleTypes.Select(role => new ActivityAllowedRoleResponse(
                     role.ActivityRoleTypeId,
-                    role.ActivityRoleType.Name,
-                    role.DesiredSignups
+                    role.ActivityRoleType.Name
                 ))
                 .ToList(),
         };

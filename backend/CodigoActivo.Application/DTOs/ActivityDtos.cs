@@ -2,11 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CodigoActivo.Application.DTOs;
 
-public record ActivityAllowedRoleResponse(
-    Guid RoleTypeId,
-    string? RoleTypeName,
-    int? DesiredSignups
-);
+public record ActivityAllowedRoleResponse(Guid RoleTypeId, string? RoleTypeName);
 
 public record ActivityResponse(
     Guid Id,
@@ -40,7 +36,7 @@ public record ActivityResponse(
         ) { }
 }
 
-public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId, int? DesiredSignups);
+public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId);
 
 public record CreateActivityRequest(
     [Required, MaxLength(200)] string Title,

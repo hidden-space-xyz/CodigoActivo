@@ -3,7 +3,6 @@ import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
-import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
 import Textarea from 'primevue/textarea'
@@ -37,7 +36,6 @@ interface ActivityForm {
   activityStartsAt: Date | null
   activityEndsAt: Date | null
   roleIds: string[]
-  desired: Record<string, number | null>
 }
 
 const form = reactive<ActivityForm>({
@@ -46,7 +44,6 @@ const form = reactive<ActivityForm>({
   activityStartsAt: null,
   activityEndsAt: null,
   roleIds: [],
-  desired: {},
 })
 const submitted = ref(false)
 const pickedFile = ref<File | null>(null)
@@ -111,11 +108,9 @@ function populate(): void {
     ? new Date(props.activity.activityEndsAt)
     : null
   form.roleIds = []
-  form.desired = {}
   for (const role of props.activity?.allowedRoleTypes ?? []) {
     if (!role.roleTypeId) continue
     form.roleIds.push(role.roleTypeId)
-    form.desired[role.roleTypeId] = role.desiredSignups ?? null
   }
 }
 
@@ -123,10 +118,6 @@ watch([() => props.visible, () => props.activity], ([open]) => {
   if (!open) return
   populate()
 })
-
-function roleLabel(id: string): string {
-  return props.roleTypes.find((role) => role.id === id)?.name ?? id
-}
 
 function close(): void {
   emit('update:visible', false)
@@ -150,10 +141,7 @@ async function save(): Promise<void> {
     description: form.description.trim(),
     activityStartsAt: activityStartsAt.toISOString(),
     activityEndsAt: activityEndsAt.toISOString(),
-    allowedRoleTypes: form.roleIds.map((id) => ({
-      activityRoleTypeId: id,
-      desiredSignups: form.desired[id] ?? null,
-    })),
+    allowedRoleTypes: form.roleIds.map((id) => ({ activityRoleTypeId: id })),
   }
   uploading.value = true
   try {
@@ -245,12 +233,6 @@ async function save(): Promise<void> {
           fluid
         />
       </div>
-      <div v-if="form.roleIds.length" class="form__desired">
-        <div v-for="id in form.roleIds" :key="id" class="form__desired-row">
-          <span class="form__desired-label">{{ roleLabel(id) }}</span>
-          <InputNumber v-model="form.desired[id]" :min="0" placeholder="Plazas" show-buttons />
-        </div>
-      </div>
       <div class="form__field">
         <label>Imagen</label>
         <ThumbnailField
@@ -302,26 +284,6 @@ async function save(): Promise<void> {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);
-}
-
-.form__desired {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-top: 1px solid var(--ca-border);
-  padding-top: 12px;
-}
-
-.form__desired-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.form__desired-label {
-  font-size: 14px;
-  color: var(--ca-text);
 }
 
 .form__error {

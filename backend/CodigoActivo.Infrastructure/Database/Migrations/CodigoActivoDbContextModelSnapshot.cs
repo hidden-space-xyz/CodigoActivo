@@ -99,10 +99,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("activity_role_type_id");
 
-                    b.Property<int?>("DesiredSignups")
-                        .HasColumnType("integer")
-                        .HasColumnName("desired_signups");
-
                     b.HasKey("ActivityId", "ActivityRoleTypeId")
                         .HasName("pk_activity_allowed_role_types");
 
@@ -888,7 +884,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Entities.User", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_users_users_parent_id");
 
                     b.HasOne("CodigoActivo.Domain.Entities.UserStatusType", "UserStatusType")
