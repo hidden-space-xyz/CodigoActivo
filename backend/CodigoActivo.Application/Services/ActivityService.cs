@@ -18,30 +18,27 @@ public class ActivityService(
     IUnitOfWork uow
 ) : IActivityService
 {
-    public async Task<IReadOnlyList<ActivityResponse>> ListByEventAsync(
-        Guid eventId,
-        CancellationToken ct = default
-    )
+    public IQueryable<ActivityResponse> QueryActivities()
     {
-        var list = await activities.ListByEventAsync(eventId, ct);
-        return list.Select(a => a.ToResponse()).ToList();
+        return activities.Query().Select(Projections.Activity);
     }
 
-    public async Task<Result<ActivityResponse>> GetByIdAsync(
-        Guid eventId,
-        Guid activityId,
-        CancellationToken ct = default
-    )
+    public IQueryable<AssignedActivityResponse> QueryAssigned(Guid userId)
     {
-        var activity = await activities.GetByIdWithDetailsAsync(activityId, ct);
-        var response = activity?.ToResponse();
+        return activities
+            .QueryAssignments()
+            .Where(assignment => assignment.UserId == userId)
+            .Select(Projections.AssignedActivity);
+    }
 
-        if (response is null || response.EventId != eventId)
-        {
-            return Error.NotFound();
-        }
+    public IQueryable<ActivityRoleTypeResponse> QueryRoleTypes()
+    {
+        return roleTypes.Query().Select(Projections.ActivityRoleType);
+    }
 
-        return response;
+    public IQueryable<AssignmentStatusTypeResponse> QueryAssignmentStatusTypes()
+    {
+        return statuses.Query().Select(Projections.AssignmentStatusType);
     }
 
     public async Task<Result<ActivityResponse>> CreateAsync(
@@ -433,34 +430,6 @@ public class ActivityService(
         return new TimeOverlapResponse(overlaps.Count > 0, overlaps);
     }
 
-    public async Task<IReadOnlyList<AssignedActivityResponse>> GetAssignedAsync(
-        Guid userId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        CancellationToken ct = default
-    )
-    {
-        var assignments = await activities.GetUserAssignmentsAsync(userId, startDate, endDate, ct);
-        return assignments
-            .Select(x => new AssignedActivityResponse(
-                x.ActivityId,
-                x.Activity.Title,
-                x.Activity.Description,
-                x.Activity.ActivityStartsAt,
-                x.Activity.ActivityEndsAt,
-                x.Activity.EventId,
-                new AssignedActivityRoleResponse(
-                    x.ActivityRoleTypeId,
-                    x.ActivityRoleType?.Name ?? string.Empty
-                ),
-                new AssignedActivityStatusResponse(
-                    x.AssignmentStatusId,
-                    x.AssignmentStatus?.Name ?? string.Empty
-                )
-            ))
-            .ToList();
-    }
-
     public async Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> GetHouseholdAssignmentsAsync(
         Guid actingUserId,
         Guid eventId,
@@ -557,14 +526,6 @@ public class ActivityService(
         return Result.Success();
     }
 
-    public async Task<IReadOnlyList<ActivityRoleTypeResponse>> GetActivityRoleTypesAsync(
-        CancellationToken ct = default
-    )
-    {
-        var list = await roleTypes.GetAllAsync(ct);
-        return list.OrderBy(x => x.Name).Select(roleType => roleType.ToResponse()).ToList();
-    }
-
     public async Task<ActivityRoleTypeResponse> CreateActivityRoleTypeAsync(
         CreateActivityRoleTypeRequest request,
         CancellationToken ct = default
@@ -609,13 +570,5 @@ public class ActivityService(
         await roleTypes.RemoveAsync(x => x.Id == id, ct);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
-    }
-
-    public async Task<IReadOnlyList<AssignmentStatusTypeResponse>> GetAssignmentStatusTypesAsync(
-        CancellationToken ct = default
-    )
-    {
-        var list = await statuses.GetAllAsync(ct);
-        return list.OrderBy(x => x.Name).Select(statusType => statusType.ToResponse()).ToList();
     }
 }

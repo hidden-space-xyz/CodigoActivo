@@ -14,22 +14,9 @@ public class EventService(
     IUnitOfWork uow
 ) : IEventService
 {
-    public async Task<IReadOnlyList<EventResponse>> ListAsync(
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        CancellationToken ct = default
-    )
+    public IQueryable<EventResponse> Query()
     {
-        var list = await events.ListAsync(startDate, endDate, ct);
-        return list.Select(e => e.ToResponse()).ToList();
-    }
-
-    public async Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        var ev = await events.GetWithThumbnailAsync(id, ct);
-        var response = ev?.ToResponse();
-
-        return response is null ? Error.NotFound() : Result.Success(response);
+        return events.Query().Select(Projections.Event);
     }
 
     public async Task<Result<EventResponse>> CreateAsync(

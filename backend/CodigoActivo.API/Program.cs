@@ -1,8 +1,11 @@
 using CodigoActivo.API.Middlewares;
+using CodigoActivo.API.OData;
 using CodigoActivo.Composition;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
@@ -10,7 +13,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCodigoActivo(builder.Configuration);
 
-builder.Services.AddControllers();
+builder
+    .Services.AddControllers()
+    .AddOData(options =>
+        options
+            .Select()
+            .Filter()
+            .OrderBy()
+            .Expand()
+            .Count()
+            .SetMaxTop(1000)
+            .AddRouteComponents("api/odata", EdmModelBuilder.Build())
+    );
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -76,6 +90,38 @@ builder.Services.AddSwaggerGen(c =>
             Description = "Backend API for CodigoActivo (cookie session auth + CSRF).",
         }
     );
+
+    // OData read endpoints are consumed by a hand-written query layer on the frontend, not by
+    // the generated client, so keep them out of the OpenAPI document (and the Orval output).
+    c.DocInclusionPredicate(
+        (_, apiDescription) =>
+            !(apiDescription.RelativePath ?? string.Empty).StartsWith(
+                "api/odata",
+                StringComparison.OrdinalIgnoreCase
+            )
+    );
+
+    // The write controllers were renamed to *CommandsController to free the entity-set names for
+    // the OData read controllers. Restore the original Swagger tags so the generated client keeps
+    // its stable file layout (endpoints/events/…, etc.).
+    var tagOverrides = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["EventCommands"] = "Events",
+        ["AnnouncementCommands"] = "Announcements",
+        ["ResourceCommands"] = "Resources",
+        ["PartnerCommands"] = "Partners",
+        ["ActivityCommands"] = "Activities",
+        ["UserCommands"] = "Users",
+    };
+    c.TagActionsBy(api =>
+        api.ActionDescriptor is ControllerActionDescriptor descriptor
+            ? [
+                tagOverrides.GetValueOrDefault(descriptor.ControllerName, descriptor.ControllerName),
+            ]
+            : [api.GroupName ?? "default"]
+    );
+
+    c.OperationFilter<JsonResponseMediaTypeFilter>();
 });
 
 var app = builder.Build();

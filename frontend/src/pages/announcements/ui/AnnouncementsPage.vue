@@ -2,11 +2,13 @@
 import { computed } from 'vue'
 
 import { AnnouncementCard, useAnnouncements } from '@/entities/announcement'
-import { SectionEyebrow } from '@/shared/ui'
+import { SectionEyebrow, YearFilter } from '@/shared/ui'
 
-const { announcements, isLoading } = useAnnouncements()
+const { years, selectedYear, setYear, announcements, isLoading } = useAnnouncements()
 
-const isEmpty = computed(() => !isLoading.value && (announcements.value?.length ?? 0) === 0)
+const isEmpty = computed(
+  () => !isLoading.value && (announcements.value?.length ?? 0) === 0,
+)
 </script>
 
 <template>
@@ -23,6 +25,15 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
 
     <section class="announcements-list-section">
       <div class="ca-container">
+        <YearFilter
+          v-if="years.length"
+          class="announcements-years"
+          :years="years"
+          :selected="selectedYear"
+          forced
+          @select="setYear"
+        />
+
         <p v-if="isLoading" class="announcements-loading">Cargando…</p>
         <p v-else-if="isEmpty" class="announcements-loading">Todavía no hay anuncios.</p>
         <div v-else class="announcements-list">
@@ -60,6 +71,10 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
 
 .announcements-list-section {
   padding: 30px 24px 80px;
+}
+
+.announcements-years {
+  margin-bottom: 26px;
 }
 
 .announcements-list {

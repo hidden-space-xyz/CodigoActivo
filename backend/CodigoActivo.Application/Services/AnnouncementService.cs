@@ -13,21 +13,9 @@ public class AnnouncementService(
     IUnitOfWork uow
 ) : IAnnouncementService
 {
-    public async Task<IReadOnlyList<AnnouncementResponse>> ListAsync(CancellationToken ct = default)
+    public IQueryable<AnnouncementResponse> Query()
     {
-        var items = await announcements.GetAllAsync(ct);
-        return items.OrderByDescending(a => a.CreatedAt).Select(a => a.ToResponse()).ToList();
-    }
-
-    public async Task<Result<AnnouncementResponse>> GetByIdAsync(
-        Guid id,
-        CancellationToken ct = default
-    )
-    {
-        var announcement = await announcements.FindAsync(a => a.Id == id, ct);
-        var response = announcement?.ToResponse();
-
-        return response is null ? Error.NotFound() : Result.Success(response);
+        return announcements.Query().Select(Projections.Announcement);
     }
 
     public async Task<Result<AnnouncementResponse>> CreateAsync(

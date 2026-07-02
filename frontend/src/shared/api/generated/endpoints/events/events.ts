@@ -6,17 +6,13 @@
  * OpenAPI spec version: v1
  */
 import {
-  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -32,7 +28,6 @@ import type {
 import type {
   CreateEventRequest,
   EventResponse,
-  GetApiEventsParams,
   UpdateEventRequest
 } from '../../models';
 
@@ -43,115 +38,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiEventsResponse200TextPlain = {
-  data: EventResponse[]
-  status: 200
-}
-
-export type getApiEventsResponse200ApplicationJson = {
-  data: EventResponse[]
-  status: 200
-}
-
-export type getApiEventsResponse200TextJson = {
-  data: EventResponse[]
-  status: 200
-}
-
-export type getApiEventsResponseSuccess = (getApiEventsResponse200TextPlain | getApiEventsResponse200ApplicationJson | getApiEventsResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiEventsResponse = (getApiEventsResponseSuccess)
-
-export const getGetApiEventsUrl = (params?: GetApiEventsParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/events?${stringifiedParams}` : `/api/events`
-}
-
-export const getApiEvents = async (params?: GetApiEventsParams, options?: RequestInit): Promise<getApiEventsResponse> => {
-
-  return httpClient<getApiEventsResponse>(getGetApiEventsUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiEventsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEvents>>, TError,{params?: GetApiEventsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiEvents>>, TError,{params?: GetApiEventsParams}, TContext> => {
-
-const mutationKey = ['getApiEvents'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEvents>>, {params?: GetApiEventsParams}> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiEvents(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiEventsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEvents>>>
-
-    export type GetApiEventsMutationError = unknown
-
-    export const useGetApiEvents = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEvents>>, TError,{params?: GetApiEventsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiEvents>>,
-        TError,
-        {params?: GetApiEventsParams},
-        TContext
-      > => {
-      return useMutation(getGetApiEventsMutationOptions(options), queryClient);
-    }
-    export type postApiEventsResponse200TextPlain = {
+export type postApiEventsResponse200 = {
   data: EventResponse
   status: 200
 }
 
-export type postApiEventsResponse200ApplicationJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type postApiEventsResponse200TextJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type postApiEventsResponseSuccess = (postApiEventsResponse200TextPlain | postApiEventsResponse200ApplicationJson | postApiEventsResponse200TextJson) & {
+export type postApiEventsResponseSuccess = (postApiEventsResponse200) & {
   headers: Headers;
 };
 ;
@@ -230,108 +122,12 @@ export function usePostApiEvents<TData = Awaited<ReturnType<typeof postApiEvents
 
 
 
-export type getApiEventsEventIdResponse200TextPlain = {
+export type putApiEventsEventIdResponse200 = {
   data: EventResponse
   status: 200
 }
 
-export type getApiEventsEventIdResponse200ApplicationJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type getApiEventsEventIdResponse200TextJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type getApiEventsEventIdResponseSuccess = (getApiEventsEventIdResponse200TextPlain | getApiEventsEventIdResponse200ApplicationJson | getApiEventsEventIdResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiEventsEventIdResponse = (getApiEventsEventIdResponseSuccess)
-
-export const getGetApiEventsEventIdUrl = (eventId: string,) => {
-
-
-
-
-  return `/api/events/${eventId}`
-}
-
-export const getApiEventsEventId = async (eventId: string, options?: RequestInit): Promise<getApiEventsEventIdResponse> => {
-
-  return httpClient<getApiEventsEventIdResponse>(getGetApiEventsEventIdUrl(eventId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiEventsEventIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventId>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventId>>, TError,{eventId: string}, TContext> => {
-
-const mutationKey = ['getApiEventsEventId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsEventId>>, {eventId: string}> = (props) => {
-          const {eventId} = props ?? {};
-
-          return  getApiEventsEventId(eventId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiEventsEventIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsEventId>>>
-
-    export type GetApiEventsEventIdMutationError = unknown
-
-    export const useGetApiEventsEventId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventId>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiEventsEventId>>,
-        TError,
-        {eventId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiEventsEventIdMutationOptions(options), queryClient);
-    }
-    export type putApiEventsEventIdResponse200TextPlain = {
-  data: EventResponse
-  status: 200
-}
-
-export type putApiEventsEventIdResponse200ApplicationJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type putApiEventsEventIdResponse200TextJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type putApiEventsEventIdResponseSuccess = (putApiEventsEventIdResponse200TextPlain | putApiEventsEventIdResponse200ApplicationJson | putApiEventsEventIdResponse200TextJson) & {
+export type putApiEventsEventIdResponseSuccess = (putApiEventsEventIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -498,22 +294,12 @@ export function useDeleteApiEventsEventId<TData = Awaited<ReturnType<typeof dele
 
 
 
-export type patchApiEventsEventIdFeatureResponse200TextPlain = {
+export type patchApiEventsEventIdFeatureResponse200 = {
   data: EventResponse
   status: 200
 }
 
-export type patchApiEventsEventIdFeatureResponse200ApplicationJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type patchApiEventsEventIdFeatureResponse200TextJson = {
-  data: EventResponse
-  status: 200
-}
-
-export type patchApiEventsEventIdFeatureResponseSuccess = (patchApiEventsEventIdFeatureResponse200TextPlain | patchApiEventsEventIdFeatureResponse200ApplicationJson | patchApiEventsEventIdFeatureResponse200TextJson) & {
+export type patchApiEventsEventIdFeatureResponseSuccess = (patchApiEventsEventIdFeatureResponse200) & {
   headers: Headers;
 };
 ;

@@ -43,7 +43,6 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 
     [HttpGet("dashboard/summary-counters")]
     [AllowAnonymous]
-    [Cached(nameof(DashboardSummaryResponse))]
     public async Task<ActionResult<DashboardSummaryResponse>> DashboardSummary(CancellationToken ct)
     {
         return Ok(await reports.GetDashboardSummaryAsync(ct));

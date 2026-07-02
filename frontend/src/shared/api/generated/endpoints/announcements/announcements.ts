@@ -6,17 +6,13 @@
  * OpenAPI spec version: v1
  */
 import {
-  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -42,108 +38,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiAnnouncementsResponse200TextPlain = {
-  data: AnnouncementResponse[]
-  status: 200
-}
-
-export type getApiAnnouncementsResponse200ApplicationJson = {
-  data: AnnouncementResponse[]
-  status: 200
-}
-
-export type getApiAnnouncementsResponse200TextJson = {
-  data: AnnouncementResponse[]
-  status: 200
-}
-
-export type getApiAnnouncementsResponseSuccess = (getApiAnnouncementsResponse200TextPlain | getApiAnnouncementsResponse200ApplicationJson | getApiAnnouncementsResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiAnnouncementsResponse = (getApiAnnouncementsResponseSuccess)
-
-export const getGetApiAnnouncementsUrl = () => {
-
-
-
-
-  return `/api/announcements`
-}
-
-export const getApiAnnouncements = async ( options?: RequestInit): Promise<getApiAnnouncementsResponse> => {
-
-  return httpClient<getApiAnnouncementsResponse>(getGetApiAnnouncementsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiAnnouncementsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncements>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncements>>, TError,void, TContext> => {
-
-const mutationKey = ['getApiAnnouncements'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAnnouncements>>, void> = () => {
-
-
-          return  getApiAnnouncements(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiAnnouncementsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAnnouncements>>>
-
-    export type GetApiAnnouncementsMutationError = unknown
-
-    export const useGetApiAnnouncements = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncements>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiAnnouncements>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiAnnouncementsMutationOptions(options), queryClient);
-    }
-    export type postApiAnnouncementsResponse200TextPlain = {
+export type postApiAnnouncementsResponse200 = {
   data: AnnouncementResponse
   status: 200
 }
 
-export type postApiAnnouncementsResponse200ApplicationJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type postApiAnnouncementsResponse200TextJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type postApiAnnouncementsResponseSuccess = (postApiAnnouncementsResponse200TextPlain | postApiAnnouncementsResponse200ApplicationJson | postApiAnnouncementsResponse200TextJson) & {
+export type postApiAnnouncementsResponseSuccess = (postApiAnnouncementsResponse200) & {
   headers: Headers;
 };
 ;
@@ -222,108 +122,12 @@ export function usePostApiAnnouncements<TData = Awaited<ReturnType<typeof postAp
 
 
 
-export type getApiAnnouncementsAnnouncementIdResponse200TextPlain = {
+export type putApiAnnouncementsAnnouncementIdResponse200 = {
   data: AnnouncementResponse
   status: 200
 }
 
-export type getApiAnnouncementsAnnouncementIdResponse200ApplicationJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type getApiAnnouncementsAnnouncementIdResponse200TextJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type getApiAnnouncementsAnnouncementIdResponseSuccess = (getApiAnnouncementsAnnouncementIdResponse200TextPlain | getApiAnnouncementsAnnouncementIdResponse200ApplicationJson | getApiAnnouncementsAnnouncementIdResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiAnnouncementsAnnouncementIdResponse = (getApiAnnouncementsAnnouncementIdResponseSuccess)
-
-export const getGetApiAnnouncementsAnnouncementIdUrl = (announcementId: string,) => {
-
-
-
-
-  return `/api/announcements/${announcementId}`
-}
-
-export const getApiAnnouncementsAnnouncementId = async (announcementId: string, options?: RequestInit): Promise<getApiAnnouncementsAnnouncementIdResponse> => {
-
-  return httpClient<getApiAnnouncementsAnnouncementIdResponse>(getGetApiAnnouncementsAnnouncementIdUrl(announcementId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiAnnouncementsAnnouncementIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, TError,{announcementId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, TError,{announcementId: string}, TContext> => {
-
-const mutationKey = ['getApiAnnouncementsAnnouncementId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, {announcementId: string}> = (props) => {
-          const {announcementId} = props ?? {};
-
-          return  getApiAnnouncementsAnnouncementId(announcementId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiAnnouncementsAnnouncementIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>>
-
-    export type GetApiAnnouncementsAnnouncementIdMutationError = unknown
-
-    export const useGetApiAnnouncementsAnnouncementId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, TError,{announcementId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>,
-        TError,
-        {announcementId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiAnnouncementsAnnouncementIdMutationOptions(options), queryClient);
-    }
-    export type putApiAnnouncementsAnnouncementIdResponse200TextPlain = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type putApiAnnouncementsAnnouncementIdResponse200ApplicationJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type putApiAnnouncementsAnnouncementIdResponse200TextJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type putApiAnnouncementsAnnouncementIdResponseSuccess = (putApiAnnouncementsAnnouncementIdResponse200TextPlain | putApiAnnouncementsAnnouncementIdResponse200ApplicationJson | putApiAnnouncementsAnnouncementIdResponse200TextJson) & {
+export type putApiAnnouncementsAnnouncementIdResponseSuccess = (putApiAnnouncementsAnnouncementIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -490,22 +294,12 @@ export function useDeleteApiAnnouncementsAnnouncementId<TData = Awaited<ReturnTy
 
 
 
-export type patchApiAnnouncementsAnnouncementIdFeatureResponse200TextPlain = {
+export type patchApiAnnouncementsAnnouncementIdFeatureResponse200 = {
   data: AnnouncementResponse
   status: 200
 }
 
-export type patchApiAnnouncementsAnnouncementIdFeatureResponse200ApplicationJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type patchApiAnnouncementsAnnouncementIdFeatureResponse200TextJson = {
-  data: AnnouncementResponse
-  status: 200
-}
-
-export type patchApiAnnouncementsAnnouncementIdFeatureResponseSuccess = (patchApiAnnouncementsAnnouncementIdFeatureResponse200TextPlain | patchApiAnnouncementsAnnouncementIdFeatureResponse200ApplicationJson | patchApiAnnouncementsAnnouncementIdFeatureResponse200TextJson) & {
+export type patchApiAnnouncementsAnnouncementIdFeatureResponseSuccess = (patchApiAnnouncementsAnnouncementIdFeatureResponse200) & {
   headers: Headers;
 };
 ;

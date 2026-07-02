@@ -13,7 +13,11 @@ public record PartnerResponse(
     Guid CreatedBy,
     Guid? UpdatedBy,
     Guid ThumbnailId
-);
+)
+{
+    public PartnerResponse()
+        : this(default, "", default, default, null, default, null, default, null, default) { }
+}
 
 public record CreatePartnerRequest(
     [Required, MaxLength(200)] string Name,

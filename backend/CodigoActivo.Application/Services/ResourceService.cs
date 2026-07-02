@@ -13,21 +13,9 @@ public class ResourceService(
     IUnitOfWork uow
 ) : IResourceService
 {
-    public async Task<IReadOnlyList<ResourceResponse>> ListAsync(CancellationToken ct = default)
+    public IQueryable<ResourceResponse> Query()
     {
-        var items = await resources.GetAllAsync(ct);
-        return items.OrderByDescending(r => r.CreatedAt).Select(r => r.ToResponse()).ToList();
-    }
-
-    public async Task<Result<ResourceResponse>> GetByIdAsync(
-        Guid id,
-        CancellationToken ct = default
-    )
-    {
-        var resource = await resources.FindAsync(r => r.Id == id, ct);
-        var response = resource?.ToResponse();
-
-        return response is null ? Error.NotFound() : Result.Success(response);
+        return resources.Query().Select(Projections.Resource);
     }
 
     public async Task<Result<ResourceResponse>> CreateAsync(

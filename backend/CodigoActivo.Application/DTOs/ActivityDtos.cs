@@ -21,7 +21,11 @@ public record ActivityResponse(
     Guid CreatedBy,
     Guid? UpdatedBy,
     IReadOnlyList<ActivityAllowedRoleResponse> AllowedRoleTypes
-);
+)
+{
+    public ActivityResponse()
+        : this(default, "", "", default, default, default, default, default, null, default, null, []) { }
+}
 
 public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId, int? DesiredSignups);
 
@@ -100,16 +104,28 @@ public record AssignedActivityResponse(
     Guid EventId,
     AssignedActivityRoleResponse RoleType,
     AssignedActivityStatusResponse Status
-);
+)
+{
+    public AssignedActivityResponse()
+        : this(default, "", "", default, default, default, null!, null!) { }
+}
 
 public record AssignedActivityRoleResponse(Guid Id, string Name);
 
 public record AssignedActivityStatusResponse(Guid Id, string Name);
 
-public record ActivityRoleTypeResponse(Guid Id, string Name, string Description);
+public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
+{
+    public ActivityRoleTypeResponse()
+        : this(default, "", "") { }
+}
 
 public record CreateActivityRoleTypeRequest(string Name, string Description);
 
 public record UpdateActivityRoleTypeRequest(string Name, string Description);
 
-public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color);
+public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color)
+{
+    public AssignmentStatusTypeResponse()
+        : this(default, "", "", "") { }
+}

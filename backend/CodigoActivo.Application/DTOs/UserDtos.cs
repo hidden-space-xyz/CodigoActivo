@@ -15,7 +15,11 @@ public record UserResponse(
     Guid? ParentId,
     UserStatusResponse Status,
     IReadOnlyList<UserRoleResponse> Roles
-);
+)
+{
+    public UserResponse()
+        : this(default, "", "", null, null, default, null, default, null, null, null!, []) { }
+}
 
 public record UserStatusResponse(Guid Id, string Name, string Color);
 
@@ -37,6 +41,27 @@ public record ChangePasswordRequest(
     [Required, MinLength(8), MaxLength(128)] string NewPassword
 );
 
-public record UserStatusTypeResponse(Guid Id, string Name, string Description, string Color);
+public record UserStatusTypeResponse(Guid Id, string Name, string Description, string Color)
+{
+    public UserStatusTypeResponse()
+        : this(default, "", "", "") { }
+}
 
-public record UserTypeResponse(Guid Id, string Name, string Description, string Color);
+public record UserTypeResponse(Guid Id, string Name, string Description, string Color)
+{
+    public UserTypeResponse()
+        : this(default, "", "", "") { }
+}
+
+public record RegistrationTypeResponse(
+    Guid Id,
+    string Name,
+    string Description,
+    string Color,
+    bool IsAllowedForMinors,
+    bool IsAllowedForAdults
+)
+{
+    public RegistrationTypeResponse()
+        : this(default, "", "", "", false, false) { }
+}

@@ -34,14 +34,11 @@ import type {
   ActivityRoleTypeResponse,
   AssignHouseholdRequest,
   AssignRequest,
-  AssignedActivityResponse,
   AssignmentResponse,
-  AssignmentStatusTypeResponse,
   ChangeAssignmentRoleRequest,
   ChangeAssignmentStatusRequest,
   CreateActivityRequest,
   CreateActivityRoleTypeRequest,
-  GetApiActivitiesAssignedParams,
   HouseholdMemberAssignmentResponse,
   TimeOverlapResponse,
   UpdateActivityRequest,
@@ -55,46 +52,29 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiActivitiesAssignedResponse200TextPlain = {
-  data: AssignedActivityResponse[]
+export type getApiActivitiesEventIdHouseholdAssignmentsResponse200 = {
+  data: HouseholdMemberAssignmentResponse[]
   status: 200
 }
 
-export type getApiActivitiesAssignedResponse200ApplicationJson = {
-  data: AssignedActivityResponse[]
-  status: 200
-}
-
-export type getApiActivitiesAssignedResponse200TextJson = {
-  data: AssignedActivityResponse[]
-  status: 200
-}
-
-export type getApiActivitiesAssignedResponseSuccess = (getApiActivitiesAssignedResponse200TextPlain | getApiActivitiesAssignedResponse200ApplicationJson | getApiActivitiesAssignedResponse200TextJson) & {
+export type getApiActivitiesEventIdHouseholdAssignmentsResponseSuccess = (getApiActivitiesEventIdHouseholdAssignmentsResponse200) & {
   headers: Headers;
 };
 ;
 
-export type getApiActivitiesAssignedResponse = (getApiActivitiesAssignedResponseSuccess)
+export type getApiActivitiesEventIdHouseholdAssignmentsResponse = (getApiActivitiesEventIdHouseholdAssignmentsResponseSuccess)
 
-export const getGetApiActivitiesAssignedUrl = (params?: GetApiActivitiesAssignedParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetApiActivitiesEventIdHouseholdAssignmentsUrl = (eventId: string,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/activities/assigned?${stringifiedParams}` : `/api/activities/assigned`
+  return `/api/activities/${eventId}/household-assignments`
 }
 
-export const getApiActivitiesAssigned = async (params?: GetApiActivitiesAssignedParams, options?: RequestInit): Promise<getApiActivitiesAssignedResponse> => {
+export const getApiActivitiesEventIdHouseholdAssignments = async (eventId: string, options?: RequestInit): Promise<getApiActivitiesEventIdHouseholdAssignmentsResponse> => {
 
-  return httpClient<getApiActivitiesAssignedResponse>(getGetApiActivitiesAssignedUrl(params),
+  return httpClient<getApiActivitiesEventIdHouseholdAssignmentsResponse>(getGetApiActivitiesEventIdHouseholdAssignmentsUrl(eventId),
   {
     ...options,
     method: 'GET'
@@ -107,11 +87,11 @@ export const getApiActivitiesAssigned = async (params?: GetApiActivitiesAssigned
 
 
 
-export const getGetApiActivitiesAssignedMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssigned>>, TError,{params?: GetApiActivitiesAssignedParams}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssigned>>, TError,{params?: GetApiActivitiesAssignedParams}, TContext> => {
+export const getGetApiActivitiesEventIdHouseholdAssignmentsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext> => {
 
-const mutationKey = ['getApiActivitiesAssigned'];
+const mutationKey = ['getApiActivitiesEventIdHouseholdAssignments'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -121,96 +101,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesAssigned>>, {params?: GetApiActivitiesAssignedParams}> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiActivitiesAssigned(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesAssignedMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesAssigned>>>
-
-    export type GetApiActivitiesAssignedMutationError = unknown
-
-    export const useGetApiActivitiesAssigned = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssigned>>, TError,{params?: GetApiActivitiesAssignedParams}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesAssigned>>,
-        TError,
-        {params?: GetApiActivitiesAssignedParams},
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesAssignedMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesEventIdResponse200TextPlain = {
-  data: ActivityResponse[]
-  status: 200
-}
-
-export type getApiActivitiesEventIdResponse200ApplicationJson = {
-  data: ActivityResponse[]
-  status: 200
-}
-
-export type getApiActivitiesEventIdResponse200TextJson = {
-  data: ActivityResponse[]
-  status: 200
-}
-
-export type getApiActivitiesEventIdResponseSuccess = (getApiActivitiesEventIdResponse200TextPlain | getApiActivitiesEventIdResponse200ApplicationJson | getApiActivitiesEventIdResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiActivitiesEventIdResponse = (getApiActivitiesEventIdResponseSuccess)
-
-export const getGetApiActivitiesEventIdUrl = (eventId: string,) => {
-
-
-
-
-  return `/api/activities/${eventId}`
-}
-
-export const getApiActivitiesEventId = async (eventId: string, options?: RequestInit): Promise<getApiActivitiesEventIdResponse> => {
-
-  return httpClient<getApiActivitiesEventIdResponse>(getGetApiActivitiesEventIdUrl(eventId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiActivitiesEventIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventId>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventId>>, TError,{eventId: string}, TContext> => {
-
-const mutationKey = ['getApiActivitiesEventId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesEventId>>, {eventId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, {eventId: string}> = (props) => {
           const {eventId} = props ?? {};
 
-          return  getApiActivitiesEventId(eventId,requestOptions)
+          return  getApiActivitiesEventIdHouseholdAssignments(eventId,requestOptions)
         }
 
 
@@ -220,36 +114,104 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type GetApiActivitiesEventIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesEventId>>>
+    export type GetApiActivitiesEventIdHouseholdAssignmentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>>
 
-    export type GetApiActivitiesEventIdMutationError = unknown
+    export type GetApiActivitiesEventIdHouseholdAssignmentsMutationError = unknown
 
-    export const useGetApiActivitiesEventId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventId>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+    export const useGetApiActivitiesEventIdHouseholdAssignments = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesEventId>>,
+        Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>,
         TError,
         {eventId: string},
         TContext
       > => {
-      return useMutation(getGetApiActivitiesEventIdMutationOptions(options), queryClient);
+      return useMutation(getGetApiActivitiesEventIdHouseholdAssignmentsMutationOptions(options), queryClient);
     }
-    export type postApiActivitiesEventIdResponse200TextPlain = {
+    export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200 = {
+  data: TimeOverlapResponse
+  status: 200
+}
+
+export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponseSuccess = (getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse = (getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponseSuccess)
+
+export const getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsUrl = (activityId: string,
+    userId: string,) => {
+
+
+
+
+  return `/api/activities/${activityId}/${userId}/verifyTimeOverlaps`
+}
+
+export const getApiActivitiesActivityIdUserIdVerifyTimeOverlaps = async (activityId: string,
+    userId: string, options?: RequestInit): Promise<getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse> => {
+
+  return httpClient<getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse>(getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsUrl(activityId,userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, TError,{activityId: string;userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, TError,{activityId: string;userId: string}, TContext> => {
+
+const mutationKey = ['getApiActivitiesActivityIdUserIdVerifyTimeOverlaps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, {activityId: string;userId: string}> = (props) => {
+          const {activityId,userId} = props ?? {};
+
+          return  getApiActivitiesActivityIdUserIdVerifyTimeOverlaps(activityId,userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>>
+
+    export type GetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationError = unknown
+
+    export const useGetApiActivitiesActivityIdUserIdVerifyTimeOverlaps = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, TError,{activityId: string;userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>,
+        TError,
+        {activityId: string;userId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationOptions(options), queryClient);
+    }
+    export type postApiActivitiesEventIdResponse200 = {
   data: ActivityResponse
   status: 200
 }
 
-export type postApiActivitiesEventIdResponse200ApplicationJson = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type postApiActivitiesEventIdResponse200TextJson = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type postApiActivitiesEventIdResponseSuccess = (postApiActivitiesEventIdResponse200TextPlain | postApiActivitiesEventIdResponse200ApplicationJson | postApiActivitiesEventIdResponse200TextJson) & {
+export type postApiActivitiesEventIdResponseSuccess = (postApiActivitiesEventIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -332,196 +294,12 @@ export function usePostApiActivitiesEventId<TData = Awaited<ReturnType<typeof po
 
 
 
-export type getApiActivitiesEventIdHouseholdAssignmentsResponse200TextPlain = {
-  data: HouseholdMemberAssignmentResponse[]
-  status: 200
-}
-
-export type getApiActivitiesEventIdHouseholdAssignmentsResponse200ApplicationJson = {
-  data: HouseholdMemberAssignmentResponse[]
-  status: 200
-}
-
-export type getApiActivitiesEventIdHouseholdAssignmentsResponse200TextJson = {
-  data: HouseholdMemberAssignmentResponse[]
-  status: 200
-}
-
-export type getApiActivitiesEventIdHouseholdAssignmentsResponseSuccess = (getApiActivitiesEventIdHouseholdAssignmentsResponse200TextPlain | getApiActivitiesEventIdHouseholdAssignmentsResponse200ApplicationJson | getApiActivitiesEventIdHouseholdAssignmentsResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiActivitiesEventIdHouseholdAssignmentsResponse = (getApiActivitiesEventIdHouseholdAssignmentsResponseSuccess)
-
-export const getGetApiActivitiesEventIdHouseholdAssignmentsUrl = (eventId: string,) => {
-
-
-
-
-  return `/api/activities/${eventId}/household-assignments`
-}
-
-export const getApiActivitiesEventIdHouseholdAssignments = async (eventId: string, options?: RequestInit): Promise<getApiActivitiesEventIdHouseholdAssignmentsResponse> => {
-
-  return httpClient<getApiActivitiesEventIdHouseholdAssignmentsResponse>(getGetApiActivitiesEventIdHouseholdAssignmentsUrl(eventId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiActivitiesEventIdHouseholdAssignmentsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext> => {
-
-const mutationKey = ['getApiActivitiesEventIdHouseholdAssignments'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, {eventId: string}> = (props) => {
-          const {eventId} = props ?? {};
-
-          return  getApiActivitiesEventIdHouseholdAssignments(eventId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesEventIdHouseholdAssignmentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>>
-
-    export type GetApiActivitiesEventIdHouseholdAssignmentsMutationError = unknown
-
-    export const useGetApiActivitiesEventIdHouseholdAssignments = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesEventIdHouseholdAssignments>>,
-        TError,
-        {eventId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesEventIdHouseholdAssignmentsMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesEventIdActivityIdResponse200TextPlain = {
+export type putApiActivitiesActivityIdResponse200 = {
   data: ActivityResponse
   status: 200
 }
 
-export type getApiActivitiesEventIdActivityIdResponse200ApplicationJson = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type getApiActivitiesEventIdActivityIdResponse200TextJson = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type getApiActivitiesEventIdActivityIdResponseSuccess = (getApiActivitiesEventIdActivityIdResponse200TextPlain | getApiActivitiesEventIdActivityIdResponse200ApplicationJson | getApiActivitiesEventIdActivityIdResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiActivitiesEventIdActivityIdResponse = (getApiActivitiesEventIdActivityIdResponseSuccess)
-
-export const getGetApiActivitiesEventIdActivityIdUrl = (eventId: string,
-    activityId: string,) => {
-
-
-
-
-  return `/api/activities/${eventId}/${activityId}`
-}
-
-export const getApiActivitiesEventIdActivityId = async (eventId: string,
-    activityId: string, options?: RequestInit): Promise<getApiActivitiesEventIdActivityIdResponse> => {
-
-  return httpClient<getApiActivitiesEventIdActivityIdResponse>(getGetApiActivitiesEventIdActivityIdUrl(eventId,activityId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiActivitiesEventIdActivityIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdActivityId>>, TError,{eventId: string;activityId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdActivityId>>, TError,{eventId: string;activityId: string}, TContext> => {
-
-const mutationKey = ['getApiActivitiesEventIdActivityId'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesEventIdActivityId>>, {eventId: string;activityId: string}> = (props) => {
-          const {eventId,activityId} = props ?? {};
-
-          return  getApiActivitiesEventIdActivityId(eventId,activityId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesEventIdActivityIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesEventIdActivityId>>>
-
-    export type GetApiActivitiesEventIdActivityIdMutationError = unknown
-
-    export const useGetApiActivitiesEventIdActivityId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesEventIdActivityId>>, TError,{eventId: string;activityId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesEventIdActivityId>>,
-        TError,
-        {eventId: string;activityId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesEventIdActivityIdMutationOptions(options), queryClient);
-    }
-    export type putApiActivitiesActivityIdResponse200TextPlain = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type putApiActivitiesActivityIdResponse200ApplicationJson = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type putApiActivitiesActivityIdResponse200TextJson = {
-  data: ActivityResponse
-  status: 200
-}
-
-export type putApiActivitiesActivityIdResponseSuccess = (putApiActivitiesActivityIdResponse200TextPlain | putApiActivitiesActivityIdResponse200ApplicationJson | putApiActivitiesActivityIdResponse200TextJson) & {
+export type putApiActivitiesActivityIdResponseSuccess = (putApiActivitiesActivityIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -688,22 +466,12 @@ export function useDeleteApiActivitiesActivityId<TData = Awaited<ReturnType<type
 
 
 
-export type patchApiActivitiesActivityIdUserIdAssignResponse200TextPlain = {
+export type patchApiActivitiesActivityIdUserIdAssignResponse200 = {
   data: AssignmentResponse
   status: 200
 }
 
-export type patchApiActivitiesActivityIdUserIdAssignResponse200ApplicationJson = {
-  data: AssignmentResponse
-  status: 200
-}
-
-export type patchApiActivitiesActivityIdUserIdAssignResponse200TextJson = {
-  data: AssignmentResponse
-  status: 200
-}
-
-export type patchApiActivitiesActivityIdUserIdAssignResponseSuccess = (patchApiActivitiesActivityIdUserIdAssignResponse200TextPlain | patchApiActivitiesActivityIdUserIdAssignResponse200ApplicationJson | patchApiActivitiesActivityIdUserIdAssignResponse200TextJson) & {
+export type patchApiActivitiesActivityIdUserIdAssignResponseSuccess = (patchApiActivitiesActivityIdUserIdAssignResponse200) & {
   headers: Headers;
 };
 ;
@@ -791,22 +559,12 @@ export function usePatchApiActivitiesActivityIdUserIdAssign<TData = Awaited<Retu
 
 
 
-export type postApiActivitiesActivityIdAssignHouseholdResponse200TextPlain = {
+export type postApiActivitiesActivityIdAssignHouseholdResponse200 = {
   data: AssignmentResponse[]
   status: 200
 }
 
-export type postApiActivitiesActivityIdAssignHouseholdResponse200ApplicationJson = {
-  data: AssignmentResponse[]
-  status: 200
-}
-
-export type postApiActivitiesActivityIdAssignHouseholdResponse200TextJson = {
-  data: AssignmentResponse[]
-  status: 200
-}
-
-export type postApiActivitiesActivityIdAssignHouseholdResponseSuccess = (postApiActivitiesActivityIdAssignHouseholdResponse200TextPlain | postApiActivitiesActivityIdAssignHouseholdResponse200ApplicationJson | postApiActivitiesActivityIdAssignHouseholdResponse200TextJson) & {
+export type postApiActivitiesActivityIdAssignHouseholdResponseSuccess = (postApiActivitiesActivityIdAssignHouseholdResponse200) & {
   headers: Headers;
 };
 ;
@@ -978,22 +736,12 @@ export function usePatchApiActivitiesActivityIdUserIdUnassign<TData = Awaited<Re
 
 
 
-export type patchApiActivitiesActivityIdUserIdChangeStatusResponse200TextPlain = {
+export type patchApiActivitiesActivityIdUserIdChangeStatusResponse200 = {
   data: AssignmentResponse
   status: 200
 }
 
-export type patchApiActivitiesActivityIdUserIdChangeStatusResponse200ApplicationJson = {
-  data: AssignmentResponse
-  status: 200
-}
-
-export type patchApiActivitiesActivityIdUserIdChangeStatusResponse200TextJson = {
-  data: AssignmentResponse
-  status: 200
-}
-
-export type patchApiActivitiesActivityIdUserIdChangeStatusResponseSuccess = (patchApiActivitiesActivityIdUserIdChangeStatusResponse200TextPlain | patchApiActivitiesActivityIdUserIdChangeStatusResponse200ApplicationJson | patchApiActivitiesActivityIdUserIdChangeStatusResponse200TextJson) & {
+export type patchApiActivitiesActivityIdUserIdChangeStatusResponseSuccess = (patchApiActivitiesActivityIdUserIdChangeStatusResponse200) & {
   headers: Headers;
 };
 ;
@@ -1081,22 +829,12 @@ export function usePatchApiActivitiesActivityIdUserIdChangeStatus<TData = Awaite
 
 
 
-export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextPlain = {
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200 = {
   data: AssignmentResponse
   status: 200
 }
 
-export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200ApplicationJson = {
-  data: AssignmentResponse
-  status: 200
-}
-
-export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextJson = {
-  data: AssignmentResponse
-  status: 200
-}
-
-export type patchApiActivitiesActivityIdUserIdChangeRoleResponseSuccess = (patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextPlain | patchApiActivitiesActivityIdUserIdChangeRoleResponse200ApplicationJson | patchApiActivitiesActivityIdUserIdChangeRoleResponse200TextJson) & {
+export type patchApiActivitiesActivityIdUserIdChangeRoleResponseSuccess = (patchApiActivitiesActivityIdUserIdChangeRoleResponse200) & {
   headers: Headers;
 };
 ;
@@ -1184,196 +922,12 @@ export function usePatchApiActivitiesActivityIdUserIdChangeRole<TData = Awaited<
 
 
 
-export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200TextPlain = {
-  data: TimeOverlapResponse
-  status: 200
-}
-
-export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200ApplicationJson = {
-  data: TimeOverlapResponse
-  status: 200
-}
-
-export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200TextJson = {
-  data: TimeOverlapResponse
-  status: 200
-}
-
-export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponseSuccess = (getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200TextPlain | getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200ApplicationJson | getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse = (getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponseSuccess)
-
-export const getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsUrl = (activityId: string,
-    userId: string,) => {
-
-
-
-
-  return `/api/activities/${activityId}/${userId}/verifyTimeOverlaps`
-}
-
-export const getApiActivitiesActivityIdUserIdVerifyTimeOverlaps = async (activityId: string,
-    userId: string, options?: RequestInit): Promise<getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse> => {
-
-  return httpClient<getApiActivitiesActivityIdUserIdVerifyTimeOverlapsResponse>(getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsUrl(activityId,userId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, TError,{activityId: string;userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, TError,{activityId: string;userId: string}, TContext> => {
-
-const mutationKey = ['getApiActivitiesActivityIdUserIdVerifyTimeOverlaps'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, {activityId: string;userId: string}> = (props) => {
-          const {activityId,userId} = props ?? {};
-
-          return  getApiActivitiesActivityIdUserIdVerifyTimeOverlaps(activityId,userId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>>
-
-    export type GetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationError = unknown
-
-    export const useGetApiActivitiesActivityIdUserIdVerifyTimeOverlaps = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>, TError,{activityId: string;userId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesActivityIdUserIdVerifyTimeOverlaps>>,
-        TError,
-        {activityId: string;userId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesActivityIdUserIdVerifyTimeOverlapsMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesRoleTypesResponse200TextPlain = {
-  data: ActivityRoleTypeResponse[]
-  status: 200
-}
-
-export type getApiActivitiesRoleTypesResponse200ApplicationJson = {
-  data: ActivityRoleTypeResponse[]
-  status: 200
-}
-
-export type getApiActivitiesRoleTypesResponse200TextJson = {
-  data: ActivityRoleTypeResponse[]
-  status: 200
-}
-
-export type getApiActivitiesRoleTypesResponseSuccess = (getApiActivitiesRoleTypesResponse200TextPlain | getApiActivitiesRoleTypesResponse200ApplicationJson | getApiActivitiesRoleTypesResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiActivitiesRoleTypesResponse = (getApiActivitiesRoleTypesResponseSuccess)
-
-export const getGetApiActivitiesRoleTypesUrl = () => {
-
-
-
-
-  return `/api/activities/roleTypes`
-}
-
-export const getApiActivitiesRoleTypes = async ( options?: RequestInit): Promise<getApiActivitiesRoleTypesResponse> => {
-
-  return httpClient<getApiActivitiesRoleTypesResponse>(getGetApiActivitiesRoleTypesUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiActivitiesRoleTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesRoleTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesRoleTypes>>, TError,void, TContext> => {
-
-const mutationKey = ['getApiActivitiesRoleTypes'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesRoleTypes>>, void> = () => {
-
-
-          return  getApiActivitiesRoleTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesRoleTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesRoleTypes>>>
-
-    export type GetApiActivitiesRoleTypesMutationError = unknown
-
-    export const useGetApiActivitiesRoleTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesRoleTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesRoleTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesRoleTypesMutationOptions(options), queryClient);
-    }
-    export type postApiActivitiesRoleTypeResponse200TextPlain = {
+export type postApiActivitiesRoleTypeResponse200 = {
   data: ActivityRoleTypeResponse
   status: 200
 }
 
-export type postApiActivitiesRoleTypeResponse200ApplicationJson = {
-  data: ActivityRoleTypeResponse
-  status: 200
-}
-
-export type postApiActivitiesRoleTypeResponse200TextJson = {
-  data: ActivityRoleTypeResponse
-  status: 200
-}
-
-export type postApiActivitiesRoleTypeResponseSuccess = (postApiActivitiesRoleTypeResponse200TextPlain | postApiActivitiesRoleTypeResponse200ApplicationJson | postApiActivitiesRoleTypeResponse200TextJson) & {
+export type postApiActivitiesRoleTypeResponseSuccess = (postApiActivitiesRoleTypeResponse200) & {
   headers: Headers;
 };
 ;
@@ -1452,22 +1006,12 @@ export function usePostApiActivitiesRoleType<TData = Awaited<ReturnType<typeof p
 
 
 
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponse200TextPlain = {
+export type putApiActivitiesRoleTypeActivityRoleTypeIdResponse200 = {
   data: ActivityRoleTypeResponse
   status: 200
 }
 
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponse200ApplicationJson = {
-  data: ActivityRoleTypeResponse
-  status: 200
-}
-
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponse200TextJson = {
-  data: ActivityRoleTypeResponse
-  status: 200
-}
-
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponseSuccess = (putApiActivitiesRoleTypeActivityRoleTypeIdResponse200TextPlain | putApiActivitiesRoleTypeActivityRoleTypeIdResponse200ApplicationJson | putApiActivitiesRoleTypeActivityRoleTypeIdResponse200TextJson) & {
+export type putApiActivitiesRoleTypeActivityRoleTypeIdResponseSuccess = (putApiActivitiesRoleTypeActivityRoleTypeIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -1634,89 +1178,3 @@ export function useDeleteApiActivitiesRoleTypeActivityRoleTypeId<TData = Awaited
 
 
 
-export type getApiActivitiesAssignmentStatusTypesResponse200TextPlain = {
-  data: AssignmentStatusTypeResponse[]
-  status: 200
-}
-
-export type getApiActivitiesAssignmentStatusTypesResponse200ApplicationJson = {
-  data: AssignmentStatusTypeResponse[]
-  status: 200
-}
-
-export type getApiActivitiesAssignmentStatusTypesResponse200TextJson = {
-  data: AssignmentStatusTypeResponse[]
-  status: 200
-}
-
-export type getApiActivitiesAssignmentStatusTypesResponseSuccess = (getApiActivitiesAssignmentStatusTypesResponse200TextPlain | getApiActivitiesAssignmentStatusTypesResponse200ApplicationJson | getApiActivitiesAssignmentStatusTypesResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiActivitiesAssignmentStatusTypesResponse = (getApiActivitiesAssignmentStatusTypesResponseSuccess)
-
-export const getGetApiActivitiesAssignmentStatusTypesUrl = () => {
-
-
-
-
-  return `/api/activities/assignmentStatusTypes`
-}
-
-export const getApiActivitiesAssignmentStatusTypes = async ( options?: RequestInit): Promise<getApiActivitiesAssignmentStatusTypesResponse> => {
-
-  return httpClient<getApiActivitiesAssignmentStatusTypesResponse>(getGetApiActivitiesAssignmentStatusTypesUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiActivitiesAssignmentStatusTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, TError,void, TContext> => {
-
-const mutationKey = ['getApiActivitiesAssignmentStatusTypes'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, void> = () => {
-
-
-          return  getApiActivitiesAssignmentStatusTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesAssignmentStatusTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>>
-
-    export type GetApiActivitiesAssignmentStatusTypesMutationError = unknown
-
-    export const useGetApiActivitiesAssignmentStatusTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesAssignmentStatusTypesMutationOptions(options), queryClient);
-    }

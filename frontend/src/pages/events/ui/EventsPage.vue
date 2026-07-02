@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { PastEventCard, usePastEvents, useUpcomingEvents } from '@/entities/event'
 import EventBoard from './EventBoard.vue'
-import YearFilter from './YearFilter.vue'
-import { SectionEyebrow } from '@/shared/ui'
+import { SectionEyebrow, YearFilter } from '@/shared/ui'
 
 const { upcomingEvents, isLoading: isLoadingUpcoming } = useUpcomingEvents()
-const { filteredEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = usePastEvents()
+const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = usePastEvents()
 </script>
 
 <template>
@@ -41,12 +40,13 @@ const { filteredEvents, years, selectedYear, setYear, isLoading: isLoadingPast }
             class="events-section__filter"
             :years="years"
             :selected="selectedYear"
+            :forced="true"
             @select="setYear"
           />
         </div>
         <p v-if="isLoadingPast" class="events-loading">Cargando…</p>
         <div v-else class="events-grid">
-          <PastEventCard v-for="event in filteredEvents" :key="event.id" :event="event" />
+          <PastEventCard v-for="event in pastEvents" :key="event.id" :event="event" />
         </div>
       </div>
     </section>

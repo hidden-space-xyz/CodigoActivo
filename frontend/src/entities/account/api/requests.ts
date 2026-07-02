@@ -1,14 +1,14 @@
 import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
 import {
   deleteApiUsersUserId,
-  getApiUsersRegistrationTypes,
   getApiUsersUserIdChildren,
   patchApiUsersUserIdPassword,
   patchApiUsersUserIdRole,
   postApiUsersUserIdChildren,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import { ApiError } from '@/shared/api'
+import { ApiError, fetchODataList } from '@/shared/api'
+import type { RegistrationTypeResponse } from '@/shared/api'
 
 import type {
   AddMinorInput,
@@ -46,8 +46,12 @@ export async function getAccountChildrenRequest(parentId: string): Promise<reado
 export async function getRegistrationTypesRequest(
   minor: boolean,
 ): Promise<readonly RegistrationType[]> {
-  const response = await getApiUsersRegistrationTypes({ minor })
-  return (response.data ?? []).map(toRegistrationType)
+  const { items } = await fetchODataList<RegistrationTypeResponse>('RegistrationTypes', {
+    filter: minor ? 'isAllowedForMinors eq true' : 'isAllowedForAdults eq true',
+    orderBy: 'name asc',
+    top: 1000,
+  })
+  return items.map(toRegistrationType)
 }
 
 export async function updateAccountProfileRequest(

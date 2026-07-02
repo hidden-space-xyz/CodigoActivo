@@ -42,22 +42,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiFilesFileIdResponse200TextPlain = {
+export type getApiFilesFileIdResponse200 = {
   data: FileResponse
   status: 200
 }
 
-export type getApiFilesFileIdResponse200ApplicationJson = {
-  data: FileResponse
-  status: 200
-}
-
-export type getApiFilesFileIdResponse200TextJson = {
-  data: FileResponse
-  status: 200
-}
-
-export type getApiFilesFileIdResponseSuccess = (getApiFilesFileIdResponse200TextPlain | getApiFilesFileIdResponse200ApplicationJson | getApiFilesFileIdResponse200TextJson) & {
+export type getApiFilesFileIdResponseSuccess = (getApiFilesFileIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -128,22 +118,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiFilesFileIdMutationOptions(options), queryClient);
     }
-    export type putApiFilesFileIdResponse200TextPlain = {
+    export type putApiFilesFileIdResponse200 = {
   data: FileResponse
   status: 200
 }
 
-export type putApiFilesFileIdResponse200ApplicationJson = {
-  data: FileResponse
-  status: 200
-}
-
-export type putApiFilesFileIdResponse200TextJson = {
-  data: FileResponse
-  status: 200
-}
-
-export type putApiFilesFileIdResponseSuccess = (putApiFilesFileIdResponse200TextPlain | putApiFilesFileIdResponse200ApplicationJson | putApiFilesFileIdResponse200TextJson) & {
+export type putApiFilesFileIdResponseSuccess = (putApiFilesFileIdResponse200) & {
   headers: Headers;
 };
 ;
@@ -390,22 +370,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiFilesFileIdContentMutationOptions(options), queryClient);
     }
-    export type postApiFilesResponse200TextPlain = {
+    export type postApiFilesResponse200 = {
   data: FileResponse
   status: 200
 }
 
-export type postApiFilesResponse200ApplicationJson = {
-  data: FileResponse
-  status: 200
-}
-
-export type postApiFilesResponse200TextJson = {
-  data: FileResponse
-  status: 200
-}
-
-export type postApiFilesResponseSuccess = (postApiFilesResponse200TextPlain | postApiFilesResponse200ApplicationJson | postApiFilesResponse200TextJson) & {
+export type postApiFilesResponseSuccess = (postApiFilesResponse200) & {
   headers: Headers;
 };
 ;

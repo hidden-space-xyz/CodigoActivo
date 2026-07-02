@@ -6,6 +6,13 @@ namespace CodigoActivo.Domain.Repositories;
 public interface IDbRepository<TEntity>
     where TEntity : IdentifiableEntity
 {
+    /// <summary>
+    /// A non-tracked, non-materialized query over the entity set. Read endpoints project
+    /// and compose OData query options ($filter/$orderby/$top/$skip/$count) on top of it,
+    /// so the whole pipeline translates to a single SQL query.
+    /// </summary>
+    IQueryable<TEntity> Query();
+
     Task<TEntity?> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default

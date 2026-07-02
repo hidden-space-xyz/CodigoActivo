@@ -7,10 +7,12 @@ export type {
 export {
   assignActivityRequest,
   assignHouseholdRequest,
+  getActivityByIdRequest,
   getEventActivitiesRequest,
   getHouseholdAssignmentsRequest,
   getHouseholdMembersRequest,
   getMyAssignmentsRequest,
+  listEventActivitiesRequest,
   unassignActivityRequest,
   verifyOverlapsRequest,
 } from './api/requests'

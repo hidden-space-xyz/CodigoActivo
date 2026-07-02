@@ -17,7 +17,11 @@ public record EventResponse(
     Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured
-);
+)
+{
+    public EventResponse()
+        : this(default, "", "", "", default, default, default, default, default, null, default, null, default, false) { }
+}
 
 public record CreateEventRequest(
     [Required, MaxLength(200)] string Title,

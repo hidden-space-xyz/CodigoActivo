@@ -16,7 +16,7 @@ export function useUsers() {
 
   const list = useQuery({
     queryKey: userQueryKeys.all,
-    queryFn: ({ signal }) => getUsersRequest(signal),
+    queryFn: () => getUsersRequest(),
   })
 
   const update = useMutation({

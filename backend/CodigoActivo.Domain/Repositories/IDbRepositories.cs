@@ -90,6 +90,9 @@ public interface IActivityRepository : IDbRepository<Activity>
         Guid eventId,
         CancellationToken ct = default
     );
+
+    /// <summary>Non-tracked, non-materialized query over the assignment join set, for OData reads.</summary>
+    IQueryable<ActivityUserRoleAssignment> QueryAssignments();
 }
 
 public interface IResourceRepository : IDbRepository<Resource>;

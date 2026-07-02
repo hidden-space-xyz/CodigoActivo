@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useConfirm } from 'primevue/useconfirm'
-import { AdminPageHeader, AppButton as Button, DataState, ListThumbnail, RichTextEditor } from '@/shared/ui'
+import { AdminPageHeader, AppButton as Button, ListThumbnail, RichTextEditor } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
@@ -26,6 +26,8 @@ const props = defineProps<{
 
 const feedback = useCrudFeedback()
 const confirm = useConfirm()
+
+const table = computed(() => props.controller.table)
 
 const dialogVisible = ref(false)
 const editing = ref<ContentItem | null>(null)
@@ -157,73 +159,101 @@ function confirmDelete(item: ContentItem): void {
       </template>
     </AdminPageHeader>
 
-    <DataState
-      :loading="controller.list.isLoading.value"
-      :error="controller.list.isError.value"
-      :empty="(controller.list.data.value?.length ?? 0) === 0"
-      empty-text="Aún no hay registros."
+    <DataTable
+      lazy
+      :value="table.items.value"
+      :total-records="table.total.value"
+      :loading="table.loading.value"
+      data-key="id"
+      striped-rows
+      paginator
+      :rows="table.rows.value"
+      :first="table.first.value"
+      :rows-per-page-options="[25, 50, 100]"
+      :sort-field="table.sortField.value"
+      :sort-order="table.sortOrder.value"
+      v-model:filters="table.filters.value"
+      filter-display="row"
+      removable-sort
+      @page="table.onPage"
+      @sort="table.onSort"
+      @filter="table.onFilter"
     >
-      <DataTable
-        :value="controller.list.data.value"
-        data-key="id"
-        striped-rows
-        paginator
-        :rows="10"
-      >
-        <Column header="Imagen" style="width: 110px">
-          <template #body="{ data }">
-            <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
-          </template>
-        </Column>
-        <Column header="Título">
-          <template #body="{ data }">
-            <span class="title-cell">
-              {{ data.title }}
-              <Tag
-                v-if="controller.canFeature && data.featured"
-                value="Destacado"
-                severity="warn"
-              />
-            </span>
-          </template>
-        </Column>
-        <Column field="subtitle" header="Subtítulo" />
-        <Column header="Creado">
-          <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
-        </Column>
-        <Column header="Acciones" style="width: 170px">
-          <template #body="{ data }">
-            <div class="row-actions">
-              <Button
-                v-if="controller.canFeature"
-                :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
-                text
-                rounded
-                :aria-label="data.featured ? 'Destacado' : 'Destacar'"
-                :disabled="data.featured || controller.feature.isPending.value"
-                :class="{ 'is-featured': data.featured }"
-                @click="onFeature(data)"
-              />
-              <Button
-                icon="pi pi-pencil"
-                text
-                rounded
-                aria-label="Editar"
-                @click="openEdit(data)"
-              />
-              <Button
-                icon="pi pi-trash"
-                text
-                rounded
-                severity="danger"
-                aria-label="Eliminar"
-                @click="confirmDelete(data)"
-              />
-            </div>
-          </template>
-        </Column>
-      </DataTable>
-    </DataState>
+      <template #empty>
+        <span v-if="table.isError.value">No se pudieron cargar los registros.</span>
+        <span v-else>Aún no hay registros.</span>
+      </template>
+
+      <Column header="Imagen" style="width: 110px">
+        <template #body="{ data }">
+          <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
+        </template>
+      </Column>
+      <Column field="title" header="Título" sortable :show-filter-menu="false">
+        <template #body="{ data }">
+          <span class="title-cell">
+            {{ data.title }}
+            <Tag
+              v-if="controller.canFeature && data.featured"
+              value="Destacado"
+              severity="warn"
+            />
+          </span>
+        </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText
+            v-model="filterModel.value"
+            placeholder="Buscar título"
+            fluid
+            @input="filterCallback()"
+          />
+        </template>
+      </Column>
+      <Column field="subtitle" header="Subtítulo" sortable :show-filter-menu="false">
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText
+            v-model="filterModel.value"
+            placeholder="Buscar subtítulo"
+            fluid
+            @input="filterCallback()"
+          />
+        </template>
+      </Column>
+      <Column field="createdAt" header="Creado" sortable style="width: 200px">
+        <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
+      </Column>
+      <Column header="Acciones" style="width: 170px">
+        <template #body="{ data }">
+          <div class="row-actions">
+            <Button
+              v-if="controller.canFeature"
+              :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
+              text
+              rounded
+              :aria-label="data.featured ? 'Destacado' : 'Destacar'"
+              :disabled="data.featured || controller.feature.isPending.value"
+              :class="{ 'is-featured': data.featured }"
+              @click="onFeature(data)"
+            />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              aria-label="Editar"
+              @click="openEdit(data)"
+            />
+            <Button
+              icon="pi pi-trash"
+              text
+              rounded
+              severity="danger"
+              aria-label="Eliminar"
+              @click="confirmDelete(data)"
+            />
+          </div>
+        </template>
+      </Column>
+    </DataTable>
 
     <Dialog
       v-model:visible="dialogVisible"

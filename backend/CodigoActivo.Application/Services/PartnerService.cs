@@ -14,14 +14,9 @@ public class PartnerService(
     IUnitOfWork uow
 ) : IPartnerService
 {
-    public async Task<IReadOnlyList<PartnerResponse>> ListAsync(CancellationToken ct = default)
+    public IQueryable<PartnerResponse> Query()
     {
-        var items = await partners.GetAllAsync(ct);
-        return items
-            .OrderBy(p => p.Tier)
-            .ThenByDescending(p => p.FromDate)
-            .Select(p => p.ToResponse())
-            .ToList();
+        return partners.Query().Select(Projections.Partner);
     }
 
     public async Task<Result<PartnerResponse>> CreateAsync(

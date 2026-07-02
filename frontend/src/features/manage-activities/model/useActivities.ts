@@ -4,12 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
   deleteApiActivitiesActivityId,
-  getApiActivitiesEventId,
-  getApiActivitiesEventIdActivityId,
   postApiActivitiesEventId,
   putApiActivitiesActivityId,
 } from '@/shared/api/generated/endpoints/activities/activities'
 import type { CreateActivityRequest, UpdateActivityRequest } from '@/shared/api/generated/models'
+import { getActivityByIdRequest, listEventActivitiesRequest } from '@/entities/activity'
 
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
@@ -18,8 +17,7 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
 
   const list = useQuery({
     queryKey,
-    queryFn: ({ signal }) =>
-      getApiActivitiesEventId(toValue(eventId), { signal }).then((r) => r.data ?? []),
+    queryFn: () => listEventActivitiesRequest(toValue(eventId)),
   })
 
   const create = useMutation({
@@ -39,8 +37,8 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
     onSuccess: invalidate,
   })
 
-  function fetchOne(eventIdValue: string, activityId: string) {
-    return getApiActivitiesEventIdActivityId(eventIdValue, activityId).then((r) => r.data)
+  function fetchOne(activityId: string) {
+    return getActivityByIdRequest(activityId)
   }
 
   return { list, create, update, remove, fetchOne }

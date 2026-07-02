@@ -13,7 +13,11 @@ public record AnnouncementResponse(
     Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured
-);
+)
+{
+    public AnnouncementResponse()
+        : this(default, "", "", "", default, null, default, null, default, false) { }
+}
 
 public record CreateAnnouncementRequest(
     [Required, MaxLength(200)] string Title,

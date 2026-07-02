@@ -1,13 +1,14 @@
 import {
   getApiActivitiesActivityIdUserIdVerifyTimeOverlaps,
-  getApiActivitiesAssigned,
-  getApiActivitiesEventId,
   getApiActivitiesEventIdHouseholdAssignments,
   patchApiActivitiesActivityIdUserIdAssign,
   patchApiActivitiesActivityIdUserIdUnassign,
   postApiActivitiesActivityIdAssignHousehold,
 } from '@/shared/api/generated/endpoints/activities/activities'
 import { getApiUsersUserIdChildren } from '@/shared/api/generated/endpoints/users/users'
+import type { ActivityResponse } from '@/shared/api/generated/models'
+import type { AssignedActivityResponse } from '@/shared/api'
+import { fetchODataEntity, fetchODataList, odataGuid } from '@/shared/api'
 
 import type { HouseholdAssignmentInput } from '../model/household-assignment-input'
 import type {
@@ -25,14 +26,42 @@ import {
   toOverlapCheck,
 } from './mapper'
 
+const ACTIVITIES = 'Activities'
+const ASSIGNED_ACTIVITIES = 'AssignedActivities'
+
 export async function getEventActivitiesRequest(eventId: string): Promise<readonly EventActivity[]> {
-  const response = await getApiActivitiesEventId(eventId)
-  return (response.data ?? []).map(toEventActivity)
+  const { items } = await fetchODataList<ActivityResponse>(ACTIVITIES, {
+    filter: `eventId eq ${odataGuid(eventId)}`,
+    orderBy: 'activityStartsAt asc',
+    top: 1000,
+  })
+  return items.map(toEventActivity)
 }
 
 export async function getMyAssignmentsRequest(): Promise<readonly ActivityAssignment[]> {
-  const response = await getApiActivitiesAssigned()
-  return (response.data ?? []).map(toActivityAssignment)
+  // The backend scopes AssignedActivities to the authenticated caller automatically.
+  const { items } = await fetchODataList<AssignedActivityResponse>(ASSIGNED_ACTIVITIES, {
+    orderBy: 'activityStartsAt asc',
+    top: 1000,
+  })
+  return items.map(toActivityAssignment)
+}
+
+// Raw activity list of an event, ordered chronologically (admin table + assign dialog).
+export async function listEventActivitiesRequest(eventId: string): Promise<ActivityResponse[]> {
+  const { items } = await fetchODataList<ActivityResponse>(ACTIVITIES, {
+    filter: `eventId eq ${odataGuid(eventId)}`,
+    orderBy: 'activityStartsAt asc',
+    top: 1000,
+  })
+  return items
+}
+
+// Single activity by id (admin edit dialog); null on 404.
+export async function getActivityByIdRequest(
+  activityId: string,
+): Promise<ActivityResponse | null> {
+  return fetchODataEntity<ActivityResponse>(ACTIVITIES, activityId)
 }
 
 export async function getHouseholdAssignmentsRequest(

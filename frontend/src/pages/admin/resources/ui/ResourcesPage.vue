@@ -2,17 +2,23 @@
 import { ContentEntityPage, useContentEntity } from '@/widgets/content-entity-page'
 import {
   deleteApiResourcesResourceId,
-  getApiResources,
-  getApiResourcesResourceId,
   postApiResources,
   putApiResourcesResourceId,
 } from '@/shared/api/generated/endpoints/resources/resources'
+import { fetchODataEntity } from '@/shared/api'
+import type { ResourceResponse } from '@/shared/api/generated/models'
 import { resourceQueryKeys } from '@/entities/resource'
 
 const controller = useContentEntity({
+  resource: 'Resources',
   queryKey: resourceQueryKeys.all,
-  fetchAll: (signal) => getApiResources({ signal }).then((r) => r.data ?? []),
-  fetchOne: (id) => getApiResourcesResourceId(id).then((r) => r.data),
+  defaultSort: { field: 'createdAt', order: -1 },
+  columns: {
+    title: { type: 'text' },
+    subtitle: { type: 'text' },
+    createdAt: { type: 'datetime' },
+  },
+  fetchOne: (id) => fetchODataEntity<ResourceResponse>('Resources', id).then((r) => r ?? {}),
   create: (body) => postApiResources(body),
   update: (id, body) => putApiResourcesResourceId(id, body),
   remove: (id) => deleteApiResourcesResourceId(id),

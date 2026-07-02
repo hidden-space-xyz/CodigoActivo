@@ -6,17 +6,13 @@
  * OpenAPI spec version: v1
  */
 import {
-  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -42,108 +38,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiPartnersResponse200TextPlain = {
-  data: PartnerResponse[]
-  status: 200
-}
-
-export type getApiPartnersResponse200ApplicationJson = {
-  data: PartnerResponse[]
-  status: 200
-}
-
-export type getApiPartnersResponse200TextJson = {
-  data: PartnerResponse[]
-  status: 200
-}
-
-export type getApiPartnersResponseSuccess = (getApiPartnersResponse200TextPlain | getApiPartnersResponse200ApplicationJson | getApiPartnersResponse200TextJson) & {
-  headers: Headers;
-};
-;
-
-export type getApiPartnersResponse = (getApiPartnersResponseSuccess)
-
-export const getGetApiPartnersUrl = () => {
-
-
-
-
-  return `/api/partners`
-}
-
-export const getApiPartners = async ( options?: RequestInit): Promise<getApiPartnersResponse> => {
-
-  return httpClient<getApiPartnersResponse>(getGetApiPartnersUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiPartnersMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,void, TContext> => {
-
-const mutationKey = ['getApiPartners'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiPartners>>, void> = () => {
-
-
-          return  getApiPartners(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiPartnersMutationResult = NonNullable<Awaited<ReturnType<typeof getApiPartners>>>
-
-    export type GetApiPartnersMutationError = unknown
-
-    export const useGetApiPartners = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiPartners>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiPartnersMutationOptions(options), queryClient);
-    }
-    export type postApiPartnersResponse200TextPlain = {
+export type postApiPartnersResponse200 = {
   data: PartnerResponse
   status: 200
 }
 
-export type postApiPartnersResponse200ApplicationJson = {
-  data: PartnerResponse
-  status: 200
-}
-
-export type postApiPartnersResponse200TextJson = {
-  data: PartnerResponse
-  status: 200
-}
-
-export type postApiPartnersResponseSuccess = (postApiPartnersResponse200TextPlain | postApiPartnersResponse200ApplicationJson | postApiPartnersResponse200TextJson) & {
+export type postApiPartnersResponseSuccess = (postApiPartnersResponse200) & {
   headers: Headers;
 };
 ;
@@ -222,22 +122,12 @@ export function usePostApiPartners<TData = Awaited<ReturnType<typeof postApiPart
 
 
 
-export type putApiPartnersPartnerIdResponse200TextPlain = {
+export type putApiPartnersPartnerIdResponse200 = {
   data: PartnerResponse
   status: 200
 }
 
-export type putApiPartnersPartnerIdResponse200ApplicationJson = {
-  data: PartnerResponse
-  status: 200
-}
-
-export type putApiPartnersPartnerIdResponse200TextJson = {
-  data: PartnerResponse
-  status: 200
-}
-
-export type putApiPartnersPartnerIdResponseSuccess = (putApiPartnersPartnerIdResponse200TextPlain | putApiPartnersPartnerIdResponse200ApplicationJson | putApiPartnersPartnerIdResponse200TextJson) & {
+export type putApiPartnersPartnerIdResponseSuccess = (putApiPartnersPartnerIdResponse200) & {
   headers: Headers;
 };
 ;

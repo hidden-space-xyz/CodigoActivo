@@ -69,7 +69,8 @@ async function openEditActivity(activity: ActivityResponse): Promise<void> {
   activityDialogVisible.value = true
   if (!activity.id) return
   try {
-    selectedActivity.value = await activities.fetchOne(eventId.value, activity.id)
+    const fresh = await activities.fetchOne(activity.id)
+    if (fresh) selectedActivity.value = fresh
   } catch {}
 }
 

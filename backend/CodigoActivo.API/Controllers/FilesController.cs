@@ -3,7 +3,6 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +16,6 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
-    [Cached(nameof(FileEntity))]
     public async Task<ActionResult<FileResponse>> GetById(Guid fileId, CancellationToken ct)
     {
         return ToOk(await files.GetByIdAsync(fileId, ct));
@@ -39,7 +37,6 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     [HttpPost]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(FileEntity))]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(MaxUploadBytes)]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
@@ -59,7 +56,6 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     [HttpPut("{fileId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(FileEntity))]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(MaxUploadBytes)]
     public async Task<ActionResult<FileResponse>> Update(
@@ -79,7 +75,6 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     [HttpDelete("{fileId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(FileEntity))]
     public async Task<IActionResult> Delete(Guid fileId, CancellationToken ct)
     {
         return ToNoContent(await files.DeleteAsync(fileId, ct));

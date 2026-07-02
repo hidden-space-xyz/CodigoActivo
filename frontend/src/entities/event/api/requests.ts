@@ -1,92 +1,91 @@
-import { getApiEvents, getApiEventsEventId } from '@/shared/api/generated/endpoints/events/events'
 import type { EventResponse } from '@/shared/api/generated/models'
-import { ApiError } from '@/shared/api'
+import { combineFilters, fetchODataEntity, fetchODataList, odataInt } from '@/shared/api'
 
 import type { EventDetail, HomeEvents, PastEvent, UpcomingEvent } from '../model/types'
 import { toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
-function startOfToday(): number {
+const EVENTS = 'Events'
+
+// Event dates are bare "yyyy-MM-dd" (Edm.Date). Anchor comparisons to the local calendar day so an
+// event stays "ongoing" through the end of its last local day.
+function today(): string {
   const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  return now.getTime()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// Event dates are bare "yyyy-mm-dd" (no time); interpret them on the local calendar so an
-// event stays "ongoing" through the end of its last local day, not until UTC midnight.
-function dateOnlyMs(value?: string | null, endOfDay = false): number | null {
-  if (!value) return null
-  const year = Number(value.slice(0, 4))
-  const month = Number(value.slice(5, 7)) - 1
-  const day = Number(value.slice(8, 10))
-  const date = endOfDay ? new Date(year, month, day, 23, 59, 59, 999) : new Date(year, month, day)
-  return Number.isNaN(date.getTime()) ? null : date.getTime()
-}
-
-function startsAt(event: EventResponse): number | null {
-  return dateOnlyMs(event.eventStartsAt)
-}
-
-function isUpcomingOrOngoing(event: EventResponse): boolean {
-  const end = dateOnlyMs(event.eventEndsAt, true)
-  if (end !== null) return end >= Date.now()
-  const start = startsAt(event)
-  if (start !== null) return start >= startOfToday()
-  return true
-}
-
-function isFinished(event: EventResponse): boolean {
-  const end = dateOnlyMs(event.eventEndsAt, true)
-  if (end !== null) return end < Date.now()
-  const start = startsAt(event)
-  if (start !== null) return start < startOfToday()
-  return false
-}
-
-const byStartAscending = (a: EventResponse, b: EventResponse): number =>
-  (startsAt(a) ?? Infinity) - (startsAt(b) ?? Infinity)
-
-const byStartDescending = (a: EventResponse, b: EventResponse): number =>
-  (startsAt(b) ?? 0) - (startsAt(a) ?? 0)
-
-async function fetchAll(): Promise<EventResponse[]> {
-  const response = await getApiEvents()
-  return response.data ?? []
-}
-
+// Upcoming/ongoing = ends today or later, nearest first.
 export async function getUpcomingEventsRequest(): Promise<readonly UpcomingEvent[]> {
-  const upcoming = (await fetchAll()).filter(isUpcomingOrOngoing).sort(byStartAscending)
-  return upcoming.map(toUpcomingEvent)
+  const { items } = await fetchODataList<EventResponse>(EVENTS, {
+    filter: `eventEndsAt ge ${today()}`,
+    orderBy: 'eventStartsAt asc',
+    top: 100,
+  })
+  return items.map(toUpcomingEvent)
 }
 
-export async function getPastEventsRequest(): Promise<readonly PastEvent[]> {
-  return (await fetchAll()).filter(isFinished).sort(byStartDescending).map(toPastEvent)
+// Distinct years that have finished events, numeric-descending (most recent first).
+export async function getPastEventYearsRequest(): Promise<readonly string[]> {
+  const { items } = await fetchODataList<EventResponse>(EVENTS, {
+    filter: `eventEndsAt lt ${today()}`,
+    orderBy: 'eventStartsAt desc',
+    select: 'eventStartsAt',
+    top: 1000,
+  })
+  const years = new Set(
+    items
+      .map((event) => event.eventStartsAt)
+      .filter((value): value is string => Boolean(value))
+      // eventStartsAt is a bare Edm.Date ("yyyy-MM-dd"); take the calendar year straight from the
+      // string so it matches the server-side `year(eventStartsAt)` filter (no local-timezone shift).
+      .map((value) => value.slice(0, 4)),
+  )
+  return [...years].sort((a, b) => Number(b) - Number(a))
+}
+
+// Past events for a given year, most-recent first (nearest-to-now first).
+export async function getPastEventsRequest(year: string): Promise<readonly PastEvent[]> {
+  const { items } = await fetchODataList<EventResponse>(EVENTS, {
+    filter: combineFilters(`eventEndsAt lt ${today()}`, `year(eventStartsAt) eq ${odataInt(year)}`),
+    orderBy: 'eventStartsAt desc',
+    top: 500,
+  })
+  return items.map(toPastEvent)
 }
 
 async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
-  const all = await fetchAll()
-  const flagged = all.find((event) => event.featured)
-  if (flagged) return toUpcomingEvent(flagged)
-  const mostRecent = all
-    .slice()
-    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0]
-  return mostRecent ? toUpcomingEvent(mostRecent) : null
+  const flagged = await fetchODataList<EventResponse>(EVENTS, {
+    filter: 'featured eq true',
+    top: 1,
+  })
+  const [flaggedFirst] = flagged.items
+  if (flaggedFirst) return toUpcomingEvent(flaggedFirst)
+
+  const mostRecent = await fetchODataList<EventResponse>(EVENTS, {
+    orderBy: 'createdAt desc',
+    top: 1,
+  })
+  const [recentFirst] = mostRecent.items
+  return recentFirst ? toUpcomingEvent(recentFirst) : null
 }
 
 export async function getEventByIdRequest(id: string): Promise<EventDetail | null> {
-  try {
-    const response = await getApiEventsEventId(id)
-    return toEventDetail(response.data)
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null
-    throw error
-  }
+  const event = await fetchODataEntity<EventResponse>(EVENTS, id)
+  return event ? toEventDetail(event) : null
 }
 
 export async function getHomeEventsRequest(): Promise<HomeEvents> {
-  const [featured, upcoming] = await Promise.all([
+  const [featured, upcomingPage] = await Promise.all([
     getFeaturedEventRequest(),
-    getUpcomingEventsRequest(),
+    fetchODataList<EventResponse>(EVENTS, {
+      filter: `eventEndsAt ge ${today()}`,
+      orderBy: 'eventStartsAt asc',
+      top: 4,
+    }),
   ])
+  const upcoming = upcomingPage.items.map(toUpcomingEvent)
   const items = upcoming.filter((event) => event.id !== featured?.id).slice(0, 3)
   return { featured, items }
 }

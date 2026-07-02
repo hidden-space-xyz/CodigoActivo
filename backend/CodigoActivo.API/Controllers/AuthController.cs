@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
@@ -31,22 +30,18 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
-    [InvalidatesCache(nameof(DashboardSummaryResponse))]
     public async Task<ActionResult<RegisterResponse>> Register(
         [FromBody] RegisterRequest request,
         CancellationToken ct
     )
     {
         var result = await auth.RegisterAsync(request, ct);
-        return result.IsFailure
-            ? (ActionResult<RegisterResponse>)ToProblem(result.Error!)
-            : (ActionResult<RegisterResponse>)
-                CreatedAtAction(
-                    nameof(UsersController.GetById),
-                    "Users",
-                    new { userId = result.Value.Adult.Id },
-                    result.Value
-                );
+        if (result.IsFailure)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return Created($"/api/users/{result.Value.Adult.Id}", result.Value);
     }
 
     [HttpPatch("{userId:guid}/verify")]

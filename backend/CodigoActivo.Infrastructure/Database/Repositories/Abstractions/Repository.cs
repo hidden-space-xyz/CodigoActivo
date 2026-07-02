@@ -12,6 +12,11 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
     protected readonly CodigoActivoDbContext Context = context;
     protected readonly DbSet<TEntity> Set = context.Set<TEntity>();
 
+    public IQueryable<TEntity> Query()
+    {
+        return Set.AsNoTracking();
+    }
+
     public virtual async Task<TEntity?> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default

@@ -10,15 +10,8 @@ namespace CodigoActivo.API.Controllers;
 [ApiController]
 [Route("api/users")]
 [Authorize]
-public class UsersController(IUserService users) : ApiControllerBase
+public class UserCommandsController(IUserService users) : ApiControllerBase
 {
-    [HttpGet]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetAll(CancellationToken ct)
-    {
-        return Ok(await users.GetAllAsync(ct));
-    }
-
     [HttpGet("{userId:guid}")]
     [AllowOnlySelf]
     public async Task<ActionResult<UserResponse>> GetById(Guid userId, CancellationToken ct)
@@ -39,7 +32,6 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpDelete("{userId:guid}")]
     [AllowOnlySelf]
-    [InvalidatesCache(nameof(DashboardSummaryResponse))]
     public async Task<IActionResult> Delete(Guid userId, CancellationToken ct)
     {
         return ToNoContent(await users.DeleteAsync(userId, ct));
@@ -57,7 +49,6 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpPost("{userId:guid}/children")]
     [AllowOnlySelf]
-    [InvalidatesCache(nameof(DashboardSummaryResponse))]
     public async Task<ActionResult<UserResponse>> AddChild(
         Guid userId,
         [FromBody] RegisterMinorRequest request,
@@ -98,31 +89,5 @@ public class UsersController(IUserService users) : ApiControllerBase
     )
     {
         return ToOk(await users.ChangeTypeAsync(userId, roleId, ct));
-    }
-
-    [HttpGet("statusTypes")]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> GetStatusTypes(
-        CancellationToken ct
-    )
-    {
-        return Ok(await users.GetUserStatusTypesAsync(ct));
-    }
-
-    [HttpGet("types")]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> GetTypes(CancellationToken ct)
-    {
-        return Ok(await users.GetUserTypesAsync(ct));
-    }
-
-    [HttpGet("registration-types")]
-    [AllowAnonymous]
-    public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> GetRegistrationTypes(
-        [FromQuery] bool minor,
-        CancellationToken ct
-    )
-    {
-        return Ok(await users.GetRegistrationTypesAsync(minor, ct));
     }
 }

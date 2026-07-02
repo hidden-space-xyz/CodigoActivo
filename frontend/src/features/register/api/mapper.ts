@@ -1,13 +1,10 @@
-import type {
-  RegisterRequest,
-  RegisterResponse,
-  UserTypeResponse,
-} from '@/shared/api/generated/models'
+import type { RegistrationTypeResponse } from '@/shared/api'
+import type { RegisterRequest, RegisterResponse } from '@/shared/api/generated/models'
 
 import type { RegistrationForm } from '../model/registration-form'
 import type { RegistrationResult, RegistrationType } from '../model/types'
 
-export function toRegistrationType(type: UserTypeResponse): RegistrationType {
+export function toRegistrationType(type: RegistrationTypeResponse): RegistrationType {
   return {
     id: type.id ?? '',
     name: type.name ?? '',

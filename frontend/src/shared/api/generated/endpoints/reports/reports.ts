@@ -29,22 +29,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiReportsEventEventIdSummaryResponse200TextPlain = {
+export type getApiReportsEventEventIdSummaryResponse200 = {
   data: EventSummaryResponse
   status: 200
 }
 
-export type getApiReportsEventEventIdSummaryResponse200ApplicationJson = {
-  data: EventSummaryResponse
-  status: 200
-}
-
-export type getApiReportsEventEventIdSummaryResponse200TextJson = {
-  data: EventSummaryResponse
-  status: 200
-}
-
-export type getApiReportsEventEventIdSummaryResponseSuccess = (getApiReportsEventEventIdSummaryResponse200TextPlain | getApiReportsEventEventIdSummaryResponse200ApplicationJson | getApiReportsEventEventIdSummaryResponse200TextJson) & {
+export type getApiReportsEventEventIdSummaryResponseSuccess = (getApiReportsEventEventIdSummaryResponse200) & {
   headers: Headers;
 };
 ;
@@ -115,22 +105,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiReportsEventEventIdSummaryMutationOptions(options), queryClient);
     }
-    export type getApiReportsEventEventIdAssignmentsResponse200TextPlain = {
+    export type getApiReportsEventEventIdAssignmentsResponse200 = {
   data: EventAssignmentsReportResponse
   status: 200
 }
 
-export type getApiReportsEventEventIdAssignmentsResponse200ApplicationJson = {
-  data: EventAssignmentsReportResponse
-  status: 200
-}
-
-export type getApiReportsEventEventIdAssignmentsResponse200TextJson = {
-  data: EventAssignmentsReportResponse
-  status: 200
-}
-
-export type getApiReportsEventEventIdAssignmentsResponseSuccess = (getApiReportsEventEventIdAssignmentsResponse200TextPlain | getApiReportsEventEventIdAssignmentsResponse200ApplicationJson | getApiReportsEventEventIdAssignmentsResponse200TextJson) & {
+export type getApiReportsEventEventIdAssignmentsResponseSuccess = (getApiReportsEventEventIdAssignmentsResponse200) & {
   headers: Headers;
 };
 ;
@@ -201,22 +181,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiReportsEventEventIdAssignmentsMutationOptions(options), queryClient);
     }
-    export type getApiReportsActivityActivityIdAssignmentsResponse200TextPlain = {
+    export type getApiReportsActivityActivityIdAssignmentsResponse200 = {
   data: ActivityAssignmentsReportResponse
   status: 200
 }
 
-export type getApiReportsActivityActivityIdAssignmentsResponse200ApplicationJson = {
-  data: ActivityAssignmentsReportResponse
-  status: 200
-}
-
-export type getApiReportsActivityActivityIdAssignmentsResponse200TextJson = {
-  data: ActivityAssignmentsReportResponse
-  status: 200
-}
-
-export type getApiReportsActivityActivityIdAssignmentsResponseSuccess = (getApiReportsActivityActivityIdAssignmentsResponse200TextPlain | getApiReportsActivityActivityIdAssignmentsResponse200ApplicationJson | getApiReportsActivityActivityIdAssignmentsResponse200TextJson) & {
+export type getApiReportsActivityActivityIdAssignmentsResponseSuccess = (getApiReportsActivityActivityIdAssignmentsResponse200) & {
   headers: Headers;
 };
 ;
@@ -287,22 +257,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiReportsActivityActivityIdAssignmentsMutationOptions(options), queryClient);
     }
-    export type getApiReportsDashboardSummaryCountersResponse200TextPlain = {
+    export type getApiReportsDashboardSummaryCountersResponse200 = {
   data: DashboardSummaryResponse
   status: 200
 }
 
-export type getApiReportsDashboardSummaryCountersResponse200ApplicationJson = {
-  data: DashboardSummaryResponse
-  status: 200
-}
-
-export type getApiReportsDashboardSummaryCountersResponse200TextJson = {
-  data: DashboardSummaryResponse
-  status: 200
-}
-
-export type getApiReportsDashboardSummaryCountersResponseSuccess = (getApiReportsDashboardSummaryCountersResponse200TextPlain | getApiReportsDashboardSummaryCountersResponse200ApplicationJson | getApiReportsDashboardSummaryCountersResponse200TextJson) & {
+export type getApiReportsDashboardSummaryCountersResponseSuccess = (getApiReportsDashboardSummaryCountersResponse200) & {
   headers: Headers;
 };
 ;

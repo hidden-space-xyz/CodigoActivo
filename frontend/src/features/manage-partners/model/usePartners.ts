@@ -1,21 +1,34 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import {
   deleteApiPartnersPartnerId,
-  getApiPartners,
   postApiPartners,
   putApiPartnersPartnerId,
 } from '@/shared/api/generated/endpoints/partners/partners'
-import type { CreatePartnerRequest, UpdatePartnerRequest } from '@/shared/api/generated/models'
-import { partnerQueryKeys } from '@/entities/partner'
+import type {
+  CreatePartnerRequest,
+  PartnerResponse,
+  UpdatePartnerRequest,
+} from '@/shared/api/generated/models'
+import { useODataTable } from '@/shared/lib'
+
+/** List cache prefix shared by the admin table and any public sponsor queries. */
+const partnersListKey = ['partners'] as const
 
 export function usePartners() {
   const queryClient = useQueryClient()
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: partnerQueryKeys.all })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: partnersListKey })
 
-  const list = useQuery({
-    queryKey: partnerQueryKeys.all,
-    queryFn: ({ signal }) => getApiPartners({ signal }).then((response) => response.data ?? []),
+  const table = useODataTable<PartnerResponse>({
+    resource: 'Partners',
+    queryKey: [...partnersListKey, 'admin'],
+    defaultSort: { field: 'tier', order: 1 },
+    columns: {
+      name: { type: 'text' },
+      tier: { type: 'numeric' },
+      website: { type: 'text' },
+      fromDate: { type: 'date' },
+    },
   })
 
   const create = useMutation({
@@ -35,5 +48,5 @@ export function usePartners() {
     onSuccess: invalidate,
   })
 
-  return { list, create, update, remove }
+  return { table, create, update, remove }
 }

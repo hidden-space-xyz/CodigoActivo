@@ -12,7 +12,11 @@ public record ResourceResponse(
     Guid CreatedBy,
     Guid? UpdatedBy,
     Guid ThumbnailId
-);
+)
+{
+    public ResourceResponse()
+        : this(default, "", "", "", default, null, default, null, default) { }
+}
 
 public record CreateResourceRequest(
     [Required, MaxLength(200)] string Title,

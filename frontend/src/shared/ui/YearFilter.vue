@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ALL_YEARS } from '@/entities/event'
-
-const props = defineProps<{
-  years: readonly string[]
-  selected: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    years: readonly string[]
+    selected: string
+    /** When true a year is always selected, so the "all" pill is hidden. */
+    forced?: boolean
+    allValue?: string
+    allLabel?: string
+  }>(),
+  { forced: false, allValue: 'all', allLabel: 'Todos' },
+)
 
 const emit = defineEmits<{ select: [year: string] }>()
 
-const options = computed(() => [ALL_YEARS, ...props.years])
+const options = computed(() => (props.forced ? [...props.years] : [props.allValue, ...props.years]))
 
 function labelFor(year: string): string {
-  return year === ALL_YEARS ? 'Todos' : year
+  return year === props.allValue ? props.allLabel : year
 }
 </script>
 

@@ -1,0 +1,133 @@
+import { computed, ref, type Ref } from 'vue'
+import { keepPreviousData, useQuery } from '@tanstack/vue-query'
+import type {
+  DataTableFilterMeta,
+  DataTableFilterMetaData,
+  DataTablePageEvent,
+  DataTableSortEvent,
+} from 'primevue/datatable'
+
+import {
+  buildFilterClause,
+  combineFilters,
+  fetchODataList,
+  formatODataValue,
+  type ODataFieldType,
+  type ODataPage,
+  type ODataQuery,
+} from '@/shared/api'
+
+export interface ODataColumn {
+  /** OData field path used in $filter/$orderby (defaults to the map key). */
+  readonly field?: string
+  readonly type: ODataFieldType
+  /** Default PrimeVue match mode; sensible per-type default when omitted. */
+  readonly matchMode?: string
+}
+
+export interface UseODataTableOptions {
+  /** OData entity set name, e.g. "Events". */
+  readonly resource: string
+  /** TanStack Query key prefix; the live table state is appended automatically. */
+  readonly queryKey: readonly unknown[]
+  /** Filterable/typed columns, keyed by the PrimeVue column field. */
+  readonly columns?: Record<string, ODataColumn> | undefined
+  /** Fixed server-side-style filter written in the front (added to every request). */
+  readonly baseFilter?: Ref<string | undefined> | (() => string | undefined) | undefined
+  readonly defaultSort?: { readonly field: string; readonly order?: 1 | -1 } | undefined
+  readonly rows?: number | undefined
+}
+
+const DEFAULT_MATCH_MODE: Record<ODataFieldType, string> = {
+  text: 'contains',
+  numeric: 'equals',
+  boolean: 'equals',
+  date: 'dateIs',
+  datetime: 'dateIs',
+  guid: 'equals',
+}
+
+function initialFilters(columns: Record<string, ODataColumn>): DataTableFilterMeta {
+  const filters: DataTableFilterMeta = {}
+  for (const [key, column] of Object.entries(columns)) {
+    filters[key] = { value: null, matchMode: column.matchMode ?? DEFAULT_MATCH_MODE[column.type] }
+  }
+  return filters
+}
+
+export function useODataTable<T>(options: UseODataTableOptions) {
+  const columns = options.columns ?? {}
+  const first = ref(0)
+  const rows = ref(options.rows ?? 25)
+  const sortField = ref<string | undefined>(options.defaultSort?.field)
+  const sortOrder = ref<number>(options.defaultSort?.order ?? 1)
+  const filters = ref<DataTableFilterMeta>(initialFilters(columns))
+
+  const resolvedBaseFilter = computed(() =>
+    typeof options.baseFilter === 'function' ? options.baseFilter() : options.baseFilter?.value,
+  )
+
+  const query = computed<ODataQuery>(() => {
+    const clauses: Array<string | undefined> = [resolvedBaseFilter.value]
+
+    for (const [key, column] of Object.entries(columns)) {
+      const meta = filters.value[key] as DataTableFilterMetaData | undefined
+      if (!meta) continue
+      const literal = formatODataValue(meta.value, column.type)
+      if (literal === null) continue
+      clauses.push(buildFilterClause(column.field ?? key, meta.matchMode ?? undefined, literal))
+    }
+
+    const orderBy = sortField.value
+      ? `${sortField.value} ${sortOrder.value === -1 ? 'desc' : 'asc'}`
+      : undefined
+    const filter = combineFilters(...clauses)
+
+    return {
+      top: rows.value,
+      skip: first.value,
+      count: true,
+      ...(orderBy ? { orderBy } : {}),
+      ...(filter ? { filter } : {}),
+    }
+  })
+
+  const tableQuery = useQuery({
+    queryKey: computed(() => [...options.queryKey, query.value]),
+    queryFn: () => fetchODataList<T>(options.resource, query.value),
+    placeholderData: keepPreviousData,
+  })
+
+  const page = computed<ODataPage<T>>(() => tableQuery.data.value ?? { items: [], total: 0 })
+
+  function onPage(event: DataTablePageEvent): void {
+    first.value = event.first
+    rows.value = event.rows
+  }
+
+  function onSort(event: DataTableSortEvent): void {
+    sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
+    sortOrder.value = event.sortOrder ?? 1
+    first.value = 0
+  }
+
+  function onFilter(): void {
+    first.value = 0
+  }
+
+  return {
+    items: computed(() => page.value.items),
+    total: computed(() => page.value.total),
+    loading: tableQuery.isFetching,
+    isError: tableQuery.isError,
+    first,
+    rows,
+    sortField,
+    sortOrder,
+    filters,
+    onPage,
+    onSort,
+    onFilter,
+    refetch: tableQuery.refetch,
+  }
+}

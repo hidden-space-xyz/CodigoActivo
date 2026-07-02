@@ -1,8 +1,8 @@
+import type { RegistrationTypeResponse } from '@/shared/api'
 import type {
   RegisterMinorRequest,
   UpdateUserRequest,
   UserResponse,
-  UserTypeResponse,
 } from '@/shared/api/generated/models'
 
 import type {
@@ -41,7 +41,7 @@ export function toAccountChild(user: UserResponse): AccountChild {
   }
 }
 
-export function toRegistrationType(type: UserTypeResponse): RegistrationType {
+export function toRegistrationType(type: RegistrationTypeResponse): RegistrationType {
   return {
     id: type.id ?? '',
     name: type.name ?? '',

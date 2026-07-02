@@ -2,7 +2,6 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
-using CodigoActivo.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,30 +9,8 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/activities")]
-public class ActivitiesController(IActivityService activities) : ApiControllerBase
+public class ActivityCommandsController(IActivityService activities) : ApiControllerBase
 {
-    [HttpGet("assigned")]
-    [Authorize]
-    public async Task<ActionResult<IReadOnlyList<AssignedActivityResponse>>> GetAssigned(
-        [FromQuery] DateTimeOffset? startDate,
-        [FromQuery] DateTimeOffset? endDate,
-        CancellationToken ct
-    )
-    {
-        return Ok(await activities.GetAssignedAsync(UserId, startDate, endDate, ct));
-    }
-
-    [HttpGet("{eventId:guid}")]
-    [AllowAnonymous]
-    [Cached(nameof(Activity))]
-    public async Task<ActionResult<IReadOnlyList<ActivityResponse>>> ListByEvent(
-        Guid eventId,
-        CancellationToken ct
-    )
-    {
-        return Ok(await activities.ListByEventAsync(eventId, ct));
-    }
-
     [HttpGet("{eventId:guid}/household-assignments")]
     [Authorize]
     public async Task<
@@ -43,21 +20,20 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         return Ok(await activities.GetHouseholdAssignmentsAsync(UserId, eventId, ct));
     }
 
-    [HttpGet("{eventId:guid}/{activityId:guid}")]
-    [AllowAnonymous]
-    [Cached(nameof(Activity))]
-    public async Task<ActionResult<ActivityResponse>> GetById(
-        Guid eventId,
+    [HttpGet("{activityId:guid}/{userId:guid}/verifyTimeOverlaps")]
+    [Authorize]
+    [AllowOnlySelf]
+    public async Task<ActionResult<TimeOverlapResponse>> VerifyTimeOverlaps(
         Guid activityId,
+        Guid userId,
         CancellationToken ct
     )
     {
-        return ToOk(await activities.GetByIdAsync(eventId, activityId, ct));
+        return ToOk(await activities.VerifyTimeOverlapsAsync(activityId, userId, ct));
     }
 
     [HttpPost("{eventId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(Activity), nameof(DashboardSummaryResponse))]
     public async Task<ActionResult<ActivityResponse>> Create(
         Guid eventId,
         [FromBody] CreateActivityRequest request,
@@ -65,19 +41,16 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     )
     {
         var result = await activities.CreateAsync(eventId, request, UserId, ct);
-        return result.IsFailure
-            ? (ActionResult<ActivityResponse>)ToProblem(result.Error!)
-            : (ActionResult<ActivityResponse>)
-                CreatedAtAction(
-                    nameof(GetById),
-                    new { eventId, activityId = result.Value.Id },
-                    result.Value
-                );
+        if (result.IsFailure)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return Created($"/api/odata/Activities({result.Value.Id})", result.Value);
     }
 
     [HttpPut("{activityId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(Activity))]
     public async Task<ActionResult<ActivityResponse>> Update(
         Guid activityId,
         [FromBody] UpdateActivityRequest request,
@@ -89,7 +62,6 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpDelete("{activityId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(Activity), nameof(DashboardSummaryResponse))]
     public async Task<IActionResult> Delete(Guid activityId, CancellationToken ct)
     {
         return ToNoContent(await activities.DeleteAsync(activityId, ct));
@@ -151,30 +123,8 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         return ToOk(await activities.ChangeRoleAsync(activityId, userId, request, ct));
     }
 
-    [HttpGet("{activityId:guid}/{userId:guid}/verifyTimeOverlaps")]
-    [Authorize]
-    [AllowOnlySelf]
-    public async Task<ActionResult<TimeOverlapResponse>> VerifyTimeOverlaps(
-        Guid activityId,
-        Guid userId,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await activities.VerifyTimeOverlapsAsync(activityId, userId, ct));
-    }
-
-    [HttpGet("roleTypes")]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<ActivityRoleTypeResponse>>> GetRoleTypes(
-        CancellationToken ct
-    )
-    {
-        return Ok(await activities.GetActivityRoleTypesAsync(ct));
-    }
-
     [HttpPost("roleType")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(Activity))]
     public async Task<ActionResult<ActivityRoleTypeResponse>> CreateRoleType(
         [FromBody] CreateActivityRoleTypeRequest request,
         CancellationToken ct
@@ -185,7 +135,6 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpPut("roleType/{activityRoleTypeId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(Activity))]
     public async Task<ActionResult<ActivityRoleTypeResponse>> UpdateRoleType(
         Guid activityRoleTypeId,
         [FromBody] UpdateActivityRoleTypeRequest request,
@@ -197,18 +146,8 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpDelete("roleType/{activityRoleTypeId:guid}")]
     [AllowOnlyAdmin]
-    [InvalidatesCache(nameof(Activity))]
     public async Task<IActionResult> DeleteRoleType(Guid activityRoleTypeId, CancellationToken ct)
     {
         return ToNoContent(await activities.DeleteActivityRoleTypeAsync(activityRoleTypeId, ct));
-    }
-
-    [HttpGet("assignmentStatusTypes")]
-    [AllowOnlyAdmin]
-    public async Task<
-        ActionResult<IReadOnlyList<AssignmentStatusTypeResponse>>
-    > GetAssignmentStatusTypes(CancellationToken ct)
-    {
-        return Ok(await activities.GetAssignmentStatusTypesAsync(ct));
     }
 }

@@ -18,10 +18,9 @@ public class UserService(
     IUnitOfWork uow
 ) : IUserService
 {
-    public async Task<IReadOnlyList<UserResponse>> GetAllAsync(CancellationToken ct = default)
+    public IQueryable<UserResponse> QueryUsers()
     {
-        var list = await users.ListWithDetailsAsync(ct);
-        return list.Select(u => u.ToResponse()).ToList();
+        return users.Query().Select(Projections.User);
     }
 
     public async Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -270,34 +269,19 @@ public class UserService(
         return Result.Success();
     }
 
-    public async Task<IReadOnlyList<UserTypeResponse>> GetRegistrationTypesAsync(
-        bool forMinor,
-        CancellationToken ct = default
-    )
+    public IQueryable<RegistrationTypeResponse> QueryRegistrationTypes()
     {
-        var list = await userTypes.GetAllAsync(ct);
-        return list.Where(type =>
-                !type.Hidden && (forMinor ? type.IsAllowedForMinors : type.IsAllowedForAdults)
-            )
-            .OrderBy(type => type.Name)
-            .Select(type => type.ToResponse())
-            .ToList();
+        return userTypes.Query().Where(type => !type.Hidden).Select(Projections.RegistrationType);
     }
 
-    public async Task<IReadOnlyList<UserStatusTypeResponse>> GetUserStatusTypesAsync(
-        CancellationToken ct = default
-    )
+    public IQueryable<UserStatusTypeResponse> QueryStatusTypes()
     {
-        var list = await userStatusTypes.GetAllAsync(ct);
-        return list.OrderBy(x => x.Name).Select(statusType => statusType.ToResponse()).ToList();
+        return userStatusTypes.Query().Select(Projections.UserStatusType);
     }
 
-    public async Task<IReadOnlyList<UserTypeResponse>> GetUserTypesAsync(
-        CancellationToken ct = default
-    )
+    public IQueryable<UserTypeResponse> QueryUserTypes()
     {
-        var list = await userTypes.GetAllAsync(ct);
-        return list.OrderBy(x => x.Name).Select(userType => userType.ToResponse()).ToList();
+        return userTypes.Query().Select(Projections.UserType);
     }
 
     private async Task<Result> ApplyMinorContactRulesAsync(

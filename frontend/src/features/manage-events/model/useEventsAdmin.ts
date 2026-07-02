@@ -4,22 +4,34 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
   deleteApiEventsEventId,
-  getApiEvents,
-  getApiEventsEventId,
   patchApiEventsEventIdFeature,
   postApiEvents,
   putApiEventsEventId,
 } from '@/shared/api/generated/endpoints/events/events'
-import type { CreateEventRequest, UpdateEventRequest } from '@/shared/api/generated/models'
+import type {
+  CreateEventRequest,
+  EventResponse,
+  UpdateEventRequest,
+} from '@/shared/api/generated/models'
+import { fetchODataEntity } from '@/shared/api'
+import { useODataTable } from '@/shared/lib'
 import { eventQueryKeys } from '@/entities/event'
 
 export function useEventsAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: eventQueryKeys.all })
 
-  const list = useQuery({
-    queryKey: eventQueryKeys.all,
-    queryFn: ({ signal }) => getApiEvents(undefined, { signal }).then((r) => r.data ?? []),
+  const table = useODataTable<EventResponse>({
+    resource: 'Events',
+    queryKey: [...eventQueryKeys.all, 'admin'],
+    defaultSort: { field: 'eventStartsAt', order: 1 },
+    columns: {
+      title: { type: 'text' },
+      subtitle: { type: 'text' },
+      eventStartsAt: { type: 'date' },
+      eventEndsAt: { type: 'date' },
+      featured: { type: 'boolean' },
+    },
   })
 
   const create = useMutation({
@@ -43,12 +55,12 @@ export function useEventsAdmin() {
     onSuccess: invalidate,
   })
 
-  return { list, create, update, remove, feature }
+  return { table, create, update, remove, feature }
 }
 
 export function useEvent(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventQueryKeys.detail(toValue(eventId))),
-    queryFn: ({ signal }) => getApiEventsEventId(toValue(eventId), { signal }).then((r) => r.data),
+    queryFn: () => fetchODataEntity<EventResponse>('Events', toValue(eventId)),
   })
 }

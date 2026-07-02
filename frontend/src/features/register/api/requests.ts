@@ -1,8 +1,9 @@
+import { fetchODataList } from '@/shared/api'
+import type { RegistrationTypeResponse } from '@/shared/api'
 import {
   patchApiAuthUserIdVerify,
   postApiAuthRegister,
 } from '@/shared/api/generated/endpoints/auth/auth'
-import { getApiUsersRegistrationTypes } from '@/shared/api/generated/endpoints/users/users'
 
 import type { RegistrationForm } from '../model/registration-form'
 import type { RegistrationResult, RegistrationType } from '../model/types'
@@ -11,8 +12,12 @@ import { toRegisterRequest, toRegistrationResult, toRegistrationType } from './m
 export async function getRegistrationTypesRequest(
   minor: boolean,
 ): Promise<readonly RegistrationType[]> {
-  const response = await getApiUsersRegistrationTypes({ minor })
-  return (response.data ?? []).map(toRegistrationType)
+  const { items } = await fetchODataList<RegistrationTypeResponse>('RegistrationTypes', {
+    filter: minor ? 'isAllowedForMinors eq true' : 'isAllowedForAdults eq true',
+    orderBy: 'name asc',
+    top: 1000,
+  })
+  return items.map(toRegistrationType)
 }
 
 export async function registerRequest(form: RegistrationForm): Promise<RegistrationResult> {

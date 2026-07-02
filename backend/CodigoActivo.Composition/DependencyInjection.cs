@@ -24,7 +24,6 @@ public static class DependencyInjection
         AddPersistence(services, configuration);
         AddRepositories(services);
         AddFileStorage(services, configuration);
-        AddCaching(services);
         AddApplicationServices(services);
         return services;
     }
@@ -74,12 +73,6 @@ public static class DependencyInjection
         };
         services.AddSingleton(storageOptions);
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();
-    }
-
-    private static void AddCaching(IServiceCollection services)
-    {
-        services.AddMemoryCache();
-        services.AddSingleton<IResponseCacheService, ResponseCacheService>();
     }
 
     private static void AddApplicationServices(IServiceCollection services)

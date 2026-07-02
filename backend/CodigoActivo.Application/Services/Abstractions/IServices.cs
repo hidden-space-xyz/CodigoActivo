@@ -16,7 +16,7 @@ public interface IAuthService
 
 public interface IUserService
 {
-    Task<IReadOnlyList<UserResponse>> GetAllAsync(CancellationToken ct = default);
+    IQueryable<UserResponse> QueryUsers();
     Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Result<UserResponse>> UpdateAsync(
         Guid id,
@@ -50,25 +50,16 @@ public interface IUserService
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<UserStatusTypeResponse>> GetUserStatusTypesAsync(
-        CancellationToken ct = default
-    );
+    IQueryable<UserStatusTypeResponse> QueryStatusTypes();
+    IQueryable<UserTypeResponse> QueryUserTypes();
 
-    Task<IReadOnlyList<UserTypeResponse>> GetUserTypesAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<UserTypeResponse>> GetRegistrationTypesAsync(
-        bool forMinor,
-        CancellationToken ct = default
-    );
+    /// <summary>Registration-eligible user types (server-side base filter: not hidden).</summary>
+    IQueryable<RegistrationTypeResponse> QueryRegistrationTypes();
 }
 
 public interface IEventService
 {
-    Task<IReadOnlyList<EventResponse>> ListAsync(
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        CancellationToken ct = default
-    );
-    Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
+    IQueryable<EventResponse> Query();
     Task<Result<EventResponse>> CreateAsync(
         CreateEventRequest request,
         Guid userId,
@@ -86,15 +77,14 @@ public interface IEventService
 
 public interface IActivityService
 {
-    Task<IReadOnlyList<ActivityResponse>> ListByEventAsync(
-        Guid eventId,
-        CancellationToken ct = default
-    );
-    Task<Result<ActivityResponse>> GetByIdAsync(
-        Guid eventId,
-        Guid activityId,
-        CancellationToken ct = default
-    );
+    IQueryable<ActivityResponse> QueryActivities();
+
+    /// <summary>Activities the given user is assigned to (server-side base filter: UserId == caller).</summary>
+    IQueryable<AssignedActivityResponse> QueryAssigned(Guid userId);
+
+    IQueryable<ActivityRoleTypeResponse> QueryRoleTypes();
+    IQueryable<AssignmentStatusTypeResponse> QueryAssignmentStatusTypes();
+
     Task<Result<ActivityResponse>> CreateAsync(
         Guid eventId,
         CreateActivityRequest request,
@@ -148,21 +138,12 @@ public interface IActivityService
         Guid userId,
         CancellationToken ct = default
     );
-    Task<IReadOnlyList<AssignedActivityResponse>> GetAssignedAsync(
-        Guid userId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
-        CancellationToken ct = default
-    );
     Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> GetHouseholdAssignmentsAsync(
         Guid actingUserId,
         Guid eventId,
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<ActivityRoleTypeResponse>> GetActivityRoleTypesAsync(
-        CancellationToken ct = default
-    );
     Task<ActivityRoleTypeResponse> CreateActivityRoleTypeAsync(
         CreateActivityRoleTypeRequest request,
         CancellationToken ct = default
@@ -173,16 +154,11 @@ public interface IActivityService
         CancellationToken ct = default
     );
     Task<Result> DeleteActivityRoleTypeAsync(Guid id, CancellationToken ct = default);
-
-    Task<IReadOnlyList<AssignmentStatusTypeResponse>> GetAssignmentStatusTypesAsync(
-        CancellationToken ct = default
-    );
 }
 
 public interface IResourceService
 {
-    Task<IReadOnlyList<ResourceResponse>> ListAsync(CancellationToken ct = default);
-    Task<Result<ResourceResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
+    IQueryable<ResourceResponse> Query();
     Task<Result<ResourceResponse>> CreateAsync(
         CreateResourceRequest request,
         Guid userId,
@@ -199,8 +175,7 @@ public interface IResourceService
 
 public interface IAnnouncementService
 {
-    Task<IReadOnlyList<AnnouncementResponse>> ListAsync(CancellationToken ct = default);
-    Task<Result<AnnouncementResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
+    IQueryable<AnnouncementResponse> Query();
     Task<Result<AnnouncementResponse>> CreateAsync(
         CreateAnnouncementRequest request,
         Guid userId,
@@ -218,7 +193,7 @@ public interface IAnnouncementService
 
 public interface IPartnerService
 {
-    Task<IReadOnlyList<PartnerResponse>> ListAsync(CancellationToken ct = default);
+    IQueryable<PartnerResponse> Query();
     Task<Result<PartnerResponse>> CreateAsync(
         CreatePartnerRequest request,
         Guid userId,
@@ -265,15 +240,4 @@ public interface IReportService
         CancellationToken ct = default
     );
     Task<DashboardSummaryResponse> GetDashboardSummaryAsync(CancellationToken ct = default);
-}
-
-public interface IResponseCacheService
-{
-    Task<object?> GetOrCreateAsync(
-        string key,
-        string group,
-        TimeSpan ttl,
-        Func<Task<object?>> factory
-    );
-    void InvalidateGroups(params string[] groups);
 }

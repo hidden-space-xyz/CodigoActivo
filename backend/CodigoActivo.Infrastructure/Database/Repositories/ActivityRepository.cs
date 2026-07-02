@@ -151,4 +151,9 @@ public class ActivityRepository(CodigoActivoDbContext context)
             .Where(x => x.Activity.EventId == eventId && userIds.Contains(x.UserId))
             .ToListAsync(ct);
     }
+
+    public IQueryable<ActivityUserRoleAssignment> QueryAssignments()
+    {
+        return Context.ActivityUserRoleAssignments.AsNoTracking();
+    }
 }

@@ -1,18 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { AnnouncementCard, FeaturedAnnouncementCard, useAnnouncements } from '@/entities/announcement'
+import { AnnouncementCard, FeaturedAnnouncementCard, useHomeAnnouncements } from '@/entities/announcement'
 import { BaseButton, SectionEyebrow } from '@/shared/ui'
 
-const { announcements, isLoading } = useAnnouncements()
-
-const featured = computed(() => {
-  const list = announcements.value ?? []
-  return list.find((announcement) => announcement.featured) ?? list[0] ?? null
-})
-const recent = computed(() =>
-  (announcements.value ?? []).filter((a) => a.id !== featured.value?.id).slice(0, 3),
-)
+const { featured, items: recent, isLoading } = useHomeAnnouncements()
 </script>
 
 <template>

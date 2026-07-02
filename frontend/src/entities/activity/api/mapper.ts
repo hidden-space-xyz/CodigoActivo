@@ -1,10 +1,10 @@
 import type {
   ActivityResponse,
-  AssignedActivityResponse,
   HouseholdMemberAssignmentResponse,
   TimeOverlapResponse,
   UserResponse,
 } from '@/shared/api/generated/models'
+import type { AssignedActivityResponse } from '@/shared/api'
 
 import type {
   ActivityAssignment,
@@ -33,9 +33,9 @@ export function toEventActivity(activity: ActivityResponse): EventActivity {
 
 export function toActivityAssignment(assignment: AssignedActivityResponse): ActivityAssignment {
   return {
-    activityId: assignment.activityId ?? '',
-    status: assignment.status?.name ?? '—',
-    roleName: assignment.roleType?.name ?? '',
+    activityId: assignment.activityId,
+    status: assignment.status.name || '—',
+    roleName: assignment.roleType.name,
   }
 }
 

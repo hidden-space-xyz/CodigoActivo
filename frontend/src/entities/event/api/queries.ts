@@ -1,12 +1,12 @@
-import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue'
+import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
-import { ALL_YEARS, availableYears, selectEventsByYear } from '../lib/filter-events'
 import { eventQueryKeys } from './query-keys'
 import {
   getEventByIdRequest,
   getHomeEventsRequest,
   getPastEventsRequest,
+  getPastEventYearsRequest,
   getUpcomingEventsRequest,
 } from './requests'
 
@@ -38,30 +38,40 @@ export function useHomeEvents() {
 }
 
 export function usePastEvents() {
-  const query = useQuery({
-    queryKey: eventQueryKeys.past(),
-    queryFn: () => getPastEventsRequest(),
+  const yearsQuery = useQuery({
+    queryKey: eventQueryKeys.pastYears(),
+    queryFn: () => getPastEventYearsRequest(),
   })
 
-  const selectedYear = ref<string>(ALL_YEARS)
+  const years = computed(() => yearsQuery.data.value ?? [])
+  const selectedYear = ref<string>('')
 
-  const years = computed(() => availableYears(query.data.value ?? []))
-  const filteredEvents = computed(() =>
-    selectEventsByYear(query.data.value ?? [], selectedYear.value),
+  watch(
+    years,
+    (list) => {
+      const [first] = list
+      if (first && !selectedYear.value) selectedYear.value = first
+    },
+    { immediate: true },
   )
+
+  const eventsQuery = useQuery({
+    queryKey: computed(() => eventQueryKeys.past(selectedYear.value)),
+    queryFn: () => getPastEventsRequest(selectedYear.value),
+    enabled: computed(() => Boolean(selectedYear.value)),
+  })
 
   function setYear(year: string): void {
     selectedYear.value = year
   }
 
   return {
-    isLoading: query.isLoading,
-    isError: query.isError,
     years,
-    filteredEvents,
     selectedYear,
     setYear,
-    ALL_YEARS,
+    pastEvents: computed(() => eventsQuery.data.value ?? []),
+    isLoading: computed(() => yearsQuery.isLoading.value || eventsQuery.isLoading.value),
+    isError: computed(() => yearsQuery.isError.value || eventsQuery.isError.value),
   }
 }
 

@@ -45,22 +45,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiAuthCsrfResponse200TextPlain = {
+export type getApiAuthCsrfResponse200 = {
   data: CsrfTokenResponse
   status: 200
 }
 
-export type getApiAuthCsrfResponse200ApplicationJson = {
-  data: CsrfTokenResponse
-  status: 200
-}
-
-export type getApiAuthCsrfResponse200TextJson = {
-  data: CsrfTokenResponse
-  status: 200
-}
-
-export type getApiAuthCsrfResponseSuccess = (getApiAuthCsrfResponse200TextPlain | getApiAuthCsrfResponse200ApplicationJson | getApiAuthCsrfResponse200TextJson) & {
+export type getApiAuthCsrfResponseSuccess = (getApiAuthCsrfResponse200) & {
   headers: Headers;
 };
 ;
@@ -131,22 +121,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiAuthCsrfMutationOptions(options), queryClient);
     }
-    export type postApiAuthRegisterResponse200TextPlain = {
+    export type postApiAuthRegisterResponse200 = {
   data: RegisterResponse
   status: 200
 }
 
-export type postApiAuthRegisterResponse200ApplicationJson = {
-  data: RegisterResponse
-  status: 200
-}
-
-export type postApiAuthRegisterResponse200TextJson = {
-  data: RegisterResponse
-  status: 200
-}
-
-export type postApiAuthRegisterResponseSuccess = (postApiAuthRegisterResponse200TextPlain | postApiAuthRegisterResponse200ApplicationJson | postApiAuthRegisterResponse200TextJson) & {
+export type postApiAuthRegisterResponseSuccess = (postApiAuthRegisterResponse200) & {
   headers: Headers;
 };
 ;
@@ -225,22 +205,12 @@ export function usePostApiAuthRegister<TData = Awaited<ReturnType<typeof postApi
 
 
 
-export type patchApiAuthUserIdVerifyResponse200TextPlain = {
+export type patchApiAuthUserIdVerifyResponse200 = {
   data: UserResponse
   status: 200
 }
 
-export type patchApiAuthUserIdVerifyResponse200ApplicationJson = {
-  data: UserResponse
-  status: 200
-}
-
-export type patchApiAuthUserIdVerifyResponse200TextJson = {
-  data: UserResponse
-  status: 200
-}
-
-export type patchApiAuthUserIdVerifyResponseSuccess = (patchApiAuthUserIdVerifyResponse200TextPlain | patchApiAuthUserIdVerifyResponse200ApplicationJson | patchApiAuthUserIdVerifyResponse200TextJson) & {
+export type patchApiAuthUserIdVerifyResponseSuccess = (patchApiAuthUserIdVerifyResponse200) & {
   headers: Headers;
 };
 ;
@@ -331,22 +301,12 @@ export function usePatchApiAuthUserIdVerify<TData = Awaited<ReturnType<typeof pa
 
 
 
-export type postApiAuthLoginResponse200TextPlain = {
+export type postApiAuthLoginResponse200 = {
   data: UserResponse
   status: 200
 }
 
-export type postApiAuthLoginResponse200ApplicationJson = {
-  data: UserResponse
-  status: 200
-}
-
-export type postApiAuthLoginResponse200TextJson = {
-  data: UserResponse
-  status: 200
-}
-
-export type postApiAuthLoginResponseSuccess = (postApiAuthLoginResponse200TextPlain | postApiAuthLoginResponse200ApplicationJson | postApiAuthLoginResponse200TextJson) & {
+export type postApiAuthLoginResponseSuccess = (postApiAuthLoginResponse200) & {
   headers: Headers;
 };
 ;
@@ -509,22 +469,12 @@ export function usePostApiAuthLogout<TData = Awaited<ReturnType<typeof postApiAu
 
 
 
-export type getApiAuthMeResponse200TextPlain = {
+export type getApiAuthMeResponse200 = {
   data: UserResponse
   status: 200
 }
 
-export type getApiAuthMeResponse200ApplicationJson = {
-  data: UserResponse
-  status: 200
-}
-
-export type getApiAuthMeResponse200TextJson = {
-  data: UserResponse
-  status: 200
-}
-
-export type getApiAuthMeResponseSuccess = (getApiAuthMeResponse200TextPlain | getApiAuthMeResponse200ApplicationJson | getApiAuthMeResponse200TextJson) & {
+export type getApiAuthMeResponseSuccess = (getApiAuthMeResponse200) & {
   headers: Headers;
 };
 ;
