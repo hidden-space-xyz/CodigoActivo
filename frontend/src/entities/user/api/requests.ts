@@ -7,7 +7,7 @@ import {
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 
 export function getUsersRequest() {
-  return fetchODataList<UserResponse>('Users', { orderBy: 'firstName asc', top: 1000 }).then(
+  return fetchODataList<UserResponse>('Users', { orderBy: 'firstName asc', top: 100 }).then(
     (page) => page.items,
   )
 }

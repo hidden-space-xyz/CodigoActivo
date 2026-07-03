@@ -7,7 +7,7 @@ import { toLearningResource } from './mapper'
 export async function getResourcesRequest(): Promise<readonly LearningResource[]> {
   const page = await fetchODataList<ResourceResponse>('Resources', {
     orderBy: 'createdAt desc',
-    top: 1000,
+    top: 100,
   })
   return page.items.map(toLearningResource)
 }

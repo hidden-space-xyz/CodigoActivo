@@ -42,7 +42,7 @@ export async function getEventActivitiesRequest(
   const { items } = await fetchODataList<ActivityResponse>(ACTIVITIES, {
     filter: `eventId eq ${odataGuid(eventId)}`,
     orderBy: 'activityStartsAt asc',
-    top: 1000,
+    top: 100,
   })
   return items.map(toEventActivity)
 }
@@ -50,7 +50,7 @@ export async function getEventActivitiesRequest(
 export async function getMyAssignmentsRequest(): Promise<readonly ActivityAssignment[]> {
   const { items } = await fetchODataList<AssignedActivityResponse>(ASSIGNED_ACTIVITIES, {
     orderBy: 'activityStartsAt asc',
-    top: 1000,
+    top: 100,
   })
   return items.map(toActivityAssignment)
 }
@@ -59,7 +59,7 @@ export async function listEventActivitiesRequest(eventId: string): Promise<Activ
   const { items } = await fetchODataList<ActivityResponse>(ACTIVITIES, {
     filter: `eventId eq ${odataGuid(eventId)}`,
     orderBy: 'activityStartsAt asc',
-    top: 1000,
+    top: 100,
   })
   return items
 }
@@ -84,7 +84,7 @@ export async function getHouseholdMembersRequest(
   const { items } = await fetchODataList<UserResponse>('Users', {
     filter: `parentId eq ${odataGuid(userId)}`,
     orderBy: 'firstName asc',
-    top: 1000,
+    top: 100,
   })
   return items.map(toHouseholdMember)
 }

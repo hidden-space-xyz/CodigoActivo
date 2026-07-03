@@ -28,7 +28,7 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
     filter: `eventEndsAt lt ${today()}`,
     orderBy: 'eventStartsAt desc',
     select: 'eventStartsAt',
-    top: 1000,
+    top: 100,
   })
   const years = new Set(
     items

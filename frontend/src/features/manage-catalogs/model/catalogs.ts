@@ -15,7 +15,7 @@ export function useActivityRoleTypes() {
     fetchAll: () =>
       fetchODataList<ActivityRoleTypeResponse>('ActivityRoleTypes', {
         orderBy: 'name asc',
-        top: 1000,
+        top: 100,
       }).then((r) => r.items),
     create: (body) => postApiActivitiesRoleType(body),
     update: (id, body) => putApiActivitiesRoleTypeActivityRoleTypeId(id, body),

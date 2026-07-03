@@ -10,7 +10,7 @@ export async function getAnnouncementYearsRequest(): Promise<readonly string[]> 
   const { items } = await fetchODataList<AnnouncementResponse>(RESOURCE, {
     orderBy: 'createdAt desc',
     select: 'createdAt',
-    top: 1000,
+    top: 100,
   })
 
   const years = new Set<string>()

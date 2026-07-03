@@ -17,7 +17,7 @@ export function useUserTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.userTypes,
     queryFn: () =>
-      fetchODataList<UserTypeResponse>('UserTypes', { orderBy: 'name asc', top: 1000 }).then(
+      fetchODataList<UserTypeResponse>('UserTypes', { orderBy: 'name asc', top: 100 }).then(
         (r) => r.items,
       ),
   })
@@ -29,7 +29,7 @@ export function useActivityRoleTypesList() {
     queryFn: () =>
       fetchODataList<ActivityRoleTypeResponse>('ActivityRoleTypes', {
         orderBy: 'name asc',
-        top: 1000,
+        top: 100,
       }).then((r) => r.items),
   })
 }
@@ -40,7 +40,7 @@ export function useAssignmentStatusTypesList() {
     queryFn: () =>
       fetchODataList<AssignmentStatusTypeResponse>('AssignmentStatusTypes', {
         orderBy: 'name asc',
-        top: 1000,
+        top: 100,
       }).then((r) => r.items),
   })
 }
@@ -51,7 +51,7 @@ export function useEventCategoryTypesList() {
     queryFn: () =>
       fetchODataList<EventCategoryTypeResponse>('EventCategoryTypes', {
         orderBy: 'name asc',
-        top: 1000,
+        top: 100,
       }).then((r) => r.items),
   })
 }
@@ -62,7 +62,7 @@ export function useActivityModalityTypesList() {
     queryFn: () =>
       fetchODataList<ActivityModalityTypeResponse>('ActivityModalityTypes', {
         orderBy: 'name asc',
-        top: 1000,
+        top: 100,
       }).then((r) => r.items),
   })
 }

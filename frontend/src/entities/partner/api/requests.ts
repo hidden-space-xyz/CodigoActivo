@@ -6,7 +6,7 @@ import type { Sponsor } from '../model/types'
 export async function getSponsorsRequest(): Promise<readonly Sponsor[]> {
   const page = await fetchODataList<PartnerResponse>('Partners', {
     orderBy: 'tier asc,fromDate desc',
-    top: 1000,
+    top: 100,
   })
   return page.items
     .filter((partner) => partner.id && partner.name)

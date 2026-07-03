@@ -43,7 +43,7 @@ export async function getAccountChildrenRequest(
   const { items } = await fetchODataList<UserResponse>('Users', {
     filter: `parentId eq ${odataGuid(parentId)}`,
     orderBy: 'firstName asc',
-    top: 1000,
+    top: 100,
   })
   return items.map(toAccountChild)
 }
@@ -54,7 +54,7 @@ export async function getRegistrationTypesRequest(
   const { items } = await fetchODataList<RegistrationTypeResponse>('RegistrationTypes', {
     filter: minor ? 'isAllowedForMinors eq true' : 'isAllowedForAdults eq true',
     orderBy: 'name asc',
-    top: 1000,
+    top: 100,
   })
   return items.map(toRegistrationType)
 }

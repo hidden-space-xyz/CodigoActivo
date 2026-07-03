@@ -24,7 +24,7 @@ export function useEventCategories() {
     queryFn: () =>
       fetchODataList<EventCategoryTypeResponse>('EventCategoryTypes', {
         orderBy: 'name asc',
-        top: 1000,
+        top: 100,
       }).then((r) => r.items),
   })
 
