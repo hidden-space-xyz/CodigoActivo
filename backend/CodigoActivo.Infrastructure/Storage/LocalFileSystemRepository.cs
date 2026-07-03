@@ -58,7 +58,7 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
             throw new ArgumentException("A stored file name is required.", nameof(storedName));
         }
 
-        if (storedName != Path.GetFileName(storedName))
+        if (!string.Equals(storedName, Path.GetFileName(storedName), StringComparison.Ordinal))
         {
             throw new ArgumentException("Invalid stored file name.", nameof(storedName));
         }

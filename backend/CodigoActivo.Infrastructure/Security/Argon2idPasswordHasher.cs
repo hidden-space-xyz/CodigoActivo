@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using CodigoActivo.Domain.Security;
@@ -34,15 +35,15 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     public bool Verify(string password, string hash)
     {
         var parts = hash.Split('$');
-        if (parts.Length != 6 || parts[0] != Prefix)
+        if (parts.Length != 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal))
         {
             return false;
         }
 
         if (
-            !int.TryParse(parts[1], out var iterations)
-            || !int.TryParse(parts[2], out var memoryKiB)
-            || !int.TryParse(parts[3], out var parallelism)
+            !int.TryParse(parts[1], CultureInfo.InvariantCulture, out var iterations)
+            || !int.TryParse(parts[2], CultureInfo.InvariantCulture, out var memoryKiB)
+            || !int.TryParse(parts[3], CultureInfo.InvariantCulture, out var parallelism)
         )
         {
             return false;

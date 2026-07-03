@@ -24,19 +24,19 @@ public record ActivityResponse(
 {
     public ActivityResponse()
         : this(
-            default,
+            Guid.Empty,
             "",
             "",
             "",
             default,
             default,
-            default,
-            default,
+            Guid.Empty,
+            Guid.Empty,
             "",
-            default,
+            Guid.Empty,
             default,
             null,
-            default,
+            Guid.Empty,
             null,
             []
         ) { }
@@ -126,7 +126,7 @@ public record AssignedActivityResponse(
 )
 {
     public AssignedActivityResponse()
-        : this(default, "", "", default, default, default, null!, null!) { }
+        : this(Guid.Empty, "", "", default, default, Guid.Empty, null!, null!) { }
 }
 
 public record AssignedActivityRoleResponse(Guid Id, string Name);
@@ -136,7 +136,7 @@ public record AssignedActivityStatusResponse(Guid Id, string Name);
 public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
 {
     public ActivityRoleTypeResponse()
-        : this(default, "", "") { }
+        : this(Guid.Empty, "", "") { }
 }
 
 public record CreateActivityRoleTypeRequest(string Name, string Description);
@@ -146,11 +146,11 @@ public record UpdateActivityRoleTypeRequest(string Name, string Description);
 public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     public AssignmentStatusTypeResponse()
-        : this(default, "", "", "") { }
+        : this(Guid.Empty, "", "", "") { }
 }
 
 public record ActivityModalityTypeResponse(Guid Id, string Name)
 {
     public ActivityModalityTypeResponse()
-        : this(default, "") { }
+        : this(Guid.Empty, "") { }
 }

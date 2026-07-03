@@ -9,8 +9,8 @@ namespace CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRepository<TEntity>
     where TEntity : IdentifiableEntity
 {
-    protected readonly CodigoActivoDbContext Context = context;
-    protected readonly DbSet<TEntity> Set = context.Set<TEntity>();
+    protected CodigoActivoDbContext Context { get; } = context;
+    protected DbSet<TEntity> Set { get; } = context.Set<TEntity>();
 
     public IQueryable<TEntity> Query()
     {

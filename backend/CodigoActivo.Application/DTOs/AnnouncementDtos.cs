@@ -16,7 +16,7 @@ public record AnnouncementResponse(
 )
 {
     public AnnouncementResponse()
-        : this(default, "", "", "", default, null, default, null, default, false) { }
+        : this(Guid.Empty, "", "", "", default, null, Guid.Empty, null, Guid.Empty, false) { }
 }
 
 public record CreateAnnouncementRequest(

@@ -25,7 +25,11 @@ public sealed class JsonResponseMediaTypeFilter : IOperationFilter
             return;
         }
 
-        foreach (var mediaType in content.Keys.Where(key => key != "application/json").ToList())
+        var mediaTypesToRemove = content
+            .Keys.Where(key => !string.Equals(key, "application/json", StringComparison.Ordinal))
+            .ToList();
+
+        foreach (var mediaType in mediaTypesToRemove)
         {
             content.Remove(mediaType);
         }

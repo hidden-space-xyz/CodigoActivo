@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Repositories;
@@ -68,8 +69,11 @@ public static class DependencyInjection
         {
             RootPath = configuration["FileStorage:RootPath"] ?? "files",
             MaxSizeBytes =
-                long.TryParse(configuration["FileStorage:MaxSizeBytes"], out var maxSize)
-                && maxSize > 0
+                long.TryParse(
+                    configuration["FileStorage:MaxSizeBytes"],
+                    CultureInfo.InvariantCulture,
+                    out var maxSize
+                ) && maxSize > 0
                     ? maxSize
                     : FileStorageOptions.DefaultMaxSizeBytes,
         };

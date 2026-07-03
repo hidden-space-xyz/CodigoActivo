@@ -22,7 +22,7 @@ public record EventResponse(
 {
     public EventResponse()
         : this(
-            default,
+            Guid.Empty,
             "",
             "",
             "",
@@ -32,9 +32,9 @@ public record EventResponse(
             default,
             default,
             null,
-            default,
+            Guid.Empty,
             null,
-            default,
+            Guid.Empty,
             false,
             []
         ) { }
@@ -69,7 +69,7 @@ public record UpdateEventRequest(
 public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
 {
     public EventCategoryTypeResponse()
-        : this(default, "", "") { }
+        : this(Guid.Empty, "", "") { }
 }
 
 public record CreateEventCategoryTypeRequest(

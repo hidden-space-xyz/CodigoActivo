@@ -2,9 +2,6 @@ root = true
 
 [*.cs]
 
-# Roslynator: all default-enabled rules as warnings
-dotnet_analyzer_diagnostic.category-roslynator.severity = warning
-
 # .NET analyzers: raise default-enabled rules in these categories to warning
 dotnet_analyzer_diagnostic.category-Security.severity = warning
 dotnet_analyzer_diagnostic.category-Performance.severity = warning
@@ -109,6 +106,24 @@ dotnet_diagnostic.CA2249.severity = warning
 dotnet_diagnostic.CA1068.severity = warning
 dotnet_diagnostic.CA1069.severity = warning
 
+# Meziantou/Sonar rules not applicable to this codebase
+# ASP.NET Core has no SynchronizationContext to marshal back to, so ConfigureAwait(false) is a no-op noise generator here.
+dotnet_diagnostic.MA0004.severity = none
+# Method length is a subjective metric better enforced via review than a hard line count.
+dotnet_diagnostic.MA0051.severity = none
+# StructLayout only matters for interop/marshaling; none of our structs cross a native boundary.
+dotnet_diagnostic.MA0008.severity = none
+# This codebase deliberately colocates closely-related types in one file (all repository interfaces in
+# IDbRepositories.cs, all service interfaces in IServices.cs, Error+ErrorKind, request/response DTOs per
+# entity, etc. - see CLAUDE.md), which is a one-file-per-type rule and doesn't fit that convention.
+dotnet_diagnostic.MA0048.severity = none
+# "Event" and "Error" are core domain vocabulary (see CLAUDE.md); this API has no VB.NET/other-language
+# consumers where the keyword clash this rule warns about would matter.
+dotnet_diagnostic.CA1716.severity = none
+# Flags string-literal Guid construction in one-time static seed-id initializers; the component-constructor
+# rewrite it suggests trades away readability for a micro-optimization that doesn't matter here.
+dotnet_diagnostic.MA0176.severity = none
+
 # Naming conventions (types, members, variables) - all as warnings
 dotnet_diagnostic.IDE1006.severity = warning
 
@@ -185,3 +200,13 @@ dotnet_naming_rule.locals_and_parameters_rule.severity = warning
 
 [**/Migrations/*.cs]
 generated_code = true
+
+[**/Controllers/OData/*.cs]
+# Read-only OData controllers: validation flows through the Result pattern (not ModelState), and routing
+# is driven by the OData model rather than [Route] attributes.
+dotnet_diagnostic.S6934.severity = none
+dotnet_diagnostic.S6967.severity = none
+
+[**/Security/Argon2idPasswordHasher.cs]
+# "Argon2id" is the algorithm's actual name per RFC 9106; don't rename it to satisfy an acronym-casing heuristic.
+dotnet_diagnostic.S101.severity = none

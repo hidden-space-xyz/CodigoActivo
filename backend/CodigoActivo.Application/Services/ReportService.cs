@@ -46,7 +46,7 @@ public class ReportService(
                 roleNames.GetValueOrDefault(id),
                 approvedByRole.GetValueOrDefault(id, 0)
             ))
-            .OrderBy(r => r.RoleTypeName)
+            .OrderBy(r => r.RoleTypeName, StringComparer.Ordinal)
             .ToList();
 
         return new EventSummaryResponse(
@@ -161,7 +161,7 @@ public class ReportService(
                     && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
                 )
             ))
-            .OrderBy(r => r.RoleTypeName)
+            .OrderBy(r => r.RoleTypeName, StringComparer.Ordinal)
             .ToList();
 
         return new ActivityAssignmentsReportResponse(
