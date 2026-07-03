@@ -35,8 +35,8 @@ namespace CodigoActivo.Domain.Constants
 
         public static class ActivityModalityTypes
         {
-            public static readonly Guid Presencial = new("c0ffee01-0000-4000-8000-000000000001");
-            public static readonly Guid Online = new("c0ffee01-0000-4000-8000-000000000002");
+            public static readonly Guid Presencial = new("3a7956c5-2346-4fc3-b3e8-10ecc07f1e1f");
+            public static readonly Guid Online = new("44b62b00-17f5-46c3-ac65-245fbd8e7db2");
         }
     }
 }
