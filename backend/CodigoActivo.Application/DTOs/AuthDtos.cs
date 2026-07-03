@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -7,8 +8,8 @@ public record LoginRequest([Required] string Identifier, [Required] string Passw
 public record CsrfTokenResponse(string Token, string HeaderName);
 
 public record RegisterRequest(
-    [Required] [MaxLength(120)] string FirstName,
-    [Required] [MaxLength(120)] string LastName,
+    [Required] [MaxLength(120)] [NotBlank] string FirstName,
+    [Required] [MaxLength(120)] [NotBlank] string LastName,
     [Required]
     [EmailAddress]
     [MaxLength(256)]
@@ -18,15 +19,15 @@ public record RegisterRequest(
     [MinLength(8)]
     [MaxLength(128)]
     string Password,
-    DateOnly BirthDate,
+    [NotDefaultOrFutureDate] DateOnly BirthDate,
     Guid RoleId,
     IReadOnlyList<RegisterMinorRequest>? Minors
 );
 
 public record RegisterMinorRequest(
-    [Required] [MaxLength(120)] string FirstName,
-    [Required] [MaxLength(120)] string LastName,
-    DateOnly BirthDate,
+    [Required] [MaxLength(120)] [NotBlank] string FirstName,
+    [Required] [MaxLength(120)] [NotBlank] string LastName,
+    [NotDefaultOrFutureDate] DateOnly BirthDate,
     Guid RoleId
 );
 

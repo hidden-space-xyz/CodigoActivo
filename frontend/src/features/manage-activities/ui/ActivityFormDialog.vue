@@ -185,12 +185,18 @@ async function save(): Promise<void> {
     <form class="form" @submit.prevent="save">
       <div class="form__field">
         <label>Título</label>
-        <InputText v-model="form.title" :invalid="submitted && !form.title.trim()" fluid />
+        <InputText
+          v-model="form.title"
+          :maxlength="200"
+          :invalid="submitted && !form.title.trim()"
+          fluid
+        />
       </div>
       <div class="form__field">
         <label>Descripción</label>
         <Textarea
           v-model="form.description"
+          :maxlength="4000"
           :invalid="submitted && !form.description.trim()"
           rows="3"
           auto-resize
@@ -215,7 +221,12 @@ async function save(): Promise<void> {
         </div>
         <div class="form__field">
           <label>Ubicación o plataforma</label>
-          <InputText v-model="form.location" :invalid="submitted && locationMissing" fluid />
+          <InputText
+            v-model="form.location"
+            :maxlength="200"
+            :invalid="submitted && locationMissing"
+            fluid
+          />
           <small v-if="submitted && locationMissing" class="form__error"
             >La ubicación es obligatoria.</small
           >

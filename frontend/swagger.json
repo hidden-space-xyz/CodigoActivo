@@ -1787,7 +1787,8 @@
           },
           "fromDate": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "nullable": true
           },
           "tier": {
             "type": "integer",
@@ -1854,6 +1855,7 @@
           "ActivityAssignmentNotFound",
           "AssignmentStatusTypeNotFound",
           "ActivityRoleTypeNotFound",
+          "ActivityRoleTypeNameAlreadyExists",
           "ActivityScheduleRequired",
           "ActivityScheduleInvalidRange",
           "ActivityScheduleOutsideEventRange",
@@ -1861,6 +1863,7 @@
           "EventNotFound",
           "EventActivitiesOutsideNewRange",
           "EventCategoryTypeNotFound",
+          "EventCategoryTypeNameAlreadyExists",
           "EventThumbnailNotFound",
           "EventCategoriesRequired",
           "EventScheduleRequired",
@@ -2398,7 +2401,8 @@
           },
           "fromDate": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "nullable": true
           },
           "tier": {
             "type": "integer",

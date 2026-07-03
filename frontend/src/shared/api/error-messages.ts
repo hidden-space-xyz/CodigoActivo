@@ -17,6 +17,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   ActivityAssignmentNotFound: 'No se encontró la asignación de la actividad.',
   AssignmentStatusTypeNotFound: 'El estado de la asignación no es válido.',
   ActivityRoleTypeNotFound: 'El rol de la actividad no es válido.',
+  ActivityRoleTypeNameAlreadyExists: 'Ya existe un rol con ese nombre.',
   ActivityScheduleRequired: 'Debes indicar un horario para la actividad.',
   ActivityScheduleInvalidRange: 'El horario de la actividad no es válido.',
   ActivityScheduleOutsideEventRange:
@@ -27,6 +28,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   EventNotFound: 'No se encontró el evento.',
   EventActivitiesOutsideNewRange: 'Hay actividades fuera del nuevo rango de fechas del evento.',
   EventCategoryTypeNotFound: 'La categoría del evento no es válida.',
+  EventCategoryTypeNameAlreadyExists: 'Ya existe una categoría con ese nombre.',
   EventThumbnailNotFound: 'No se encontró la imagen del evento.',
   EventCategoriesRequired: 'Debes seleccionar al menos una categoría para el evento.',
   EventScheduleRequired: 'Debes indicar un horario para el evento.',

@@ -74,10 +74,17 @@ public class UserService(
         CancellationToken ct = default
     )
     {
-        if (!await users.ExistsAsync(u => u.Id == id, ct)) return Error.NotFound(ErrorCode.UserNotFound);
+        var user = await users.FindAsync(u => u.Id == id, ct);
+        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (!await userTypes.ExistsAsync(ut => ut.Id == userTypeId, ct))
-            return Error.NotFound(ErrorCode.UserTypeNotFound);
+        var role = await userTypes.FindAsync(ut => ut.Id == userTypeId, ct);
+        if (role is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
+
+        var isMinor = user.BirthDate.IsMinor();
+        if (role.Hidden || (isMinor ? !role.IsAllowedForMinors : !role.IsAllowedForAdults))
+            return Error.BadRequest(
+                isMinor ? ErrorCode.UserTypeNotAllowedForMinors : ErrorCode.UserTypeNotAllowedForAdults
+            );
 
         if (!await users.HasTypeAssignmentAsync(id, userTypeId, ct))
         {

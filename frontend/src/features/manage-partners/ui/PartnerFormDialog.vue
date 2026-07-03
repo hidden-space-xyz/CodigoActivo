@@ -61,7 +61,7 @@ function close(): void {
 async function save(): Promise<void> {
   submitted.value = true
   uploadError.value = ''
-  if (!form.name.trim() || missingThumbnail.value) return
+  if (!form.name.trim() || !form.fromDate || missingThumbnail.value) return
   const body: CreatePartnerRequest = {
     name: form.name.trim(),
     tier: form.tier,
@@ -98,6 +98,7 @@ async function save(): Promise<void> {
         <InputText
           id="partner-name"
           v-model="form.name"
+          :maxlength="200"
           :invalid="submitted && !form.name.trim()"
           fluid
         />
@@ -113,8 +114,12 @@ async function save(): Promise<void> {
           v-model="form.fromDate"
           date-format="dd/mm/yy"
           show-icon
+          :invalid="submitted && !form.fromDate"
           fluid
         />
+        <small v-if="submitted && !form.fromDate" class="form__error"
+          >La fecha de alta es obligatoria.</small
+        >
       </div>
 
       <div class="form__field">

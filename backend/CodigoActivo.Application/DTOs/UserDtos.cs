@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -28,11 +29,11 @@ public record UserStatusResponse(Guid Id, string Name, string Color);
 public record UserRoleResponse(Guid Id, string Name, string Color);
 
 public record UpdateUserRequest(
-    [Required] [MaxLength(120)] string FirstName,
-    [Required] [MaxLength(120)] string LastName,
+    [Required] [MaxLength(120)] [NotBlank] string FirstName,
+    [Required] [MaxLength(120)] [NotBlank] string LastName,
     [EmailAddress] [MaxLength(256)] string? Email,
     [Phone] [MaxLength(40)] string? Phone,
-    DateOnly BirthDate,
+    [NotDefaultOrFutureDate] DateOnly BirthDate,
     Guid? ParentId
 );
 

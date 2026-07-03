@@ -16,6 +16,7 @@ const feedback = useCrudFeedback()
 const session = useSession()
 const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
 
+const todayIso = computed(() => new Date().toISOString().slice(0, 10))
 const user = computed(() => profile.data.value ?? null)
 const roleNames = computed(() =>
   (user.value?.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0),
@@ -162,23 +163,30 @@ function confirmDeleteAccount(): void {
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="p-firstname">Nombre</label>
-            <InputText id="p-firstname" v-model="editForm.firstName" required fluid />
+            <InputText id="p-firstname" v-model="editForm.firstName" :maxlength="120" required fluid />
           </div>
           <div class="acc-form__field">
             <label for="p-lastname">Apellidos</label>
-            <InputText id="p-lastname" v-model="editForm.lastName" required fluid />
+            <InputText id="p-lastname" v-model="editForm.lastName" :maxlength="120" required fluid />
           </div>
           <div class="acc-form__field">
             <label for="p-email">Correo</label>
-            <InputText id="p-email" v-model="editForm.email" type="email" required fluid />
+            <InputText id="p-email" v-model="editForm.email" type="email" :maxlength="256" required fluid />
           </div>
           <div class="acc-form__field">
             <label for="p-phone">Teléfono</label>
-            <InputText id="p-phone" v-model="editForm.phone" type="tel" required fluid />
+            <InputText id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required fluid />
           </div>
           <div class="acc-form__field">
             <label for="p-dob">Fecha de nacimiento</label>
-            <input id="p-dob" v-model="editForm.birthDate" type="date" class="acc-date" required />
+            <input
+              id="p-dob"
+              v-model="editForm.birthDate"
+              type="date"
+              class="acc-date"
+              :max="todayIso"
+              required
+            />
           </div>
         </div>
         <div class="acc-form__actions">

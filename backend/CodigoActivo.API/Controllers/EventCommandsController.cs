@@ -55,7 +55,7 @@ public class EventCommandsController(IEventService events) : CommandControllerBa
         CancellationToken ct
     )
     {
-        return Ok(await events.CreateCategoryTypeAsync(request, ct));
+        return ToOk(await events.CreateCategoryTypeAsync(request, ct));
     }
 
     [HttpPut("categoryType/{eventCategoryTypeId:guid}")]

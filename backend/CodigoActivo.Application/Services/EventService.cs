@@ -140,16 +140,16 @@ public class EventService(
         return categoryTypes.Query().Select(Projections.EventCategoryType);
     }
 
-    public async Task<EventCategoryTypeResponse> CreateCategoryTypeAsync(
+    public async Task<Result<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         CreateEventCategoryTypeRequest request,
         CancellationToken ct = default
     )
     {
-        var categoryType = new EventCategoryType
-        {
-            Name = request.Name.Trim(),
-            Color = request.Color.Trim()
-        };
+        var name = request.Name.Trim();
+        if (await categoryTypes.ExistsAsync(x => x.Name == name, ct))
+            return Error.Conflict(ErrorCode.EventCategoryTypeNameAlreadyExists);
+
+        var categoryType = new EventCategoryType { Name = name, Color = request.Color.Trim() };
         await categoryTypes.AddAsync(categoryType, ct);
         await uow.SaveChangesAsync(ct);
         return categoryType.ToResponse();
@@ -164,7 +164,11 @@ public class EventService(
         var categoryType = await categoryTypes.FindAsync(x => x.Id == id, ct);
         if (categoryType is null) return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
 
-        categoryType.Name = request.Name.Trim();
+        var name = request.Name.Trim();
+        if (await categoryTypes.ExistsAsync(x => x.Name == name && x.Id != id, ct))
+            return Error.Conflict(ErrorCode.EventCategoryTypeNameAlreadyExists);
+
+        categoryType.Name = name;
         categoryType.Color = request.Color.Trim();
         categoryTypes.Update(categoryType);
         await uow.SaveChangesAsync(ct);
@@ -228,6 +232,9 @@ public class EventService(
             return Error.BadRequest(ErrorCode.EventScheduleRequired);
 
         if (eventEnd < eventStart || signupEnd <= signupStart)
+            return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
+
+        if (DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd)
             return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
 
         return new EventSchedule(eventStart, eventEnd, signupStart, signupEnd);

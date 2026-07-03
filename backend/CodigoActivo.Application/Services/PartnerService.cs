@@ -28,7 +28,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
         var partner = new Partner
         {
             Name = request.Name.Trim(),
-            FromDate = request.FromDate,
+            FromDate = request.FromDate!.Value,
             Tier = request.Tier,
             Web = request.Website.NormalizeOrNull(),
             ThumbnailId = request.ThumbnailId,
@@ -54,7 +54,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         partner.Name = request.Name.Trim();
-        partner.FromDate = request.FromDate;
+        partner.FromDate = request.FromDate!.Value;
         partner.Tier = request.Tier;
         partner.Web = request.Website.NormalizeOrNull();
         partner.ThumbnailId = request.ThumbnailId;

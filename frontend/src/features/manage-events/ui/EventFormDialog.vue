@@ -131,6 +131,12 @@ const signupEndMissing = computed(() => !form.signupEndsAt)
 const signupOrderInvalid = computed(
   () => !!form.signupStartsAt && !!form.signupEndsAt && form.signupEndsAt <= form.signupStartsAt,
 )
+const signupAfterEventEnd = computed(
+  () =>
+    !!form.signupStartsAt &&
+    !!form.eventEndsAt &&
+    toDateOnly(form.signupStartsAt) > toDateOnly(form.eventEndsAt),
+)
 const datesValid = computed(
   () =>
     !eventStartMissing.value &&
@@ -138,7 +144,8 @@ const datesValid = computed(
     !eventOrderInvalid.value &&
     !signupStartMissing.value &&
     !signupEndMissing.value &&
-    !signupOrderInvalid.value,
+    !signupOrderInvalid.value &&
+    !signupAfterEventEnd.value,
 )
 
 watch(
@@ -218,11 +225,21 @@ async function save(): Promise<void> {
     <form class="form" @submit.prevent="save">
       <div class="form__field">
         <label>Título</label>
-        <InputText v-model="form.title" :invalid="submitted && !form.title.trim()" fluid />
+        <InputText
+          v-model="form.title"
+          :maxlength="200"
+          :invalid="submitted && !form.title.trim()"
+          fluid
+        />
       </div>
       <div class="form__field">
         <label>Subtítulo</label>
-        <InputText v-model="form.subtitle" :invalid="submitted && !form.subtitle.trim()" fluid />
+        <InputText
+          v-model="form.subtitle"
+          :maxlength="300"
+          :invalid="submitted && !form.subtitle.trim()"
+          fluid
+        />
       </div>
       <div class="form__field">
         <label>Categorías</label>
@@ -285,11 +302,14 @@ async function save(): Promise<void> {
             show-time
             hour-format="24"
             date-format="dd/mm/yy"
-            :invalid="submitted && signupStartMissing"
+            :invalid="submitted && (signupStartMissing || signupAfterEventEnd)"
             fluid
           />
           <small v-if="submitted && signupStartMissing" class="form__error"
             >La apertura de inscripción es obligatoria.</small
+          >
+          <small v-else-if="submitted && signupAfterEventEnd" class="form__error"
+            >La inscripción debe abrir antes de que termine el evento.</small
           >
         </div>
         <div class="form__field">
@@ -346,7 +366,12 @@ async function save(): Promise<void> {
     <form class="form" @submit.prevent="createCategory">
       <div class="form__field">
         <label>Nombre</label>
-        <InputText v-model="newCat.name" :invalid="catSubmitted && !newCat.name.trim()" fluid />
+        <InputText
+          v-model="newCat.name"
+          :maxlength="120"
+          :invalid="catSubmitted && !newCat.name.trim()"
+          fluid
+        />
       </div>
       <div class="form__field">
         <label>Color</label>

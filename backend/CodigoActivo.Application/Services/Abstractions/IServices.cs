@@ -74,7 +74,7 @@ public interface IEventService
 
     IQueryable<EventCategoryTypeResponse> QueryCategoryTypes();
 
-    Task<EventCategoryTypeResponse> CreateCategoryTypeAsync(
+    Task<Result<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         CreateEventCategoryTypeRequest request,
         CancellationToken ct = default
     );
@@ -163,7 +163,7 @@ public interface IActivityService
         CancellationToken ct = default
     );
 
-    Task<ActivityRoleTypeResponse> CreateActivityRoleTypeAsync(
+    Task<Result<ActivityRoleTypeResponse>> CreateActivityRoleTypeAsync(
         CreateActivityRoleTypeRequest request,
         CancellationToken ct = default
     );

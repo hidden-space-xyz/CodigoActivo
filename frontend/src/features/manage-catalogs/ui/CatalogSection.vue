@@ -138,11 +138,16 @@ function confirmDelete(item: CatalogItem): void {
       <form class="catalog__form" @submit.prevent="save">
         <div class="catalog__field">
           <label>Nombre</label>
-          <InputText v-model="form.name" :invalid="submitted && !form.name.trim()" fluid />
+          <InputText
+            v-model="form.name"
+            :maxlength="120"
+            :invalid="submitted && !form.name.trim()"
+            fluid
+          />
         </div>
         <div class="catalog__field">
           <label>Descripción</label>
-          <Textarea v-model="form.description" rows="3" auto-resize fluid />
+          <Textarea v-model="form.description" :maxlength="500" rows="3" auto-resize fluid />
         </div>
       </form>
       <template #footer>

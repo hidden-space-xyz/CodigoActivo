@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -47,9 +48,9 @@ public record ActivityResponse(
 public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId);
 
 public record CreateActivityRequest(
-    [Required] [MaxLength(200)] string Title,
-    [Required] string Description,
-    [Required] [MaxLength(200)] string Location,
+    [Required] [MaxLength(200)] [NotBlank] string Title,
+    [Required] [MaxLength(4000)] [NotBlank] string Description,
+    [Required] [MaxLength(200)] [NotBlank] string Location,
     [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
@@ -58,9 +59,9 @@ public record CreateActivityRequest(
 );
 
 public record UpdateActivityRequest(
-    [Required] [MaxLength(200)] string Title,
-    [Required] string Description,
-    [Required] [MaxLength(200)] string Location,
+    [Required] [MaxLength(200)] [NotBlank] string Title,
+    [Required] [MaxLength(4000)] [NotBlank] string Description,
+    [Required] [MaxLength(200)] [NotBlank] string Location,
     [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
@@ -145,9 +146,15 @@ public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
     }
 }
 
-public record CreateActivityRoleTypeRequest(string Name, string Description);
+public record CreateActivityRoleTypeRequest(
+    [Required] [MaxLength(120)] [NotBlank] string Name,
+    [MaxLength(500)] string? Description
+);
 
-public record UpdateActivityRoleTypeRequest(string Name, string Description);
+public record UpdateActivityRoleTypeRequest(
+    [Required] [MaxLength(120)] [NotBlank] string Name,
+    [MaxLength(500)] string? Description
+);
 
 public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {

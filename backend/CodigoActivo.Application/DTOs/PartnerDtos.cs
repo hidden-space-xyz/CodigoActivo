@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -22,16 +23,16 @@ public record PartnerResponse(
 }
 
 public record CreatePartnerRequest(
-    [Required] [MaxLength(200)] string Name,
-    DateOnly FromDate,
+    [Required] [MaxLength(200)] [NotBlank] string Name,
+    [Required] DateOnly? FromDate,
     [Range(0, int.MaxValue)] int Tier,
     [Url] [MaxLength(500)] string? Website,
     Guid ThumbnailId
 );
 
 public record UpdatePartnerRequest(
-    [Required] [MaxLength(200)] string Name,
-    DateOnly FromDate,
+    [Required] [MaxLength(200)] [NotBlank] string Name,
+    [Required] DateOnly? FromDate,
     [Range(0, int.MaxValue)] int Tier,
     [Url] [MaxLength(500)] string? Website,
     Guid ThumbnailId

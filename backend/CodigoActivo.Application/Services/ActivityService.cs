@@ -70,6 +70,9 @@ public class ActivityService(
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
 
+        var allowedRoles = await EnsureAllowedRolesAsync(request.AllowedRoleTypes, ct);
+        if (allowedRoles.IsFailure) return allowedRoles.Error!;
+
         var activity = new Activity
         {
             Title = request.Title.Trim(),
@@ -117,6 +120,9 @@ public class ActivityService(
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
+
+        var allowedRoles = await EnsureAllowedRolesAsync(request.AllowedRoleTypes, ct);
+        if (allowedRoles.IsFailure) return allowedRoles.Error!;
 
         activity.Title = request.Title.Trim();
         activity.Description = request.Description;
@@ -386,15 +392,19 @@ public class ActivityService(
             .ToList();
     }
 
-    public async Task<ActivityRoleTypeResponse> CreateActivityRoleTypeAsync(
+    public async Task<Result<ActivityRoleTypeResponse>> CreateActivityRoleTypeAsync(
         CreateActivityRoleTypeRequest request,
         CancellationToken ct = default
     )
     {
+        var name = request.Name.Trim();
+        if (await roleTypes.ExistsAsync(x => x.Name == name, ct))
+            return Error.Conflict(ErrorCode.ActivityRoleTypeNameAlreadyExists);
+
         var roleType = new ActivityRoleType
         {
-            Name = request.Name.Trim(),
-            Description = request.Description.Trim()
+            Name = name,
+            Description = request.Description?.Trim() ?? string.Empty
         };
         await roleTypes.AddAsync(roleType, ct);
         await uow.SaveChangesAsync(ct);
@@ -410,8 +420,12 @@ public class ActivityService(
         var roleType = await roleTypes.FindAsync(x => x.Id == id, ct);
         if (roleType is null) return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
 
-        roleType.Name = request.Name.Trim();
-        roleType.Description = request.Description.Trim();
+        var name = request.Name.Trim();
+        if (await roleTypes.ExistsAsync(x => x.Name == name && x.Id != id, ct))
+            return Error.Conflict(ErrorCode.ActivityRoleTypeNameAlreadyExists);
+
+        roleType.Name = name;
+        roleType.Description = request.Description?.Trim() ?? string.Empty;
         roleTypes.Update(roleType);
         await uow.SaveChangesAsync(ct);
         return roleType.ToResponse();
@@ -424,6 +438,22 @@ public class ActivityService(
 
         await roleTypes.RemoveAsync(x => x.Id == id, ct);
         await uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    private async Task<Result> EnsureAllowedRolesAsync(
+        IReadOnlyList<ActivityAllowedRoleRequest>? roles,
+        CancellationToken ct
+    )
+    {
+        if (roles is null) return Result.Success();
+
+        foreach (var roleId in roles.Select(r => r.ActivityRoleTypeId).Distinct())
+        {
+            if (!await roleTypes.ExistsAsync(r => r.Id == roleId, ct))
+                return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
+        }
+
         return Result.Success();
     }
 

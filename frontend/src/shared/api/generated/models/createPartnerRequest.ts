@@ -8,7 +8,8 @@
 export interface CreatePartnerRequest {
   /** @nullable */
   name?: string | null;
-  fromDate?: string;
+  /** @nullable */
+  fromDate?: string | null;
   tier?: number;
   /** @nullable */
   website?: string | null;

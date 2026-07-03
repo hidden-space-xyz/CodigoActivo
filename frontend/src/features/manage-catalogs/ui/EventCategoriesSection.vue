@@ -139,7 +139,12 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       <form class="catalog__form" @submit.prevent="save">
         <div class="catalog__field">
           <label>Nombre</label>
-          <InputText v-model="form.name" :invalid="submitted && !form.name.trim()" fluid />
+          <InputText
+            v-model="form.name"
+            :maxlength="120"
+            :invalid="submitted && !form.name.trim()"
+            fluid
+          />
         </div>
         <div class="catalog__field">
           <label>Color</label>

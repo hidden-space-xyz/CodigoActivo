@@ -254,11 +254,21 @@ function confirmDelete(item: ContentItem): void {
       <form class="form" @submit.prevent="save">
         <div class="form__field">
           <label>Título</label>
-          <InputText v-model="form.title" :invalid="submitted && !form.title.trim()" fluid />
+          <InputText
+            v-model="form.title"
+            :maxlength="200"
+            :invalid="submitted && !form.title.trim()"
+            fluid
+          />
         </div>
         <div class="form__field">
           <label>Subtítulo</label>
-          <InputText v-model="form.subtitle" :invalid="submitted && !form.subtitle.trim()" fluid />
+          <InputText
+            v-model="form.subtitle"
+            :maxlength="300"
+            :invalid="submitted && !form.subtitle.trim()"
+            fluid
+          />
         </div>
         <div class="form__field">
           <label>Descripción</label>

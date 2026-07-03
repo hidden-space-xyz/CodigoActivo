@@ -203,9 +203,22 @@ const householdSelectable = computed(() =>
 function confirmHousehold(): void {
   const activity = householdDialog.activity
   if (!activity) return
-  const assignments = householdDialog.rows
-    .filter((row) => row.include && !row.alreadyAssigned && row.roleId)
-    .map((row) => ({ userId: row.userId, roleId: row.roleId }))
+
+  const includedRows = householdDialog.rows.filter(
+    (row) => row.include && !row.alreadyAssigned,
+  )
+  const missingRole = includedRows.some((row) => !row.roleId)
+  if (missingRole) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Falta el rol',
+      detail: 'Selecciona un rol para cada integrante que quieras apuntar.',
+      life: 3500,
+    })
+    return
+  }
+
+  const assignments = includedRows.map((row) => ({ userId: row.userId, roleId: row.roleId }))
 
   if (assignments.length === 0) {
     householdDialog.visible = false

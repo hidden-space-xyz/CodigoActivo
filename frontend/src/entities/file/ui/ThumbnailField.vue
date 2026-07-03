@@ -13,6 +13,8 @@ const previewUrl = ref<string | null>(null)
 const fileName = ref<string>('')
 const pickedFile = ref<File | null>(null)
 const loading = ref(false)
+const sizeError = ref('')
+const MAX_SIZE = 10 * 1024 * 1024
 let objectUrl: string | null = null
 
 function revokeObjectUrl(): void {
@@ -61,6 +63,11 @@ function onChange(event: Event): void {
   const file = input.files?.[0] ?? null
   input.value = ''
   if (!file) return
+  if (file.size > MAX_SIZE) {
+    sizeError.value = 'La imagen supera el tamaño máximo de 10 MB.'
+    return
+  }
+  sizeError.value = ''
   pickedFile.value = file
   fileName.value = file.name
   revokeObjectUrl()
@@ -112,6 +119,8 @@ onBeforeUnmount(revokeObjectUrl)
       <span v-if="fileName" class="thumb__name">{{ fileName }}</span>
     </div>
 
+    <small v-if="sizeError" class="thumb__error">{{ sizeError }}</small>
+
     <input ref="fileInput" type="file" accept="image/*" class="thumb__input" @change="onChange" />
   </div>
 </template>
@@ -161,6 +170,11 @@ onBeforeUnmount(revokeObjectUrl)
   font-size: 12.5px;
   color: var(--ca-text-muted);
   word-break: break-all;
+}
+
+.thumb__error {
+  font-size: 12.5px;
+  color: var(--ca-coral);
 }
 
 .thumb__input {

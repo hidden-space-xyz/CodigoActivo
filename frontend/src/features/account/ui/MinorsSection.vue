@@ -171,11 +171,11 @@ function confirmDelete(): void {
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="m-firstname">Nombre</label>
-            <InputText id="m-firstname" v-model="form.firstName" required fluid />
+            <InputText id="m-firstname" v-model="form.firstName" :maxlength="120" required fluid />
           </div>
           <div class="acc-form__field">
             <label for="m-lastname">Apellidos</label>
-            <InputText id="m-lastname" v-model="form.lastName" required fluid />
+            <InputText id="m-lastname" v-model="form.lastName" :maxlength="120" required fluid />
           </div>
           <div class="acc-form__field">
             <label for="m-dob">Fecha de nacimiento</label>

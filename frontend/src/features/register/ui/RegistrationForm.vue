@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Select from 'primevue/select'
@@ -18,6 +18,26 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: []; back: [] }>()
 
 const model = props.form
+
+const submitted = ref(false)
+const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(model.email.trim()))
+const passwordTooShort = computed(() => model.password.length < 8)
+
+const isValid = computed(() => {
+  if (!model.firstName.trim() || !model.lastName.trim()) return false
+  if (!emailValid.value || !model.phone.trim()) return false
+  if (passwordTooShort.value) return false
+  if (!model.dateOfBirth || !model.roleId) return false
+  return model.minors.every(
+    (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.roleId,
+  )
+})
+
+function onSubmit(): void {
+  submitted.value = true
+  if (!isValid.value) return
+  emit('submit')
+}
 
 const todayIso = computed(() => new Date().toISOString().slice(0, 10))
 const adultThresholdIso = computed(() => {
@@ -49,24 +69,57 @@ function removeMinor(index: number): void {
       <BaseButton variant="link" @click="emit('back')">← Volver</BaseButton>
     </div>
 
-    <form class="reg__form" @submit.prevent="emit('submit')">
+    <form class="reg__form" @submit.prevent="onSubmit">
       <h2 class="reg__section-title">Tus datos</h2>
       <div class="reg__grid">
         <div class="reg__field">
           <label class="reg__label" for="reg-firstname">Nombre</label>
-          <InputText id="reg-firstname" v-model="model.firstName" required fluid />
+          <InputText
+            id="reg-firstname"
+            v-model="model.firstName"
+            :maxlength="120"
+            :invalid="submitted && !model.firstName.trim()"
+            required
+            fluid
+          />
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-lastname">Apellidos</label>
-          <InputText id="reg-lastname" v-model="model.lastName" required fluid />
+          <InputText
+            id="reg-lastname"
+            v-model="model.lastName"
+            :maxlength="120"
+            :invalid="submitted && !model.lastName.trim()"
+            required
+            fluid
+          />
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-email">Correo</label>
-          <InputText id="reg-email" v-model="model.email" type="email" required fluid />
+          <InputText
+            id="reg-email"
+            v-model="model.email"
+            type="email"
+            :maxlength="256"
+            :invalid="submitted && !emailValid"
+            required
+            fluid
+          />
+          <small v-if="submitted && !emailValid" class="reg__error"
+            >Introduce un correo válido.</small
+          >
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-phone">Teléfono</label>
-          <InputText id="reg-phone" v-model="model.phone" type="tel" required fluid />
+          <InputText
+            id="reg-phone"
+            v-model="model.phone"
+            type="tel"
+            :maxlength="40"
+            :invalid="submitted && !model.phone.trim()"
+            required
+            fluid
+          />
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-password">Contraseña</label>
@@ -74,10 +127,15 @@ function removeMinor(index: number): void {
             input-id="reg-password"
             v-model="model.password"
             :feedback="false"
+            :maxlength="128"
+            :invalid="submitted && passwordTooShort"
             toggle-mask
             required
             fluid
           />
+          <small v-if="submitted && passwordTooShort" class="reg__error"
+            >La contraseña debe tener al menos 8 caracteres.</small
+          >
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-dob">Fecha de nacimiento</label>
@@ -99,9 +157,13 @@ function removeMinor(index: number): void {
             option-label="name"
             option-value="id"
             placeholder="Selecciona un rol"
+            :invalid="submitted && !model.roleId"
             required
             fluid
           />
+          <small v-if="submitted && !model.roleId" class="reg__error"
+            >Selecciona cómo quieres participar.</small
+          >
           <p v-if="adultRoleDescription" class="reg__role-desc">{{ adultRoleDescription }}</p>
         </div>
       </div>
@@ -134,6 +196,8 @@ function removeMinor(index: number): void {
                 <InputText
                   :id="`minor-firstname-${index}`"
                   v-model="minor.firstName"
+                  :maxlength="120"
+                  :invalid="submitted && !minor.firstName.trim()"
                   required
                   fluid
                 />
@@ -143,6 +207,8 @@ function removeMinor(index: number): void {
                 <InputText
                   :id="`minor-lastname-${index}`"
                   v-model="minor.lastName"
+                  :maxlength="120"
+                  :invalid="submitted && !minor.lastName.trim()"
                   required
                   fluid
                 />
@@ -168,6 +234,7 @@ function removeMinor(index: number): void {
                   option-label="name"
                   option-value="id"
                   placeholder="Selecciona un rol"
+                  :invalid="submitted && !minor.roleId"
                   required
                   fluid
                 />
@@ -251,6 +318,12 @@ function removeMinor(index: number): void {
   font-size: 13px;
   line-height: 1.5;
   color: var(--ca-text-muted);
+}
+
+.reg__error {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--ca-coral);
 }
 
 .reg__minors {

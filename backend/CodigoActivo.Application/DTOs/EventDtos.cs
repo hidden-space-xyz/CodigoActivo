@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -45,9 +46,9 @@ public record EventResponse(
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);
 
 public record CreateEventRequest(
-    [Required] [MaxLength(200)] string Title,
-    [Required] [MaxLength(300)] string Subtitle,
-    string Description,
+    [Required] [MaxLength(200)] [NotBlank] string Title,
+    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
+    [JsonString] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     [Required] DateTimeOffset? SignupStartsAt,
@@ -57,9 +58,9 @@ public record CreateEventRequest(
 );
 
 public record UpdateEventRequest(
-    [Required] [MaxLength(200)] string Title,
-    [Required] [MaxLength(300)] string Subtitle,
-    string Description,
+    [Required] [MaxLength(200)] [NotBlank] string Title,
+    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
+    [JsonString] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     [Required] DateTimeOffset? SignupStartsAt,
@@ -77,11 +78,11 @@ public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
 }
 
 public record CreateEventCategoryTypeRequest(
-    [Required] [MaxLength(120)] string Name,
-    [Required] [MaxLength(9)] string Color
+    [Required] [MaxLength(120)] [NotBlank] string Name,
+    [Required] [MaxLength(9)] [RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
 );
 
 public record UpdateEventCategoryTypeRequest(
-    [Required] [MaxLength(120)] string Name,
-    [Required] [MaxLength(9)] string Color
+    [Required] [MaxLength(120)] [NotBlank] string Name,
+    [Required] [MaxLength(9)] [RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
 );

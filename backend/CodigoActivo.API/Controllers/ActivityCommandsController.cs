@@ -108,7 +108,7 @@ public class ActivityCommandsController(IActivityService activities) : CommandCo
         CancellationToken ct
     )
     {
-        return Ok(await activities.CreateActivityRoleTypeAsync(request, ct));
+        return ToOk(await activities.CreateActivityRoleTypeAsync(request, ct));
     }
 
     [HttpPut("roleType/{activityRoleTypeId:guid}")]

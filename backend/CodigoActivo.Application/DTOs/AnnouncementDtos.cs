@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -22,15 +23,15 @@ public record AnnouncementResponse(
 }
 
 public record CreateAnnouncementRequest(
-    [Required] [MaxLength(200)] string Title,
-    [Required] [MaxLength(300)] string Subtitle,
-    string Description,
+    [Required] [MaxLength(200)] [NotBlank] string Title,
+    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
+    [JsonString] string Description,
     Guid ThumbnailId
 );
 
 public record UpdateAnnouncementRequest(
-    [Required] [MaxLength(200)] string Title,
-    [Required] [MaxLength(300)] string Subtitle,
-    string Description,
+    [Required] [MaxLength(200)] [NotBlank] string Title,
+    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
+    [JsonString] string Description,
     Guid ThumbnailId
 );
