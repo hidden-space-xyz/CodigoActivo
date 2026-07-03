@@ -6,7 +6,7 @@ public enum ErrorKind
     NotFound = 1,
     Forbidden = 2,
     Unauthorized = 3,
-    Conflict = 4
+    Conflict = 4,
 }
 
 public sealed record Error(ErrorKind Kind, ErrorCode Code)

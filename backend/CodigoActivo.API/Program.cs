@@ -155,7 +155,7 @@ try
             ["PartnerCommands"] = "Partners",
             ["ActivityCommands"] = "Activities",
             ["UserCommands"] = "Users",
-            ["FileCommands"] = "Files"
+            ["FileCommands"] = "Files",
         };
         c.TagActionsBy(api =>
             api.ActionDescriptor is ControllerActionDescriptor descriptor
@@ -222,7 +222,7 @@ static SameSiteMode ResolveSameSite(string? value)
         "none" => SameSiteMode.None,
         "strict" => SameSiteMode.Strict,
         "lax" => SameSiteMode.Lax,
-        _ => SameSiteMode.Lax
+        _ => SameSiteMode.Lax,
     };
 }
 

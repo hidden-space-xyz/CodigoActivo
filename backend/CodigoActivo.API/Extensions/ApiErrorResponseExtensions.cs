@@ -47,7 +47,7 @@ public static class ApiErrorResponseExtensions
             ErrorKind.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden"),
             ErrorKind.NotFound => (StatusCodes.Status404NotFound, "Not Found"),
             ErrorKind.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported error kind.")
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported error kind."),
         };
     }
 }

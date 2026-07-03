@@ -81,7 +81,7 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
             Salt = salt,
             DegreeOfParallelism = parallelism,
             Iterations = iterations,
-            MemorySize = memoryKiB
+            MemorySize = memoryKiB,
         };
         return argon2.GetBytes(hashSize);
     }

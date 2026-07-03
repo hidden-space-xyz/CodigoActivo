@@ -93,7 +93,7 @@ public class UserService(
                 {
                     UserId = id,
                     UserTypeId = userTypeId,
-                    AssignedAt = DateTimeOffset.UtcNow
+                    AssignedAt = DateTimeOffset.UtcNow,
                 },
                 ct
             );
@@ -130,7 +130,7 @@ public class UserService(
             BirthDate = request.BirthDate,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            CreatedAt = now
+            CreatedAt = now,
         };
         await users.AddAsync(child, ct);
         await users.AddTypeAssignmentAsync(
@@ -138,7 +138,7 @@ public class UserService(
             {
                 UserId = child.Id,
                 UserTypeId = request.RoleId,
-                AssignedAt = now
+                AssignedAt = now,
             },
             ct
         );

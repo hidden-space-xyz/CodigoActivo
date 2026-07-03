@@ -84,7 +84,7 @@ public class ActivityService(
             EventId = eventId,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId
+            CreatedBy = userId,
         };
         ApplyAllowedRoles(activity, request.AllowedRoleTypes);
 
@@ -181,7 +181,7 @@ public class ActivityService(
             UserId = userId,
             ActivityId = activityId,
             ActivityRoleTypeId = request.ActivityRoleTypeId,
-            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested
+            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
         };
         await activities.AddAssignmentAsync(assignment, ct);
         await uow.SaveChangesAsync(ct);
@@ -239,7 +239,7 @@ public class ActivityService(
                     UserId = item.UserId,
                     ActivityId = activityId,
                     ActivityRoleTypeId = item.ActivityRoleTypeId,
-                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested
+                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
                 },
                 ct
             );
@@ -404,7 +404,7 @@ public class ActivityService(
         var roleType = new ActivityRoleType
         {
             Name = name,
-            Description = request.Description?.Trim() ?? string.Empty
+            Description = request.Description?.Trim() ?? string.Empty,
         };
         await roleTypes.AddAsync(roleType, ct);
         await uow.SaveChangesAsync(ct);
@@ -469,7 +469,7 @@ public class ActivityService(
                 new ActivityAllowedRoleType
                 {
                     ActivityId = activity.Id,
-                    ActivityRoleTypeId = role.ActivityRoleTypeId
+                    ActivityRoleTypeId = role.ActivityRoleTypeId,
                 }
             );
     }

@@ -75,7 +75,7 @@ public static class DependencyInjection
                     out var maxSize
                 ) && maxSize > 0
                     ? maxSize
-                    : FileStorageOptions.DefaultMaxSizeBytes
+                    : FileStorageOptions.DefaultMaxSizeBytes,
         };
         services.AddSingleton(storageOptions);
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();

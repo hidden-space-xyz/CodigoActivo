@@ -15,7 +15,7 @@ public sealed class CsrfValidationMiddleware(
         "GET",
         "HEAD",
         "OPTIONS",
-        "TRACE"
+        "TRACE",
     };
 
     public async Task InvokeAsync(HttpContext context)

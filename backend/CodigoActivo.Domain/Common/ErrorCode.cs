@@ -5,11 +5,8 @@ namespace CodigoActivo.Domain.Common;
 [JsonConverter(typeof(JsonStringEnumConverter<ErrorCode>))]
 public enum ErrorCode
 {
-    // Announcement
     AnnouncementNotFound,
     AnnouncementThumbnailNotFound,
-
-    // Activity
     ActivityNotFound,
     ActivityModalityTypeNotFound,
     ActivitySignupClosed,
@@ -25,8 +22,6 @@ public enum ErrorCode
     ActivityScheduleInvalidRange,
     ActivityScheduleOutsideEventRange,
     ActivityThumbnailNotFound,
-
-    // Event
     EventNotFound,
     EventActivitiesOutsideNewRange,
     EventCategoryTypeNotFound,
@@ -35,16 +30,10 @@ public enum ErrorCode
     EventCategoriesRequired,
     EventScheduleRequired,
     EventScheduleInvalidRange,
-
-    // Resource
     ResourceNotFound,
     ResourceThumbnailNotFound,
-
-    // Partner
     PartnerNotFound,
     PartnerThumbnailNotFound,
-
-    // File
     FileNotFound,
     FileContentMissingFromStorage,
     FileUploadMissing,
@@ -52,8 +41,6 @@ public enum ErrorCode
     FileUploadTooLarge,
     FileUploadStreamNotSeekable,
     FileUploadUnsupportedFormat,
-
-    // User
     UserNotFound,
     UserDeleteAdminForbidden,
     UserTypeNotFound,
@@ -69,8 +56,6 @@ public enum ErrorCode
     UserContactInfoRequired,
     UserEmailAlreadyInUse,
     UserPhoneAlreadyInUse,
-
-    // Auth
     InvalidCredentials,
     UserAccountBlocked,
     UserAccountIsDependent,
@@ -82,11 +67,9 @@ public enum ErrorCode
     RegisterEmailOrPhoneAlreadyInUse,
     RegisterMinorBirthDateNotMinor,
     OtpInvalidOrExpired,
-
-    // Infrastructure (auth pipeline, CSRF, model validation, unhandled exceptions)
     AuthenticationRequired,
     AccessDenied,
     InvalidCsrfToken,
     RequestValidationFailed,
-    UnexpectedError
+    UnexpectedError,
 }

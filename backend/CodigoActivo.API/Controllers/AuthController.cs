@@ -91,7 +91,7 @@ public class AuthController(IAuthService auth) : CommandControllerBase
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
         };
         if (!string.IsNullOrEmpty(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
 

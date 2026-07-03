@@ -31,7 +31,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
             Description = request.Description,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId
+            CreatedBy = userId,
         };
         await resources.AddAsync(resource, ct);
         await uow.SaveChangesAsync(ct);

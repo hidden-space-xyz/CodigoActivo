@@ -51,7 +51,7 @@ public class EventService(
             SignupEndsAt = schedule.Value.SignupEndsAt,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId
+            CreatedBy = userId,
         };
         ApplyCategories(ev, request.CategoryTypeIds!);
 

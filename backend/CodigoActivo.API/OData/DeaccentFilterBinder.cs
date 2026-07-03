@@ -21,7 +21,7 @@ public sealed class DeaccentFilterBinder : FilterBinder
         ("é", "e"),
         ("í", "i"),
         ("ó", "o"),
-        ("ú", "u")
+        ("ú", "u"),
     ];
 
     private static bool FunctionRegistered;

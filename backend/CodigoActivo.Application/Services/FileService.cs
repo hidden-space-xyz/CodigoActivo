@@ -66,7 +66,7 @@ public class FileService(
             Name = SanitizeName(upload.FileName),
             Extension = format.Extension,
             UploadedAt = DateTimeOffset.UtcNow,
-            UploadedBy = userId
+            UploadedBy = userId,
         };
 
         var storedName = StoredName(file.Id, file.Extension);

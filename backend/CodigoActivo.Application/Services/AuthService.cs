@@ -122,7 +122,7 @@ public class AuthService(
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
             OtpCode = otp,
             OtpExpiresAt = now.AddMinutes(15),
-            CreatedAt = now
+            CreatedAt = now,
         };
         await users.AddAsync(adult, ct);
 
@@ -135,7 +135,7 @@ public class AuthService(
                 {
                     UserId = adult.Id,
                     UserTypeId = roleId,
-                    AssignedAt = now
+                    AssignedAt = now,
                 },
                 ct
             );
@@ -150,7 +150,7 @@ public class AuthService(
                 BirthDate = minor.BirthDate,
                 ParentId = adult.Id,
                 UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                CreatedAt = now
+                CreatedAt = now,
             };
             await users.AddAsync(child, ct);
             await users.AddTypeAssignmentAsync(
@@ -158,7 +158,7 @@ public class AuthService(
                 {
                     UserId = child.Id,
                     UserTypeId = minor.RoleId,
-                    AssignedAt = now
+                    AssignedAt = now,
                 },
                 ct
             );

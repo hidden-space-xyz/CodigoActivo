@@ -34,7 +34,7 @@ public class AnnouncementService(
             Description = request.Description,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId
+            CreatedBy = userId,
         };
         await announcements.AddAsync(announcement, ct);
         await uow.SaveChangesAsync(ct);

@@ -13,7 +13,7 @@ public class ActivityUserRoleAssignmentConfiguration
         {
             x.UserId,
             x.ActivityId,
-            x.ActivityRoleTypeId
+            x.ActivityRoleTypeId,
         });
 
         builder

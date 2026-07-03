@@ -29,7 +29,7 @@ public static class Projections
                     category.EventCategoryType.Name,
                     category.EventCategoryType.Color
                 ))
-                .ToList()
+                .ToList(),
         };
 
     public static readonly Expression<Func<Announcement, AnnouncementResponse>> Announcement =
@@ -44,7 +44,7 @@ public static class Projections
             CreatedBy = announcement.CreatedBy,
             UpdatedBy = announcement.UpdatedBy,
             ThumbnailId = announcement.ThumbnailId,
-            Featured = announcement.Featured
+            Featured = announcement.Featured,
         };
 
     public static readonly Expression<Func<Resource, ResourceResponse>> Resource =
@@ -58,7 +58,7 @@ public static class Projections
             UpdatedAt = resource.UpdatedAt,
             CreatedBy = resource.CreatedBy,
             UpdatedBy = resource.UpdatedBy,
-            ThumbnailId = resource.ThumbnailId
+            ThumbnailId = resource.ThumbnailId,
         };
 
     public static readonly Expression<Func<Partner, PartnerResponse>> Partner =
@@ -73,7 +73,7 @@ public static class Projections
             UpdatedAt = partner.UpdatedAt,
             CreatedBy = partner.CreatedBy,
             UpdatedBy = partner.UpdatedBy,
-            ThumbnailId = partner.ThumbnailId
+            ThumbnailId = partner.ThumbnailId,
         };
 
     public static readonly Expression<Func<Activity, ActivityResponse>> Activity =
@@ -98,7 +98,7 @@ public static class Projections
                     role.ActivityRoleTypeId,
                     role.ActivityRoleType.Name
                 ))
-                .ToList()
+                .ToList(),
         };
 
     public static readonly Expression<Func<User, UserResponse>> User = user => new UserResponse
@@ -124,7 +124,7 @@ public static class Projections
                 assignment.UserType.Name,
                 assignment.UserType.Color
             ))
-            .ToList()
+            .ToList(),
     };
 
     public static readonly Expression<
@@ -133,7 +133,7 @@ public static class Projections
     {
         Id = roleType.Id,
         Name = roleType.Name,
-        Description = roleType.Description
+        Description = roleType.Description,
     };
 
     public static readonly Expression<
@@ -143,7 +143,7 @@ public static class Projections
         Id = statusType.Id,
         Name = statusType.Name,
         Description = statusType.Description,
-        Color = statusType.Color
+        Color = statusType.Color,
     };
 
     public static readonly Expression<
@@ -152,7 +152,7 @@ public static class Projections
     {
         Id = categoryType.Id,
         Name = categoryType.Name,
-        Color = categoryType.Color
+        Color = categoryType.Color,
     };
 
     public static readonly Expression<
@@ -160,7 +160,7 @@ public static class Projections
     > ActivityModalityType = modalityType => new ActivityModalityTypeResponse
     {
         Id = modalityType.Id,
-        Name = modalityType.Name
+        Name = modalityType.Name,
     };
 
     public static readonly Expression<Func<UserStatusType, UserStatusTypeResponse>> UserStatusType =
@@ -169,7 +169,7 @@ public static class Projections
             Id = statusType.Id,
             Name = statusType.Name,
             Description = statusType.Description,
-            Color = statusType.Color
+            Color = statusType.Color,
         };
 
     public static readonly Expression<Func<UserType, UserTypeResponse>> UserType =
@@ -178,7 +178,7 @@ public static class Projections
             Id = userType.Id,
             Name = userType.Name,
             Description = userType.Description,
-            Color = userType.Color
+            Color = userType.Color,
         };
 
     public static readonly Expression<Func<UserType, RegistrationTypeResponse>> RegistrationType =
@@ -189,7 +189,7 @@ public static class Projections
             Description = userType.Description,
             Color = userType.Color,
             IsAllowedForMinors = userType.IsAllowedForMinors,
-            IsAllowedForAdults = userType.IsAllowedForAdults
+            IsAllowedForAdults = userType.IsAllowedForAdults,
         };
 
     public static readonly Expression<
@@ -209,6 +209,6 @@ public static class Projections
         Status = new AssignedActivityStatusResponse(
             assignment.AssignmentStatusId,
             assignment.AssignmentStatus.Name
-        )
+        ),
     };
 }

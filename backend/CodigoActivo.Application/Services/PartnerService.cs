@@ -33,7 +33,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
             Web = request.Website.NormalizeOrNull(),
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId
+            CreatedBy = userId,
         };
         await partners.AddAsync(partner, ct);
         await uow.SaveChangesAsync(ct);
