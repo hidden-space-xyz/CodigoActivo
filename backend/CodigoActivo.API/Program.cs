@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Context;
 using Serilog.Events;

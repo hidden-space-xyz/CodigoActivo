@@ -1,4 +1,3 @@
-using System.Globalization;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Repositories;
@@ -12,6 +11,7 @@ using CodigoActivo.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 namespace CodigoActivo.Composition;
 

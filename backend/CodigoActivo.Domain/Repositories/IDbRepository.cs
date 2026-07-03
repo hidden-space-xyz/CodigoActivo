@@ -1,5 +1,5 @@
-using System.Linq.Expressions;
 using CodigoActivo.Domain.Entities.Abstractions;
+using System.Linq.Expressions;
 
 namespace CodigoActivo.Domain.Repositories;
 

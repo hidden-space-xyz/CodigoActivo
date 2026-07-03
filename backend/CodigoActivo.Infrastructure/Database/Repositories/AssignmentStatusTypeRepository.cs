@@ -7,4 +7,5 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 public class AssignmentStatusTypeRepository(CodigoActivoDbContext context)
     : Repository<AssignmentStatusType>(context),
-        IAssignmentStatusTypeRepository { }
+        IAssignmentStatusTypeRepository
+{ }

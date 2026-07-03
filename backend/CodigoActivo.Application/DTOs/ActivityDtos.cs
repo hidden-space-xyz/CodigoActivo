@@ -39,7 +39,8 @@ UpdatedAt: null,
             Guid.Empty,
 UpdatedBy: null,
             []
-        ) { }
+        )
+    { }
 }
 
 public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId);

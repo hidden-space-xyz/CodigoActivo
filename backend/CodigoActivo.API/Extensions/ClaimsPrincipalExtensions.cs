@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using CodigoActivo.Domain.Constants;
+using System.Security.Claims;
 
 namespace CodigoActivo.API.Extensions;
 

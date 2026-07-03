@@ -37,7 +37,8 @@ UpdatedBy: null,
             Guid.Empty,
 Featured: false,
             []
-        ) { }
+        )
+    { }
 }
 
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);

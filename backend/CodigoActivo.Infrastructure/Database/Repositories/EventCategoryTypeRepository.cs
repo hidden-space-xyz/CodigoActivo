@@ -7,4 +7,5 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 public class EventCategoryTypeRepository(CodigoActivoDbContext context)
     : Repository<EventCategoryType>(context),
-        IEventCategoryTypeRepository { }
+        IEventCategoryTypeRepository
+{ }

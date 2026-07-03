@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
@@ -7,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CodigoActivo.API.Controllers;
 

@@ -1,8 +1,8 @@
-using System.Linq.Expressions;
 using CodigoActivo.Domain.Entities.Abstractions;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 

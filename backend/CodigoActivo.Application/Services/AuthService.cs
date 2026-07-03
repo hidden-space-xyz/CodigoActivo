@@ -226,7 +226,7 @@ public class AuthService(
 
         if (
             string.IsNullOrWhiteSpace(otp)
-            || (user.OtpCode == Guid.Empty || user.OtpCode is null)
+            || user.OtpCode == Guid.Empty || user.OtpCode is null
             || user.OtpExpiresAt is null
             || user.OtpExpiresAt < DateTimeOffset.UtcNow
             || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
