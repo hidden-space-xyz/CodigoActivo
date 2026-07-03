@@ -1,3 +1,4 @@
+using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +13,7 @@ public class FilesController(IFileService files) : ODataController
     public async Task<ActionResult<FileResponse>> Get(Guid key, CancellationToken ct)
     {
         var result = await files.GetByIdAsync(key, ct);
-        return result.IsSuccess ? Ok(result.Value) : NotFound();
+        return this.ToActionResult(result);
     }
 
     [HttpGet("api/files/{fileId:guid}/content")]
@@ -21,7 +22,7 @@ public class FilesController(IFileService files) : ODataController
         var result = await files.GetContentAsync(fileId, ct);
         if (result.IsFailure)
         {
-            return NotFound();
+            return this.ToProblemResult(result.Error!);
         }
 
         var content = result.Value;

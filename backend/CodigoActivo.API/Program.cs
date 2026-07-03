@@ -2,9 +2,11 @@ using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.API.OData;
 using CodigoActivo.Composition;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Query.Expressions;
@@ -63,7 +65,18 @@ try
                     EdmModelBuilder.Build(),
                     services => services.AddSingleton<IFilterBinder, DeaccentFilterBinder>()
                 )
-        );
+        )
+        .ConfigureApiBehaviorOptions(options =>
+        {
+            options.InvalidModelStateResponseFactory = context =>
+            {
+                var (statusCode, body) = ApiErrorResponseExtensions.Create(
+                    Error.BadRequest(ErrorCode.RequestValidationFailed),
+                    context.HttpContext
+                );
+                return new ObjectResult(body) { StatusCode = statusCode };
+            };
+        });
 
     builder.Services.AddAntiforgery(options =>
     {
@@ -91,28 +104,30 @@ try
                 builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
             );
 
-            options.Events.OnRedirectToLogin = ctx =>
+            options.Events.OnRedirectToLogin = async ctx =>
             {
-                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return Task.CompletedTask;
+                var (statusCode, body) = ApiErrorResponseExtensions.Create(
+                    Error.Unauthorized(ErrorCode.AuthenticationRequired),
+                    ctx.HttpContext
+                );
+                ctx.Response.StatusCode = statusCode;
+                await ctx.Response.WriteAsJsonAsync(body);
             };
-            options.Events.OnRedirectToAccessDenied = ctx =>
+            options.Events.OnRedirectToAccessDenied = async ctx =>
             {
-                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-                return Task.CompletedTask;
+                var (statusCode, body) = ApiErrorResponseExtensions.Create(
+                    Error.Forbidden(ErrorCode.AccessDenied),
+                    ctx.HttpContext
+                );
+                ctx.Response.StatusCode = statusCode;
+                await ctx.Response.WriteAsJsonAsync(body);
             };
         });
 
     builder.Services.AddAuthorization();
 
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddProblemDetails(options =>
-    {
-        options.CustomizeProblemDetails = problemContext =>
-        {
-            problemContext.ProblemDetails.Extensions["traceId"] = problemContext.HttpContext.GetOrSetTraceId();
-        };
-    });
+    builder.Services.AddProblemDetails();
 
     const string CorsPolicy = "Frontend";
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -152,6 +167,7 @@ try
         );
 
         c.OperationFilter<JsonResponseMediaTypeFilter>();
+        c.DocumentFilter<ApiErrorResponseDocumentFilter>();
     });
 
     var app = builder.Build();

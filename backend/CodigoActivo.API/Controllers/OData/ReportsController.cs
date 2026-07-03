@@ -1,4 +1,5 @@
 using CodigoActivo.API.Attributes;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -17,7 +18,7 @@ public class ReportsController(IReportService reports) : ODataController
     )
     {
         var result = await reports.GetEventSummaryAsync(eventId, ct);
-        return result.IsSuccess ? Ok(result.Value) : NotFound();
+        return this.ToActionResult(result);
     }
 
     [HttpGet("api/odata/EventAssignments(eventId={eventId})")]
@@ -28,7 +29,7 @@ public class ReportsController(IReportService reports) : ODataController
     )
     {
         var result = await reports.GetEventAssignmentsAsync(eventId, ct);
-        return result.IsSuccess ? Ok(result.Value) : NotFound();
+        return this.ToActionResult(result);
     }
 
     [HttpGet("api/odata/ActivityAssignments(activityId={activityId})")]
@@ -39,7 +40,7 @@ public class ReportsController(IReportService reports) : ODataController
     )
     {
         var result = await reports.GetActivityAssignmentsAsync(activityId, ct);
-        return result.IsSuccess ? Ok(result.Value) : NotFound();
+        return this.ToActionResult(result);
     }
 
     [HttpGet("api/odata/DashboardSummary()")]

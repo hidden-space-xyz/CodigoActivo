@@ -4,13 +4,13 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { ErrorCode } from './errorCode';
 
-export interface UpdateResourceRequest {
+export interface ApiErrorResponse {
   /** @nullable */
   title?: string | null;
+  status?: number;
+  code?: ErrorCode;
   /** @nullable */
-  subtitle?: string | null;
-  /** @nullable */
-  description?: string | null;
-  thumbnailId?: string;
+  traceId?: string | null;
 }

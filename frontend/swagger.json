@@ -1,9 +1,8 @@
 {
   "openapi": "3.0.4",
   "info": {
-    "title": "CodigoActivo API",
-    "description": "Backend API for CodigoActivo (cookie session auth + CSRF).",
-    "version": "v1"
+    "title": "CodigoActivo.API",
+    "version": "1.0"
   },
   "paths": {
     "/api/activities/{eventId}": {
@@ -1519,6 +1518,27 @@
         },
         "additionalProperties": false
       },
+      "ApiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AssignHouseholdRequest": {
         "type": "object",
         "properties": {
@@ -1819,6 +1839,76 @@
           }
         },
         "additionalProperties": false
+      },
+      "ErrorCode": {
+        "enum": [
+          "AnnouncementNotFound",
+          "AnnouncementThumbnailNotFound",
+          "ActivityNotFound",
+          "ActivityModalityTypeNotFound",
+          "ActivitySignupClosed",
+          "ActivityRoleNotAllowed",
+          "ActivityAssignmentAlreadyExists",
+          "ActivityHouseholdAssignmentsRequired",
+          "ActivityHouseholdMemberNotAllowed",
+          "ActivityAssignmentNotFound",
+          "AssignmentStatusTypeNotFound",
+          "ActivityRoleTypeNotFound",
+          "ActivityScheduleRequired",
+          "ActivityScheduleInvalidRange",
+          "ActivityScheduleOutsideEventRange",
+          "ActivityThumbnailNotFound",
+          "EventNotFound",
+          "EventActivitiesOutsideNewRange",
+          "EventCategoryTypeNotFound",
+          "EventThumbnailNotFound",
+          "EventCategoriesRequired",
+          "EventScheduleRequired",
+          "EventScheduleInvalidRange",
+          "ResourceNotFound",
+          "ResourceThumbnailNotFound",
+          "PartnerNotFound",
+          "PartnerThumbnailNotFound",
+          "FileNotFound",
+          "FileContentMissingFromStorage",
+          "FileUploadMissing",
+          "FileUploadEmpty",
+          "FileUploadTooLarge",
+          "FileUploadStreamNotSeekable",
+          "FileUploadUnsupportedFormat",
+          "UserNotFound",
+          "UserDeleteAdminForbidden",
+          "UserTypeNotFound",
+          "ParentUserNotFound",
+          "UserParentIsMinor",
+          "UserChildBirthDateNotMinor",
+          "UserTypeNotAllowedForMinors",
+          "UserPasswordNotSet",
+          "UserCurrentPasswordIncorrect",
+          "UserParentIdRequired",
+          "UserCannotBeOwnParent",
+          "UserParentNotAllowedForAdult",
+          "UserContactInfoRequired",
+          "UserEmailAlreadyInUse",
+          "UserPhoneAlreadyInUse",
+          "InvalidCredentials",
+          "UserAccountBlocked",
+          "UserAccountIsDependent",
+          "UserAccountPendingVerification",
+          "CurrentUserNotFound",
+          "RegisterAdultCannotBeMinor",
+          "UserTypeNotAllowedForAdults",
+          "RegisterContactInfoRequired",
+          "RegisterEmailOrPhoneAlreadyInUse",
+          "RegisterMinorBirthDateNotMinor",
+          "OtpInvalidOrExpired",
+          "AuthenticationRequired",
+          "AccessDenied",
+          "InvalidCsrfToken",
+          "RequestValidationFailed",
+          "UnexpectedError"
+        ],
+        "type": "string"
       },
       "EventCategoryResponse": {
         "type": "object",

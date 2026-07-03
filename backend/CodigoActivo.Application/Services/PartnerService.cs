@@ -53,7 +53,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
         var partner = await partners.FindAsync(p => p.Id == id, ct);
         if (partner is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.PartnerNotFound);
         }
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
@@ -79,7 +79,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
     {
         if (!await partners.ExistsAsync(p => p.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.PartnerNotFound);
         }
 
         await partners.RemoveAsync(p => p.Id == id, ct);
@@ -91,7 +91,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
         }
 
         return Result.Success();

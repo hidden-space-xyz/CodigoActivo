@@ -57,7 +57,7 @@ public class ActivityService(
         var ev = await events.FindAsync(e => e.Id == eventId, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         var schedule = ValidateActivitySchedule(
@@ -78,7 +78,7 @@ public class ActivityService(
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
         }
 
         var activity = new Activity
@@ -113,13 +113,13 @@ public class ActivityService(
         var activity = await activities.GetForEditAsync(activityId, ct);
         if (activity is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityNotFound);
         }
 
         var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         var schedule = ValidateActivitySchedule(
@@ -140,7 +140,7 @@ public class ActivityService(
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
         }
 
         activity.Title = request.Title.Trim();
@@ -166,7 +166,7 @@ public class ActivityService(
     {
         if (!await activities.ExistsAsync(a => a.Id == activityId, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityNotFound);
         }
 
         await activities.RemoveAsync(a => a.Id == activityId, ct);
@@ -185,28 +185,28 @@ public class ActivityService(
         var activity = await activities.FindAsync(a => a.Id == activityId, ct);
         if (activity is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityNotFound);
         }
 
         var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         if (!isAdmin && !IsSignupOpen(ev, DateTimeOffset.UtcNow))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
         }
 
         if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
         }
 
         if (await activities.GetAssignmentAsync(userId, activityId, ct) is not null)
         {
-            return Error.Validation();
+            return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
         }
 
         var assignment = new ActivityUserRoleAssignment
@@ -241,24 +241,24 @@ RoleTypeName: null,
     {
         if (request.Assignments is null || request.Assignments.Count == 0)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityHouseholdAssignmentsRequired);
         }
 
         var activity = await activities.FindAsync(a => a.Id == activityId, ct);
         if (activity is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityNotFound);
         }
 
         var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         if (!isAdmin && !IsSignupOpen(ev, DateTimeOffset.UtcNow))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
         }
 
         var created = new List<AssignmentResponse>();
@@ -269,13 +269,13 @@ RoleTypeName: null,
                 var target = await users.FindAsync(u => u.Id == item.UserId, ct);
                 if (target is null || target.ParentId != actingUserId)
                 {
-                    return Error.Forbidden();
+                    return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
                 }
             }
 
             if (!await activities.AllowedRoleExistsAsync(activityId, item.ActivityRoleTypeId, ct))
             {
-                return Error.Validation();
+                return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
             }
 
             if (await activities.GetAssignmentAsync(item.UserId, activityId, ct) is not null)
@@ -321,7 +321,7 @@ RoleTypeName: null,
         var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
         if (assignment is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
         }
 
         if (!isAdmin)
@@ -329,18 +329,18 @@ RoleTypeName: null,
             var activity = await activities.FindAsync(a => a.Id == activityId, ct);
             if (activity is null)
             {
-                return Error.NotFound();
+                return Error.NotFound(ErrorCode.ActivityNotFound);
             }
 
             var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
             if (ev is null)
             {
-                return Error.NotFound();
+                return Error.NotFound(ErrorCode.EventNotFound);
             }
 
             if (!IsSignupOpen(ev, DateTimeOffset.UtcNow))
             {
-                return Error.Validation();
+                return Error.BadRequest(ErrorCode.ActivitySignupClosed);
             }
         }
 
@@ -359,13 +359,13 @@ RoleTypeName: null,
         var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
         if (assignment is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
         }
 
         var status = await statuses.FindAsync(s => s.Id == request.AssignmentStatusId, ct);
         if (status is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.AssignmentStatusTypeNotFound);
         }
 
         assignment.AssignmentStatusId = status.Id;
@@ -390,18 +390,18 @@ RoleTypeName: null,
         var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
         if (assignment is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
         }
 
         if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
         }
 
         var role = await roleTypes.FindAsync(r => r.Id == request.ActivityRoleTypeId, ct);
         if (role is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
         }
 
         assignment.ActivityRoleTypeId = role.Id;
@@ -427,7 +427,7 @@ RoleTypeName: null,
     {
         if (!await activities.ExistsAsync(a => a.Id == activityId, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityNotFound);
         }
 
         var target = await activities.FindAsync(a => a.Id == activityId, ct);
@@ -513,19 +513,19 @@ RoleTypeName: null,
     {
         if (startsAt is not { } start || endsAt is not { } end)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityScheduleRequired);
         }
 
         if (end <= start)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityScheduleInvalidRange);
         }
 
         var startDate = DateOnly.FromDateTime(start.UtcDateTime);
         var endDate = DateOnly.FromDateTime(end.UtcDateTime);
         if (startDate < ev.EventStartsAt || endDate > ev.EventEndsAt)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityScheduleOutsideEventRange);
         }
 
         return new ActivitySchedule(start, end);
@@ -537,7 +537,7 @@ RoleTypeName: null,
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ActivityThumbnailNotFound);
         }
 
         return Result.Success();
@@ -567,7 +567,7 @@ RoleTypeName: null,
         var roleType = await roleTypes.FindAsync(x => x.Id == id, ct);
         if (roleType is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
         }
 
         roleType.Name = request.Name.Trim();
@@ -581,7 +581,7 @@ RoleTypeName: null,
     {
         if (!await roleTypes.ExistsAsync(x => x.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
         }
 
         await roleTypes.RemoveAsync(x => x.Id == id, ct);

@@ -1,5 +1,7 @@
+using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
@@ -20,6 +22,6 @@ public class EventsController(IEventService events) : ODataController
     public async Task<ActionResult<EventResponse>> Get(Guid key, CancellationToken ct)
     {
         var result = await events.Query().FirstOrDefaultAsync(e => e.Id == key, ct);
-        return result is null ? NotFound() : Ok(result);
+        return result is null ? this.ToProblemResult(Error.NotFound(ErrorCode.EventNotFound)) : Ok(result);
     }
 }

@@ -24,7 +24,7 @@ public class FileService(
         var file = await files.FindAsync(f => f.Id == id, ct);
         var response = file?.ToResponse();
 
-        return response is null ? Error.NotFound() : Result.Success(response);
+        return response is null ? Error.NotFound(ErrorCode.FileNotFound) : Result.Success(response);
     }
 
     public async Task<Result<FileContentValueObject>> GetContentAsync(
@@ -44,7 +44,7 @@ public class FileService(
         );
         if (stream is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.FileContentMissingFromStorage);
         }
 
         var format = await stream.DetectImageFormatAsync(ct);
@@ -104,7 +104,7 @@ public class FileService(
         var file = await files.FindAsync(f => f.Id == id, ct);
         if (file is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.FileNotFound);
         }
 
         var detection = await ValidateAndDetectAsync(upload, ct);
@@ -154,7 +154,7 @@ public class FileService(
         var file = await files.FindAsync(f => f.Id == id, ct);
         if (file is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.FileNotFound);
         }
 
         var storedName = StoredName(file.Id, file.Extension);
@@ -173,29 +173,29 @@ public class FileService(
     {
         if (upload is null)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.FileUploadMissing);
         }
 
         if (upload.Length <= 0)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.FileUploadEmpty);
         }
 
         if (upload.Length > options.MaxSizeBytes)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.FileUploadTooLarge);
         }
 
         if (!upload.Content.CanSeek)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.FileUploadStreamNotSeekable);
         }
 
         upload.Content.Position = 0;
         var format = await upload.Content.DetectImageFormatAsync(ct);
         if (format is null)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.FileUploadUnsupportedFormat);
         }
 
         upload.Content.Position = 0;

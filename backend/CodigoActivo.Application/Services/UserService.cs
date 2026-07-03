@@ -32,7 +32,7 @@ public class UserService(
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserNotFound);
         }
 
         var rules = request.BirthDate.IsMinor()
@@ -66,12 +66,12 @@ public class UserService(
     {
         if (!await users.ExistsAsync(u => u.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserNotFound);
         }
 
         if (await users.HasTypeAssignmentAsync(id, SeedIds.UserTypes.Admin, ct))
         {
-            return Error.Forbidden();
+            return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
         }
 
         await users.RemoveAsync(u => u.Id == id, ct);
@@ -87,12 +87,12 @@ public class UserService(
     {
         if (!await users.ExistsAsync(u => u.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserNotFound);
         }
 
         if (!await userTypes.ExistsAsync(ut => ut.Id == userTypeId, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserTypeNotFound);
         }
 
         if (!await users.HasTypeAssignmentAsync(id, userTypeId, ct))
@@ -122,28 +122,28 @@ public class UserService(
         var parent = await users.FindAsync(u => u.Id == parentId, ct);
         if (parent is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ParentUserNotFound);
         }
 
         if (parent.BirthDate.IsMinor())
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserParentIsMinor);
         }
 
         if (!request.BirthDate.IsMinor())
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
         }
 
         var role = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
         if (role is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserTypeNotFound);
         }
 
         if (role.Hidden || !role.IsAllowedForMinors)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -181,17 +181,17 @@ public class UserService(
         var user = await users.FindAsync(u => u.Id == userId, ct);
         if (user is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserNotFound);
         }
 
         if (string.IsNullOrEmpty(user.PasswordHash))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserPasswordNotSet);
         }
 
         if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
         user.PasswordHash = hasher.Hash(request.NewPassword);
@@ -225,23 +225,23 @@ public class UserService(
     {
         if (parentId is not { } parent)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserParentIdRequired);
         }
 
         if (parent == excludeUserId)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
         }
 
         var parentUser = await users.FindAsync(u => u.Id == parent, ct);
         if (parentUser is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ParentUserNotFound);
         }
 
         if (parentUser.BirthDate.IsMinor())
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserParentIsMinor);
         }
 
         user.ParentId = parent;
@@ -264,24 +264,24 @@ public class UserService(
     {
         if (parentId is not null)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
         }
 
         var email = rawEmail.NormalizeOrNull();
         var phone = rawPhone.NormalizeOrNull();
         if (email is null || phone is null)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.UserContactInfoRequired);
         }
 
         if (await users.EmailExistsAsync(email, excludeUserId, ct))
         {
-            return Error.Validation();
+            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
         }
 
         if (await users.PhoneExistsAsync(phone, excludeUserId, ct))
         {
-            return Error.Validation();
+            return Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
         }
 
         user.ParentId = null;

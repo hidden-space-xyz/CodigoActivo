@@ -1,0 +1,88 @@
+import type { ErrorCode } from '@/shared/api/generated/models'
+
+export const errorMessages: Record<ErrorCode, string> = {
+  // Announcement
+  AnnouncementNotFound: 'No se encontró el anuncio.',
+  AnnouncementThumbnailNotFound: 'No se encontró la imagen del anuncio.',
+
+  // Activity
+  ActivityNotFound: 'No se encontró la actividad.',
+  ActivityModalityTypeNotFound: 'La modalidad de la actividad no es válida.',
+  ActivitySignupClosed: 'La inscripción a esta actividad está cerrada.',
+  ActivityRoleNotAllowed: 'Este rol no está permitido para la actividad.',
+  ActivityAssignmentAlreadyExists: 'Esta persona ya está asignada a la actividad.',
+  ActivityHouseholdAssignmentsRequired: 'Debes asignar al menos un integrante del grupo familiar.',
+  ActivityHouseholdMemberNotAllowed:
+    'Este integrante del grupo familiar no puede participar en la actividad.',
+  ActivityAssignmentNotFound: 'No se encontró la asignación de la actividad.',
+  AssignmentStatusTypeNotFound: 'El estado de la asignación no es válido.',
+  ActivityRoleTypeNotFound: 'El rol de la actividad no es válido.',
+  ActivityScheduleRequired: 'Debes indicar un horario para la actividad.',
+  ActivityScheduleInvalidRange: 'El horario de la actividad no es válido.',
+  ActivityScheduleOutsideEventRange:
+    'El horario de la actividad debe estar dentro de las fechas del evento.',
+  ActivityThumbnailNotFound: 'No se encontró la imagen de la actividad.',
+
+  // Event
+  EventNotFound: 'No se encontró el evento.',
+  EventActivitiesOutsideNewRange: 'Hay actividades fuera del nuevo rango de fechas del evento.',
+  EventCategoryTypeNotFound: 'La categoría del evento no es válida.',
+  EventThumbnailNotFound: 'No se encontró la imagen del evento.',
+  EventCategoriesRequired: 'Debes seleccionar al menos una categoría para el evento.',
+  EventScheduleRequired: 'Debes indicar un horario para el evento.',
+  EventScheduleInvalidRange: 'El horario del evento no es válido.',
+
+  // Resource
+  ResourceNotFound: 'No se encontró el recurso.',
+  ResourceThumbnailNotFound: 'No se encontró la imagen del recurso.',
+
+  // Partner
+  PartnerNotFound: 'No se encontró el aliado.',
+  PartnerThumbnailNotFound: 'No se encontró la imagen del aliado.',
+
+  // File
+  FileNotFound: 'No se encontró el archivo.',
+  FileContentMissingFromStorage: 'El contenido del archivo ya no está disponible.',
+  FileUploadMissing: 'Debes seleccionar un archivo para subir.',
+  FileUploadEmpty: 'El archivo seleccionado está vacío.',
+  FileUploadTooLarge: 'El archivo supera el tamaño máximo permitido.',
+  FileUploadStreamNotSeekable: 'No se pudo procesar el archivo subido.',
+  FileUploadUnsupportedFormat: 'El formato del archivo no es compatible.',
+
+  // User
+  UserNotFound: 'No se encontró el usuario.',
+  UserDeleteAdminForbidden: 'No puedes eliminar a un usuario administrador.',
+  UserTypeNotFound: 'El tipo de usuario no es válido.',
+  ParentUserNotFound: 'No se encontró el usuario responsable.',
+  UserParentIsMinor: 'El responsable no puede ser menor de edad.',
+  UserChildBirthDateNotMinor: 'La fecha de nacimiento indicada no corresponde a un menor de edad.',
+  UserTypeNotAllowedForMinors: 'Este tipo de usuario no está permitido para menores de edad.',
+  UserPasswordNotSet: 'El usuario no tiene una contraseña configurada.',
+  UserCurrentPasswordIncorrect: 'La contraseña actual no es correcta.',
+  UserParentIdRequired: 'Debes indicar el usuario responsable.',
+  UserCannotBeOwnParent: 'Un usuario no puede ser su propio responsable.',
+  UserParentNotAllowedForAdult: 'Un usuario mayor de edad no puede tener un responsable.',
+  UserContactInfoRequired: 'Debes indicar al menos un dato de contacto.',
+  UserEmailAlreadyInUse: 'Este correo electrónico ya está en uso.',
+  UserPhoneAlreadyInUse: 'Este teléfono ya está en uso.',
+
+  // Auth
+  InvalidCredentials: 'El correo electrónico o la contraseña no son correctos.',
+  UserAccountBlocked: 'Tu cuenta está bloqueada. Contacta al administrador.',
+  UserAccountIsDependent: 'Esta cuenta depende de un responsable y no puede iniciar sesión directamente.',
+  UserAccountPendingVerification: 'Tu cuenta aún no ha sido verificada.',
+  CurrentUserNotFound: 'No se encontró el usuario de la sesión actual.',
+  RegisterAdultCannotBeMinor: 'Un usuario adulto no puede tener una fecha de nacimiento de menor de edad.',
+  UserTypeNotAllowedForAdults: 'Este tipo de usuario no está permitido para personas adultas.',
+  RegisterContactInfoRequired: 'Debes indicar al menos un dato de contacto para registrarte.',
+  RegisterEmailOrPhoneAlreadyInUse: 'El correo electrónico o el teléfono ya están en uso.',
+  RegisterMinorBirthDateNotMinor: 'La fecha de nacimiento indicada no corresponde a un menor de edad.',
+  OtpInvalidOrExpired: 'El código de verificación no es válido o ha expirado.',
+
+  // Infrastructure (auth pipeline, CSRF, model validation, unhandled exceptions)
+  AuthenticationRequired: 'Debes iniciar sesión para continuar.',
+  AccessDenied: 'No tienes permiso para realizar esta acción.',
+  InvalidCsrfToken: 'La sesión ha expirado. Recarga la página e inténtalo de nuevo.',
+  RequestValidationFailed: 'Los datos enviados no son válidos. Revisa el formulario e inténtalo de nuevo.',
+  UnexpectedError: 'Ha ocurrido un error inesperado. Inténtalo de nuevo.',
+}

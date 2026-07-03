@@ -38,22 +38,22 @@ public class AuthService(
             || !hasher.Verify(request.Password, user.PasswordHash)
         )
         {
-            return Error.Unauthorized();
+            return Error.Unauthorized(ErrorCode.InvalidCredentials);
         }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked)
         {
-            return Error.Forbidden();
+            return Error.Forbidden(ErrorCode.UserAccountBlocked);
         }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent)
         {
-            return Error.Forbidden();
+            return Error.Forbidden(ErrorCode.UserAccountIsDependent);
         }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending)
         {
-            return Error.Forbidden();
+            return Error.Forbidden(ErrorCode.UserAccountPendingVerification);
         }
 
         user.RegisterLogin();
@@ -70,7 +70,7 @@ public class AuthService(
         var user = await users.GetByIdWithDetailsAsync(userId, ct);
         if (user is null)
         {
-            return Error.Unauthorized();
+            return Error.Unauthorized(ErrorCode.CurrentUserNotFound);
         }
 
         return user.ToResponse();
@@ -83,7 +83,7 @@ public class AuthService(
     {
         if (request.BirthDate.IsMinor())
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
         }
 
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
@@ -93,12 +93,12 @@ public class AuthService(
             var adultRole = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
             if (adultRole is null)
             {
-                return Error.NotFound();
+                return Error.NotFound(ErrorCode.UserTypeNotFound);
             }
 
             if (adultRole.Hidden || !adultRole.IsAllowedForAdults)
             {
-                return Error.Validation();
+                return Error.BadRequest(ErrorCode.UserTypeNotAllowedForAdults);
             }
         }
 
@@ -106,7 +106,7 @@ public class AuthService(
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
         }
 
         if (
@@ -114,7 +114,7 @@ public class AuthService(
             || await users.PhoneExistsAsync(phone, excludeUserId: null, ct)
         )
         {
-            return Error.Validation();
+            return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
         }
 
         var minorRequests = request.Minors ?? [];
@@ -122,18 +122,18 @@ public class AuthService(
         {
             if (!minor.BirthDate.IsMinor())
             {
-                return Error.Validation();
+                return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
             }
 
             var minorRole = await userTypes.FindAsync(ut => ut.Id == minor.RoleId, ct);
             if (minorRole is null)
             {
-                return Error.NotFound();
+                return Error.NotFound(ErrorCode.UserTypeNotFound);
             }
 
             if (minorRole.Hidden || !minorRole.IsAllowedForMinors)
             {
-                return Error.Validation();
+                return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
             }
         }
 
@@ -221,7 +221,7 @@ public class AuthService(
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.UserNotFound);
         }
 
         if (
@@ -235,7 +235,7 @@ public class AuthService(
             )
         )
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
         }
 
         user.Verify(SeedIds.UserStatusTypes.Active);

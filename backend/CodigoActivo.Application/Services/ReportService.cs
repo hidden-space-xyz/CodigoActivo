@@ -25,7 +25,7 @@ public class ReportService(
         var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         var assignments = ev.Activities.SelectMany(a => a.Assignments).ToList();
@@ -70,7 +70,7 @@ public class ReportService(
         var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
@@ -101,7 +101,7 @@ public class ReportService(
         var activity = await activities.GetWithAssignmentsAndUsersAsync(activityId, ct);
         if (activity is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ActivityNotFound);
         }
 
         var signedUpUserIds = activity.Assignments.Select(a => a.UserId).ToHashSet();

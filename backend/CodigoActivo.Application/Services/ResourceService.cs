@@ -51,7 +51,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
         var resource = await resources.FindAsync(r => r.Id == id, ct);
         if (resource is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ResourceNotFound);
         }
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
@@ -76,7 +76,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
     {
         if (!await resources.ExistsAsync(r => r.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.ResourceNotFound);
         }
 
         await resources.RemoveAsync(r => r.Id == id, ct);
@@ -88,7 +88,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
         }
 
         return Result.Success();

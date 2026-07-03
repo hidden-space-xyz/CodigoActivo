@@ -98,7 +98,7 @@ public class EventService(
         var ev = await events.GetForEditAsync(id, ct);
         if (ev is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         var (lowerInclusive, upperExclusive) = DayBounds(
@@ -107,7 +107,7 @@ public class EventService(
         );
         if (await activities.AnyOutsideRangeAsync(id, lowerInclusive, upperExclusive, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.EventActivitiesOutsideNewRange);
         }
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
@@ -140,7 +140,7 @@ public class EventService(
     {
         if (!await events.ExistsAsync(e => e.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         await events.RemoveAsync(e => e.Id == id, ct);
@@ -155,7 +155,7 @@ public class EventService(
     {
         if (!await events.ExistsAsync(e => e.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         await events.SetFeaturedAsync(id, ct);
@@ -193,7 +193,7 @@ public class EventService(
         var categoryType = await categoryTypes.FindAsync(x => x.Id == id, ct);
         if (categoryType is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
         }
 
         categoryType.Name = request.Name.Trim();
@@ -207,7 +207,7 @@ public class EventService(
     {
         if (!await categoryTypes.ExistsAsync(x => x.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
         }
 
         await categoryTypes.RemoveAsync(x => x.Id == id, ct);
@@ -219,7 +219,7 @@ public class EventService(
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
         }
 
         return Result.Success();
@@ -232,14 +232,14 @@ public class EventService(
     {
         if (categoryTypeIds is null || categoryTypeIds.Count == 0)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.EventCategoriesRequired);
         }
 
         var distinct = categoryTypeIds.Distinct().ToList();
         var existing = await categoryTypes.CountAsync(c => distinct.Contains(c.Id), ct);
         if (existing != distinct.Count)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.EventCategoryTypeNotFound);
         }
 
         return Result.Success();
@@ -269,12 +269,12 @@ public class EventService(
             || signupEndsAt is not { } signupEnd
         )
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.EventScheduleRequired);
         }
 
         if (eventEnd < eventStart || signupEnd <= signupStart)
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
         }
 
         return new EventSchedule(eventStart, eventEnd, signupStart, signupEnd);

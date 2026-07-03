@@ -1,12 +1,9 @@
+using CodigoActivo.API.Extensions;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Middlewares;
 
-public sealed class GlobalExceptionHandler(
-    ILogger<GlobalExceptionHandler> logger,
-    IProblemDetailsService problemDetails
-) : IExceptionHandler
+public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -16,19 +13,10 @@ public sealed class GlobalExceptionHandler(
     {
         logger.LogError(exception, "Unhandled exception while processing the request");
 
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        var (statusCode, body) = ApiErrorResponseExtensions.CreateInternalError(httpContext);
+        httpContext.Response.StatusCode = statusCode;
+        await httpContext.Response.WriteAsJsonAsync(body, cancellationToken);
 
-        return await problemDetails.TryWriteAsync(
-            new ProblemDetailsContext
-            {
-                HttpContext = httpContext,
-                Exception = exception,
-                ProblemDetails = new ProblemDetails
-                {
-                    Status = StatusCodes.Status500InternalServerError,
-                    Title = "An unexpected error occurred.",
-                },
-            }
-        );
+        return true;
     }
 }

@@ -19,9 +19,14 @@ public class FileCommandsController(IFileService files) : CommandControllerBase
     [RequestSizeLimit(MaxUploadBytes)]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
     {
-        if (file is null || file.Length == 0)
+        if (file is null)
         {
-            return ToProblem(Error.Validation());
+            return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
+        }
+
+        if (file.Length == 0)
+        {
+            return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
         }
 
         var upload = new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
@@ -42,9 +47,14 @@ public class FileCommandsController(IFileService files) : CommandControllerBase
         CancellationToken ct
     )
     {
-        if (file is null || file.Length == 0)
+        if (file is null)
         {
-            return ToProblem(Error.Validation());
+            return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
+        }
+
+        if (file.Length == 0)
+        {
+            return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
         }
 
         var upload = new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);

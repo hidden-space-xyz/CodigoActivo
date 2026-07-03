@@ -1,9 +1,14 @@
+using CodigoActivo.API.Extensions;
+using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Middlewares;
 
-public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery antiforgery)
+public sealed class CsrfValidationMiddleware(
+    RequestDelegate next,
+    IAntiforgery antiforgery,
+    ILogger<CsrfValidationMiddleware> logger
+)
 {
     private static readonly HashSet<string> SafeMethods = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -13,7 +18,7 @@ public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery 
         "TRACE",
     };
 
-    public async Task InvokeAsync(HttpContext context, IProblemDetailsService problemDetails)
+    public async Task InvokeAsync(HttpContext context)
     {
         if (!SafeMethods.Contains(context.Request.Method) && RequiresValidation(context))
         {
@@ -23,19 +28,14 @@ public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery 
             }
             catch (AntiforgeryValidationException ex)
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await problemDetails.TryWriteAsync(
-                    new ProblemDetailsContext
-                    {
-                        HttpContext = context,
-                        ProblemDetails = new ProblemDetails
-                        {
-                            Status = StatusCodes.Status400BadRequest,
-                            Title = "Validation failed",
-                            Detail = $"Invalid or missing CSRF token. {ex.Message}",
-                        },
-                    }
+                logger.LogWarning(ex, "CSRF validation failed");
+
+                var (statusCode, body) = ApiErrorResponseExtensions.Create(
+                    Error.BadRequest(ErrorCode.InvalidCsrfToken),
+                    context
                 );
+                context.Response.StatusCode = statusCode;
+                await context.Response.WriteAsJsonAsync(body);
                 return;
             }
         }

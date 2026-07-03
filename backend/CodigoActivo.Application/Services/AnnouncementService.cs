@@ -54,7 +54,7 @@ public class AnnouncementService(
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
         if (announcement is null)
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.AnnouncementNotFound);
         }
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
@@ -79,7 +79,7 @@ public class AnnouncementService(
     {
         if (!await announcements.ExistsAsync(a => a.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.AnnouncementNotFound);
         }
 
         await announcements.RemoveAsync(a => a.Id == id, ct);
@@ -94,7 +94,7 @@ public class AnnouncementService(
     {
         if (!await announcements.ExistsAsync(a => a.Id == id, ct))
         {
-            return Error.NotFound();
+            return Error.NotFound(ErrorCode.AnnouncementNotFound);
         }
 
         await announcements.SetFeaturedAsync(id, ct);
@@ -107,7 +107,7 @@ public class AnnouncementService(
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
         {
-            return Error.Validation();
+            return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
         }
 
         return Result.Success();
