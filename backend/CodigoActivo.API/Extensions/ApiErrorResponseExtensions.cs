@@ -38,14 +38,16 @@ public static class ApiErrorResponseExtensions
         );
     }
 
-    private static (int Status, string Title) MapKind(ErrorKind kind) =>
-        kind switch
+    private static (int Status, string Title) MapKind(ErrorKind kind)
+    {
+        return kind switch
         {
             ErrorKind.BadRequest => (StatusCodes.Status400BadRequest, "Bad Request"),
             ErrorKind.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized"),
             ErrorKind.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden"),
             ErrorKind.NotFound => (StatusCodes.Status404NotFound, "Not Found"),
             ErrorKind.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported error kind."),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported error kind.")
         };
+    }
 }

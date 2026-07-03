@@ -8,4 +8,5 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 public class ResourceRepository(CodigoActivoDbContext context)
     : Repository<Resource>(context),
         IResourceRepository
-{ }
+{
+}

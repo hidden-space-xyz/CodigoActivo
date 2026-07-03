@@ -15,13 +15,12 @@ public sealed class CsrfValidationMiddleware(
         "GET",
         "HEAD",
         "OPTIONS",
-        "TRACE",
+        "TRACE"
     };
 
     public async Task InvokeAsync(HttpContext context)
     {
         if (!SafeMethods.Contains(context.Request.Method) && RequiresValidation(context))
-        {
             try
             {
                 await antiforgery.ValidateRequestAsync(context);
@@ -38,7 +37,6 @@ public sealed class CsrfValidationMiddleware(
                 await context.Response.WriteAsJsonAsync(body);
                 return;
             }
-        }
 
         await next(context);
     }

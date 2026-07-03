@@ -19,22 +19,16 @@ public class FileCommandsController(IFileService files) : CommandControllerBase
     [RequestSizeLimit(MaxUploadBytes)]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
     {
-        if (file is null)
-        {
-            return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
-        }
+        if (file is null) return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
 
-        if (file.Length == 0)
-        {
-            return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
-        }
+        if (file.Length == 0) return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
 
         var upload = new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
         var result = await files.CreateAsync(upload, UserId, ct);
         return result.IsFailure
             ? (ActionResult<FileResponse>)ToProblem(result.Error!)
             : (ActionResult<FileResponse>)
-                Created($"/api/odata/Files({result.Value.Id})", result.Value);
+            Created($"/api/odata/Files({result.Value.Id})", result.Value);
     }
 
     [HttpPut("{fileId:guid}")]
@@ -47,15 +41,9 @@ public class FileCommandsController(IFileService files) : CommandControllerBase
         CancellationToken ct
     )
     {
-        if (file is null)
-        {
-            return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
-        }
+        if (file is null) return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
 
-        if (file.Length == 0)
-        {
-            return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
-        }
+        if (file.Length == 0) return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
 
         var upload = new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
         return ToOk(await files.UpdateAsync(fileId, upload, ct));

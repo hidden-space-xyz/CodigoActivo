@@ -25,10 +25,7 @@ public class AnnouncementService(
     )
     {
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var announcement = new Announcement
         {
@@ -37,7 +34,7 @@ public class AnnouncementService(
             Description = request.Description,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId,
+            CreatedBy = userId
         };
         await announcements.AddAsync(announcement, ct);
         await uow.SaveChangesAsync(ct);
@@ -52,16 +49,10 @@ public class AnnouncementService(
     )
     {
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
-        if (announcement is null)
-        {
-            return Error.NotFound(ErrorCode.AnnouncementNotFound);
-        }
+        if (announcement is null) return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         announcement.Title = request.Title.Trim();
         announcement.Subtitle = request.Subtitle.Trim();
@@ -78,9 +69,7 @@ public class AnnouncementService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         if (!await announcements.ExistsAsync(a => a.Id == id, ct))
-        {
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
-        }
 
         await announcements.RemoveAsync(a => a.Id == id, ct);
         await uow.SaveChangesAsync(ct);
@@ -93,9 +82,7 @@ public class AnnouncementService(
     )
     {
         if (!await announcements.ExistsAsync(a => a.Id == id, ct))
-        {
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
-        }
 
         await announcements.SetFeaturedAsync(id, ct);
 
@@ -106,9 +93,7 @@ public class AnnouncementService(
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-        {
             return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
-        }
 
         return Result.Success();
     }

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -25,7 +27,7 @@ public class AuthService(
         var identifier = request.Identifier.Trim();
         var byEmail = identifier.Contains('@');
 
-        User? user = byEmail
+        var user = byEmail
             ? await users.GetByEmailAsync(identifier, ct)
             : await users.GetByPhoneAsync(identifier, ct);
         user ??= byEmail
@@ -37,24 +39,16 @@ public class AuthService(
             || string.IsNullOrEmpty(user.PasswordHash)
             || !hasher.Verify(request.Password, user.PasswordHash)
         )
-        {
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
-        }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked)
-        {
             return Error.Forbidden(ErrorCode.UserAccountBlocked);
-        }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent)
-        {
             return Error.Forbidden(ErrorCode.UserAccountIsDependent);
-        }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending)
-        {
             return Error.Forbidden(ErrorCode.UserAccountPendingVerification);
-        }
 
         user.RegisterLogin();
         await uow.SaveChangesAsync(ct);
@@ -68,10 +62,7 @@ public class AuthService(
     )
     {
         var user = await users.GetByIdWithDetailsAsync(userId, ct);
-        if (user is null)
-        {
-            return Error.Unauthorized(ErrorCode.CurrentUserNotFound);
-        }
+        if (user is null) return Error.Unauthorized(ErrorCode.CurrentUserNotFound);
 
         return user.ToResponse();
     }
@@ -81,60 +72,40 @@ public class AuthService(
         CancellationToken ct = default
     )
     {
-        if (request.BirthDate.IsMinor())
-        {
-            return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
-        }
+        if (request.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
 
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
 
         if (!isFirstUser)
         {
             var adultRole = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
-            if (adultRole is null)
-            {
-                return Error.NotFound(ErrorCode.UserTypeNotFound);
-            }
+            if (adultRole is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
 
             if (adultRole.Hidden || !adultRole.IsAllowedForAdults)
-            {
                 return Error.BadRequest(ErrorCode.UserTypeNotAllowedForAdults);
-            }
         }
 
         var email = request.Email.NormalizeOrNull();
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
-        {
             return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
-        }
 
         if (
-            await users.EmailExistsAsync(email, excludeUserId: null, ct)
-            || await users.PhoneExistsAsync(phone, excludeUserId: null, ct)
+            await users.EmailExistsAsync(email, null, ct)
+            || await users.PhoneExistsAsync(phone, null, ct)
         )
-        {
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
-        }
 
         var minorRequests = request.Minors ?? [];
         foreach (var minor in minorRequests)
         {
-            if (!minor.BirthDate.IsMinor())
-            {
-                return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
-            }
+            if (!minor.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
 
             var minorRole = await userTypes.FindAsync(ut => ut.Id == minor.RoleId, ct);
-            if (minorRole is null)
-            {
-                return Error.NotFound(ErrorCode.UserTypeNotFound);
-            }
+            if (minorRole is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
 
             if (minorRole.Hidden || !minorRole.IsAllowedForMinors)
-            {
                 return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
-            }
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -151,7 +122,7 @@ public class AuthService(
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
             OtpCode = otp,
             OtpExpiresAt = now.AddMinutes(15),
-            CreatedAt = now,
+            CreatedAt = now
         };
         await users.AddAsync(adult, ct);
 
@@ -159,17 +130,15 @@ public class AuthService(
             ? new[] { SeedIds.UserTypes.Admin, SeedIds.UserTypes.Member }
             : [request.RoleId];
         foreach (var roleId in adultRoleIds)
-        {
             await users.AddTypeAssignmentAsync(
                 new UserTypeAssignment
                 {
                     UserId = adult.Id,
                     UserTypeId = roleId,
-                    AssignedAt = now,
+                    AssignedAt = now
                 },
                 ct
             );
-        }
 
         var minorIds = new List<Guid>();
         foreach (var minor in minorRequests)
@@ -181,7 +150,7 @@ public class AuthService(
                 BirthDate = minor.BirthDate,
                 ParentId = adult.Id,
                 UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                CreatedAt = now,
+                CreatedAt = now
             };
             await users.AddAsync(child, ct);
             await users.AddTypeAssignmentAsync(
@@ -189,7 +158,7 @@ public class AuthService(
                 {
                     UserId = child.Id,
                     UserTypeId = minor.RoleId,
-                    AssignedAt = now,
+                    AssignedAt = now
                 },
                 ct
             );
@@ -203,10 +172,7 @@ public class AuthService(
         foreach (var id in minorIds)
         {
             var created = await users.GetByIdWithDetailsAsync(id, ct);
-            if (created is not null)
-            {
-                createdMinors.Add(created.ToResponse());
-            }
+            if (created is not null) createdMinors.Add(created.ToResponse());
         }
 
         return new RegisterResponse(createdAdult!.ToResponse(), createdMinors, otp);
@@ -219,24 +185,19 @@ public class AuthService(
     )
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
-        if (user is null)
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
+        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
 
         if (
             string.IsNullOrWhiteSpace(otp)
             || user.OtpCode == Guid.Empty || user.OtpCode is null
             || user.OtpExpiresAt is null
             || user.OtpExpiresAt < DateTimeOffset.UtcNow
-            || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-                System.Text.Encoding.UTF8.GetBytes(user.OtpCode.Value.ToString()),
-                System.Text.Encoding.UTF8.GetBytes(otp)
+            || !CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(user.OtpCode.Value.ToString()),
+                Encoding.UTF8.GetBytes(otp)
             )
         )
-        {
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
-        }
 
         user.Verify(SeedIds.UserStatusTypes.Active);
         users.Update(user);

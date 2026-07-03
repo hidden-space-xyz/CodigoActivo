@@ -30,10 +30,7 @@ public class UserService(
     )
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
-        if (user is null)
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
+        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
 
         var rules = request.BirthDate.IsMinor()
             ? await ApplyMinorContactRulesAsync(user, request.ParentId, id, ct)
@@ -42,13 +39,10 @@ public class UserService(
                 request.Email,
                 request.Phone,
                 request.ParentId,
-                excludeUserId: id,
+                id,
                 ct
             );
-        if (rules.IsFailure)
-        {
-            return rules.Error!;
-        }
+        if (rules.IsFailure) return rules.Error!;
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
@@ -64,15 +58,10 @@ public class UserService(
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await users.ExistsAsync(u => u.Id == id, ct))
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
+        if (!await users.ExistsAsync(u => u.Id == id, ct)) return Error.NotFound(ErrorCode.UserNotFound);
 
         if (await users.HasTypeAssignmentAsync(id, SeedIds.UserTypes.Admin, ct))
-        {
             return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
-        }
 
         await users.RemoveAsync(u => u.Id == id, ct);
         await uow.SaveChangesAsync(ct);
@@ -85,15 +74,10 @@ public class UserService(
         CancellationToken ct = default
     )
     {
-        if (!await users.ExistsAsync(u => u.Id == id, ct))
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
+        if (!await users.ExistsAsync(u => u.Id == id, ct)) return Error.NotFound(ErrorCode.UserNotFound);
 
         if (!await userTypes.ExistsAsync(ut => ut.Id == userTypeId, ct))
-        {
             return Error.NotFound(ErrorCode.UserTypeNotFound);
-        }
 
         if (!await users.HasTypeAssignmentAsync(id, userTypeId, ct))
         {
@@ -102,7 +86,7 @@ public class UserService(
                 {
                     UserId = id,
                     UserTypeId = userTypeId,
-                    AssignedAt = DateTimeOffset.UtcNow,
+                    AssignedAt = DateTimeOffset.UtcNow
                 },
                 ct
             );
@@ -120,31 +104,16 @@ public class UserService(
     )
     {
         var parent = await users.FindAsync(u => u.Id == parentId, ct);
-        if (parent is null)
-        {
-            return Error.NotFound(ErrorCode.ParentUserNotFound);
-        }
+        if (parent is null) return Error.NotFound(ErrorCode.ParentUserNotFound);
 
-        if (parent.BirthDate.IsMinor())
-        {
-            return Error.BadRequest(ErrorCode.UserParentIsMinor);
-        }
+        if (parent.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
-        if (!request.BirthDate.IsMinor())
-        {
-            return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
-        }
+        if (!request.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
 
         var role = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
-        if (role is null)
-        {
-            return Error.NotFound(ErrorCode.UserTypeNotFound);
-        }
+        if (role is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
 
-        if (role.Hidden || !role.IsAllowedForMinors)
-        {
-            return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
-        }
+        if (role.Hidden || !role.IsAllowedForMinors) return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
 
         var now = DateTimeOffset.UtcNow;
         var child = new User
@@ -154,7 +123,7 @@ public class UserService(
             BirthDate = request.BirthDate,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            CreatedAt = now,
+            CreatedAt = now
         };
         await users.AddAsync(child, ct);
         await users.AddTypeAssignmentAsync(
@@ -162,7 +131,7 @@ public class UserService(
             {
                 UserId = child.Id,
                 UserTypeId = request.RoleId,
-                AssignedAt = now,
+                AssignedAt = now
             },
             ct
         );
@@ -179,20 +148,12 @@ public class UserService(
     )
     {
         var user = await users.FindAsync(u => u.Id == userId, ct);
-        if (user is null)
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
+        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (string.IsNullOrEmpty(user.PasswordHash))
-        {
-            return Error.BadRequest(ErrorCode.UserPasswordNotSet);
-        }
+        if (string.IsNullOrEmpty(user.PasswordHash)) return Error.BadRequest(ErrorCode.UserPasswordNotSet);
 
         if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
-        {
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
-        }
 
         user.PasswordHash = hasher.Hash(request.NewPassword);
         user.UpdatedAt = DateTimeOffset.UtcNow;
@@ -223,26 +184,14 @@ public class UserService(
         CancellationToken ct
     )
     {
-        if (parentId is not { } parent)
-        {
-            return Error.BadRequest(ErrorCode.UserParentIdRequired);
-        }
+        if (parentId is not { } parent) return Error.BadRequest(ErrorCode.UserParentIdRequired);
 
-        if (parent == excludeUserId)
-        {
-            return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
-        }
+        if (parent == excludeUserId) return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
 
         var parentUser = await users.FindAsync(u => u.Id == parent, ct);
-        if (parentUser is null)
-        {
-            return Error.NotFound(ErrorCode.ParentUserNotFound);
-        }
+        if (parentUser is null) return Error.NotFound(ErrorCode.ParentUserNotFound);
 
-        if (parentUser.BirthDate.IsMinor())
-        {
-            return Error.BadRequest(ErrorCode.UserParentIsMinor);
-        }
+        if (parentUser.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
         user.ParentId = parent;
         user.Email = null;
@@ -262,27 +211,17 @@ public class UserService(
         CancellationToken ct
     )
     {
-        if (parentId is not null)
-        {
-            return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
-        }
+        if (parentId is not null) return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
 
         var email = rawEmail.NormalizeOrNull();
         var phone = rawPhone.NormalizeOrNull();
-        if (email is null || phone is null)
-        {
-            return Error.BadRequest(ErrorCode.UserContactInfoRequired);
-        }
+        if (email is null || phone is null) return Error.BadRequest(ErrorCode.UserContactInfoRequired);
 
         if (await users.EmailExistsAsync(email, excludeUserId, ct))
-        {
             return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
-        }
 
         if (await users.PhoneExistsAsync(phone, excludeUserId, ct))
-        {
             return Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
-        }
 
         user.ParentId = null;
         user.Email = email;

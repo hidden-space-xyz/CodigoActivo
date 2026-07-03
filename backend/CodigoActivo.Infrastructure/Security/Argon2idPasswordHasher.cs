@@ -1,8 +1,8 @@
-using CodigoActivo.Domain.Security;
-using Konscious.Security.Cryptography;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using CodigoActivo.Domain.Security;
+using Konscious.Security.Cryptography;
 
 namespace CodigoActivo.Infrastructure.Security;
 
@@ -18,8 +18,8 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
 
     public string Hash(string password)
     {
-        byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
-        byte[] hash = Compute(password, salt, Iterations, MemoryKiB, Parallelism, HashSize);
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var hash = Compute(password, salt, Iterations, MemoryKiB, Parallelism, HashSize);
 
         return string.Join(
             '$',
@@ -35,19 +35,14 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     public bool Verify(string password, string hash)
     {
         var parts = hash.Split('$');
-        if (parts.Length != 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
+        if (parts.Length != 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal)) return false;
 
         if (
             !int.TryParse(parts[1], CultureInfo.InvariantCulture, out var iterations)
             || !int.TryParse(parts[2], CultureInfo.InvariantCulture, out var memoryKiB)
             || !int.TryParse(parts[3], CultureInfo.InvariantCulture, out var parallelism)
         )
-        {
             return false;
-        }
 
         byte[] salt,
             expected;
@@ -61,7 +56,7 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
             return false;
         }
 
-        byte[] actual = Compute(
+        var actual = Compute(
             password,
             salt,
             iterations,
@@ -86,7 +81,7 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
             Salt = salt,
             DegreeOfParallelism = parallelism,
             Iterations = iterations,
-            MemorySize = memoryKiB,
+            MemorySize = memoryKiB
         };
         return argon2.GetBytes(hashSize);
     }

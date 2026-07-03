@@ -33,19 +33,13 @@ public class FileService(
     )
     {
         var meta = await GetByIdAsync(id, ct);
-        if (meta.IsFailure)
-        {
-            return meta.Error!;
-        }
+        if (meta.IsFailure) return meta.Error!;
 
         var stream = await storage.OpenReadAsync(
             StoredName(meta.Value.Id, meta.Value.Extension),
             ct
         );
-        if (stream is null)
-        {
-            return Error.NotFound(ErrorCode.FileContentMissingFromStorage);
-        }
+        if (stream is null) return Error.NotFound(ErrorCode.FileContentMissingFromStorage);
 
         var format = await stream.DetectImageFormatAsync(ct);
         stream.Position = 0;
@@ -64,10 +58,7 @@ public class FileService(
     )
     {
         var detection = await ValidateAndDetectAsync(upload, ct);
-        if (detection.IsFailure)
-        {
-            return detection.Error!;
-        }
+        if (detection.IsFailure) return detection.Error!;
 
         var format = detection.Value;
         var file = new FileEntity
@@ -75,7 +66,7 @@ public class FileService(
             Name = SanitizeName(upload.FileName),
             Extension = format.Extension,
             UploadedAt = DateTimeOffset.UtcNow,
-            UploadedBy = userId,
+            UploadedBy = userId
         };
 
         var storedName = StoredName(file.Id, file.Extension);
@@ -102,16 +93,10 @@ public class FileService(
     )
     {
         var file = await files.FindAsync(f => f.Id == id, ct);
-        if (file is null)
-        {
-            return Error.NotFound(ErrorCode.FileNotFound);
-        }
+        if (file is null) return Error.NotFound(ErrorCode.FileNotFound);
 
         var detection = await ValidateAndDetectAsync(upload, ct);
-        if (detection.IsFailure)
-        {
-            return detection.Error!;
-        }
+        if (detection.IsFailure) return detection.Error!;
 
         var format = detection.Value;
         var oldStoredName = StoredName(file.Id, file.Extension);
@@ -134,17 +119,11 @@ public class FileService(
         }
         catch
         {
-            if (extensionChanged)
-            {
-                storage.Delete(newStoredName);
-            }
+            if (extensionChanged) storage.Delete(newStoredName);
             throw;
         }
 
-        if (extensionChanged)
-        {
-            storage.Delete(oldStoredName);
-        }
+        if (extensionChanged) storage.Delete(oldStoredName);
 
         return file.ToResponse();
     }
@@ -152,10 +131,7 @@ public class FileService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var file = await files.FindAsync(f => f.Id == id, ct);
-        if (file is null)
-        {
-            return Error.NotFound(ErrorCode.FileNotFound);
-        }
+        if (file is null) return Error.NotFound(ErrorCode.FileNotFound);
 
         var storedName = StoredName(file.Id, file.Extension);
 
@@ -171,32 +147,17 @@ public class FileService(
         CancellationToken ct
     )
     {
-        if (upload is null)
-        {
-            return Error.BadRequest(ErrorCode.FileUploadMissing);
-        }
+        if (upload is null) return Error.BadRequest(ErrorCode.FileUploadMissing);
 
-        if (upload.Length <= 0)
-        {
-            return Error.BadRequest(ErrorCode.FileUploadEmpty);
-        }
+        if (upload.Length <= 0) return Error.BadRequest(ErrorCode.FileUploadEmpty);
 
-        if (upload.Length > options.MaxSizeBytes)
-        {
-            return Error.BadRequest(ErrorCode.FileUploadTooLarge);
-        }
+        if (upload.Length > options.MaxSizeBytes) return Error.BadRequest(ErrorCode.FileUploadTooLarge);
 
-        if (!upload.Content.CanSeek)
-        {
-            return Error.BadRequest(ErrorCode.FileUploadStreamNotSeekable);
-        }
+        if (!upload.Content.CanSeek) return Error.BadRequest(ErrorCode.FileUploadStreamNotSeekable);
 
         upload.Content.Position = 0;
         var format = await upload.Content.DetectImageFormatAsync(ct);
-        if (format is null)
-        {
-            return Error.BadRequest(ErrorCode.FileUploadUnsupportedFormat);
-        }
+        if (format is null) return Error.BadRequest(ErrorCode.FileUploadUnsupportedFormat);
 
         upload.Content.Position = 0;
         return format;
@@ -210,10 +171,7 @@ public class FileService(
     private static string SanitizeName(string? fileName)
     {
         var name = Path.GetFileName(fileName ?? string.Empty).Trim();
-        if (string.IsNullOrEmpty(name))
-        {
-            name = "file";
-        }
+        if (string.IsNullOrEmpty(name)) name = "file";
 
         return name.Length > MaxNameLength ? name[..MaxNameLength] : name;
     }

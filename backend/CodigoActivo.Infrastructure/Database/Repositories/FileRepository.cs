@@ -8,4 +8,5 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 public class FileRepository(CodigoActivoDbContext context)
     : Repository<FileEntity>(context),
         IFileRepository
-{ }
+{
+}

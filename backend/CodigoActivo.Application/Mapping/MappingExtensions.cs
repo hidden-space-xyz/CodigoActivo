@@ -49,7 +49,7 @@ public static class MappingExtensions
                 .ToList()
             ?? [];
 
-        return new(
+        return new EventResponse(
             @event.Id,
             @event.Title,
             @event.Subtitle,
@@ -100,7 +100,7 @@ public static class MappingExtensions
 
     public static ResourceResponse ToResponse(this Resource resource)
     {
-        return new(
+        return new ResourceResponse(
             resource.Id,
             resource.Title,
             resource.Subtitle,
@@ -115,7 +115,7 @@ public static class MappingExtensions
 
     public static AnnouncementResponse ToResponse(this Announcement announcement)
     {
-        return new(
+        return new AnnouncementResponse(
             announcement.Id,
             announcement.Title,
             announcement.Subtitle,
@@ -131,7 +131,7 @@ public static class MappingExtensions
 
     public static PartnerResponse ToResponse(this Partner partner)
     {
-        return new(
+        return new PartnerResponse(
             partner.Id,
             partner.Name,
             partner.FromDate,
@@ -147,16 +147,16 @@ public static class MappingExtensions
 
     public static FileResponse ToResponse(this FileEntity file)
     {
-        return new(file.Id, file.Name, file.Extension, file.UploadedAt, file.UploadedBy);
+        return new FileResponse(file.Id, file.Name, file.Extension, file.UploadedAt, file.UploadedBy);
     }
 
     public static ActivityRoleTypeResponse ToResponse(this ActivityRoleType roleType)
     {
-        return new(roleType.Id, roleType.Name, roleType.Description);
+        return new ActivityRoleTypeResponse(roleType.Id, roleType.Name, roleType.Description);
     }
 
     public static EventCategoryTypeResponse ToResponse(this EventCategoryType categoryType)
     {
-        return new(categoryType.Id, categoryType.Name, categoryType.Color);
+        return new EventCategoryTypeResponse(categoryType.Id, categoryType.Name, categoryType.Color);
     }
 }

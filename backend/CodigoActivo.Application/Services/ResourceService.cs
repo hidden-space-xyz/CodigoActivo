@@ -22,10 +22,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
     )
     {
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var resource = new Resource
         {
@@ -34,7 +31,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
             Description = request.Description,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId,
+            CreatedBy = userId
         };
         await resources.AddAsync(resource, ct);
         await uow.SaveChangesAsync(ct);
@@ -49,16 +46,10 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
     )
     {
         var resource = await resources.FindAsync(r => r.Id == id, ct);
-        if (resource is null)
-        {
-            return Error.NotFound(ErrorCode.ResourceNotFound);
-        }
+        if (resource is null) return Error.NotFound(ErrorCode.ResourceNotFound);
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         resource.Title = request.Title.Trim();
         resource.Subtitle = request.Subtitle.Trim();
@@ -74,10 +65,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await resources.ExistsAsync(r => r.Id == id, ct))
-        {
-            return Error.NotFound(ErrorCode.ResourceNotFound);
-        }
+        if (!await resources.ExistsAsync(r => r.Id == id, ct)) return Error.NotFound(ErrorCode.ResourceNotFound);
 
         await resources.RemoveAsync(r => r.Id == id, ct);
         await uow.SaveChangesAsync(ct);
@@ -87,9 +75,7 @@ public class ResourceService(IResourceRepository resources, IFileRepository file
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-        {
             return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
-        }
 
         return Result.Success();
     }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.API.OData;
@@ -15,7 +16,6 @@ using Serilog;
 using Serilog.Context;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
-using System.Globalization;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
@@ -27,8 +27,7 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog(
-        (context, services, loggerConfiguration) =>
+    builder.Host.UseSerilog((context, services, loggerConfiguration) =>
         {
             loggerConfiguration
                 .ReadFrom.Configuration(context.Configuration)
@@ -141,12 +140,11 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
-        c.DocInclusionPredicate(
-            (_, apiDescription) =>
-                !(apiDescription.RelativePath ?? string.Empty).StartsWith(
-                    "api/odata",
-                    StringComparison.OrdinalIgnoreCase
-                )
+        c.DocInclusionPredicate((_, apiDescription) =>
+            !(apiDescription.RelativePath ?? string.Empty).StartsWith(
+                "api/odata",
+                StringComparison.OrdinalIgnoreCase
+            )
         );
 
         var tagOverrides = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -157,7 +155,7 @@ try
             ["PartnerCommands"] = "Partners",
             ["ActivityCommands"] = "Activities",
             ["UserCommands"] = "Users",
-            ["FileCommands"] = "Files",
+            ["FileCommands"] = "Files"
         };
         c.TagActionsBy(api =>
             api.ActionDescriptor is ControllerActionDescriptor descriptor
@@ -173,8 +171,7 @@ try
 
     await InitializeDatabaseAsync(app);
 
-    app.Use(
-        async (httpContext, next) =>
+    app.Use(async (httpContext, next) =>
         {
             using (LogContext.PushProperty("CorrelationId", httpContext.GetOrSetTraceId()))
             {
@@ -218,21 +215,21 @@ finally
     await Log.CloseAndFlushAsync();
 }
 
-static SameSiteMode ResolveSameSite(string? value) =>
-    value?.Trim().ToLowerInvariant() switch
+static SameSiteMode ResolveSameSite(string? value)
+{
+    return value?.Trim().ToLowerInvariant() switch
     {
         "none" => SameSiteMode.None,
         "strict" => SameSiteMode.Strict,
         "lax" => SameSiteMode.Lax,
-        _ => SameSiteMode.Lax,
+        _ => SameSiteMode.Lax
     };
+}
 
 static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
 {
     if (ex is not null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError)
-    {
         return LogEventLevel.Error;
-    }
 
     return httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
         ? LogEventLevel.Warning
@@ -243,25 +240,23 @@ static async Task InitializeDatabaseAsync(WebApplication app)
 {
     var config = app.Configuration;
     if (
-        !config.GetValue("Database:MigrateOnStartup", defaultValue: true)
-        && !config.GetValue("Database:SeedOnStartup", defaultValue: true)
+        !config.GetValue("Database:MigrateOnStartup", true)
+        && !config.GetValue("Database:SeedOnStartup", true)
     )
-    {
         return;
-    }
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    if (config.GetValue("Database:MigrateOnStartup", defaultValue: true))
+    if (config.GetValue("Database:MigrateOnStartup", true))
     {
         logger.LogInformation("Applying database migrations");
         await db.Database.MigrateAsync();
         logger.LogInformation("Database migrations applied");
     }
 
-    if (config.GetValue("Database:SeedOnStartup", defaultValue: true))
+    if (config.GetValue("Database:SeedOnStartup", true))
     {
         logger.LogInformation("Seeding database");
         await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();

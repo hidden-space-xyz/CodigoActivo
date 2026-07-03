@@ -28,7 +28,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#6B7280",
                 Description =
                     "Cuenta registrada que aún no ha completado el proceso de verificación. "
-                    + "No puede acceder a las funciones de la plataforma hasta que un administrador la apruebe.",
+                    + "No puede acceder a las funciones de la plataforma hasta que un administrador la apruebe."
             },
             new UserStatusType
             {
@@ -37,7 +37,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#22C55E",
                 Description =
                     "Cuenta verificada y habilitada. Tiene acceso completo a las funcionalidades "
-                    + "correspondientes a su tipo de usuario.",
+                    + "correspondientes a su tipo de usuario."
             },
             new UserStatusType
             {
@@ -46,7 +46,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#EF4444",
                 Description =
                     "Cuenta suspendida por un administrador. El acceso queda restringido hasta que "
-                    + "se restablezca manualmente.",
+                    + "se restablezca manualmente."
             },
             new UserStatusType
             {
@@ -55,16 +55,12 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#3B82F6",
                 Description =
                     "Cuenta vinculada a un tutor o cuenta principal. No puede iniciar sesión por sí "
-                    + "misma y se gestiona a través de la cuenta responsable.",
-            },
+                    + "misma y se gestiona a través de la cuenta responsable."
+            }
         };
         foreach (var item in seed)
-        {
             if (!await context.UserStatusTypes.AnyAsync(x => x.Id == item.Id, ct))
-            {
                 context.UserStatusTypes.Add(item);
-            }
-        }
     }
 
     private async Task SeedUserTypesAsync(CancellationToken ct)
@@ -81,7 +77,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     + "catálogos y la configuración general de la plataforma.",
                 Hidden = true,
                 IsAllowedForAdults = true,
-                IsAllowedForMinors = false,
+                IsAllowedForMinors = false
             },
             new UserType
             {
@@ -93,7 +89,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     + "continua, participa en sus actividades y accede a las secciones reservadas a socios.",
                 Hidden = false,
                 IsAllowedForAdults = true,
-                IsAllowedForMinors = true,
+                IsAllowedForMinors = true
             },
             new UserType
             {
@@ -105,7 +101,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     + "concretos, colaborando en su organización y ejecución cuando puede.",
                 Hidden = false,
                 IsAllowedForAdults = true,
-                IsAllowedForMinors = true,
+                IsAllowedForMinors = true
             },
             new UserType
             {
@@ -117,16 +113,12 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     + "disfrutar, sin asumir un rol organizativo.",
                 Hidden = false,
                 IsAllowedForAdults = false,
-                IsAllowedForMinors = true,
-            },
+                IsAllowedForMinors = true
+            }
         };
         foreach (var item in seed)
-        {
             if (!await context.UserTypes.AnyAsync(x => x.Id == item.Id, ct))
-            {
                 context.UserTypes.Add(item);
-            }
-        }
     }
 
     private async Task SeedActivityRoleTypesAsync(CancellationToken ct)
@@ -138,30 +130,26 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = SeedIds.ActivityRoleTypes.Leader,
                 Name = "Líder",
                 Description =
-                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas y vela por el cumplimiento de los objetivos.",
+                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas y vela por el cumplimiento de los objetivos."
             },
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Helper,
                 Name = "Colaborador",
                 Description =
-                    "Apoya al líder durante la actividad asumiendo tareas de soporte para su correcto desarrollo.",
+                    "Apoya al líder durante la actividad asumiendo tareas de soporte para su correcto desarrollo."
             },
             new ActivityRoleType
             {
                 Id = SeedIds.ActivityRoleTypes.Participant,
                 Name = "Participante",
                 Description =
-                    "Asiste a la actividad como público o beneficiario, sin responsabilidades de organización.",
-            },
+                    "Asiste a la actividad como público o beneficiario, sin responsabilidades de organización."
+            }
         };
         foreach (var item in seed)
-        {
             if (!await context.ActivityRoleTypes.AnyAsync(x => x.Id == item.Id, ct))
-            {
                 context.ActivityRoleTypes.Add(item);
-            }
-        }
     }
 
     private async Task SeedAssignmentStatusTypesAsync(CancellationToken ct)
@@ -175,7 +163,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#6B7280",
                 Description =
                     "La asignación ha sido solicitada y está pendiente de revisión por parte de un "
-                    + "responsable.",
+                    + "responsable."
             },
             new AssignmentStatusType
             {
@@ -184,7 +172,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#22C55E",
                 Description =
                     "La asignación ha sido revisada y aprobada. La persona queda oficialmente "
-                    + "asignada a la actividad.",
+                    + "asignada a la actividad."
             },
             new AssignmentStatusType
             {
@@ -193,16 +181,12 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Color = "#EF4444",
                 Description =
                     "La asignación ha sido revisada y rechazada. La persona no participará en la "
-                    + "actividad bajo este rol.",
-            },
+                    + "actividad bajo este rol."
+            }
         };
         foreach (var item in seed)
-        {
             if (!await context.AssignmentStatusTypes.AnyAsync(x => x.Id == item.Id, ct))
-            {
                 context.AssignmentStatusTypes.Add(item);
-            }
-        }
     }
 
     private async Task SeedActivityModalityTypesAsync(CancellationToken ct)
@@ -212,16 +196,12 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             new ActivityModalityType
             {
                 Id = SeedIds.ActivityModalityTypes.Presencial,
-                Name = "Presencial",
+                Name = "Presencial"
             },
-            new ActivityModalityType { Id = SeedIds.ActivityModalityTypes.Online, Name = "Online" },
+            new ActivityModalityType { Id = SeedIds.ActivityModalityTypes.Online, Name = "Online" }
         };
         foreach (var item in seed)
-        {
             if (!await context.ActivityModalityTypes.AnyAsync(x => x.Id == item.Id, ct))
-            {
                 context.ActivityModalityTypes.Add(item);
-            }
-        }
     }
 }

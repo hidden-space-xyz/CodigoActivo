@@ -23,10 +23,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
     )
     {
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var partner = new Partner
         {
@@ -36,7 +33,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
             Web = request.Website.NormalizeOrNull(),
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId,
+            CreatedBy = userId
         };
         await partners.AddAsync(partner, ct);
         await uow.SaveChangesAsync(ct);
@@ -51,16 +48,10 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
     )
     {
         var partner = await partners.FindAsync(p => p.Id == id, ct);
-        if (partner is null)
-        {
-            return Error.NotFound(ErrorCode.PartnerNotFound);
-        }
+        if (partner is null) return Error.NotFound(ErrorCode.PartnerNotFound);
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         partner.Name = request.Name.Trim();
         partner.FromDate = request.FromDate;
@@ -77,10 +68,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await partners.ExistsAsync(p => p.Id == id, ct))
-        {
-            return Error.NotFound(ErrorCode.PartnerNotFound);
-        }
+        if (!await partners.ExistsAsync(p => p.Id == id, ct)) return Error.NotFound(ErrorCode.PartnerNotFound);
 
         await partners.RemoveAsync(p => p.Id == id, ct);
         await uow.SaveChangesAsync(ct);
@@ -90,9 +78,7 @@ public class PartnerService(IPartnerRepository partners, IFileRepository files, 
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-        {
             return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
-        }
 
         return Result.Success();
     }

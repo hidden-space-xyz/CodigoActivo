@@ -8,4 +8,5 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 public class ActivityRoleTypeRepository(CodigoActivoDbContext context)
     : Repository<ActivityRoleType>(context),
         IActivityRoleTypeRepository
-{ }
+{
+}

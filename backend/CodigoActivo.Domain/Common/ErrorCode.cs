@@ -86,5 +86,5 @@ public enum ErrorCode
     AccessDenied,
     InvalidCsrfToken,
     RequestValidationFailed,
-    UnexpectedError,
+    UnexpectedError
 }

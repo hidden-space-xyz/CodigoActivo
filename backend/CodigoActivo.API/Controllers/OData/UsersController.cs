@@ -16,10 +16,7 @@ public class UsersController(IUserService users) : ODataController
     [EnableQuery(PageSize = 100)]
     public IQueryable<UserResponse> Get()
     {
-        if (User.IsAdmin())
-        {
-            return users.QueryUsers();
-        }
+        if (User.IsAdmin()) return users.QueryUsers();
 
         var callerId =
             User.GetUserId()

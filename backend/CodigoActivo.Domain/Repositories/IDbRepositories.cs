@@ -14,6 +14,7 @@ public interface IUserRepository : IDbRepository<User>
         Guid? excludeUserId = null,
         CancellationToken ct = default
     );
+
     Task<bool> PhoneExistsAsync(
         string phone,
         Guid? excludeUserId = null,
@@ -67,6 +68,7 @@ public interface IActivityRepository : IDbRepository<Activity>
         Guid activityId,
         CancellationToken ct = default
     );
+
     Task AddAssignmentAsync(ActivityUserRoleAssignment assignment, CancellationToken ct = default);
     void RemoveAssignment(ActivityUserRoleAssignment assignment);
 

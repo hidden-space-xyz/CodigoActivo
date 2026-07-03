@@ -16,15 +16,18 @@ public class Result
 
     public static Result Success()
     {
-        return new(isSuccess: true, error: null);
+        return new Result(true, null);
     }
 
     public static Result<T> Success<T>(T value)
     {
-        return new(value);
+        return new Result<T>(value);
     }
 
-    public static implicit operator Result(Error error) => new(isSuccess: false, error);
+    public static implicit operator Result(Error error)
+    {
+        return new Result(false, error);
+    }
 }
 
 public sealed class Result<T> : Result
@@ -32,17 +35,29 @@ public sealed class Result<T> : Result
     private readonly T? value;
 
     internal Result(T value)
-        : base(isSuccess: true, error: null) => this.value = value;
+        : base(true, null)
+    {
+        this.value = value;
+    }
 
     internal Result(Error error)
-        : base(isSuccess: false, error) => this.value = default;
+        : base(false, error)
+    {
+        this.value = default;
+    }
 
     public T Value =>
         IsSuccess
             ? value!
             : throw new InvalidOperationException("Cannot access the value of a failed result.");
 
-    public static implicit operator Result<T>(T value) => new(value);
+    public static implicit operator Result<T>(T value)
+    {
+        return new Result<T>(value);
+    }
 
-    public static implicit operator Result<T>(Error error) => new(error);
+    public static implicit operator Result<T>(Error error)
+    {
+        return new Result<T>(error);
+    }
 }

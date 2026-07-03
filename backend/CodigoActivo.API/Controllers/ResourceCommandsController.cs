@@ -18,10 +18,7 @@ public class ResourceCommandsController(IResourceService resources) : CommandCon
     )
     {
         var result = await resources.CreateAsync(request, UserId, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         return Created($"/api/odata/Resources({result.Value.Id})", result.Value);
     }

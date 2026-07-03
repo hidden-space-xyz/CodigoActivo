@@ -16,19 +16,21 @@ public record AnnouncementResponse(
 )
 {
     public AnnouncementResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, default, UpdatedAt: null, Guid.Empty, UpdatedBy: null, Guid.Empty, Featured: false) { }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, default, null, Guid.Empty, null, Guid.Empty, false)
+    {
+    }
 }
 
 public record CreateAnnouncementRequest(
-    [Required, MaxLength(200)] string Title,
-    [Required, MaxLength(300)] string Subtitle,
+    [Required] [MaxLength(200)] string Title,
+    [Required] [MaxLength(300)] string Subtitle,
     string Description,
     Guid ThumbnailId
 );
 
 public record UpdateAnnouncementRequest(
-    [Required, MaxLength(200)] string Title,
-    [Required, MaxLength(300)] string Subtitle,
+    [Required] [MaxLength(200)] string Title,
+    [Required] [MaxLength(300)] string Subtitle,
     string Description,
     Guid ThumbnailId
 );

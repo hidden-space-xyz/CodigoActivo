@@ -18,10 +18,7 @@ public class EventCommandsController(IEventService events) : CommandControllerBa
     )
     {
         var result = await events.CreateAsync(request, UserId, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         return Created($"/api/odata/Events({result.Value.Id})", result.Value);
     }

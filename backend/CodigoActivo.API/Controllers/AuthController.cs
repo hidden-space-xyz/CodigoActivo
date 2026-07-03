@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
@@ -6,7 +7,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -36,10 +36,7 @@ public class AuthController(IAuthService auth) : CommandControllerBase
     )
     {
         var result = await auth.RegisterAsync(request, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         return Created($"/api/odata/Users({result.Value.Adult.Id})", result.Value);
     }
@@ -63,10 +60,7 @@ public class AuthController(IAuthService auth) : CommandControllerBase
     )
     {
         var result = await auth.LoginAsync(request, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         var user = result.Value;
         await HttpContext.SignInAsync(
@@ -97,17 +91,11 @@ public class AuthController(IAuthService auth) : CommandControllerBase
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
         };
-        if (!string.IsNullOrEmpty(user.Email))
-        {
-            claims.Add(new Claim(ClaimTypes.Email, user.Email));
-        }
+        if (!string.IsNullOrEmpty(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
-        foreach (var role in user.Roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role.Id.ToString()));
-        }
+        foreach (var role in user.Roles) claims.Add(new Claim(ClaimTypes.Role, role.Id.ToString()));
 
         var identity = new ClaimsIdentity(
             claims,

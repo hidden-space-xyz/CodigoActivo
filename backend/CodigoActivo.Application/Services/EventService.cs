@@ -32,22 +32,13 @@ public class EventService(
             request.SignupStartsAt,
             request.SignupEndsAt
         );
-        if (schedule.IsFailure)
-        {
-            return schedule.Error!;
-        }
+        if (schedule.IsFailure) return schedule.Error!;
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
-        if (categories.IsFailure)
-        {
-            return categories.Error!;
-        }
+        if (categories.IsFailure) return categories.Error!;
 
         var ev = new Event
         {
@@ -60,7 +51,7 @@ public class EventService(
             SignupEndsAt = schedule.Value.SignupEndsAt,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedBy = userId,
+            CreatedBy = userId
         };
         ApplyCategories(ev, request.CategoryTypeIds!);
 
@@ -84,37 +75,23 @@ public class EventService(
             request.SignupStartsAt,
             request.SignupEndsAt
         );
-        if (schedule.IsFailure)
-        {
-            return schedule.Error!;
-        }
+        if (schedule.IsFailure) return schedule.Error!;
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
-        if (categories.IsFailure)
-        {
-            return categories.Error!;
-        }
+        if (categories.IsFailure) return categories.Error!;
 
         var ev = await events.GetForEditAsync(id, ct);
-        if (ev is null)
-        {
-            return Error.NotFound(ErrorCode.EventNotFound);
-        }
+        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
 
         var (lowerInclusive, upperExclusive) = DayBounds(
             schedule.Value.EventStartsAt,
             schedule.Value.EventEndsAt
         );
         if (await activities.AnyOutsideRangeAsync(id, lowerInclusive, upperExclusive, ct))
-        {
             return Error.BadRequest(ErrorCode.EventActivitiesOutsideNewRange);
-        }
 
         var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
-        if (thumbnail.IsFailure)
-        {
-            return thumbnail.Error!;
-        }
+        if (thumbnail.IsFailure) return thumbnail.Error!;
 
         ev.Title = request.Title.Trim();
         ev.Subtitle = request.Subtitle.Trim();
@@ -138,10 +115,7 @@ public class EventService(
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await events.ExistsAsync(e => e.Id == id, ct))
-        {
-            return Error.NotFound(ErrorCode.EventNotFound);
-        }
+        if (!await events.ExistsAsync(e => e.Id == id, ct)) return Error.NotFound(ErrorCode.EventNotFound);
 
         await events.RemoveAsync(e => e.Id == id, ct);
         await uow.SaveChangesAsync(ct);
@@ -153,10 +127,7 @@ public class EventService(
         CancellationToken ct = default
     )
     {
-        if (!await events.ExistsAsync(e => e.Id == id, ct))
-        {
-            return Error.NotFound(ErrorCode.EventNotFound);
-        }
+        if (!await events.ExistsAsync(e => e.Id == id, ct)) return Error.NotFound(ErrorCode.EventNotFound);
 
         await events.SetFeaturedAsync(id, ct);
 
@@ -177,7 +148,7 @@ public class EventService(
         var categoryType = new EventCategoryType
         {
             Name = request.Name.Trim(),
-            Color = request.Color.Trim(),
+            Color = request.Color.Trim()
         };
         await categoryTypes.AddAsync(categoryType, ct);
         await uow.SaveChangesAsync(ct);
@@ -191,10 +162,7 @@ public class EventService(
     )
     {
         var categoryType = await categoryTypes.FindAsync(x => x.Id == id, ct);
-        if (categoryType is null)
-        {
-            return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
-        }
+        if (categoryType is null) return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
 
         categoryType.Name = request.Name.Trim();
         categoryType.Color = request.Color.Trim();
@@ -206,9 +174,7 @@ public class EventService(
     public async Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default)
     {
         if (!await categoryTypes.ExistsAsync(x => x.Id == id, ct))
-        {
             return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
-        }
 
         await categoryTypes.RemoveAsync(x => x.Id == id, ct);
         await uow.SaveChangesAsync(ct);
@@ -218,9 +184,7 @@ public class EventService(
     private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
     {
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-        {
             return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
-        }
 
         return Result.Success();
     }
@@ -231,16 +195,11 @@ public class EventService(
     )
     {
         if (categoryTypeIds is null || categoryTypeIds.Count == 0)
-        {
             return Error.BadRequest(ErrorCode.EventCategoriesRequired);
-        }
 
         var distinct = categoryTypeIds.Distinct().ToList();
         var existing = await categoryTypes.CountAsync(c => distinct.Contains(c.Id), ct);
-        if (existing != distinct.Count)
-        {
-            return Error.BadRequest(ErrorCode.EventCategoryTypeNotFound);
-        }
+        if (existing != distinct.Count) return Error.BadRequest(ErrorCode.EventCategoryTypeNotFound);
 
         return Result.Success();
     }
@@ -248,11 +207,9 @@ public class EventService(
     private static void ApplyCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)
     {
         foreach (var categoryTypeId in categoryTypeIds.Distinct())
-        {
             ev.Categories.Add(
                 new EventCategory { EventId = ev.Id, EventCategoryTypeId = categoryTypeId }
             );
-        }
     }
 
     private static Result<EventSchedule> ValidateSchedule(
@@ -268,14 +225,10 @@ public class EventService(
             || signupStartsAt is not { } signupStart
             || signupEndsAt is not { } signupEnd
         )
-        {
             return Error.BadRequest(ErrorCode.EventScheduleRequired);
-        }
 
         if (eventEnd < eventStart || signupEnd <= signupStart)
-        {
             return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
-        }
 
         return new EventSchedule(eventStart, eventEnd, signupStart, signupEnd);
     }

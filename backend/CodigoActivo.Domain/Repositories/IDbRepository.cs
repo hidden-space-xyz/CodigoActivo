@@ -1,5 +1,5 @@
-using CodigoActivo.Domain.Entities.Abstractions;
 using System.Linq.Expressions;
+using CodigoActivo.Domain.Entities.Abstractions;
 
 namespace CodigoActivo.Domain.Repositories;
 
@@ -12,16 +12,20 @@ public interface IDbRepository<TEntity>
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );
+
     Task<IReadOnlyList<TEntity>> GetAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );
+
     Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken ct = default);
     Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+
     Task<bool> ExistsAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );
+
     Task AddAsync(TEntity entity, CancellationToken ct = default);
     Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default);
     void Update(TEntity entity);

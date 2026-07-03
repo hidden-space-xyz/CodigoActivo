@@ -18,10 +18,7 @@ public class PartnerCommandsController(IPartnerService partners) : CommandContro
     )
     {
         var result = await partners.CreateAsync(request, UserId, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         return Created($"/api/odata/Partners({result.Value.Id})", result.Value);
     }

@@ -11,7 +11,7 @@ public static class EdmModelBuilder
         var builder = new ODataConventionModelBuilder
         {
             Namespace = "CodigoActivo",
-            ContainerName = "Read",
+            ContainerName = "Read"
         };
         builder.EnableLowerCamelCase();
 

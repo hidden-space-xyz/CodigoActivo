@@ -16,21 +16,23 @@ public record PartnerResponse(
 )
 {
     public PartnerResponse()
-        : this(Guid.Empty, string.Empty, default, default, Website: null, default, UpdatedAt: null, Guid.Empty, UpdatedBy: null, Guid.Empty) { }
+        : this(Guid.Empty, string.Empty, default, default, null, default, null, Guid.Empty, null, Guid.Empty)
+    {
+    }
 }
 
 public record CreatePartnerRequest(
-    [Required, MaxLength(200)] string Name,
+    [Required] [MaxLength(200)] string Name,
     DateOnly FromDate,
     [Range(0, int.MaxValue)] int Tier,
-    [Url, MaxLength(500)] string? Website,
+    [Url] [MaxLength(500)] string? Website,
     Guid ThumbnailId
 );
 
 public record UpdatePartnerRequest(
-    [Required, MaxLength(200)] string Name,
+    [Required] [MaxLength(200)] string Name,
     DateOnly FromDate,
     [Range(0, int.MaxValue)] int Tier,
-    [Url, MaxLength(500)] string? Website,
+    [Url] [MaxLength(500)] string? Website,
     Guid ThumbnailId
 );

@@ -20,10 +20,7 @@ public class FilesController(IFileService files) : ODataController
     public async Task<IActionResult> GetContent(Guid fileId, CancellationToken ct)
     {
         var result = await files.GetContentAsync(fileId, ct);
-        if (result.IsFailure)
-        {
-            return this.ToProblemResult(result.Error!);
-        }
+        if (result.IsFailure) return this.ToProblemResult(result.Error!);
 
         var content = result.Value;
         return File(content.Content, content.ContentType);

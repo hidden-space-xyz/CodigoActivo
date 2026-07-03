@@ -20,10 +20,7 @@ public class ActivityCommandsController(IActivityService activities) : CommandCo
     )
     {
         var result = await activities.CreateAsync(eventId, request, UserId, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         return Created($"/api/odata/Activities({result.Value.Id})", result.Value);
     }

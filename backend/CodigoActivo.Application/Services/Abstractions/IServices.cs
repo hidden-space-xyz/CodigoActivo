@@ -7,22 +7,27 @@ public interface IAuthService
 {
     Task<Result<UserResponse>> LoginAsync(LoginRequest request, CancellationToken ct = default);
     Task<Result<UserResponse>> GetCurrentAsync(Guid userId, CancellationToken ct = default);
+
     Task<Result<RegisterResponse>> RegisterAsync(
         RegisterRequest request,
         CancellationToken ct = default
     );
+
     Task<Result<UserResponse>> VerifyAsync(Guid id, string otp, CancellationToken ct = default);
 }
 
 public interface IUserService
 {
     IQueryable<UserResponse> QueryUsers();
+
     Task<Result<UserResponse>> UpdateAsync(
         Guid id,
         UpdateUserRequest request,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
+
     Task<Result<UserResponse>> ChangeTypeAsync(
         Guid id,
         Guid userTypeId,
@@ -34,6 +39,7 @@ public interface IUserService
         RegisterMinorRequest request,
         CancellationToken ct = default
     );
+
     Task<Result> ChangePasswordAsync(
         Guid userId,
         ChangePasswordRequest request,
@@ -49,30 +55,36 @@ public interface IUserService
 public interface IEventService
 {
     IQueryable<EventResponse> Query();
+
     Task<Result<EventResponse>> CreateAsync(
         CreateEventRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result<EventResponse>> UpdateAsync(
         Guid id,
         UpdateEventRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
     Task<Result<EventResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 
     IQueryable<EventCategoryTypeResponse> QueryCategoryTypes();
+
     Task<EventCategoryTypeResponse> CreateCategoryTypeAsync(
         CreateEventCategoryTypeRequest request,
         CancellationToken ct = default
     );
+
     Task<Result<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
         Guid id,
         UpdateEventCategoryTypeRequest request,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default);
 }
 
@@ -92,12 +104,14 @@ public interface IActivityService
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result<ActivityResponse>> UpdateAsync(
         Guid activityId,
         UpdateActivityRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid activityId, CancellationToken ct = default);
 
     Task<Result<AssignmentResponse>> AssignAsync(
@@ -107,6 +121,7 @@ public interface IActivityService
         bool isAdmin,
         CancellationToken ct = default
     );
+
     Task<Result<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
         Guid activityId,
         Guid actingUserId,
@@ -114,12 +129,14 @@ public interface IActivityService
         bool isAdmin,
         CancellationToken ct = default
     );
+
     Task<Result> UnassignAsync(
         Guid activityId,
         Guid userId,
         bool isAdmin,
         CancellationToken ct = default
     );
+
     Task<Result<AssignmentResponse>> ChangeStatusAsync(
         Guid activityId,
         Guid userId,
@@ -139,6 +156,7 @@ public interface IActivityService
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> GetHouseholdAssignmentsAsync(
         Guid actingUserId,
         Guid eventId,
@@ -149,45 +167,53 @@ public interface IActivityService
         CreateActivityRoleTypeRequest request,
         CancellationToken ct = default
     );
+
     Task<Result<ActivityRoleTypeResponse>> UpdateActivityRoleTypeAsync(
         Guid id,
         UpdateActivityRoleTypeRequest request,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteActivityRoleTypeAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IResourceService
 {
     IQueryable<ResourceResponse> Query();
+
     Task<Result<ResourceResponse>> CreateAsync(
         CreateResourceRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result<ResourceResponse>> UpdateAsync(
         Guid id,
         UpdateResourceRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IAnnouncementService
 {
     IQueryable<AnnouncementResponse> Query();
+
     Task<Result<AnnouncementResponse>> CreateAsync(
         CreateAnnouncementRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result<AnnouncementResponse>> UpdateAsync(
         Guid id,
         UpdateAnnouncementRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
     Task<Result<AnnouncementResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
@@ -195,17 +221,20 @@ public interface IAnnouncementService
 public interface IPartnerService
 {
     IQueryable<PartnerResponse> Query();
+
     Task<Result<PartnerResponse>> CreateAsync(
         CreatePartnerRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result<PartnerResponse>> UpdateAsync(
         Guid id,
         UpdatePartnerRequest request,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 }
 
@@ -213,16 +242,19 @@ public interface IFileService
 {
     Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Result<FileContentValueObject>> GetContentAsync(Guid id, CancellationToken ct = default);
+
     Task<Result<FileResponse>> CreateAsync(
         FileUploadRequest upload,
         Guid userId,
         CancellationToken ct = default
     );
+
     Task<Result<FileResponse>> UpdateAsync(
         Guid id,
         FileUploadRequest upload,
         CancellationToken ct = default
     );
+
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 }
 
@@ -232,13 +264,16 @@ public interface IReportService
         Guid eventId,
         CancellationToken ct = default
     );
+
     Task<Result<EventAssignmentsReportResponse>> GetEventAssignmentsAsync(
         Guid eventId,
         CancellationToken ct = default
     );
+
     Task<Result<ActivityAssignmentsReportResponse>> GetActivityAssignmentsAsync(
         Guid activityId,
         CancellationToken ct = default
     );
+
     Task<DashboardSummaryResponse> GetDashboardSummaryAsync(CancellationToken ct = default);
 }

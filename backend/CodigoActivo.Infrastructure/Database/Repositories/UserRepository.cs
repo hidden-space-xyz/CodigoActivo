@@ -15,7 +15,7 @@ public class UserRepository(CodigoActivoDbContext context)
         return await Set.AsNoTracking()
             .Include(u => u.UserStatusType)
             .Include(u => u.TypeAssignments)
-                .ThenInclude(ta => ta.UserType)
+            .ThenInclude(ta => ta.UserType)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
@@ -23,7 +23,7 @@ public class UserRepository(CodigoActivoDbContext context)
     {
         return await Set.Include(u => u.UserStatusType)
             .Include(u => u.TypeAssignments)
-                .ThenInclude(ta => ta.UserType)
+            .ThenInclude(ta => ta.UserType)
             .FirstOrDefaultAsync(u => u.Email == email, ct);
     }
 
@@ -31,7 +31,7 @@ public class UserRepository(CodigoActivoDbContext context)
     {
         return await Set.Include(u => u.UserStatusType)
             .Include(u => u.TypeAssignments)
-                .ThenInclude(ta => ta.UserType)
+            .ThenInclude(ta => ta.UserType)
             .FirstOrDefaultAsync(u => u.Phone == phone, ct);
     }
 
@@ -87,7 +87,7 @@ public class UserRepository(CodigoActivoDbContext context)
         return await Set.AsNoTracking()
             .Include(u => u.UserStatusType)
             .Include(u => u.TypeAssignments)
-                .ThenInclude(ta => ta.UserType)
+            .ThenInclude(ta => ta.UserType)
             .Where(u => u.ParentId == parentId)
             .OrderBy(u => u.FirstName)
             .ToListAsync(ct);

@@ -19,10 +19,7 @@ public class AnnouncementCommandsController(IAnnouncementService announcements)
     )
     {
         var result = await announcements.CreateAsync(request, UserId, ct);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        if (result.IsFailure) return ToProblem(result.Error!);
 
         return Created($"/api/odata/Announcements({result.Value.Id})", result.Value);
     }

@@ -13,8 +13,8 @@ public class AnnouncementRepository(CodigoActivoDbContext context)
     public async Task SetFeaturedAsync(Guid id, CancellationToken ct = default)
     {
         await Set.Where(a => a.Featured && a.Id != id)
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Featured, valueExpression: false), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Featured, false), ct);
         await Set.Where(a => a.Id == id)
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Featured, valueExpression: true), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Featured, true), ct);
     }
 }

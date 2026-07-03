@@ -23,10 +23,7 @@ public class ReportService(
     )
     {
         var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
-        if (ev is null)
-        {
-            return Error.NotFound(ErrorCode.EventNotFound);
-        }
+        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
 
         var assignments = ev.Activities.SelectMany(a => a.Assignments).ToList();
 
@@ -68,10 +65,7 @@ public class ReportService(
     )
     {
         var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
-        if (ev is null)
-        {
-            return Error.NotFound(ErrorCode.EventNotFound);
-        }
+        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
 
         var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
         var statusNames = (await statusTypes.GetAllAsync(ct)).ToDictionary(s => s.Id, s => s.Name);
@@ -99,10 +93,7 @@ public class ReportService(
     )
     {
         var activity = await activities.GetWithAssignmentsAndUsersAsync(activityId, ct);
-        if (activity is null)
-        {
-            return Error.NotFound(ErrorCode.ActivityNotFound);
-        }
+        if (activity is null) return Error.NotFound(ErrorCode.ActivityNotFound);
 
         var signedUpUserIds = activity.Assignments.Select(a => a.UserId).ToHashSet();
 
@@ -114,7 +105,7 @@ public class ReportService(
                 a.User.Email,
                 a.User.Phone,
                 a.User.ParentId,
-SignedUp: true,
+                true,
                 a.ActivityRoleTypeId,
                 a.ActivityRoleType.Name,
                 a.AssignmentStatusId,
@@ -131,9 +122,7 @@ SignedUp: true,
                 || signedUpUserIds.Contains(parent.Id)
                 || !addedParents.Add(parent.Id)
             )
-            {
                 continue;
-            }
 
             rows.Add(
                 new ActivityAssignmentRowResponse(
@@ -143,11 +132,11 @@ SignedUp: true,
                     parent.Email,
                     parent.Phone,
                     parent.ParentId,
-SignedUp: false,
-RoleTypeId: null,
-RoleTypeName: null,
-StatusId: null,
-StatusName: null
+                    false,
+                    null,
+                    null,
+                    null,
+                    null
                 )
             );
         }

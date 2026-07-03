@@ -24,9 +24,9 @@ public class EventRepository(CodigoActivoDbContext context)
     {
         return await Set.AsNoTracking()
             .Include(e => e.Activities)
-                .ThenInclude(a => a.Assignments)
+            .ThenInclude(a => a.Assignments)
             .Include(e => e.Activities)
-                .ThenInclude(a => a.AllowedRoleTypes)
+            .ThenInclude(a => a.AllowedRoleTypes)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
@@ -39,15 +39,15 @@ public class EventRepository(CodigoActivoDbContext context)
     {
         return await Set.AsNoTracking()
             .Include(e => e.Categories)
-                .ThenInclude(c => c.EventCategoryType)
+            .ThenInclude(c => c.EventCategoryType)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
     public async Task SetFeaturedAsync(Guid id, CancellationToken ct = default)
     {
         await Set.Where(e => e.Featured && e.Id != id)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, valueExpression: false), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, false), ct);
         await Set.Where(e => e.Id == id)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, valueExpression: true), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, true), ct);
     }
 }

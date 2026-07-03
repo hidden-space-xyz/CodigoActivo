@@ -5,10 +5,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace CodigoActivo.API.Attributes;
 
 [AttributeUsage(
-    AttributeTargets.Class | AttributeTargets.Method,
-    AllowMultiple = false,
-    Inherited = true
-)]
+    AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowOnlyAdminAttribute : Attribute, IAuthorizationFilter
 {
     public void OnAuthorization(AuthorizationFilterContext context)
@@ -21,9 +18,6 @@ public sealed class AllowOnlyAdminAttribute : Attribute, IAuthorizationFilter
             return;
         }
 
-        if (!user.IsAdmin())
-        {
-            context.Result = new ForbidResult();
-        }
+        if (!user.IsAdmin()) context.Result = new ForbidResult();
     }
 }

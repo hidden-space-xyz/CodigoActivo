@@ -1,8 +1,8 @@
+using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.AspNetCore.OData.Query.Expressions;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
-using System.Linq.Expressions;
-using System.Reflection;
 
 namespace CodigoActivo.API.OData;
 
@@ -21,20 +21,17 @@ public sealed class DeaccentFilterBinder : FilterBinder
         ("é", "e"),
         ("í", "i"),
         ("ó", "o"),
-        ("ú", "u"),
+        ("ú", "u")
     ];
 
     private static bool FunctionRegistered;
 
     public static void EnsureFunctionRegistered()
     {
-        if (FunctionRegistered)
-        {
-            return;
-        }
+        if (FunctionRegistered) return;
 
         FunctionRegistered = true;
-        var stringType = EdmCoreModel.Instance.GetString(isNullable: true);
+        var stringType = EdmCoreModel.Instance.GetString(true);
         CustomUriFunctions.AddCustomUriFunction(
             FunctionName,
             new FunctionSignatureWithReturnType(stringType, stringType)
@@ -59,14 +56,12 @@ public sealed class DeaccentFilterBinder : FilterBinder
     {
         var current = source;
         foreach (var (accented, plain) in Replacements)
-        {
             current = Expression.Call(
                 current,
                 ReplaceMethod,
                 Expression.Constant(accented),
                 Expression.Constant(plain)
             );
-        }
 
         return current;
     }

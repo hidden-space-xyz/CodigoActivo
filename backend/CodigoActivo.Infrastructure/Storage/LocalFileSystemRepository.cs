@@ -33,10 +33,7 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
     public Task<Stream?> OpenReadAsync(string storedName, CancellationToken ct = default)
     {
         var path = ResolvePath(storedName);
-        if (!File.Exists(path))
-        {
-            return Task.FromResult<Stream?>(null);
-        }
+        if (!File.Exists(path)) return Task.FromResult<Stream?>(null);
 
         Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         return Task.FromResult<Stream?>(stream);
@@ -45,23 +42,16 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
     public void Delete(string storedName)
     {
         var path = ResolvePath(storedName);
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
+        if (File.Exists(path)) File.Delete(path);
     }
 
     private string ResolvePath(string storedName)
     {
         if (string.IsNullOrWhiteSpace(storedName))
-        {
             throw new ArgumentException("A stored file name is required.", nameof(storedName));
-        }
 
         if (!string.Equals(storedName, Path.GetFileName(storedName), StringComparison.Ordinal))
-        {
             throw new ArgumentException("Invalid stored file name.", nameof(storedName));
-        }
 
         var fullPath = Path.GetFullPath(Path.Combine(rootPath, storedName));
         return !fullPath.StartsWith(rootPath, StringComparison.Ordinal)

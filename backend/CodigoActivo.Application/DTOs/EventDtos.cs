@@ -31,21 +31,22 @@ public record EventResponse(
             default,
             default,
             default,
-UpdatedAt: null,
+            null,
             Guid.Empty,
-UpdatedBy: null,
+            null,
             Guid.Empty,
-Featured: false,
+            false,
             []
         )
-    { }
+    {
+    }
 }
 
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);
 
 public record CreateEventRequest(
-    [Required, MaxLength(200)] string Title,
-    [Required, MaxLength(300)] string Subtitle,
+    [Required] [MaxLength(200)] string Title,
+    [Required] [MaxLength(300)] string Subtitle,
     string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
@@ -56,8 +57,8 @@ public record CreateEventRequest(
 );
 
 public record UpdateEventRequest(
-    [Required, MaxLength(200)] string Title,
-    [Required, MaxLength(300)] string Subtitle,
+    [Required] [MaxLength(200)] string Title,
+    [Required] [MaxLength(300)] string Subtitle,
     string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
@@ -70,15 +71,17 @@ public record UpdateEventRequest(
 public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
 {
     public EventCategoryTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty) { }
+        : this(Guid.Empty, string.Empty, string.Empty)
+    {
+    }
 }
 
 public record CreateEventCategoryTypeRequest(
-    [Required, MaxLength(120)] string Name,
-    [Required, MaxLength(9)] string Color
+    [Required] [MaxLength(120)] string Name,
+    [Required] [MaxLength(9)] string Color
 );
 
 public record UpdateEventCategoryTypeRequest(
-    [Required, MaxLength(120)] string Name,
-    [Required, MaxLength(9)] string Color
+    [Required] [MaxLength(120)] string Name,
+    [Required] [MaxLength(9)] string Color
 );

@@ -6,10 +6,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace CodigoActivo.API.Attributes;
 
 [AttributeUsage(
-    AttributeTargets.Class | AttributeTargets.Method,
-    AllowMultiple = false,
-    Inherited = true
-)]
+    AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilter
 {
     private const string RouteKey = "userId";
@@ -25,10 +22,7 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        if (user.IsAdmin())
-        {
-            return;
-        }
+        if (user.IsAdmin()) return;
 
         if (
             !context.RouteData.Values.TryGetValue(RouteKey, out var raw)
@@ -39,20 +33,14 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        if (targetUserId == currentUserId)
-        {
-            return;
-        }
+        if (targetUserId == currentUserId) return;
 
         var users = services.GetRequiredService<IUserRepository>();
         var target = await users.FindAsync(
             u => u.Id == targetUserId,
             context.HttpContext.RequestAborted
         );
-        if (target?.ParentId == currentUserId)
-        {
-            return;
-        }
+        if (target?.ParentId == currentUserId) return;
 
         context.Result = new ForbidResult();
     }
