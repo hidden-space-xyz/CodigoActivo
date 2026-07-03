@@ -43,7 +43,7 @@ public sealed class Result<T> : Result
     internal Result(Error error)
         : base(false, error)
     {
-        this.value = default;
+        value = default;
     }
 
     public T Value =>
