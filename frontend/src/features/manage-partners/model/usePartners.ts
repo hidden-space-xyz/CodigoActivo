@@ -2,15 +2,17 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import {
   deleteApiPartnersPartnerId,
+  getApiPartners,
   postApiPartners,
   putApiPartnersPartnerId,
 } from '@/shared/api/generated/endpoints/partners/partners'
 import type {
   CreatePartnerRequest,
+  GetApiPartnersParams,
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
-import { useODataTable } from '@/shared/lib'
+import { useServerTable } from '@/shared/lib'
 
 const partnersListKey = ['partners'] as const
 
@@ -18,15 +20,18 @@ export function usePartners() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: partnersListKey })
 
-  const table = useODataTable<PartnerResponse>({
-    resource: 'Partners',
+  const table = useServerTable<PartnerResponse, GetApiPartnersParams>({
     queryKey: [...partnersListKey, 'admin'],
+    fetchPage: (params) =>
+      getApiPartners(params).then((r) => ({
+        items: r.data.items ?? [],
+        total: r.data.total ?? 0,
+      })),
     defaultSort: { field: 'tier', order: 1 },
     columns: {
       name: { type: 'text' },
-      tier: { type: 'numeric' },
+      tier: { type: 'number' },
       website: { type: 'text' },
-      fromDate: { type: 'date' },
     },
   })
 

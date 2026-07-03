@@ -12,7 +12,7 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService auth) : CommandControllerBase
+public class AuthController(IAuthService auth) : ApiControllerBase
 {
     [HttpGet("csrf")]
     [AllowAnonymous]
@@ -38,7 +38,7 @@ public class AuthController(IAuthService auth) : CommandControllerBase
         var result = await auth.RegisterAsync(request, ct);
         if (result.IsFailure) return ToProblem(result.Error!);
 
-        return Created($"/api/odata/Users({result.Value.Adult.Id})", result.Value);
+        return Created($"/api/users/{result.Value.Adult.Id}", result.Value);
     }
 
     [HttpPatch("{userId:guid}/verify")]

@@ -1,4 +1,4 @@
-import type { RegistrationTypeResponse } from '@/shared/api'
+import type { RegistrationTypeResponse } from '@/shared/api/generated/models'
 import type {
   RegisterMinorRequest,
   UpdateUserRequest,

@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
   deleteApiEventsEventId,
+  getApiEvents,
+  getApiEventsEventId,
   patchApiEventsEventIdFeature,
   postApiEvents,
   putApiEventsEventId,
@@ -11,26 +13,25 @@ import {
 import type {
   CreateEventRequest,
   EventResponse,
+  GetApiEventsParams,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { fetchODataEntity } from '@/shared/api'
-import { useODataTable } from '@/shared/lib'
+import { unwrapOrNull } from '@/shared/api'
+import { useServerTable } from '@/shared/lib'
 import { eventQueryKeys } from '@/entities/event'
 
 export function useEventsAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: eventQueryKeys.all })
 
-  const table = useODataTable<EventResponse>({
-    resource: 'Events',
+  const table = useServerTable<EventResponse, GetApiEventsParams>({
     queryKey: [...eventQueryKeys.all, 'admin'],
+    fetchPage: (params) =>
+      getApiEvents(params).then((r) => ({ items: r.data.items ?? [], total: r.data.total ?? 0 })),
     defaultSort: { field: 'eventStartsAt', order: 1 },
     columns: {
       title: { type: 'text' },
       subtitle: { type: 'text' },
-      eventStartsAt: { type: 'date' },
-      eventEndsAt: { type: 'date' },
-      featured: { type: 'boolean' },
     },
   })
 
@@ -61,6 +62,6 @@ export function useEventsAdmin() {
 export function useEvent(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventQueryKeys.detail(toValue(eventId))),
-    queryFn: () => fetchODataEntity<EventResponse>('Events', toValue(eventId)),
+    queryFn: () => unwrapOrNull<EventResponse>(getApiEventsEventId(toValue(eventId))),
   })
 }

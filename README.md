@@ -26,7 +26,7 @@ This repository holds a single full-stack web app with two clearly separated sur
 | Layer        | Technologies                                                                            |
 | ------------ | --------------------------------------------------------------------------------------- |
 | **Backend**  | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · Swashbuckle (OpenAPI)          |
-| **Frontend** | Vue 3 · Vite · TypeScript · PrimeVue · TanStack Query · TipTap · Orval · OData (reads)   |
+| **Frontend** | Vue 3 · Vite · TypeScript · PrimeVue · TanStack Query · TipTap · Orval (generated REST client) |
 | **Quality**  | Roslynator analyzers (build-enforced) · ESLint · Prettier · `vue-tsc` typecheck · Steiger (FSD lint) |
 
 ## 🏗️ Architecture

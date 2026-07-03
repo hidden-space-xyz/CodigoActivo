@@ -1,5 +1,6 @@
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -7,12 +8,57 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Services;
 
-public class ResourceService(IResourceRepository resources, IFileRepository files, IUnitOfWork uow)
-    : IResourceService
+public class ResourceService(
+    IResourceRepository resources,
+    IFileRepository files,
+    IQueryExecutor executor,
+    IUnitOfWork uow
+) : IResourceService
 {
-    public IQueryable<ResourceResponse> Query()
+    private static readonly SortMap<ResourceResponse> Sort = new SortMap<ResourceResponse>()
+        .Add("createdAt", r => r.CreatedAt)
+        .Add("title", r => r.Title)
+        .Add("subtitle", r => r.Subtitle)
+        .Default("-createdAt")
+        .Tie(r => r.Id);
+
+    public Task<PagedResult<ResourceResponse>> ListAsync(
+        ResourceListQuery query,
+        CancellationToken ct = default
+    )
     {
-        return resources.Query().Select(Projections.Resource);
+        var source = resources.Query().Select(Projections.Resource);
+
+        if (!string.IsNullOrWhiteSpace(query.Title))
+            source = source.Where(
+                TextSearch.Contains<ResourceResponse>(
+                    r => r.Title,
+                    TextSearch.Normalize(query.Title)
+                )
+            );
+        if (!string.IsNullOrWhiteSpace(query.Subtitle))
+            source = source.Where(
+                TextSearch.Contains<ResourceResponse>(
+                    r => r.Subtitle,
+                    TextSearch.Normalize(query.Subtitle)
+                )
+            );
+
+        source = Sort.Apply(source, query.Sort);
+        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+    }
+
+    public async Task<Result<ResourceResponse>> GetByIdAsync(
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        var response = await executor.FirstOrDefaultAsync(
+            resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
+            ct
+        );
+        if (response is null) return Error.NotFound(ErrorCode.ResourceNotFound);
+        return response;
     }
 
     public async Task<Result<ResourceResponse>> CreateAsync(

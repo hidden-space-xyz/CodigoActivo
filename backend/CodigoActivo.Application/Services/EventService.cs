@@ -1,5 +1,6 @@
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -12,12 +13,76 @@ public class EventService(
     IActivityRepository activities,
     IFileRepository files,
     IEventCategoryTypeRepository categoryTypes,
+    IQueryExecutor executor,
+    IClock clock,
     IUnitOfWork uow
 ) : IEventService
 {
-    public IQueryable<EventResponse> Query()
+    private static readonly SortMap<EventResponse> Sort = new SortMap<EventResponse>()
+        .Add("eventStartsAt", e => e.EventStartsAt)
+        .Add("eventEndsAt", e => e.EventEndsAt)
+        .Add("createdAt", e => e.CreatedAt)
+        .Add("title", e => e.Title)
+        .Add("subtitle", e => e.Subtitle)
+        .Add("featured", e => e.Featured)
+        .Default("eventStartsAt")
+        .Tie(e => e.Id);
+
+    public Task<PagedResult<EventResponse>> ListAsync(
+        EventListQuery query,
+        CancellationToken ct = default
+    )
     {
-        return events.Query().Select(Projections.Event);
+        var today = clock.Today;
+        var source = events.Query().Select(Projections.Event);
+
+        source = query.Scope switch
+        {
+            EventScope.Upcoming => source.Where(e => e.EventEndsAt >= today),
+            EventScope.Past => source.Where(e => e.EventEndsAt < today),
+            _ => source,
+        };
+
+        if (query.Year is { } year) source = source.Where(e => e.EventStartsAt.Year == year);
+        if (query.Featured is { } featured) source = source.Where(e => e.Featured == featured);
+        if (!string.IsNullOrWhiteSpace(query.Title))
+            source = source.Where(
+                TextSearch.Contains<EventResponse>(e => e.Title, TextSearch.Normalize(query.Title))
+            );
+        if (!string.IsNullOrWhiteSpace(query.Subtitle))
+            source = source.Where(
+                TextSearch.Contains<EventResponse>(
+                    e => e.Subtitle,
+                    TextSearch.Normalize(query.Subtitle)
+                )
+            );
+
+        source = Sort.Apply(source, query.Sort);
+        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+    }
+
+    public async Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await executor.FirstOrDefaultAsync(
+            events.Query().Where(e => e.Id == id).Select(Projections.Event),
+            ct
+        );
+        if (response is null) return Error.NotFound(ErrorCode.EventNotFound);
+        return response;
+    }
+
+    public async Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default)
+    {
+        var today = clock.Today;
+        return await executor.ToListAsync(
+            events
+                .Query()
+                .Where(e => e.EventEndsAt < today)
+                .Select(e => e.EventStartsAt.Year)
+                .Distinct()
+                .OrderByDescending(year => year),
+            ct
+        );
     }
 
     public async Task<Result<EventResponse>> CreateAsync(
@@ -135,9 +200,14 @@ public class EventService(
         return ev!.ToResponse();
     }
 
-    public IQueryable<EventCategoryTypeResponse> QueryCategoryTypes()
+    public async Task<IReadOnlyList<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+        CancellationToken ct = default
+    )
     {
-        return categoryTypes.Query().Select(Projections.EventCategoryType);
+        return await executor.ToListAsync(
+            categoryTypes.Query().OrderBy(c => c.Name).Select(Projections.EventCategoryType),
+            ct
+        );
     }
 
     public async Task<Result<EventCategoryTypeResponse>> CreateCategoryTypeAsync(

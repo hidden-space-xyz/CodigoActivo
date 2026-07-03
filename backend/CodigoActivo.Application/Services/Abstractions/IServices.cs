@@ -1,4 +1,5 @@
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Services.Abstractions;
@@ -18,7 +19,14 @@ public interface IAuthService
 
 public interface IUserService
 {
-    IQueryable<UserResponse> QueryUsers();
+    Task<PagedResult<UserResponse>> ListAsync(
+        UserListQuery query,
+        Guid callerId,
+        bool isAdmin,
+        CancellationToken ct = default
+    );
+
+    Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     Task<Result<UserResponse>> UpdateAsync(
         Guid id,
@@ -46,15 +54,25 @@ public interface IUserService
         CancellationToken ct = default
     );
 
-    IQueryable<UserStatusTypeResponse> QueryStatusTypes();
-    IQueryable<UserTypeResponse> QueryUserTypes();
+    Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(CancellationToken ct = default);
 
-    IQueryable<RegistrationTypeResponse> QueryRegistrationTypes();
+    Task<IReadOnlyList<RegistrationTypeResponse>> ListRegistrationTypesAsync(
+        RegistrationAudience? audience,
+        CancellationToken ct = default
+    );
 }
 
 public interface IEventService
 {
-    IQueryable<EventResponse> Query();
+    Task<PagedResult<EventResponse>> ListAsync(
+        EventListQuery query,
+        CancellationToken ct = default
+    );
+
+    Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default);
 
     Task<Result<EventResponse>> CreateAsync(
         CreateEventRequest request,
@@ -72,7 +90,9 @@ public interface IEventService
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
     Task<Result<EventResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 
-    IQueryable<EventCategoryTypeResponse> QueryCategoryTypes();
+    Task<IReadOnlyList<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+        CancellationToken ct = default
+    );
 
     Task<Result<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         CreateEventCategoryTypeRequest request,
@@ -90,13 +110,25 @@ public interface IEventService
 
 public interface IActivityService
 {
-    IQueryable<ActivityResponse> QueryActivities();
+    Task<PagedResult<ActivityResponse>> ListAsync(
+        ActivityListQuery query,
+        CancellationToken ct = default
+    );
 
-    IQueryable<AssignedActivityResponse> QueryAssigned(Guid userId);
+    Task<Result<ActivityResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
 
-    IQueryable<ActivityRoleTypeResponse> QueryRoleTypes();
-    IQueryable<AssignmentStatusTypeResponse> QueryAssignmentStatusTypes();
-    IQueryable<ActivityModalityTypeResponse> QueryModalityTypes();
+    Task<IReadOnlyList<AssignedActivityResponse>> ListAssignedAsync(
+        Guid userId,
+        CancellationToken ct = default
+    );
+
+    Task<IReadOnlyList<ActivityRoleTypeResponse>> ListRoleTypesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<AssignmentStatusTypeResponse>> ListAssignmentStatusTypesAsync(
+        CancellationToken ct = default
+    );
+    Task<IReadOnlyList<ActivityModalityTypeResponse>> ListModalityTypesAsync(
+        CancellationToken ct = default
+    );
 
     Task<Result<ActivityResponse>> CreateAsync(
         Guid eventId,
@@ -179,7 +211,12 @@ public interface IActivityService
 
 public interface IResourceService
 {
-    IQueryable<ResourceResponse> Query();
+    Task<PagedResult<ResourceResponse>> ListAsync(
+        ResourceListQuery query,
+        CancellationToken ct = default
+    );
+
+    Task<Result<ResourceResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     Task<Result<ResourceResponse>> CreateAsync(
         CreateResourceRequest request,
@@ -199,7 +236,14 @@ public interface IResourceService
 
 public interface IAnnouncementService
 {
-    IQueryable<AnnouncementResponse> Query();
+    Task<PagedResult<AnnouncementResponse>> ListAsync(
+        AnnouncementListQuery query,
+        CancellationToken ct = default
+    );
+
+    Task<Result<AnnouncementResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<int>> GetYearsAsync(CancellationToken ct = default);
 
     Task<Result<AnnouncementResponse>> CreateAsync(
         CreateAnnouncementRequest request,
@@ -220,7 +264,12 @@ public interface IAnnouncementService
 
 public interface IPartnerService
 {
-    IQueryable<PartnerResponse> Query();
+    Task<PagedResult<PartnerResponse>> ListAsync(
+        PartnerListQuery query,
+        CancellationToken ct = default
+    );
+
+    Task<Result<PartnerResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     Task<Result<PartnerResponse>> CreateAsync(
         CreatePartnerRequest request,

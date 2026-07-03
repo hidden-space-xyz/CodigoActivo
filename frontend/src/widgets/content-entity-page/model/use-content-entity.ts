@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { useODataTable, type ODataColumn } from '@/shared/lib'
+import { useServerTable, type ServerTableColumn, type ServerTablePage } from '@/shared/lib'
 
 export interface ContentItem {
   id?: string
@@ -19,10 +19,10 @@ export interface ContentRequest {
   thumbnailId?: string
 }
 
-interface ContentApi {
-  resource: string
+interface ContentApi<TParams> {
   queryKey: readonly unknown[]
-  columns: Record<string, ODataColumn>
+  fetchPage: (params: TParams) => Promise<ServerTablePage<ContentItem>>
+  columns: Record<string, ServerTableColumn>
   defaultSort?: { readonly field: string; readonly order?: 1 | -1 }
   fetchOne: (id: string) => Promise<ContentItem>
   create: (body: ContentRequest) => Promise<unknown>
@@ -31,13 +31,13 @@ interface ContentApi {
   feature?: (id: string) => Promise<unknown>
 }
 
-export function useContentEntity(api: ContentApi) {
+export function useContentEntity<TParams = Record<string, unknown>>(api: ContentApi<TParams>) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: api.queryKey })
 
-  const table = useODataTable<ContentItem>({
-    resource: api.resource,
+  const table = useServerTable<ContentItem, TParams>({
     queryKey: api.queryKey,
+    fetchPage: api.fetchPage,
     columns: api.columns,
     defaultSort: api.defaultSort,
   })

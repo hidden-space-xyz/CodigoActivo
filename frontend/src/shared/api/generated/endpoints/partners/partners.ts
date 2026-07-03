@@ -5,13 +5,17 @@
  * OpenAPI spec version: 1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -26,7 +30,9 @@ import type {
 
 import type {
   CreatePartnerRequest,
+  GetApiPartnersParams,
   PartnerResponse,
+  PartnerResponsePagedResult,
   UpdatePartnerRequest
 } from '../../models';
 
@@ -37,7 +43,90 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type postApiPartnersResponse200 = {
+export type getApiPartnersResponse200 = {
+  data: PartnerResponsePagedResult
+  status: 200
+}
+
+export type getApiPartnersResponseSuccess = (getApiPartnersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiPartnersResponse = (getApiPartnersResponseSuccess)
+
+export const getGetApiPartnersUrl = (params?: GetApiPartnersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/partners?${stringifiedParams}` : `/api/partners`
+}
+
+export const getApiPartners = async (params?: GetApiPartnersParams, options?: RequestInit): Promise<getApiPartnersResponse> => {
+
+  return httpClient<getApiPartnersResponse>(getGetApiPartnersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiPartnersMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,{params?: GetApiPartnersParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,{params?: GetApiPartnersParams}, TContext> => {
+
+const mutationKey = ['getApiPartners'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiPartners>>, {params?: GetApiPartnersParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiPartners(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiPartnersMutationResult = NonNullable<Awaited<ReturnType<typeof getApiPartners>>>
+
+    export type GetApiPartnersMutationError = unknown
+
+    export const useGetApiPartners = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,{params?: GetApiPartnersParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiPartners>>,
+        TError,
+        {params?: GetApiPartnersParams},
+        TContext
+      > => {
+      return useMutation(getGetApiPartnersMutationOptions(options), queryClient);
+    }
+    export type postApiPartnersResponse200 = {
   data: PartnerResponse
   status: 200
 }
@@ -121,7 +210,83 @@ export function usePostApiPartners<TData = Awaited<ReturnType<typeof postApiPart
 
 
 
-export type putApiPartnersPartnerIdResponse200 = {
+export type getApiPartnersPartnerIdResponse200 = {
+  data: PartnerResponse
+  status: 200
+}
+
+export type getApiPartnersPartnerIdResponseSuccess = (getApiPartnersPartnerIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiPartnersPartnerIdResponse = (getApiPartnersPartnerIdResponseSuccess)
+
+export const getGetApiPartnersPartnerIdUrl = (partnerId: string,) => {
+
+
+
+
+  return `/api/partners/${partnerId}`
+}
+
+export const getApiPartnersPartnerId = async (partnerId: string, options?: RequestInit): Promise<getApiPartnersPartnerIdResponse> => {
+
+  return httpClient<getApiPartnersPartnerIdResponse>(getGetApiPartnersPartnerIdUrl(partnerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiPartnersPartnerIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, TError,{partnerId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, TError,{partnerId: string}, TContext> => {
+
+const mutationKey = ['getApiPartnersPartnerId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, {partnerId: string}> = (props) => {
+          const {partnerId} = props ?? {};
+
+          return  getApiPartnersPartnerId(partnerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiPartnersPartnerIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiPartnersPartnerId>>>
+
+    export type GetApiPartnersPartnerIdMutationError = unknown
+
+    export const useGetApiPartnersPartnerId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, TError,{partnerId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiPartnersPartnerId>>,
+        TError,
+        {partnerId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiPartnersPartnerIdMutationOptions(options), queryClient);
+    }
+    export type putApiPartnersPartnerIdResponse200 = {
   data: PartnerResponse
   status: 200
 }

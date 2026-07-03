@@ -1,68 +1,46 @@
 import { useQuery } from '@tanstack/vue-query'
 
-import type {
-  ActivityRoleTypeResponse,
-  EventCategoryTypeResponse,
-} from '@/shared/api/generated/models'
-import type {
-  ActivityModalityTypeResponse,
-  AssignmentStatusTypeResponse,
-  UserTypeResponse,
-} from '@/shared/api'
-import { fetchODataList } from '@/shared/api'
+import {
+  getApiActivitiesAssignmentStatusTypes,
+  getApiActivitiesModalityTypes,
+  getApiActivitiesRoleType,
+} from '@/shared/api/generated/endpoints/activities/activities'
+import { getApiEventsCategoryType } from '@/shared/api/generated/endpoints/events/events'
+import { getApiUsersTypes } from '@/shared/api/generated/endpoints/users/users'
 
 import { catalogQueryKeys } from './query-keys'
 
 export function useUserTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.userTypes,
-    queryFn: () =>
-      fetchODataList<UserTypeResponse>('UserTypes', { orderBy: 'name asc', top: 100 }).then(
-        (r) => r.items,
-      ),
+    queryFn: () => getApiUsersTypes().then((r) => r.data ?? []),
   })
 }
 
 export function useActivityRoleTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.activityRoleTypes,
-    queryFn: () =>
-      fetchODataList<ActivityRoleTypeResponse>('ActivityRoleTypes', {
-        orderBy: 'name asc',
-        top: 100,
-      }).then((r) => r.items),
+    queryFn: () => getApiActivitiesRoleType().then((r) => r.data ?? []),
   })
 }
 
 export function useAssignmentStatusTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.assignmentStatusTypes,
-    queryFn: () =>
-      fetchODataList<AssignmentStatusTypeResponse>('AssignmentStatusTypes', {
-        orderBy: 'name asc',
-        top: 100,
-      }).then((r) => r.items),
+    queryFn: () => getApiActivitiesAssignmentStatusTypes().then((r) => r.data ?? []),
   })
 }
 
 export function useEventCategoryTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.eventCategoryTypes,
-    queryFn: () =>
-      fetchODataList<EventCategoryTypeResponse>('EventCategoryTypes', {
-        orderBy: 'name asc',
-        top: 100,
-      }).then((r) => r.items),
+    queryFn: () => getApiEventsCategoryType().then((r) => r.data ?? []),
   })
 }
 
 export function useActivityModalityTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.activityModalityTypes,
-    queryFn: () =>
-      fetchODataList<ActivityModalityTypeResponse>('ActivityModalityTypes', {
-        orderBy: 'name asc',
-        top: 100,
-      }).then((r) => r.items),
+    queryFn: () => getApiActivitiesModalityTypes().then((r) => r.data ?? []),
   })
 }

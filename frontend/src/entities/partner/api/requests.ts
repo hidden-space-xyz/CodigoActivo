@@ -1,14 +1,10 @@
-import { fetchODataList } from '@/shared/api'
-import type { PartnerResponse } from '@/shared/api/generated/models'
+import { getApiPartners } from '@/shared/api/generated/endpoints/partners/partners'
 
 import type { Sponsor } from '../model/types'
 
 export async function getSponsorsRequest(): Promise<readonly Sponsor[]> {
-  const page = await fetchODataList<PartnerResponse>('Partners', {
-    orderBy: 'tier asc,fromDate desc',
-    top: 100,
-  })
-  return page.items
+  const { data } = await getApiPartners({ sort: 'tier,-fromDate', pageSize: 100 })
+  return (data.items ?? [])
     .filter((partner) => partner.id && partner.name)
     .map((partner) => ({
       id: partner.id ?? '',

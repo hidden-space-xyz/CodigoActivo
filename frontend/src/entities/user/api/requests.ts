@@ -1,21 +1,20 @@
-import { ApiError, fetchODataEntity, fetchODataList } from '@/shared/api'
 import {
   deleteApiUsersUserId,
+  getApiUsers,
+  getApiUsersUserId,
   patchApiUsersUserIdChangeType,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
+import type { UpdateUserRequest } from '@/shared/api/generated/models'
 
-export function getUsersRequest() {
-  return fetchODataList<UserResponse>('Users', { orderBy: 'firstName asc', top: 100 }).then(
-    (page) => page.items,
-  )
+export async function getUsersRequest() {
+  const { data } = await getApiUsers({ sort: 'firstName', pageSize: 100 })
+  return data.items ?? []
 }
 
-export async function getUserRequest(id: string): Promise<UserResponse> {
-  const user = await fetchODataEntity<UserResponse>('Users', id)
-  if (!user) throw new ApiError(404, 'Usuario no encontrado', null)
-  return user
+export async function getUserRequest(id: string) {
+  const { data } = await getApiUsersUserId(id)
+  return data
 }
 
 export function updateUserRequest(id: string, body: UpdateUserRequest) {

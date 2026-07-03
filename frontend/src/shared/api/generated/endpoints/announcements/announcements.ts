@@ -5,13 +5,17 @@
  * OpenAPI spec version: 1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -26,7 +30,9 @@ import type {
 
 import type {
   AnnouncementResponse,
+  AnnouncementResponsePagedResult,
   CreateAnnouncementRequest,
+  GetApiAnnouncementsParams,
   UpdateAnnouncementRequest
 } from '../../models';
 
@@ -37,7 +43,90 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type postApiAnnouncementsResponse200 = {
+export type getApiAnnouncementsResponse200 = {
+  data: AnnouncementResponsePagedResult
+  status: 200
+}
+
+export type getApiAnnouncementsResponseSuccess = (getApiAnnouncementsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAnnouncementsResponse = (getApiAnnouncementsResponseSuccess)
+
+export const getGetApiAnnouncementsUrl = (params?: GetApiAnnouncementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/announcements?${stringifiedParams}` : `/api/announcements`
+}
+
+export const getApiAnnouncements = async (params?: GetApiAnnouncementsParams, options?: RequestInit): Promise<getApiAnnouncementsResponse> => {
+
+  return httpClient<getApiAnnouncementsResponse>(getGetApiAnnouncementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiAnnouncementsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncements>>, TError,{params?: GetApiAnnouncementsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncements>>, TError,{params?: GetApiAnnouncementsParams}, TContext> => {
+
+const mutationKey = ['getApiAnnouncements'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAnnouncements>>, {params?: GetApiAnnouncementsParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiAnnouncements(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiAnnouncementsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAnnouncements>>>
+
+    export type GetApiAnnouncementsMutationError = unknown
+
+    export const useGetApiAnnouncements = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncements>>, TError,{params?: GetApiAnnouncementsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiAnnouncements>>,
+        TError,
+        {params?: GetApiAnnouncementsParams},
+        TContext
+      > => {
+      return useMutation(getGetApiAnnouncementsMutationOptions(options), queryClient);
+    }
+    export type postApiAnnouncementsResponse200 = {
   data: AnnouncementResponse
   status: 200
 }
@@ -121,7 +210,159 @@ export function usePostApiAnnouncements<TData = Awaited<ReturnType<typeof postAp
 
 
 
-export type putApiAnnouncementsAnnouncementIdResponse200 = {
+export type getApiAnnouncementsYearsResponse200 = {
+  data: number[]
+  status: 200
+}
+
+export type getApiAnnouncementsYearsResponseSuccess = (getApiAnnouncementsYearsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAnnouncementsYearsResponse = (getApiAnnouncementsYearsResponseSuccess)
+
+export const getGetApiAnnouncementsYearsUrl = () => {
+
+
+
+
+  return `/api/announcements/years`
+}
+
+export const getApiAnnouncementsYears = async ( options?: RequestInit): Promise<getApiAnnouncementsYearsResponse> => {
+
+  return httpClient<getApiAnnouncementsYearsResponse>(getGetApiAnnouncementsYearsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiAnnouncementsYearsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsYears>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsYears>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiAnnouncementsYears'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAnnouncementsYears>>, void> = () => {
+
+
+          return  getApiAnnouncementsYears(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiAnnouncementsYearsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAnnouncementsYears>>>
+
+    export type GetApiAnnouncementsYearsMutationError = unknown
+
+    export const useGetApiAnnouncementsYears = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsYears>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiAnnouncementsYears>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiAnnouncementsYearsMutationOptions(options), queryClient);
+    }
+    export type getApiAnnouncementsAnnouncementIdResponse200 = {
+  data: AnnouncementResponse
+  status: 200
+}
+
+export type getApiAnnouncementsAnnouncementIdResponseSuccess = (getApiAnnouncementsAnnouncementIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAnnouncementsAnnouncementIdResponse = (getApiAnnouncementsAnnouncementIdResponseSuccess)
+
+export const getGetApiAnnouncementsAnnouncementIdUrl = (announcementId: string,) => {
+
+
+
+
+  return `/api/announcements/${announcementId}`
+}
+
+export const getApiAnnouncementsAnnouncementId = async (announcementId: string, options?: RequestInit): Promise<getApiAnnouncementsAnnouncementIdResponse> => {
+
+  return httpClient<getApiAnnouncementsAnnouncementIdResponse>(getGetApiAnnouncementsAnnouncementIdUrl(announcementId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiAnnouncementsAnnouncementIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, TError,{announcementId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, TError,{announcementId: string}, TContext> => {
+
+const mutationKey = ['getApiAnnouncementsAnnouncementId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, {announcementId: string}> = (props) => {
+          const {announcementId} = props ?? {};
+
+          return  getApiAnnouncementsAnnouncementId(announcementId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiAnnouncementsAnnouncementIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>>
+
+    export type GetApiAnnouncementsAnnouncementIdMutationError = unknown
+
+    export const useGetApiAnnouncementsAnnouncementId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>, TError,{announcementId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiAnnouncementsAnnouncementId>>,
+        TError,
+        {announcementId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiAnnouncementsAnnouncementIdMutationOptions(options), queryClient);
+    }
+    export type putApiAnnouncementsAnnouncementIdResponse200 = {
   data: AnnouncementResponse
   status: 200
 }

@@ -1,13 +1,13 @@
 import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
+import { getApiRegistrationTypes } from '@/shared/api/generated/endpoints/registration-types/registration-types'
 import {
   deleteApiUsersUserId,
+  getApiUsers,
   patchApiUsersUserIdPassword,
   postApiUsersUserIdChildren,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import type { UserResponse } from '@/shared/api/generated/models'
-import { ApiError, fetchODataList, odataGuid } from '@/shared/api'
-import type { RegistrationTypeResponse } from '@/shared/api'
+import { ApiError } from '@/shared/api'
 
 import type {
   AddMinorInput,
@@ -40,23 +40,15 @@ export async function getAccountProfileRequest(): Promise<AccountProfile | null>
 export async function getAccountChildrenRequest(
   parentId: string,
 ): Promise<readonly AccountChild[]> {
-  const { items } = await fetchODataList<UserResponse>('Users', {
-    filter: `parentId eq ${odataGuid(parentId)}`,
-    orderBy: 'firstName asc',
-    top: 100,
-  })
-  return items.map(toAccountChild)
+  const { data } = await getApiUsers({ parentId, sort: 'firstName', pageSize: 100 })
+  return (data.items ?? []).map(toAccountChild)
 }
 
 export async function getRegistrationTypesRequest(
   minor: boolean,
 ): Promise<readonly RegistrationType[]> {
-  const { items } = await fetchODataList<RegistrationTypeResponse>('RegistrationTypes', {
-    filter: minor ? 'isAllowedForMinors eq true' : 'isAllowedForAdults eq true',
-    orderBy: 'name asc',
-    top: 100,
-  })
-  return items.map(toRegistrationType)
+  const { data } = await getApiRegistrationTypes({ audience: minor ? 'Minor' : 'Adult' })
+  return (data ?? []).map(toRegistrationType)
 }
 
 export async function updateAccountProfileRequest(

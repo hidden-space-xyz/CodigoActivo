@@ -2,11 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
   deleteApiEventsCategoryTypeEventCategoryTypeId,
+  getApiEventsCategoryType,
   postApiEventsCategoryType,
   putApiEventsCategoryTypeEventCategoryTypeId,
 } from '@/shared/api/generated/endpoints/events/events'
-import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
-import { fetchODataList } from '@/shared/api'
 import { catalogQueryKeys } from '@/entities/catalog'
 
 export interface EventCategoryInput {
@@ -21,11 +20,7 @@ export function useEventCategories() {
 
   const list = useQuery({
     queryKey: catalogQueryKeys.eventCategoryTypes,
-    queryFn: () =>
-      fetchODataList<EventCategoryTypeResponse>('EventCategoryTypes', {
-        orderBy: 'name asc',
-        top: 100,
-      }).then((r) => r.items),
+    queryFn: () => getApiEventsCategoryType().then((r) => r.data ?? []),
   })
 
   const create = useMutation({

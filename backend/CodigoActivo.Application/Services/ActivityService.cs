@@ -1,5 +1,6 @@
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -16,35 +17,94 @@ public class ActivityService(
     IActivityRoleTypeRepository roleTypes,
     IActivityModalityTypeRepository modalityTypes,
     IUserRepository users,
+    IQueryExecutor executor,
     IUnitOfWork uow
 ) : IActivityService
 {
-    public IQueryable<ActivityResponse> QueryActivities()
+    private static readonly SortMap<ActivityResponse> Sort = new SortMap<ActivityResponse>()
+        .Add("activityStartsAt", a => a.ActivityStartsAt)
+        .Add("activityEndsAt", a => a.ActivityEndsAt)
+        .Add("title", a => a.Title)
+        .Add("createdAt", a => a.CreatedAt)
+        .Default("activityStartsAt")
+        .Tie(a => a.Id);
+
+    public Task<PagedResult<ActivityResponse>> ListAsync(
+        ActivityListQuery query,
+        CancellationToken ct = default
+    )
     {
-        return activities.Query().Select(Projections.Activity);
+        var source = activities.Query().Select(Projections.Activity);
+
+        if (query.EventId is { } eventId) source = source.Where(a => a.EventId == eventId);
+        if (!string.IsNullOrWhiteSpace(query.Title))
+            source = source.Where(
+                TextSearch.Contains<ActivityResponse>(
+                    a => a.Title,
+                    TextSearch.Normalize(query.Title)
+                )
+            );
+
+        source = Sort.Apply(source, query.Sort);
+        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public IQueryable<AssignedActivityResponse> QueryAssigned(Guid userId)
+    public async Task<Result<ActivityResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return activities
-            .QueryAssignments()
-            .Where(assignment => assignment.UserId == userId)
-            .Select(Projections.AssignedActivity);
+        var response = await executor.FirstOrDefaultAsync(
+            activities.Query().Where(a => a.Id == id).Select(Projections.Activity),
+            ct
+        );
+        if (response is null) return Error.NotFound(ErrorCode.ActivityNotFound);
+        return response;
     }
 
-    public IQueryable<ActivityRoleTypeResponse> QueryRoleTypes()
+    public async Task<IReadOnlyList<AssignedActivityResponse>> ListAssignedAsync(
+        Guid userId,
+        CancellationToken ct = default
+    )
     {
-        return roleTypes.Query().Select(Projections.ActivityRoleType);
+        return await executor.ToListAsync(
+            activities
+                .QueryAssignments()
+                .Where(assignment => assignment.UserId == userId)
+                .Select(Projections.AssignedActivity)
+                .OrderBy(assignment => assignment.ActivityStartsAt),
+            ct
+        );
     }
 
-    public IQueryable<AssignmentStatusTypeResponse> QueryAssignmentStatusTypes()
+    public async Task<IReadOnlyList<ActivityRoleTypeResponse>> ListRoleTypesAsync(
+        CancellationToken ct = default
+    )
     {
-        return statuses.Query().Select(Projections.AssignmentStatusType);
+        return await executor.ToListAsync(
+            roleTypes.Query().OrderBy(role => role.Name).Select(Projections.ActivityRoleType),
+            ct
+        );
     }
 
-    public IQueryable<ActivityModalityTypeResponse> QueryModalityTypes()
+    public async Task<IReadOnlyList<AssignmentStatusTypeResponse>> ListAssignmentStatusTypesAsync(
+        CancellationToken ct = default
+    )
     {
-        return modalityTypes.Query().Select(Projections.ActivityModalityType);
+        return await executor.ToListAsync(
+            statuses.Query().OrderBy(status => status.Name).Select(Projections.AssignmentStatusType),
+            ct
+        );
+    }
+
+    public async Task<IReadOnlyList<ActivityModalityTypeResponse>> ListModalityTypesAsync(
+        CancellationToken ct = default
+    )
+    {
+        return await executor.ToListAsync(
+            modalityTypes
+                .Query()
+                .OrderBy(modality => modality.Name)
+                .Select(Projections.ActivityModalityType),
+            ct
+        );
     }
 
     public async Task<Result<ActivityResponse>> CreateAsync(

@@ -1,6 +1,7 @@
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -15,12 +16,63 @@ public class UserService(
     IUserTypeRepository userTypes,
     IUserStatusTypeRepository userStatusTypes,
     IPasswordHasher hasher,
+    IQueryExecutor executor,
     IUnitOfWork uow
 ) : IUserService
 {
-    public IQueryable<UserResponse> QueryUsers()
+    private static readonly SortMap<UserResponse> Sort = new SortMap<UserResponse>()
+        .Add("firstName", u => u.FirstName)
+        .Add("lastName", u => u.LastName)
+        .Add("createdAt", u => u.CreatedAt)
+        .Add("birthDate", u => u.BirthDate)
+        .Default("firstName")
+        .Tie(u => u.Id);
+
+    public Task<PagedResult<UserResponse>> ListAsync(
+        UserListQuery query,
+        Guid callerId,
+        bool isAdmin,
+        CancellationToken ct = default
+    )
     {
-        return users.Query().Select(Projections.User);
+        var source = users.Query().Select(Projections.User);
+
+        // Row-level authorization: non-admins only ever see themselves and their dependents.
+        if (!isAdmin)
+            source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
+
+        if (query.ParentId is { } parentId) source = source.Where(u => u.ParentId == parentId);
+        if (!string.IsNullOrWhiteSpace(query.FirstName))
+            source = source.Where(
+                TextSearch.Contains<UserResponse>(
+                    u => u.FirstName,
+                    TextSearch.Normalize(query.FirstName)
+                )
+            );
+        if (!string.IsNullOrWhiteSpace(query.LastName))
+            source = source.Where(
+                TextSearch.Contains<UserResponse>(
+                    u => u.LastName,
+                    TextSearch.Normalize(query.LastName)
+                )
+            );
+        if (!string.IsNullOrWhiteSpace(query.Email))
+            source = source.Where(
+                TextSearch.Contains<UserResponse>(u => u.Email, TextSearch.Normalize(query.Email))
+            );
+
+        source = Sort.Apply(source, query.Sort);
+        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+    }
+
+    public async Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await executor.FirstOrDefaultAsync(
+            users.Query().Where(u => u.Id == id).Select(Projections.User),
+            ct
+        );
+        if (response is null) return Error.NotFound(ErrorCode.UserNotFound);
+        return response;
     }
 
     public async Task<Result<UserResponse>> UpdateAsync(
@@ -169,19 +221,44 @@ public class UserService(
         return Result.Success();
     }
 
-    public IQueryable<RegistrationTypeResponse> QueryRegistrationTypes()
+    public async Task<IReadOnlyList<RegistrationTypeResponse>> ListRegistrationTypesAsync(
+        RegistrationAudience? audience,
+        CancellationToken ct = default
+    )
     {
-        return userTypes.Query().Where(type => !type.Hidden).Select(Projections.RegistrationType);
+        var source = userTypes.Query().Where(type => !type.Hidden);
+
+        source = audience switch
+        {
+            RegistrationAudience.Minor => source.Where(type => type.IsAllowedForMinors),
+            RegistrationAudience.Adult => source.Where(type => type.IsAllowedForAdults),
+            _ => source,
+        };
+
+        return await executor.ToListAsync(
+            source.OrderBy(type => type.Name).Select(Projections.RegistrationType),
+            ct
+        );
     }
 
-    public IQueryable<UserStatusTypeResponse> QueryStatusTypes()
+    public async Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(
+        CancellationToken ct = default
+    )
     {
-        return userStatusTypes.Query().Select(Projections.UserStatusType);
+        return await executor.ToListAsync(
+            userStatusTypes.Query().OrderBy(type => type.Name).Select(Projections.UserStatusType),
+            ct
+        );
     }
 
-    public IQueryable<UserTypeResponse> QueryUserTypes()
+    public async Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(
+        CancellationToken ct = default
+    )
     {
-        return userTypes.Query().Select(Projections.UserType);
+        return await executor.ToListAsync(
+            userTypes.Query().OrderBy(type => type.Name).Select(Projections.UserType),
+            ct
+        );
     }
 
     private async Task<Result> ApplyMinorContactRulesAsync(

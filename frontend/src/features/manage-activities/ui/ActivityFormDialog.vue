@@ -15,7 +15,7 @@ import type {
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import type { ActivityModalityTypeResponse } from '@/shared/api'
+import type { ActivityModalityTypeResponse } from '@/shared/api/generated/models'
 import { getErrorMessage } from '@/shared/lib'
 
 const props = defineProps<{

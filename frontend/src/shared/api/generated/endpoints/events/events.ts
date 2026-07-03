@@ -5,13 +5,17 @@
  * OpenAPI spec version: 1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -29,6 +33,8 @@ import type {
   CreateEventRequest,
   EventCategoryTypeResponse,
   EventResponse,
+  EventResponsePagedResult,
+  GetApiEventsParams,
   UpdateEventCategoryTypeRequest,
   UpdateEventRequest
 } from '../../models';
@@ -40,7 +46,90 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type postApiEventsResponse200 = {
+export type getApiEventsResponse200 = {
+  data: EventResponsePagedResult
+  status: 200
+}
+
+export type getApiEventsResponseSuccess = (getApiEventsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsResponse = (getApiEventsResponseSuccess)
+
+export const getGetApiEventsUrl = (params?: GetApiEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/events?${stringifiedParams}` : `/api/events`
+}
+
+export const getApiEvents = async (params?: GetApiEventsParams, options?: RequestInit): Promise<getApiEventsResponse> => {
+
+  return httpClient<getApiEventsResponse>(getGetApiEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEvents>>, TError,{params?: GetApiEventsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEvents>>, TError,{params?: GetApiEventsParams}, TContext> => {
+
+const mutationKey = ['getApiEvents'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEvents>>, {params?: GetApiEventsParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiEvents(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEvents>>>
+
+    export type GetApiEventsMutationError = unknown
+
+    export const useGetApiEvents = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEvents>>, TError,{params?: GetApiEventsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEvents>>,
+        TError,
+        {params?: GetApiEventsParams},
+        TContext
+      > => {
+      return useMutation(getGetApiEventsMutationOptions(options), queryClient);
+    }
+    export type postApiEventsResponse200 = {
   data: EventResponse
   status: 200
 }
@@ -124,7 +213,159 @@ export function usePostApiEvents<TData = Awaited<ReturnType<typeof postApiEvents
 
 
 
-export type putApiEventsEventIdResponse200 = {
+export type getApiEventsPastYearsResponse200 = {
+  data: number[]
+  status: 200
+}
+
+export type getApiEventsPastYearsResponseSuccess = (getApiEventsPastYearsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsPastYearsResponse = (getApiEventsPastYearsResponseSuccess)
+
+export const getGetApiEventsPastYearsUrl = () => {
+
+
+
+
+  return `/api/events/past-years`
+}
+
+export const getApiEventsPastYears = async ( options?: RequestInit): Promise<getApiEventsPastYearsResponse> => {
+
+  return httpClient<getApiEventsPastYearsResponse>(getGetApiEventsPastYearsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsPastYearsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsPastYears>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsPastYears>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiEventsPastYears'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsPastYears>>, void> = () => {
+
+
+          return  getApiEventsPastYears(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsPastYearsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsPastYears>>>
+
+    export type GetApiEventsPastYearsMutationError = unknown
+
+    export const useGetApiEventsPastYears = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsPastYears>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEventsPastYears>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiEventsPastYearsMutationOptions(options), queryClient);
+    }
+    export type getApiEventsEventIdResponse200 = {
+  data: EventResponse
+  status: 200
+}
+
+export type getApiEventsEventIdResponseSuccess = (getApiEventsEventIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsEventIdResponse = (getApiEventsEventIdResponseSuccess)
+
+export const getGetApiEventsEventIdUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}`
+}
+
+export const getApiEventsEventId = async (eventId: string, options?: RequestInit): Promise<getApiEventsEventIdResponse> => {
+
+  return httpClient<getApiEventsEventIdResponse>(getGetApiEventsEventIdUrl(eventId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsEventIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventId>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventId>>, TError,{eventId: string}, TContext> => {
+
+const mutationKey = ['getApiEventsEventId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsEventId>>, {eventId: string}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  getApiEventsEventId(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsEventIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsEventId>>>
+
+    export type GetApiEventsEventIdMutationError = unknown
+
+    export const useGetApiEventsEventId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventId>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEventsEventId>>,
+        TError,
+        {eventId: string},
+        TContext
+      > => {
+      return useMutation(getGetApiEventsEventIdMutationOptions(options), queryClient);
+    }
+    export type putApiEventsEventIdResponse200 = {
   data: EventResponse
   status: 200
 }
@@ -296,6 +537,166 @@ export function useDeleteApiEventsEventId<TData = Awaited<ReturnType<typeof dele
 
 
 
+export type getApiEventsCategoryTypeResponse200 = {
+  data: EventCategoryTypeResponse[]
+  status: 200
+}
+
+export type getApiEventsCategoryTypeResponseSuccess = (getApiEventsCategoryTypeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsCategoryTypeResponse = (getApiEventsCategoryTypeResponseSuccess)
+
+export const getGetApiEventsCategoryTypeUrl = () => {
+
+
+
+
+  return `/api/events/categoryType`
+}
+
+export const getApiEventsCategoryType = async ( options?: RequestInit): Promise<getApiEventsCategoryTypeResponse> => {
+
+  return httpClient<getApiEventsCategoryTypeResponse>(getGetApiEventsCategoryTypeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsCategoryTypeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiEventsCategoryType'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsCategoryType>>, void> = () => {
+
+
+          return  getApiEventsCategoryType(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsCategoryTypeMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsCategoryType>>>
+
+    export type GetApiEventsCategoryTypeMutationError = unknown
+
+    export const useGetApiEventsCategoryType = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEventsCategoryType>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiEventsCategoryTypeMutationOptions(options), queryClient);
+    }
+    export type postApiEventsCategoryTypeResponse200 = {
+  data: EventCategoryTypeResponse
+  status: 200
+}
+
+export type postApiEventsCategoryTypeResponseSuccess = (postApiEventsCategoryTypeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiEventsCategoryTypeResponse = (postApiEventsCategoryTypeResponseSuccess)
+
+export const getPostApiEventsCategoryTypeUrl = () => {
+
+
+
+
+  return `/api/events/categoryType`
+}
+
+export const postApiEventsCategoryType = async (createEventCategoryTypeRequest?: CreateEventCategoryTypeRequest, options?: RequestInit): Promise<postApiEventsCategoryTypeResponse> => {
+
+  return httpClient<postApiEventsCategoryTypeResponse>(getPostApiEventsCategoryTypeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createEventCategoryTypeRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiEventsCategoryTypeQueryKey = (createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>,) => {
+    return [
+    'POST', 'api','events','categoryType', createEventCategoryTypeRequest
+    ] as const;
+    }
+
+
+export const getPostApiEventsCategoryTypeQueryOptions = <TData = Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError = unknown>(createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiEventsCategoryTypeQueryKey(createEventCategoryTypeRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEventsCategoryType>>> = ({ signal }) => postApiEventsCategoryType(unref(createEventCategoryTypeRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>
+}
+
+export type PostApiEventsCategoryTypeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEventsCategoryType>>>
+export type PostApiEventsCategoryTypeQueryError = unknown
+
+
+
+export function usePostApiEventsCategoryType<TData = Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError = unknown>(
+ createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiEventsCategoryTypeQueryOptions(createEventCategoryTypeRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
 export type patchApiEventsEventIdFeatureResponse200 = {
   data: EventResponse
   status: 200
@@ -367,90 +768,6 @@ export function usePatchApiEventsEventIdFeature<TData = Awaited<ReturnType<typeo
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPatchApiEventsEventIdFeatureQueryOptions(eventId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type postApiEventsCategoryTypeResponse200 = {
-  data: EventCategoryTypeResponse
-  status: 200
-}
-
-export type postApiEventsCategoryTypeResponseSuccess = (postApiEventsCategoryTypeResponse200) & {
-  headers: Headers;
-};
-;
-
-export type postApiEventsCategoryTypeResponse = (postApiEventsCategoryTypeResponseSuccess)
-
-export const getPostApiEventsCategoryTypeUrl = () => {
-
-
-
-
-  return `/api/events/categoryType`
-}
-
-export const postApiEventsCategoryType = async (createEventCategoryTypeRequest?: CreateEventCategoryTypeRequest, options?: RequestInit): Promise<postApiEventsCategoryTypeResponse> => {
-
-  return httpClient<postApiEventsCategoryTypeResponse>(getPostApiEventsCategoryTypeUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createEventCategoryTypeRequest)
-  }
-);}
-
-
-
-
-
-export const getPostApiEventsCategoryTypeQueryKey = (createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>,) => {
-    return [
-    'POST', 'api','events','categoryType', createEventCategoryTypeRequest
-    ] as const;
-    }
-
-
-export const getPostApiEventsCategoryTypeQueryOptions = <TData = Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError = unknown>(createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiEventsCategoryTypeQueryKey(createEventCategoryTypeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEventsCategoryType>>> = ({ signal }) => postApiEventsCategoryType(unref(createEventCategoryTypeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>
-}
-
-export type PostApiEventsCategoryTypeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEventsCategoryType>>>
-export type PostApiEventsCategoryTypeQueryError = unknown
-
-
-
-export function usePostApiEventsCategoryType<TData = Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError = unknown>(
- createEventCategoryTypeRequest?: MaybeRef<CreateEventCategoryTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsCategoryType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiEventsCategoryTypeQueryOptions(createEventCategoryTypeRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

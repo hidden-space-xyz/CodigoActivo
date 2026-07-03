@@ -1,16 +1,14 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
-using CodigoActivo.API.OData;
+using CodigoActivo.API.OpenApi;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.OData;
-using Microsoft.AspNetCore.OData.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Context;
@@ -46,23 +44,10 @@ try
 
     builder.Services.AddCodigoActivo(builder.Configuration);
 
-    DeaccentFilterBinder.EnsureFunctionRegistered();
-
     builder
         .Services.AddControllers()
-        .AddOData(options =>
-            options
-                .Select()
-                .Filter()
-                .OrderBy()
-                .Expand()
-                .Count()
-                .SetMaxTop(100)
-                .AddRouteComponents(
-                    "api/odata",
-                    EdmModelBuilder.Build(),
-                    services => services.AddSingleton<IFilterBinder, DeaccentFilterBinder>()
-                )
+        .AddJsonOptions(options =>
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
         )
         .ConfigureApiBehaviorOptions(options =>
         {
@@ -140,30 +125,8 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
-        c.DocInclusionPredicate((_, apiDescription) =>
-            !(apiDescription.RelativePath ?? string.Empty).StartsWith(
-                "api/odata",
-                StringComparison.OrdinalIgnoreCase
-            )
-        );
-
-        var tagOverrides = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["EventCommands"] = "Events",
-            ["AnnouncementCommands"] = "Announcements",
-            ["ResourceCommands"] = "Resources",
-            ["PartnerCommands"] = "Partners",
-            ["ActivityCommands"] = "Activities",
-            ["UserCommands"] = "Users",
-            ["FileCommands"] = "Files",
-        };
-        c.TagActionsBy(api =>
-            api.ActionDescriptor is ControllerActionDescriptor descriptor
-                ? [tagOverrides.GetValueOrDefault(descriptor.ControllerName, descriptor.ControllerName)]
-                : [api.GroupName ?? "default"]
-        );
-
         c.OperationFilter<JsonResponseMediaTypeFilter>();
+        c.OperationFilter<CamelCaseQueryParametersFilter>();
         c.DocumentFilter<ApiErrorResponseDocumentFilter>();
     });
 
