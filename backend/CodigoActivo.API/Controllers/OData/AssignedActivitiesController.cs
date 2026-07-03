@@ -10,7 +10,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [Authorize]
 public class AssignedActivitiesController(IActivityService activities) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<AssignedActivityResponse> Get()
     {
         var userId =

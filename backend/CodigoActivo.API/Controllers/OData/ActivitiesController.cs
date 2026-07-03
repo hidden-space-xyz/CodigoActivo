@@ -13,7 +13,7 @@ namespace CodigoActivo.API.Controllers.OData;
 public class ActivitiesController(IActivityService activities) : ODataController
 {
     [AllowAnonymous]
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<ActivityResponse> Get()
     {
         return activities.QueryActivities();

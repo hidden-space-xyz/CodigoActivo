@@ -1,3 +1,4 @@
+using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.API.OData;
 using CodigoActivo.Composition;
@@ -9,145 +10,198 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Serilog;
+using Serilog.Context;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
+using System.Globalization;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .CreateBootstrapLogger();
 
-builder.Services.AddCodigoActivo(builder.Configuration);
+try
+{
+    Log.Information("Starting CodigoActivo API");
 
-DeaccentFilterBinder.EnsureFunctionRegistered();
+    var builder = WebApplication.CreateBuilder(args);
 
-builder
-    .Services.AddControllers()
-    .AddOData(options =>
-        options
-            .Select()
-            .Filter()
-            .OrderBy()
-            .Expand()
-            .Count()
-            .SetMaxTop(1000)
-            .AddRouteComponents(
-                "api/odata",
-                EdmModelBuilder.Build(),
-                services => services.AddSingleton<IFilterBinder, DeaccentFilterBinder>()
-            )
+    builder.Host.UseSerilog(
+        (context, services, loggerConfiguration) =>
+        {
+            loggerConfiguration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .WriteTo.File(
+                    new RenderedCompactJsonFormatter(),
+                    Path.Combine(context.HostingEnvironment.ContentRootPath, "logs", "codigoactivo-.log"),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 14
+                );
+
+            loggerConfiguration.WriteTo.Console(new RenderedCompactJsonFormatter());
+        }
     );
 
-builder.Services.AddAntiforgery(options =>
-{
-    options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.Name = "CodigoActivo.Csrf";
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
-    options.Cookie.SameSite = ResolveSameSite(builder.Configuration["Auth:SameSite"]);
-});
+    builder.Services.AddCodigoActivo(builder.Configuration);
 
-builder
-    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+    DeaccentFilterBinder.EnsureFunctionRegistered();
+
+    builder
+        .Services.AddControllers()
+        .AddOData(options =>
+            options
+                .Select()
+                .Filter()
+                .OrderBy()
+                .Expand()
+                .Count()
+                .SetMaxTop(100)
+                .AddRouteComponents(
+                    "api/odata",
+                    EdmModelBuilder.Build(),
+                    services => services.AddSingleton<IFilterBinder, DeaccentFilterBinder>()
+                )
+        );
+
+    builder.Services.AddAntiforgery(options =>
     {
-        options.Cookie.Name = builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
+        options.HeaderName = "X-CSRF-TOKEN";
+        options.Cookie.Name = "CodigoActivo.Csrf";
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
         options.Cookie.SameSite = ResolveSameSite(builder.Configuration["Auth:SameSite"]);
-        options.SlidingExpiration = true;
-        options.ExpireTimeSpan = TimeSpan.FromHours(
-            builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
-        );
+    });
 
-        options.Events.OnRedirectToLogin = ctx =>
+    builder
+        .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
         {
-            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToAccessDenied = ctx =>
+            options.Cookie.Name = builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
+            options.Cookie.SameSite = ResolveSameSite(builder.Configuration["Auth:SameSite"]);
+            options.SlidingExpiration = true;
+            options.ExpireTimeSpan = TimeSpan.FromHours(
+                builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
+            );
+
+            options.Events.OnRedirectToLogin = ctx =>
+            {
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = ctx =>
+            {
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
+
+    builder.Services.AddAuthorization();
+
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails(options =>
+    {
+        options.CustomizeProblemDetails = problemContext =>
         {
-            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return Task.CompletedTask;
+            problemContext.ProblemDetails.Extensions["traceId"] = problemContext.HttpContext.GetOrSetTraceId();
         };
     });
 
-builder.Services.AddAuthorization();
+    const string CorsPolicy = "Frontend";
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    builder.Services.AddCors(options =>
+        options.AddPolicy(
+            CorsPolicy,
+            policy =>
+                policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
+        )
+    );
 
-builder.Services.AddProblemDetails();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.DocInclusionPredicate(
+            (_, apiDescription) =>
+                !(apiDescription.RelativePath ?? string.Empty).StartsWith(
+                    "api/odata",
+                    StringComparison.OrdinalIgnoreCase
+                )
+        );
 
-const string CorsPolicy = "Frontend";
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-builder.Services.AddCors(options =>
-    options.AddPolicy(
-        CorsPolicy,
-        policy =>
-            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
-    )
-);
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc(
-        "v1",
-        new OpenApiInfo
+        var tagOverrides = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            Title = "CodigoActivo API",
-            Version = "v1",
-            Description = "Backend API for CodigoActivo (cookie session auth + CSRF).",
+            ["EventCommands"] = "Events",
+            ["AnnouncementCommands"] = "Announcements",
+            ["ResourceCommands"] = "Resources",
+            ["PartnerCommands"] = "Partners",
+            ["ActivityCommands"] = "Activities",
+            ["UserCommands"] = "Users",
+            ["FileCommands"] = "Files",
+        };
+        c.TagActionsBy(api =>
+            api.ActionDescriptor is ControllerActionDescriptor descriptor
+                ? [tagOverrides.GetValueOrDefault(descriptor.ControllerName, descriptor.ControllerName)]
+                : [api.GroupName ?? "default"]
+        );
+
+        c.OperationFilter<JsonResponseMediaTypeFilter>();
+    });
+
+    var app = builder.Build();
+
+    await InitializeDatabaseAsync(app);
+
+    app.Use(
+        async (httpContext, next) =>
+        {
+            using (LogContext.PushProperty("CorrelationId", httpContext.GetOrSetTraceId()))
+            {
+                await next();
+            }
         }
     );
 
-    c.DocInclusionPredicate(
-        (_, apiDescription) =>
-            !(apiDescription.RelativePath ?? string.Empty).StartsWith(
-                "api/odata",
-                StringComparison.OrdinalIgnoreCase
-            )
-    );
-
-    var tagOverrides = new Dictionary<string, string>(StringComparer.Ordinal)
+    app.UseSerilogRequestLogging(options =>
     {
-        ["EventCommands"] = "Events",
-        ["AnnouncementCommands"] = "Announcements",
-        ["ResourceCommands"] = "Resources",
-        ["PartnerCommands"] = "Partners",
-        ["ActivityCommands"] = "Activities",
-        ["UserCommands"] = "Users",
-        ["FileCommands"] = "Files",
-    };
-    c.TagActionsBy(api =>
-        api.ActionDescriptor is ControllerActionDescriptor descriptor
-            ? [tagOverrides.GetValueOrDefault(descriptor.ControllerName, descriptor.ControllerName)]
-            : [api.GroupName ?? "default"]
-    );
+        options.GetLevel = static (httpContext, _, ex) => ResolveRequestLogLevel(httpContext, ex);
+    });
 
-    c.OperationFilter<JsonResponseMediaTypeFilter>();
-});
+    app.UseExceptionHandler();
 
-var app = builder.Build();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CodigoActivo API v1"));
+    }
 
-await InitializeDatabaseAsync(app);
+    app.UseHttpsRedirection();
+    app.UseCors(CorsPolicy);
 
-app.UseExceptionHandler();
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CodigoActivo API v1"));
+    app.UseMiddleware<CsrfValidationMiddleware>();
+
+    app.MapControllers();
+
+    await app.RunAsync();
 }
-
-app.UseHttpsRedirection();
-app.UseCors(CorsPolicy);
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseMiddleware<CsrfValidationMiddleware>();
-
-app.MapControllers();
-
-await app.RunAsync();
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "CodigoActivo API terminated unexpectedly");
+    throw;
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
+}
 
 static SameSiteMode ResolveSameSite(string? value) =>
     value?.Trim().ToLowerInvariant() switch
@@ -158,27 +212,44 @@ static SameSiteMode ResolveSameSite(string? value) =>
         _ => SameSiteMode.Lax,
     };
 
+static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
+{
+    if (ex is not null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError)
+    {
+        return LogEventLevel.Error;
+    }
+
+    return httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
+        ? LogEventLevel.Warning
+        : LogEventLevel.Information;
+}
+
 static async Task InitializeDatabaseAsync(WebApplication app)
 {
     var config = app.Configuration;
     if (
-        !config.GetValue("Database:MigrateOnStartup", true)
-        && !config.GetValue("Database:SeedOnStartup", true)
+        !config.GetValue("Database:MigrateOnStartup", defaultValue: true)
+        && !config.GetValue("Database:SeedOnStartup", defaultValue: true)
     )
     {
         return;
     }
 
-    using var scope = app.Services.CreateScope();
+    await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    if (config.GetValue("Database:MigrateOnStartup", true))
+    if (config.GetValue("Database:MigrateOnStartup", defaultValue: true))
     {
+        logger.LogInformation("Applying database migrations");
         await db.Database.MigrateAsync();
+        logger.LogInformation("Database migrations applied");
     }
 
-    if (config.GetValue("Database:SeedOnStartup", true))
+    if (config.GetValue("Database:SeedOnStartup", defaultValue: true))
     {
+        logger.LogInformation("Seeding database");
         await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
+        logger.LogInformation("Database seeding complete");
     }
 }

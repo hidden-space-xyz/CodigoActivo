@@ -109,7 +109,7 @@ async function save(): Promise<void> {
           feedback.success('Cambios guardados.')
           dialogVisible.value = false
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       },
     )
     return
@@ -119,7 +119,7 @@ async function save(): Promise<void> {
       feedback.success('Creado correctamente.')
       dialogVisible.value = false
     },
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -127,7 +127,7 @@ function onFeature(item: ContentItem): void {
   if (!item.id || item.featured) return
   props.controller.feature.mutate(item.id, {
     onSuccess: () => feedback.success('Destacado actualizado.'),
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -146,7 +146,7 @@ function confirmDelete(item: ContentItem): void {
           feedback.success('Eliminado.')
           void deleteThumbnail(item.thumbnailId)
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })

@@ -5,12 +5,14 @@ const UNSAFE_METHODS: ReadonlySet<string> = new Set(['POST', 'PUT', 'PATCH', 'DE
 export class ApiError extends Error {
   readonly status: number
   readonly body: unknown
+  readonly traceId?: string | undefined
 
-  constructor(status: number, message: string, body: unknown) {
+  constructor(status: number, message: string, body: unknown, traceId?: string | undefined) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.body = body
+    this.traceId = traceId
   }
 }
 
@@ -36,12 +38,14 @@ async function ensureCsrfToken(): Promise<void> {
 async function buildApiError(response: Response): Promise<ApiError> {
   let body: unknown = null
   let message = `Error ${response.status}`
+  let traceId: string | undefined
   try {
     const contentType = response.headers.get('content-type') ?? ''
     if (contentType.includes('json')) {
       body = await response.json()
-      const detail = body as { title?: string; detail?: string; message?: string }
+      const detail = body as { title?: string; detail?: string; message?: string; traceId?: string }
       message = detail.detail ?? detail.title ?? detail.message ?? message
+      traceId = detail.traceId
     } else {
       const text = await response.text()
       if (text) {
@@ -50,7 +54,7 @@ async function buildApiError(response: Response): Promise<ApiError> {
       }
     }
   } catch {}
-  return new ApiError(response.status, message, body)
+  return new ApiError(response.status, message, body, traceId)
 }
 
 async function parseData(response: Response): Promise<unknown> {

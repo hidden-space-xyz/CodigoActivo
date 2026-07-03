@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowOnlyAdmin]
 public class EventCategoryTypesController(IEventService events) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<EventCategoryTypeResponse> Get()
     {
         return events.QueryCategoryTypes();

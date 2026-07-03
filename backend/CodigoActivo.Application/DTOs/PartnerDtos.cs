@@ -16,7 +16,7 @@ public record PartnerResponse(
 )
 {
     public PartnerResponse()
-        : this(Guid.Empty, "", default, default, null, default, null, Guid.Empty, null, Guid.Empty) { }
+        : this(Guid.Empty, string.Empty, default, default, Website: null, default, UpdatedAt: null, Guid.Empty, UpdatedBy: null, Guid.Empty) { }
 }
 
 public record CreatePartnerRequest(

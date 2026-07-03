@@ -46,8 +46,8 @@ public class EventRepository(CodigoActivoDbContext context)
     public async Task SetFeaturedAsync(Guid id, CancellationToken ct = default)
     {
         await Set.Where(e => e.Featured && e.Id != id)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, false), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, valueExpression: false), ct);
         await Set.Where(e => e.Id == id)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, true), ct);
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Featured, valueExpression: true), ct);
     }
 }

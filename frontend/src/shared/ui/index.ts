@@ -1,6 +1,7 @@
 export { default as AdminPageHeader } from './AdminPageHeader.vue'
 export { default as AppBackground } from './AppBackground.vue'
 export { default as AppButton } from './AppButton.vue'
+export { default as AppToast } from './AppToast.vue'
 export { default as BaseButton } from './BaseButton.vue'
 export { default as BrandLogo } from './BrandLogo.vue'
 export { default as ColorTag } from './ColorTag.vue'

@@ -11,7 +11,7 @@ import Tag from 'primevue/tag'
 import { useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
-import { formatDate, getErrorMessage, groupByParent, useCrudFeedback } from '@/shared/lib'
+import { formatDate, groupByParent, useCrudFeedback } from '@/shared/lib'
 
 const { list, update, remove, changeType, fetchOne } = useUsers()
 const userTypes = useUserTypesList()
@@ -89,7 +89,7 @@ function onSubmit(body: UpdateUserRequest): void {
         feedback.success('Usuario actualizado.')
         dialogVisible.value = false
       },
-      onError: (error) => feedback.error(getErrorMessage(error)),
+      onError: (error) => feedback.error(error),
     },
   )
 }
@@ -109,7 +109,7 @@ function submitChangeType(): void {
         feedback.success('Tipo de usuario actualizado.')
         typeDialogVisible.value = false
       },
-      onError: (error) => feedback.error(getErrorMessage(error)),
+      onError: (error) => feedback.error(error),
     },
   )
 }
@@ -126,7 +126,7 @@ function confirmDelete(user: UserResponse): void {
       if (!user.id) return
       remove.mutate(user.id, {
         onSuccess: () => feedback.success('Usuario eliminado.'),
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })

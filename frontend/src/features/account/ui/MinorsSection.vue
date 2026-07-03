@@ -8,9 +8,10 @@ import Select from 'primevue/select'
 import { useAccount } from '../model/useAccount'
 import type { AccountChild } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, getErrorMessage, toDateInput } from '@/shared/lib'
+import { formatDate, toDateInput, useCrudFeedback } from '@/shared/lib'
 
 const toast = useToast()
+const feedback = useCrudFeedback()
 const { children, minorRoles, addChild, updateChild, deleteChild } = useAccount()
 
 const items = computed(() => children.data.value ?? [])
@@ -57,7 +58,7 @@ function openEdit(child: AccountChild): void {
 }
 
 function notifyError(error: unknown): void {
-  toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(error), life: 4000 })
+  feedback.error(error)
 }
 
 function save(): void {

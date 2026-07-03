@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowOnlyAdmin]
 public class ActivityModalityTypesController(IActivityService activities) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<ActivityModalityTypeResponse> Get()
     {
         return activities.QueryModalityTypes();

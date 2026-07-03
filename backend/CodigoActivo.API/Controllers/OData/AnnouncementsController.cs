@@ -11,7 +11,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowAnonymous]
 public class AnnouncementsController(IAnnouncementService announcements) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<AnnouncementResponse> Get()
     {
         return announcements.Query();

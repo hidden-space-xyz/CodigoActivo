@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowOnlyAdmin]
 public class UserStatusTypesController(IUserService users) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<UserStatusTypeResponse> Get()
     {
         return users.QueryStatusTypes();

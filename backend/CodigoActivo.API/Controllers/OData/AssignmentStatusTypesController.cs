@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowOnlyAdmin]
 public class AssignmentStatusTypesController(IActivityService activities) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<AssignmentStatusTypeResponse> Get()
     {
         return activities.QueryAssignmentStatusTypes();

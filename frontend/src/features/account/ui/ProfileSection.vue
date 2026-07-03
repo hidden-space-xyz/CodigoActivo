@@ -9,9 +9,10 @@ import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
 import { useSession } from '@/entities/session'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, getErrorMessage, toDateInput } from '@/shared/lib'
+import { formatDate, toDateInput, useCrudFeedback } from '@/shared/lib'
 
 const toast = useToast()
+const feedback = useCrudFeedback()
 const session = useSession()
 const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
 
@@ -56,13 +57,7 @@ function saveEdit(): void {
         life: 3000,
       })
     },
-    onError: (error) =>
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: getErrorMessage(error),
-        life: 4000,
-      }),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -111,13 +106,7 @@ const deleteVisible = ref(false)
 
 function confirmDeleteAccount(): void {
   deleteOwnAccount.mutate(undefined, {
-    onError: (error) =>
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: getErrorMessage(error),
-        life: 4000,
-      }),
+    onError: (error) => feedback.error(error),
   })
 }
 </script>

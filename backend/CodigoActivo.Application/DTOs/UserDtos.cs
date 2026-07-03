@@ -18,7 +18,7 @@ public record UserResponse(
 )
 {
     public UserResponse()
-        : this(Guid.Empty, "", "", null, null, default, null, default, null, null, null!, []) { }
+        : this(Guid.Empty, string.Empty, string.Empty, Email: null, Phone: null, default, LastLoginAt: null, default, UpdatedAt: null, ParentId: null, null!, []) { }
 }
 
 public record UserStatusResponse(Guid Id, string Name, string Color);
@@ -42,13 +42,13 @@ public record ChangePasswordRequest(
 public record UserStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     public UserStatusTypeResponse()
-        : this(Guid.Empty, "", "", "") { }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty) { }
 }
 
 public record UserTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     public UserTypeResponse()
-        : this(Guid.Empty, "", "", "") { }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty) { }
 }
 
 public record RegistrationTypeResponse(
@@ -61,5 +61,5 @@ public record RegistrationTypeResponse(
 )
 {
     public RegistrationTypeResponse()
-        : this(Guid.Empty, "", "", "", false, false) { }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, IsAllowedForMinors: false, IsAllowedForAdults: false) { }
 }

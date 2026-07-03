@@ -21,7 +21,7 @@ import type {
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTime, getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { formatDateTime, useCrudFeedback } from '@/shared/lib'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,7 +89,7 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
           feedback.success('Actividad actualizada.')
           activityDialogVisible.value = false
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       },
     )
     return
@@ -100,7 +100,7 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
       activityDialogVisible.value = false
       void summary.refetch()
     },
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -120,7 +120,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
           void deleteThumbnail(activity.thumbnailId)
           void summary.refetch()
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })
@@ -145,7 +145,7 @@ function onAssignSubmit(payload: {
         assignDialogVisible.value = false
         void summary.refetch()
       },
-      onError: (error) => feedback.error(getErrorMessage(error)),
+      onError: (error) => feedback.error(error),
     },
   )
 }

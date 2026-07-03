@@ -223,7 +223,7 @@ public class ActivityService(
             userId,
             activityId,
             request.ActivityRoleTypeId,
-            null,
+RoleTypeName: null,
             new AssignmentStatusResponse(
                 SeedIds.AssignmentStatusTypes.Requested,
                 nameof(SeedIds.AssignmentStatusTypes.Requested)
@@ -298,7 +298,7 @@ public class ActivityService(
                     item.UserId,
                     activityId,
                     item.ActivityRoleTypeId,
-                    null,
+RoleTypeName: null,
                     new AssignmentStatusResponse(
                         SeedIds.AssignmentStatusTypes.Requested,
                         nameof(SeedIds.AssignmentStatusTypes.Requested)
@@ -433,10 +433,10 @@ public class ActivityService(
         var target = await activities.FindAsync(a => a.Id == activityId, ct);
         if (target is null)
         {
-            return new TimeOverlapResponse(false, []);
+            return new TimeOverlapResponse(HasOverlaps: false, []);
         }
 
-        var assignments = await activities.GetUserAssignmentsAsync(userId, null, null, ct);
+        var assignments = await activities.GetUserAssignmentsAsync(userId, startDate: null, endDate: null, ct);
         var overlaps = assignments
             .Where(x => x.ActivityId != activityId && Overlaps(target, x.Activity))
             .Select(x => new OverlappingActivityResponse(

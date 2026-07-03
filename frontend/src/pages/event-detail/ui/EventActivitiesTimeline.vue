@@ -11,12 +11,13 @@ import { useEventActivities } from '../model/useEventActivities'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
 import type { TimelineActivity, TimelineMemberAssignment } from '../model/activity-timeline.types'
 import type { ActivityOverlap } from '@/entities/activity'
-import { formatDateTime, getErrorMessage } from '@/shared/lib'
+import { formatDateTime, useCrudFeedback } from '@/shared/lib'
 
 const props = defineProps<{ eventId: string; signupOpen: boolean }>()
 
 const router = useRouter()
 const toast = useToast()
+const feedback = useCrudFeedback()
 const {
   activities,
   assigned,
@@ -148,7 +149,7 @@ async function onSignup(activity: TimelineActivity, roleId: string): Promise<voi
     doAssign(activity.id, roleId)
   } catch (error) {
     busyId.value = null
-    toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(error), life: 4000 })
+    feedback.error(error)
   }
 }
 
@@ -170,13 +171,7 @@ function doAssign(activityId: string, roleId: string): void {
           detail: 'Te has apuntado a la actividad.',
           life: 3500,
         }),
-      onError: (error) =>
-        toast.add({
-          severity: 'error',
-          summary: 'No se pudo apuntar',
-          detail: getErrorMessage(error),
-          life: 4000,
-        }),
+      onError: (error) => feedback.error(error, 'No se pudo apuntar'),
       onSettled: () => {
         busyId.value = null
       },
@@ -230,13 +225,7 @@ function confirmHousehold(): void {
           life: 3500,
         })
       },
-      onError: (error) =>
-        toast.add({
-          severity: 'error',
-          summary: 'No se pudo apuntar',
-          detail: getErrorMessage(error),
-          life: 4000,
-        }),
+      onError: (error) => feedback.error(error, 'No se pudo apuntar'),
       onSettled: () => {
         busyId.value = null
       },
@@ -257,13 +246,7 @@ function onUnassignMember(activity: TimelineActivity, memberId: string): void {
           detail: 'Se ha eliminado la inscripción.',
           life: 3000,
         }),
-      onError: (error) =>
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: getErrorMessage(error),
-          life: 4000,
-        }),
+      onError: (error) => feedback.error(error),
       onSettled: () => {
         busyId.value = null
       },

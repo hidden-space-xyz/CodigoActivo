@@ -19,7 +19,7 @@ import type {
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { formatDate, formatDateTime, getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { formatDate, formatDateTime, useCrudFeedback } from '@/shared/lib'
 
 const { table, create, update, remove, feature } = useEventsAdmin()
 const feedback = useCrudFeedback()
@@ -29,7 +29,7 @@ function onFeature(event: EventResponse): void {
   if (!event.id || event.featured) return
   feature.mutate(event.id, {
     onSuccess: () => feedback.success('Evento destacado.'),
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -56,7 +56,7 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
           feedback.success('Evento actualizado.')
           dialogVisible.value = false
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       },
     )
     return
@@ -66,7 +66,7 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
       feedback.success('Evento creado.')
       dialogVisible.value = false
     },
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -85,7 +85,7 @@ function confirmDelete(event: EventResponse): void {
           feedback.success('Evento eliminado.')
           void deleteThumbnail(event.thumbnailId)
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })

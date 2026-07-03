@@ -12,7 +12,7 @@ import type {
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
-import { formatDate, getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { formatDate, useCrudFeedback } from '@/shared/lib'
 
 const { table, create, update, remove } = usePartners()
 const feedback = useCrudFeedback()
@@ -41,7 +41,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
           feedback.success('Patrocinador actualizado.')
           dialogVisible.value = false
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       },
     )
     return
@@ -51,7 +51,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
       feedback.success('Patrocinador creado.')
       dialogVisible.value = false
     },
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -70,7 +70,7 @@ function confirmDelete(partner: PartnerResponse): void {
           feedback.success('Patrocinador eliminado.')
           void deleteThumbnail(partner.thumbnailId)
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })

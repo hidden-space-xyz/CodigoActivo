@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowAnonymous]
 public class PartnersController(IPartnerService partners) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<PartnerResponse> Get()
     {
         return partners.Query();

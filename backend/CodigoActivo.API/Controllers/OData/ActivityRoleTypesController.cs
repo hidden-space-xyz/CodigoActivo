@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowOnlyAdmin]
 public class ActivityRoleTypesController(IActivityService activities) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<ActivityRoleTypeResponse> Get()
     {
         return activities.QueryRoleTypes();

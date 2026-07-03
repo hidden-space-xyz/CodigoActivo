@@ -13,7 +13,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [Authorize]
 public class UsersController(IUserService users) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<UserResponse> Get()
     {
         if (User.IsAdmin())

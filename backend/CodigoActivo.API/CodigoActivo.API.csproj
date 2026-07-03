@@ -6,13 +6,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="files\**" />
+    <Compile Remove="logs\**" />
     <Content Remove="files\**" />
+    <Content Remove="logs\**" />
     <EmbeddedResource Remove="files\**" />
+    <EmbeddedResource Remove="logs\**" />
     <None Remove="files\**" />
+    <None Remove="logs\**" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OData" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Meziantou.Analyzer">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

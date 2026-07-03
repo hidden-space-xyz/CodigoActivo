@@ -9,7 +9,7 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 
 import type { CatalogController, CatalogItem } from '../model/useCatalog'
-import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { useCrudFeedback } from '@/shared/lib'
 
 const props = defineProps<{ title: string; controller: CatalogController }>()
 
@@ -54,7 +54,7 @@ function save(): void {
           feedback.success('Elemento actualizado.')
           dialogVisible.value = false
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       },
     )
     return
@@ -64,7 +64,7 @@ function save(): void {
       feedback.success('Elemento creado.')
       dialogVisible.value = false
     },
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -80,7 +80,7 @@ function confirmDelete(item: CatalogItem): void {
       if (!item.id) return
       props.controller.remove.mutate(item.id, {
         onSuccess: () => feedback.success('Elemento eliminado.'),
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })

@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowAnonymous]
 public class RegistrationTypesController(IUserService users) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<RegistrationTypeResponse> Get()
     {
         return users.QueryRegistrationTypes();

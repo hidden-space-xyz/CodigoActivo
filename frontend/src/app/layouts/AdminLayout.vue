@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import ConfirmDialog from 'primevue/confirmdialog'
-import Toast from 'primevue/toast'
 
 import { useAuth } from '@/features/auth'
+import { AppToast } from '@/shared/ui'
 import { ADMIN_NAV } from '@/shared/config'
 
 const { displayName, logout } = useAuth()
@@ -42,7 +42,7 @@ const { displayName, logout } = useAuth()
       </main>
     </div>
 
-    <Toast position="top-right" />
+    <AppToast position="top-right" />
     <ConfirmDialog />
   </div>
 </template>

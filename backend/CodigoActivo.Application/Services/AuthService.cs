@@ -110,8 +110,8 @@ public class AuthService(
         }
 
         if (
-            await users.EmailExistsAsync(email, null, ct)
-            || await users.PhoneExistsAsync(phone, null, ct)
+            await users.EmailExistsAsync(email, excludeUserId: null, ct)
+            || await users.PhoneExistsAsync(phone, excludeUserId: null, ct)
         )
         {
             return Error.Validation();

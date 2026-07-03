@@ -11,7 +11,7 @@ import Tag from 'primevue/tag'
 import { useActivityAssignments, useAssignments } from '@/features/manage-activities'
 import { useAssignmentStatusTypesList } from '@/entities/catalog'
 import type { ActivityAssignmentRowResponse } from '@/shared/api'
-import { getErrorMessage, groupByParent, useCrudFeedback } from '@/shared/lib'
+import { groupByParent, useCrudFeedback } from '@/shared/lib'
 
 const route = useRoute()
 const eventId = computed(() => String(route.params.eventId))
@@ -92,7 +92,7 @@ function submitChangeStatus(): void {
         statusDialogVisible.value = false
         void report.refetch()
       },
-      onError: (error) => feedback.error(getErrorMessage(error)),
+      onError: (error) => feedback.error(error),
     },
   )
 }
@@ -124,7 +124,7 @@ function submitChangeRole(): void {
         roleDialogVisible.value = false
         void report.refetch()
       },
-      onError: (error) => feedback.error(getErrorMessage(error)),
+      onError: (error) => feedback.error(error),
     },
   )
 }

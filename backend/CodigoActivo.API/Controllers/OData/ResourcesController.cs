@@ -11,7 +11,7 @@ namespace CodigoActivo.API.Controllers.OData;
 [AllowAnonymous]
 public class ResourcesController(IResourceService resources) : ODataController
 {
-    [EnableQuery(PageSize = 1000)]
+    [EnableQuery(PageSize = 100)]
     public IQueryable<ResourceResponse> Get()
     {
         return resources.Query();

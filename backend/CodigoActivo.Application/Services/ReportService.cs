@@ -114,7 +114,7 @@ public class ReportService(
                 a.User.Email,
                 a.User.Phone,
                 a.User.ParentId,
-                true,
+SignedUp: true,
                 a.ActivityRoleTypeId,
                 a.ActivityRoleType.Name,
                 a.AssignmentStatusId,
@@ -143,11 +143,11 @@ public class ReportService(
                     parent.Email,
                     parent.Phone,
                     parent.ParentId,
-                    false,
-                    null,
-                    null,
-                    null,
-                    null
+SignedUp: false,
+RoleTypeId: null,
+RoleTypeName: null,
+StatusId: null,
+StatusName: null
                 )
             );
         }

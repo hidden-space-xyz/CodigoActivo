@@ -10,7 +10,7 @@ import InputText from 'primevue/inputtext'
 
 import { useEventCategories } from '../model/categories'
 import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
-import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { useCrudFeedback } from '@/shared/lib'
 
 const { list, create, update, remove } = useEventCategories()
 const feedback = useCrudFeedback()
@@ -53,7 +53,7 @@ function save(): void {
           feedback.success('Categoría actualizada.')
           dialogVisible.value = false
         },
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       },
     )
     return
@@ -63,7 +63,7 @@ function save(): void {
       feedback.success('Categoría creada.')
       dialogVisible.value = false
     },
-    onError: (error) => feedback.error(getErrorMessage(error)),
+    onError: (error) => feedback.error(error),
   })
 }
 
@@ -79,7 +79,7 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       if (!item.id) return
       remove.mutate(item.id, {
         onSuccess: () => feedback.success('Categoría eliminada.'),
-        onError: (error) => feedback.error(getErrorMessage(error)),
+        onError: (error) => feedback.error(error),
       })
     },
   })

@@ -15,7 +15,7 @@ public record ResourceResponse(
 )
 {
     public ResourceResponse()
-        : this(Guid.Empty, "", "", "", default, null, Guid.Empty, null, Guid.Empty) { }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, default, UpdatedAt: null, Guid.Empty, UpdatedBy: null, Guid.Empty) { }
 }
 
 public record CreateResourceRequest(

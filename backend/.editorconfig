@@ -123,6 +123,9 @@ dotnet_diagnostic.CA1716.severity = none
 # Flags string-literal Guid construction in one-time static seed-id initializers; the component-constructor
 # rewrite it suggests trades away readability for a micro-optimization that doesn't matter here.
 dotnet_diagnostic.MA0176.severity = none
+# Source-generated LoggerMessage delegates only pay off on hot paths; this API's log call sites are
+# startup/one-off/error-path only, where the ceremony isn't worth it.
+dotnet_diagnostic.CA1848.severity = none
 
 # Naming conventions (types, members, variables) - all as warnings
 dotnet_diagnostic.IDE1006.severity = warning
@@ -210,3 +213,8 @@ dotnet_diagnostic.S6967.severity = none
 [**/Security/Argon2idPasswordHasher.cs]
 # "Argon2id" is the algorithm's actual name per RFC 9106; don't rename it to satisfy an acronym-casing heuristic.
 dotnet_diagnostic.S101.severity = none
+
+[**/Program.cs]
+# Top-level entry point: logging the fatal startup exception before rethrowing is the standard Serilog
+# bootstrap pattern - there is no outer caller that would end up double-logging it.
+dotnet_diagnostic.S2139.severity = none

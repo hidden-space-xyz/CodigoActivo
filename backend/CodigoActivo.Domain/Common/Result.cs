@@ -16,7 +16,7 @@ public class Result
 
     public static Result Success()
     {
-        return new(true, null);
+        return new(isSuccess: true, error: null);
     }
 
     public static Result<T> Success<T>(T value)
@@ -24,7 +24,7 @@ public class Result
         return new(value);
     }
 
-    public static implicit operator Result(Error error) => new(false, error);
+    public static implicit operator Result(Error error) => new(isSuccess: false, error);
 }
 
 public sealed class Result<T> : Result
@@ -32,10 +32,10 @@ public sealed class Result<T> : Result
     private readonly T? value;
 
     internal Result(T value)
-        : base(true, null) => this.value = value;
+        : base(isSuccess: true, error: null) => this.value = value;
 
     internal Result(Error error)
-        : base(false, error) => this.value = default;
+        : base(isSuccess: false, error) => this.value = default;
 
     public T Value =>
         IsSuccess
