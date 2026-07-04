@@ -481,12 +481,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
     // ---- Change role (admin only) -----------------------------------------
 
-    // Skipped: reveals a pre-existing production bug. ActivityService.ChangeRoleAsync mutates
-    // assignment.ActivityRoleTypeId and calls SaveChanges, but that column is part of the
-    // ActivityUserRoleAssignment composite key (UserId, ActivityId, ActivityRoleTypeId), so EF Core
-    // throws "part of a key and so cannot be modified" — on PostgreSQL as well as in-memory. A correct
-    // role change must delete the old assignment and insert a new one. Reported, not worked around.
-    [Fact(Skip = "Pre-existing bug: ChangeRoleAsync mutates the ActivityRoleTypeId key property; EF rejects SaveChanges (fails on PostgreSQL too).")]
+    // ActivityRoleTypeId is part of the ActivityUserRoleAssignment composite key, so a role change
+    // deletes the old assignment and inserts a new one (carrying the original status) rather than
+    // mutating the key in place, which EF Core forbids.
+    [Fact]
     public async Task ChangeRole_as_admin_updates_and_persists()
     {
         // Allow both Leader (current) and Helper (target) on the activity.

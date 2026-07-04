@@ -4,6 +4,7 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -28,7 +29,18 @@ public class FilesController(IFileService files) : ApiControllerBase
         if (result.IsFailure) return ToProblem(result.Error!);
 
         var content = result.Value;
-        return File(content.Content, content.ContentType);
+
+        // Image content is immutable for a given (id, uploaded-at); let browsers cache it and
+        // revalidate with a conditional GET so repeat page views are 304s instead of full
+        // re-downloads. The File overload handles If-None-Match / If-Modified-Since automatically.
+        var lastModified = content.UploadedAt;
+        var etag = new EntityTagHeaderValue($"\"{fileId:N}-{lastModified.UtcTicks}\"");
+        Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue
+        {
+            Private = true,
+            MaxAge = TimeSpan.FromMinutes(5),
+        };
+        return File(content.Content, content.ContentType, lastModified, etag);
     }
 
     [HttpPost]

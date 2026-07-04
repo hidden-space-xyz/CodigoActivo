@@ -1,9 +1,13 @@
 interface MinorForm {
+  /** Stable client-side identity for list rendering; never sent to the API. */
+  key: number
   firstName: string
   lastName: string
   dateOfBirth: string
   roleId: string
 }
+
+let minorKeySeq = 0
 
 export interface RegistrationForm {
   firstName: string
@@ -17,7 +21,8 @@ export interface RegistrationForm {
 }
 
 export function createEmptyMinor(): MinorForm {
-  return { firstName: '', lastName: '', dateOfBirth: '', roleId: '' }
+  minorKeySeq += 1
+  return { key: minorKeySeq, firstName: '', lastName: '', dateOfBirth: '', roleId: '' }
 }
 
 export function createEmptyRegistrationForm(): RegistrationForm {

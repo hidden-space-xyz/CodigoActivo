@@ -563,7 +563,20 @@ public sealed class ActivityServiceAssignmentTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        assignment.ActivityRoleTypeId.Should().Be(roleId);
+        // The role id is part of the composite key, so the change is a remove + re-insert that
+        // carries the original status, not an in-place mutation.
+        activities.Received(1).RemoveAssignment(assignment);
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == userId
+                    && a.ActivityId == activityId
+                    && a.ActivityRoleTypeId == roleId
+                    && a.AssignmentStatusId == assignment.AssignmentStatusId
+                ),
+                Arg.Any<CancellationToken>()
+            );
         result.Value.RoleTypeId.Should().Be(roleId);
         result.Value.RoleTypeName.Should().Be("Líder");
         result.Value.Status.Name.Should().BeEmpty();

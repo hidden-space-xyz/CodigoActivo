@@ -12,6 +12,7 @@ import type {
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
+import { parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{
   visible: boolean
@@ -49,7 +50,7 @@ watch(
     submitted.value = false
     resetThumbnail()
     form.name = props.partner?.name ?? ''
-    form.fromDate = props.partner?.fromDate ? new Date(props.partner.fromDate) : null
+    form.fromDate = parseDateOnly(props.partner?.fromDate)
     form.tier = props.partner?.tier ?? 0
     form.website = props.partner?.website ?? ''
   },
@@ -68,7 +69,7 @@ async function save(): Promise<void> {
     name: form.name.trim(),
     tier: form.tier,
     website: form.website.trim() ? form.website.trim() : null,
-    fromDate: form.fromDate.toISOString().slice(0, 10),
+    fromDate: toDateOnly(form.fromDate),
     thumbnailId,
   } satisfies CreatePartnerRequest)
 }

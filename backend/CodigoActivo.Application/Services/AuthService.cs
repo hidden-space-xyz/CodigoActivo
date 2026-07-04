@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -79,7 +77,7 @@ public class AuthService(
                 return Error.BadRequest(ErrorCode.UserTypeNotAllowedForAdults);
         }
 
-        var email = request.Email.NormalizeOrNull();
+        var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
             return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
@@ -179,10 +177,8 @@ public class AuthService(
             || user.OtpCode == Guid.Empty || user.OtpCode is null
             || user.OtpExpiresAt is null
             || user.OtpExpiresAt < clock.UtcNow
-            || !CryptographicOperations.FixedTimeEquals(
-                Encoding.UTF8.GetBytes(user.OtpCode.Value.ToString()),
-                Encoding.UTF8.GetBytes(otp)
-            )
+            || !Guid.TryParse(otp, out var submitted)
+            || submitted != user.OtpCode.Value
         )
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
 

@@ -1,3 +1,5 @@
+import type { MaybeRefOrGetter } from 'vue'
+import { toValue } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import {
@@ -13,12 +15,13 @@ import type {
 } from '@/shared/api/generated/models'
 import { verifyOverlapsRequest } from '@/entities/activity'
 
-export function useAssignments(eventId: string) {
+export function useAssignments(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   // Assignment changes feed both report queries; invalidating here keeps every consuming page
-  // fresh without per-page manual refetches.
+  // fresh without per-page manual refetches. Read eventId through toValue so it stays correct if
+  // the host component is reused across a param-only route change.
   const invalidate = (_data: unknown, vars: { activityId: string }) => {
-    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-summary', eventId] })
+    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-summary', toValue(eventId)] })
     void queryClient.invalidateQueries({
       queryKey: ['reports', 'activity-assignments', vars.activityId],
     })

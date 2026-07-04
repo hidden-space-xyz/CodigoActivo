@@ -24,7 +24,7 @@ interface ContentApi<TParams> {
   fetchPage: (params: TParams) => Promise<ServerTablePage<ContentItem>>
   columns: Record<string, ServerTableColumn>
   defaultSort?: { readonly field: string; readonly order?: 1 | -1 }
-  fetchOne: (id: string) => Promise<ContentItem>
+  fetchOne: (id: string) => Promise<ContentItem | null>
   create: (body: ContentRequest) => Promise<unknown>
   update: (id: string, body: ContentRequest) => Promise<unknown>
   remove: (id: string) => Promise<unknown>

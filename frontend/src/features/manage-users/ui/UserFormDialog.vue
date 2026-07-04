@@ -6,7 +6,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
-import { ageFrom } from '@/shared/lib'
+import { ageFrom, parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{ visible: boolean; user: UserResponse | null; saving: boolean }>()
 
@@ -55,7 +55,7 @@ watch(
     form.lastName = props.user?.lastName ?? ''
     form.email = props.user?.email ?? ''
     form.phone = props.user?.phone ?? ''
-    form.birthDate = props.user?.birthDate ? new Date(props.user.birthDate) : null
+    form.birthDate = parseDateOnly(props.user?.birthDate)
   },
 )
 
@@ -81,7 +81,7 @@ function save(): void {
     lastName: form.lastName.trim(),
     email: form.email.trim() ? form.email.trim() : null,
     phone: form.phone.trim() ? form.phone.trim() : null,
-    birthDate: birthDate.toISOString().slice(0, 10),
+    birthDate: toDateOnly(birthDate),
     parentId: props.user?.parentId ?? null,
   }
   emit('submit', body)

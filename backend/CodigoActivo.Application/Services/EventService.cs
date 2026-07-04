@@ -301,17 +301,32 @@ public class EventService(
         if (DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd)
             return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
 
-        return new EventSchedule(eventStart, eventEnd, signupStart, signupEnd);
+        // Persist signup instants as UTC: Npgsql rejects a non-zero offset on a timestamptz column.
+        return new EventSchedule(
+            eventStart,
+            eventEnd,
+            signupStart.ToUniversalTime(),
+            signupEnd.ToUniversalTime()
+        );
     }
 
-    private static (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) DayBounds(
+    private (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) DayBounds(
         DateOnly eventStart,
         DateOnly eventEnd
     )
     {
-        var lower = new DateTimeOffset(eventStart.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        // Event days are calendar days in the app's timezone; resolve their start-of-day instants
+        // through that timezone so the "activities outside the new range" check lines up with how
+        // activity days are classified (and stored as UTC).
+        var lower = new DateTimeOffset(
+            TimeZoneInfo.ConvertTimeToUtc(eventStart.ToDateTime(TimeOnly.MinValue), clock.TimeZone),
+            TimeSpan.Zero
+        );
         var upperExclusive = new DateTimeOffset(
-            eventEnd.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeZoneInfo.ConvertTimeToUtc(
+                eventEnd.AddDays(1).ToDateTime(TimeOnly.MinValue),
+                clock.TimeZone
+            ),
             TimeSpan.Zero
         );
         return (lower, upperExclusive);

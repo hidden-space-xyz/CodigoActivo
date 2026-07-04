@@ -54,7 +54,13 @@ public static class TextSearch
         string term
     )
     {
-        Expression body = Expression.Call(selector.Body, ToLowerMethod);
+        // Coalesce to "" first: the selected column may be nullable (e.g. User.Email), and calling
+        // ToLower() on a null throws under LINQ-to-Objects (the in-memory/fake executors) while
+        // silently dropping the row under Postgres — folding null to "" makes both behave the same.
+        Expression body = Expression.Call(
+            Expression.Coalesce(selector.Body, Expression.Constant(string.Empty)),
+            ToLowerMethod
+        );
         foreach (var (accented, plain) in Folds)
             body = Expression.Call(
                 body,

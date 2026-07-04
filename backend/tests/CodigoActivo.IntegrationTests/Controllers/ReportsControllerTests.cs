@@ -274,12 +274,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         error!.Code.Should().Be(ErrorCode.ActivityNotFound);
     }
 
-    // ---- Dashboard (anonymous) ---------------------------------------------
+    // ---- Dashboard (admin only) --------------------------------------------
 
     [Fact]
-    public async Task Dashboard_is_anonymous_and_counts_reference_users_only_when_empty()
+    public async Task Dashboard_counts_reference_users_only_when_empty()
     {
-        var client = CreateClient();
+        var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync("/api/reports/dashboard");
 
@@ -297,7 +297,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     public async Task Dashboard_reflects_seeded_events_and_activities()
     {
         await SeedEventGraphAsync();
-        var client = CreateClient();
+        var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync("/api/reports/dashboard");
 
@@ -314,6 +314,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         $"/api/reports/events/{EventId}/summary",
         $"/api/reports/events/{EventId}/assignments",
         $"/api/reports/activities/{ActivityAId}/assignments",
+        "/api/reports/dashboard",
     };
 
     [Theory]

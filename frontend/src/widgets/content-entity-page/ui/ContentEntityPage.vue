@@ -67,13 +67,26 @@ function openCreate(): void {
 }
 
 async function openEdit(item: ContentItem): Promise<void> {
-  editing.value = item
-  dialogVisible.value = true
-  if (!item.id) return
+  if (!item.id) {
+    editing.value = item
+    dialogVisible.value = true
+    return
+  }
+  // Load the full detail (which carries the description the list row omits) BEFORE opening, so the
+  // form is populated once from complete data. Populating from the list row and then letting a late
+  // fetch re-trigger the form watch would clobber anything the user had already typed.
   loadingDetail.value = true
   try {
-    editing.value = await props.controller.fetchOne(item.id)
-  } catch {
+    const detail = await props.controller.fetchOne(item.id)
+    if (!detail) {
+      // 404: the row was deleted between listing and editing — don't fall through to a create.
+      feedback.error(`Este ${props.entityLabel} ya no existe.`)
+      return
+    }
+    editing.value = detail
+    dialogVisible.value = true
+  } catch (error) {
+    feedback.error(error)
   } finally {
     loadingDetail.value = false
   }

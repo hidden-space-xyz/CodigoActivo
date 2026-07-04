@@ -7,7 +7,7 @@ import {
   postApiUsersUserIdChildren,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import { ApiError } from '@/shared/api'
+import { ApiError, fetchAllPages, toPage } from '@/shared/api'
 
 import type {
   AddMinorInput,
@@ -40,8 +40,10 @@ export async function getAccountProfileRequest(): Promise<AccountProfile | null>
 export async function getAccountChildrenRequest(
   parentId: string,
 ): Promise<readonly AccountChild[]> {
-  const { data } = await getApiUsers({ parentId, sort: 'firstName', pageSize: 100 })
-  return (data.items ?? []).map(toAccountChild)
+  const children = await fetchAllPages((page, pageSize) =>
+    getApiUsers({ parentId, sort: 'firstName', page, pageSize }).then(toPage),
+  )
+  return children.map(toAccountChild)
 }
 
 export async function getRegistrationTypesRequest(

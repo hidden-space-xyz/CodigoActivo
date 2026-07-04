@@ -9,4 +9,6 @@ public sealed class SystemClock(TimeZoneInfo timeZone) : IClock
 
     public DateOnly Today =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, timeZone).DateTime);
+
+    public TimeZoneInfo TimeZone => timeZone;
 }

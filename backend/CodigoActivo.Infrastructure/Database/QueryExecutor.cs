@@ -17,7 +17,14 @@ public sealed class QueryExecutor : IQueryExecutor
     )
     {
         var total = await source.CountAsync(ct);
-        var items = await source.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        // Widen to long so a large in-range page (page is only floored at 1, never capped) can't
+        // overflow Int32 into a negative Skip that PostgreSQL rejects with "OFFSET must not be
+        // negative"; any page past the end simply yields no items.
+        var skip = (long)(page - 1) * pageSize;
+        var items =
+            skip >= total
+                ? []
+                : await source.Skip((int)skip).Take(pageSize).ToListAsync(ct);
         return new PagedResult<T>(items, total, page, pageSize);
     }
 

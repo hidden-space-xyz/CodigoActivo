@@ -8,19 +8,18 @@ import {
   putApiResourcesResourceId,
 } from '@/shared/api/generated/endpoints/resources/resources'
 import type { GetApiResourcesParams } from '@/shared/api/generated/models'
-import { unwrapOrNull } from '@/shared/api'
+import { toPage, unwrapOrNull } from '@/shared/api'
 import { resourceQueryKeys } from '@/entities/resource'
 
 const controller = useContentEntity<GetApiResourcesParams>({
   queryKey: resourceQueryKeys.all,
-  fetchPage: (params) =>
-    getApiResources(params).then((r) => ({ items: r.data.items ?? [], total: r.data.total ?? 0 })),
+  fetchPage: (params) => getApiResources(params).then(toPage),
   defaultSort: { field: 'createdAt', order: -1 },
   columns: {
     title: { type: 'text' },
     subtitle: { type: 'text' },
   },
-  fetchOne: (id) => unwrapOrNull(getApiResourcesResourceId(id)).then((r) => r ?? {}),
+  fetchOne: (id) => unwrapOrNull(getApiResourcesResourceId(id)),
   create: (body) => postApiResources(body),
   update: (id, body) => putApiResourcesResourceId(id, body),
   remove: (id) => deleteApiResourcesResourceId(id),

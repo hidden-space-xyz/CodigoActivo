@@ -10,7 +10,7 @@ import {
 import { getApiMeAssignedActivities } from '@/shared/api/generated/endpoints/me/me'
 import { getApiUsers } from '@/shared/api/generated/endpoints/users/users'
 import type { ActivityResponse } from '@/shared/api/generated/models'
-import { unwrapOrNull } from '@/shared/api'
+import { fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
 
 import type { HouseholdAssignmentInput } from '../model/household-assignment-input'
 import type {
@@ -41,8 +41,9 @@ export async function getMyAssignmentsRequest(): Promise<readonly ActivityAssign
 }
 
 export async function listEventActivitiesRequest(eventId: string): Promise<ActivityResponse[]> {
-  const { data } = await getApiActivities({ eventId, sort: 'activityStartsAt', pageSize: 100 })
-  return data.items ?? []
+  return fetchAllPages((page, pageSize) =>
+    getApiActivities({ eventId, sort: 'activityStartsAt', page, pageSize }).then(toPage),
+  )
 }
 
 export async function getActivityByIdRequest(activityId: string): Promise<ActivityResponse | null> {
@@ -59,8 +60,10 @@ export async function getHouseholdAssignmentsRequest(
 export async function getHouseholdMembersRequest(
   userId: string,
 ): Promise<readonly HouseholdMember[]> {
-  const { data } = await getApiUsers({ parentId: userId, sort: 'firstName', pageSize: 100 })
-  return (data.items ?? []).map(toHouseholdMember)
+  const users = await fetchAllPages((page, pageSize) =>
+    getApiUsers({ parentId: userId, sort: 'firstName', page, pageSize }).then(toPage),
+  )
+  return users.map(toHouseholdMember)
 }
 
 export async function verifyOverlapsRequest(

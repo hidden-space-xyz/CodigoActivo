@@ -52,6 +52,9 @@ export function useAccount() {
 
   function invalidateChildren(): void {
     void queryClient.invalidateQueries({ queryKey: childrenKey })
+    // The event-signup household dialog caches the same members under its own key; keep it in sync
+    // so a newly added/removed minor shows up there without waiting for staleTime.
+    void queryClient.invalidateQueries({ queryKey: ['public', 'my-children'] })
   }
 
   function syncProfile(updated: AccountProfile): void {

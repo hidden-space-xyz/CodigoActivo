@@ -42,7 +42,7 @@ public class ReportsController(IReportService reports) : ApiControllerBase
     }
 
     [HttpGet("dashboard")]
-    [AllowAnonymous]
+    [AllowOnlyAdmin]
     public async Task<ActionResult<DashboardSummaryResponse>> Dashboard(CancellationToken ct)
     {
         return Ok(await reports.GetDashboardSummaryAsync(ct));

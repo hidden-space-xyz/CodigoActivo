@@ -10,4 +10,9 @@ public record FileResponse(
 
 public sealed record FileUploadRequest(Stream Content, string FileName, long Length);
 
-public sealed record FileContentValueObject(Stream Content, string ContentType, string FileName);
+public sealed record FileContentValueObject(
+    Stream Content,
+    string ContentType,
+    string FileName,
+    DateTimeOffset UploadedAt
+);

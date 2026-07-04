@@ -16,7 +16,7 @@ import type {
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
 import type { ActivityModalityTypeResponse } from '@/shared/api/generated/models'
-import { parseDateOnly } from '@/shared/lib'
+import { parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{
   visible: boolean
@@ -62,10 +62,6 @@ const {
   resolveThumbnailId,
 } = useThumbnailUpload(() => props.activity?.thumbnailId)
 
-function utcDay(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
-
 const eventStartDate = computed(() => parseDateOnly(props.eventStart))
 const eventEndDate = computed(() => parseDateOnly(props.eventEnd))
 const minDate = computed(() => eventStartDate.value ?? undefined)
@@ -90,8 +86,10 @@ const outsideEvent = computed(() => {
   if (!start || !end) return false
   const eventStart = props.eventStart?.slice(0, 10)
   const eventEnd = props.eventEnd?.slice(0, 10)
-  if (eventStart && utcDay(start) < eventStart) return true
-  if (eventEnd && utcDay(end) > eventEnd) return true
+  // Compare the activity's local calendar day (matching the picker's local min/max bounds and the
+  // backend's timezone-aware check), not its UTC day which drifts across midnight.
+  if (eventStart && toDateOnly(start) < eventStart) return true
+  if (eventEnd && toDateOnly(end) > eventEnd) return true
   return false
 })
 const datesValid = computed(

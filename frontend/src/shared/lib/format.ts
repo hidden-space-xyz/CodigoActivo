@@ -38,8 +38,10 @@ export function yearsAgoIso(years: number): string {
 /** Age in whole years for a birth date, or null when the value is missing or invalid. */
 export function ageFrom(value?: Date | string | null): number | null {
   if (!value) return null
-  const birth = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(birth.getTime())) return null
+  // Parse date-only strings as a local calendar day (parseDateOnly), not UTC midnight, so the
+  // month/day comparison below doesn't shift a day and report the wrong age around a birthday.
+  const birth = value instanceof Date ? value : parseDateOnly(value)
+  if (!birth || Number.isNaN(birth.getTime())) return null
   const now = new Date()
   let age = now.getFullYear() - birth.getFullYear()
   const monthDiff = now.getMonth() - birth.getMonth()

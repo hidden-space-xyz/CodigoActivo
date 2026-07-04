@@ -1,5 +1,5 @@
 import { env } from '@/shared/config'
-import type { ErrorCode } from '@/shared/api/generated/models'
+import { ErrorCode } from '@/shared/api/generated/models'
 
 const UNSAFE_METHODS: ReadonlySet<string> = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -24,13 +24,13 @@ export class ApiError extends Error {
 
 let csrfToken: string | null = null
 let csrfHeaderName = 'X-CSRF-TOKEN'
+let csrfTokenPromise: Promise<void> | null = null
 
 export function resetCsrfToken(): void {
   csrfToken = null
 }
 
-async function ensureCsrfToken(): Promise<void> {
-  if (csrfToken) return
+async function fetchCsrfToken(): Promise<void> {
   const { getApiAuthCsrf } = await import('@/shared/api/generated/endpoints/auth/auth')
   try {
     const response = await getApiAuthCsrf()
@@ -39,6 +39,17 @@ async function ensureCsrfToken(): Promise<void> {
   } catch {
     csrfToken = null
   }
+}
+
+async function ensureCsrfToken(): Promise<void> {
+  if (csrfToken) return
+  // Share one in-flight fetch across concurrent unsafe requests: the antiforgery endpoint mints a
+  // fresh cookie per call, so parallel fetches would each get a different cookie/token pair and all
+  // but the last would fail validation.
+  csrfTokenPromise ??= fetchCsrfToken().finally(() => {
+    csrfTokenPromise = null
+  })
+  await csrfTokenPromise
 }
 
 async function buildApiError(response: Response): Promise<ApiError> {
@@ -98,15 +109,15 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
   })
 
   if (!response.ok) {
-    if (
-      UNSAFE_METHODS.has(method) &&
-      retry &&
-      (response.status === 400 || response.status === 403)
-    ) {
+    const error = await buildApiError(response)
+    // Only a genuine CSRF-token rejection is worth retrying (the token may have expired). Retrying
+    // on every 400/403 re-sends the whole request — doubling server work and re-running the body
+    // upload — for ordinary validation failures and authorization denials that a retry can't fix.
+    if (UNSAFE_METHODS.has(method) && retry && error.code === ErrorCode.InvalidCsrfToken) {
       resetCsrfToken()
       return request<T>(url, init, false)
     }
-    throw await buildApiError(response)
+    throw error
   }
 
   const data = await parseData(response)

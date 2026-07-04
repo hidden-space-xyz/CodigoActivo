@@ -74,8 +74,10 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         return entities.Count;
     }
 
-    // Features the target first so a failure between the two statements can never leave zero
-    // featured rows. EF.Property is required because EF cannot bind interface members directly.
+    // Sets Featured=true on the target and false on every other row in a single atomic UPDATE.
+    // Doing it as one statement (rather than two) means concurrent calls can't interleave into a
+    // state with zero — or two — featured rows. EF.Property is required because EF cannot bind
+    // interface members directly.
     protected static async Task<bool> SetExclusiveFeaturedAsync<TFeaturable>(
         DbSet<TFeaturable> set,
         Guid id,
@@ -83,18 +85,12 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
     )
         where TFeaturable : IdentifiableEntity, IFeaturable
     {
-        var updated = await set.Where(e => e.Id == id)
-            .ExecuteUpdateAsync(
-                s => s.SetProperty(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)), true),
-                ct
-            );
-        if (updated == 0) return false;
+        if (!await set.AnyAsync(e => e.Id == id, ct)) return false;
 
-        await set.Where(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)) && e.Id != id)
-            .ExecuteUpdateAsync(
-                s => s.SetProperty(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)), false),
-                ct
-            );
+        await set.ExecuteUpdateAsync(
+            s => s.SetProperty(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)), e => e.Id == id),
+            ct
+        );
         return true;
     }
 }

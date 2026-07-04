@@ -14,4 +14,6 @@ public sealed class TestClock : IClock
     public DateTimeOffset UtcNow { get; set; }
 
     public DateOnly Today { get; set; }
+
+    public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Utc;
 }

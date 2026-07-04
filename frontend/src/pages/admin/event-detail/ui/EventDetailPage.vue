@@ -33,7 +33,7 @@ const assignDialogVisible = ref(false)
 const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
 const activities = useActivities(eventId)
-const assignments = useAssignments(eventId.value)
+const assignments = useAssignments(eventId)
 const roleTypes = useActivityRoleTypesList()
 const modalityTypes = useActivityModalityTypesList()
 // The users list only feeds the assign dialog — don't fetch it until the dialog opens.

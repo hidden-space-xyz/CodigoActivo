@@ -52,14 +52,13 @@ public sealed class TextSearchTests
     }
 
     [Fact]
-    public void Contains_throws_when_the_selected_value_is_null()
+    public void Contains_treats_a_null_selected_value_as_no_match()
     {
-        // In memory the fold calls string.ToLower() on the selected value; a null column selection
-        // therefore throws (EF Core would instead translate this to a SQL NULL comparison).
+        // The fold coalesces a null column selection to "" before lower-casing, so a nullable column
+        // (e.g. User.Email) simply doesn't match a non-empty term instead of throwing in memory /
+        // silently dropping the row under SQL — both executors now behave identically.
         var predicate = TextSearch.Contains<Row>(r => r.Name, TextSearch.Normalize("x")).Compile();
 
-        var act = () => predicate(new Row(null));
-
-        act.Should().Throw<NullReferenceException>();
+        predicate(new Row(null)).Should().BeFalse();
     }
 }

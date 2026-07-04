@@ -48,7 +48,8 @@ public class FileService(
         return new FileContentValueObject(
             stream,
             format?.ContentType ?? FallbackContentType,
-            meta.Value.Name
+            meta.Value.Name,
+            meta.Value.UploadedAt
         );
     }
 
@@ -132,6 +133,11 @@ public class FileService(
     {
         var file = await files.FindAsync(f => f.Id == id, ct);
         if (file is null) return Error.NotFound(ErrorCode.FileNotFound);
+
+        // Thumbnail FKs are restricted, so deleting a file still in use throws a DbUpdateException
+        // that would surface as a 500; check first and return a clean conflict instead.
+        if (await files.IsReferencedAsThumbnailAsync(id, ct))
+            return Error.Conflict(ErrorCode.FileInUse);
 
         var storedName = StoredName(file.Id, file.Extension);
 

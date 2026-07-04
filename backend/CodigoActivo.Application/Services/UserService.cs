@@ -275,6 +275,12 @@ public class UserService(
 
         if (parentUser.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
+        // Once a minor already has a parent, this self-service endpoint must not re-point them to a
+        // different adult: otherwise the owning parent could transfer control of the child to an
+        // unrelated adult who never consented. (First-time assignment is still allowed.)
+        if (user.ParentId is { } currentParent && currentParent != parent)
+            return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
+
         user.ParentId = parent;
         user.Email = null;
         user.Phone = null;
@@ -295,7 +301,7 @@ public class UserService(
     {
         if (parentId is not null) return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
 
-        var email = rawEmail.NormalizeOrNull();
+        var email = rawEmail.NormalizeEmailOrNull();
         var phone = rawPhone.NormalizeOrNull();
         if (email is null || phone is null) return Error.BadRequest(ErrorCode.UserContactInfoRequired);
 

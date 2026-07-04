@@ -19,7 +19,7 @@ const activityId = computed(() => String(route.params.activityId))
 
 const feedback = useCrudFeedback()
 const report = useActivityAssignments(activityId)
-const assignments = useAssignments(eventId.value)
+const assignments = useAssignments(eventId)
 const statusTypes = useAssignmentStatusTypesList()
 
 const summaryCards = computed(() => {

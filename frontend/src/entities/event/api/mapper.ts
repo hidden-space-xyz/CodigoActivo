@@ -1,5 +1,5 @@
 import type { EventResponse } from '@/shared/api/generated/models'
-import { formatDate, formatDateTime } from '@/shared/lib'
+import { formatDate, formatDateTime, parseDateOnly } from '@/shared/lib'
 
 import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
 
@@ -69,7 +69,10 @@ export function toEventDetail(event: EventResponse): EventDetail {
 }
 
 export function toPastEvent(event: EventResponse): PastEvent {
-  const year = event.eventStartsAt ? String(new Date(event.eventStartsAt).getFullYear()) : '—'
+  // Read the year off the local calendar day, not new Date()'s UTC parse, so it matches the
+  // backend's year grouping (a Jan-1 event stays in its own year in UTC-negative timezones).
+  const localStart = parseDateOnly(event.eventStartsAt)
+  const year = localStart ? String(localStart.getFullYear()) : '—'
   return {
     id: event.id ?? '',
     title: event.title ?? '',

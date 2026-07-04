@@ -14,11 +14,15 @@ import { deleteThumbnail } from '@/entities/file'
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const queryKey = computed(() => ['activities', 'event', toValue(eventId)] as const)
-  // Creating/removing activities also changes the event summary report's counts.
+  // Creating/removing activities also changes the event summary report's counts, and the public
+  // event page caches the same activities under its own ['public', 'event-activities', id] key.
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKey.value })
     void queryClient.invalidateQueries({
       queryKey: ['reports', 'event-summary', toValue(eventId)],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['public', 'event-activities', toValue(eventId)],
     })
   }
 

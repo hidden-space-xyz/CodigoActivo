@@ -176,7 +176,7 @@ function removeMinor(index: number): void {
         </p>
 
         <transition-group name="reg-fade" tag="div">
-          <fieldset v-for="(minor, index) in model.minors" :key="index" class="reg__minor">
+          <fieldset v-for="(minor, index) in model.minors" :key="minor.key" class="reg__minor">
             <legend class="reg__minor-legend">Menor {{ index + 1 }}</legend>
             <button
               type="button"

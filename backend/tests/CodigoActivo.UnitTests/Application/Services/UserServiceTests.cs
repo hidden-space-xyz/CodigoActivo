@@ -330,7 +330,8 @@ public sealed class UserServiceTests
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("New");
         user.LastName.Should().Be("Name");
-        user.Email.Should().Be("NEW@test.com");
+        // Email is canonicalized to lower-case so uniqueness and login are case-insensitive.
+        user.Email.Should().Be("new@test.com");
         user.Phone.Should().Be("999");
         user.ParentId.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
