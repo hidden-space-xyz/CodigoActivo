@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Constants;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.API.Extensions;

@@ -1,8 +1,8 @@
 # Backend testing conventions
 
-Two test projects under `backend/tests/`, both xUnit v3 + FluentAssertions (pinned to the free 7.x)
-+ NSubstitute, coverage via coverlet. Target: **≥95% line coverage** on the production assemblies
-(EF migrations excluded).
+Two test projects under `backend/tests/`, both xUnit v3 + AwesomeAssertions (the Apache-2.0/MIT
+fork of FluentAssertions — same API, `using AwesomeAssertions;`) + NSubstitute, coverage via
+coverlet. Target: **≥95% line coverage** on the production assemblies (EF migrations excluded).
 
 - **`CodigoActivo.UnitTests`** — fast, isolated. Collaborators are NSubstitute doubles. References
   every layer (via the API + Infrastructure projects).
@@ -16,7 +16,7 @@ Reference files to copy patterns from (read them before writing):
 
 ## Hard rules
 
-1. **FluentAssertions** for every assertion (`result.Should().Be(...)`), never raw `Assert.*`.
+1. **AwesomeAssertions** for every assertion (`result.Should().Be(...)`), never raw `Assert.*`.
 2. **NSubstitute** for unit doubles (`Substitute.For<IXRepository>()`, `.Returns(...)`,
    `.Received(1)`, `.DidNotReceiveWithAnyArgs()`).
 3. `[Fact]` / `[Theory]` + `[InlineData]` / `[MemberData]`. Prefer `[Theory]` for tables of inputs.

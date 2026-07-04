@@ -1,7 +1,7 @@
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Mapping;

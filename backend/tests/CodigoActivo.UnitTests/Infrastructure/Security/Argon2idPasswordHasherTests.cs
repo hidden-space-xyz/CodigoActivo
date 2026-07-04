@@ -1,5 +1,5 @@
 using CodigoActivo.Infrastructure.Security;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Security;

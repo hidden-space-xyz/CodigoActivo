@@ -9,7 +9,7 @@ Two independent apps, no root-level tooling:
 - `backend/` — ASP.NET Core (.NET 10) Web API, Clean Architecture, PostgreSQL via EF Core.
 - `frontend/` — Vue 3 + Vite SPA (PrimeVue, TanStack Query). Reads and writes both go through a REST client generated (Orval) from the backend's OpenAPI doc.
 
-There is no automated test suite in either app (no test projects, no Vitest/Jest). Don't suggest "run the tests" — verify by building and running.
+The **backend** has an xUnit v3 test suite (unit + integration) held to a **≥95% line-coverage floor** — see "Testing" under Backend. The **frontend** has no automated test suite (no Vitest/Jest); verify it by building and running.
 
 ## Backend
 
@@ -19,6 +19,15 @@ There is no automated test suite in either app (no test projects, no Vitest/Jest
 - Run: `dotnet run --project CodigoActivo.API` → http://localhost:5150 (and https://localhost:7039), Swagger UI at `/swagger` in Development.
 - Add a migration: `dotnet ef migrations add <Name> --project CodigoActivo.Infrastructure --startup-project CodigoActivo.API`. Migrations and seed data are applied automatically on startup (toggle via `Database:MigrateOnStartup` / `Database:SeedOnStartup`); there is no manual `database update` step in normal dev.
 - Packages are centrally managed in `Directory.Packages.props` (no versions in individual `.csproj`). Add a `PackageVersion` there, then a versionless `PackageReference` in the project.
+
+### Testing (run from `backend/`)
+
+- **Stack:** xUnit v3 + **AwesomeAssertions** (the Apache-2.0/MIT fork of FluentAssertions — same API, `using AwesomeAssertions;`; chosen because FluentAssertions 8.x is commercially licensed) + NSubstitute, coverage via coverlet. Two projects under `tests/`: `CodigoActivo.UnitTests` and `CodigoActivo.IntegrationTests`. They live under `tests/Directory.Build.props`, which intentionally does **not** inherit the strict analyzer settings, so test code is not held to the production style bar.
+- **Run:** `dotnet test CodigoActivo.slnx`. Coverage + summary: `./coverage.ps1` (fails if line coverage drops below the 95% floor; needs `dotnet tool install --global dotnet-reportgenerator-globaltool`).
+- **Unit tests** mock the repository/`IUnitOfWork`/`IClock`/`IPasswordHasher` collaborators with NSubstitute. The read path runs against the real projection/`SortMap`/`TextSearch` via `TestSupport/FakeQueryExecutor` over `list.AsQueryable()`.
+- **Integration tests** boot the real app through `WebApplicationFactory<Program>` (see `Infrastructure/CodigoActivoWebAppFactory`): real cookie auth, CSRF middleware, controllers, services and repositories, on an EF Core **in-memory** store. Only three things are swapped — the DB provider, a fast fake password hasher, and a fixed `TestClock`. Auth is exercised by real login (`LoginAsAdminAsync`/`LoginAsMemberAsync`); unsafe verbs auto-fetch a CSRF token. Fixed users/ids live in `Infrastructure/TestSeedData`. `Program` is exposed to the test host via `InternalsVisibleTo`. Docker is not assumed, so there is no Testcontainers/Postgres; the handful of relational-only methods (EF `ExecuteUpdate` in `SetExclusiveFeaturedAsync`) are covered by a small **SQLite**-backed test in `Repositories/RepositoryTests` instead.
+- **Conventions:** `tests/TESTING_CONVENTIONS.md` is the authoritative guide for writing new tests.
+- **Maintenance policy (keep this current):** keep line coverage **≥95%** as code changes — add/adjust tests alongside features. **Do not add regression tests when fixing bugs**; a bug fix should not ship with a test that only exists to pin that specific regression.
 
 ### Architecture — 5 projects, strict dependency direction
 

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;

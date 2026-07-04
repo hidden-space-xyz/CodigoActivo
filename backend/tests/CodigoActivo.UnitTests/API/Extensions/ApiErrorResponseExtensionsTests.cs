@@ -1,6 +1,6 @@
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;

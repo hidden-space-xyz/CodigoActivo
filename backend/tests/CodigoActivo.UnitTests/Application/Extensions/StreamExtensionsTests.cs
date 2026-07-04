@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using CodigoActivo.Application.Extensions;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Extensions;

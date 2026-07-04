@@ -5,7 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 

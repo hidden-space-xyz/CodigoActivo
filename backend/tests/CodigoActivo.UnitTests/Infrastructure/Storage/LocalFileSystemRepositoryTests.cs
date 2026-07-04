@@ -1,7 +1,7 @@
 using System.Text;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Storage;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Storage;

@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 

@@ -1,14 +1,14 @@
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests;
 
 /// <summary>
-/// Validates the unit toolchain end-to-end: xUnit v3 discovery/run, FluentAssertions, NSubstitute,
+/// Validates the unit toolchain end-to-end: xUnit v3 discovery/run, AwesomeAssertions, NSubstitute,
 /// and the shared <see cref="FakeQueryExecutor"/>. Real coverage lives in the per-component suites.
 /// </summary>
 public class SmokeTests

@@ -1,5 +1,5 @@
 using CodigoActivo.Application.Validation;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Validation;

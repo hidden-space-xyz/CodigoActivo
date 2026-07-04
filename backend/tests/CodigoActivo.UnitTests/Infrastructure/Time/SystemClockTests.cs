@@ -1,5 +1,5 @@
 using CodigoActivo.Infrastructure.Time;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Time;
@@ -33,8 +33,11 @@ public sealed class SystemClockTests
             TimeZoneInfo.CreateCustomTimeZone("-11", TimeSpan.FromHours(-11), "-11", "-11")
         );
 
-        (plus14.Today >= minus11.Today).Should().BeTrue();
-        (plus14.Today.DayNumber - minus11.Today.DayNumber).Should().BeLessThanOrEqualTo(1);
+        // The two zones are 25 hours apart, so their local dates always differ — by 1 day for most of
+        // the day, and by 2 during the ~1h window when -11 is still on the previous date. Asserting the
+        // bound (not a fixed gap) keeps this deterministic regardless of the wall clock.
+        (plus14.Today > minus11.Today).Should().BeTrue();
+        (plus14.Today.DayNumber - minus11.Today.DayNumber).Should().BeInRange(1, 2);
     }
 
     [Fact]

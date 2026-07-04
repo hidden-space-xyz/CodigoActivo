@@ -2,7 +2,7 @@ using System.Net;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;

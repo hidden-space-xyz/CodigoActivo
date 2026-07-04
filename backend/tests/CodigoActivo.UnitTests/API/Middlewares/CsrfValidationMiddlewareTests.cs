@@ -2,7 +2,7 @@ using System.Text.Json;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;

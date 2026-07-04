@@ -1,6 +1,6 @@
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.OpenApi;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.OpenApi;
 using NSubstitute;

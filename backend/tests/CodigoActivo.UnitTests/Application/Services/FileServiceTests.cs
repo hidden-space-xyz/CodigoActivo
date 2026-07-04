@@ -6,7 +6,7 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.UnitTests.TestSupport;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 

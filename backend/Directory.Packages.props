@@ -21,14 +21,15 @@
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
   <!--
-    Test-only packages. FluentAssertions is pinned to the last 7.x release: 8.0.0+ moved to a
-    commercial (Xceed) license, whereas 7.x stays Apache-2.0 and free for this codebase.
+    Test-only packages. AwesomeAssertions is the Apache-2.0/MIT community fork of FluentAssertions
+    (kept free after FluentAssertions 8.0 moved to a commercial Xceed license). It exposes the same
+    assertion API under the `AwesomeAssertions` namespace (`using AwesomeAssertions;`).
   -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.4.0" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />
