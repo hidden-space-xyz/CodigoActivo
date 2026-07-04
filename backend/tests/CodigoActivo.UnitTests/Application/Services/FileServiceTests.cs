@@ -1,0 +1,430 @@
+using System.Linq.Expressions;
+using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Services;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Storage;
+using CodigoActivo.UnitTests.TestSupport;
+using FluentAssertions;
+using NSubstitute;
+using Xunit;
+
+namespace CodigoActivo.UnitTests.Application.Services;
+
+/// <summary>
+/// Unit tests for <see cref="FileService"/>. Collaborators are NSubstitute doubles; image detection
+/// runs for real over hand-built PNG / junk byte streams so every validation branch and the exact
+/// <see cref="ErrorCode"/> per guard are exercised.
+/// </summary>
+public sealed class FileServiceTests
+{
+    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly ILocalFileSystemRepository storage = Substitute.For<ILocalFileSystemRepository>();
+    private readonly TestClock clock = new();
+    private readonly FileStorageOptions options = new();
+    private readonly FileService sut;
+
+    public FileServiceTests()
+    {
+        sut = new FileService(files, uow, storage, clock, options);
+    }
+
+    // ---- Helpers -----------------------------------------------------------
+
+    private static byte[] PngBytes()
+    {
+        // 32-byte PNG header the detector accepts: signature + IHDR(len 13, 1x1).
+        var bytes = new byte[32];
+        byte[] signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        signature.CopyTo(bytes, 0);
+        bytes[8] = 0x00; bytes[9] = 0x00; bytes[10] = 0x00; bytes[11] = 0x0D; // IHDR length 13
+        bytes[12] = (byte)'I'; bytes[13] = (byte)'H'; bytes[14] = (byte)'D'; bytes[15] = (byte)'R';
+        bytes[19] = 0x01; // width = 1
+        bytes[23] = 0x01; // height = 1
+        return bytes;
+    }
+
+    private static MemoryStream PngStream() => new(PngBytes(), writable: false);
+
+    private static MemoryStream JunkStream() => new(new byte[32], writable: false);
+
+    private void FileFound(FileEntity file) =>
+        files
+            .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(file);
+
+    private void FileMissing() =>
+        files
+            .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((FileEntity?)null);
+
+    private static FileEntity NewFile(string name = "photo.png", string extension = "png") =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Extension = extension,
+            UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            UploadedBy = Guid.NewGuid(),
+        };
+
+    // ---- GetByIdAsync ------------------------------------------------------
+
+    [Fact]
+    public async Task GetByIdAsync_returns_response_when_found()
+    {
+        var file = NewFile();
+        FileFound(file);
+
+        var result = await sut.GetByIdAsync(file.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Id.Should().Be(file.Id);
+        result.Value.Name.Should().Be("photo.png");
+        result.Value.Extension.Should().Be("png");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_returns_not_found_when_missing()
+    {
+        FileMissing();
+
+        var result = await sut.GetByIdAsync(Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
+    }
+
+    // ---- GetContentAsync ---------------------------------------------------
+
+    [Fact]
+    public async Task GetContentAsync_returns_not_found_when_metadata_missing()
+    {
+        FileMissing();
+
+        var result = await sut.GetContentAsync(Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
+        await storage.DidNotReceiveWithAnyArgs().OpenReadAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task GetContentAsync_returns_missing_from_storage_when_stream_null()
+    {
+        var file = NewFile();
+        FileFound(file);
+        storage
+            .OpenReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((Stream?)null);
+
+        var result = await sut.GetContentAsync(file.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.FileContentMissingFromStorage);
+    }
+
+    [Fact]
+    public async Task GetContentAsync_returns_detected_content_type_and_rewinds_stream()
+    {
+        var file = NewFile(name: "avatar.png");
+        FileFound(file);
+        var stream = PngStream();
+        storage
+            .OpenReadAsync($"{file.Id}.png", Arg.Any<CancellationToken>())
+            .Returns(stream);
+
+        var result = await sut.GetContentAsync(file.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.ContentType.Should().Be("image/png");
+        result.Value.FileName.Should().Be("avatar.png");
+        result.Value.Content.Should().BeSameAs(stream);
+        result.Value.Content.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetContentAsync_falls_back_to_octet_stream_for_unknown_bytes()
+    {
+        var file = NewFile();
+        FileFound(file);
+        storage
+            .OpenReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(JunkStream());
+
+        var result = await sut.GetContentAsync(file.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.ContentType.Should().Be("application/octet-stream");
+    }
+
+    // ---- CreateAsync : validation guards -----------------------------------
+
+    [Fact]
+    public async Task CreateAsync_fails_when_upload_missing()
+    {
+        var result = await sut.CreateAsync(null, Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.FileUploadMissing);
+        await AssertNothingPersisted();
+    }
+
+    [Fact]
+    public async Task CreateAsync_fails_when_upload_empty()
+    {
+        var upload = new FileUploadRequest(new MemoryStream(), "empty.png", 0);
+
+        var result = await sut.CreateAsync(upload, Guid.NewGuid());
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.FileUploadEmpty);
+        await AssertNothingPersisted();
+    }
+
+    [Fact]
+    public async Task CreateAsync_fails_when_upload_too_large()
+    {
+        options.MaxSizeBytes = 10;
+        var upload = new FileUploadRequest(PngStream(), "big.png", 11);
+
+        var result = await sut.CreateAsync(upload, Guid.NewGuid());
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.FileUploadTooLarge);
+        await AssertNothingPersisted();
+    }
+
+    [Fact]
+    public async Task CreateAsync_fails_when_stream_not_seekable()
+    {
+        var upload = new FileUploadRequest(new NonSeekableStream(PngBytes()), "x.png", 32);
+
+        var result = await sut.CreateAsync(upload, Guid.NewGuid());
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.FileUploadStreamNotSeekable);
+        await AssertNothingPersisted();
+    }
+
+    [Fact]
+    public async Task CreateAsync_fails_when_format_unsupported()
+    {
+        var upload = new FileUploadRequest(JunkStream(), "junk.bin", 32);
+
+        var result = await sut.CreateAsync(upload, Guid.NewGuid());
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.FileUploadUnsupportedFormat);
+        await AssertNothingPersisted();
+        await storage.DidNotReceiveWithAnyArgs().SaveAsync(default!, default!, default);
+    }
+
+    // ---- CreateAsync : success ---------------------------------------------
+
+    [Fact]
+    public async Task CreateAsync_saves_content_persists_entity_and_returns_response()
+    {
+        var caller = Guid.NewGuid();
+        clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
+        var content = PngStream();
+        // Path components + surrounding whitespace must be stripped by SanitizeName.
+        var upload = new FileUploadRequest(content, "  C:\\folder\\avatar.png  ", 32);
+
+        var result = await sut.CreateAsync(upload, caller);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be("avatar.png");
+        result.Value.Extension.Should().Be("png");
+        result.Value.UploadedBy.Should().Be(caller);
+        result.Value.UploadedAt.Should().Be(clock.UtcNow);
+
+        await storage.Received(1).SaveAsync($"{result.Value.Id}.png", content, Arg.Any<CancellationToken>());
+        await files.Received(1).AddAsync(
+            Arg.Is<FileEntity>(f =>
+                f.Name == "avatar.png"
+                && f.Extension == "png"
+                && f.UploadedBy == caller
+                && f.UploadedAt == clock.UtcNow),
+            Arg.Any<CancellationToken>()
+        );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateAsync_defaults_blank_filename_to_file()
+    {
+        var upload = new FileUploadRequest(PngStream(), "   ", 32);
+
+        var result = await sut.CreateAsync(upload, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be("file");
+    }
+
+    [Fact]
+    public async Task CreateAsync_rolls_back_storage_when_persistence_throws()
+    {
+        var upload = new FileUploadRequest(PngStream(), "avatar.png", 32);
+        uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new InvalidOperationException("db down"));
+
+        var act = async () => await sut.CreateAsync(upload, Guid.NewGuid());
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        storage.Received(1).Delete(Arg.Any<string>());
+    }
+
+    // ---- UpdateAsync -------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateAsync_returns_not_found_when_missing()
+    {
+        FileMissing();
+        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+
+        var result = await sut.UpdateAsync(Guid.NewGuid(), upload);
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await storage.DidNotReceiveWithAnyArgs().SaveAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_revalidates_upload_and_rejects_missing_content()
+    {
+        FileFound(NewFile());
+
+        var result = await sut.UpdateAsync(Guid.NewGuid(), null);
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.FileUploadMissing);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await storage.DidNotReceiveWithAnyArgs().SaveAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_replaces_content_without_deleting_when_extension_unchanged()
+    {
+        var file = NewFile(name: "old.png", extension: "png");
+        FileFound(file);
+        var content = PngStream();
+        var upload = new FileUploadRequest(content, "renamed.png", 32);
+
+        var result = await sut.UpdateAsync(file.Id, upload);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be("renamed.png");
+        file.Name.Should().Be("renamed.png");
+        file.Extension.Should().Be("png");
+        await storage.Received(1).SaveAsync($"{file.Id}.png", content, Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        storage.DidNotReceiveWithAnyArgs().Delete(default!);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_deletes_old_stored_file_when_extension_changes()
+    {
+        var file = NewFile(name: "old.jpg", extension: "jpg");
+        FileFound(file);
+        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+
+        var result = await sut.UpdateAsync(file.Id, upload);
+
+        result.IsSuccess.Should().BeTrue();
+        file.Extension.Should().Be("png");
+        await storage.Received(1).SaveAsync($"{file.Id}.png", Arg.Any<Stream>(), Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        storage.Received(1).Delete($"{file.Id}.jpg");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_rolls_back_new_content_when_persistence_throws_and_extension_changed()
+    {
+        var file = NewFile(name: "old.jpg", extension: "jpg");
+        FileFound(file);
+        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+        uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new InvalidOperationException("db down"));
+
+        var act = async () => await sut.UpdateAsync(file.Id, upload);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        storage.Received(1).Delete($"{file.Id}.png");
+        storage.DidNotReceive().Delete($"{file.Id}.jpg");
+    }
+
+    // ---- DeleteAsync -------------------------------------------------------
+
+    [Fact]
+    public async Task DeleteAsync_returns_not_found_when_missing()
+    {
+        FileMissing();
+
+        var result = await sut.DeleteAsync(Guid.NewGuid());
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        storage.DidNotReceiveWithAnyArgs().Delete(default!);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_removes_row_saves_and_deletes_stored_content()
+    {
+        var file = NewFile(name: "gone.png", extension: "png");
+        FileFound(file);
+
+        var result = await sut.DeleteAsync(file.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        files.Received(1).Remove(file);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        storage.Received(1).Delete($"{file.Id}.png");
+    }
+
+    // ---- Shared assertions -------------------------------------------------
+
+    private async Task AssertNothingPersisted()
+    {
+        await files.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+    }
+
+    /// <summary>A readable but non-seekable stream, to exercise the seekability guard.</summary>
+    private sealed class NonSeekableStream(byte[] data) : Stream
+    {
+        private readonly MemoryStream inner = new(data, writable: false);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            inner.Read(buffer, offset, count);
+
+        public override void Flush() { }
+
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
+    }
+}

@@ -35,4 +35,9 @@
     <ItemGroup>
         <ProjectReference Include="..\CodigoActivo.Composition\CodigoActivo.Composition.csproj"/>
     </ItemGroup>
+    <!-- Program uses top-level statements, so its implicit class is internal; expose it to the
+         integration test host that boots the app through WebApplicationFactory<Program>. -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="CodigoActivo.IntegrationTests"/>
+    </ItemGroup>
 </Project>

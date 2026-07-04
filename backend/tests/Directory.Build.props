@@ -1,0 +1,28 @@
+<Project>
+  <!--
+    Test projects deliberately do NOT chain to backend/Directory.Build.props (MSBuild stops at the
+    nearest Directory.Build.props walking up). The production tree turns on EnforceCodeStyleInBuild
+    plus Roslynator/Sonar/Meziantou-as-errors; test code should not be held to that bar, so this
+    file replaces those defaults with relaxed settings for everything under backend/tests/.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-Minimum</AnalysisLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!-- xUnit v3 supplies its own generated entry point; suppress the Test SDK's Program.cs
+         so the two don't produce duplicate entry points. -->
+    <GenerateProgramFile>false</GenerateProgramFile>
+
+    <!-- Test doubles legitimately trip these; silencing keeps the signal-to-noise high. -->
+    <NoWarn>$(NoWarn);CA1707;CA1816;CA1861;CA2007;xUnit1051;CS1591</NoWarn>
+  </PropertyGroup>
+</Project>

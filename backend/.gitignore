@@ -433,3 +433,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# reportgenerator HTML output (generated)
+coveragereport/

@@ -1,0 +1,298 @@
+using System.Net;
+using System.Net.Http.Json;
+using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.DTOs;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Entities;
+using CodigoActivo.IntegrationTests.Infrastructure;
+using FluentAssertions;
+using Xunit;
+
+namespace CodigoActivo.IntegrationTests.Controllers;
+
+/// <summary>
+/// Integration coverage for the resources CRUD controller: anonymous reads (list paging + title filter,
+/// get), admin-only writes with the full auth matrix, CSRF enforcement, model validation, the not-found +
+/// missing-thumbnail contracts, and persistence verified straight from the store.
+/// </summary>
+public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
+{
+    private const string Description = "{}";
+
+    private async Task<Guid> SeedThumbnailAsync()
+    {
+        var id = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(new FileEntity
+            {
+                Id = id,
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                UploadedBy = TestSeedData.Users.AdminId,
+            });
+            return Task.CompletedTask;
+        });
+        return id;
+    }
+
+    private async Task<Guid> SeedResourceAsync(string title = "Existing", string subtitle = "Sub")
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var id = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Resources.Add(new Resource
+            {
+                Id = id,
+                Title = title,
+                Subtitle = subtitle,
+                Description = Description,
+                ThumbnailId = thumbnailId,
+                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                CreatedBy = TestSeedData.Users.AdminId,
+            });
+            return Task.CompletedTask;
+        });
+        return id;
+    }
+
+    // ---- Reads (anonymous) -------------------------------------------------
+
+    [Fact]
+    public async Task List_is_anonymous_and_returns_paged_envelope()
+    {
+        await SeedResourceAsync("Alpha");
+        var client = CreateClient();
+
+        var response = await client.GetAsync("/api/resources");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ResourceResponse>>();
+        page!.Total.Should().Be(1);
+        page.Page.Should().Be(1);
+        page.Items.Should().ContainSingle(r => r.Title == "Alpha");
+    }
+
+    [Fact]
+    public async Task List_filters_by_title()
+    {
+        await SeedResourceAsync("Keep Me");
+        await SeedResourceAsync("Other");
+        var client = CreateClient();
+
+        var response = await client.GetAsync("/api/resources?title=keep");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ResourceResponse>>();
+        page!.Items.Should().ContainSingle(r => r.Title == "Keep Me");
+        page.Total.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task List_filters_by_subtitle()
+    {
+        await SeedResourceAsync("A", subtitle: "Findable");
+        await SeedResourceAsync("B", subtitle: "Hidden");
+        var client = CreateClient();
+
+        var response = await client.GetAsync("/api/resources?subtitle=findable");
+
+        var page = await response.ReadJsonAsync<PagedResult<ResourceResponse>>();
+        page!.Items.Should().ContainSingle(r => r.Title == "A");
+    }
+
+    [Fact]
+    public async Task Get_returns_resource_when_present()
+    {
+        var id = await SeedResourceAsync("Beta");
+        var client = CreateClient();
+
+        var response = await client.GetAsync($"/api/resources/{id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var resource = await response.ReadJsonAsync<ResourceResponse>();
+        resource!.Title.Should().Be("Beta");
+    }
+
+    [Fact]
+    public async Task Get_returns_404_with_error_code_when_absent()
+    {
+        var client = CreateClient();
+
+        var response = await client.GetAsync($"/api/resources/{Guid.NewGuid()}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.ResourceNotFound);
+    }
+
+    // ---- Create (admin only) ----------------------------------------------
+
+    [Fact]
+    public async Task Create_as_admin_persists_and_returns_201_with_location()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreateResourceRequest("Gamma", "Tagline", Description, thumbnailId);
+
+        var response = await client.PostJsonAsync("/api/resources", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.Should().NotBeNull();
+        var created = await response.ReadJsonAsync<ResourceResponse>();
+        created!.Title.Should().Be("Gamma");
+
+        var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(created.Id).AsTask());
+        stored!.Subtitle.Should().Be("Tagline");
+        stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+    }
+
+    [Fact]
+    public async Task Create_as_member_is_forbidden()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new CreateResourceRequest("Nope", "Sub", Description, thumbnailId);
+
+        var response = await client.PostJsonAsync("/api/resources", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Create_anonymous_is_unauthorized()
+    {
+        var client = CreateClient();
+        var request = new CreateResourceRequest("Nope", "Sub", Description, Guid.NewGuid());
+
+        var response = await client.PostJsonAsync("/api/resources", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Theory]
+    [InlineData("   ", "Sub")]
+    [InlineData("Title", "   ")]
+    public async Task Create_with_blank_field_is_validation_error(string title, string subtitle)
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreateResourceRequest(title, subtitle, Description, thumbnailId);
+
+        var response = await client.PostJsonAsync("/api/resources", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
+    public async Task Create_with_missing_thumbnail_is_bad_request()
+    {
+        var client = await LoginAsAdminAsync();
+        var request = new CreateResourceRequest("Gamma", "Sub", Description, Guid.NewGuid());
+
+        var response = await client.PostJsonAsync("/api/resources", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
+    }
+
+    [Fact]
+    public async Task Post_without_csrf_token_is_rejected()
+    {
+        var client = await LoginAsAdminAsync();
+        var thumbnailId = await SeedThumbnailAsync();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/resources")
+        {
+            Content = JsonContent.Create(
+                new CreateResourceRequest("Gamma", "Sub", Description, thumbnailId),
+                options: TestJson.Options
+            ),
+        };
+
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
+    }
+
+    // ---- Update ------------------------------------------------------------
+
+    [Fact]
+    public async Task Update_as_admin_changes_resource()
+    {
+        var id = await SeedResourceAsync("Before");
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new UpdateResourceRequest("After", "NewSub", Description, thumbnailId);
+
+        var response = await client.PutJsonAsync($"/api/resources/{id}", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask());
+        stored!.Title.Should().Be("After");
+        stored.Subtitle.Should().Be("NewSub");
+        stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
+    }
+
+    [Fact]
+    public async Task Update_missing_resource_is_404()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new UpdateResourceRequest("X", "Y", Description, thumbnailId);
+
+        var response = await client.PutJsonAsync($"/api/resources/{Guid.NewGuid()}", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.ResourceNotFound);
+    }
+
+    [Fact]
+    public async Task Update_with_missing_thumbnail_is_bad_request()
+    {
+        var id = await SeedResourceAsync("Before");
+        var client = await LoginAsAdminAsync();
+        var request = new UpdateResourceRequest("After", "Sub", Description, Guid.NewGuid());
+
+        var response = await client.PutJsonAsync($"/api/resources/{id}", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
+    }
+
+    // ---- Delete ------------------------------------------------------------
+
+    [Fact]
+    public async Task Delete_as_admin_removes_resource()
+    {
+        var id = await SeedResourceAsync("Doomed");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/resources/{id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask());
+        stored.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Delete_missing_resource_is_404()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/resources/{Guid.NewGuid()}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.ResourceNotFound);
+    }
+}
