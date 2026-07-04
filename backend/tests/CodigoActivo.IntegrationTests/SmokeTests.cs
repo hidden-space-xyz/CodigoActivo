@@ -37,7 +37,7 @@ public class SmokeTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var me = await response.ReadJsonAsync<UserResponse>();
         me!.Email.Should().Be(TestSeedData.AdminEmail);
-        me.Roles.Should().Contain(role => role.Id == SeedIds.UserTypes.Admin);
+        me.IsAdmin.Should().BeTrue();
     }
 
     [Fact]

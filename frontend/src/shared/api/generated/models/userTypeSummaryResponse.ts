@@ -5,7 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface UserRoleResponse {
+export interface UserTypeSummaryResponse {
   id?: string;
   /** @nullable */
   name?: string | null;

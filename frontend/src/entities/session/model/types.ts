@@ -1,8 +1,3 @@
-export interface AuthRole {
-  readonly id: string
-  readonly name: string
-}
-
 export interface AuthUser {
   readonly id: string
   readonly firstName: string
@@ -10,5 +5,5 @@ export interface AuthUser {
   readonly email: string
   readonly phone: string
   readonly birthDate: string
-  readonly roles: readonly AuthRole[]
+  readonly isAdmin: boolean
 }

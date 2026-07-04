@@ -2,6 +2,7 @@ import {
   deleteApiUsersUserId,
   getApiUsers,
   getApiUsersUserId,
+  patchApiUsersUserIdAdmin,
   patchApiUsersUserIdChangeType,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
@@ -29,4 +30,8 @@ export function deleteUserRequest(id: string) {
 
 export function changeUserTypeRequest(id: string, roleId: string) {
   return patchApiUsersUserIdChangeType(id, { roleId }).then((r) => r.data)
+}
+
+export function setUserAdminRequest(id: string, isAdmin: boolean) {
+  return patchApiUsersUserIdAdmin(id, { isAdmin })
 }

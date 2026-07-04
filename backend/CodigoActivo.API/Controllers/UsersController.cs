@@ -64,6 +64,17 @@ public class UsersController(IUserService users) : ApiControllerBase
         return ToNoContent(await users.DeleteAsync(userId, ct));
     }
 
+    [HttpPatch("{userId:guid}/admin")]
+    [AllowOnlyAdmin]
+    public async Task<IActionResult> SetAdmin(
+        Guid userId,
+        [FromBody] SetAdminRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await users.SetAdminAsync(userId, request.IsAdmin, ct));
+    }
+
     [HttpPost("{userId:guid}/children")]
     [AllowOnlySelf]
     public async Task<ActionResult<UserResponse>> AddChild(

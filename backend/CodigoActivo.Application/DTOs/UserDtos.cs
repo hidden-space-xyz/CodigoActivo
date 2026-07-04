@@ -15,18 +15,21 @@ public record UserResponse(
     DateTimeOffset? UpdatedAt,
     Guid? ParentId,
     UserStatusResponse Status,
-    IReadOnlyList<UserRoleResponse> Roles
+    bool IsAdmin,
+    UserTypeSummaryResponse Type
 )
 {
     public UserResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, null, null, default, null, default, null, null, null!, [])
+        : this(Guid.Empty, string.Empty, string.Empty, null, null, default, null, default, null, null, null!, false, null!)
     {
     }
 }
 
 public record UserStatusResponse(Guid Id, string Name, string Color);
 
-public record UserRoleResponse(Guid Id, string Name, string Color);
+public record UserTypeSummaryResponse(Guid Id, string Name, string Color);
+
+public record SetAdminRequest(bool IsAdmin);
 
 public record UpdateUserRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,

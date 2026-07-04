@@ -50,6 +50,8 @@ public static class TestSeedData
             PasswordHash = PasswordHash,
             BirthDate = new DateOnly(1985, 3, 12),
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+            UserTypeId = SeedIds.UserTypes.Member,
+            IsAdmin = true,
             CreatedAt = SeededAt,
         };
 
@@ -63,6 +65,7 @@ public static class TestSeedData
             PasswordHash = PasswordHash,
             BirthDate = new DateOnly(1992, 7, 30),
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+            UserTypeId = SeedIds.UserTypes.Member,
             CreatedAt = SeededAt,
         };
 
@@ -74,6 +77,7 @@ public static class TestSeedData
             BirthDate = new DateOnly(2015, 5, 5),
             ParentId = Users.MemberId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+            UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = SeededAt,
         };
 
@@ -87,6 +91,7 @@ public static class TestSeedData
             PasswordHash = PasswordHash,
             BirthDate = new DateOnly(1990, 1, 1),
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+            UserTypeId = SeedIds.UserTypes.Member,
             CreatedAt = SeededAt,
         };
 
@@ -100,16 +105,11 @@ public static class TestSeedData
             PasswordHash = PasswordHash,
             BirthDate = new DateOnly(1988, 9, 9),
             UserStatusTypeId = SeedIds.UserStatusTypes.Blocked,
+            UserTypeId = SeedIds.UserTypes.Member,
             CreatedAt = SeededAt,
         };
 
         db.Users.AddRange(admin, member, child, pending, blocked);
-        db.UserTypeAssignments.AddRange(
-            new UserTypeAssignment { UserId = Users.AdminId, UserTypeId = SeedIds.UserTypes.Admin, AssignedAt = SeededAt },
-            new UserTypeAssignment { UserId = Users.AdminId, UserTypeId = SeedIds.UserTypes.Member, AssignedAt = SeededAt },
-            new UserTypeAssignment { UserId = Users.MemberId, UserTypeId = SeedIds.UserTypes.Member, AssignedAt = SeededAt },
-            new UserTypeAssignment { UserId = Users.MemberChildId, UserTypeId = SeedIds.UserTypes.Participant, AssignedAt = SeededAt }
-        );
 
         await db.SaveChangesAsync(ct);
     }

@@ -12,14 +12,11 @@ public static class MappingExtensions
             user.UserStatusType?.Name ?? string.Empty,
             user.UserStatusType?.Color ?? string.Empty
         );
-        var roles =
-            user.TypeAssignments?.Select(assignment => new UserRoleResponse(
-                    assignment.UserTypeId,
-                    assignment.UserType?.Name ?? string.Empty,
-                    assignment.UserType?.Color ?? string.Empty
-                ))
-                .ToList()
-            ?? [];
+        var type = new UserTypeSummaryResponse(
+            user.UserTypeId,
+            user.UserType?.Name ?? string.Empty,
+            user.UserType?.Color ?? string.Empty
+        );
 
         return new UserResponse(
             user.Id,
@@ -33,7 +30,8 @@ public static class MappingExtensions
             user.UpdatedAt,
             user.ParentId,
             status,
-            roles
+            user.IsAdmin,
+            type
         );
     }
 

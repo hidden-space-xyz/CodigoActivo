@@ -33,6 +33,7 @@ import type {
   GetApiUsersParams,
   PatchApiUsersUserIdChangeTypeParams,
   RegisterMinorRequest,
+  SetAdminRequest,
   UpdateUserRequest,
   UserResponse,
   UserResponsePagedResult,
@@ -517,6 +518,94 @@ export function useDeleteApiUsersUserId<TData = Awaited<ReturnType<typeof delete
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDeleteApiUsersUserIdQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type patchApiUsersUserIdAdminResponse200 = {
+  data: void
+  status: 200
+}
+
+export type patchApiUsersUserIdAdminResponseSuccess = (patchApiUsersUserIdAdminResponse200) & {
+  headers: Headers;
+};
+;
+
+export type patchApiUsersUserIdAdminResponse = (patchApiUsersUserIdAdminResponseSuccess)
+
+export const getPatchApiUsersUserIdAdminUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/admin`
+}
+
+export const patchApiUsersUserIdAdmin = async (userId: string,
+    setAdminRequest?: SetAdminRequest, options?: RequestInit): Promise<patchApiUsersUserIdAdminResponse> => {
+
+  return httpClient<patchApiUsersUserIdAdminResponse>(getPatchApiUsersUserIdAdminUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setAdminRequest)
+  }
+);}
+
+
+
+
+
+export const getPatchApiUsersUserIdAdminQueryKey = (userId: MaybeRef<string>,
+    setAdminRequest?: MaybeRef<SetAdminRequest>,) => {
+    return [
+    'PATCH', 'api','users',userId,'admin', setAdminRequest
+    ] as const;
+    }
+
+
+export const getPatchApiUsersUserIdAdminQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError = unknown>(userId: MaybeRef<string>,
+    setAdminRequest?: MaybeRef<SetAdminRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiUsersUserIdAdminQueryKey(userId,setAdminRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>> = ({ signal }) => patchApiUsersUserIdAdmin(unref(userId),unref(setAdminRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError, TData>
+}
+
+export type PatchApiUsersUserIdAdminQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>>
+export type PatchApiUsersUserIdAdminQueryError = unknown
+
+
+
+export function usePatchApiUsersUserIdAdmin<TData = Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError = unknown>(
+ userId: MaybeRef<string>,
+    setAdminRequest?: MaybeRef<SetAdminRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiUsersUserIdAdminQueryOptions(userId,setAdminRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

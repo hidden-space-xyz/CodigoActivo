@@ -44,6 +44,7 @@ public enum ErrorCode
     FileUploadUnsupportedFormat,
     UserNotFound,
     UserDeleteAdminForbidden,
+    UserCannotRemoveLastAdmin,
     UserTypeNotFound,
     ParentUserNotFound,
     UserParentIsMinor,

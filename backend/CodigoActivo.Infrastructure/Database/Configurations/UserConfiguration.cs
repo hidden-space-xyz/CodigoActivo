@@ -25,6 +25,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
+            .HasOne(u => u.UserType)
+            .WithMany(t => t.Users)
+            .HasForeignKey(u => u.UserTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
             .HasOne(u => u.Parent)
             .WithMany(u => u.Children)
             .HasForeignKey(u => u.ParentId)

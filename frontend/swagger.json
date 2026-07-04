@@ -2251,6 +2251,38 @@
         }
       }
     },
+    "/api/users/{userId}/admin": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAdminRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{userId}/children": {
       "post": {
         "tags": [
@@ -3194,6 +3226,7 @@
           "PartnerNotFound",
           "PartnerThumbnailNotFound",
           "FileNotFound",
+          "FileInUse",
           "FileContentMissingFromStorage",
           "FileUploadMissing",
           "FileUploadEmpty",
@@ -3202,6 +3235,7 @@
           "FileUploadUnsupportedFormat",
           "UserNotFound",
           "UserDeleteAdminForbidden",
+          "UserCannotRemoveLastAdmin",
           "UserTypeNotFound",
           "ParentUserNotFound",
           "UserParentIsMinor",
@@ -3211,6 +3245,7 @@
           "UserCurrentPasswordIncorrect",
           "UserParentIdRequired",
           "UserCannotBeOwnParent",
+          "UserParentReassignmentForbidden",
           "UserParentNotAllowedForAdult",
           "UserContactInfoRequired",
           "UserEmailAlreadyInUse",
@@ -3831,6 +3866,15 @@
         },
         "additionalProperties": false
       },
+      "SetAdminRequest": {
+        "type": "object",
+        "properties": {
+          "isAdmin": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "TimeOverlapResponse": {
         "type": "object",
         "properties": {
@@ -4119,12 +4163,11 @@
           "status": {
             "$ref": "#/components/schemas/UserStatusResponse"
           },
-          "roles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserRoleResponse"
-            },
-            "nullable": true
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/UserTypeSummaryResponse"
           }
         },
         "additionalProperties": false
@@ -4150,24 +4193,6 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "UserRoleResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "color": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -4224,6 +4249,24 @@
             "nullable": true
           },
           "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserTypeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
             "type": "string",
             "nullable": true
           },

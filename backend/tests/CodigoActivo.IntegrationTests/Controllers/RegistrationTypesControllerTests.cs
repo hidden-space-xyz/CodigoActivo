@@ -29,7 +29,6 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     {
         var types = await GetTypesAsync("/api/registration-types");
 
-        types.Should().NotContain(t => t.Id == SeedIds.UserTypes.Admin);
         types.Select(t => t.Id)
             .Should()
             .BeEquivalentTo(
@@ -76,7 +75,6 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
                 }
             );
         types.Should().OnlyContain(t => t.IsAllowedForMinors);
-        types.Should().NotContain(t => t.Id == SeedIds.UserTypes.Admin);
     }
 
     [Fact]
@@ -88,9 +86,8 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
             .Should()
             .BeEquivalentTo(new[] { SeedIds.UserTypes.Member, SeedIds.UserTypes.Volunteer });
         types.Should().OnlyContain(t => t.IsAllowedForAdults);
-        // Participante is minor-only; Administrador is hidden.
+        // Participante is minor-only.
         types.Should().NotContain(t => t.Id == SeedIds.UserTypes.Participant);
-        types.Should().NotContain(t => t.Id == SeedIds.UserTypes.Admin);
     }
 
     [Fact]

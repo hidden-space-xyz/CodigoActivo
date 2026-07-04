@@ -75,7 +75,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         body.Minors.Should().BeEmpty();
         body.Adult.Email.Should().Be("new.adult@codigoactivo.test");
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Pending);
-        body.Adult.Roles.Should().ContainSingle(r => r.Id == SeedIds.UserTypes.Member);
+        body.Adult.IsAdmin.Should().BeFalse();
+        body.Adult.Type.Id.Should().Be(SeedIds.UserTypes.Member);
 
         var stored = await Factory.QueryAsync(db => db.Users.FindAsync(body.Adult.Id).AsTask());
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);

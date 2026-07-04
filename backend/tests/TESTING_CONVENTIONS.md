@@ -62,7 +62,8 @@ reflects the supplied `TimeZoneInfo`.
 - `ApiErrorResponseExtensions`: `MapKind` for each `ErrorKind` → status/title; unsupported kind (cast
   an out-of-range `(ErrorKind)99`) throws `ArgumentOutOfRangeException` (invoke via `Create`).
 - `ClaimsPrincipalExtensions`: build a `ClaimsPrincipal` with a `ClaimTypes.NameIdentifier` /
-  `ClaimTypes.Role` and assert `GetUserId()` / `IsAdmin()`; also the missing/unparseable id → null.
+  `ClaimsPrincipalExtensions.IsAdminClaim` and assert `GetUserId()` / `IsAdmin()`; also the
+  missing/unparseable id → null.
 - Filters (`AllowOnlyAdminAttribute`, `AllowOnlySelfAttribute`): construct an
   `AuthorizationFilterContext` over a `DefaultHttpContext` (set `.User`, `.RequestServices` with a
   `ServiceCollection` containing any `Substitute.For<IUserRepository>()` needed, and `RouteData`

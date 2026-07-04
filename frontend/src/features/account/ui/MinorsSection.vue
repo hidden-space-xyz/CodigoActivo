@@ -14,11 +14,8 @@ const { children, minorRoles, addChild, updateChild, deleteChild } = useAccount(
 
 const items = computed(() => children.data.value ?? [])
 
-function roleNames(child: AccountChild): string {
-  return (child.roles ?? [])
-    .map((role) => role.name ?? '')
-    .filter((name) => name.length > 0)
-    .join(', ')
+function typeName(child: AccountChild): string {
+  return child.type?.name ?? ''
 }
 
 const dialogVisible = ref(false)
@@ -130,7 +127,7 @@ function confirmDelete(): void {
         <div class="acc-minor__info">
           <span class="acc-minor__name">{{ child.firstName }} {{ child.lastName }}</span>
           <span class="acc-minor__meta">
-            {{ formatDate(child.birthDate) }} · {{ roleNames(child) || 'Sin rol' }}
+            {{ formatDate(child.birthDate) }} · {{ typeName(child) || 'Sin tipo' }}
           </span>
         </div>
         <div class="acc-minor__actions">

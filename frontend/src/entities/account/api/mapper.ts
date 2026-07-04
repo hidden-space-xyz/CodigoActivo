@@ -6,12 +6,10 @@ import type {
 } from '@/shared/api/generated/models'
 
 import type { AddMinorInput, UpdateMinorInput, UpdateProfileInput } from '../model/account-inputs'
-import type { AccountChild, AccountProfile, AccountRole, RegistrationType } from '../model/types'
+import type { AccountChild, AccountProfile, AccountType, RegistrationType } from '../model/types'
 
-function toRoles(user: UserResponse): AccountRole[] {
-  return (user.roles ?? [])
-    .filter((role) => role.id)
-    .map((role) => ({ id: role.id as string, name: role.name ?? '' }))
+function toType(user: UserResponse): AccountType | null {
+  return user.type?.id ? { id: user.type.id, name: user.type.name ?? '' } : null
 }
 
 export function toAccountProfile(user: UserResponse): AccountProfile {
@@ -23,7 +21,8 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
     phone: user.phone ?? '',
     birthDate: user.birthDate ?? '',
     statusName: user.status?.name ?? '',
-    roles: toRoles(user),
+    isAdmin: user.isAdmin ?? false,
+    type: toType(user),
   }
 }
 
@@ -33,7 +32,7 @@ export function toAccountChild(user: UserResponse): AccountChild {
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
     birthDate: user.birthDate ?? '',
-    roles: toRoles(user),
+    type: toType(user),
   }
 }
 

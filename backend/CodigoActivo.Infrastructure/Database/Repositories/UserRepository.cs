@@ -48,26 +48,6 @@ public class UserRepository(CodigoActivoDbContext context)
         );
     }
 
-    public Task<bool> HasTypeAssignmentAsync(
-        Guid userId,
-        Guid userTypeId,
-        CancellationToken ct = default
-    )
-    {
-        return Context.UserTypeAssignments.AnyAsync(
-            a => a.UserId == userId && a.UserTypeId == userTypeId,
-            ct
-        );
-    }
-
-    public async Task AddTypeAssignmentAsync(
-        UserTypeAssignment assignment,
-        CancellationToken ct = default
-    )
-    {
-        await Context.UserTypeAssignments.AddAsync(assignment, ct);
-    }
-
     public async Task<IReadOnlyList<User>> ListChildrenWithDetailsAsync(
         Guid parentId,
         CancellationToken ct = default
@@ -84,7 +64,6 @@ public class UserRepository(CodigoActivoDbContext context)
         var query = tracked ? Set : Set.AsNoTracking();
         return query
             .Include(u => u.UserStatusType)
-            .Include(u => u.TypeAssignments)
-            .ThenInclude(ta => ta.UserType);
+            .Include(u => u.UserType);
     }
 }

@@ -110,11 +110,33 @@ public class UserService(
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (await users.HasTypeAssignmentAsync(id, SeedIds.UserTypes.Admin, ct))
-            return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
+        var user = await users.FindAsync(u => u.Id == id, ct);
+        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (await users.RemoveAsync(u => u.Id == id, ct) == 0) return Error.NotFound(ErrorCode.UserNotFound);
+        // [AllowOnlySelf] lets admins delete other users, so this is the guard that protects admin
+        // accounts from deletion.
+        if (user.IsAdmin) return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
 
+        users.Remove(user);
+        await uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result> SetAdminAsync(Guid id, bool isAdmin, CancellationToken ct = default)
+    {
+        var user = await users.FindAsync(u => u.Id == id, ct);
+        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
+
+        if (user.IsAdmin == isAdmin) return Result.Success();
+
+        // Never leave the system without an admin.
+        if (!isAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
+            return Error.Forbidden(ErrorCode.UserCannotRemoveLastAdmin);
+
+        user.IsAdmin = isAdmin;
+        user.UpdatedAt = clock.UtcNow;
+        // Admin-ness is snapshotted into the auth cookie at login, so a revoke only takes full effect
+        // on the target user's next sign-in.
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -137,17 +159,10 @@ public class UserService(
                 isMinor ? ErrorCode.UserTypeNotAllowedForMinors : ErrorCode.UserTypeNotAllowedForAdults
             );
 
-        if (!await users.HasTypeAssignmentAsync(id, userTypeId, ct))
+        if (user.UserTypeId != userTypeId)
         {
-            await users.AddTypeAssignmentAsync(
-                new UserTypeAssignment
-                {
-                    UserId = id,
-                    UserTypeId = userTypeId,
-                    AssignedAt = clock.UtcNow,
-                },
-                ct
-            );
+            user.UserTypeId = userTypeId;
+            user.UpdatedAt = clock.UtcNow;
             await uow.SaveChangesAsync(ct);
         }
 
@@ -181,18 +196,10 @@ public class UserService(
             BirthDate = request.BirthDate,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+            UserTypeId = request.RoleId,
             CreatedAt = now,
         };
         await users.AddAsync(child, ct);
-        await users.AddTypeAssignmentAsync(
-            new UserTypeAssignment
-            {
-                UserId = child.Id,
-                UserTypeId = request.RoleId,
-                AssignedAt = now,
-            },
-            ct
-        );
         await uow.SaveChangesAsync(ct);
 
         var created = await users.GetByIdWithDetailsAsync(child.Id, ct);

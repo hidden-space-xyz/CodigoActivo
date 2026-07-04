@@ -63,7 +63,8 @@ public sealed class RepositoryTests
         string? email = null,
         string? phone = null,
         Guid? statusId = null,
-        Guid? parentId = null
+        Guid? parentId = null,
+        Guid? userTypeId = null
     ) =>
         new()
         {
@@ -74,6 +75,7 @@ public sealed class RepositoryTests
             Phone = phone,
             BirthDate = new DateOnly(1990, 1, 1),
             UserStatusTypeId = statusId ?? Guid.NewGuid(),
+            UserTypeId = userTypeId ?? Guid.NewGuid(),
             ParentId = parentId,
             CreatedAt = Fixed,
         };
@@ -301,14 +303,13 @@ public sealed class RepositoryTests
     // =======================================================================
 
     [Fact]
-    public async Task GetByIdWithDetailsAsync_includes_status_and_role_assignments()
+    public async Task GetByIdWithDetailsAsync_includes_status_and_type()
     {
         using var ctx = NewContext();
         var status = NewStatus("Active");
-        var type = NewUserType("Admin");
-        var user = NewUser("Ada", "Admin", statusId: status.Id);
+        var type = NewUserType("Socio");
+        var user = NewUser("Ada", "Admin", statusId: status.Id, userTypeId: type.Id);
         ctx.AddRange(status, type, user);
-        ctx.UserTypeAssignments.Add(new UserTypeAssignment { UserId = user.Id, UserTypeId = type.Id, AssignedAt = Fixed });
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new UserRepository(ctx);
@@ -317,8 +318,7 @@ public sealed class RepositoryTests
 
         result.Should().NotBeNull();
         result!.UserStatusType.Name.Should().Be("Active");
-        result.TypeAssignments.Should().ContainSingle();
-        result.TypeAssignments.Single().UserType.Name.Should().Be("Admin");
+        result.UserType.Name.Should().Be("Socio");
     }
 
     [Fact]
@@ -338,8 +338,9 @@ public sealed class RepositoryTests
     {
         using var ctx = NewContext();
         var status = NewStatus();
-        var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000", statusId: status.Id);
-        ctx.AddRange(status, user);
+        var type = NewUserType();
+        var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000", statusId: status.Id, userTypeId: type.Id);
+        ctx.AddRange(status, type, user);
         await ctx.SaveChangesAsync();
         var repo = new UserRepository(ctx);
 
@@ -387,57 +388,16 @@ public sealed class RepositoryTests
     }
 
     [Fact]
-    public async Task HasTypeAssignmentAsync_detects_membership()
-    {
-        using var ctx = NewContext();
-        var user = NewUser();
-        var type = NewUserType();
-        ctx.AddRange(user, type);
-        ctx.UserTypeAssignments.Add(new UserTypeAssignment { UserId = user.Id, UserTypeId = type.Id, AssignedAt = Fixed });
-        await ctx.SaveChangesAsync();
-        var repo = new UserRepository(ctx);
-
-        (await repo.HasTypeAssignmentAsync(user.Id, type.Id)).Should().BeTrue();
-        (await repo.HasTypeAssignmentAsync(user.Id, Guid.NewGuid())).Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task AddTypeAssignmentAsync_stages_row_without_saving()
-    {
-        var database = Guid.NewGuid().ToString();
-        var user = NewUser();
-        var type = NewUserType();
-        var assignment = new UserTypeAssignment { UserId = user.Id, UserTypeId = type.Id, AssignedAt = Fixed };
-
-        await using (var ctx = NewContext(database))
-        {
-            ctx.AddRange(user, type);
-            await ctx.SaveChangesAsync();
-            var repo = new UserRepository(ctx);
-
-            await repo.AddTypeAssignmentAsync(assignment);
-            await using (var probe = NewContext(database))
-            {
-                (await probe.UserTypeAssignments.CountAsync()).Should().Be(0);
-            }
-
-            await ctx.SaveChangesAsync();
-        }
-
-        await using var verify = NewContext(database);
-        (await verify.UserTypeAssignments.CountAsync()).Should().Be(1);
-    }
-
-    [Fact]
     public async Task ListChildrenWithDetailsAsync_returns_children_ordered_with_details()
     {
         using var ctx = NewContext();
         var status = NewStatus("Dependent");
-        var parent = NewUser("Parent", "P", statusId: status.Id);
-        var zoe = NewUser("Zoe", "Child", statusId: status.Id, parentId: parent.Id);
-        var amy = NewUser("Amy", "Child", statusId: status.Id, parentId: parent.Id);
-        var stranger = NewUser("Stranger", "S", statusId: status.Id);
-        ctx.AddRange(status, parent, zoe, amy, stranger);
+        var type = NewUserType();
+        var parent = NewUser("Parent", "P", statusId: status.Id, userTypeId: type.Id);
+        var zoe = NewUser("Zoe", "Child", statusId: status.Id, parentId: parent.Id, userTypeId: type.Id);
+        var amy = NewUser("Amy", "Child", statusId: status.Id, parentId: parent.Id, userTypeId: type.Id);
+        var stranger = NewUser("Stranger", "S", statusId: status.Id, userTypeId: type.Id);
+        ctx.AddRange(status, type, parent, zoe, amy, stranger);
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new UserRepository(ctx);

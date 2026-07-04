@@ -213,10 +213,10 @@ public sealed class ProjectionsTests
     // ---- User --------------------------------------------------------------
 
     [Fact]
-    public void User_projection_maps_scalars_status_and_roles()
+    public void User_projection_maps_scalars_status_isadmin_and_type()
     {
         var statusId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
         var user = new User
         {
@@ -232,14 +232,9 @@ public sealed class ProjectionsTests
             ParentId = parentId,
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType { Id = statusId, Name = "Active", Color = "#0f0" },
-            TypeAssignments =
-            [
-                new UserTypeAssignment
-                {
-                    UserTypeId = roleId,
-                    UserType = new UserType { Id = roleId, Name = "Member", Color = "#00f" },
-                },
-            ],
+            IsAdmin = true,
+            UserTypeId = typeId,
+            UserType = new UserType { Id = typeId, Name = "Member", Color = "#00f" },
         };
 
         var response = Project(Projections.User, user);
@@ -255,7 +250,8 @@ public sealed class ProjectionsTests
         response.UpdatedAt.Should().Be(Updated);
         response.ParentId.Should().Be(parentId);
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
-        response.Roles.Should().ContainSingle().Which.Should().Be(new UserRoleResponse(roleId, "Member", "#00f"));
+        response.IsAdmin.Should().BeTrue();
+        response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#00f"));
     }
 
     // ---- Reference-type projections ---------------------------------------

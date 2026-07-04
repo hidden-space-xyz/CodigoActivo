@@ -21,9 +21,6 @@ public interface IUserRepository : IDbRepository<User>
         CancellationToken ct = default
     );
 
-    Task<bool> HasTypeAssignmentAsync(Guid userId, Guid userTypeId, CancellationToken ct = default);
-    Task AddTypeAssignmentAsync(UserTypeAssignment assignment, CancellationToken ct = default);
-
     Task<IReadOnlyList<User>> ListChildrenWithDetailsAsync(
         Guid parentId,
         CancellationToken ct = default

@@ -79,7 +79,8 @@ public sealed class UserServiceTests
         Guid? parentId = null,
         DateOnly? dob = null,
         string? email = "ana@test.com",
-        string? phone = "555-0100"
+        string? phone = "555-0100",
+        bool isAdmin = false
     ) =>
         new()
         {
@@ -92,8 +93,10 @@ public sealed class UserServiceTests
             ParentId = parentId,
             UserStatusTypeId = Guid.NewGuid(),
             UserStatusType = new UserStatusType { Name = "Active", Color = "#111", Description = "" },
+            IsAdmin = isAdmin,
+            UserTypeId = Guid.NewGuid(),
+            UserType = new UserType { Name = "Socio", Color = "#111", Description = "" },
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            TypeAssignments = [],
         };
 
     private static UserType NewUserType(
@@ -419,23 +422,23 @@ public sealed class UserServiceTests
     // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_forbidden_for_admin_assignment()
+    public async Task DeleteAsync_forbidden_for_admin()
     {
         var id = Guid.NewGuid();
-        users.HasTypeAssignmentAsync(id, SeedIds.UserTypes.Admin, Arg.Any<CancellationToken>()).Returns(true);
+        FindReturns(NewUser(id: id, isAdmin: true));
 
         var result = await sut.DeleteAsync(id);
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ErrorCode.UserDeleteAdminForbidden);
-        await users.DidNotReceiveWithAnyArgs().RemoveAsync(default!, default);
+        users.DidNotReceiveWithAnyArgs().Remove(default!);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteAsync_returns_not_found_when_user_missing()
     {
-        users.RemoveAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(0);
+        FindReturns(null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
 
@@ -445,14 +448,84 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_saves_when_removed()
+    public async Task DeleteAsync_removes_and_saves_for_non_admin()
     {
-        users.RemoveAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(1);
+        var user = NewUser(isAdmin: false);
+        FindReturns(user);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(user.Id);
 
         result.IsSuccess.Should().BeTrue();
+        users.Received(1).Remove(user);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    // ---- SetAdminAsync -----------------------------------------------------
+
+    [Fact]
+    public async Task SetAdminAsync_returns_not_found_when_user_missing()
+    {
+        FindReturns(null);
+
+        var result = await sut.SetAdminAsync(Guid.NewGuid(), true);
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.UserNotFound);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+    }
+
+    [Fact]
+    public async Task SetAdminAsync_grants_admin_and_saves()
+    {
+        var user = NewUser(isAdmin: false);
+        FindReturns(user);
+
+        var result = await sut.SetAdminAsync(user.Id, true);
+
+        result.IsSuccess.Should().BeTrue();
+        user.IsAdmin.Should().BeTrue();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SetAdminAsync_is_noop_when_flag_unchanged()
+    {
+        var user = NewUser(isAdmin: true);
+        FindReturns(user);
+
+        var result = await sut.SetAdminAsync(user.Id, true);
+
+        result.IsSuccess.Should().BeTrue();
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+    }
+
+    [Fact]
+    public async Task SetAdminAsync_revokes_when_other_admins_remain()
+    {
+        var user = NewUser(isAdmin: true);
+        FindReturns(user);
+        users.CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(2);
+
+        var result = await sut.SetAdminAsync(user.Id, false);
+
+        result.IsSuccess.Should().BeTrue();
+        user.IsAdmin.Should().BeFalse();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SetAdminAsync_forbids_removing_the_last_admin()
+    {
+        var user = NewUser(isAdmin: true);
+        FindReturns(user);
+        users.CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await sut.SetAdminAsync(user.Id, false);
+
+        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
+        result.Error.Code.Should().Be(ErrorCode.UserCannotRemoveLastAdmin);
+        user.IsAdmin.Should().BeTrue();
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
     // ---- ChangeTypeAsync ---------------------------------------------------
@@ -522,40 +595,38 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_adds_assignment_and_saves_when_not_yet_assigned()
+    public async Task ChangeTypeAsync_replaces_type_and_saves_when_different()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
-        FindReturns(NewUser(id: id, dob: AdultDob));
+        var user = NewUser(id: id, dob: AdultDob);
+        FindReturns(user);
         RoleReturns(NewUserType("Member", adults: true));
-        users.HasTypeAssignmentAsync(id, roleId, Arg.Any<CancellationToken>()).Returns(false);
         DetailsReturns(NewUser(id: id));
         clock.UtcNow = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
         var result = await sut.ChangeTypeAsync(id, roleId);
 
         result.IsSuccess.Should().BeTrue();
-        await users.Received(1).AddTypeAssignmentAsync(
-            Arg.Is<UserTypeAssignment>(a => a.UserId == id && a.UserTypeId == roleId && a.AssignedAt == clock.UtcNow),
-            Arg.Any<CancellationToken>()
-        );
+        user.UserTypeId.Should().Be(roleId);
+        user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_is_noop_when_already_assigned()
+    public async Task ChangeTypeAsync_is_noop_when_type_unchanged()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
-        FindReturns(NewUser(id: id, dob: AdultDob));
+        var user = NewUser(id: id, dob: AdultDob);
+        user.UserTypeId = roleId;
+        FindReturns(user);
         RoleReturns(NewUserType("Member", adults: true));
-        users.HasTypeAssignmentAsync(id, roleId, Arg.Any<CancellationToken>()).Returns(true);
         DetailsReturns(NewUser(id: id));
 
         var result = await sut.ChangeTypeAsync(id, roleId);
 
         result.IsSuccess.Should().BeTrue();
-        await users.DidNotReceiveWithAnyArgs().AddTypeAssignmentAsync(default!, default);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
@@ -648,12 +719,9 @@ public sealed class UserServiceTests
                 && u.LastName == "Doe"
                 && u.ParentId == parentId
                 && u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+                && u.UserTypeId == roleId
                 && u.CreatedAt == clock.UtcNow
             ),
-            Arg.Any<CancellationToken>()
-        );
-        await users.Received(1).AddTypeAssignmentAsync(
-            Arg.Is<UserTypeAssignment>(a => a.UserTypeId == roleId && a.AssignedAt == clock.UtcNow),
             Arg.Any<CancellationToken>()
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

@@ -12,5 +12,5 @@ public class UserType : NamedEntity
 
     public bool IsAllowedForAdults { get; set; }
 
-    public ICollection<UserTypeAssignment> Assignments { get; set; } = [];
+    public ICollection<User> Users { get; set; } = [];
 }

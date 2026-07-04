@@ -16,9 +16,7 @@ const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount(
 
 const maxBirthDateIso = todayIso()
 const user = computed(() => profile.data.value ?? null)
-const roleNames = computed(() =>
-  (user.value?.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0),
-)
+const typeName = computed(() => user.value?.type?.name ?? '')
 
 const editVisible = ref(false)
 const editForm = reactive<{
@@ -132,8 +130,8 @@ function confirmDeleteAccount(): void {
         <dd>{{ formatDate(user.birthDate) }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>Rol</dt>
-        <dd>{{ roleNames.join(', ') || '—' }}</dd>
+        <dt>Tipo</dt>
+        <dd>{{ typeName || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>Estado</dt>

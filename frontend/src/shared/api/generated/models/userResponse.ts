@@ -4,8 +4,8 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { UserRoleResponse } from './userRoleResponse';
 import type { UserStatusResponse } from './userStatusResponse';
+import type { UserTypeSummaryResponse } from './userTypeSummaryResponse';
 
 export interface UserResponse {
   id?: string;
@@ -26,6 +26,6 @@ export interface UserResponse {
   /** @nullable */
   parentId?: string | null;
   status?: UserStatusResponse;
-  /** @nullable */
-  roles?: UserRoleResponse[] | null;
+  isAdmin?: boolean;
+  type?: UserTypeSummaryResponse;
 }

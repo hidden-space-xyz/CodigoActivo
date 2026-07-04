@@ -349,7 +349,7 @@ public sealed class AuthServiceTests
     // ---- RegisterAsync : success ------------------------------------------
 
     [Fact]
-    public async Task RegisterAsync_first_user_gets_admin_and_member_roles_and_persists()
+    public async Task RegisterAsync_first_user_becomes_admin_with_member_type_and_persists()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
         ExistsReturns(false, false); // first user, no duplicate
@@ -375,19 +375,13 @@ public sealed class AuthServiceTests
                 && u.Phone == "+34123456789"
                 && u.PasswordHash == "fake:password123"
                 && u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
+                && u.IsAdmin
+                && u.UserTypeId == SeedIds.UserTypes.Member
                 && u.OtpCode != null
                 && u.OtpCode != Guid.Empty
                 && u.OtpExpiresAt == clock.UtcNow.AddMinutes(15)
                 && u.CreatedAt == clock.UtcNow
             ),
-            Arg.Any<CancellationToken>()
-        );
-        await users.Received(1).AddTypeAssignmentAsync(
-            Arg.Is<UserTypeAssignment>(a => a.UserTypeId == SeedIds.UserTypes.Admin),
-            Arg.Any<CancellationToken>()
-        );
-        await users.Received(1).AddTypeAssignmentAsync(
-            Arg.Is<UserTypeAssignment>(a => a.UserTypeId == SeedIds.UserTypes.Member),
             Arg.Any<CancellationToken>()
         );
         // Only the adult is created; the role check was skipped for the first user.
@@ -422,10 +416,14 @@ public sealed class AuthServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Minors.Should().HaveCount(1);
 
-        // Adult (Pending) and one child (Dependent) are added.
+        // Adult (Pending) and one child (Dependent) are added, each with its single chosen type.
         await users.Received(2).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await users.Received(1).AddAsync(
-            Arg.Is<User>(u => u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending),
+            Arg.Is<User>(u =>
+                u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
+                && !u.IsAdmin
+                && u.UserTypeId == adultRoleId
+            ),
             Arg.Any<CancellationToken>()
         );
         await users.Received(1).AddAsync(
@@ -433,15 +431,8 @@ public sealed class AuthServiceTests
                 u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
                 && u.FirstName == "Leo"
                 && u.ParentId != null
+                && u.UserTypeId == minorRoleId
             ),
-            Arg.Any<CancellationToken>()
-        );
-        await users.Received(1).AddTypeAssignmentAsync(
-            Arg.Is<UserTypeAssignment>(a => a.UserTypeId == adultRoleId),
-            Arg.Any<CancellationToken>()
-        );
-        await users.Received(1).AddTypeAssignmentAsync(
-            Arg.Is<UserTypeAssignment>(a => a.UserTypeId == minorRoleId),
             Arg.Any<CancellationToken>()
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

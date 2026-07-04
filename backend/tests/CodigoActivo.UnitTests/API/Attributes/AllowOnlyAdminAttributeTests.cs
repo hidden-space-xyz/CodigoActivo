@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using CodigoActivo.API.Attributes;
-using CodigoActivo.Domain.Constants;
+using CodigoActivo.API.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -13,8 +13,6 @@ namespace CodigoActivo.UnitTests.API.Attributes;
 
 public sealed class AllowOnlyAdminAttributeTests
 {
-    private static readonly string AdminRole = SeedIds.UserTypes.Admin.ToString();
-
     private static AuthorizationFilterContext BuildContext(ClaimsPrincipal principal)
     {
         var httpContext = new DefaultHttpContext { User = principal };
@@ -28,10 +26,10 @@ public sealed class AllowOnlyAdminAttributeTests
 
     private static ClaimsPrincipal Anonymous() => new(new ClaimsIdentity());
 
-    private static ClaimsPrincipal User(Guid id, params string[] roles)
+    private static ClaimsPrincipal User(Guid id, bool isAdmin = false)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id.ToString()) };
-        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+        if (isAdmin) claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
     }
 
@@ -48,7 +46,7 @@ public sealed class AllowOnlyAdminAttributeTests
     [Fact]
     public void OnAuthorization_forbids_authenticated_non_admin()
     {
-        var context = BuildContext(User(Guid.NewGuid(), SeedIds.UserTypes.Member.ToString()));
+        var context = BuildContext(User(Guid.NewGuid()));
 
         new AllowOnlyAdminAttribute().OnAuthorization(context);
 
@@ -58,7 +56,7 @@ public sealed class AllowOnlyAdminAttributeTests
     [Fact]
     public void OnAuthorization_allows_admin()
     {
-        var context = BuildContext(User(Guid.NewGuid(), AdminRole));
+        var context = BuildContext(User(Guid.NewGuid(), isAdmin: true));
 
         new AllowOnlyAdminAttribute().OnAuthorization(context);
 

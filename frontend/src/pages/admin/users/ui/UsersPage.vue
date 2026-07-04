@@ -6,13 +6,14 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
+import ToggleSwitch from 'primevue/toggleswitch'
 
 import { useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { ageFrom, formatDate, groupByParent, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
-const { list, update, remove, changeType, fetchOne } = useUsers()
+const { list, update, remove, changeType, setAdmin, fetchOne } = useUsers()
 const userTypes = useUserTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
@@ -84,8 +85,20 @@ function onSubmit(body: UpdateUserRequest): void {
 
 function openChangeType(user: UserResponse): void {
   typeUser.value = user
-  selectedRoleId.value = null
+  selectedRoleId.value = user.type?.id ?? null
   typeDialogVisible.value = true
+}
+
+function toggleAdmin(user: UserResponse, value: boolean): void {
+  if (!user.id) return
+  setAdmin.mutate(
+    { id: user.id, isAdmin: value },
+    {
+      onSuccess: () =>
+        feedback.success(value ? 'Administrador concedido.' : 'Administrador retirado.'),
+      onError: (error) => feedback.error(error),
+    },
+  )
 }
 
 function submitChangeType(): void {
@@ -173,15 +186,19 @@ function confirmDelete(user: UserResponse): void {
             <span v-else>—</span>
           </template>
         </Column>
-        <Column header="Tipos">
+        <Column header="Tipo">
           <template #body="{ data }">
-            <span v-if="(data.roles ?? []).length === 0">—</span>
-            <ColorTag
-              v-for="role in data.roles ?? []"
-              :key="role.id"
-              :value="role.name ?? ''"
-              :color="role.color"
-              class="user-role-tag"
+            <ColorTag v-if="data.type" :value="data.type.name ?? ''" :color="data.type.color" />
+            <span v-else>—</span>
+          </template>
+        </Column>
+        <Column header="Admin" style="width: 90px">
+          <template #body="{ data }">
+            <ToggleSwitch
+              :model-value="!!data.isAdmin"
+              :disabled="setAdmin.isPending.value"
+              aria-label="Administrador"
+              @update:model-value="(value: boolean) => toggleAdmin(data, value)"
             />
           </template>
         </Column>
@@ -263,10 +280,6 @@ function confirmDelete(user: UserResponse): void {
 .row-actions {
   display: flex;
   gap: 2px;
-}
-
-.user-role-tag {
-  margin-right: 4px;
 }
 
 .user-name {

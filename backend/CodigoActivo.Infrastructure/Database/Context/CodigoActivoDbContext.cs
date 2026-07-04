@@ -10,7 +10,6 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<User> Users => Set<User>();
     public DbSet<UserStatusType> UserStatusTypes => Set<UserStatusType>();
     public DbSet<UserType> UserTypes => Set<UserType>();
-    public DbSet<UserTypeAssignment> UserTypeAssignments => Set<UserTypeAssignment>();
 
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Activity> Activities => Set<Activity>();

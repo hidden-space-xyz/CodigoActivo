@@ -118,13 +118,12 @@ public static class Projections
             user.UserStatusType.Name,
             user.UserStatusType.Color
         ),
-        Roles = user
-            .TypeAssignments.Select(assignment => new UserRoleResponse(
-                assignment.UserTypeId,
-                assignment.UserType.Name,
-                assignment.UserType.Color
-            ))
-            .ToList(),
+        IsAdmin = user.IsAdmin,
+        Type = new UserTypeSummaryResponse(
+            user.UserTypeId,
+            user.UserType.Name,
+            user.UserType.Color
+        ),
     };
 
     public static readonly Expression<

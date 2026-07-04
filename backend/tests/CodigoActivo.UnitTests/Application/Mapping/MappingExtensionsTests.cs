@@ -18,10 +18,10 @@ public sealed class MappingExtensionsTests
     // ---- User.ToResponse ---------------------------------------------------
 
     [Fact]
-    public void User_ToResponse_maps_scalars_status_and_roles()
+    public void User_ToResponse_maps_scalars_status_isadmin_and_type()
     {
         var statusId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
         var user = new User
         {
@@ -37,14 +37,9 @@ public sealed class MappingExtensionsTests
             ParentId = parentId,
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType { Id = statusId, Name = "Active", Color = "#00ff00" },
-            TypeAssignments =
-            [
-                new UserTypeAssignment
-                {
-                    UserTypeId = roleId,
-                    UserType = new UserType { Id = roleId, Name = "Member", Color = "#123456" },
-                },
-            ],
+            IsAdmin = true,
+            UserTypeId = typeId,
+            UserType = new UserType { Id = typeId, Name = "Member", Color = "#123456" },
         };
 
         var response = user.ToResponse();
@@ -60,7 +55,8 @@ public sealed class MappingExtensionsTests
         response.UpdatedAt.Should().Be(Updated);
         response.ParentId.Should().Be(parentId);
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#00ff00"));
-        response.Roles.Should().ContainSingle().Which.Should().Be(new UserRoleResponse(roleId, "Member", "#123456"));
+        response.IsAdmin.Should().BeTrue();
+        response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#123456"));
     }
 
     [Fact]
@@ -83,39 +79,23 @@ public sealed class MappingExtensionsTests
     }
 
     [Fact]
-    public void User_ToResponse_returns_empty_roles_when_assignments_null()
+    public void User_ToResponse_uses_empty_type_name_and_color_when_user_type_navigation_null()
     {
+        var typeId = Guid.NewGuid();
         var user = new User
         {
             FirstName = "N",
             LastName = "N",
             UserStatusType = new UserStatusType { Name = "S", Color = "#fff" },
-            TypeAssignments = null!,
+            UserTypeId = typeId,
+            UserType = null!,
         };
 
         var response = user.ToResponse();
 
-        response.Roles.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void User_ToResponse_uses_empty_role_name_and_color_when_user_type_navigation_null()
-    {
-        var roleId = Guid.NewGuid();
-        var user = new User
-        {
-            FirstName = "N",
-            LastName = "N",
-            UserStatusType = new UserStatusType { Name = "S", Color = "#fff" },
-            TypeAssignments = [new UserTypeAssignment { UserTypeId = roleId, UserType = null! }],
-        };
-
-        var response = user.ToResponse();
-
-        var role = response.Roles.Should().ContainSingle().Subject;
-        role.Id.Should().Be(roleId);
-        role.Name.Should().BeEmpty();
-        role.Color.Should().BeEmpty();
+        response.Type.Id.Should().Be(typeId);
+        response.Type.Name.Should().BeEmpty();
+        response.Type.Color.Should().BeEmpty();
     }
 
     // ---- Resource.ToResponse ----------------------------------------------

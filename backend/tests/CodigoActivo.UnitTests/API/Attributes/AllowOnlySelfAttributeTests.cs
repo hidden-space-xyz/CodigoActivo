@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using System.Security.Claims;
 using CodigoActivo.API.Attributes;
-using CodigoActivo.Domain.Constants;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.AspNetCore.Http;
@@ -18,8 +18,6 @@ namespace CodigoActivo.UnitTests.API.Attributes;
 
 public sealed class AllowOnlySelfAttributeTests
 {
-    private static readonly string AdminRole = SeedIds.UserTypes.Admin.ToString();
-
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
 
     private AuthorizationFilterContext BuildContext(
@@ -47,10 +45,10 @@ public sealed class AllowOnlySelfAttributeTests
 
     private static ClaimsPrincipal Anonymous() => new(new ClaimsIdentity());
 
-    private static ClaimsPrincipal User(Guid id, params string[] roles)
+    private static ClaimsPrincipal User(Guid id, bool isAdmin = false)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id.ToString()) };
-        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+        if (isAdmin) claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
     }
 
@@ -68,7 +66,7 @@ public sealed class AllowOnlySelfAttributeTests
     [Fact]
     public async Task OnAuthorizationAsync_allows_admin_regardless_of_route()
     {
-        var context = BuildContext(User(Guid.NewGuid(), AdminRole), Guid.NewGuid());
+        var context = BuildContext(User(Guid.NewGuid(), isAdmin: true), Guid.NewGuid());
 
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 

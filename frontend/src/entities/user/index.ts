@@ -4,5 +4,6 @@ export {
   deleteUserRequest,
   getUserRequest,
   getUsersRequest,
+  setUserAdminRequest,
   updateUserRequest,
 } from './api/requests'

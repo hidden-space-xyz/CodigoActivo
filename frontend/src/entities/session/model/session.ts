@@ -3,15 +3,13 @@ import { computed, reactive, ref } from 'vue'
 import { getCurrentUserRequest } from '../api/requests'
 import type { AuthUser } from './types'
 
-const ADMIN_ROLE_ID = '6a8fbafe-22da-4dcc-8b4f-e8b5f43528b2'
-
 const user = ref<AuthUser | null>(null)
 
 let inflight: Promise<AuthUser | null> | null = null
 
 const isAuthenticated = computed(() => user.value !== null)
 const displayName = computed(() => user.value?.firstName ?? '')
-const isAdmin = computed(() => (user.value?.roles ?? []).some((role) => role.id === ADMIN_ROLE_ID))
+const isAdmin = computed(() => user.value?.isAdmin ?? false)
 
 function setUser(value: AuthUser | null): void {
   user.value = value

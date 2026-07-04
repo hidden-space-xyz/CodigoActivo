@@ -23,10 +23,15 @@ public class User : IdentifiableEntity
     public Guid UserStatusTypeId { get; set; }
     public UserStatusType UserStatusType { get; set; } = null!;
 
+    public Guid UserTypeId { get; set; }
+    public UserType UserType { get; set; } = null!;
+
+    // Admin/non-admin is a plain flag on the user, independent of the (single) UserType.
+    public bool IsAdmin { get; set; }
+
     public Guid? OtpCode { get; set; }
     public DateTimeOffset? OtpExpiresAt { get; set; }
 
-    public ICollection<UserTypeAssignment> TypeAssignments { get; set; } = [];
     public ICollection<User> Children { get; set; } = [];
 
     public void Verify(Guid activeStatusId)

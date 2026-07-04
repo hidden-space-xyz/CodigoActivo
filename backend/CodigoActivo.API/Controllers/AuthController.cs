@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Antiforgery;
@@ -92,7 +93,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
         };
         if (!string.IsNullOrEmpty(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
-        foreach (var role in user.Roles) claims.Add(new Claim(ClaimTypes.Role, role.Id.ToString()));
+        if (user.IsAdmin) claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
 
         var identity = new ClaimsIdentity(
             claims,

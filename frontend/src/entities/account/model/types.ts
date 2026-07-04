@@ -1,4 +1,4 @@
-export interface AccountRole {
+export interface AccountType {
   readonly id: string
   readonly name: string
 }
@@ -11,7 +11,8 @@ export interface AccountProfile {
   readonly phone: string
   readonly birthDate: string
   readonly statusName: string
-  readonly roles: readonly AccountRole[]
+  readonly isAdmin: boolean
+  readonly type: AccountType | null
 }
 
 export interface AccountChild {
@@ -19,7 +20,7 @@ export interface AccountChild {
   readonly firstName: string
   readonly lastName: string
   readonly birthDate: string
-  readonly roles: readonly AccountRole[]
+  readonly type: AccountType | null
 }
 
 export interface RegistrationType {

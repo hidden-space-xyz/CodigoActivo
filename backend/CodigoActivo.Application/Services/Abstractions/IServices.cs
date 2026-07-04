@@ -36,6 +36,8 @@ public interface IUserService
 
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 
+    Task<Result> SetAdminAsync(Guid id, bool isAdmin, CancellationToken ct = default);
+
     Task<Result<UserResponse>> ChangeTypeAsync(
         Guid id,
         Guid userTypeId,

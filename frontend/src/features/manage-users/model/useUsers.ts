@@ -6,6 +6,7 @@ import {
   deleteUserRequest,
   getUserRequest,
   getUsersRequest,
+  setUserAdminRequest,
   updateUserRequest,
   userQueryKeys,
 } from '@/entities/user'
@@ -38,9 +39,15 @@ export function useUsers(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
     onSuccess: invalidate,
   })
 
+  const setAdmin = useMutation({
+    mutationFn: (vars: { id: string; isAdmin: boolean }) =>
+      setUserAdminRequest(vars.id, vars.isAdmin),
+    onSuccess: invalidate,
+  })
+
   function fetchOne(id: string) {
     return getUserRequest(id)
   }
 
-  return { list, update, remove, changeType, fetchOne }
+  return { list, update, remove, changeType, setAdmin, fetchOne }
 }

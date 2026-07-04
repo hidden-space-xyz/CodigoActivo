@@ -44,6 +44,7 @@ export const errorMessages: Record<ErrorCode, string> = {
 
   // File
   FileNotFound: 'No se encontró el archivo.',
+  FileInUse: 'No se puede eliminar el archivo porque está en uso.',
   FileContentMissingFromStorage: 'El contenido del archivo ya no está disponible.',
   FileUploadMissing: 'Debes seleccionar un archivo para subir.',
   FileUploadEmpty: 'El archivo seleccionado está vacío.',
@@ -54,6 +55,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   // User
   UserNotFound: 'No se encontró el usuario.',
   UserDeleteAdminForbidden: 'No puedes eliminar a un usuario administrador.',
+  UserCannotRemoveLastAdmin: 'No puedes quitar el rango de administrador al único administrador.',
   UserTypeNotFound: 'El tipo de usuario no es válido.',
   ParentUserNotFound: 'No se encontró el usuario responsable.',
   UserParentIsMinor: 'El responsable no puede ser menor de edad.',
@@ -64,6 +66,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   UserParentIdRequired: 'Debes indicar el usuario responsable.',
   UserCannotBeOwnParent: 'Un usuario no puede ser su propio responsable.',
   UserParentNotAllowedForAdult: 'Un usuario mayor de edad no puede tener un responsable.',
+  UserParentReassignmentForbidden: 'No puedes reasignar este menor a otro responsable.',
   UserContactInfoRequired: 'Debes indicar al menos un dato de contacto.',
   UserEmailAlreadyInUse: 'Este correo electrónico ya está en uso.',
   UserPhoneAlreadyInUse: 'Este teléfono ya está en uso.',

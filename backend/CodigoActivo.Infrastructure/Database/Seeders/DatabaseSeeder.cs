@@ -68,18 +68,6 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
         {
             new UserType
             {
-                Id = SeedIds.UserTypes.Admin,
-                Name = "Administrador",
-                Color = "#F97316",
-                Description =
-                    "Usuario con control total del sistema. Gestiona las cuentas, los eventos, los "
-                    + "catálogos y la configuración general de la plataforma.",
-                Hidden = true,
-                IsAllowedForAdults = true,
-                IsAllowedForMinors = false,
-            },
-            new UserType
-            {
                 Id = SeedIds.UserTypes.Member,
                 Name = "Socio",
                 Color = "#EF4444",

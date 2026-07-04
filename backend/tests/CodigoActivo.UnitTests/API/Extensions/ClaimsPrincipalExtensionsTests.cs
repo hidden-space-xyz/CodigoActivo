@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Domain.Constants;
 using AwesomeAssertions;
 using Xunit;
 
@@ -41,23 +40,23 @@ public sealed class ClaimsPrincipalExtensionsTests
     // ---- IsAdmin -----------------------------------------------------------
 
     [Fact]
-    public void IsAdmin_is_true_when_role_matches_admin_user_type()
+    public void IsAdmin_is_true_when_isadmin_claim_is_true()
     {
-        var principal = PrincipalWith(new Claim(ClaimTypes.Role, SeedIds.UserTypes.Admin.ToString()));
+        var principal = PrincipalWith(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
 
         principal.IsAdmin().Should().BeTrue();
     }
 
     [Fact]
-    public void IsAdmin_is_false_for_non_admin_role()
+    public void IsAdmin_is_false_when_isadmin_claim_is_false()
     {
-        var principal = PrincipalWith(new Claim(ClaimTypes.Role, SeedIds.UserTypes.Member.ToString()));
+        var principal = PrincipalWith(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.FalseString));
 
         principal.IsAdmin().Should().BeFalse();
     }
 
     [Fact]
-    public void IsAdmin_is_false_when_no_role_claim_present()
+    public void IsAdmin_is_false_when_no_isadmin_claim_present()
     {
         var principal = PrincipalWith(new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()));
 

@@ -111,25 +111,15 @@ public class AuthService(
             Phone = phone,
             PasswordHash = hasher.Hash(request.Password),
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+            // The very first registered user bootstraps the system as an admin with a default type;
+            // everyone else is a non-admin with the single type they chose.
+            IsAdmin = isFirstUser,
+            UserTypeId = isFirstUser ? SeedIds.UserTypes.Member : request.RoleId,
             OtpCode = otp,
             OtpExpiresAt = now.AddMinutes(15),
             CreatedAt = now,
         };
         await users.AddAsync(adult, ct);
-
-        var adultRoleIds = isFirstUser
-            ? new[] { SeedIds.UserTypes.Admin, SeedIds.UserTypes.Member }
-            : [request.RoleId];
-        foreach (var roleId in adultRoleIds)
-            await users.AddTypeAssignmentAsync(
-                new UserTypeAssignment
-                {
-                    UserId = adult.Id,
-                    UserTypeId = roleId,
-                    AssignedAt = now,
-                },
-                ct
-            );
 
         foreach (var minor in minorRequests)
         {
@@ -140,18 +130,10 @@ public class AuthService(
                 BirthDate = minor.BirthDate,
                 ParentId = adult.Id,
                 UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+                UserTypeId = minor.RoleId,
                 CreatedAt = now,
             };
             await users.AddAsync(child, ct);
-            await users.AddTypeAssignmentAsync(
-                new UserTypeAssignment
-                {
-                    UserId = child.Id,
-                    UserTypeId = minor.RoleId,
-                    AssignedAt = now,
-                },
-                ct
-            );
         }
 
         await uow.SaveChangesAsync(ct);

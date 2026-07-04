@@ -139,8 +139,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var types = await response.ReadJsonAsync<List<UserTypeResponse>>();
-        types!.Should().HaveCount(4);
-        types.Should().Contain(t => t.Id == SeedIds.UserTypes.Admin);
+        types!.Should().HaveCount(3);
+        types.Should().Contain(t => t.Id == SeedIds.UserTypes.Member);
     }
 
     [Fact]
@@ -499,7 +499,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
     // ---- Change type: [AllowOnlyAdmin] -------------------------------------
 
     [Fact]
-    public async Task ChangeType_as_admin_assigns_new_role()
+    public async Task ChangeType_as_admin_replaces_the_users_type()
     {
         var client = await LoginAsAdminAsync();
 
@@ -508,14 +508,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var count = await Factory.QueryAsync(db =>
-            db.UserTypeAssignments.CountAsync(a => a.UserId == TestSeedData.Users.MemberId)
+        var user = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask()
         );
-        count.Should().Be(2);
+        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Volunteer);
     }
 
     [Fact]
-    public async Task ChangeType_to_already_assigned_role_is_noop()
+    public async Task ChangeType_to_already_assigned_role_keeps_the_type()
     {
         var client = await LoginAsAdminAsync();
 
@@ -524,10 +524,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var count = await Factory.QueryAsync(db =>
-            db.UserTypeAssignments.CountAsync(a => a.UserId == TestSeedData.Users.MemberId)
+        var user = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask()
         );
-        count.Should().Be(1);
+        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
     }
 
     [Fact]
@@ -570,20 +570,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.UserTypeNotAllowedForAdults);
-    }
-
-    [Fact]
-    public async Task ChangeType_minor_to_hidden_role_is_bad_request()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?roleId={SeedIds.UserTypes.Admin}"
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
     }
 
     [Fact]
@@ -670,19 +656,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.UserTypeNotFound);
-    }
-
-    [Fact]
-    public async Task AddChild_with_role_not_allowed_for_minors_is_bad_request()
-    {
-        var client = await LoginAsMemberAsync();
-        var request = new RegisterMinorRequest("Nino", "X", MinorBirthDate, SeedIds.UserTypes.Admin);
-
-        var response = await client.PostJsonAsync($"/api/users/{TestSeedData.Users.MemberId}/children", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
     }
 
     [Fact]
@@ -774,6 +747,56 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var types = await response.ReadJsonAsync<List<RegistrationTypeResponse>>();
         types!.Should().HaveCount(expected);
-        types.Should().OnlyContain(t => t.Id != SeedIds.UserTypes.Admin);
+    }
+
+    // ---- Admin grant/revoke: [AllowOnlyAdmin] ------------------------------
+
+    [Fact]
+    public async Task SetAdmin_as_admin_grants_admin_to_another_user()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new SetAdminRequest(true)
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var user = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask()
+        );
+        user!.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetAdmin_cannot_revoke_the_last_admin()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.AdminId}/admin",
+            new SetAdminRequest(false)
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.UserCannotRemoveLastAdmin);
+        var admin = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.AdminId).AsTask()
+        );
+        admin!.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetAdmin_as_member_is_forbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.PendingId}/admin",
+            new SetAdminRequest(true)
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }
