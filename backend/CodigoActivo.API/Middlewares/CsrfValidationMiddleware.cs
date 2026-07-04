@@ -29,12 +29,7 @@ public sealed class CsrfValidationMiddleware(
             {
                 logger.LogWarning(ex, "CSRF validation failed");
 
-                var (statusCode, body) = ApiErrorResponseExtensions.Create(
-                    Error.BadRequest(ErrorCode.InvalidCsrfToken),
-                    context
-                );
-                context.Response.StatusCode = statusCode;
-                await context.Response.WriteAsJsonAsync(body);
+                await context.WriteApiErrorAsync(Error.BadRequest(ErrorCode.InvalidCsrfToken));
                 return;
             }
 

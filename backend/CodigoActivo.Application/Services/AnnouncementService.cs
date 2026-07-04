@@ -1,4 +1,5 @@
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -12,6 +13,7 @@ public class AnnouncementService(
     IAnnouncementRepository announcements,
     IFileRepository files,
     IQueryExecutor executor,
+    IClock clock,
     IUnitOfWork uow
 ) : IAnnouncementService
 {
@@ -83,7 +85,11 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.AnnouncementThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var announcement = new Announcement
@@ -92,7 +98,7 @@ public class AnnouncementService(
             Subtitle = request.Subtitle.Trim(),
             Description = request.Description,
             ThumbnailId = request.ThumbnailId,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = clock.UtcNow,
             CreatedBy = userId,
         };
         await announcements.AddAsync(announcement, ct);
@@ -110,27 +116,29 @@ public class AnnouncementService(
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
         if (announcement is null) return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.AnnouncementThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         announcement.Title = request.Title.Trim();
         announcement.Subtitle = request.Subtitle.Trim();
         announcement.Description = request.Description;
         announcement.ThumbnailId = request.ThumbnailId;
-        announcement.UpdatedAt = DateTimeOffset.UtcNow;
+        announcement.UpdatedAt = clock.UtcNow;
         announcement.UpdatedBy = userId;
 
-        announcements.Update(announcement);
         await uow.SaveChangesAsync(ct);
         return announcement.ToResponse();
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await announcements.ExistsAsync(a => a.Id == id, ct))
+        if (await announcements.RemoveAsync(a => a.Id == id, ct) == 0)
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
-        await announcements.RemoveAsync(a => a.Id == id, ct);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -140,20 +148,9 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        if (!await announcements.ExistsAsync(a => a.Id == id, ct))
+        if (!await announcements.SetFeaturedAsync(id, ct))
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
-        await announcements.SetFeaturedAsync(id, ct);
-
-        var announcement = await announcements.FindAsync(a => a.Id == id, ct);
-        return announcement!.ToResponse();
-    }
-
-    private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
-    {
-        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-            return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
-
-        return Result.Success();
+        return await GetByIdAsync(id, ct);
     }
 }

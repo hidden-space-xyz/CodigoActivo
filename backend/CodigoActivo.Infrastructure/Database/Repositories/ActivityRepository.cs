@@ -10,17 +10,6 @@ public class ActivityRepository(CodigoActivoDbContext context)
     : Repository<Activity>(context),
         IActivityRepository
 {
-    public async Task<Activity?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
-    {
-        return await Set.AsNoTracking()
-            .Include(a => a.Thumbnail)
-            .Include(a => a.ActivityModalityType)
-            .Include(a => a.AllowedRoleTypes)
-            .ThenInclude(ar => ar.ActivityRoleType)
-            .Include(a => a.Assignments)
-            .FirstOrDefaultAsync(a => a.Id == id, ct);
-    }
-
     public async Task<Activity?> GetWithAssignmentsAndUsersAsync(
         Guid id,
         CancellationToken ct = default
@@ -98,23 +87,15 @@ public class ActivityRepository(CodigoActivoDbContext context)
 
     public async Task<IReadOnlyList<ActivityUserRoleAssignment>> GetUserAssignmentsAsync(
         Guid userId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
         CancellationToken ct = default
     )
     {
-        var query = Context
+        return await Context
             .ActivityUserRoleAssignments.AsNoTracking()
             .Include(x => x.Activity)
-            .Include(x => x.ActivityRoleType)
-            .Include(x => x.AssignmentStatus)
-            .Where(x => x.UserId == userId);
-
-        if (startDate.HasValue) query = query.Where(x => x.Activity.ActivityEndsAt >= startDate.Value);
-
-        if (endDate.HasValue) query = query.Where(x => x.Activity.ActivityStartsAt <= endDate.Value);
-
-        return await query.OrderBy(x => x.Activity.ActivityStartsAt).ToListAsync(ct);
+            .Where(x => x.UserId == userId)
+            .OrderBy(x => x.Activity.ActivityStartsAt)
+            .ToListAsync(ct);
     }
 
     public async Task<IReadOnlyList<ActivityUserRoleAssignment>> GetAssignmentsForUsersByEventAsync(

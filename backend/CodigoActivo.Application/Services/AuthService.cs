@@ -16,6 +16,7 @@ public class AuthService(
     IUserRepository users,
     IUserTypeRepository userTypes,
     IUnitOfWork uow,
+    IClock clock,
     IPasswordHasher hasher
 ) : IAuthService
 {
@@ -25,14 +26,7 @@ public class AuthService(
     )
     {
         var identifier = request.Identifier.Trim();
-        var byEmail = identifier.Contains('@');
-
-        var user = byEmail
-            ? await users.GetByEmailAsync(identifier, ct)
-            : await users.GetByPhoneAsync(identifier, ct);
-        user ??= byEmail
-            ? await users.GetByPhoneAsync(identifier, ct)
-            : await users.GetByEmailAsync(identifier, ct);
+        var user = await users.GetByEmailOrPhoneAsync(identifier, ct);
 
         if (
             user is null
@@ -90,25 +84,24 @@ public class AuthService(
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
             return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
 
-        if (
-            await users.EmailExistsAsync(email, null, ct)
-            || await users.PhoneExistsAsync(phone, null, ct)
-        )
+        if (await users.ExistsAsync(u => u.Email == email || u.Phone == phone, ct))
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
 
         var minorRequests = request.Minors ?? [];
-        foreach (var minor in minorRequests)
+        if (minorRequests.Any(minor => !minor.BirthDate.IsMinor()))
+            return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
+
+        if (minorRequests.Count > 0)
         {
-            if (!minor.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
+            var roleIds = minorRequests.Select(minor => minor.RoleId).Distinct().ToList();
+            var minorRoles = await userTypes.GetAsync(ut => roleIds.Contains(ut.Id), ct);
+            if (minorRoles.Count != roleIds.Count) return Error.NotFound(ErrorCode.UserTypeNotFound);
 
-            var minorRole = await userTypes.FindAsync(ut => ut.Id == minor.RoleId, ct);
-            if (minorRole is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
-
-            if (minorRole.Hidden || !minorRole.IsAllowedForMinors)
+            if (minorRoles.Any(role => role.Hidden || !role.IsAllowedForMinors))
                 return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
         }
 
-        var now = DateTimeOffset.UtcNow;
+        var now = clock.UtcNow;
         var otp = Guid.NewGuid();
 
         var adult = new User
@@ -140,7 +133,6 @@ public class AuthService(
                 ct
             );
 
-        var minorIds = new List<Guid>();
         foreach (var minor in minorRequests)
         {
             var child = new User
@@ -162,18 +154,13 @@ public class AuthService(
                 },
                 ct
             );
-            minorIds.Add(child.Id);
         }
 
         await uow.SaveChangesAsync(ct);
 
         var createdAdult = await users.GetByIdWithDetailsAsync(adult.Id, ct);
-        var createdMinors = new List<UserResponse>();
-        foreach (var id in minorIds)
-        {
-            var created = await users.GetByIdWithDetailsAsync(id, ct);
-            if (created is not null) createdMinors.Add(created.ToResponse());
-        }
+        var children = await users.ListChildrenWithDetailsAsync(adult.Id, ct);
+        var createdMinors = children.Select(child => child.ToResponse()).ToList();
 
         return new RegisterResponse(createdAdult!.ToResponse(), createdMinors, otp);
     }
@@ -191,7 +178,7 @@ public class AuthService(
             string.IsNullOrWhiteSpace(otp)
             || user.OtpCode == Guid.Empty || user.OtpCode is null
             || user.OtpExpiresAt is null
-            || user.OtpExpiresAt < DateTimeOffset.UtcNow
+            || user.OtpExpiresAt < clock.UtcNow
             || !CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(user.OtpCode.Value.ToString()),
                 Encoding.UTF8.GetBytes(otp)
@@ -200,7 +187,6 @@ public class AuthService(
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
 
         user.Verify(SeedIds.UserStatusTypes.Active);
-        users.Update(user);
         await uow.SaveChangesAsync(ct);
 
         var updated = await users.GetByIdWithDetailsAsync(id, ct);

@@ -293,14 +293,14 @@ public interface IFileService
     Task<Result<FileContentValueObject>> GetContentAsync(Guid id, CancellationToken ct = default);
 
     Task<Result<FileResponse>> CreateAsync(
-        FileUploadRequest upload,
+        FileUploadRequest? upload,
         Guid userId,
         CancellationToken ct = default
     );
 
     Task<Result<FileResponse>> UpdateAsync(
         Guid id,
-        FileUploadRequest upload,
+        FileUploadRequest? upload,
         CancellationToken ct = default
     );
 

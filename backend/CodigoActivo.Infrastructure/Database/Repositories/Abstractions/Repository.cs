@@ -59,27 +59,42 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         await Set.AddAsync(entity, ct);
     }
 
-    public async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default)
+    public void Remove(TEntity entity)
     {
-        await Set.AddRangeAsync(entities, ct);
+        Set.Remove(entity);
     }
 
-    public void Update(TEntity entity)
-    {
-        Set.Update(entity);
-    }
-
-    public void UpdateRange(IEnumerable<TEntity> entities)
-    {
-        Set.UpdateRange(entities);
-    }
-
-    public virtual async Task RemoveAsync(
+    public virtual async Task<int> RemoveAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     )
     {
         var entities = await Set.Where(predicate).ToListAsync(ct);
         Set.RemoveRange(entities);
+        return entities.Count;
+    }
+
+    // Features the target first so a failure between the two statements can never leave zero
+    // featured rows. EF.Property is required because EF cannot bind interface members directly.
+    protected static async Task<bool> SetExclusiveFeaturedAsync<TFeaturable>(
+        DbSet<TFeaturable> set,
+        Guid id,
+        CancellationToken ct
+    )
+        where TFeaturable : IdentifiableEntity, IFeaturable
+    {
+        var updated = await set.Where(e => e.Id == id)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)), true),
+                ct
+            );
+        if (updated == 0) return false;
+
+        await set.Where(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)) && e.Id != id)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)), false),
+                ct
+            );
+        return true;
     }
 }

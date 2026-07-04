@@ -4,6 +4,8 @@ namespace CodigoActivo.Infrastructure.Storage;
 
 public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
 {
+    private const int StreamBufferSize = 64 * 1024;
+
     private readonly string rootPath;
 
     public LocalFileSystemRepository(FileStorageOptions options)
@@ -25,7 +27,9 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
             path,
             FileMode.Create,
             FileAccess.Write,
-            FileShare.None
+            FileShare.None,
+            StreamBufferSize,
+            FileOptions.Asynchronous | FileOptions.SequentialScan
         );
         await content.CopyToAsync(fs, ct);
     }
@@ -35,7 +39,14 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
         var path = ResolvePath(storedName);
         if (!File.Exists(path)) return Task.FromResult<Stream?>(null);
 
-        Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        Stream stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            StreamBufferSize,
+            FileOptions.Asynchronous | FileOptions.SequentialScan
+        );
         return Task.FromResult<Stream?>(stream);
     }
 

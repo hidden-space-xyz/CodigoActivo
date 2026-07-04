@@ -87,24 +87,12 @@ try
                 builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
             );
 
-            options.Events.OnRedirectToLogin = async ctx =>
-            {
-                var (statusCode, body) = ApiErrorResponseExtensions.Create(
-                    Error.Unauthorized(ErrorCode.AuthenticationRequired),
-                    ctx.HttpContext
+            options.Events.OnRedirectToLogin = ctx =>
+                ctx.HttpContext.WriteApiErrorAsync(
+                    Error.Unauthorized(ErrorCode.AuthenticationRequired)
                 );
-                ctx.Response.StatusCode = statusCode;
-                await ctx.Response.WriteAsJsonAsync(body);
-            };
-            options.Events.OnRedirectToAccessDenied = async ctx =>
-            {
-                var (statusCode, body) = ApiErrorResponseExtensions.Create(
-                    Error.Forbidden(ErrorCode.AccessDenied),
-                    ctx.HttpContext
-                );
-                ctx.Response.StatusCode = statusCode;
-                await ctx.Response.WriteAsJsonAsync(body);
-            };
+            options.Events.OnRedirectToAccessDenied = ctx =>
+                ctx.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
         });
 
     builder.Services.AddAuthorization();
@@ -136,7 +124,7 @@ try
 
     app.Use(async (httpContext, next) =>
         {
-            using (LogContext.PushProperty("CorrelationId", httpContext.GetOrSetTraceId()))
+            using (LogContext.PushProperty("CorrelationId", httpContext.TraceIdentifier))
             {
                 await next();
             }

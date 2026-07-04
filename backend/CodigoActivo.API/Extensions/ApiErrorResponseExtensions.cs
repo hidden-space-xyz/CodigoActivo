@@ -26,7 +26,7 @@ public static class ApiErrorResponseExtensions
     public static (int StatusCode, ApiErrorResponse Body) Create(Error error, HttpContext context)
     {
         var (status, title) = MapKind(error.Kind);
-        return (status, new ApiErrorResponse(title, status, error.Code, context.GetOrSetTraceId()));
+        return (status, new ApiErrorResponse(title, status, error.Code, context.TraceIdentifier));
     }
 
     public static (int StatusCode, ApiErrorResponse Body) CreateInternalError(HttpContext context)
@@ -34,7 +34,7 @@ public static class ApiErrorResponseExtensions
         const int Status = StatusCodes.Status500InternalServerError;
         return (
             Status,
-            new ApiErrorResponse("Internal Server Error", Status, ErrorCode.UnexpectedError, context.GetOrSetTraceId())
+            new ApiErrorResponse("Internal Server Error", Status, ErrorCode.UnexpectedError, context.TraceIdentifier)
         );
     }
 

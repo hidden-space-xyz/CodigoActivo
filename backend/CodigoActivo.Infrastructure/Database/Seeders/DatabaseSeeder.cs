@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Entities.Abstractions;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,9 +59,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     + "misma y se gestiona a través de la cuenta responsable.",
             },
         };
-        foreach (var item in seed)
-            if (!await context.UserStatusTypes.AnyAsync(x => x.Id == item.Id, ct))
-                context.UserStatusTypes.Add(item);
+        await AddMissingAsync(context.UserStatusTypes, seed, ct);
     }
 
     private async Task SeedUserTypesAsync(CancellationToken ct)
@@ -116,9 +115,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 IsAllowedForMinors = true,
             },
         };
-        foreach (var item in seed)
-            if (!await context.UserTypes.AnyAsync(x => x.Id == item.Id, ct))
-                context.UserTypes.Add(item);
+        await AddMissingAsync(context.UserTypes, seed, ct);
     }
 
     private async Task SeedActivityRoleTypesAsync(CancellationToken ct)
@@ -147,9 +144,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     "Asiste a la actividad como público o beneficiario, sin responsabilidades de organización.",
             },
         };
-        foreach (var item in seed)
-            if (!await context.ActivityRoleTypes.AnyAsync(x => x.Id == item.Id, ct))
-                context.ActivityRoleTypes.Add(item);
+        await AddMissingAsync(context.ActivityRoleTypes, seed, ct);
     }
 
     private async Task SeedAssignmentStatusTypesAsync(CancellationToken ct)
@@ -184,9 +179,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                     + "actividad bajo este rol.",
             },
         };
-        foreach (var item in seed)
-            if (!await context.AssignmentStatusTypes.AnyAsync(x => x.Id == item.Id, ct))
-                context.AssignmentStatusTypes.Add(item);
+        await AddMissingAsync(context.AssignmentStatusTypes, seed, ct);
     }
 
     private async Task SeedActivityModalityTypesAsync(CancellationToken ct)
@@ -200,8 +193,18 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             },
             new ActivityModalityType { Id = SeedIds.ActivityModalityTypes.Online, Name = "Online" },
         };
-        foreach (var item in seed)
-            if (!await context.ActivityModalityTypes.AnyAsync(x => x.Id == item.Id, ct))
-                context.ActivityModalityTypes.Add(item);
+        await AddMissingAsync(context.ActivityModalityTypes, seed, ct);
+    }
+
+    private static async Task AddMissingAsync<TEntity>(
+        DbSet<TEntity> set,
+        IReadOnlyList<TEntity> seed,
+        CancellationToken ct
+    )
+        where TEntity : IdentifiableEntity
+    {
+        var ids = seed.Select(x => x.Id).ToList();
+        var existing = await set.Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync(ct);
+        set.AddRange(seed.Where(x => !existing.Contains(x.Id)));
     }
 }

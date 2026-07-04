@@ -6,8 +6,8 @@ public interface IUserRepository : IDbRepository<User>
 {
     Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 
-    Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
-    Task<User?> GetByPhoneAsync(string phone, CancellationToken ct = default);
+    /// <summary>Tracked lookup by email or phone, whichever matches the identifier.</summary>
+    Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default);
 
     Task<bool> EmailExistsAsync(
         string email,
@@ -32,20 +32,16 @@ public interface IUserRepository : IDbRepository<User>
 
 public interface IEventRepository : IDbRepository<Event>
 {
-    Task<Event?> GetWithThumbnailAsync(Guid id, CancellationToken ct = default);
-
     Task<Event?> GetWithActivitiesAndAssignmentsAsync(Guid id, CancellationToken ct = default);
 
     Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
-    Task<Event?> GetWithCategoriesAsync(Guid id, CancellationToken ct = default);
-
-    Task SetFeaturedAsync(Guid id, CancellationToken ct = default);
+    /// <summary>Marks the event as the only featured one. Returns false when the id doesn't exist.</summary>
+    Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IActivityRepository : IDbRepository<Activity>
 {
-    Task<Activity?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
     Task<Activity?> GetWithAssignmentsAndUsersAsync(Guid id, CancellationToken ct = default);
 
     Task<Activity?> GetForEditAsync(Guid id, CancellationToken ct = default);
@@ -74,8 +70,6 @@ public interface IActivityRepository : IDbRepository<Activity>
 
     Task<IReadOnlyList<ActivityUserRoleAssignment>> GetUserAssignmentsAsync(
         Guid userId,
-        DateTimeOffset? startDate,
-        DateTimeOffset? endDate,
         CancellationToken ct = default
     );
 
@@ -92,7 +86,8 @@ public interface IResourceRepository : IDbRepository<Resource>;
 
 public interface IAnnouncementRepository : IDbRepository<Announcement>
 {
-    Task SetFeaturedAsync(Guid id, CancellationToken ct = default);
+    /// <summary>Marks the announcement as the only featured one. Returns false when the id doesn't exist.</summary>
+    Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IPartnerRepository : IDbRepository<Partner>;

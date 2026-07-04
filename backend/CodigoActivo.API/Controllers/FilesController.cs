@@ -2,7 +2,6 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
-using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,15 +37,7 @@ public class FilesController(IFileService files) : ApiControllerBase
     [RequestSizeLimit(MaxUploadBytes)]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
     {
-        if (file is null) return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
-
-        if (file.Length == 0) return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
-
-        var upload = new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
-        var result = await files.CreateAsync(upload, UserId, ct);
-        return result.IsFailure
-            ? (ActionResult<FileResponse>)ToProblem(result.Error!)
-            : (ActionResult<FileResponse>)Created($"/api/files/{result.Value.Id}", result.Value);
+        return ToCreated(await files.CreateAsync(ToUploadRequest(file), UserId, ct), f => $"/api/files/{f.Id}");
     }
 
     [HttpPut("{fileId:guid}")]
@@ -59,12 +50,7 @@ public class FilesController(IFileService files) : ApiControllerBase
         CancellationToken ct
     )
     {
-        if (file is null) return ToProblem(Error.BadRequest(ErrorCode.FileUploadMissing));
-
-        if (file.Length == 0) return ToProblem(Error.BadRequest(ErrorCode.FileUploadEmpty));
-
-        var upload = new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
-        return ToOk(await files.UpdateAsync(fileId, upload, ct));
+        return ToOk(await files.UpdateAsync(fileId, ToUploadRequest(file), ct));
     }
 
     [HttpDelete("{fileId:guid}")]
@@ -72,5 +58,10 @@ public class FilesController(IFileService files) : ApiControllerBase
     public async Task<IActionResult> Delete(Guid fileId, CancellationToken ct)
     {
         return ToNoContent(await files.DeleteAsync(fileId, ct));
+    }
+
+    private static FileUploadRequest? ToUploadRequest(IFormFile? file)
+    {
+        return file is null ? null : new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
     }
 }

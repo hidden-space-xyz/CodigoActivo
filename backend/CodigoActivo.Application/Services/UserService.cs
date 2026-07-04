@@ -17,6 +17,7 @@ public class UserService(
     IUserStatusTypeRepository userStatusTypes,
     IPasswordHasher hasher,
     IQueryExecutor executor,
+    IClock clock,
     IUnitOfWork uow
 ) : IUserService
 {
@@ -99,9 +100,8 @@ public class UserService(
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
         user.BirthDate = request.BirthDate;
-        user.UpdatedAt = DateTimeOffset.UtcNow;
+        user.UpdatedAt = clock.UtcNow;
 
-        users.Update(user);
         await uow.SaveChangesAsync(ct);
 
         var updated = await users.GetByIdWithDetailsAsync(id, ct);
@@ -110,12 +110,11 @@ public class UserService(
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await users.ExistsAsync(u => u.Id == id, ct)) return Error.NotFound(ErrorCode.UserNotFound);
-
         if (await users.HasTypeAssignmentAsync(id, SeedIds.UserTypes.Admin, ct))
             return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
 
-        await users.RemoveAsync(u => u.Id == id, ct);
+        if (await users.RemoveAsync(u => u.Id == id, ct) == 0) return Error.NotFound(ErrorCode.UserNotFound);
+
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -145,7 +144,7 @@ public class UserService(
                 {
                     UserId = id,
                     UserTypeId = userTypeId,
-                    AssignedAt = DateTimeOffset.UtcNow,
+                    AssignedAt = clock.UtcNow,
                 },
                 ct
             );
@@ -174,7 +173,7 @@ public class UserService(
 
         if (role.Hidden || !role.IsAllowedForMinors) return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
 
-        var now = DateTimeOffset.UtcNow;
+        var now = clock.UtcNow;
         var child = new User
         {
             FirstName = request.FirstName.Trim(),
@@ -215,8 +214,7 @@ public class UserService(
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
 
         user.PasswordHash = hasher.Hash(request.NewPassword);
-        user.UpdatedAt = DateTimeOffset.UtcNow;
-        users.Update(user);
+        user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }

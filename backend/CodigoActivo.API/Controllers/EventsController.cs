@@ -53,10 +53,7 @@ public class EventsController(IEventService events) : ApiControllerBase
         CancellationToken ct
     )
     {
-        var result = await events.CreateAsync(request, UserId, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created($"/api/events/{result.Value.Id}", result.Value);
+        return ToCreated(await events.CreateAsync(request, UserId, ct), e => $"/api/events/{e.Id}");
     }
 
     [HttpPut("{eventId:guid}")]

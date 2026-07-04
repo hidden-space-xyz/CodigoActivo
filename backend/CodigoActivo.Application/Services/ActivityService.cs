@@ -1,4 +1,5 @@
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -18,6 +19,7 @@ public class ActivityService(
     IActivityModalityTypeRepository modalityTypes,
     IUserRepository users,
     IQueryExecutor executor,
+    IClock clock,
     IUnitOfWork uow
 ) : IActivityService
 {
@@ -124,7 +126,11 @@ public class ActivityService(
         );
         if (schedule.IsFailure) return schedule.Error!;
 
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.ActivityThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
@@ -143,7 +149,7 @@ public class ActivityService(
             ActivityEndsAt = schedule.Value.EndsAt,
             EventId = eventId,
             ThumbnailId = request.ThumbnailId,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = clock.UtcNow,
             CreatedBy = userId,
         };
         ApplyAllowedRoles(activity, request.AllowedRoleTypes);
@@ -151,8 +157,7 @@ public class ActivityService(
         await activities.AddAsync(activity, ct);
         await uow.SaveChangesAsync(ct);
 
-        var created = await activities.GetByIdWithDetailsAsync(activity.Id, ct);
-        return created!.ToResponse();
+        return await GetByIdAsync(activity.Id, ct);
     }
 
     public async Task<Result<ActivityResponse>> UpdateAsync(
@@ -175,7 +180,11 @@ public class ActivityService(
         );
         if (schedule.IsFailure) return schedule.Error!;
 
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.ActivityThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
@@ -191,7 +200,7 @@ public class ActivityService(
         activity.ActivityStartsAt = schedule.Value.StartsAt;
         activity.ActivityEndsAt = schedule.Value.EndsAt;
         activity.ThumbnailId = request.ThumbnailId;
-        activity.UpdatedAt = DateTimeOffset.UtcNow;
+        activity.UpdatedAt = clock.UtcNow;
         activity.UpdatedBy = userId;
 
         activity.AllowedRoleTypes.Clear();
@@ -199,16 +208,14 @@ public class ActivityService(
 
         await uow.SaveChangesAsync(ct);
 
-        var updated = await activities.GetByIdWithDetailsAsync(activityId, ct);
-        return updated!.ToResponse();
+        return await GetByIdAsync(activityId, ct);
     }
 
     public async Task<Result> DeleteAsync(Guid activityId, CancellationToken ct = default)
     {
-        if (!await activities.ExistsAsync(a => a.Id == activityId, ct))
+        if (await activities.RemoveAsync(a => a.Id == activityId, ct) == 0)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
-        await activities.RemoveAsync(a => a.Id == activityId, ct);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -221,14 +228,8 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
-        if (activity is null) return Error.NotFound(ErrorCode.ActivityNotFound);
-
-        var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
-
-        if (!isAdmin && !IsSignupOpen(ev, DateTimeOffset.UtcNow))
-            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
+        var signup = await EnsureSignupOpenAsync(activityId, isAdmin, ct);
+        if (signup.IsFailure) return signup.Error!;
 
         if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
@@ -246,15 +247,13 @@ public class ActivityService(
         await activities.AddAssignmentAsync(assignment, ct);
         await uow.SaveChangesAsync(ct);
 
+        var requestedStatus = await GetRequestedStatusAsync(ct);
         return new AssignmentResponse(
             userId,
             activityId,
             request.ActivityRoleTypeId,
             null,
-            new AssignmentStatusResponse(
-                SeedIds.AssignmentStatusTypes.Requested,
-                nameof(SeedIds.AssignmentStatusTypes.Requested)
-            )
+            requestedStatus
         );
     }
 
@@ -269,29 +268,54 @@ public class ActivityService(
         if (request.Assignments is null || request.Assignments.Count == 0)
             return Error.BadRequest(ErrorCode.ActivityHouseholdAssignmentsRequired);
 
-        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
-        if (activity is null) return Error.NotFound(ErrorCode.ActivityNotFound);
+        var signup = await EnsureSignupOpenAsync(activityId, isAdmin, ct);
+        if (signup.IsFailure) return signup.Error!;
 
-        var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+        var items = request.Assignments.DistinctBy(a => a.UserId).ToList();
 
-        if (!isAdmin && !IsSignupOpen(ev, DateTimeOffset.UtcNow))
-            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
-
-        var created = new List<AssignmentResponse>();
-        foreach (var item in request.Assignments.DistinctBy(a => a.UserId))
+        var memberIds = items
+            .Select(item => item.UserId)
+            .Where(id => id != actingUserId)
+            .ToList();
+        if (memberIds.Count > 0)
         {
-            if (item.UserId != actingUserId)
-            {
-                var target = await users.FindAsync(u => u.Id == item.UserId, ct);
-                if (target is null || target.ParentId != actingUserId)
-                    return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
-            }
+            var householdIds = await executor.ToListAsync(
+                users
+                    .Query()
+                    .Where(u => memberIds.Contains(u.Id) && u.ParentId == actingUserId)
+                    .Select(u => u.Id),
+                ct
+            );
+            if (memberIds.Except(householdIds).Any())
+                return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
+        }
 
-            if (!await activities.AllowedRoleExistsAsync(activityId, item.ActivityRoleTypeId, ct))
-                return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
+        var allowedRoleIds = await executor.ToListAsync(
+            activities
+                .Query()
+                .Where(a => a.Id == activityId)
+                .SelectMany(a => a.AllowedRoleTypes.Select(r => r.ActivityRoleTypeId)),
+            ct
+        );
+        if (items.Exists(item => !allowedRoleIds.Contains(item.ActivityRoleTypeId)))
+            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
 
-            if (await activities.GetAssignmentAsync(item.UserId, activityId, ct) is not null) continue;
+        var userIds = items.Select(item => item.UserId).ToList();
+        var alreadyAssigned = (
+            await executor.ToListAsync(
+                activities
+                    .QueryAssignments()
+                    .Where(x => x.ActivityId == activityId && userIds.Contains(x.UserId))
+                    .Select(x => x.UserId),
+                ct
+            )
+        ).ToHashSet();
+
+        var requestedStatus = await GetRequestedStatusAsync(ct);
+        var created = new List<AssignmentResponse>();
+        foreach (var item in items)
+        {
+            if (alreadyAssigned.Contains(item.UserId)) continue;
 
             await activities.AddAssignmentAsync(
                 new ActivityUserRoleAssignment
@@ -309,10 +333,7 @@ public class ActivityService(
                     activityId,
                     item.ActivityRoleTypeId,
                     null,
-                    new AssignmentStatusResponse(
-                        SeedIds.AssignmentStatusTypes.Requested,
-                        nameof(SeedIds.AssignmentStatusTypes.Requested)
-                    )
+                    requestedStatus
                 )
             );
         }
@@ -333,13 +354,8 @@ public class ActivityService(
 
         if (!isAdmin)
         {
-            var activity = await activities.FindAsync(a => a.Id == activityId, ct);
-            if (activity is null) return Error.NotFound(ErrorCode.ActivityNotFound);
-
-            var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
-            if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
-
-            if (!IsSignupOpen(ev, DateTimeOffset.UtcNow)) return Error.BadRequest(ErrorCode.ActivitySignupClosed);
+            var signup = await EnsureSignupOpenAsync(activityId, isAdmin, ct);
+            if (signup.IsFailure) return signup.Error!;
         }
 
         activities.RemoveAssignment(assignment);
@@ -409,13 +425,10 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        if (!await activities.ExistsAsync(a => a.Id == activityId, ct))
-            return Error.NotFound(ErrorCode.ActivityNotFound);
-
         var target = await activities.FindAsync(a => a.Id == activityId, ct);
-        if (target is null) return new TimeOverlapResponse(false, []);
+        if (target is null) return Error.NotFound(ErrorCode.ActivityNotFound);
 
-        var assignments = await activities.GetUserAssignmentsAsync(userId, null, null, ct);
+        var assignments = await activities.GetUserAssignmentsAsync(userId, ct);
         var overlaps = assignments
             .Where(x => x.ActivityId != activityId && Overlaps(target, x.Activity))
             .Select(x => new OverlappingActivityResponse(
@@ -486,17 +499,15 @@ public class ActivityService(
 
         roleType.Name = name;
         roleType.Description = request.Description?.Trim() ?? string.Empty;
-        roleTypes.Update(roleType);
         await uow.SaveChangesAsync(ct);
         return roleType.ToResponse();
     }
 
     public async Task<Result> DeleteActivityRoleTypeAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await roleTypes.ExistsAsync(x => x.Id == id, ct))
+        if (await roleTypes.RemoveAsync(x => x.Id == id, ct) == 0)
             return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
 
-        await roleTypes.RemoveAsync(x => x.Id == id, ct);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -508,11 +519,11 @@ public class ActivityService(
     {
         if (roles is null) return Result.Success();
 
-        foreach (var roleId in roles.Select(r => r.ActivityRoleTypeId).Distinct())
-        {
-            if (!await roleTypes.ExistsAsync(r => r.Id == roleId, ct))
-                return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
-        }
+        var distinct = roles.Select(r => r.ActivityRoleTypeId).Distinct().ToList();
+        if (distinct.Count == 0) return Result.Success();
+
+        var existing = await roleTypes.CountAsync(r => distinct.Contains(r.Id), ct);
+        if (existing != distinct.Count) return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
 
         return Result.Success();
     }
@@ -539,9 +550,38 @@ public class ActivityService(
         return a.ActivityStartsAt < b.ActivityEndsAt && b.ActivityStartsAt < a.ActivityEndsAt;
     }
 
-    private static bool IsSignupOpen(Event ev, DateTimeOffset now)
+    private async Task<Result> EnsureSignupOpenAsync(
+        Guid activityId,
+        bool isAdmin,
+        CancellationToken ct
+    )
     {
-        return now >= ev.SignupStartsAt && now <= ev.SignupEndsAt;
+        var window = await executor.FirstOrDefaultAsync(
+            activities
+                .Query()
+                .Where(a => a.Id == activityId)
+                .Select(a => new SignupWindow(a.Event.SignupStartsAt, a.Event.SignupEndsAt)),
+            ct
+        );
+        if (window is null) return Error.NotFound(ErrorCode.ActivityNotFound);
+
+        var now = clock.UtcNow;
+        if (!isAdmin && (now < window.StartsAt || now > window.EndsAt))
+            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
+
+        return Result.Success();
+    }
+
+    private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
+    {
+        var status = await statuses.FindAsync(
+            s => s.Id == SeedIds.AssignmentStatusTypes.Requested,
+            ct
+        );
+        return new AssignmentStatusResponse(
+            SeedIds.AssignmentStatusTypes.Requested,
+            status?.Name ?? string.Empty
+        );
     }
 
     private static Result<ActivitySchedule> ValidateActivitySchedule(
@@ -563,13 +603,7 @@ public class ActivityService(
         return new ActivitySchedule(start, end);
     }
 
-    private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
-    {
-        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-            return Error.BadRequest(ErrorCode.ActivityThumbnailNotFound);
-
-        return Result.Success();
-    }
-
     private readonly record struct ActivitySchedule(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
+    private sealed record SignupWindow(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
 }

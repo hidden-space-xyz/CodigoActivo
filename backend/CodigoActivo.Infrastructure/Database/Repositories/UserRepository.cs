@@ -12,27 +12,13 @@ public class UserRepository(CodigoActivoDbContext context)
 {
     public async Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
     {
-        return await Set.AsNoTracking()
-            .Include(u => u.UserStatusType)
-            .Include(u => u.TypeAssignments)
-            .ThenInclude(ta => ta.UserType)
-            .FirstOrDefaultAsync(u => u.Id == id, ct);
+        return await QueryWithDetails().FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
-    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+    public async Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default)
     {
-        return await Set.Include(u => u.UserStatusType)
-            .Include(u => u.TypeAssignments)
-            .ThenInclude(ta => ta.UserType)
-            .FirstOrDefaultAsync(u => u.Email == email, ct);
-    }
-
-    public async Task<User?> GetByPhoneAsync(string phone, CancellationToken ct = default)
-    {
-        return await Set.Include(u => u.UserStatusType)
-            .Include(u => u.TypeAssignments)
-            .ThenInclude(ta => ta.UserType)
-            .FirstOrDefaultAsync(u => u.Phone == phone, ct);
+        return await QueryWithDetails(tracked: true)
+            .FirstOrDefaultAsync(u => u.Email == identifier || u.Phone == identifier, ct);
     }
 
     public Task<bool> EmailExistsAsync(
@@ -84,12 +70,18 @@ public class UserRepository(CodigoActivoDbContext context)
         CancellationToken ct = default
     )
     {
-        return await Set.AsNoTracking()
-            .Include(u => u.UserStatusType)
-            .Include(u => u.TypeAssignments)
-            .ThenInclude(ta => ta.UserType)
+        return await QueryWithDetails()
             .Where(u => u.ParentId == parentId)
             .OrderBy(u => u.FirstName)
             .ToListAsync(ct);
+    }
+
+    private IQueryable<User> QueryWithDetails(bool tracked = false)
+    {
+        var query = tracked ? Set : Set.AsNoTracking();
+        return query
+            .Include(u => u.UserStatusType)
+            .Include(u => u.TypeAssignments)
+            .ThenInclude(ta => ta.UserType);
     }
 }

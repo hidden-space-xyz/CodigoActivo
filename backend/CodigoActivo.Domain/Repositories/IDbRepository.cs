@@ -27,8 +27,8 @@ public interface IDbRepository<TEntity>
     );
 
     Task AddAsync(TEntity entity, CancellationToken ct = default);
-    Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken ct = default);
-    void Update(TEntity entity);
-    void UpdateRange(IEnumerable<TEntity> entities);
-    Task RemoveAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+    void Remove(TEntity entity);
+
+    /// <summary>Stages every entity matching the predicate for removal and returns how many matched.</summary>
+    Task<int> RemoveAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
 }

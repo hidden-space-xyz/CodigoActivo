@@ -37,10 +37,10 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
         CancellationToken ct
     )
     {
-        var result = await resources.CreateAsync(request, UserId, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created($"/api/resources/{result.Value.Id}", result.Value);
+        return ToCreated(
+            await resources.CreateAsync(request, UserId, ct),
+            r => $"/api/resources/{r.Id}"
+        );
     }
 
     [HttpPut("{resourceId:guid}")]

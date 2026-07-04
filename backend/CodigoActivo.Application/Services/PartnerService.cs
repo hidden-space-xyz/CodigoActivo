@@ -13,6 +13,7 @@ public class PartnerService(
     IPartnerRepository partners,
     IFileRepository files,
     IQueryExecutor executor,
+    IClock clock,
     IUnitOfWork uow
 ) : IPartnerService
 {
@@ -68,7 +69,11 @@ public class PartnerService(
         CancellationToken ct = default
     )
     {
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.PartnerThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var partner = new Partner
@@ -78,7 +83,7 @@ public class PartnerService(
             Tier = request.Tier,
             Web = request.Website.NormalizeOrNull(),
             ThumbnailId = request.ThumbnailId,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = clock.UtcNow,
             CreatedBy = userId,
         };
         await partners.AddAsync(partner, ct);
@@ -96,7 +101,11 @@ public class PartnerService(
         var partner = await partners.FindAsync(p => p.Id == id, ct);
         if (partner is null) return Error.NotFound(ErrorCode.PartnerNotFound);
 
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.PartnerThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         partner.Name = request.Name.Trim();
@@ -104,28 +113,19 @@ public class PartnerService(
         partner.Tier = request.Tier;
         partner.Web = request.Website.NormalizeOrNull();
         partner.ThumbnailId = request.ThumbnailId;
-        partner.UpdatedAt = DateTimeOffset.UtcNow;
+        partner.UpdatedAt = clock.UtcNow;
         partner.UpdatedBy = userId;
 
-        partners.Update(partner);
         await uow.SaveChangesAsync(ct);
         return partner.ToResponse();
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await partners.ExistsAsync(p => p.Id == id, ct)) return Error.NotFound(ErrorCode.PartnerNotFound);
+        if (await partners.RemoveAsync(p => p.Id == id, ct) == 0)
+            return Error.NotFound(ErrorCode.PartnerNotFound);
 
-        await partners.RemoveAsync(p => p.Id == id, ct);
         await uow.SaveChangesAsync(ct);
-        return Result.Success();
-    }
-
-    private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
-    {
-        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-            return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
-
         return Result.Success();
     }
 }

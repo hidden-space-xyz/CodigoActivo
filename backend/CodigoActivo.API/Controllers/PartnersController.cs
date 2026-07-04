@@ -37,10 +37,10 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
         CancellationToken ct
     )
     {
-        var result = await partners.CreateAsync(request, UserId, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created($"/api/partners/{result.Value.Id}", result.Value);
+        return ToCreated(
+            await partners.CreateAsync(request, UserId, ct),
+            p => $"/api/partners/{p.Id}"
+        );
     }
 
     [HttpPut("{partnerId:guid}")]

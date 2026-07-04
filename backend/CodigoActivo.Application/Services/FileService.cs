@@ -13,6 +13,7 @@ public class FileService(
     IFileRepository files,
     IUnitOfWork uow,
     ILocalFileSystemRepository storage,
+    IClock clock,
     FileStorageOptions options
 ) : IFileService
 {
@@ -52,7 +53,7 @@ public class FileService(
     }
 
     public async Task<Result<FileResponse>> CreateAsync(
-        FileUploadRequest upload,
+        FileUploadRequest? upload,
         Guid userId,
         CancellationToken ct = default
     )
@@ -63,9 +64,9 @@ public class FileService(
         var format = detection.Value;
         var file = new FileEntity
         {
-            Name = SanitizeName(upload.FileName),
+            Name = SanitizeName(upload!.FileName),
             Extension = format.Extension,
-            UploadedAt = DateTimeOffset.UtcNow,
+            UploadedAt = clock.UtcNow,
             UploadedBy = userId,
         };
 
@@ -88,7 +89,7 @@ public class FileService(
 
     public async Task<Result<FileResponse>> UpdateAsync(
         Guid id,
-        FileUploadRequest upload,
+        FileUploadRequest? upload,
         CancellationToken ct = default
     )
     {
@@ -107,11 +108,10 @@ public class FileService(
             StringComparison.OrdinalIgnoreCase
         );
 
-        await storage.SaveAsync(newStoredName, upload.Content, ct);
+        await storage.SaveAsync(newStoredName, upload!.Content, ct);
 
         file.Name = SanitizeName(upload.FileName);
         file.Extension = format.Extension;
-        files.Update(file);
 
         try
         {
@@ -135,7 +135,7 @@ public class FileService(
 
         var storedName = StoredName(file.Id, file.Extension);
 
-        await files.RemoveAsync(f => f.Id == id, ct);
+        files.Remove(file);
         await uow.SaveChangesAsync(ct);
 
         storage.Delete(storedName);
@@ -143,7 +143,7 @@ public class FileService(
     }
 
     private async Task<Result<ImageFormat>> ValidateAndDetectAsync(
-        FileUploadRequest upload,
+        FileUploadRequest? upload,
         CancellationToken ct
     )
     {

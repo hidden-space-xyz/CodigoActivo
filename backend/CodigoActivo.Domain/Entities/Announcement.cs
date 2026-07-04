@@ -2,7 +2,7 @@ using CodigoActivo.Domain.Entities.Abstractions;
 
 namespace CodigoActivo.Domain.Entities;
 
-public class Announcement : AuditableEntity
+public class Announcement : AuditableEntity, IFeaturable
 {
     public string Title { get; set; } = null!;
     public string Subtitle { get; set; } = null!;

@@ -47,10 +47,10 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
         CancellationToken ct
     )
     {
-        var result = await announcements.CreateAsync(request, UserId, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created($"/api/announcements/{result.Value.Id}", result.Value);
+        return ToCreated(
+            await announcements.CreateAsync(request, UserId, ct),
+            a => $"/api/announcements/{a.Id}"
+        );
     }
 
     [HttpPut("{announcementId:guid}")]

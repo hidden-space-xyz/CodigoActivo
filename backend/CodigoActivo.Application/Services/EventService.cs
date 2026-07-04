@@ -1,4 +1,5 @@
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -99,7 +100,11 @@ public class EventService(
         );
         if (schedule.IsFailure) return schedule.Error!;
 
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.EventThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
@@ -115,7 +120,7 @@ public class EventService(
             SignupStartsAt = schedule.Value.SignupStartsAt,
             SignupEndsAt = schedule.Value.SignupEndsAt,
             ThumbnailId = request.ThumbnailId,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = clock.UtcNow,
             CreatedBy = userId,
         };
         ApplyCategories(ev, request.CategoryTypeIds!);
@@ -123,8 +128,7 @@ public class EventService(
         await events.AddAsync(ev, ct);
         await uow.SaveChangesAsync(ct);
 
-        var created = await events.GetWithCategoriesAsync(ev.Id, ct);
-        return created!.ToResponse();
+        return await GetByIdAsync(ev.Id, ct);
     }
 
     public async Task<Result<EventResponse>> UpdateAsync(
@@ -155,7 +159,11 @@ public class EventService(
         if (await activities.AnyOutsideRangeAsync(id, lowerInclusive, upperExclusive, ct))
             return Error.BadRequest(ErrorCode.EventActivitiesOutsideNewRange);
 
-        var thumbnail = await EnsureThumbnailAsync(request.ThumbnailId, ct);
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ThumbnailId,
+            ErrorCode.EventThumbnailNotFound,
+            ct
+        );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
         ev.Title = request.Title.Trim();
@@ -166,7 +174,7 @@ public class EventService(
         ev.SignupStartsAt = schedule.Value.SignupStartsAt;
         ev.SignupEndsAt = schedule.Value.SignupEndsAt;
         ev.ThumbnailId = request.ThumbnailId;
-        ev.UpdatedAt = DateTimeOffset.UtcNow;
+        ev.UpdatedAt = clock.UtcNow;
         ev.UpdatedBy = userId;
 
         ev.Categories.Clear();
@@ -174,15 +182,14 @@ public class EventService(
 
         await uow.SaveChangesAsync(ct);
 
-        var updated = await events.GetWithCategoriesAsync(id, ct);
-        return updated!.ToResponse();
+        return await GetByIdAsync(id, ct);
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await events.ExistsAsync(e => e.Id == id, ct)) return Error.NotFound(ErrorCode.EventNotFound);
+        if (await events.RemoveAsync(e => e.Id == id, ct) == 0)
+            return Error.NotFound(ErrorCode.EventNotFound);
 
-        await events.RemoveAsync(e => e.Id == id, ct);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -192,12 +199,9 @@ public class EventService(
         CancellationToken ct = default
     )
     {
-        if (!await events.ExistsAsync(e => e.Id == id, ct)) return Error.NotFound(ErrorCode.EventNotFound);
+        if (!await events.SetFeaturedAsync(id, ct)) return Error.NotFound(ErrorCode.EventNotFound);
 
-        await events.SetFeaturedAsync(id, ct);
-
-        var ev = await events.GetWithThumbnailAsync(id, ct);
-        return ev!.ToResponse();
+        return await GetByIdAsync(id, ct);
     }
 
     public async Task<IReadOnlyList<EventCategoryTypeResponse>> ListCategoryTypesAsync(
@@ -240,26 +244,16 @@ public class EventService(
 
         categoryType.Name = name;
         categoryType.Color = request.Color.Trim();
-        categoryTypes.Update(categoryType);
         await uow.SaveChangesAsync(ct);
         return categoryType.ToResponse();
     }
 
     public async Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default)
     {
-        if (!await categoryTypes.ExistsAsync(x => x.Id == id, ct))
+        if (await categoryTypes.RemoveAsync(x => x.Id == id, ct) == 0)
             return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
 
-        await categoryTypes.RemoveAsync(x => x.Id == id, ct);
         await uow.SaveChangesAsync(ct);
-        return Result.Success();
-    }
-
-    private async Task<Result> EnsureThumbnailAsync(Guid thumbnailId, CancellationToken ct)
-    {
-        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
-            return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
-
         return Result.Success();
     }
 

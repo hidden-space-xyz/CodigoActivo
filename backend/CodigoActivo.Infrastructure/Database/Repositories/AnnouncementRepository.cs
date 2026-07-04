@@ -10,11 +10,8 @@ public class AnnouncementRepository(CodigoActivoDbContext context)
     : Repository<Announcement>(context),
         IAnnouncementRepository
 {
-    public async Task SetFeaturedAsync(Guid id, CancellationToken ct = default)
+    public Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default)
     {
-        await Set.Where(a => a.Featured && a.Id != id)
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Featured, false), ct);
-        await Set.Where(a => a.Id == id)
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Featured, true), ct);
+        return SetExclusiveFeaturedAsync(Set, id, ct);
     }
 }

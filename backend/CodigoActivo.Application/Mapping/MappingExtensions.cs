@@ -37,67 +37,6 @@ public static class MappingExtensions
         );
     }
 
-    public static EventResponse ToResponse(this Event @event)
-    {
-        var categories =
-            @event
-                .Categories?.Select(category => new EventCategoryResponse(
-                    category.EventCategoryTypeId,
-                    category.EventCategoryType?.Name ?? string.Empty,
-                    category.EventCategoryType?.Color ?? string.Empty
-                ))
-                .ToList()
-            ?? [];
-
-        return new EventResponse(
-            @event.Id,
-            @event.Title,
-            @event.Subtitle,
-            @event.Description,
-            @event.EventStartsAt,
-            @event.EventEndsAt,
-            @event.SignupStartsAt,
-            @event.SignupEndsAt,
-            @event.CreatedAt,
-            @event.UpdatedAt,
-            @event.CreatedBy,
-            @event.UpdatedBy,
-            @event.ThumbnailId,
-            @event.Featured,
-            categories
-        );
-    }
-
-    public static ActivityResponse ToResponse(this Activity activity)
-    {
-        var roles =
-            activity
-                .AllowedRoleTypes?.Select(role => new ActivityAllowedRoleResponse(
-                    role.ActivityRoleTypeId,
-                    role.ActivityRoleType?.Name
-                ))
-                .ToList()
-            ?? [];
-
-        return new ActivityResponse(
-            activity.Id,
-            activity.Title,
-            activity.Description,
-            activity.Location,
-            activity.ActivityStartsAt,
-            activity.ActivityEndsAt,
-            activity.EventId,
-            activity.ActivityModalityTypeId,
-            activity.ActivityModalityType?.Name ?? string.Empty,
-            activity.ThumbnailId,
-            activity.CreatedAt,
-            activity.UpdatedAt,
-            activity.CreatedBy,
-            activity.UpdatedBy,
-            roles
-        );
-    }
-
     public static ResourceResponse ToResponse(this Resource resource)
     {
         return new ResourceResponse(

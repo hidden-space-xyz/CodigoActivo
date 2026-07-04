@@ -36,11 +36,11 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
         if (targetUserId == currentUserId) return;
 
         var users = services.GetRequiredService<IUserRepository>();
-        var target = await users.FindAsync(
-            u => u.Id == targetUserId,
+        var isOwnChild = await users.ExistsAsync(
+            u => u.Id == targetUserId && u.ParentId == currentUserId,
             context.HttpContext.RequestAborted
         );
-        if (target?.ParentId == currentUserId) return;
+        if (isOwnChild) return;
 
         context.Result = new ForbidResult();
     }

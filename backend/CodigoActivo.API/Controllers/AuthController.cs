@@ -35,10 +35,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
         CancellationToken ct
     )
     {
-        var result = await auth.RegisterAsync(request, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created($"/api/users/{result.Value.Adult.Id}", result.Value);
+        return ToCreated(await auth.RegisterAsync(request, ct), r => $"/api/users/{r.Adult.Id}");
     }
 
     [HttpPatch("{userId:guid}/verify")]

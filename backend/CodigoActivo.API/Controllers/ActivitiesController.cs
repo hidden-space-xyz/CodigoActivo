@@ -85,10 +85,10 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         CancellationToken ct
     )
     {
-        var result = await activities.CreateAsync(eventId, request, UserId, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created($"/api/activities/{result.Value.Id}", result.Value);
+        return ToCreated(
+            await activities.CreateAsync(eventId, request, UserId, ct),
+            a => $"/api/activities/{a.Id}"
+        );
     }
 
     [HttpPut("{activityId:guid}")]
@@ -110,7 +110,6 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/assign")]
-    [Authorize]
     [AllowOnlySelf]
     public async Task<ActionResult<AssignmentResponse>> Assign(
         Guid activityId,
@@ -136,7 +135,6 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/unassign")]
-    [Authorize]
     [AllowOnlySelf]
     public async Task<IActionResult> Unassign(Guid activityId, Guid userId, CancellationToken ct)
     {
