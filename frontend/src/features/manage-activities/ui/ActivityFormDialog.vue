@@ -8,7 +8,7 @@ import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 
-import { ThumbnailField, uploadThumbnail } from '@/entities/file'
+import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type {
   ActivityResponse,
   ActivityRoleTypeResponse,
@@ -16,7 +16,7 @@ import type {
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
 import type { ActivityModalityTypeResponse } from '@/shared/api/generated/models'
-import { getErrorMessage } from '@/shared/lib'
+import { parseDateOnly } from '@/shared/lib'
 
 const props = defineProps<{
   visible: boolean
@@ -53,18 +53,14 @@ const form = reactive<ActivityForm>({
   roleIds: [],
 })
 const submitted = ref(false)
-const pickedFile = ref<File | null>(null)
-const uploading = ref(false)
-const uploadError = ref('')
-
-const missingThumbnail = computed(() => !pickedFile.value && !props.activity?.thumbnailId)
-
-function parseDateOnly(value?: string | null): Date | null {
-  if (!value) return null
-  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
-  if (!year || !month || !day) return null
-  return new Date(year, month - 1, day)
-}
+const {
+  pickedFile,
+  uploading,
+  uploadError,
+  missingThumbnail,
+  reset: resetThumbnail,
+  resolveThumbnailId,
+} = useThumbnailUpload(() => props.activity?.thumbnailId)
 
 function utcDay(date: Date): string {
   return date.toISOString().slice(0, 10)
@@ -106,8 +102,7 @@ const modalityMissing = computed(() => !form.modalityId)
 
 function populate(): void {
   submitted.value = false
-  pickedFile.value = null
-  uploadError.value = ''
+  resetThumbnail()
   form.title = props.activity?.title ?? ''
   form.description = props.activity?.description ?? ''
   form.location = props.activity?.location ?? ''
@@ -136,7 +131,6 @@ function close(): void {
 
 async function save(): Promise<void> {
   submitted.value = true
-  uploadError.value = ''
   if (
     !form.title.trim() ||
     !form.description.trim() ||
@@ -149,7 +143,9 @@ async function save(): Promise<void> {
   }
   const { activityStartsAt, activityEndsAt } = form
   if (!activityStartsAt || !activityEndsAt) return
-  const body: CreateActivityRequest = {
+  const thumbnailId = await resolveThumbnailId()
+  if (!thumbnailId) return
+  emit('submit', {
     title: form.title.trim(),
     description: form.description.trim(),
     location: form.location.trim(),
@@ -157,20 +153,8 @@ async function save(): Promise<void> {
     activityStartsAt: activityStartsAt.toISOString(),
     activityEndsAt: activityEndsAt.toISOString(),
     allowedRoleTypes: form.roleIds.map((id) => ({ activityRoleTypeId: id })),
-  }
-  uploading.value = true
-  try {
-    if (pickedFile.value) {
-      body.thumbnailId = await uploadThumbnail(pickedFile.value, props.activity?.thumbnailId)
-    } else if (props.activity?.thumbnailId) {
-      body.thumbnailId = props.activity.thumbnailId
-    }
-    emit('submit', body)
-  } catch (error) {
-    uploadError.value = getErrorMessage(error, 'No se pudo subir la imagen.')
-  } finally {
-    uploading.value = false
-  }
+    thumbnailId,
+  } satisfies CreateActivityRequest)
 }
 </script>
 

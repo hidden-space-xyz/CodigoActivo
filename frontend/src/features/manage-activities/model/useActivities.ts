@@ -9,11 +9,18 @@ import {
 } from '@/shared/api/generated/endpoints/activities/activities'
 import type { CreateActivityRequest, UpdateActivityRequest } from '@/shared/api/generated/models'
 import { getActivityByIdRequest, listEventActivitiesRequest } from '@/entities/activity'
+import { deleteThumbnail } from '@/entities/file'
 
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const queryKey = computed(() => ['activities', 'event', toValue(eventId)] as const)
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKey.value })
+  // Creating/removing activities also changes the event summary report's counts.
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: queryKey.value })
+    void queryClient.invalidateQueries({
+      queryKey: ['reports', 'event-summary', toValue(eventId)],
+    })
+  }
 
   const list = useQuery({
     queryKey,
@@ -33,8 +40,12 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiActivitiesActivityId(id),
-    onSuccess: invalidate,
+    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) =>
+      deleteApiActivitiesActivityId(vars.id),
+    onSuccess: (_data, vars) => {
+      void deleteThumbnail(vars.thumbnailId)
+      invalidate()
+    },
   })
 
   function fetchOne(activityId: string) {

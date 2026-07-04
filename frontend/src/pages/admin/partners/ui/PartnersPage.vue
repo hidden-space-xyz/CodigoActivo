@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
 import { AdminPageHeader, AppButton as Button, ColumnSearch, ListThumbnail } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
-import { deleteThumbnail } from '@/entities/file'
 import { PartnerFormDialog, usePartners } from '@/features/manage-partners'
 import type {
   CreatePartnerRequest,
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
-import { formatDate, useCrudFeedback } from '@/shared/lib'
+import { formatDate, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { table, create, update, remove } = usePartners()
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
 
 const dialogVisible = ref(false)
 const selected = ref<PartnerResponse | null>(null)
@@ -56,22 +54,18 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
 }
 
 function confirmDelete(partner: PartnerResponse): void {
-  confirm.require({
+  requireDelete({
     header: 'Eliminar patrocinador',
     message: `¿Seguro que quieres eliminar a "${partner.name}"? Esta acción no se puede deshacer.`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!partner.id) return
-      remove.mutate(partner.id, {
-        onSuccess: () => {
-          feedback.success('Patrocinador eliminado.')
-          void deleteThumbnail(partner.thumbnailId)
+      remove.mutate(
+        { id: partner.id, thumbnailId: partner.thumbnailId },
+        {
+          onSuccess: () => feedback.success('Patrocinador eliminado.'),
+          onError: (error) => feedback.error(error),
         },
-        onError: (error) => feedback.error(error),
-      })
+      )
     },
   })
 }

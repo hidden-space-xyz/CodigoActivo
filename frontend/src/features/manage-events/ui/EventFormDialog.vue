@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useQueryClient } from '@tanstack/vue-query'
 import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
 import ColorPicker from 'primevue/colorpicker'
 import DatePicker from 'primevue/datepicker'
@@ -8,16 +7,15 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
 
-import { ThumbnailField, uploadThumbnail } from '@/entities/file'
-import { catalogQueryKeys, useEventCategoryTypesList } from '@/entities/catalog'
-import { postApiEventsCategoryType } from '@/shared/api/generated/endpoints/events/events'
+import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
+import { useCreateEventCategoryType, useEventCategoryTypesList } from '@/entities/catalog'
 import type {
   CreateEventRequest,
   EventCategoryTypeResponse,
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { EMPTY_DOC_JSON, getErrorMessage } from '@/shared/lib'
+import { EMPTY_DOC_JSON, getErrorMessage, parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{ visible: boolean; event: EventResponse | null; saving: boolean }>()
 
@@ -48,23 +46,25 @@ const form = reactive<EventForm>({
   signupEndsAt: null,
 })
 const submitted = ref(false)
-const pickedFile = ref<File | null>(null)
-const uploading = ref(false)
-const uploadError = ref('')
+const {
+  pickedFile,
+  uploading,
+  uploadError,
+  missingThumbnail,
+  reset: resetThumbnail,
+  resolveThumbnailId,
+} = useThumbnailUpload(() => props.event?.thumbnailId)
 
 const categoriesQuery = useEventCategoryTypesList()
-const queryClient = useQueryClient()
-const localCategories = ref<EventCategoryTypeResponse[]>([])
-const categoryOptions = computed<EventCategoryTypeResponse[]>(() => {
-  const fetched = categoriesQuery.data.value ?? []
-  const extra = localCategories.value.filter((cat) => !fetched.some((f) => f.id === cat.id))
-  return [...fetched, ...extra]
-})
+const categoryOptions = computed<EventCategoryTypeResponse[]>(
+  () => categoriesQuery.data.value ?? [],
+)
 const categoriesMissing = computed(() => form.categoryIds.length === 0)
 
+const createCategory = useCreateEventCategoryType()
 const catDialogVisible = ref(false)
 const catSubmitted = ref(false)
-const creatingCat = ref(false)
+const creatingCat = createCategory.isPending
 const catError = ref('')
 const newCat = reactive<{ name: string; color: string }>({ name: '', color: '6366F1' })
 const newCatHex = computed(() => `#${newCat.color.replace(/^#/, '')}`)
@@ -77,48 +77,27 @@ function openNewCategory(): void {
   catDialogVisible.value = true
 }
 
-async function createCategory(): Promise<void> {
+function submitNewCategory(): void {
   catSubmitted.value = true
   catError.value = ''
   if (!newCat.name.trim()) return
-  creatingCat.value = true
-  try {
-    const response = await postApiEventsCategoryType({
-      name: newCat.name.trim(),
-      color: newCatHex.value,
-    })
-    const created = response.data
-    if (created.id) {
-      localCategories.value.push(created)
-      if (!form.categoryIds.includes(created.id)) form.categoryIds.push(created.id)
-    }
-    void queryClient.invalidateQueries({ queryKey: catalogQueryKeys.eventCategoryTypes })
-    catDialogVisible.value = false
-  } catch (error) {
-    catError.value = getErrorMessage(error, 'No se pudo crear la categoría.')
-  } finally {
-    creatingCat.value = false
-  }
+  createCategory.mutate(
+    { name: newCat.name.trim(), color: newCatHex.value },
+    {
+      // The mutation refreshes the category list before settling, so the new id is selectable.
+      onSuccess: (created) => {
+        if (created.id && !form.categoryIds.includes(created.id)) form.categoryIds.push(created.id)
+        catDialogVisible.value = false
+      },
+      onError: (error) => {
+        catError.value = getErrorMessage(error, 'No se pudo crear la categoría.')
+      },
+    },
+  )
 }
-
-const missingThumbnail = computed(() => !pickedFile.value && !props.event?.thumbnailId)
 
 function parse(value?: string | null): Date | null {
   return value ? new Date(value) : null
-}
-
-function parseDateOnly(value?: string | null): Date | null {
-  if (!value) return null
-  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
-  if (!year || !month || !day) return null
-  return new Date(year, month - 1, day)
-}
-
-function toDateOnly(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 const eventStartMissing = computed(() => !form.eventStartsAt)
@@ -153,15 +132,13 @@ watch(
   (open) => {
     if (!open) return
     submitted.value = false
-    pickedFile.value = null
-    uploadError.value = ''
+    resetThumbnail()
     form.title = props.event?.title ?? ''
     form.subtitle = props.event?.subtitle ?? ''
     form.description = props.event?.description ?? ''
     form.categoryIds = (props.event?.categories ?? [])
       .map((cat) => cat.categoryTypeId)
       .filter((id): id is string => !!id)
-    localCategories.value = []
     form.eventStartsAt = parseDateOnly(props.event?.eventStartsAt)
     form.eventEndsAt = parseDateOnly(props.event?.eventEndsAt)
     form.signupStartsAt = parse(props.event?.signupStartsAt)
@@ -175,7 +152,6 @@ function close(): void {
 
 async function save(): Promise<void> {
   submitted.value = true
-  uploadError.value = ''
   if (
     !form.title.trim() ||
     !form.subtitle.trim() ||
@@ -187,7 +163,9 @@ async function save(): Promise<void> {
   }
   const { eventStartsAt, eventEndsAt, signupStartsAt, signupEndsAt } = form
   if (!eventStartsAt || !eventEndsAt || !signupStartsAt || !signupEndsAt) return
-  const body: CreateEventRequest = {
+  const thumbnailId = await resolveThumbnailId()
+  if (!thumbnailId) return
+  emit('submit', {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
     description: form.description.trim() ? form.description : EMPTY_DOC_JSON,
@@ -196,20 +174,8 @@ async function save(): Promise<void> {
     eventEndsAt: toDateOnly(eventEndsAt),
     signupStartsAt: signupStartsAt.toISOString(),
     signupEndsAt: signupEndsAt.toISOString(),
-  }
-  uploading.value = true
-  try {
-    if (pickedFile.value) {
-      body.thumbnailId = await uploadThumbnail(pickedFile.value, props.event?.thumbnailId)
-    } else if (props.event?.thumbnailId) {
-      body.thumbnailId = props.event.thumbnailId
-    }
-    emit('submit', body)
-  } catch (error) {
-    uploadError.value = getErrorMessage(error, 'No se pudo subir la imagen.')
-  } finally {
-    uploading.value = false
-  }
+    thumbnailId,
+  } satisfies CreateEventRequest)
 }
 </script>
 
@@ -363,7 +329,7 @@ async function save(): Promise<void> {
     header="Nueva categoría"
     :style="{ width: '380px' }"
   >
-    <form class="form" @submit.prevent="createCategory">
+    <form class="form" @submit.prevent="submitNewCategory">
       <div class="form__field">
         <label>Nombre</label>
         <InputText
@@ -391,7 +357,7 @@ async function save(): Promise<void> {
         :disabled="creatingCat"
         @click="catDialogVisible = false"
       />
-      <Button label="Crear" :loading="creatingCat" @click="createCategory" />
+      <Button label="Crear" :loading="creatingCat" @click="submitNewCategory" />
     </template>
   </Dialog>
 </template>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -14,9 +13,9 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
 
-import { deleteThumbnail, ThumbnailField, uploadThumbnail } from '@/entities/file'
+import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type { ContentController, ContentItem, ContentRequest } from '../model/use-content-entity'
-import { EMPTY_DOC_JSON, formatDateTime, getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { EMPTY_DOC_JSON, formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const props = defineProps<{
   title: string
@@ -27,7 +26,7 @@ const props = defineProps<{
 }>()
 
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
 
 const table = computed(() => props.controller.table)
 
@@ -35,9 +34,14 @@ const dialogVisible = ref(false)
 const editing = ref<ContentItem | null>(null)
 const loadingDetail = ref(false)
 const submitted = ref(false)
-const pickedFile = ref<File | null>(null)
-const uploading = ref(false)
-const uploadError = ref('')
+const {
+  pickedFile,
+  uploading,
+  uploadError,
+  missingThumbnail,
+  reset: resetThumbnail,
+  resolveThumbnailId,
+} = useThumbnailUpload(() => editing.value?.thumbnailId)
 const form = reactive<{ title: string; subtitle: string; description: string }>({
   title: '',
   subtitle: '',
@@ -48,13 +52,10 @@ const saving = computed(
   () => props.controller.create.isPending.value || props.controller.update.isPending.value,
 )
 
-const missingThumbnail = computed(() => !pickedFile.value && !editing.value?.thumbnailId)
-
 watch([dialogVisible, editing], ([open]) => {
   if (!open) return
   submitted.value = false
-  pickedFile.value = null
-  uploadError.value = ''
+  resetThumbnail()
   form.title = editing.value?.title ?? ''
   form.subtitle = editing.value?.subtitle ?? ''
   form.description = editing.value?.description ?? ''
@@ -80,26 +81,15 @@ async function openEdit(item: ContentItem): Promise<void> {
 
 async function save(): Promise<void> {
   submitted.value = true
-  uploadError.value = ''
   if (!form.title.trim() || !form.subtitle.trim() || missingThumbnail.value) return
+  const thumbnailId = await resolveThumbnailId()
+  if (!thumbnailId) return
   const body: ContentRequest = {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
     description: form.description.trim() ? form.description : EMPTY_DOC_JSON,
+    thumbnailId,
   }
-  uploading.value = true
-  try {
-    if (pickedFile.value) {
-      body.thumbnailId = await uploadThumbnail(pickedFile.value, editing.value?.thumbnailId)
-    } else if (editing.value?.thumbnailId) {
-      body.thumbnailId = editing.value.thumbnailId
-    }
-  } catch (error) {
-    uploadError.value = getErrorMessage(error, 'No se pudo subir la imagen.')
-    uploading.value = false
-    return
-  }
-  uploading.value = false
 
   if (editing.value?.id) {
     props.controller.update.mutate(
@@ -132,22 +122,18 @@ function onFeature(item: ContentItem): void {
 }
 
 function confirmDelete(item: ContentItem): void {
-  confirm.require({
+  requireDelete({
     header: `Eliminar ${props.entityLabel}`,
     message: `¿Seguro que quieres eliminar "${item.title}"? Esta acción no se puede deshacer.`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!item.id) return
-      props.controller.remove.mutate(item.id, {
-        onSuccess: () => {
-          feedback.success('Eliminado.')
-          void deleteThumbnail(item.thumbnailId)
+      props.controller.remove.mutate(
+        { id: item.id, thumbnailId: item.thumbnailId },
+        {
+          onSuccess: () => feedback.success('Eliminado.'),
+          onError: (error) => feedback.error(error),
         },
-        onError: (error) => feedback.error(error),
-      })
+      )
     },
   })
 }

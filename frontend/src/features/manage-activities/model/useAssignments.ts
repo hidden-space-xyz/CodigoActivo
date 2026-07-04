@@ -15,8 +15,14 @@ import { verifyOverlapsRequest } from '@/entities/activity'
 
 export function useAssignments(eventId: string) {
   const queryClient = useQueryClient()
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['reports', 'event-assignments', eventId] as const })
+  // Assignment changes feed both report queries; invalidating here keeps every consuming page
+  // fresh without per-page manual refetches.
+  const invalidate = (_data: unknown, vars: { activityId: string }) => {
+    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-summary', eventId] })
+    void queryClient.invalidateQueries({
+      queryKey: ['reports', 'activity-assignments', vars.activityId],
+    })
+  }
 
   const assign = useMutation({
     mutationFn: (vars: { activityId: string; userId: string; body: AssignRequest }) =>

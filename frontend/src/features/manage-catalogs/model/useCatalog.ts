@@ -6,32 +6,34 @@ export interface CatalogItem {
   description?: string | null
 }
 
-interface CatalogRequest {
+export interface CatalogRequest {
   name?: string | null
   description?: string | null
 }
 
-interface CatalogApi {
+interface CatalogApi<TItem, TBody> {
   queryKey: readonly unknown[]
-  fetchAll: (signal: AbortSignal) => Promise<CatalogItem[]>
-  create: (body: CatalogRequest) => Promise<unknown>
-  update: (id: string, body: CatalogRequest) => Promise<unknown>
+  fetchAll: () => Promise<TItem[]>
+  create: (body: TBody) => Promise<unknown>
+  update: (id: string, body: TBody) => Promise<unknown>
   remove: (id: string) => Promise<unknown>
 }
 
-export function useCatalog(api: CatalogApi) {
+export function useCatalog<TItem extends CatalogItem = CatalogItem, TBody = CatalogRequest>(
+  api: CatalogApi<TItem, TBody>,
+) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: api.queryKey })
 
   const list = useQuery({
     queryKey: api.queryKey,
-    queryFn: ({ signal }) => api.fetchAll(signal),
+    queryFn: () => api.fetchAll(),
   })
 
   const create = useMutation({ mutationFn: api.create, onSuccess: invalidate })
 
   const update = useMutation({
-    mutationFn: (vars: { id: string; body: CatalogRequest }) => api.update(vars.id, vars.body),
+    mutationFn: (vars: { id: string; body: TBody }) => api.update(vars.id, vars.body),
     onSuccess: invalidate,
   })
 
@@ -40,4 +42,4 @@ export function useCatalog(api: CatalogApi) {
   return { list, create, update, remove }
 }
 
-export type CatalogController = ReturnType<typeof useCatalog>
+export type CatalogController = ReturnType<typeof useCatalog<CatalogItem, CatalogRequest>>

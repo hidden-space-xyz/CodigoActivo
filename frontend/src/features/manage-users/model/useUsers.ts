@@ -1,3 +1,4 @@
+import type { MaybeRefOrGetter } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
@@ -10,13 +11,14 @@ import {
 } from '@/entities/user'
 import type { UpdateUserRequest } from '@/shared/api/generated/models'
 
-export function useUsers() {
+export function useUsers(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: userQueryKeys.all })
 
   const list = useQuery({
     queryKey: userQueryKeys.all,
     queryFn: () => getUsersRequest(),
+    enabled: options?.enabled ?? true,
   })
 
   const update = useMutation({

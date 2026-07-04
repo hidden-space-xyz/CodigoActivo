@@ -1,25 +1,16 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue'
-import { EditorContent, useEditor } from '@tiptap/vue-3'
+import { computed } from 'vue'
 
-import { parseRichText, richTextExtensions } from '@/shared/lib'
+import { renderRichTextHtml } from '@/shared/lib'
 
 const props = defineProps<{ content?: string | null }>()
 
-const editor = useEditor({
-  editable: false,
-  extensions: richTextExtensions(),
-  content: parseRichText(props.content),
-})
-
-watch(
-  () => props.content,
-  (value) => editor.value?.commands.setContent(parseRichText(value), { emitUpdate: false }),
-)
-
-onBeforeUnmount(() => editor.value?.destroy())
+// The HTML comes from generateHTML over admin-authored TipTap JSON — the same DOM the previous
+// read-only editor instance produced, without the ProseMirror machinery.
+const html = computed(() => renderRichTextHtml(props.content))
 </script>
 
 <template>
-  <EditorContent v-if="editor" :editor="editor" class="rich-text" />
+  <!-- eslint-disable-next-line vue/no-v-html -->
+  <div class="rich-text" v-html="html" />
 </template>

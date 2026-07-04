@@ -1,3 +1,4 @@
+import { generateHTML } from '@tiptap/core'
 import type { AnyExtension, JSONContent } from '@tiptap/core'
 import { Color } from '@tiptap/extension-color'
 import Highlight from '@tiptap/extension-highlight'
@@ -34,6 +35,14 @@ export function richTextExtensions(): AnyExtension[] {
     TableCell,
     Image,
   ]
+}
+
+let rendererExtensions: AnyExtension[] | undefined
+
+/** Renders stored TipTap JSON to static HTML — no editor instance needed for read-only display. */
+export function renderRichTextHtml(value?: string | null): string {
+  rendererExtensions ??= richTextExtensions()
+  return generateHTML(parseRichText(value), rendererExtensions)
 }
 
 export function parseRichText(value?: string | null): JSONContent {

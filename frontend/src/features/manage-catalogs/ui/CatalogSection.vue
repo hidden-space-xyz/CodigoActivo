@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
 import { AppButton as Button, DataState } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -9,12 +8,12 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 
 import type { CatalogController, CatalogItem } from '../model/useCatalog'
-import { useCrudFeedback } from '@/shared/lib'
+import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const props = defineProps<{ title: string; controller: CatalogController }>()
 
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
 
 const dialogVisible = ref(false)
 const selected = ref<CatalogItem | null>(null)
@@ -69,13 +68,9 @@ function save(): void {
 }
 
 function confirmDelete(item: CatalogItem): void {
-  confirm.require({
+  requireDelete({
     header: 'Eliminar elemento',
     message: `¿Seguro que quieres eliminar "${item.name}"?`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!item.id) return
       props.controller.remove.mutate(item.id, {

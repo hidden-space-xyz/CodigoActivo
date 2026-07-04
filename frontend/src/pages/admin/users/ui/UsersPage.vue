@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
 import { AdminPageHeader, AppButton as Button, ColorTag, DataState } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -11,12 +10,12 @@ import Tag from 'primevue/tag'
 import { useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
-import { formatDate, groupByParent, useCrudFeedback } from '@/shared/lib'
+import { ageFrom, formatDate, groupByParent, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { list, update, remove, changeType, fetchOne } = useUsers()
 const userTypes = useUserTypesList()
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
 
 const dialogVisible = ref(false)
 const selected = ref<UserResponse | null>(null)
@@ -51,17 +50,6 @@ function rowClass(user: UserResponse): string {
 
 function fullName(user: UserResponse): string {
   return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—'
-}
-
-function ageFrom(value?: string | null): number | null {
-  if (!value) return null
-  const birth = new Date(value)
-  if (Number.isNaN(birth.getTime())) return null
-  const now = new Date()
-  let age = now.getFullYear() - birth.getFullYear()
-  const monthDiff = now.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) age--
-  return age
 }
 
 function birthDateWithAge(user: UserResponse): string {
@@ -115,13 +103,9 @@ function submitChangeType(): void {
 }
 
 function confirmDelete(user: UserResponse): void {
-  confirm.require({
+  requireDelete({
     header: 'Eliminar usuario',
     message: `¿Seguro que quieres eliminar a "${fullName(user)}"?`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!user.id) return
       remove.mutate(user.id, {

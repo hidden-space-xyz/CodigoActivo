@@ -1,7 +1,7 @@
 import { toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getCurrentUserRequest, logoutRequest, useSession } from '@/entities/session'
+import { logoutRequest, useSession } from '@/entities/session'
 
 export function useAuth() {
   const session = useSession()
@@ -9,7 +9,7 @@ export function useAuth() {
   const router = useRouter()
 
   async function bootstrap(): Promise<void> {
-    session.setUser(await getCurrentUserRequest())
+    await session.resolve()
   }
 
   async function logout(): Promise<void> {

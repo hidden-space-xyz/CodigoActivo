@@ -40,8 +40,7 @@ function initialFilters(
 /**
  * Server-side pagination/sorting/filtering for a PrimeVue lazy DataTable, backed by a REST list
  * endpoint. Builds a plain query-parameter object (`page`, `pageSize`, `sort`, plus one param per
- * filtered column) and returns the same surface the pages already consume, so admin templates need
- * no changes when moving off OData.
+ * filtered column) matching the backend's typed list queries.
  */
 export function useServerTable<T, TParams = Record<string, unknown>>(
   options: UseServerTableOptions<T, TParams>,

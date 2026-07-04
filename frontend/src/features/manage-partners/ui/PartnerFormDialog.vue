@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 
-import { ThumbnailField, uploadThumbnail } from '@/entities/file'
+import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type {
   CreatePartnerRequest,
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
-import { getErrorMessage } from '@/shared/lib'
 
 const props = defineProps<{
   visible: boolean
@@ -34,19 +33,21 @@ interface PartnerForm {
 
 const form = reactive<PartnerForm>({ name: '', fromDate: null, tier: 0, website: '' })
 const submitted = ref(false)
-const pickedFile = ref<File | null>(null)
-const uploading = ref(false)
-const uploadError = ref('')
-
-const missingThumbnail = computed(() => !pickedFile.value && !props.partner?.thumbnailId)
+const {
+  pickedFile,
+  uploading,
+  uploadError,
+  missingThumbnail,
+  reset: resetThumbnail,
+  resolveThumbnailId,
+} = useThumbnailUpload(() => props.partner?.thumbnailId)
 
 watch(
   () => props.visible,
   (open) => {
     if (!open) return
     submitted.value = false
-    pickedFile.value = null
-    uploadError.value = ''
+    resetThumbnail()
     form.name = props.partner?.name ?? ''
     form.fromDate = props.partner?.fromDate ? new Date(props.partner.fromDate) : null
     form.tier = props.partner?.tier ?? 0
@@ -60,27 +61,16 @@ function close(): void {
 
 async function save(): Promise<void> {
   submitted.value = true
-  uploadError.value = ''
   if (!form.name.trim() || !form.fromDate || missingThumbnail.value) return
-  const body: CreatePartnerRequest = {
+  const thumbnailId = await resolveThumbnailId()
+  if (!thumbnailId) return
+  emit('submit', {
     name: form.name.trim(),
     tier: form.tier,
     website: form.website.trim() ? form.website.trim() : null,
-  }
-  if (form.fromDate) body.fromDate = form.fromDate.toISOString().slice(0, 10)
-  uploading.value = true
-  try {
-    if (pickedFile.value) {
-      body.thumbnailId = await uploadThumbnail(pickedFile.value, props.partner?.thumbnailId)
-    } else if (props.partner?.thumbnailId) {
-      body.thumbnailId = props.partner.thumbnailId
-    }
-    emit('submit', body)
-  } catch (error) {
-    uploadError.value = getErrorMessage(error, 'No se pudo subir la imagen.')
-  } finally {
-    uploading.value = false
-  }
+    fromDate: form.fromDate.toISOString().slice(0, 10),
+    thumbnailId,
+  } satisfies CreatePartnerRequest)
 }
 </script>
 

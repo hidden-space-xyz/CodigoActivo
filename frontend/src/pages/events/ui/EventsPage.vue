@@ -40,7 +40,6 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
             class="events-section__filter"
             :years="years"
             :selected="selectedYear"
-            :forced="true"
             @select="setYear"
           />
         </div>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
 import { AppButton as Button, ColorTag, DataState } from '@/shared/ui'
 import ColorPicker from 'primevue/colorpicker'
 import Column from 'primevue/column'
@@ -10,11 +9,11 @@ import InputText from 'primevue/inputtext'
 
 import { useEventCategories } from '../model/categories'
 import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
-import { useCrudFeedback } from '@/shared/lib'
+import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { list, create, update, remove } = useEventCategories()
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
 
 const dialogVisible = ref(false)
 const selected = ref<EventCategoryTypeResponse | null>(null)
@@ -68,13 +67,9 @@ function save(): void {
 }
 
 function confirmDelete(item: EventCategoryTypeResponse): void {
-  confirm.require({
+  requireDelete({
     header: 'Eliminar categoría',
     message: `¿Seguro que quieres eliminar "${item.name}"? Se quitará de los eventos que la usen.`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!item.id) return
       remove.mutate(item.id, {

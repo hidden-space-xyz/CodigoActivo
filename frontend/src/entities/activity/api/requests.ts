@@ -31,8 +31,8 @@ import {
 export async function getEventActivitiesRequest(
   eventId: string,
 ): Promise<readonly EventActivity[]> {
-  const { data } = await getApiActivities({ eventId, sort: 'activityStartsAt', pageSize: 100 })
-  return (data.items ?? []).map(toEventActivity)
+  const items = await listEventActivitiesRequest(eventId)
+  return items.map(toEventActivity)
 }
 
 export async function getMyAssignmentsRequest(): Promise<readonly ActivityAssignment[]> {

@@ -1,23 +1,21 @@
-import { computed } from 'vue'
-
-interface ValueConfig {
+export interface OrganizationValue {
   readonly id: string
-  readonly icon: string
-  readonly soft: string
   readonly title: string
   readonly description: string
+  readonly icon: string
+  readonly soft: string
 }
 
-interface ActivityConfig {
+export interface OrganizationActivity {
   readonly id: string
+  readonly title: string
+  readonly description: string
   readonly number: string
   readonly color: string
   readonly soft: string
-  readonly title: string
-  readonly description: string
 }
 
-const VALUE_CONFIG: readonly ValueConfig[] = [
+const VALUES: readonly OrganizationValue[] = [
   {
     id: 'free',
     icon: '🎟️',
@@ -48,7 +46,7 @@ const VALUE_CONFIG: readonly ValueConfig[] = [
   },
 ]
 
-const ACTIVITY_CONFIG: readonly ActivityConfig[] = [
+const ACTIVITIES: readonly OrganizationActivity[] = [
   {
     id: 'workshops',
     number: '01',
@@ -84,44 +82,6 @@ const ACTIVITY_CONFIG: readonly ActivityConfig[] = [
   },
 ]
 
-export interface OrganizationValue {
-  readonly id: string
-  readonly title: string
-  readonly description: string
-  readonly icon: string
-  readonly soft: string
-}
-
-export interface OrganizationActivity {
-  readonly id: string
-  readonly title: string
-  readonly description: string
-  readonly number: string
-  readonly color: string
-  readonly soft: string
-}
-
 export function useOrganizationContent() {
-  const values = computed<OrganizationValue[]>(() =>
-    VALUE_CONFIG.map((config) => ({
-      id: config.id,
-      icon: config.icon,
-      soft: config.soft,
-      title: config.title,
-      description: config.description,
-    })),
-  )
-
-  const activities = computed<OrganizationActivity[]>(() =>
-    ACTIVITY_CONFIG.map((config) => ({
-      id: config.id,
-      number: config.number,
-      color: config.color,
-      soft: config.soft,
-      title: config.title,
-      description: config.description,
-    })),
-  )
-
-  return { values, activities }
+  return { values: VALUES, activities: ACTIVITIES }
 }

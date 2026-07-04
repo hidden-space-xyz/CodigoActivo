@@ -90,7 +90,6 @@ function submitChangeStatus(): void {
       onSuccess: () => {
         feedback.success('Estado actualizado.')
         statusDialogVisible.value = false
-        void report.refetch()
       },
       onError: (error) => feedback.error(error),
     },
@@ -122,7 +121,6 @@ function submitChangeRole(): void {
       onSuccess: () => {
         feedback.success('Rol actualizado.')
         roleDialogVisible.value = false
-        void report.refetch()
       },
       onError: (error) => feedback.error(error),
     },

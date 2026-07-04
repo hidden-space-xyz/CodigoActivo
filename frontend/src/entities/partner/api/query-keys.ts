@@ -1,3 +1,4 @@
 export const partnerQueryKeys = {
-  sponsors: ['sponsors'] as const,
+  all: ['partners'] as const,
+  sponsors: ['partners', 'sponsors'] as const,
 }

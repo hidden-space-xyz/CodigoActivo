@@ -28,7 +28,6 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
           class="announcements-years"
           :years="years"
           :selected="selectedYear"
-          forced
           @select="setYear"
         />
 

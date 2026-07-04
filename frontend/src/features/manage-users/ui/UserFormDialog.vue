@@ -6,6 +6,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
+import { ageFrom } from '@/shared/lib'
 
 const props = defineProps<{ visible: boolean; user: UserResponse | null; saving: boolean }>()
 
@@ -32,15 +33,10 @@ const form = reactive<UserForm>({
 const submitted = ref(false)
 const maxBirthDate = new Date()
 
-function isMinorDate(date: Date): boolean {
-  const today = new Date()
-  let age = today.getFullYear() - date.getFullYear()
-  const monthDiff = today.getMonth() - date.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) age--
-  return age < 18
-}
-
-const isMinor = computed(() => !!form.birthDate && isMinorDate(form.birthDate))
+const isMinor = computed(() => {
+  const age = ageFrom(form.birthDate)
+  return age !== null && age < 18
+})
 const birthDateInvalid = computed(() => !form.birthDate || form.birthDate > new Date())
 const emailInvalid = computed(() => {
   const value = form.email.trim()

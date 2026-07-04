@@ -1,39 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
-const props = withDefaults(
-  defineProps<{
-    years: readonly string[]
-    selected: string
-    forced?: boolean
-    allValue?: string
-    allLabel?: string
-  }>(),
-  { forced: false, allValue: 'all', allLabel: 'Todos' },
-)
+defineProps<{
+  years: readonly string[]
+  selected: string
+}>()
 
 const emit = defineEmits<{ select: [year: string] }>()
-
-const options = computed(() => (props.forced ? [...props.years] : [props.allValue, ...props.years]))
-
-function labelFor(year: string): string {
-  return year === props.allValue ? props.allLabel : year
-}
 </script>
 
 <template>
   <div class="year-filter" role="group" aria-label="Filtrar por año">
     <button
-      v-for="year in options"
+      v-for="year in years"
       :key="year"
       type="button"
       class="year-filter__pill"
       :class="{ 'year-filter__pill--active': year === selected }"
       :aria-pressed="year === selected"
-      :title="`Filtrar por ${labelFor(year)}`"
+      :title="`Filtrar por ${year}`"
       @click="emit('select', year)"
     >
-      {{ labelFor(year) }}
+      {{ year }}
     </button>
   </div>
 </template>

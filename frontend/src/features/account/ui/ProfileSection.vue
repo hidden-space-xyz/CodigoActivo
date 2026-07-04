@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -9,14 +8,13 @@ import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
 import { useSession } from '@/entities/session'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, toDateInput, useCrudFeedback } from '@/shared/lib'
+import { formatDate, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib'
 
-const toast = useToast()
 const feedback = useCrudFeedback()
 const session = useSession()
 const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
 
-const todayIso = computed(() => new Date().toISOString().slice(0, 10))
+const maxBirthDateIso = todayIso()
 const user = computed(() => profile.data.value ?? null)
 const roleNames = computed(() =>
   (user.value?.roles ?? []).map((role) => role.name ?? '').filter((name) => name.length > 0),
@@ -51,12 +49,7 @@ function saveEdit(): void {
   updateProfile.mutate(request, {
     onSuccess: () => {
       editVisible.value = false
-      toast.add({
-        severity: 'success',
-        summary: 'Datos actualizados',
-        detail: 'Tu información se ha guardado.',
-        life: 3000,
-      })
+      feedback.success('Tu información se ha guardado.', 'Datos actualizados')
     },
     onError: (error) => feedback.error(error),
   })
@@ -89,12 +82,7 @@ function savePassword(): void {
     {
       onSuccess: () => {
         passwordVisible.value = false
-        toast.add({
-          severity: 'success',
-          summary: 'Contraseña cambiada',
-          detail: 'Tu contraseña se ha actualizado.',
-          life: 3000,
-        })
+        feedback.success('Tu contraseña se ha actualizado.', 'Contraseña cambiada')
       },
       onError: () => {
         passwordError.value = 'No se pudo cambiar. Revisa tu contraseña actual.'
@@ -184,7 +172,7 @@ function confirmDeleteAccount(): void {
               v-model="editForm.birthDate"
               type="date"
               class="acc-date"
-              :max="todayIso"
+              :max="maxBirthDateIso"
               required
             />
           </div>

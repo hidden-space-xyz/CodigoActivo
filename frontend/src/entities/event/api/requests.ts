@@ -4,14 +4,16 @@ import {
   getApiEventsPastYears,
 } from '@/shared/api/generated/endpoints/events/events'
 import type { EventResponse } from '@/shared/api/generated/models'
-import { fetchAllPages, unwrapOrNull } from '@/shared/api'
+import { fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
 
 import type { EventDetail, HomeEvents, PastEvent, UpcomingEvent } from '../model/types'
 import { toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
 export async function getUpcomingEventsRequest(): Promise<readonly UpcomingEvent[]> {
-  const { data } = await getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', pageSize: 100 })
-  return (data.items ?? []).map(toUpcomingEvent)
+  const items = await fetchAllPages<EventResponse>((page, pageSize) =>
+    getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize }).then(toPage),
+  )
+  return items.map(toUpcomingEvent)
 }
 
 export async function getPastEventYearsRequest(): Promise<readonly string[]> {
@@ -22,7 +24,7 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
 export async function getPastEventsRequest(year: string): Promise<readonly PastEvent[]> {
   const items = await fetchAllPages<EventResponse>((page, pageSize) =>
     getApiEvents({ scope: 'Past', year: Number(year), sort: '-eventStartsAt', page, pageSize }).then(
-      (r) => ({ items: r.data.items ?? [], total: r.data.total ?? 0 }),
+      toPage,
     ),
   )
   return items.map(toPastEvent)

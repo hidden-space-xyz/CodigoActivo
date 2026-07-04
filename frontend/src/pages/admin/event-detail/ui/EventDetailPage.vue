@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useConfirm } from 'primevue/useconfirm'
 import { AdminPageHeader, AppButton as Button, DataState, ListThumbnail } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -12,7 +11,6 @@ import {
   useActivities,
   useAssignments,
 } from '@/features/manage-activities'
-import { deleteThumbnail } from '@/entities/file'
 import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
 import { useUsers } from '@/features/manage-users'
@@ -21,14 +19,16 @@ import type {
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTime, useCrudFeedback } from '@/shared/lib'
+import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const route = useRoute()
 const router = useRouter()
 const eventId = computed(() => String(route.params.eventId))
 
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
+
+const assignDialogVisible = ref(false)
 
 const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
@@ -36,7 +36,8 @@ const activities = useActivities(eventId)
 const assignments = useAssignments(eventId.value)
 const roleTypes = useActivityRoleTypesList()
 const modalityTypes = useActivityModalityTypesList()
-const users = useUsers()
+// The users list only feeds the assign dialog — don't fetch it until the dialog opens.
+const users = useUsers({ enabled: assignDialogVisible })
 
 const summaryCards = computed(() => {
   const data = summary.data.value
@@ -98,35 +99,27 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
     onSuccess: () => {
       feedback.success('Actividad creada.')
       activityDialogVisible.value = false
-      void summary.refetch()
     },
     onError: (error) => feedback.error(error),
   })
 }
 
 function confirmDeleteActivity(activity: ActivityResponse): void {
-  confirm.require({
+  requireDelete({
     header: 'Eliminar actividad',
     message: `¿Seguro que quieres eliminar "${activity.title}"?`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!activity.id) return
-      activities.remove.mutate(activity.id, {
-        onSuccess: () => {
-          feedback.success('Actividad eliminada.')
-          void deleteThumbnail(activity.thumbnailId)
-          void summary.refetch()
+      activities.remove.mutate(
+        { id: activity.id, thumbnailId: activity.thumbnailId },
+        {
+          onSuccess: () => feedback.success('Actividad eliminada.'),
+          onError: (error) => feedback.error(error),
         },
-        onError: (error) => feedback.error(error),
-      })
+      )
     },
   })
 }
-
-const assignDialogVisible = ref(false)
 
 function onAssignSubmit(payload: {
   activityId: string
@@ -143,7 +136,6 @@ function onAssignSubmit(payload: {
       onSuccess: () => {
         feedback.success('Voluntario asignado.')
         assignDialogVisible.value = false
-        void summary.refetch()
       },
       onError: (error) => feedback.error(error),
     },

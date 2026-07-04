@@ -2,12 +2,9 @@ import { reactive, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 
 import { scrollToTop } from '@/shared/lib'
+import { getRegistrationTypesRequest } from '@/entities/account'
 
-import {
-  getRegistrationTypesRequest,
-  registerRequest,
-  verifyRegistrationRequest,
-} from '../api/requests'
+import { registerRequest, verifyRegistrationRequest } from '../api/requests'
 import { createEmptyRegistrationForm, type RegistrationForm } from './registration-form'
 
 export type RegistrationStep = 'age-gate' | 'form' | 'success'

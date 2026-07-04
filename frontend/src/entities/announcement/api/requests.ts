@@ -4,7 +4,7 @@ import {
   getApiAnnouncementsYears,
 } from '@/shared/api/generated/endpoints/announcements/announcements'
 import type { AnnouncementResponse } from '@/shared/api/generated/models'
-import { fetchAllPages, unwrapOrNull } from '@/shared/api'
+import { fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
 
 import type { Announcement, HomeAnnouncements } from '../model/types'
 import { toAnnouncement } from './mapper'
@@ -18,10 +18,7 @@ export async function getAnnouncementsByYearRequest(
   year: string,
 ): Promise<readonly Announcement[]> {
   const items = await fetchAllPages<AnnouncementResponse>((page, pageSize) =>
-    getApiAnnouncements({ year: Number(year), sort: '-createdAt', page, pageSize }).then((r) => ({
-      items: r.data.items ?? [],
-      total: r.data.total ?? 0,
-    })),
+    getApiAnnouncements({ year: Number(year), sort: '-createdAt', page, pageSize }).then(toPage),
   )
   return items.map(toAnnouncement)
 }
@@ -37,9 +34,10 @@ async function getFeaturedAnnouncementRequest(): Promise<Announcement | null> {
 }
 
 export async function getHomeAnnouncementsRequest(): Promise<HomeAnnouncements> {
-  const featured = await getFeaturedAnnouncementRequest()
-
-  const recent = await getApiAnnouncements({ sort: '-createdAt', pageSize: 4 })
+  const [featured, recent] = await Promise.all([
+    getFeaturedAnnouncementRequest(),
+    getApiAnnouncements({ sort: '-createdAt', pageSize: 4 }),
+  ])
 
   const items = (recent.data.items ?? [])
     .map(toAnnouncement)

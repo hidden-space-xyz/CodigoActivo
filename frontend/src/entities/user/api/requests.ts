@@ -5,11 +5,13 @@ import {
   patchApiUsersUserIdChangeType,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import type { UpdateUserRequest } from '@/shared/api/generated/models'
+import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
+import { fetchAllPages, toPage } from '@/shared/api'
 
-export async function getUsersRequest() {
-  const { data } = await getApiUsers({ sort: 'firstName', pageSize: 100 })
-  return data.items ?? []
+export function getUsersRequest(): Promise<UserResponse[]> {
+  return fetchAllPages<UserResponse>((page, pageSize) =>
+    getApiUsers({ sort: 'firstName', page, pageSize }).then(toPage),
+  )
 }
 
 export async function getUserRequest(id: string) {

@@ -1,12 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-
 import {
   deleteApiEventsCategoryTypeEventCategoryTypeId,
   getApiEventsCategoryType,
   postApiEventsCategoryType,
   putApiEventsCategoryTypeEventCategoryTypeId,
 } from '@/shared/api/generated/endpoints/events/events'
+import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
 import { catalogQueryKeys } from '@/entities/catalog'
+
+import { useCatalog } from './useCatalog'
 
 export interface EventCategoryInput {
   name: string
@@ -14,30 +15,11 @@ export interface EventCategoryInput {
 }
 
 export function useEventCategories() {
-  const queryClient = useQueryClient()
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: catalogQueryKeys.eventCategoryTypes })
-
-  const list = useQuery({
+  return useCatalog<EventCategoryTypeResponse, EventCategoryInput>({
     queryKey: catalogQueryKeys.eventCategoryTypes,
-    queryFn: () => getApiEventsCategoryType().then((r) => r.data ?? []),
+    fetchAll: () => getApiEventsCategoryType().then((r) => r.data ?? []),
+    create: (body) => postApiEventsCategoryType(body),
+    update: (id, body) => putApiEventsCategoryTypeEventCategoryTypeId(id, body),
+    remove: (id) => deleteApiEventsCategoryTypeEventCategoryTypeId(id),
   })
-
-  const create = useMutation({
-    mutationFn: (body: EventCategoryInput) => postApiEventsCategoryType(body),
-    onSuccess: invalidate,
-  })
-
-  const update = useMutation({
-    mutationFn: (vars: { id: string; body: EventCategoryInput }) =>
-      putApiEventsCategoryTypeEventCategoryTypeId(vars.id, vars.body),
-    onSuccess: invalidate,
-  })
-
-  const remove = useMutation({
-    mutationFn: (id: string) => deleteApiEventsCategoryTypeEventCategoryTypeId(id),
-    onSuccess: invalidate,
-  })
-
-  return { list, create, update, remove }
 }

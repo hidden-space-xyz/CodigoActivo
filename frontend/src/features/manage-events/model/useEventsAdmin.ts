@@ -16,9 +16,10 @@ import type {
   GetApiEventsParams,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { unwrapOrNull } from '@/shared/api'
+import { toPage, unwrapOrNull } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
 import { eventQueryKeys } from '@/entities/event'
+import { deleteThumbnail } from '@/entities/file'
 
 export function useEventsAdmin() {
   const queryClient = useQueryClient()
@@ -26,8 +27,7 @@ export function useEventsAdmin() {
 
   const table = useServerTable<EventResponse, GetApiEventsParams>({
     queryKey: [...eventQueryKeys.all, 'admin'],
-    fetchPage: (params) =>
-      getApiEvents(params).then((r) => ({ items: r.data.items ?? [], total: r.data.total ?? 0 })),
+    fetchPage: (params) => getApiEvents(params).then(toPage),
     defaultSort: { field: 'eventStartsAt', order: 1 },
     columns: {
       title: { type: 'text' },
@@ -47,8 +47,14 @@ export function useEventsAdmin() {
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiEventsEventId(id),
-    onSuccess: invalidate,
+    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) =>
+      deleteApiEventsEventId(vars.id),
+    // The backend does not cascade to the thumbnail file; removing it here keeps the rule with
+    // the mutation instead of in every delete-confirmation callback.
+    onSuccess: (_data, vars) => {
+      void deleteThumbnail(vars.thumbnailId)
+      return invalidate()
+    },
   })
 
   const feature = useMutation({
@@ -61,7 +67,7 @@ export function useEventsAdmin() {
 
 export function useEvent(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: computed(() => eventQueryKeys.detail(toValue(eventId))),
+    queryKey: computed(() => eventQueryKeys.adminDetail(toValue(eventId))),
     queryFn: () => unwrapOrNull<EventResponse>(getApiEventsEventId(toValue(eventId))),
   })
 }

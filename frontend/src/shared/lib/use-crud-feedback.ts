@@ -11,8 +11,8 @@ export interface ErrorToastMessageOptions extends ToastMessageOptions {
 export function useCrudFeedback() {
   const toast = useToast()
 
-  function success(detail: string): void {
-    toast.add({ severity: 'success', summary: 'Hecho', detail, life: 3000 })
+  function success(detail: string, summary = 'Hecho'): void {
+    toast.add({ severity: 'success', summary, detail, life: 3000 })
   }
 
   function error(err: unknown, summary = 'Error'): void {

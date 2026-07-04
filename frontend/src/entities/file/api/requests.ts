@@ -1,7 +1,6 @@
 import {
   deleteApiFilesFileId,
   getApiFilesFileId,
-  getApiFilesFileIdContent,
   postApiFiles,
   putApiFilesFileId,
 } from '@/shared/api/generated/endpoints/files/files'
@@ -26,18 +25,7 @@ export async function uploadThumbnail(file: File, existingId?: string | null): P
   return response.data.id ?? ''
 }
 
-interface ThumbnailPreview {
-  url: string
-  name: string
-}
-
-export async function loadThumbnailPreview(id: string): Promise<ThumbnailPreview> {
-  const [meta, content] = await Promise.all([
-    unwrapOrNull<FileResponse>(getApiFilesFileId(id)),
-    getApiFilesFileIdContent(id).then((r) => r.data as unknown as Blob),
-  ])
-  return {
-    url: URL.createObjectURL(content),
-    name: `${meta?.name ?? ''}${meta?.extension ?? ''}`,
-  }
+export async function getThumbnailNameRequest(id: string): Promise<string> {
+  const meta = await unwrapOrNull<FileResponse>(getApiFilesFileId(id))
+  return `${meta?.name ?? ''}${meta?.extension ?? ''}`
 }

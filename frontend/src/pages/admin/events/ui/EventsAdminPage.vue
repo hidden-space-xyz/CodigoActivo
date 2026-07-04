@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -12,18 +11,17 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Tag from 'primevue/tag'
 
-import { deleteThumbnail } from '@/entities/file'
 import { EventFormDialog, useEventsAdmin } from '@/features/manage-events'
 import type {
   CreateEventRequest,
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { formatDate, formatDateTime, useCrudFeedback } from '@/shared/lib'
+import { formatDate, formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { table, create, update, remove, feature } = useEventsAdmin()
 const feedback = useCrudFeedback()
-const confirm = useConfirm()
+const { confirmDelete: requireDelete } = useDeleteConfirm()
 
 function onFeature(event: EventResponse): void {
   if (!event.id || event.featured) return
@@ -71,22 +69,18 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
 }
 
 function confirmDelete(event: EventResponse): void {
-  confirm.require({
+  requireDelete({
     header: 'Eliminar evento',
     message: `¿Seguro que quieres eliminar "${event.title}"? Se perderán también sus actividades.`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Eliminar',
-    rejectLabel: 'Cancelar',
-    acceptClass: 'p-button-danger',
     accept: () => {
       if (!event.id) return
-      remove.mutate(event.id, {
-        onSuccess: () => {
-          feedback.success('Evento eliminado.')
-          void deleteThumbnail(event.thumbnailId)
+      remove.mutate(
+        { id: event.id, thumbnailId: event.thumbnailId },
+        {
+          onSuccess: () => feedback.success('Evento eliminado.'),
+          onError: (error) => feedback.error(error),
         },
-        onError: (error) => feedback.error(error),
-      })
+      )
     },
   })
 }

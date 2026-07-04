@@ -12,21 +12,19 @@ import type {
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
+import { toPage } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
-
-const partnersListKey = ['partners'] as const
+import { deleteThumbnail } from '@/entities/file'
+import { partnerQueryKeys } from '@/entities/partner'
 
 export function usePartners() {
   const queryClient = useQueryClient()
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: partnersListKey })
+  // Invalidating the entity root also refreshes the public sponsors query after admin edits.
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: partnerQueryKeys.all })
 
   const table = useServerTable<PartnerResponse, GetApiPartnersParams>({
-    queryKey: [...partnersListKey, 'admin'],
-    fetchPage: (params) =>
-      getApiPartners(params).then((r) => ({
-        items: r.data.items ?? [],
-        total: r.data.total ?? 0,
-      })),
+    queryKey: [...partnerQueryKeys.all, 'admin'],
+    fetchPage: (params) => getApiPartners(params).then(toPage),
     defaultSort: { field: 'tier', order: 1 },
     columns: {
       name: { type: 'text' },
@@ -48,8 +46,12 @@ export function usePartners() {
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiPartnersPartnerId(id),
-    onSuccess: invalidate,
+    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) =>
+      deleteApiPartnersPartnerId(vars.id),
+    onSuccess: (_data, vars) => {
+      void deleteThumbnail(vars.thumbnailId)
+      return invalidate()
+    },
   })
 
   return { table, create, update, remove }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
+import { fileContentUrl } from '@/shared/lib'
 
-import { loadThumbnailPreview } from '../api/requests'
+import { getThumbnailNameRequest } from '../api/requests'
 
 const props = defineProps<{ existingThumbnailId?: string | null | undefined; invalid?: boolean }>()
 
@@ -12,7 +13,6 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const previewUrl = ref<string | null>(null)
 const fileName = ref<string>('')
 const pickedFile = ref<File | null>(null)
-const loading = ref(false)
 const sizeError = ref('')
 const MAX_SIZE = 10 * 1024 * 1024
 let objectUrl: string | null = null
@@ -24,27 +24,23 @@ function revokeObjectUrl(): void {
   }
 }
 
-async function loadExisting(id: string): Promise<void> {
-  loading.value = true
-  try {
-    const preview = await loadThumbnailPreview(id)
-    revokeObjectUrl()
-    objectUrl = preview.url
-    previewUrl.value = preview.url
-    fileName.value = preview.name
-  } catch {
-    previewUrl.value = null
-    fileName.value = ''
-  } finally {
-    loading.value = false
-  }
+function showExisting(id: string): void {
+  revokeObjectUrl()
+  // The browser loads (and caches) the image itself — only the display name needs a request.
+  previewUrl.value = fileContentUrl(id)
+  fileName.value = ''
+  void getThumbnailNameRequest(id)
+    .then((name) => {
+      fileName.value = name
+    })
+    .catch(() => undefined)
 }
 
 watch(
   () => props.existingThumbnailId,
   (id) => {
     pickedFile.value = null
-    if (id) void loadExisting(id)
+    if (id) showExisting(id)
     else {
       revokeObjectUrl()
       previewUrl.value = null
@@ -79,7 +75,7 @@ function onChange(event: Event): void {
 function clearSelection(): void {
   pickedFile.value = null
   emit('update:file', null)
-  if (props.existingThumbnailId) void loadExisting(props.existingThumbnailId)
+  if (props.existingThumbnailId) showExisting(props.existingThumbnailId)
   else {
     revokeObjectUrl()
     previewUrl.value = null
@@ -94,7 +90,6 @@ onBeforeUnmount(revokeObjectUrl)
   <div class="thumb">
     <div class="thumb__preview" :class="{ 'thumb__preview--invalid': invalid }">
       <img v-if="previewUrl" :src="previewUrl" alt="Miniatura" class="thumb__img" />
-      <span v-else-if="loading" class="thumb__placeholder">Cargando…</span>
       <span v-else class="thumb__placeholder">Sin imagen</span>
     </div>
 

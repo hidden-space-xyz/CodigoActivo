@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useServerTable, type ServerTableColumn, type ServerTablePage } from '@/shared/lib'
+import { deleteThumbnail } from '@/entities/file'
 
 export interface ContentItem {
   id?: string
@@ -8,7 +9,6 @@ export interface ContentItem {
   description?: string | null
   thumbnailId?: string
   createdAt?: string
-  updatedAt?: string | null
   featured?: boolean
 }
 
@@ -52,7 +52,13 @@ export function useContentEntity<TParams = Record<string, unknown>>(api: Content
     onSuccess: invalidate,
   })
 
-  const remove = useMutation({ mutationFn: (id: string) => api.remove(id), onSuccess: invalidate })
+  const remove = useMutation({
+    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) => api.remove(vars.id),
+    onSuccess: (_data, vars) => {
+      void deleteThumbnail(vars.thumbnailId)
+      return invalidate()
+    },
+  })
 
   const feature = useMutation({
     mutationFn: (id: string) => api.feature?.(id) ?? Promise.resolve(),

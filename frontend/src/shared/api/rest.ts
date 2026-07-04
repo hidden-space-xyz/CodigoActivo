@@ -13,20 +13,26 @@ export async function unwrapOrNull<T>(request: Promise<{ data: T }>): Promise<T 
   }
 }
 
+/** Unwraps a generated `PagedResult` response into a non-nullable `{ items, total }` page. */
+export function toPage<T>(response: {
+  data: { items?: T[] | null; total?: number | null }
+}): { items: T[]; total: number } {
+  return { items: response.data.items ?? [], total: response.data.total ?? 0 }
+}
+
 /**
  * Fetches every page of a bounded list read (e.g. one year's archive) and concatenates the items,
- * so a result set larger than a single page is never silently truncated.
+ * so a result set larger than a single page is never silently truncated. Pages after the first
+ * are fetched in parallel once the total is known.
  */
 export async function fetchAllPages<T>(
   fetchPage: (page: number, pageSize: number) => Promise<{ items: T[]; total: number }>,
   pageSize = 100,
 ): Promise<T[]> {
   const first = await fetchPage(1, pageSize)
-  const items = [...first.items]
   const pageCount = Math.ceil(first.total / pageSize)
-  for (let page = 2; page <= pageCount; page++) {
-    const next = await fetchPage(page, pageSize)
-    items.push(...next.items)
-  }
-  return items
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, pageCount - 1) }, (_, i) => fetchPage(i + 2, pageSize)),
+  )
+  return [...first.items, ...rest.flatMap((page) => page.items)]
 }

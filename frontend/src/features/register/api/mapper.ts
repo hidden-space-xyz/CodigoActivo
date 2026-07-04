@@ -1,17 +1,7 @@
-import type { RegistrationTypeResponse } from '@/shared/api/generated/models'
 import type { RegisterRequest, RegisterResponse } from '@/shared/api/generated/models'
 
 import type { RegistrationForm } from '../model/registration-form'
-import type { RegistrationResult, RegistrationType } from '../model/types'
-
-export function toRegistrationType(type: RegistrationTypeResponse): RegistrationType {
-  return {
-    id: type.id ?? '',
-    name: type.name ?? '',
-    description: type.description ?? '',
-    color: type.color ?? '',
-  }
-}
+import type { RegistrationResult } from '../model/types'
 
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
   return {

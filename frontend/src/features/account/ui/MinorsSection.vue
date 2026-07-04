@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -8,9 +7,8 @@ import Select from 'primevue/select'
 import { useAccount } from '../model/useAccount'
 import type { AccountChild } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, toDateInput, useCrudFeedback } from '@/shared/lib'
+import { formatDate, toDateInput, todayIso, useCrudFeedback, yearsAgoIso } from '@/shared/lib'
 
-const toast = useToast()
 const feedback = useCrudFeedback()
 const { children, minorRoles, addChild, updateChild, deleteChild } = useAccount()
 
@@ -28,12 +26,8 @@ const mode = ref<'add' | 'edit'>('add')
 const editingId = ref<string | null>(null)
 const form = reactive({ firstName: '', lastName: '', birthDate: '', roleId: '' })
 
-const todayIso = computed(() => new Date().toISOString().slice(0, 10))
-const adultThresholdIso = computed(() => {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 18)
-  return d.toISOString().slice(0, 10)
-})
+const maxBirthDateIso = todayIso()
+const adultThresholdIso = yearsAgoIso(18)
 
 const saving = computed(() => addChild.isPending.value || updateChild.isPending.value)
 
@@ -73,12 +67,7 @@ function save(): void {
       {
         onSuccess: () => {
           dialogVisible.value = false
-          toast.add({
-            severity: 'success',
-            summary: 'Menor añadido',
-            detail: 'El menor se ha registrado a tu cargo.',
-            life: 3000,
-          })
+          feedback.success('El menor se ha registrado a tu cargo.', 'Menor añadido')
         },
         onError: notifyError,
       },
@@ -106,12 +95,7 @@ function save(): void {
 
 function finishEdit(): void {
   dialogVisible.value = false
-  toast.add({
-    severity: 'success',
-    summary: 'Menor actualizado',
-    detail: 'Los datos del menor se han guardado.',
-    life: 3000,
-  })
+  feedback.success('Los datos del menor se han guardado.', 'Menor actualizado')
 }
 
 const deleteTarget = ref<AccountChild | null>(null)
@@ -122,12 +106,7 @@ function confirmDelete(): void {
   deleteChild.mutate(id, {
     onSuccess: () => {
       deleteTarget.value = null
-      toast.add({
-        severity: 'success',
-        summary: 'Menor eliminado',
-        detail: 'El menor se ha eliminado de tu cuenta.',
-        life: 3000,
-      })
+      feedback.success('El menor se ha eliminado de tu cuenta.', 'Menor eliminado')
     },
     onError: notifyError,
   })
@@ -185,7 +164,7 @@ function confirmDelete(): void {
               type="date"
               class="acc-date"
               :min="adultThresholdIso"
-              :max="todayIso"
+              :max="maxBirthDateIso"
               required
             />
           </div>

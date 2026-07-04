@@ -5,8 +5,9 @@ import Password from 'primevue/password'
 import Select from 'primevue/select'
 
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
-import type { RegistrationType } from '../model/types'
+import type { RegistrationType } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
+import { todayIso, yearsAgoIso } from '@/shared/lib'
 
 const props = defineProps<{
   form: RegistrationForm
@@ -39,12 +40,8 @@ function onSubmit(): void {
   emit('submit')
 }
 
-const todayIso = computed(() => new Date().toISOString().slice(0, 10))
-const adultThresholdIso = computed(() => {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 18)
-  return d.toISOString().slice(0, 10)
-})
+const maxBirthDateIso = todayIso()
+const adultThresholdIso = yearsAgoIso(18)
 
 const adultRoleDescription = computed(
   () => props.adultRoles.find((role) => role.id === model.roleId)?.description ?? '',
@@ -221,7 +218,7 @@ function removeMinor(index: number): void {
                   type="date"
                   class="reg__date"
                   :min="adultThresholdIso"
-                  :max="todayIso"
+                  :max="maxBirthDateIso"
                   required
                 />
               </div>

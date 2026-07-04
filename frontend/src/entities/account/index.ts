@@ -4,7 +4,7 @@ export type {
   UpdateMinorInput,
   UpdateProfileInput,
 } from './model/account-inputs'
-export type { AccountChild, AccountProfile } from './model/types'
+export type { AccountChild, AccountProfile, RegistrationType } from './model/types'
 export {
   addAccountChildRequest,
   changeAccountPasswordRequest,

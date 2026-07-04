@@ -164,13 +164,7 @@ function doAssign(activityId: string, roleId: string): void {
   assign.mutate(
     { activityId, activityRoleTypeId: roleId },
     {
-      onSuccess: () =>
-        toast.add({
-          severity: 'success',
-          summary: 'Inscripción enviada',
-          detail: 'Te has apuntado a la actividad.',
-          life: 3500,
-        }),
+      onSuccess: () => feedback.success('Te has apuntado a la actividad.', 'Inscripción enviada'),
       onError: (error) => feedback.error(error, 'No se pudo apuntar'),
       onSettled: () => {
         busyId.value = null
@@ -231,12 +225,7 @@ function confirmHousehold(): void {
     {
       onSuccess: () => {
         householdDialog.visible = false
-        toast.add({
-          severity: 'success',
-          summary: 'Inscripción enviada',
-          detail: 'Habéis quedado apuntados a la actividad.',
-          life: 3500,
-        })
+        feedback.success('Habéis quedado apuntados a la actividad.', 'Inscripción enviada')
       },
       onError: (error) => feedback.error(error, 'No se pudo apuntar'),
       onSettled: () => {
@@ -252,13 +241,7 @@ function onUnassignMember(activity: TimelineActivity, memberId: string): void {
   unassign.mutate(
     { activityId: activity.id, userId: memberId },
     {
-      onSuccess: () =>
-        toast.add({
-          severity: 'success',
-          summary: 'Inscripción cancelada',
-          detail: 'Se ha eliminado la inscripción.',
-          life: 3000,
-        }),
+      onSuccess: () => feedback.success('Se ha eliminado la inscripción.', 'Inscripción cancelada'),
       onError: (error) => feedback.error(error),
       onSettled: () => {
         busyId.value = null
