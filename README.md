@@ -25,9 +25,9 @@ This repository holds a single full-stack web app with two clearly separated sur
 
 | Layer        | Technologies                                                                            |
 | ------------ | --------------------------------------------------------------------------------------- |
-| **Backend**  | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · Swashbuckle (OpenAPI)          |
+| **Backend**  | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · Serilog · Swashbuckle (OpenAPI)  |
 | **Frontend** | Vue 3 · Vite · TypeScript · PrimeVue · TanStack Query · TipTap · Orval (generated REST client) |
-| **Quality**  | Roslynator analyzers (build-enforced) · ESLint · Prettier · `vue-tsc` typecheck · Steiger (FSD lint) |
+| **Quality**  | Meziantou.Analyzer · SonarAnalyzer (build-enforced) · ESLint · Prettier · `vue-tsc` typecheck · Steiger (FSD lint) |
 
 ## 🏗️ Architecture
 
@@ -49,7 +49,6 @@ CodigoActivo/
 | **Composition**      | The single place dependency injection is wired together.                        |
 | **API**              | Controllers, middleware, auth attributes. References **Composition** only.       |
 
-
 ### Frontend
 
 | Layer             | Responsibility                                                            |
@@ -57,7 +56,7 @@ CodigoActivo/
 | **`src/app`**     | Bootstrap: providers, centralized router, layouts                         |
 | **`src/pages`**   | One slice per route (public pages + admin under `pages/admin/`)           |
 | **`src/widgets`** | Composite cross-page UI blocks                                            |
-| **`src/features`**| User interactions (auth, register, account, admin `manage-*` CRUD)        |
+| **`src/features`** | User interactions (auth, register, account, admin `manage-*` CRUD)        |
 | **`src/entities`**| Business entities — `model` (types, reactive session state), `api` (requests), `ui` (cards) |
 | **`src/shared`**  | Reusable base: API client, UI kit, lib helpers, config                    |
 
@@ -74,7 +73,7 @@ CodigoActivo/
 ```bash
 cd backend
 
-# Point the API at your PostgreSQL instance (edit appsettings.json or use a secret/env var):
+# Point the API at your PostgreSQL instance (edit appsettings.json or set an environment variable):
 #   ConnectionStrings:Default = Host=localhost;Port=5432;Database=codigoactivo;Username=postgres;Password=...
 
 dotnet run --project CodigoActivo.API
@@ -83,8 +82,8 @@ dotnet run --project CodigoActivo.API
 On startup the API **applies migrations and seeds the catalogs automatically** (toggle with
 `Database:MigrateOnStartup` / `Database:SeedOnStartup`). It then listens on:
 
-- API · <http://localhost:5150> and <https://localhost:7039>
-- Swagger UI · <https://localhost:7039/swagger> *(Development only)*
+- API · <http://localhost:5150> (add `--launch-profile https` to also listen on <https://localhost:7039>)
+- Swagger UI · <http://localhost:5150/swagger> *(Development only)*
 
 ### 2. Frontend
 
@@ -94,7 +93,7 @@ npm install
 
 # Tell Vite which backend to proxy /api to (defaults to https://localhost:5001):
 cp .env.example .env.local
-#   VITE_API_PROXY_TARGET=https://localhost:7039
+#   VITE_API_PROXY_TARGET=http://localhost:5150
 
 npm run dev
 ```
@@ -107,6 +106,7 @@ The SPA is served at <http://localhost:5173>.
 
 | Key                          | Description                                              | Default                       |
 | ---------------------------- | ------------------------------------------------------- | ----------------------------- |
+| `App:TimeZone`               | IANA time zone the app operates in                      | `Europe/Madrid`               |
 | `ConnectionStrings:Default`  | PostgreSQL connection string                            | local `codigoactivo` database |
 | `Database:MigrateOnStartup`  | Apply EF Core migrations on boot                        | `true`                        |
 | `Database:SeedOnStartup`     | Seed catalog data on boot                               | `true`                        |
@@ -132,7 +132,8 @@ The SPA is served at <http://localhost:5173>.
 dotnet build                                   # build + run analyzers (style violations fail the build)
 dotnet run --project CodigoActivo.API          # run the API
 
-# Add a migration (applied automatically on next startup):
+# Add a migration (requires the EF tool: dotnet tool install -g dotnet-ef).
+# Migrations are applied automatically on next startup:
 dotnet ef migrations add <Name> \
   --project CodigoActivo.Infrastructure \
   --startup-project CodigoActivo.API
