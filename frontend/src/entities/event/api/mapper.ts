@@ -3,8 +3,6 @@ import { formatDate, formatDateTime, parseDateOnly } from '@/shared/lib'
 
 import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
 
-// List mappers accept the slim list-item shape (no description); the full EventResponse is
-// structurally assignable to it, so the shared helpers work for both reads.
 function toCategoryTags(event: EventListItemResponse): EventCategoryTag[] {
   return (event.categories ?? [])
     .filter((category) => category.categoryTypeId)
@@ -71,8 +69,6 @@ export function toEventDetail(event: EventResponse): EventDetail {
 }
 
 export function toPastEvent(event: EventListItemResponse): PastEvent {
-  // Read the year off the local calendar day, not new Date()'s UTC parse, so it matches the
-  // backend's year grouping (a Jan-1 event stays in its own year in UTC-negative timezones).
   const localStart = parseDateOnly(event.eventStartsAt)
   const year = localStart ? String(localStart.getFullYear()) : '—'
   return {

@@ -13,12 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="UserService"/>. Collaborators are NSubstitute doubles; the read path runs
-/// against a real <see cref="FakeQueryExecutor"/> over <c>list.AsQueryable()</c>, exercising the real
-/// <see cref="CodigoActivo.Application.Mapping.Projections"/>, sort and search expressions. Age rules
-/// (<c>IsMinor</c>) are computed against the real UTC clock, so birthdates are derived from "today".
-/// </summary>
 public sealed class UserServiceTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
@@ -38,8 +32,6 @@ public sealed class UserServiceTests
         sut = new UserService(users, userTypes, userStatusTypes, hasher, new FakeQueryExecutor(), clock, uow);
     }
 
-    // ---- helpers -----------------------------------------------------------
-
     private void HasUsers(params User[] items) => users.Query().Returns(items.AsQueryable());
 
     private void HasUserTypes(params UserType[] items) => userTypes.Query().Returns(items.AsQueryable());
@@ -49,8 +41,6 @@ public sealed class UserServiceTests
 
     private void FindReturns(params User?[]? sequence)
     {
-        // A bare `FindReturns(null)` binds null to the whole params array, and `FindReturns()` yields
-        // an empty one; both mean "the lookup finds nothing".
         if (sequence is null || sequence.Length == 0)
         {
             users
@@ -124,8 +114,6 @@ public sealed class UserServiceTests
             Description = string.Empty,
             Color = "#000",
         };
-
-    // ---- ListAsync ---------------------------------------------------------
 
     [Fact]
     public async Task ListAsync_admin_sees_all_users()
@@ -218,8 +206,6 @@ public sealed class UserServiceTests
         result.PageSize.Should().Be(2);
     }
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_user_when_found()
     {
@@ -243,8 +229,6 @@ public sealed class UserServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
     }
-
-    // ---- UpdateAsync -------------------------------------------------------
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_user_missing()
@@ -333,7 +317,6 @@ public sealed class UserServiceTests
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("New");
         user.LastName.Should().Be("Name");
-        // Email is canonicalized to lower-case so uniqueness and login are case-insensitive.
         user.Email.Should().Be("new@test.com");
         user.Phone.Should().Be("999");
         user.ParentId.Should().BeNull();
@@ -419,8 +402,6 @@ public sealed class UserServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ---- DeleteAsync -------------------------------------------------------
-
     [Fact]
     public async Task DeleteAsync_forbidden_for_admin()
     {
@@ -459,8 +440,6 @@ public sealed class UserServiceTests
         users.Received(1).Remove(user);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- SetAdminAsync -----------------------------------------------------
 
     [Fact]
     public async Task SetAdminAsync_returns_not_found_when_user_missing()
@@ -527,8 +506,6 @@ public sealed class UserServiceTests
         user.IsAdmin.Should().BeTrue();
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
-
-    // ---- ChangeTypeAsync ---------------------------------------------------
 
     [Fact]
     public async Task ChangeTypeAsync_returns_not_found_when_user_missing()
@@ -630,8 +607,6 @@ public sealed class UserServiceTests
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
-    // ---- AddChildAsync -----------------------------------------------------
-
     [Fact]
     public async Task AddChildAsync_returns_not_found_when_parent_missing()
     {
@@ -727,8 +702,6 @@ public sealed class UserServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ---- ChangePasswordAsync ----------------------------------------------
-
     [Fact]
     public async Task ChangePasswordAsync_returns_not_found_when_user_missing()
     {
@@ -789,8 +762,6 @@ public sealed class UserServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ---- ListRegistrationTypesAsync ---------------------------------------
-
     [Fact]
     public async Task ListRegistrationTypesAsync_without_audience_excludes_hidden_ordered_by_name()
     {
@@ -834,8 +805,6 @@ public sealed class UserServiceTests
 
         result.Select(r => r.Name).Should().BeEquivalentTo("AdultOnly", "Both");
     }
-
-    // ---- ListStatusTypesAsync / ListUserTypesAsync ------------------------
 
     [Fact]
     public async Task ListStatusTypesAsync_projects_ordered_by_name()

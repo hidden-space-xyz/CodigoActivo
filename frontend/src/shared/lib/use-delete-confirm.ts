@@ -1,9 +1,5 @@
 import { useConfirm } from 'primevue/useconfirm'
 
-/**
- * The app-standard destructive-action confirmation (warning icon, Eliminar/Cancelar, danger
- * accept). Call sites provide only the header, message, and what to do on accept.
- */
 export function useDeleteConfirm() {
   const confirm = useConfirm()
 

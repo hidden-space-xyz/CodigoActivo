@@ -11,11 +11,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="ReportService"/>. All repositories are NSubstitute doubles; the service
-/// performs pure in-memory aggregation over the graphs they return, so tests feed representative
-/// object graphs and assert the computed shape and every error code.
-/// </summary>
 public sealed class ReportServiceTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
@@ -28,7 +23,6 @@ public sealed class ReportServiceTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly ReportService sut;
 
-    // Deterministic role ids: two known roles plus one "ghost" role absent from the roleTypes catalog.
     private static readonly Guid AlphaRoleId = new("11111111-1111-1111-1111-111111111111");
     private static readonly Guid BetaRoleId = new("22222222-2222-2222-2222-222222222222");
     private static readonly Guid GhostRoleId = new("33333333-3333-3333-3333-333333333333");
@@ -41,8 +35,6 @@ public sealed class ReportServiceTests
     {
         sut = new ReportService(events, roleTypes, statusTypes, activities, resources, announcements, partners, users);
     }
-
-    // ---- helpers -----------------------------------------------------------
 
     private void HasRoleTypes(params (Guid Id, string Name)[] roles) =>
         roleTypes.GetAllAsync(Arg.Any<CancellationToken>())
@@ -108,8 +100,6 @@ public sealed class ReportServiceTests
             AssignmentStatus = new AssignmentStatusType { Id = statusId, Name = statusName, Color = "#000" },
         };
 
-    // ---- GetEventSummaryAsync ---------------------------------------------
-
     [Fact]
     public async Task GetEventSummaryAsync_returns_not_found_when_event_missing()
     {
@@ -138,7 +128,7 @@ public sealed class ReportServiceTests
             [
                 Asg(user1, AlphaRoleId, Confirmed),
                 Asg(user2, AlphaRoleId, Confirmed),
-                Asg(user1, BetaRoleId, Confirmed), // user1 again -> distinct volunteers unaffected
+                Asg(user1, BetaRoleId, Confirmed),
             ]);
         var activity2 = ActivityWith(
             allowed: [Allowed(BetaRoleId, "Beta"), Allowed(GhostRoleId, "unused")],
@@ -150,7 +140,6 @@ public sealed class ReportServiceTests
 
         var ev = new Event { Id = eventId, Title = "Feria", Activities = [activity1, activity2] };
         EventGraph(eventId, ev);
-        // Ghost role deliberately absent from catalog -> its RoleTypeName resolves to null.
         HasRoleTypes((AlphaRoleId, "Alpha"), (BetaRoleId, "Beta"));
 
         var result = await sut.GetEventSummaryAsync(eventId);
@@ -166,7 +155,6 @@ public sealed class ReportServiceTests
         summary.DeniedAssignments.Should().Be(1);
         summary.DistinctVolunteers.Should().Be(3);
 
-        // Breakdown covers the distinct allowed roles across activities, ordered by name (Ordinal, null first).
         summary.RoleTypeBreakdown.Should().HaveCount(3);
         summary.RoleTypeBreakdown[0].Should().BeEquivalentTo(
             new EventRoleTypeSummaryResponse(GhostRoleId, null, 0));
@@ -193,8 +181,6 @@ public sealed class ReportServiceTests
         result.Value.RoleTypeBreakdown.Should().BeEmpty();
     }
 
-    // ---- GetEventAssignmentsAsync -----------------------------------------
-
     [Fact]
     public async Task GetEventAssignmentsAsync_returns_not_found_when_event_missing()
     {
@@ -220,14 +206,14 @@ public sealed class ReportServiceTests
             assignments:
             [
                 Asg(user1, AlphaRoleId, Confirmed),
-                Asg(user2, GhostRoleId, Requested), // ghost role + missing status -> null names
+                Asg(user2, GhostRoleId, Requested),
             ],
             title: "Taller");
 
         var ev = new Event { Id = eventId, Title = "Congreso", Activities = [activity] };
         EventGraph(eventId, ev);
         HasRoleTypes((AlphaRoleId, "Alpha"));
-        HasStatusTypes((Confirmed, "Confirmado")); // Requested deliberately absent -> null status name
+        HasStatusTypes((Confirmed, "Confirmado"));
 
         var result = await sut.GetEventAssignmentsAsync(eventId);
 
@@ -248,8 +234,6 @@ public sealed class ReportServiceTests
         unresolved.StatusName.Should().BeNull();
     }
 
-    // ---- GetActivityAssignmentsAsync --------------------------------------
-
     [Fact]
     public async Task GetActivityAssignmentsAsync_returns_not_found_when_activity_missing()
     {
@@ -266,13 +250,13 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetActivityAssignmentsAsync_builds_rows_parents_and_confirmed_breakdown()
     {
-        var parentP = NewUser("Padre"); // not signed up -> should be appended once as a non-signup row
-        var parentQ = NewUser("Madre"); // signed up -> must NOT be appended as a parent row
+        var parentP = NewUser("Padre");
+        var parentQ = NewUser("Madre");
 
         var child1 = NewUser("Hijo1", parentP);
-        var child2 = NewUser("Hijo2", parentP); // same parent -> parent added only once
-        var child3 = NewUser("Hijo3", parentQ); // parent already signed up -> skipped
-        var solo = NewUser("Solo"); // no parent -> nothing extra
+        var child2 = NewUser("Hijo2", parentP);
+        var child3 = NewUser("Hijo3", parentQ);
+        var solo = NewUser("Solo");
 
         var activity = ActivityWith(
             allowed: [Allowed(AlphaRoleId, "Alpha"), Allowed(BetaRoleId, "Beta")],
@@ -296,7 +280,6 @@ public sealed class ReportServiceTests
         report.Title.Should().Be("Limpieza");
         report.TotalSignups.Should().Be(5);
 
-        // 5 signed-up rows + parentP appended once (parentQ signed up, so not appended).
         report.Rows.Should().HaveCount(6);
         report.Rows.Count(r => r.SignedUp).Should().Be(5);
 
@@ -316,7 +299,6 @@ public sealed class ReportServiceTests
         childRow.StatusName.Should().Be("Confirmado");
         childRow.ParentId.Should().Be(parentP.Id);
 
-        // Confirmed-only breakdown, ordered by role name: Alpha (child1, child3, solo) = 3, Beta = 0.
         report.RoleTypeBreakdown.Should().HaveCount(2);
         report.RoleTypeBreakdown[0].Should().BeEquivalentTo(
             new ActivityRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 3));
@@ -337,8 +319,6 @@ public sealed class ReportServiceTests
         result.Value.Rows.Should().BeEmpty();
         result.Value.RoleTypeBreakdown.Should().BeEmpty();
     }
-
-    // ---- GetDashboardSummaryAsync -----------------------------------------
 
     [Fact]
     public async Task GetDashboardSummaryAsync_maps_each_repository_count_in_order()

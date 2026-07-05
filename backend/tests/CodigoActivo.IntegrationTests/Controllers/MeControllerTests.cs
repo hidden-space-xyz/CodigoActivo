@@ -7,11 +7,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Integration tests for <c>GET /api/me/assigned-activities</c>: it is authenticated-only, scopes the
-/// result to the caller's own assignments (identity from the session cookie), orders by activity start,
-/// and projects the assignment's activity, role and status.
-/// </summary>
 public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);

@@ -13,12 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// CRUD + catalog coverage for <see cref="ActivityService"/>. The read path runs against the real
-/// <see cref="FakeQueryExecutor"/> over <c>list.AsQueryable()</c>, exercising the real projection,
-/// <c>SortMap</c> and <c>TextSearch</c> expressions. Assignment/household logic lives in
-/// <c>ActivityServiceAssignmentTests</c>.
-/// </summary>
 public sealed class ActivityServiceTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
@@ -140,8 +134,6 @@ public sealed class ActivityServiceTests
             roles
         );
 
-    // ---- ListAsync ---------------------------------------------------------
-
     [Fact]
     public async Task ListAsync_projects_and_pages()
     {
@@ -185,8 +177,6 @@ public sealed class ActivityServiceTests
         result.Items.Select(a => a.Title).Should().ContainInOrder("Zeta", "Mint", "Alpha");
     }
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_activity_when_found()
     {
@@ -212,8 +202,6 @@ public sealed class ActivityServiceTests
         result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
     }
 
-    // ---- CreateAsync guards ------------------------------------------------
-
     [Fact]
     public async Task CreateAsync_returns_not_found_when_event_missing()
     {
@@ -231,7 +219,6 @@ public sealed class ActivityServiceTests
     {
         EventFound(NewEvent());
 
-        // Built inline (CreateRequest's `?? default` coalescing would defeat the null injection).
         var request = new CreateActivityRequest(
             "  Taller  ",
             "{}",
@@ -411,8 +398,6 @@ public sealed class ActivityServiceTests
         captured!.AllowedRoleTypes.Should().ContainSingle().Which.ActivityRoleTypeId.Should().Be(duplicate);
     }
 
-    // ---- UpdateAsync -------------------------------------------------------
-
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_activity_missing()
     {
@@ -447,7 +432,6 @@ public sealed class ActivityServiceTests
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
         EventFound(NewEvent());
 
-        // Built inline (UpdateRequest's `?? default` coalescing would defeat the null injection).
         var request = new UpdateActivityRequest(
             "  New  ",
             "{}",
@@ -583,8 +567,6 @@ public sealed class ActivityServiceTests
         await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
 
-    // ---- DeleteAsync -------------------------------------------------------
-
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_activity_missing()
     {
@@ -613,8 +595,6 @@ public sealed class ActivityServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await fileService.Received(1).DeleteIfOrphanedAsync(activity.ThumbnailId, Arg.Any<CancellationToken>());
     }
-
-    // ---- Catalog list methods ---------------------------------------------
 
     [Fact]
     public async Task ListRoleTypesAsync_orders_by_name_and_projects()
@@ -704,8 +684,6 @@ public sealed class ActivityServiceTests
             AssignmentStatusId = Guid.NewGuid(),
             AssignmentStatus = new AssignmentStatusType { Name = "Solicitado", Color = "#000" },
         };
-
-    // ---- ActivityRoleType CRUD --------------------------------------------
 
     [Fact]
     public async Task CreateActivityRoleTypeAsync_returns_conflict_when_name_exists()

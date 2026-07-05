@@ -4,15 +4,10 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Querying;
 
-/// <summary>
-/// Unit tests for <see cref="SortMap{T}"/>. All expressions are applied over an in-memory
-/// <c>List&lt;Row&gt;.AsQueryable()</c> and materialized so the real ordering is observed.
-/// </summary>
 public sealed class SortMapTests
 {
     private sealed record Row(int A, int B, int Id, string Name);
 
-    /// <summary>Fully configured map: two sortable keys, a default order and a unique tie-breaker.</summary>
     private static SortMap<Row> FullMap() =>
         new SortMap<Row>()
             .Add("a", r => r.A)
@@ -37,7 +32,6 @@ public sealed class SortMapTests
 
         var ordered = FullMap().Apply(rows.AsQueryable(), sort).ToList();
 
-        // Default is A ascending; the (1,*) rows tie on A and are broken by Id ascending.
         ordered.Select(r => r.Id).Should().ContainInOrder(10, 20, 30);
     }
 
@@ -71,7 +65,6 @@ public sealed class SortMapTests
             new Row(1, 2, 4, "w")
         );
 
-        // "-a,b" => A descending, then B ascending, then Id tie-breaker.
         var ordered = FullMap().Apply(rows.AsQueryable(), "-a,b").ToList();
 
         ordered.Select(r => r.Id).Should().ContainInOrder(2, 3, 4, 1);
@@ -90,7 +83,6 @@ public sealed class SortMapTests
     [Fact]
     public void Apply_appends_tie_breaker_last_for_stable_order_on_equal_keys()
     {
-        // Every row ties on A, so ordering is decided entirely by the Id tie-breaker (ascending).
         var rows = Rows(
             new Row(7, 0, 40, "x"),
             new Row(7, 0, 10, "y"),
@@ -106,7 +98,6 @@ public sealed class SortMapTests
     [Fact]
     public void Default_drops_terms_that_are_not_registered_selectors()
     {
-        // Default references an unregistered key => defaults collapse to empty; only the tie applies.
         var map = new SortMap<Row>().Add("a", r => r.A).Default("missing").Tie(r => r.Id);
         var rows = Rows(new Row(9, 0, 3, "x"), new Row(1, 0, 1, "y"), new Row(5, 0, 2, "z"));
 
@@ -123,7 +114,6 @@ public sealed class SortMapTests
 
         var ordered = map.Apply(rows.AsQueryable(), null).ToList();
 
-        // No default and no tie-breaker => original order is preserved.
         ordered.Select(r => r.Id).Should().ContainInOrder(3, 1, 2);
     }
 

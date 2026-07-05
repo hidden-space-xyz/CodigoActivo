@@ -17,8 +17,6 @@ import {
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const queryKey = computed(() => activityQueryKeys.adminByEvent(toValue(eventId)))
-  // Creating/removing activities also changes the event summary report's counts, and the public
-  // event page caches the same activities under the entity's public key.
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKey.value })
     void queryClient.invalidateQueries({
@@ -47,7 +45,6 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
   })
 
   const remove = useMutation({
-    // The backend cascades orphaned thumbnail files, so no client-side file cleanup is needed.
     mutationFn: (id: string) => deleteApiActivitiesActivityId(id),
     onSuccess: invalidate,
   })

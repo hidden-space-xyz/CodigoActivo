@@ -21,7 +21,6 @@ public record ResourceResponse(
     }
 }
 
-/// <summary>List-read shape: the full <see cref="ResourceResponse"/> minus the heavy Description.</summary>
 public record ResourceListItemResponse(
     Guid Id,
     string Title,

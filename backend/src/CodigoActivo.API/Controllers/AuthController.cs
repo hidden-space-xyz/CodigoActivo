@@ -17,8 +17,6 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 {
     [HttpGet("csrf")]
     [AllowAnonymous]
-    // Issues the antiforgery token pair. As a GET it is never CSRF-validated (CsrfValidationMiddleware
-    // only checks unsafe methods), so it needs no [IgnoreAntiforgeryToken] to bootstrap the token.
     public ActionResult<CsrfTokenResponse> Csrf([FromServices] IAntiforgery antiforgery)
     {
         var tokens = antiforgery.GetAndStoreTokens(HttpContext);

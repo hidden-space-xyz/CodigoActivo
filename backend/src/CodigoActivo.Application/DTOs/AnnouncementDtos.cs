@@ -22,7 +22,6 @@ public record AnnouncementResponse(
     }
 }
 
-/// <summary>List-read shape: the full <see cref="AnnouncementResponse"/> minus the heavy Description.</summary>
 public record AnnouncementListItemResponse(
     Guid Id,
     string Title,

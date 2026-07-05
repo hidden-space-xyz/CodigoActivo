@@ -10,19 +10,9 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// HTTP-level coverage for <c>EventsController</c> and the <c>EventService</c> behind it: anonymous
-/// reads with time-scope/year/featured filters and the paging envelope, the not-found contract, the
-/// admin-only write matrix, every schedule/thumbnail/category guard, the activity-range guard on
-/// update, feature toggling, and the event-category-type CRUD (including the conflict/not-found codes).
-/// The host clock is fixed to 2026-07-04 (<see cref="TestClock"/>), so upcoming/past boundaries are
-/// deterministic.
-/// </summary>
 public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-
-    // ---- seeding helpers ---------------------------------------------------
 
     private async Task<Guid> SeedThumbnailAsync()
     {
@@ -135,8 +125,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         );
     }
 
-    // ---- List / reads (anonymous) ------------------------------------------
-
     [Fact]
     public async Task List_is_anonymous_and_returns_paged_envelope_with_categories()
     {
@@ -182,8 +170,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var years = await response.ReadJsonAsync<IReadOnlyList<int>>();
         years.Should().Equal(2025, 2024);
     }
-
-    // ---- Create ------------------------------------------------------------
 
     [Fact]
     public async Task Create_as_admin_persists_event_with_categories_and_returns_201()
@@ -246,8 +232,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
-    // ---- Update ------------------------------------------------------------
-
     [Fact]
     public async Task Update_as_admin_changes_event_and_persists()
     {
@@ -284,8 +268,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         newFile.Should().NotBeNull();
     }
 
-    // ---- Delete / Feature --------------------------------------------------
-
     [Fact]
     public async Task Delete_as_admin_removes_event_and_its_orphaned_thumbnail()
     {
@@ -313,8 +295,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
-
-    // ---- Category-type CRUD ------------------------------------------------
 
     [Fact]
     public async Task ListCategoryTypes_returns_seeded_types_for_admin()

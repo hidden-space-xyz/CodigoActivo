@@ -12,12 +12,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="AuthService"/>. Collaborators are NSubstitute doubles; the real
-/// <see cref="FakePasswordHasher"/> and <see cref="TestClock"/> preserve the hash/verify and time
-/// contracts. Every guard branch and every distinct <see cref="ErrorCode"/> is exercised, asserting
-/// both <see cref="Error.Kind"/> and <see cref="Error.Code"/> and that failures never persist.
-/// </summary>
 public sealed class AuthServiceTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
@@ -96,14 +90,10 @@ public sealed class AuthServiceTests
     private static RegisterMinorRequest NewMinor(Guid? roleId = null, DateOnly? birthDate = null) =>
         new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate, roleId ?? SeedIds.UserTypes.Participant);
 
-    /// <summary>Stubs the sequential <c>users.ExistsAsync</c> calls: first is the "is first user" probe,
-    /// the second (if reached) is the duplicate email/phone probe.</summary>
     private void ExistsReturns(params bool[] seq) =>
         users
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(seq[0], seq.Skip(1).ToArray());
-
-    // ---- LoginAsync --------------------------------------------------------
 
     [Fact]
     public async Task LoginAsync_returns_unauthorized_when_user_not_found()
@@ -194,8 +184,6 @@ public sealed class AuthServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ---- GetCurrentAsync ---------------------------------------------------
-
     [Fact]
     public async Task GetCurrentAsync_returns_unauthorized_when_missing()
     {
@@ -223,8 +211,6 @@ public sealed class AuthServiceTests
         result.Value.Id.Should().Be(user.Id);
     }
 
-    // ---- RegisterAsync : guards -------------------------------------------
-
     [Fact]
     public async Task RegisterAsync_rejects_minor_adult_and_does_not_persist()
     {
@@ -251,8 +237,8 @@ public sealed class AuthServiceTests
     }
 
     [Theory]
-    [InlineData(true, true)] // hidden
-    [InlineData(false, false)] // not allowed for adults
+    [InlineData(true, true)]
+    [InlineData(false, false)]
     public async Task RegisterAsync_rejects_disallowed_adult_role(bool hidden, bool allowedForAdults)
     {
         ExistsReturns(true);
@@ -268,12 +254,12 @@ public sealed class AuthServiceTests
     }
 
     [Theory]
-    [InlineData("   ", "+34123456789", "password123")] // blank email
-    [InlineData("ana@test.com", "   ", "password123")] // blank phone
-    [InlineData("ana@test.com", "+34123456789", "   ")] // blank password
+    [InlineData("   ", "+34123456789", "password123")]
+    [InlineData("ana@test.com", "   ", "password123")]
+    [InlineData("ana@test.com", "+34123456789", "   ")]
     public async Task RegisterAsync_requires_contact_info(string email, string phone, string password)
     {
-        ExistsReturns(false); // first user -> role check skipped
+        ExistsReturns(false);
 
         var result = await sut.RegisterAsync(NewRegister(email: email, phone: phone, password: password));
 
@@ -285,7 +271,7 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task RegisterAsync_returns_conflict_when_email_or_phone_in_use()
     {
-        ExistsReturns(false, true); // first user, but duplicate contact
+        ExistsReturns(false, true);
 
         var result = await sut.RegisterAsync(NewRegister());
 
@@ -314,7 +300,7 @@ public sealed class AuthServiceTests
         ExistsReturns(false, false);
         userTypes
             .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new List<UserType>()); // fewer than the distinct requested role ids
+            .Returns(new List<UserType>());
 
         var result = await sut.RegisterAsync(NewRegister(minors: [NewMinor()]));
 
@@ -324,8 +310,8 @@ public sealed class AuthServiceTests
     }
 
     [Theory]
-    [InlineData(true, true)] // hidden
-    [InlineData(false, false)] // not allowed for minors
+    [InlineData(true, true)]
+    [InlineData(false, false)]
     public async Task RegisterAsync_rejects_disallowed_minor_role(bool hidden, bool allowedForMinors)
     {
         var minorRoleId = SeedIds.UserTypes.Participant;
@@ -346,13 +332,11 @@ public sealed class AuthServiceTests
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
-    // ---- RegisterAsync : success ------------------------------------------
-
     [Fact]
     public async Task RegisterAsync_first_user_becomes_admin_with_member_type_and_persists()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
-        ExistsReturns(false, false); // first user, no duplicate
+        ExistsReturns(false, false);
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(NewUser());
@@ -384,7 +368,6 @@ public sealed class AuthServiceTests
             ),
             Arg.Any<CancellationToken>()
         );
-        // Only the adult is created; the role check was skipped for the first user.
         await userTypes.DidNotReceiveWithAnyArgs().FindAsync(default!, default);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -395,7 +378,7 @@ public sealed class AuthServiceTests
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
         var adultRoleId = SeedIds.UserTypes.Volunteer;
         var minorRoleId = SeedIds.UserTypes.Participant;
-        ExistsReturns(true, false); // not first user, no duplicate
+        ExistsReturns(true, false);
         userTypes
             .FindAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(NewUserType(id: adultRoleId));
@@ -416,7 +399,6 @@ public sealed class AuthServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Minors.Should().HaveCount(1);
 
-        // Adult (Pending) and one child (Dependent) are added, each with its single chosen type.
         await users.Received(2).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await users.Received(1).AddAsync(
             Arg.Is<User>(u =>
@@ -438,8 +420,6 @@ public sealed class AuthServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ---- VerifyAsync -------------------------------------------------------
-
     [Fact]
     public async Task VerifyAsync_returns_not_found_when_user_missing()
     {
@@ -459,12 +439,12 @@ public sealed class AuthServiceTests
         var code = Guid.NewGuid();
         return new TheoryData<string, Guid?, int?>
         {
-            { "   ", code, 5 }, // blank otp argument
-            { Guid.NewGuid().ToString(), Guid.Empty, 5 }, // stored code is empty
-            { Guid.NewGuid().ToString(), null, 5 }, // stored code is null
-            { Guid.NewGuid().ToString(), code, null }, // no expiry set
-            { Guid.NewGuid().ToString(), code, -5 }, // expired
-            { Guid.NewGuid().ToString(), code, 5 }, // mismatch (argument != stored code)
+            { "   ", code, 5 },
+            { Guid.NewGuid().ToString(), Guid.Empty, 5 },
+            { Guid.NewGuid().ToString(), null, 5 },
+            { Guid.NewGuid().ToString(), code, null },
+            { Guid.NewGuid().ToString(), code, -5 },
+            { Guid.NewGuid().ToString(), code, 5 },
         };
     }
 

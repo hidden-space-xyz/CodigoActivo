@@ -32,7 +32,6 @@ public static class Projections
                 .ToList(),
         };
 
-    /// <summary>List projection: same as <see cref="Event"/> but without the heavy Description.</summary>
     public static readonly Expression<Func<Event, EventListItemResponse>> EventListItem =
         @event => new EventListItemResponse
         {
@@ -73,7 +72,6 @@ public static class Projections
             Featured = announcement.Featured,
         };
 
-    /// <summary>List projection: same as <see cref="Announcement"/> but without the heavy Description.</summary>
     public static readonly Expression<
         Func<Announcement, AnnouncementListItemResponse>
     > AnnouncementListItem = announcement => new AnnouncementListItemResponse
@@ -103,7 +101,6 @@ public static class Projections
             ThumbnailId = resource.ThumbnailId,
         };
 
-    /// <summary>List projection: same as <see cref="Resource"/> but without the heavy Description.</summary>
     public static readonly Expression<Func<Resource, ResourceListItemResponse>> ResourceListItem =
         resource => new ResourceListItemResponse
         {

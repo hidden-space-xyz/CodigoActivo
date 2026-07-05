@@ -4,11 +4,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
-/// <summary>
-/// Unit tests for the behaviour on the <see cref="User"/> entity: <see cref="User.Verify"/> promoting
-/// a pending account and <see cref="User.RegisterLogin"/> stamping the last-login time. Both mutators
-/// read <c>DateTimeOffset.UtcNow</c> directly, so timestamps are asserted against a captured window.
-/// </summary>
 public sealed class UserEntityTests
 {
     private static User NewPendingUser() =>

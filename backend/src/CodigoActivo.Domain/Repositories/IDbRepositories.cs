@@ -6,7 +6,6 @@ public interface IUserRepository : IDbRepository<User>
 {
     Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>Tracked lookup by email or phone, whichever matches the identifier.</summary>
     Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default);
 
     Task<bool> EmailExistsAsync(
@@ -33,7 +32,6 @@ public interface IEventRepository : IDbRepository<Event>
 
     Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>Marks the event as the only featured one. Returns false when the id doesn't exist.</summary>
     Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
@@ -83,7 +81,6 @@ public interface IResourceRepository : IDbRepository<Resource>;
 
 public interface IAnnouncementRepository : IDbRepository<Announcement>
 {
-    /// <summary>Marks the announcement as the only featured one. Returns false when the id doesn't exist.</summary>
     Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
@@ -91,10 +88,6 @@ public interface IPartnerRepository : IDbRepository<Partner>;
 
 public interface IFileRepository : IDbRepository<FileEntity>
 {
-    /// <summary>
-    /// True when any entity still references the file — as its thumbnail (a restricted FK) or
-    /// embedded as a content URL inside a rich-text description (plain text, no FK).
-    /// </summary>
     Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default);
 }
 

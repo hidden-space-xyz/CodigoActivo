@@ -10,8 +10,6 @@ public sealed class ClaimsPrincipalExtensionsTests
     private static ClaimsPrincipal PrincipalWith(params Claim[] claims) =>
         new(new ClaimsIdentity(claims, authenticationType: "Test"));
 
-    // ---- GetUserId ---------------------------------------------------------
-
     [Fact]
     public void GetUserId_returns_guid_when_name_identifier_is_valid()
     {
@@ -36,8 +34,6 @@ public sealed class ClaimsPrincipalExtensionsTests
 
         principal.GetUserId().Should().BeNull();
     }
-
-    // ---- IsAdmin -----------------------------------------------------------
 
     [Fact]
     public void IsAdmin_is_true_when_isadmin_claim_is_true()

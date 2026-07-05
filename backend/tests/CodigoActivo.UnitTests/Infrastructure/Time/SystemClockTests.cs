@@ -24,8 +24,6 @@ public sealed class SystemClockTests
     [Fact]
     public void Today_differs_between_the_two_extreme_timezones_when_they_straddle_midnight()
     {
-        // Not asserting a specific value (wall-clock dependent); this exercises the conversion for
-        // both directions and proves Today is timezone-derived rather than a fixed UTC date.
         var plus14 = new SystemClock(
             TimeZoneInfo.CreateCustomTimeZone("+14", TimeSpan.FromHours(14), "+14", "+14")
         );
@@ -33,9 +31,6 @@ public sealed class SystemClockTests
             TimeZoneInfo.CreateCustomTimeZone("-11", TimeSpan.FromHours(-11), "-11", "-11")
         );
 
-        // The two zones are 25 hours apart, so their local dates always differ — by 1 day for most of
-        // the day, and by 2 during the ~1h window when -11 is still on the previous date. Asserting the
-        // bound (not a fixed gap) keeps this deterministic regardless of the wall clock.
         (plus14.Today > minus11.Today).Should().BeTrue();
         (plus14.Today.DayNumber - minus11.Today.DayNumber).Should().BeInRange(1, 2);
     }

@@ -10,15 +10,8 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// HTTP-level tests for the cookie-session auth surface: CSRF issuance, self-registration + OTP
-/// verification, the login status/credential matrix, the authenticated <c>me</c>/<c>logout</c>
-/// endpoints, and CSRF enforcement on unsafe verbs. Runs through the real pipeline (cookie auth,
-/// CSRF middleware, controller, service, repositories) on the in-memory store.
-/// </summary>
 public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
-    // BirthDate.IsMinor() reads the real wall clock (not the TestClock), so anchor ages to "now".
     private static readonly DateOnly AdultBirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-30);
 
     private static RegisterRequest NewAdultRequest(
@@ -41,8 +34,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         );
     }
 
-    // ---- CSRF ---------------------------------------------------------------
-
     [Fact]
     public async Task Csrf_is_anonymous_and_returns_token_and_sets_cookie()
     {
@@ -57,8 +48,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
         cookies.Should().NotBeEmpty();
     }
-
-    // ---- Register -----------------------------------------------------------
 
     [Fact]
     public async Task Register_new_adult_returns_201_with_verification_code_and_persists_pending()
@@ -83,9 +72,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
     }
 
     [Theory]
-    [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!")] // blank first name
-    [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!")] // invalid email
-    [InlineData("Nadia", "valid@codigoactivo.test", "+34600000098", "short")] // password too short
+    [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!")]
+    [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!")]
+    [InlineData("Nadia", "valid@codigoactivo.test", "+34600000098", "short")]
     public async Task Register_with_invalid_body_is_validation_error(
         string firstName,
         string email,
@@ -104,8 +93,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
-
-    // ---- Verify -------------------------------------------------------------
 
     private static async Task<(Guid UserId, Guid Otp)> RegisterPendingAdultAsync(HttpClient client)
     {
@@ -142,8 +129,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.UserNotFound);
     }
-
-    // ---- Login --------------------------------------------------------------
 
     [Fact]
     public async Task Login_with_valid_credentials_returns_200_sets_cookie_and_records_login()
@@ -198,8 +183,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
-
-    // ---- Me / Logout --------------------------------------------------------
 
     [Fact]
     public async Task Me_when_authenticated_returns_the_current_user()

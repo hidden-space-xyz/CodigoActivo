@@ -306,14 +306,8 @@ public interface IFileService
         CancellationToken ct = default
     );
 
-    /// <summary>Deletes the file row and its stored content; fails with FileNotFound / FileInUse.</summary>
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>
-    /// Best-effort cascade cleanup used by the entity services after dropping a thumbnail
-    /// reference: a file that is still referenced elsewhere (FileInUse) or already gone
-    /// (FileNotFound) is silently kept/skipped.
-    /// </summary>
     Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default);
 }
 

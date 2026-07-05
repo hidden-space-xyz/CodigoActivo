@@ -13,11 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Reference unit test for a CRUD service. Collaborators are NSubstitute doubles; the read path runs
-/// against a real <see cref="FakeQueryExecutor"/> over <c>list.AsQueryable()</c>, so the projection,
-/// <see cref="SortMap{T}"/> and <see cref="TextSearch"/> expressions are exercised for real.
-/// </summary>
 public sealed class PartnerServiceTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
@@ -52,8 +47,6 @@ public sealed class PartnerServiceTests
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
-
-    // ---- ListAsync ---------------------------------------------------------
 
     [Fact]
     public async Task ListAsync_projects_and_pages()
@@ -107,8 +100,6 @@ public sealed class PartnerServiceTests
         result.Items.Select(p => p.Name).Should().ContainInOrder("Zeta", "Mint", "Acme");
     }
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_partner_when_found()
     {
@@ -132,8 +123,6 @@ public sealed class PartnerServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.PartnerNotFound);
     }
-
-    // ---- CreateAsync -------------------------------------------------------
 
     [Fact]
     public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
@@ -184,8 +173,6 @@ public sealed class PartnerServiceTests
 
         result.Value.Website.Should().BeNull();
     }
-
-    // ---- UpdateAsync -------------------------------------------------------
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_partner_missing()
@@ -266,8 +253,6 @@ public sealed class PartnerServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
-
-    // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_partner_missing()

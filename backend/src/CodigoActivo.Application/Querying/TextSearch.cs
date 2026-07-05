@@ -3,13 +3,6 @@ using System.Reflection;
 
 namespace CodigoActivo.Application.Querying;
 
-/// <summary>
-/// Accent- and case-insensitive text search, translated to SQL by EF Core. Reproduces the folding
-/// the old OData <c>deaccent(tolower(field))</c> filter did: the column is lower-cased and the five
-/// Spanish acute vowels are stripped (<c>LOWER</c> + chained <c>REPLACE</c>), then matched with
-/// <c>LIKE</c>. Callers must fold the search term with <see cref="Normalize"/> first so both sides
-/// use the same alphabet.
-/// </summary>
 public static class TextSearch
 {
     private static readonly (string Accented, string Plain)[] Folds =
@@ -36,7 +29,6 @@ public static class TextSearch
         [typeof(string)]
     )!;
 
-    /// <summary>Folds a raw search term to the same alphabet the column is folded to.</summary>
     public static string Normalize(string value)
     {
         var normalized = value.Trim().ToLowerInvariant();
@@ -45,18 +37,11 @@ public static class TextSearch
         return normalized;
     }
 
-    /// <summary>
-    /// Builds <c>x =&gt; fold(selector(x)).Contains(term)</c> as an EF-translatable predicate. The
-    /// term is captured (not inlined) so EF Core parameterizes it.
-    /// </summary>
     public static Expression<Func<T, bool>> Contains<T>(
         Expression<Func<T, string?>> selector,
         string term
     )
     {
-        // Coalesce to "" first: the selected column may be nullable (e.g. User.Email), and calling
-        // ToLower() on a null throws under LINQ-to-Objects (the in-memory/fake executors) while
-        // silently dropping the row under Postgres — folding null to "" makes both behave the same.
         Expression body = Expression.Call(
             Expression.Coalesce(selector.Body, Expression.Constant(string.Empty)),
             ToLowerMethod

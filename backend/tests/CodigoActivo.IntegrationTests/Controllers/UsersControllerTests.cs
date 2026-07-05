@@ -10,15 +10,8 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Integration coverage for <c>UsersController</c> + <c>UserService</c>: the mixed authorization
-/// matrix (plain <c>[Authorize]</c> list with row-level scoping, <c>[AllowOnlyAdmin]</c> catalogs and
-/// get, <c>[AllowOnlySelf]</c> writes), every distinct <see cref="ErrorCode"/> the service can return,
-/// and persistence verified straight from the store.
-/// </summary>
 public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
-    // Ages relative to the real clock used by DateOnly.IsMinor: 2015/2016 => minor, 1990 => adult.
     private static readonly DateOnly MinorBirthDate = new(2016, 1, 1);
     private static readonly DateOnly ChildBirthDate = new(2015, 5, 5);
 
@@ -37,8 +30,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
     {
         return new UpdateUserRequest(firstName, "Miembro", null, null, ChildBirthDate, parentId);
     }
-
-    // ---- List: plain [Authorize] with row-level scoping --------------------
 
     [Fact]
     public async Task List_anonymous_is_unauthorized()
@@ -78,8 +69,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
             [TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]
         );
     }
-
-    // ---- Catalog endpoints: [AllowOnlyAdmin] -------------------------------
 
     [Fact]
     public async Task Types_as_admin_returns_all_user_types()
@@ -127,8 +116,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         statuses.Should().Contain(s => s.Id == SeedIds.UserStatusTypes.Active);
     }
 
-    // ---- Get by id: [AllowOnlyAdmin] ---------------------------------------
-
     [Fact]
     public async Task Get_missing_user_is_404_with_error_code()
     {
@@ -140,8 +127,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.UserNotFound);
     }
-
-    // ---- Update: [AllowOnlySelf] -------------------------------------------
 
     [Fact]
     public async Task Update_anonymous_is_unauthorized()
@@ -211,8 +196,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
-    // ---- Delete: [AllowOnlySelf] -------------------------------------------
-
     [Fact]
     public async Task Delete_as_admin_removes_member()
     {
@@ -224,8 +207,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.PendingId).AsTask());
         stored.Should().BeNull();
     }
-
-    // ---- Change type: [AllowOnlyAdmin] -------------------------------------
 
     [Fact]
     public async Task ChangeType_as_admin_replaces_the_users_type()
@@ -242,8 +223,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         );
         user!.UserTypeId.Should().Be(SeedIds.UserTypes.Volunteer);
     }
-
-    // ---- Add child: [AllowOnlySelf] ----------------------------------------
 
     [Fact]
     public async Task AddChild_as_member_creates_dependent()
@@ -262,8 +241,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
     }
 
-    // ---- Change password: [AllowOnlySelf] ----------------------------------
-
     [Fact]
     public async Task ChangePassword_with_correct_current_updates_hash()
     {
@@ -276,8 +253,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask());
         stored!.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NewStr0ngPass!");
     }
-
-    // ---- Admin grant/revoke: [AllowOnlyAdmin] ------------------------------
 
     [Fact]
     public async Task SetAdmin_as_admin_grants_admin_to_another_user()

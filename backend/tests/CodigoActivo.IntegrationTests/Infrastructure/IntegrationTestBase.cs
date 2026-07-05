@@ -4,13 +4,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-/// <summary>
-/// Base for HTTP-level integration tests. Each test starts from a freshly reseeded in-memory store
-/// (reference data + the fixed <see cref="TestSeedData"/> users). Exposes cookie-aware clients and
-/// login helpers; every test class gets its own factory (hence its own isolated database).
-/// Parallelization is disabled assembly-wide (see <c>TestParallelization.cs</c>) so the multiple
-/// hosts never race on Serilog's static logger or its shared log file.
-/// </summary>
 public abstract class IntegrationTestBase : IClassFixture<CodigoActivoWebAppFactory>, IAsyncLifetime
 {
     protected IntegrationTestBase(CodigoActivoWebAppFactory factory)
@@ -30,13 +23,11 @@ public abstract class IntegrationTestBase : IClassFixture<CodigoActivoWebAppFact
         return ValueTask.CompletedTask;
     }
 
-    /// <summary>An anonymous, cookie-aware client (no session).</summary>
     protected HttpClient CreateClient()
     {
         return Factory.CreateClient();
     }
 
-    /// <summary>Logs the given seeded user in and returns a client carrying the session cookie.</summary>
     protected async Task<HttpClient> LoginAsync(TestCredentials credentials)
     {
         var client = Factory.CreateClient();

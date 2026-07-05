@@ -2,21 +2,13 @@ using System.Text.RegularExpressions;
 
 namespace CodigoActivo.Domain.Storage;
 
-/// <summary>
-/// Rich-text descriptions (TipTap JSON on events, announcements and resources) embed uploaded
-/// images as plain "/api/files/{id}/content" URLs with no FK backing them. This is the single
-/// place that knows that stored format — both for extracting the referenced file ids from a
-/// document and for building the text marker the in-use check scans descriptions for.
-/// </summary>
 public static partial class RichTextFileReferences
 {
-    /// <summary>The substring a description contains iff it embeds the given file.</summary>
     public static string ContentUrlMarker(Guid fileId)
     {
         return $"/api/files/{fileId}/content";
     }
 
-    /// <summary>File ids embedded as content URLs in the document (absolute or relative).</summary>
     public static IReadOnlySet<Guid> Extract(string? richTextJson)
     {
         var ids = new HashSet<Guid>();
@@ -30,7 +22,6 @@ public static partial class RichTextFileReferences
         return ids;
     }
 
-    /// <summary>File ids embedded in the previous document but no longer in the current one.</summary>
     public static IReadOnlySet<Guid> ExtractRemoved(string? previous, string? current)
     {
         var removed = new HashSet<Guid>(Extract(previous));

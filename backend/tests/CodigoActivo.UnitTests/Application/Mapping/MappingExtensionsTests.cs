@@ -6,16 +6,10 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Mapping;
 
-/// <summary>
-/// Unit tests for the entity → DTO <c>ToResponse</c> extension methods, covering the null-navigation
-/// fallbacks on <see cref="User"/> as well as the flat mappings for the remaining entities.
-/// </summary>
 public sealed class MappingExtensionsTests
 {
     private static readonly DateTimeOffset Created = new(2024, 1, 2, 3, 4, 5, TimeSpan.Zero);
     private static readonly DateTimeOffset Updated = new(2025, 6, 7, 8, 9, 10, TimeSpan.Zero);
-
-    // ---- User.ToResponse ---------------------------------------------------
 
     [Fact]
     public void User_ToResponse_maps_scalars_status_isadmin_and_type()

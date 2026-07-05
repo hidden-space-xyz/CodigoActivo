@@ -8,11 +8,8 @@ import type {
 
 export type ServerTableFieldType = 'text' | 'number'
 
-/** A filterable column: maps a table column to a REST query parameter. */
 export interface ServerTableColumn {
-  /** Query parameter name to send (defaults to the column key). */
   readonly param?: string
-  /** How to coerce the filter value (default 'text'). */
   readonly type?: ServerTableFieldType
 }
 
@@ -37,11 +34,6 @@ function initialFilters(
   return filters
 }
 
-/**
- * Server-side pagination/sorting/filtering for a PrimeVue lazy DataTable, backed by a REST list
- * endpoint. Builds a plain query-parameter object (`page`, `pageSize`, `sort`, plus one param per
- * filtered column) matching the backend's typed list queries.
- */
 export function useServerTable<T, TParams = Record<string, unknown>>(
   options: UseServerTableOptions<T, TParams>,
 ) {
@@ -66,8 +58,6 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
       if (value === null || value === undefined || value === '') continue
       if (column.type === 'number') {
         const parsed = Number(value)
-        // A non-numeric or overflowing value would serialize as `?param=NaN` / `?param=Infinity`
-        // and fail backend model binding; omit the param entirely instead.
         if (!Number.isFinite(parsed)) continue
         result[column.param ?? key] = parsed
       } else {

@@ -134,9 +134,6 @@ public class FileService(
         var file = await files.FindAsync(f => f.Id == id, ct);
         if (file is null) return Error.NotFound(ErrorCode.FileNotFound);
 
-        // Thumbnail FKs are restricted (deleting would throw and surface as a 500) and rich-text
-        // embeds have no FK at all (deleting would silently break the description), so check both
-        // first and return a clean conflict instead.
         if (await files.IsInUseAsync(id, ct))
             return Error.Conflict(ErrorCode.FileInUse);
 
@@ -151,18 +148,12 @@ public class FileService(
 
     public async Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default)
     {
-        // Entity services call this after their own SaveChanges, so a dropped thumbnail reference
-        // is already gone. Failures are deliberately ignored: FileInUse means the file is still
-        // shared elsewhere, FileNotFound means there is nothing to clean, and a storage or database
-        // hiccup (e.g. the blob being streamed concurrently) must not fail the entity operation
-        // that already succeeded — so exceptions are swallowed too, not just Result failures.
         try
         {
             _ = await DeleteAsync(fileId, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Best-effort cleanup only — leave the blob behind rather than surface a 500.
         }
     }
 

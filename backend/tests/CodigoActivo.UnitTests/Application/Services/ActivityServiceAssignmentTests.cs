@@ -13,11 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Assignment, household and overlap coverage for <see cref="ActivityService"/>. CRUD and catalog
-/// coverage lives in <c>ActivityServiceTests</c>. Signup-window reads run against the real
-/// <see cref="FakeQueryExecutor"/> so <c>EnsureSignupOpenAsync</c> is exercised for real.
-/// </summary>
 public sealed class ActivityServiceAssignmentTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
@@ -34,7 +29,6 @@ public sealed class ActivityServiceAssignmentTests
     private readonly TestClock clock = new();
     private readonly ActivityService sut;
 
-    // clock.UtcNow default is 2026-07-04 12:00Z; these windows bracket it / exclude it.
     private static readonly DateTimeOffset OpenStart = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset OpenEnd = new(2026, 7, 30, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset PastStart = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
@@ -119,8 +113,6 @@ public sealed class ActivityServiceAssignmentTests
             AssignmentStatus = status!,
         };
 
-    // ---- AssignAsync -------------------------------------------------------
-
     [Fact]
     public async Task AssignAsync_returns_not_found_when_activity_window_missing()
     {
@@ -202,7 +194,6 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
-        // Admin bypasses the window even though it is closed.
         HasActivityWindow(activityId, PastStart, PastEnd);
         AllowedRoleExists(true);
         ExistingAssignment(null);
@@ -232,8 +223,6 @@ public sealed class ActivityServiceAssignmentTests
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- AssignHouseholdAsync ---------------------------------------------
 
     [Fact]
     public async Task AssignHouseholdAsync_returns_required_when_no_assignments()
@@ -304,7 +293,6 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             actingUserId,
             new AssignHouseholdRequest(
-                // acting user only (no household check), role not in the activity's allowed set.
                 new List<HouseholdAssignmentRequest> { new(actingUserId, Guid.NewGuid()) }
             ),
             isAdmin: true
@@ -335,20 +323,18 @@ public sealed class ActivityServiceAssignmentTests
                 },
             }.AsQueryable()
         );
-        // The child is already assigned, so only the acting user is created.
         activities.QueryAssignments().Returns(
             new List<ActivityUserRoleAssignment>
             {
                 new() { UserId = childId, ActivityId = activityId },
             }.AsQueryable()
         );
-        // statuses.FindAsync is left unstubbed (returns null) to exercise the empty-name fallback.
 
         var request = new AssignHouseholdRequest(
             new List<HouseholdAssignmentRequest>
             {
                 new(actingUserId, roleId),
-                new(actingUserId, roleId), // duplicate, deduped by UserId
+                new(actingUserId, roleId),
                 new(childId, roleId),
             }
         );
@@ -370,8 +356,6 @@ public sealed class ActivityServiceAssignmentTests
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- UnassignAsync -----------------------------------------------------
 
     [Fact]
     public async Task UnassignAsync_returns_not_found_when_assignment_missing()
@@ -429,8 +413,6 @@ public sealed class ActivityServiceAssignmentTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ---- ChangeStatusAsync -------------------------------------------------
-
     [Fact]
     public async Task ChangeStatusAsync_returns_not_found_when_assignment_missing()
     {
@@ -471,7 +453,6 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var statusId = Guid.NewGuid();
-        // ActivityRoleType left null to exercise the null-conditional role name.
         var assignment = Assignment(userId, activityId);
         ExistingAssignment(assignment);
         statuses.FindAsync(Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(), Arg.Any<CancellationToken>())
@@ -490,8 +471,6 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.RoleTypeName.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- ChangeRoleAsync ---------------------------------------------------
 
     [Fact]
     public async Task ChangeRoleAsync_returns_not_found_when_assignment_missing()
@@ -551,7 +530,6 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
-        // AssignmentStatus left null to exercise the empty-name fallback.
         var assignment = Assignment(userId, activityId);
         ExistingAssignment(assignment);
         AllowedRoleExists(true);
@@ -565,8 +543,6 @@ public sealed class ActivityServiceAssignmentTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        // The role id is part of the composite key, so the change is a remove + re-insert that
-        // carries the original status, not an in-place mutation.
         activities.Received(1).RemoveAssignment(assignment);
         await activities
             .Received(1)
@@ -584,8 +560,6 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.Status.Name.Should().BeEmpty();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- VerifyTimeOverlapsAsync ------------------------------------------
 
     [Fact]
     public async Task VerifyTimeOverlapsAsync_returns_not_found_when_activity_missing()
@@ -612,9 +586,7 @@ public sealed class ActivityServiceAssignmentTests
         activities.GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>()).Returns(
             new List<ActivityUserRoleAssignment>
             {
-                // Same activity is skipped even though times coincide.
                 new() { ActivityId = activityId, Activity = OverlapActivity(activityId, 10, 12) },
-                // Overlaps the target window (11:00-13:00 vs 10:00-12:00).
                 new() { ActivityId = overlappingId, Activity = OverlapActivity(overlappingId, 11, 13, "Choque") },
             }
         );
@@ -659,8 +631,6 @@ public sealed class ActivityServiceAssignmentTests
             ActivityStartsAt = new DateTimeOffset(2026, 7, 10, startHour, 0, 0, TimeSpan.Zero),
             ActivityEndsAt = new DateTimeOffset(2026, 7, 10, endHour, 0, 0, TimeSpan.Zero),
         };
-
-    // ---- GetHouseholdAssignmentsAsync -------------------------------------
 
     [Fact]
     public async Task GetHouseholdAssignmentsAsync_maps_children_and_falls_back_on_null_navigations()

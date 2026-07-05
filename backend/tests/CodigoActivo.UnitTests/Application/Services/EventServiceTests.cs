@@ -13,12 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="EventService"/>. Collaborators are NSubstitute doubles; the read path
-/// (<c>ListAsync</c>/<c>GetByIdAsync</c>/<c>GetPastYearsAsync</c>/<c>ListCategoryTypesAsync</c>) runs
-/// against a real <see cref="FakeQueryExecutor"/> over <c>list.AsQueryable()</c>, so the projection,
-/// <see cref="CodigoActivo.Application.Querying.SortMap{T}"/> and text-search expressions execute for real.
-/// </summary>
 public sealed class EventServiceTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
@@ -44,8 +38,6 @@ public sealed class EventServiceTests
             uow
         );
     }
-
-    // ---- helpers -----------------------------------------------------------
 
     private void HasEvents(params Event[] items) => events.Query().Returns(items.AsQueryable());
 
@@ -131,8 +123,6 @@ public sealed class EventServiceTests
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
             CategoryTypeIds: categoryTypeIds
         );
-
-    // ---- ListAsync ---------------------------------------------------------
 
     [Fact]
     public async Task ListAsync_without_scope_projects_and_pages_all()
@@ -241,8 +231,6 @@ public sealed class EventServiceTests
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Zeta");
     }
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_event_when_found()
     {
@@ -267,8 +255,6 @@ public sealed class EventServiceTests
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
-    // ---- GetPastYearsAsync -------------------------------------------------
-
     [Fact]
     public async Task GetPastYearsAsync_returns_distinct_start_years_descending()
     {
@@ -285,8 +271,6 @@ public sealed class EventServiceTests
         result.Should().Equal(2025, 2024);
     }
 
-    // ---- CreateAsync : schedule guards -------------------------------------
-
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -294,7 +278,6 @@ public sealed class EventServiceTests
     [InlineData(3)]
     public async Task CreateAsync_returns_schedule_required_when_any_datetime_missing(int missing)
     {
-        // Built inline (not via CreateReq, whose `?? default` coalescing would defeat the null injection).
         var request = new CreateEventRequest(
             Title: "Hackathon",
             Subtitle: "Innovación",
@@ -360,8 +343,6 @@ public sealed class EventServiceTests
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
-    // ---- CreateAsync : thumbnail / category guards -------------------------
-
     [Fact]
     public async Task CreateAsync_returns_thumbnail_not_found_when_file_missing()
     {
@@ -395,7 +376,7 @@ public sealed class EventServiceTests
     public async Task CreateAsync_returns_category_type_not_found_when_some_ids_do_not_exist()
     {
         ThumbnailExists(true);
-        HasCategoryCount(1); // two distinct ids requested, only one exists
+        HasCategoryCount(1);
         var request = CreateReq(categoryTypeIds: new[] { Guid.NewGuid(), Guid.NewGuid() });
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
@@ -451,8 +432,6 @@ public sealed class EventServiceTests
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- UpdateAsync -------------------------------------------------------
 
     [Fact]
     public async Task UpdateAsync_returns_schedule_invalid_range_before_touching_repository()
@@ -643,10 +622,6 @@ public sealed class EventServiceTests
         await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
     }
 
-    /// <summary>
-    /// Stubs a happy-path update for <paramref name="ev"/>: found for edit, thumbnail + category
-    /// checks pass, and SaveChanges backfills the category navigation the projection dereferences.
-    /// </summary>
     private void PrepareUpdate(Event ev)
     {
         HasEvents(ev);
@@ -666,8 +641,6 @@ public sealed class EventServiceTests
                 return 1;
             });
     }
-
-    // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_event_missing()
@@ -697,9 +670,7 @@ public sealed class EventServiceTests
             new[]
             {
                 new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
-                // Two activities sharing one thumbnail -> cleaned up once (Distinct).
                 new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
-                // Another event's activity -> untouched.
                 foreignActivity,
             }.AsQueryable()
         );
@@ -731,8 +702,6 @@ public sealed class EventServiceTests
         await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
 
-    // ---- SetFeaturedAsync --------------------------------------------------
-
     [Fact]
     public async Task SetFeaturedAsync_returns_not_found_when_event_missing()
     {
@@ -758,8 +727,6 @@ public sealed class EventServiceTests
         result.Value.Featured.Should().BeTrue();
     }
 
-    // ---- ListCategoryTypesAsync --------------------------------------------
-
     [Fact]
     public async Task ListCategoryTypesAsync_returns_types_ordered_by_name()
     {
@@ -772,8 +739,6 @@ public sealed class EventServiceTests
 
         result.Select(c => c.Name).Should().ContainInOrder("Alpha", "Zeta");
     }
-
-    // ---- CreateCategoryTypeAsync -------------------------------------------
 
     [Fact]
     public async Task CreateCategoryTypeAsync_returns_conflict_when_name_exists()
@@ -808,8 +773,6 @@ public sealed class EventServiceTests
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- UpdateCategoryTypeAsync -------------------------------------------
 
     [Fact]
     public async Task UpdateCategoryTypeAsync_returns_not_found_when_type_missing()
@@ -874,8 +837,6 @@ public sealed class EventServiceTests
         existing.Color.Should().Be("#abcdef");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- DeleteCategoryTypeAsync -------------------------------------------
 
     [Fact]
     public async Task DeleteCategoryTypeAsync_returns_not_found_when_nothing_removed()

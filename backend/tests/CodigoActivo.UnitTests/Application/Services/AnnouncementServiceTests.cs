@@ -13,11 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="AnnouncementService"/>. Collaborators are NSubstitute doubles; the read
-/// path runs against a real <see cref="FakeQueryExecutor"/> over <c>list.AsQueryable()</c>, exercising
-/// the projection, <see cref="SortMap{T}"/> and <see cref="TextSearch"/> expressions for real.
-/// </summary>
 public sealed class AnnouncementServiceTests
 {
     private readonly IAnnouncementRepository announcements = Substitute.For<IAnnouncementRepository>();
@@ -57,8 +52,6 @@ public sealed class AnnouncementServiceTests
             CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
-
-    // ---- ListAsync ---------------------------------------------------------
 
     [Fact]
     public async Task ListAsync_projects_and_pages()
@@ -130,8 +123,6 @@ public sealed class AnnouncementServiceTests
         result.Items.Select(a => a.Title).Should().ContainInOrder("Alpha", "Bravo", "Charlie");
     }
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_announcement_when_found()
     {
@@ -156,8 +147,6 @@ public sealed class AnnouncementServiceTests
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
     }
 
-    // ---- GetYearsAsync -----------------------------------------------------
-
     [Fact]
     public async Task GetYearsAsync_returns_distinct_years_descending()
     {
@@ -173,8 +162,6 @@ public sealed class AnnouncementServiceTests
         result.Should().ContainInOrder(2025, 2024, 2023);
         result.Should().HaveCount(3);
     }
-
-    // ---- CreateAsync -------------------------------------------------------
 
     [Fact]
     public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
@@ -217,8 +204,6 @@ public sealed class AnnouncementServiceTests
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- UpdateAsync -------------------------------------------------------
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_missing()
@@ -331,8 +316,6 @@ public sealed class AnnouncementServiceTests
         await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
     }
 
-    // ---- DeleteAsync -------------------------------------------------------
-
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_announcement_missing()
     {
@@ -377,8 +360,6 @@ public sealed class AnnouncementServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
-
-    // ---- SetFeaturedAsync --------------------------------------------------
 
     [Fact]
     public async Task SetFeaturedAsync_returns_not_found_when_id_missing()

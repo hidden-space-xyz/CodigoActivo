@@ -1,10 +1,5 @@
 namespace CodigoActivo.Application.Querying;
 
-/// <summary>
-/// Base for list-endpoint query parameters. Bound from the query string
-/// (<c>?page=&amp;pageSize=&amp;sort=</c>). <see cref="Page"/>/<see cref="PageSize"/> are
-/// self-clamping so a caller can never request an unbounded page.
-/// </summary>
 public abstract class PageQuery
 {
     public const int MaxPageSize = 100;
@@ -30,9 +25,5 @@ public abstract class PageQuery
         }
     }
 
-    /// <summary>
-    /// Comma-separated sort keys; a leading <c>-</c> means descending (e.g. <c>-createdAt,title</c>).
-    /// Only keys whitelisted in the endpoint's <see cref="SortMap{T}"/> are honored.
-    /// </summary>
     public string? Sort { get; set; }
 }

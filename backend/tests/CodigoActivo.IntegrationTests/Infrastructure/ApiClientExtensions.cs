@@ -3,12 +3,6 @@ using CodigoActivo.Application.DTOs;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-/// <summary>
-/// HTTP helpers that mirror how the SPA talks to the API: a fresh CSRF token is fetched from
-/// <c>GET /api/auth/csrf</c> (which also drops the antiforgery cookie) immediately before each
-/// unsafe request, so the token always matches the current identity and cookie. Bodies and responses
-/// use <see cref="TestJson.Options"/>.
-/// </summary>
 public static class ApiClientExtensions
 {
     public static async Task<string> FetchCsrfTokenAsync(

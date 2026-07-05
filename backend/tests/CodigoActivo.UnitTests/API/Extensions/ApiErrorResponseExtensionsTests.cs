@@ -14,7 +14,6 @@ public sealed class ApiErrorResponseExtensionsTests
     private static DefaultHttpContext ContextWithTrace() =>
         new() { TraceIdentifier = TraceId };
 
-    /// <summary>Minimal concrete controller so the <c>ControllerBase</c> extension methods can run.</summary>
     private sealed class TestController : ControllerBase;
 
     private static TestController NewController(string traceId = TraceId)
@@ -35,8 +34,6 @@ public sealed class ApiErrorResponseExtensionsTests
             { ErrorKind.NotFound, StatusCodes.Status404NotFound, "Not Found" },
             { ErrorKind.Conflict, StatusCodes.Status409Conflict, "Conflict" },
         };
-
-    // ---- Create ------------------------------------------------------------
 
     [Theory]
     [MemberData(nameof(KindMappings))]
@@ -72,8 +69,6 @@ public sealed class ApiErrorResponseExtensionsTests
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("kind");
     }
 
-    // ---- CreateInternalError ----------------------------------------------
-
     [Fact]
     public void CreateInternalError_returns_500_unexpected_error()
     {
@@ -85,8 +80,6 @@ public sealed class ApiErrorResponseExtensionsTests
         body.Code.Should().Be(ErrorCode.UnexpectedError);
         body.TraceId.Should().Be(TraceId);
     }
-
-    // ---- ToActionResult<T> -------------------------------------------------
 
     [Fact]
     public void ToActionResult_generic_success_returns_ok_with_value()
@@ -115,8 +108,6 @@ public sealed class ApiErrorResponseExtensionsTests
         body.Status.Should().Be(StatusCodes.Status404NotFound);
     }
 
-    // ---- ToActionResult (non-generic) -------------------------------------
-
     [Fact]
     public void ToActionResult_success_returns_no_content()
     {
@@ -141,8 +132,6 @@ public sealed class ApiErrorResponseExtensionsTests
         problem.Value.Should().BeOfType<ApiErrorResponse>()
             .Which.Title.Should().Be("Conflict");
     }
-
-    // ---- ToProblemResult ---------------------------------------------------
 
     [Fact]
     public void ToProblemResult_builds_object_result_with_status_and_trace()

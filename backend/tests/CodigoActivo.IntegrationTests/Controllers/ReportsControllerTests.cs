@@ -10,27 +10,14 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Integration coverage for the reports controller: the admin-only event/activity summary and
-/// assignment endpoints and the dashboard, the full authorization matrix (anonymous 401 / member
-/// 403 / admin 200), the not-found contracts (<see cref="ErrorCode.EventNotFound"/>,
-/// <see cref="ErrorCode.ActivityNotFound"/>), and the exact computed aggregates including the
-/// non-signed-up parent row and the confirmed-only role-type breakdown.
-/// </summary>
 public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
-    // Fixed ids so URLs are stable across the seed + request.
     private static readonly Guid EventId = new("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid ActivityAId = new("bbbbbbbb-0000-0000-0000-000000000001");
     private static readonly Guid ActivityBId = new("bbbbbbbb-0000-0000-0000-000000000002");
 
     private static readonly DateTimeOffset At = new(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
 
-    /// <summary>
-    /// Seeds one event with two activities. Activity A (Taller) has a single confirmed signup by the
-    /// child whose parent is NOT signed up (exercises the added-parent row). Activity B (Charla) has a
-    /// spread of statuses/roles so the aggregate counts are all distinct.
-    /// </summary>
     private Task SeedEventGraphAsync()
     {
         return Factory.SeedAsync(db =>
@@ -61,9 +48,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
             );
 
             db.ActivityUserRoleAssignments.AddRange(
-                // Activity A: only the child signs up (helper, confirmed); parent is not signed up.
                 Assignment(ActivityAId, TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Helper, SeedIds.AssignmentStatusTypes.Confirmed),
-                // Activity B: three assignments spanning every status.
                 Assignment(ActivityBId, TestSeedData.Users.AdminId, SeedIds.ActivityRoleTypes.Leader, SeedIds.AssignmentStatusTypes.Confirmed),
                 Assignment(ActivityBId, TestSeedData.Users.PendingId, SeedIds.ActivityRoleTypes.Participant, SeedIds.AssignmentStatusTypes.Requested),
                 Assignment(ActivityBId, TestSeedData.Users.BlockedId, SeedIds.ActivityRoleTypes.Leader, SeedIds.AssignmentStatusTypes.Denied)
@@ -100,8 +85,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
             AssignmentStatusId = statusId,
         };
 
-    // ---- Event summary -----------------------------------------------------
-
     [Fact]
     public async Task EventSummary_as_admin_returns_computed_aggregates()
     {
@@ -134,8 +117,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
-    // ---- Event assignments report ------------------------------------------
-
     [Fact]
     public async Task EventAssignments_as_admin_lists_every_assignment_with_names()
     {
@@ -159,8 +140,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         confirmedLeader.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
         confirmedLeader.StatusName.Should().Be("Confirmada");
     }
-
-    // ---- Activity assignments report ---------------------------------------
 
     [Fact]
     public async Task ActivityAssignments_includes_signed_up_row_and_non_signed_up_parent()
@@ -207,8 +186,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         error!.Code.Should().Be(ErrorCode.ActivityNotFound);
     }
 
-    // ---- Dashboard (admin only) --------------------------------------------
-
     [Fact]
     public async Task Dashboard_counts_reference_users_only_when_empty()
     {
@@ -223,10 +200,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         dashboard.Resources.Should().Be(0);
         dashboard.Announcements.Should().Be(0);
         dashboard.Partners.Should().Be(0);
-        dashboard.Users.Should().Be(5); // the five fixed TestSeedData users
+        dashboard.Users.Should().Be(5);
     }
-
-    // ---- Authorization matrix ----------------------------------------------
 
     [Fact]
     public async Task Admin_only_endpoints_challenge_anonymous()

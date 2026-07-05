@@ -7,12 +7,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Integration tests for <c>GET /api/registration-types</c>: the anonymous registration catalogue.
-/// Verifies that hidden user types (e.g. Administrador) are never exposed, the list is ordered by name,
-/// and the optional <c>audience</c> filter narrows results to the minor- or adult-allowed types while
-/// still surfacing each type's allowed-for flags.
-/// </summary>
 public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
@@ -39,7 +33,6 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
                     SeedIds.UserTypes.Participant,
                 }
             );
-        // Ordered by name: Participante, Socio, Voluntario puntual.
         types.Select(t => t.Name).Should().ContainInOrder("Participante", "Socio", "Voluntario puntual");
     }
 

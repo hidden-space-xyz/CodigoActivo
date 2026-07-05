@@ -43,7 +43,6 @@ public record EventResponse(
     }
 }
 
-/// <summary>List-read shape: the full <see cref="EventResponse"/> minus the heavy Description.</summary>
 public record EventListItemResponse(
     Guid Id,
     string Title,

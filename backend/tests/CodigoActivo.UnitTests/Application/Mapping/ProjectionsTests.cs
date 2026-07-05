@@ -7,11 +7,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Mapping;
 
-/// <summary>
-/// Unit tests for the EF-translatable <see cref="Projections"/> expression trees. Each expression is
-/// compiled and invoked over a fully-populated sample entity so that every mapped field, including the
-/// nested collection projections, is exercised.
-/// </summary>
 public sealed class ProjectionsTests
 {
     private static readonly DateTimeOffset Created = new(2024, 1, 2, 3, 4, 5, TimeSpan.Zero);
@@ -19,8 +14,6 @@ public sealed class ProjectionsTests
 
     private static TResult Project<TSource, TResult>(Expression<Func<TSource, TResult>> projection, TSource source) =>
         projection.Compile().Invoke(source);
-
-    // ---- Event -------------------------------------------------------------
 
     [Fact]
     public void Event_projection_maps_scalars_and_categories()
@@ -116,11 +109,8 @@ public sealed class ProjectionsTests
             @event.Id, "Conf", "Sub", new DateOnly(2024, 8, 1), new DateOnly(2024, 8, 3), Created,
             Updated, Created, Updated, @event.CreatedBy, @event.UpdatedBy, @event.ThumbnailId, true,
             [new EventCategoryResponse(categoryTypeId, "Tech", "#111")]));
-        // The list DTO deliberately has no Description member at all.
         typeof(EventListItemResponse).GetProperty("Description").Should().BeNull();
     }
-
-    // ---- Partner -----------------------------------------------------------
 
     [Fact]
     public void Partner_projection_maps_web_to_website_and_all_fields()
@@ -145,8 +135,6 @@ public sealed class ProjectionsTests
             partner.Id, "Acme", new DateOnly(2024, 5, 6), 2, "https://acme.test", Created, Updated,
             partner.CreatedBy, partner.UpdatedBy, partner.ThumbnailId));
     }
-
-    // ---- Activity ----------------------------------------------------------
 
     [Fact]
     public void Activity_projection_maps_scalars_modality_and_allowed_roles()
@@ -199,8 +187,6 @@ public sealed class ProjectionsTests
             .Be(new ActivityAllowedRoleResponse(roleTypeId, "Speaker"));
     }
 
-    // ---- User --------------------------------------------------------------
-
     [Fact]
     public void User_projection_maps_scalars_status_isadmin_and_type()
     {
@@ -243,8 +229,6 @@ public sealed class ProjectionsTests
         response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#00f"));
     }
 
-    // ---- Reference-type projections ---------------------------------------
-
     [Fact]
     public void RegistrationType_projection_maps_all_fields_including_allowance_flags()
     {
@@ -261,8 +245,6 @@ public sealed class ProjectionsTests
         Project(Projections.RegistrationType, userType).Should()
             .Be(new RegistrationTypeResponse(userType.Id, "Member", "Standard", "#00f", true, false));
     }
-
-    // ---- AssignedActivity --------------------------------------------------
 
     [Fact]
     public void AssignedActivity_projection_maps_activity_chain_role_and_status()

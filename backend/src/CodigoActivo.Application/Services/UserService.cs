@@ -38,7 +38,6 @@ public class UserService(
     {
         var source = users.Query().Select(Projections.User);
 
-        // Row-level authorization: non-admins only ever see themselves and their dependents.
         if (!isAdmin)
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
 
@@ -113,8 +112,6 @@ public class UserService(
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
 
-        // [AllowOnlySelf] lets admins delete other users, so this is the guard that protects admin
-        // accounts from deletion.
         if (user.IsAdmin) return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
 
         users.Remove(user);
@@ -129,14 +126,11 @@ public class UserService(
 
         if (user.IsAdmin == isAdmin) return Result.Success();
 
-        // Never leave the system without an admin.
         if (!isAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
             return Error.Forbidden(ErrorCode.UserCannotRemoveLastAdmin);
 
         user.IsAdmin = isAdmin;
         user.UpdatedAt = clock.UtcNow;
-        // Admin-ness is snapshotted into the auth cookie at login, so a revoke only takes full effect
-        // on the target user's next sign-in.
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
@@ -282,9 +276,6 @@ public class UserService(
 
         if (parentUser.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
-        // Once a minor already has a parent, this self-service endpoint must not re-point them to a
-        // different adult: otherwise the owning parent could transfer control of the child to an
-        // unrelated adult who never consented. (First-time assignment is still allowed.)
         if (user.ParentId is { } currentParent && currentParent != parent)
             return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
 

@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers;
 
-/// <summary>Reads scoped to the current authenticated user (identity taken from the session cookie).</summary>
 [ApiController]
 [Route("api/me")]
 [Authorize]

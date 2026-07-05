@@ -425,9 +425,6 @@ public class ActivityService(
                 )
             );
 
-        // ActivityRoleTypeId is part of the composite primary key, which EF Core forbids mutating in
-        // place; swap the role by removing the old assignment and inserting a new one that carries
-        // the same status.
         var statusId = assignment.AssignmentStatusId;
         var statusName = assignment.AssignmentStatus?.Name ?? string.Empty;
         activities.RemoveAssignment(assignment);
@@ -628,15 +625,11 @@ public class ActivityService(
 
         if (end <= start) return Error.BadRequest(ErrorCode.ActivityScheduleInvalidRange);
 
-        // Event bounds are calendar days in the app's timezone, so compare against the activity's
-        // local day (not its UTC day, which drifts across midnight and rejects valid near-midnight
-        // activities on the first/last event day).
         var startDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(start, clock.TimeZone).DateTime);
         var endDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end, clock.TimeZone).DateTime);
         if (startDate < ev.EventStartsAt || endDate > ev.EventEndsAt)
             return Error.BadRequest(ErrorCode.ActivityScheduleOutsideEventRange);
 
-        // Persist as UTC: Npgsql rejects a non-zero offset on a timestamptz column.
         return new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime());
     }
 

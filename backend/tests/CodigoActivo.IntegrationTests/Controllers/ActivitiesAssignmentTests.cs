@@ -11,16 +11,9 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Assignment-flow coverage for <see cref="CodigoActivo.API.Controllers.ActivitiesController"/>:
-/// assign / assign-household / unassign (self vs admin vs signup-window), admin-only change-status
-/// and change-role, time-overlap verification, and the household-assignments read. CRUD and catalog
-/// coverage lives in <c>ActivitiesControllerTests</c>.
-/// </summary>
 public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    // Open window brackets the fixed clock (2026-07-04 12:00Z); the closed one is in the past.
     private static readonly DateTimeOffset OpenSignupStart = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset OpenSignupEnd = new(2026, 7, 30, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset ClosedSignupStart = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
@@ -46,7 +39,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         return id;
     }
 
-    /// <summary>Seeds an event + activity with the given signup window and allowed roles.</summary>
     private async Task<(Guid EventId, Guid ActivityId)> SeedActivityAsync(
         bool openSignup = true,
         DateTimeOffset? activityStart = null,
@@ -113,8 +105,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             db.ActivityUserRoleAssignments
                 .FirstOrDefaultAsync(a => a.ActivityId == activityId && a.UserId == userId));
 
-    // ---- Assign ------------------------------------------------------------
-
     [Fact]
     public async Task Assign_as_self_member_persists_requested_assignment()
     {
@@ -138,7 +128,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task Assign_missing_activity_is_404()
     {
-        // Admin so the window read is the failing branch, not the window itself.
         var client = await LoginAsAdminAsync();
         var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
 
@@ -159,7 +148,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
 
-        // Member tries to assign the blocked user, who is not their child.
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.BlockedId}/assign",
             request
@@ -167,8 +155,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
-
-    // ---- Assign household --------------------------------------------------
 
     [Fact]
     public async Task AssignHousehold_creates_for_self_and_child()
@@ -193,8 +179,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId)).Should().NotBeNull();
     }
 
-    // ---- Unassign ----------------------------------------------------------
-
     [Fact]
     public async Task Unassign_as_self_member_when_open_removes_assignment()
     {
@@ -209,8 +193,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
     }
-
-    // ---- Change status (admin only) ---------------------------------------
 
     [Fact]
     public async Task ChangeStatus_as_admin_updates_and_persists()
@@ -232,15 +214,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         stored!.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
     }
 
-    // ---- Change role (admin only) -----------------------------------------
-
-    // ActivityRoleTypeId is part of the ActivityUserRoleAssignment composite key, so a role change
-    // deletes the old assignment and inserts a new one (carrying the original status) rather than
-    // mutating the key in place, which EF Core forbids.
     [Fact]
     public async Task ChangeRole_as_admin_updates_and_persists()
     {
-        // Allow both Leader (current) and Helper (target) on the activity.
         var (_, activityId) = await SeedActivityAsync(
             allowedRoles: new[] { SeedIds.ActivityRoleTypes.Leader, SeedIds.ActivityRoleTypes.Helper }
         );
@@ -260,12 +236,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
     }
 
-    // ---- Time-overlap verification ----------------------------------------
-
     [Fact]
     public async Task Overlaps_reports_conflicting_activity_for_self()
     {
-        // Two overlapping activities; member is assigned to the other one.
         var (_, targetId) = await SeedActivityAsync(
             activityStart: new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             activityEnd: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
@@ -286,8 +259,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         body!.HasOverlaps.Should().BeTrue();
         body.Overlaps.Should().ContainSingle(o => o.ActivityId == otherId);
     }
-
-    // ---- Household assignments read ---------------------------------------
 
     [Fact]
     public async Task HouseholdAssignments_returns_member_and_children()

@@ -3,10 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-/// <summary>
-/// JSON options mirroring the API's serializer (camelCase, enums as strings) so requests are
-/// serialized and responses deserialized exactly as the running app would.
-/// </summary>
 public static class TestJson
 {
     public static readonly JsonSerializerOptions Options = CreateOptions();

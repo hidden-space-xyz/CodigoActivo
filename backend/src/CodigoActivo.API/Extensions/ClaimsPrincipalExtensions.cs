@@ -4,7 +4,6 @@ namespace CodigoActivo.API.Extensions;
 
 public static class ClaimsPrincipalExtensions
 {
-    /// <summary>Claim carrying the user's admin flag, emitted at login when the user is an admin.</summary>
     public const string IsAdminClaim = "isAdmin";
 
     public static Guid? GetUserId(this ClaimsPrincipal principal)

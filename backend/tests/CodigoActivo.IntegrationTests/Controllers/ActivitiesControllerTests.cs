@@ -12,16 +12,9 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// CRUD and catalog coverage for <see cref="CodigoActivo.API.Controllers.ActivitiesController"/>:
-/// anonymous reads, the admin-only write matrix, every create/update schedule/modality/thumbnail/role
-/// guard, delete, and the admin-only reference-list endpoints (role/status/modality types) plus
-/// role-type CRUD. Assignment flows live in <c>ActivitiesAssignmentTests</c>.
-/// </summary>
 public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    // Event window brackets the fixed test clock (2026-07-04 12:00Z); activities fit inside the dates.
     private static readonly DateOnly EventStart = new(2026, 7, 1);
     private static readonly DateOnly EventEnd = new(2026, 7, 31);
     private static readonly DateTimeOffset SignupStart = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
@@ -114,8 +107,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             allowedRoles
         );
 
-    // ---- Reads (anonymous) -------------------------------------------------
-
     [Fact]
     public async Task List_is_anonymous_and_returns_paged_envelope()
     {
@@ -144,8 +135,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.ActivityNotFound);
     }
-
-    // ---- Create ------------------------------------------------------------
 
     [Fact]
     public async Task Create_as_admin_persists_and_returns_201_with_location()
@@ -236,8 +225,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
-    // ---- Update ------------------------------------------------------------
-
     [Fact]
     public async Task Update_as_admin_changes_activity_and_replaces_roles()
     {
@@ -268,8 +255,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         roles.Should().ContainSingle(r => r.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Helper);
     }
 
-    // ---- Delete ------------------------------------------------------------
-
     [Fact]
     public async Task Delete_as_admin_removes_activity_and_its_orphaned_thumbnail()
     {
@@ -291,7 +276,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task Delete_keeps_a_thumbnail_still_shared_with_the_event()
     {
-        // Event and activity deliberately share one file: deleting the activity must leave it alone.
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
         var id = await SeedActivityAsync(eventId, thumb);
@@ -303,8 +287,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumb).AsTask());
         file.Should().NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
     }
-
-    // ---- Catalog reads (admin only) ---------------------------------------
 
     [Fact]
     public async Task RoleTypes_lists_seeded_roles_for_admin()
@@ -342,8 +324,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var modalities = await response.ReadJsonAsync<IReadOnlyList<ActivityModalityTypeResponse>>();
         modalities!.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
     }
-
-    // ---- Role-type CRUD (admin only) --------------------------------------
 
     [Fact]
     public async Task CreateRoleType_as_admin_persists()

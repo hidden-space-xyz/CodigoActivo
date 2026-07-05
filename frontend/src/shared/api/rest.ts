@@ -1,16 +1,7 @@
 import { ApiError } from './http-client'
 
-/**
- * Sort expression for "featured first, then most recent" list reads: featured items lead and the
- * latest items backfill, so a single request replaces the featured-or-latest fallback pair.
- * The `featured` sort key must stay in sync with the backend's whitelisted sort map.
- */
 export const FEATURED_FIRST_SORT = '-featured,-createdAt'
 
-/**
- * Unwraps a generated read request, returning `null` when the resource does not exist (404)
- * instead of throwing. Detail/edit screens rely on this to render a "not found" state.
- */
 export async function unwrapOrNull<T>(request: Promise<{ data: T }>): Promise<T | null> {
   try {
     return (await request).data
@@ -20,18 +11,12 @@ export async function unwrapOrNull<T>(request: Promise<{ data: T }>): Promise<T 
   }
 }
 
-/** Unwraps a generated `PagedResult` response into a non-nullable `{ items, total }` page. */
 export function toPage<T>(response: {
   data: { items?: T[] | null; total?: number | null }
 }): { items: T[]; total: number } {
   return { items: response.data.items ?? [], total: response.data.total ?? 0 }
 }
 
-/**
- * Fetches every page of a bounded list read (e.g. one year's archive) and concatenates the items,
- * so a result set larger than a single page is never silently truncated. Pages after the first
- * are fetched in parallel once the total is known.
- */
 export async function fetchAllPages<T>(
   fetchPage: (page: number, pageSize: number) => Promise<{ items: T[]; total: number }>,
   pageSize = 100,

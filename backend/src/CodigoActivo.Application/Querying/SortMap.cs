@@ -2,13 +2,6 @@ using System.Linq.Expressions;
 
 namespace CodigoActivo.Application.Querying;
 
-/// <summary>
-/// Whitelist-based dynamic sorting. Each sortable field is registered with a strongly typed key
-/// selector, so a client can only order by fields the endpoint explicitly allows (no reflection
-/// over arbitrary property names, no injection surface). Supports multi-key sort, a deterministic
-/// default, and a mandatory unique tie-breaker so <c>OFFSET</c>/<c>LIMIT</c> pagination is always
-/// repeatable (a non-unique ORDER BY lets Postgres duplicate or drop rows at page boundaries).
-/// </summary>
 public sealed class SortMap<T>
 {
     private readonly Dictionary<string, LambdaExpression> selectors = new(
@@ -23,17 +16,12 @@ public sealed class SortMap<T>
         return this;
     }
 
-    /// <summary>Deterministic fallback order applied when the caller supplies no valid sort key.</summary>
     public SortMap<T> Default(params string[] terms)
     {
         defaults = terms.Select(Parse).Where(term => selectors.ContainsKey(term.Key)).ToList();
         return this;
     }
 
-    /// <summary>
-    /// Unique tie-breaker (e.g. the primary key) appended after every sort so the total order is
-    /// stable across page requests. Required whenever the result is paged.
-    /// </summary>
     public SortMap<T> Tie<TKey>(Expression<Func<T, TKey>> selector)
     {
         tieBreaker = selector;

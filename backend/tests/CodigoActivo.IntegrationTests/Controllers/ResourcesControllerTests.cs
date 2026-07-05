@@ -10,11 +10,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Integration coverage for the resources CRUD controller: anonymous reads (list paging + title filter,
-/// get), admin-only writes with the full auth matrix, CSRF enforcement, model validation, the not-found +
-/// missing-thumbnail contracts, and persistence verified straight from the store.
-/// </summary>
 public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
@@ -59,8 +54,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         return id;
     }
 
-    // ---- Reads (anonymous) -------------------------------------------------
-
     [Fact]
     public async Task List_is_anonymous_and_returns_paged_envelope()
     {
@@ -87,8 +80,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.ResourceNotFound);
     }
-
-    // ---- Create (admin only) ----------------------------------------------
 
     [Fact]
     public async Task Create_as_admin_persists_and_returns_201_with_location()
@@ -168,8 +159,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
-    // ---- Update ------------------------------------------------------------
-
     [Fact]
     public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
     {
@@ -187,8 +176,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
         newFile.Should().NotBeNull();
     }
-
-    // ---- Delete ------------------------------------------------------------
 
     [Fact]
     public async Task Delete_as_admin_removes_resource_and_its_orphaned_thumbnail()

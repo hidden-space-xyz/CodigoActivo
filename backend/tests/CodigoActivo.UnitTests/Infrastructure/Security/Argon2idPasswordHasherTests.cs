@@ -46,21 +46,13 @@ public sealed class Argon2idPasswordHasherTests
     }
 
     [Theory]
-    // wrong segment count (too few)
     [InlineData("argon2id$3$65536$4$c2FsdA==")]
-    // wrong segment count (too many)
     [InlineData("argon2id$3$65536$4$c2FsdA==$aGFzaA==$extra")]
-    // wrong prefix
     [InlineData("bcrypt$3$65536$4$c2FsdA==$aGFzaA==")]
-    // non-numeric iterations
     [InlineData("argon2id$x$65536$4$c2FsdA==$aGFzaA==")]
-    // non-numeric memory
     [InlineData("argon2id$3$x$4$c2FsdA==$aGFzaA==")]
-    // non-numeric parallelism
     [InlineData("argon2id$3$65536$x$c2FsdA==$aGFzaA==")]
-    // non-base64 salt
     [InlineData("argon2id$3$65536$4$!!!$aGFzaA==")]
-    // non-base64 hash
     [InlineData("argon2id$3$65536$4$c2FsdA==$!!!")]
     public void Verify_returns_false_for_malformed_hash_strings(string malformed)
     {

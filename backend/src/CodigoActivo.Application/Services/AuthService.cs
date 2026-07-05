@@ -111,8 +111,6 @@ public class AuthService(
             Phone = phone,
             PasswordHash = hasher.Hash(request.Password),
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
-            // The very first registered user bootstraps the system as an admin with a default type;
-            // everyone else is a non-admin with the single type they chose.
             IsAdmin = isFirstUser,
             UserTypeId = isFirstUser ? SeedIds.UserTypes.Member : request.RoleId,
             OtpCode = otp,

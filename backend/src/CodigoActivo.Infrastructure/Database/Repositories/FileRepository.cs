@@ -13,9 +13,6 @@ public class FileRepository(CodigoActivoDbContext context)
 {
     public async Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default)
     {
-        // Thumbnails point at files through restricted FKs; rich-text descriptions (events,
-        // announcements, resources) embed them as plain "/api/files/{id}/content" URLs inside the
-        // stored TipTap JSON, so those references can only be found by scanning the text.
         var marker = RichTextFileReferences.ContentUrlMarker(fileId);
 
         return await Context.Events.AnyAsync(

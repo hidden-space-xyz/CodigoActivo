@@ -13,10 +13,6 @@ namespace CodigoActivo.API.Controllers;
 [Route("api/files")]
 public class FilesController(IFileService files) : ApiControllerBase
 {
-    // The multipart envelope (boundary lines + part headers) adds a little on top of the raw file
-    // bytes, so the request-body cap needs headroom above the storage limit — otherwise a file of
-    // exactly MaxSizeBytes would be rejected by Kestrel with a 413 before the storage-size guard
-    // (which is the single source of truth) could accept it.
     private const long MaxRequestBodyBytes = FileStorageOptions.DefaultMaxSizeBytes + (64 * 1024);
 
     [HttpGet("{fileId:guid}")]
@@ -35,9 +31,6 @@ public class FilesController(IFileService files) : ApiControllerBase
 
         var content = result.Value;
 
-        // Image content is immutable for a given (id, uploaded-at); let browsers cache it and
-        // revalidate with a conditional GET so repeat page views are 304s instead of full
-        // re-downloads. The File overload handles If-None-Match / If-Modified-Since automatically.
         var lastModified = content.UploadedAt;
         var etag = new EntityTagHeaderValue($"\"{fileId:N}-{lastModified.UtcTicks}\"");
         Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue

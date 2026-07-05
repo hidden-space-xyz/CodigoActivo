@@ -8,12 +8,9 @@ public sealed class ValidationAttributesTests
 {
     private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-    // ---- NotBlankAttribute -------------------------------------------------
-
     [Fact]
     public void NotBlank_is_valid_for_non_string_values()
     {
-        // Only strings are constrained; anything else (incl. null) passes.
         new NotBlankAttribute().IsValid(123).Should().BeTrue();
         new NotBlankAttribute().IsValid(null).Should().BeTrue();
     }
@@ -32,8 +29,6 @@ public sealed class ValidationAttributesTests
     {
         new NotBlankAttribute().IsValid("Acme").Should().BeTrue();
     }
-
-    // ---- JsonStringAttribute ----------------------------------------------
 
     [Fact]
     public void JsonString_is_valid_for_non_string_values()
@@ -62,8 +57,6 @@ public sealed class ValidationAttributesTests
     {
         new JsonStringAttribute().IsValid(value).Should().BeFalse();
     }
-
-    // ---- NotDefaultOrFutureDateAttribute -----------------------------------
 
     [Fact]
     public void NotDefaultOrFutureDate_is_valid_for_non_dateonly_values()

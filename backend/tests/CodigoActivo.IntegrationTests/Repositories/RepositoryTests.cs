@@ -8,13 +8,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
 
-/// <summary>
-/// Exercises the repository implementations directly against a real <see cref="CodigoActivoDbContext"/>
-/// backed by the EF Core in-memory provider. The generic <c>Repository&lt;T&gt;</c> base is covered
-/// through <see cref="PartnerRepository"/>; each concrete repository's custom methods are covered against
-/// hand-seeded graphs. Repositories never call <c>SaveChanges</c>, so the tests save explicitly and
-/// verify persistence (and the absence of it) through independent contexts sharing the same store.
-/// </summary>
 public sealed class RepositoryTests
 {
     private static readonly DateTimeOffset Fixed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -28,8 +21,6 @@ public sealed class RepositoryTests
         );
 
     private static CodigoActivoDbContext NewContext() => NewContext(Guid.NewGuid().ToString());
-
-    // ---- builders ----------------------------------------------------------
 
     private static Partner NewPartner(string name = "Partner", int tier = 1) =>
         new()
@@ -149,10 +140,6 @@ public sealed class RepositoryTests
             Description = "d",
             Color = "#0f0",
         };
-
-    // =======================================================================
-    //  Generic Repository<T> base — via PartnerRepository
-    // =======================================================================
 
     [Fact]
     public async Task Query_returns_all_rows_untracked()
@@ -284,10 +271,6 @@ public sealed class RepositoryTests
         (await ctx.Partners.CountAsync()).Should().Be(1);
     }
 
-    // =======================================================================
-    //  UserRepository
-    // =======================================================================
-
     [Fact]
     public async Task GetByIdWithDetailsAsync_includes_status_and_type()
     {
@@ -403,15 +386,6 @@ public sealed class RepositoryTests
         (await repo.ListChildrenWithDetailsAsync(Guid.NewGuid())).Should().BeEmpty();
     }
 
-    // =======================================================================
-    //  EventRepository
-    // =======================================================================
-
-    // Note: SetFeaturedAsync uses EF ExecuteUpdate, a relational-only feature the in-memory provider
-    // cannot execute. Its guard/NotFound path is covered end-to-end by the EventsController feature
-    // integration test; the bulk-update statement itself is only reachable against a real relational
-    // DB and is intentionally left out (no relational test provider — see TESTING_CONVENTIONS.md).
-
     [Fact]
     public async Task GetForEditAsync_includes_categories_and_returns_null_when_missing()
     {
@@ -462,10 +436,6 @@ public sealed class RepositoryTests
         loadedActivity.AllowedRoleTypes.Should().ContainSingle();
         (await repo.GetWithActivitiesAndAssignmentsAsync(Guid.NewGuid())).Should().BeNull();
     }
-
-    // =======================================================================
-    //  ActivityRepository
-    // =======================================================================
 
     [Fact]
     public async Task GetWithAssignmentsAndUsersAsync_loads_nested_user_and_role_graph()
@@ -522,10 +492,10 @@ public sealed class RepositoryTests
     }
 
     [Theory]
-    [InlineData(10, 50, false)] // fully inside [0, 60)
-    [InlineData(-5, 30, true)] // starts before the lower bound
-    [InlineData(10, 60, true)] // ends exactly at the exclusive upper bound
-    [InlineData(10, 120, true)] // ends after the upper bound
+    [InlineData(10, 50, false)]
+    [InlineData(-5, 30, true)]
+    [InlineData(10, 60, true)]
+    [InlineData(10, 120, true)]
     public async Task AnyOutsideRangeAsync_detects_activities_outside_the_window(
         int startOffsetMinutes,
         int endOffsetMinutes,
@@ -553,7 +523,6 @@ public sealed class RepositoryTests
         var target = NewEvent("Target");
         var other = NewEvent("Other");
         ctx.Events.AddRange(target, other);
-        // Only the *other* event has an out-of-range activity.
         ctx.Activities.Add(NewActivity(other.Id, startsAt: Fixed.AddMinutes(-120), endsAt: Fixed));
         ctx.Activities.Add(NewActivity(target.Id, startsAt: Fixed.AddMinutes(10), endsAt: Fixed.AddMinutes(50)));
         await ctx.SaveChangesAsync();
@@ -757,10 +726,6 @@ public sealed class RepositoryTests
         count.Should().Be(1);
         ctx.ChangeTracker.Entries<ActivityUserRoleAssignment>().Should().BeEmpty();
     }
-
-    // =======================================================================
-    //  FileRepository
-    // =======================================================================
 
     [Fact]
     public async Task IsInUseAsync_detects_thumbnail_fks_and_description_embeds()

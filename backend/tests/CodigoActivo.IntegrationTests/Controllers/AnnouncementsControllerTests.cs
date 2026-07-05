@@ -10,11 +10,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Integration coverage for the announcements CRUD controller: anonymous reads (list paging + filters,
-/// get, years), admin-only writes with the full auth matrix, CSRF enforcement, model validation, the
-/// not-found + missing-thumbnail contracts, the set-featured endpoint, and persistence read from the store.
-/// </summary>
 public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
@@ -65,8 +60,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         return id;
     }
 
-    // ---- Reads (anonymous) -------------------------------------------------
-
     [Fact]
     public async Task List_is_anonymous_and_returns_paged_envelope()
     {
@@ -109,8 +102,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var announcement = await response.ReadJsonAsync<AnnouncementResponse>();
         announcement!.Title.Should().Be("Beta");
     }
-
-    // ---- Create (admin only) ----------------------------------------------
 
     [Fact]
     public async Task Create_as_admin_persists_and_returns_201_with_location()
@@ -191,8 +182,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
-    // ---- Update ------------------------------------------------------------
-
     [Fact]
     public async Task Update_as_admin_changes_announcement()
     {
@@ -254,8 +243,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         file.Should().BeNull("an image dropped from the description is orphaned and must be cascade-deleted");
     }
 
-    // ---- Feature (set-featured) -------------------------------------------
-
     [Fact]
     public async Task Feature_missing_announcement_is_404()
     {
@@ -267,8 +254,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.AnnouncementNotFound);
     }
-
-    // ---- Delete ------------------------------------------------------------
 
     [Fact]
     public async Task Delete_as_admin_removes_announcement_and_its_orphaned_thumbnail()

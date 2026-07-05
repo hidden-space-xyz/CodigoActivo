@@ -4,14 +4,8 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
-/// <summary>
-/// Unit tests for the primitives in <c>Domain/Common</c>: the <see cref="Result"/> /
-/// <see cref="Result{T}"/> pattern (factories, implicit conversions, value access), the
-/// <see cref="Error"/> factory kinds, and the <see cref="PagedResult{T}"/> value record.
-/// </summary>
 public sealed class CommonTests
 {
-    // ---- Result (non-generic) ---------------------------------------------
 
     [Fact]
     public void Success_produces_a_successful_result_with_no_error()
@@ -34,8 +28,6 @@ public sealed class CommonTests
         result.IsFailure.Should().BeTrue();
         result.Error.Should().BeSameAs(error);
     }
-
-    // ---- Result<T> --------------------------------------------------------
 
     [Fact]
     public void SuccessOfT_wraps_the_value_and_exposes_it()
@@ -90,8 +82,6 @@ public sealed class CommonTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();
     }
-
-    // ---- Error factories --------------------------------------------------
 
     public static TheoryData<Func<ErrorCode, Error>, ErrorKind> ErrorFactories =>
         new()

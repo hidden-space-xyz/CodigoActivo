@@ -1,13 +1,11 @@
 namespace CodigoActivo.Application.Querying;
 
-/// <summary>Time scope for the public events listing, computed server-side against "today".</summary>
 public enum EventScope
 {
     Upcoming,
     Past,
 }
 
-/// <summary>Which registration types to expose, based on the registrant's age bracket.</summary>
 public enum RegistrationAudience
 {
     Minor,

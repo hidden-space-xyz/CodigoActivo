@@ -19,10 +19,6 @@ function clear(): void {
   user.value = null
 }
 
-/**
- * Resolves the current user from the session cookie. Concurrent callers (router guards, app
- * bootstrap) share a single in-flight request instead of each hitting /api/auth/me.
- */
 function resolve(): Promise<AuthUser | null> {
   if (user.value) return Promise.resolve(user.value)
   inflight ??= getCurrentUserRequest()

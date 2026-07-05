@@ -9,25 +9,14 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.API.OpenApi;
 
-/// <summary>
-/// Unit tests for the three Swashbuckle document/operation filters. The two operation filters read
-/// only their <see cref="OpenApiOperation"/> argument (never the <see cref="OperationFilterContext"/>),
-/// so a <c>null</c> context is passed. The document filter is exercised over a real
-/// <see cref="DocumentFilterContext"/> with a substituted <see cref="ISchemaGenerator"/>.
-/// </summary>
 public sealed class OpenApiFiltersTests
 {
-    // ---- helpers -----------------------------------------------------------
 
     private static Dictionary<string, OpenApiMediaType> Content(params string[] mediaTypes) =>
         mediaTypes.ToDictionary(m => m, _ => new OpenApiMediaType());
 
     private static OpenApiParameter QueryParam(string name) =>
         new() { Name = name, In = ParameterLocation.Query };
-
-    // =====================================================================
-    // JsonResponseMediaTypeFilter
-    // =====================================================================
 
     [Fact]
     public void Json_filter_reduces_every_response_to_application_json()
@@ -100,10 +89,6 @@ public sealed class OpenApiFiltersTests
         operation.Responses["204"].Content.Should().BeNull();
     }
 
-    // =====================================================================
-    // CamelCaseQueryParametersFilter
-    // =====================================================================
-
     [Theory]
     [InlineData("Page", "page")]
     [InlineData("PageSize", "pageSize")]
@@ -168,10 +153,6 @@ public sealed class OpenApiFiltersTests
 
         act.Should().NotThrow();
     }
-
-    // =====================================================================
-    // ApiErrorResponseDocumentFilter
-    // =====================================================================
 
     [Fact]
     public void Document_filter_force_generates_the_api_error_response_schema()

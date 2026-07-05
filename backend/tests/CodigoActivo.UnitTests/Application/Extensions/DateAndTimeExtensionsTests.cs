@@ -6,13 +6,11 @@ namespace CodigoActivo.UnitTests.Application.Extensions;
 
 public sealed class DateAndTimeExtensionsTests
 {
-    // IsMinor reads the wall clock (DateTime.UtcNow), so anchor every case to "today".
     private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
 
     [Fact]
     public void IsMinor_is_false_for_someone_exactly_eighteen_today()
     {
-        // Born exactly 18 years ago today -> age 18 -> adult.
         var birthDate = Today.AddYears(-18);
 
         birthDate.IsMinor().Should().BeFalse();
@@ -29,7 +27,6 @@ public sealed class DateAndTimeExtensionsTests
     [Fact]
     public void IsMinor_is_true_when_eighteenth_birthday_is_tomorrow()
     {
-        // Turns 18 tomorrow: still 17 today (exercises the birthDate > today.AddYears(-age) decrement).
         var birthDate = Today.AddYears(-18).AddDays(1);
 
         birthDate.IsMinor().Should().BeTrue();

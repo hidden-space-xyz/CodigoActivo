@@ -13,11 +13,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="ResourceService"/>. Collaborators are NSubstitute doubles; the read path
-/// runs against a real <see cref="FakeQueryExecutor"/> over <c>list.AsQueryable()</c>, exercising the
-/// projection, <see cref="SortMap{T}"/> and <see cref="TextSearch"/> expressions for real.
-/// </summary>
 public sealed class ResourceServiceTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
@@ -55,8 +50,6 @@ public sealed class ResourceServiceTests
             CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
-
-    // ---- ListAsync ---------------------------------------------------------
 
     [Fact]
     public async Task ListAsync_projects_and_pages()
@@ -117,8 +110,6 @@ public sealed class ResourceServiceTests
         result.Items.Select(r => r.Title).Should().ContainInOrder("Newest", "Mid", "Old");
     }
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_resource_when_found()
     {
@@ -142,8 +133,6 @@ public sealed class ResourceServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
     }
-
-    // ---- CreateAsync -------------------------------------------------------
 
     [Fact]
     public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
@@ -186,8 +175,6 @@ public sealed class ResourceServiceTests
         );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    // ---- UpdateAsync -------------------------------------------------------
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_missing()
@@ -299,8 +286,6 @@ public sealed class ResourceServiceTests
         await fileService.Received(1).DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
         await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
     }
-
-    // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_resource_missing()

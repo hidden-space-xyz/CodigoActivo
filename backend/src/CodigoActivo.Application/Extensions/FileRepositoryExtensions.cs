@@ -5,10 +5,6 @@ namespace CodigoActivo.Application.Extensions;
 
 public static class FileRepositoryExtensions
 {
-    /// <summary>
-    /// Guards that a referenced thumbnail file exists; <paramref name="missingCode"/> carries the
-    /// per-entity error code so callers keep their resource-specific error contract.
-    /// </summary>
     public static async Task<Result> EnsureThumbnailExistsAsync(
         this IFileRepository files,
         Guid thumbnailId,

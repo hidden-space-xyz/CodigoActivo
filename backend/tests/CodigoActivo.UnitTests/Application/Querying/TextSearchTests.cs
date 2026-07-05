@@ -4,11 +4,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Querying;
 
-/// <summary>
-/// Unit tests for <see cref="TextSearch"/>. The <see cref="TextSearch.Contains{T}"/> predicate is
-/// compiled and executed in memory so the LOWER + REPLACE fold is exercised exactly as EF would
-/// translate it.
-/// </summary>
 public sealed class TextSearchTests
 {
     private sealed record Row(string? Name);
@@ -54,9 +49,6 @@ public sealed class TextSearchTests
     [Fact]
     public void Contains_treats_a_null_selected_value_as_no_match()
     {
-        // The fold coalesces a null column selection to "" before lower-casing, so a nullable column
-        // (e.g. User.Email) simply doesn't match a non-empty term instead of throwing in memory /
-        // silently dropping the row under SQL — both executors now behave identically.
         var predicate = TextSearch.Contains<Row>(r => r.Name, TextSearch.Normalize("x")).Compile();
 
         predicate(new Row(null)).Should().BeFalse();

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers;
 
-/// <summary>Public catalog of the user types offered on the registration form.</summary>
 [ApiController]
 [Route("api/registration-types")]
 public class RegistrationTypesController(IUserService users) : ApiControllerBase

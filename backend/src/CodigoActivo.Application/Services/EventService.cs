@@ -204,7 +204,6 @@ public class EventService(
         var ev = await events.FindAsync(e => e.Id == id, ct);
         if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
 
-        // Deleting the event cascades to its activities, so their thumbnails become orphans too.
         var activityThumbnailIds = await executor.ToListAsync(
             activities.Query().Where(a => a.EventId == id).Select(a => a.ThumbnailId),
             ct
@@ -213,7 +212,6 @@ public class EventService(
         events.Remove(ev);
         await uow.SaveChangesAsync(ct);
 
-        // Thumbnails (event + cascaded activities) plus the images embedded in the description.
         var orphanCandidates = activityThumbnailIds
             .Append(ev.ThumbnailId)
             .Concat(RichTextFileReferences.Extract(ev.Description))
@@ -331,7 +329,6 @@ public class EventService(
         if (DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd)
             return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
 
-        // Persist signup instants as UTC: Npgsql rejects a non-zero offset on a timestamptz column.
         return new EventSchedule(
             eventStart,
             eventEnd,
@@ -345,9 +342,6 @@ public class EventService(
         DateOnly eventEnd
     )
     {
-        // Event days are calendar days in the app's timezone; resolve their start-of-day instants
-        // through that timezone so the "activities outside the new range" check lines up with how
-        // activity days are classified (and stored as UTC).
         var lower = new DateTimeOffset(
             TimeZoneInfo.ConvertTimeToUtc(eventStart.ToDateTime(TimeOnly.MinValue), clock.TimeZone),
             TimeSpan.Zero

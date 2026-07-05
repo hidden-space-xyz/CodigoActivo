@@ -10,11 +10,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-/// <summary>
-/// Reference integration test for a CRUD resource controller: the full auth matrix
-/// (anonymous reads, admin-only writes, member forbidden, anonymous challenged), CSRF enforcement,
-/// model validation, the not-found contract, and persistence verified straight from the store.
-/// </summary>
 public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
     private async Task<Guid> SeedThumbnailAsync()
@@ -56,8 +51,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         return id;
     }
 
-    // ---- Reads (anonymous) -------------------------------------------------
-
     [Fact]
     public async Task List_is_anonymous_and_returns_paged_envelope()
     {
@@ -84,8 +77,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.PartnerNotFound);
     }
-
-    // ---- Create (admin only) ----------------------------------------------
 
     [Fact]
     public async Task Create_as_admin_persists_and_returns_201_with_location()
@@ -162,8 +153,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
-
-    // ---- Update / Delete ---------------------------------------------------
 
     [Fact]
     public async Task Update_as_admin_changes_partner()

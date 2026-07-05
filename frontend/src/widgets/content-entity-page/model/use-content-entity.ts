@@ -52,8 +52,6 @@ export function useContentEntity<TParams = Record<string, unknown>>(api: Content
   })
 
   const remove = useMutation({
-    // The backend cascades orphaned thumbnail files on entity delete/replace, so no client-side
-    // file cleanup is needed here.
     mutationFn: (id: string) => api.remove(id),
     onSuccess: invalidate,
   })

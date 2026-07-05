@@ -1,5 +1,4 @@
 interface MinorForm {
-  /** Stable client-side identity for list rendering; never sent to the API. */
   key: number
   firstName: string
   lastName: string

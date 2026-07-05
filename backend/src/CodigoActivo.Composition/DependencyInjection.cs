@@ -35,9 +35,6 @@ public static class DependencyInjection
 
     private static void AddClock(IServiceCollection services, IConfiguration configuration)
     {
-        // "App:TimeZone" is an IANA (e.g. "Europe/Madrid") or Windows (e.g. "Romance Standard Time")
-        // id; unset falls back to the server's local timezone. Determines the date used for the
-        // upcoming/past boundary reads.
         var timeZone = ResolveTimeZone(configuration["App:TimeZone"]);
         services.AddSingleton<IClock>(new SystemClock(timeZone));
     }
@@ -47,8 +44,6 @@ public static class DependencyInjection
         if (string.IsNullOrWhiteSpace(id)) return TimeZoneInfo.Local;
         if (TimeZoneInfo.TryFindSystemTimeZoneById(id, out var direct)) return direct;
 
-        // The configured id may use the "other" convention for this host (an IANA id on a Windows
-        // box without ICU, or a Windows id on Linux); convert and retry before giving up.
         if (
             TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var windowsId)
             && TimeZoneInfo.TryFindSystemTimeZoneById(windowsId, out var viaWindows)

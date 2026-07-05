@@ -6,13 +6,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;
 
-/// <summary>
-/// Exercises the three OpenAPI filters end-to-end by fetching the generated Swagger document from the
-/// Development-hosted integration app: <see cref="CodigoActivo.API.OpenApi.JsonResponseMediaTypeFilter"/>
-/// (single media type), <see cref="CodigoActivo.API.OpenApi.CamelCaseQueryParametersFilter"/>
-/// (camelCased query params) and <see cref="CodigoActivo.API.OpenApi.ApiErrorResponseDocumentFilter"/>
-/// (forced shared error schema). Assertions check for presence, not exact schema structure.
-/// </summary>
 public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
     private const string SwaggerUrl = "/swagger/v1/swagger.json";
@@ -50,9 +43,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory) : Integra
             .ToList();
 
         queryParamNames.Should().NotBeEmpty();
-        // Every documented query parameter must start with a lower-case letter (camelCase).
         queryParamNames.Should().OnlyContain(name => !char.IsUpper(name[0]));
-        // The paging kernel's PascalCase properties surface as camelCase.
         queryParamNames.Should().Contain("page");
     }
 

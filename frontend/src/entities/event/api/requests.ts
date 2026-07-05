@@ -30,7 +30,6 @@ export async function getPastEventsRequest(year: string): Promise<readonly PastE
   return items.map(toPastEvent)
 }
 
-/** Featured-first single read: the featured event, or the latest one when none is featured. */
 async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
   const { data } = await getApiEvents({ sort: FEATURED_FIRST_SORT, pageSize: 1 })
   const first = data.items?.[0]

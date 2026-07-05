@@ -1,11 +1,9 @@
 import type { ErrorCode } from '@/shared/api/generated/models'
 
 export const errorMessages: Record<ErrorCode, string> = {
-  // Announcement
   AnnouncementNotFound: 'No se encontró el anuncio.',
   AnnouncementThumbnailNotFound: 'No se encontró la imagen del anuncio.',
 
-  // Activity
   ActivityNotFound: 'No se encontró la actividad.',
   ActivityModalityTypeNotFound: 'La modalidad de la actividad no es válida.',
   ActivitySignupClosed: 'La inscripción a esta actividad está cerrada.',
@@ -24,7 +22,6 @@ export const errorMessages: Record<ErrorCode, string> = {
     'El horario de la actividad debe estar dentro de las fechas del evento.',
   ActivityThumbnailNotFound: 'No se encontró la imagen de la actividad.',
 
-  // Event
   EventNotFound: 'No se encontró el evento.',
   EventActivitiesOutsideNewRange: 'Hay actividades fuera del nuevo rango de fechas del evento.',
   EventCategoryTypeNotFound: 'La categoría del evento no es válida.',
@@ -34,15 +31,12 @@ export const errorMessages: Record<ErrorCode, string> = {
   EventScheduleRequired: 'Debes indicar un horario para el evento.',
   EventScheduleInvalidRange: 'El horario del evento no es válido.',
 
-  // Resource
   ResourceNotFound: 'No se encontró el recurso.',
   ResourceThumbnailNotFound: 'No se encontró la imagen del recurso.',
 
-  // Partner
   PartnerNotFound: 'No se encontró el aliado.',
   PartnerThumbnailNotFound: 'No se encontró la imagen del aliado.',
 
-  // File
   FileNotFound: 'No se encontró el archivo.',
   FileInUse: 'No se puede eliminar el archivo porque está en uso.',
   FileContentMissingFromStorage: 'El contenido del archivo ya no está disponible.',
@@ -52,7 +46,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   FileUploadStreamNotSeekable: 'No se pudo procesar el archivo subido.',
   FileUploadUnsupportedFormat: 'El formato del archivo no es compatible.',
 
-  // User
   UserNotFound: 'No se encontró el usuario.',
   UserDeleteAdminForbidden: 'No puedes eliminar a un usuario administrador.',
   UserCannotRemoveLastAdmin: 'No puedes quitar el rango de administrador al único administrador.',
@@ -71,7 +64,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   UserEmailAlreadyInUse: 'Este correo electrónico ya está en uso.',
   UserPhoneAlreadyInUse: 'Este teléfono ya está en uso.',
 
-  // Auth
   InvalidCredentials: 'El correo electrónico o la contraseña no son correctos.',
   UserAccountBlocked: 'Tu cuenta está bloqueada. Contacta al administrador.',
   UserAccountIsDependent: 'Esta cuenta depende de un responsable y no puede iniciar sesión directamente.',
@@ -84,7 +76,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   RegisterMinorBirthDateNotMinor: 'La fecha de nacimiento indicada no corresponde a un menor de edad.',
   OtpInvalidOrExpired: 'El código de verificación no es válido o ha expirado.',
 
-  // Infrastructure (auth pipeline, CSRF, model validation, unhandled exceptions)
   AuthenticationRequired: 'Debes iniciar sesión para continuar.',
   AccessDenied: 'No tienes permiso para realizar esta acción.',
   InvalidCsrfToken: 'La sesión ha expirado. Recarga la página e inténtalo de nuevo.',

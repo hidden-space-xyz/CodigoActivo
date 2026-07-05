@@ -29,6 +29,5 @@ public interface IDbRepository<TEntity>
     Task AddAsync(TEntity entity, CancellationToken ct = default);
     void Remove(TEntity entity);
 
-    /// <summary>Stages every entity matching the predicate for removal and returns how many matched.</summary>
     Task<int> RemoveAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
 }

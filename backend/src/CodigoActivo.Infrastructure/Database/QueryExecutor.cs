@@ -3,10 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database;
 
-/// <summary>
-/// EF Core implementation of <see cref="IQueryExecutor"/>. This is the single place where read
-/// queries built in the Application layer are turned into database round-trips.
-/// </summary>
 public sealed class QueryExecutor : IQueryExecutor
 {
     public async Task<PagedResult<T>> ToPagedAsync<T>(
@@ -17,9 +13,6 @@ public sealed class QueryExecutor : IQueryExecutor
     )
     {
         var total = await source.CountAsync(ct);
-        // Widen to long so a large in-range page (page is only floored at 1, never capped) can't
-        // overflow Int32 into a negative Skip that PostgreSQL rejects with "OFFSET must not be
-        // negative"; any page past the end simply yields no items.
         var skip = (long)(page - 1) * pageSize;
         var items =
             skip >= total

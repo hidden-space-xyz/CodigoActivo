@@ -9,10 +9,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests;
 
-/// <summary>
-/// Validates the integration toolchain end-to-end: the real host boots on the in-memory store, the
-/// database seeds, cookie login works, CSRF is enforced, and the Result→HTTP error mapping fires.
-/// </summary>
 public class SmokeTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
     [Fact]

@@ -12,11 +12,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Services;
 
-/// <summary>
-/// Unit tests for <see cref="FileService"/>. Collaborators are NSubstitute doubles; image detection
-/// runs for real over hand-built PNG / junk byte streams so every validation branch and the exact
-/// <see cref="ErrorCode"/> per guard are exercised.
-/// </summary>
 public sealed class FileServiceTests
 {
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
@@ -31,18 +26,15 @@ public sealed class FileServiceTests
         sut = new FileService(files, uow, storage, clock, options);
     }
 
-    // ---- Helpers -----------------------------------------------------------
-
     private static byte[] PngBytes()
     {
-        // 32-byte PNG header the detector accepts: signature + IHDR(len 13, 1x1).
         var bytes = new byte[32];
         byte[] signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         signature.CopyTo(bytes, 0);
-        bytes[8] = 0x00; bytes[9] = 0x00; bytes[10] = 0x00; bytes[11] = 0x0D; // IHDR length 13
+        bytes[8] = 0x00; bytes[9] = 0x00; bytes[10] = 0x00; bytes[11] = 0x0D;
         bytes[12] = (byte)'I'; bytes[13] = (byte)'H'; bytes[14] = (byte)'D'; bytes[15] = (byte)'R';
-        bytes[19] = 0x01; // width = 1
-        bytes[23] = 0x01; // height = 1
+        bytes[19] = 0x01;
+        bytes[23] = 0x01;
         return bytes;
     }
 
@@ -75,8 +67,6 @@ public sealed class FileServiceTests
             UploadedBy = Guid.NewGuid(),
         };
 
-    // ---- GetByIdAsync ------------------------------------------------------
-
     [Fact]
     public async Task GetByIdAsync_returns_response_when_found()
     {
@@ -102,8 +92,6 @@ public sealed class FileServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.FileNotFound);
     }
-
-    // ---- GetContentAsync ---------------------------------------------------
 
     [Fact]
     public async Task GetContentAsync_returns_not_found_when_metadata_missing()
@@ -168,8 +156,6 @@ public sealed class FileServiceTests
         result.Value.ContentType.Should().Be("application/octet-stream");
     }
 
-    // ---- CreateAsync : validation guards -----------------------------------
-
     [Fact]
     public async Task CreateAsync_fails_when_upload_missing()
     {
@@ -231,15 +217,12 @@ public sealed class FileServiceTests
         await storage.DidNotReceiveWithAnyArgs().SaveAsync(default!, default!, default);
     }
 
-    // ---- CreateAsync : success ---------------------------------------------
-
     [Fact]
     public async Task CreateAsync_saves_content_persists_entity_and_returns_response()
     {
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         var content = PngStream();
-        // Path components + surrounding whitespace must be stripped by SanitizeName.
         var upload = new FileUploadRequest(content, "  C:\\folder\\avatar.png  ", 32);
 
         var result = await sut.CreateAsync(upload, caller);
@@ -285,8 +268,6 @@ public sealed class FileServiceTests
         await act.Should().ThrowAsync<InvalidOperationException>();
         storage.Received(1).Delete(Arg.Any<string>());
     }
-
-    // ---- UpdateAsync -------------------------------------------------------
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_missing()
@@ -366,8 +347,6 @@ public sealed class FileServiceTests
         storage.DidNotReceive().Delete($"{file.Id}.jpg");
     }
 
-    // ---- DeleteAsync -------------------------------------------------------
-
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_missing()
     {
@@ -411,8 +390,6 @@ public sealed class FileServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{file.Id}.png");
     }
-
-    // ---- DeleteIfOrphanedAsync ---------------------------------------------
 
     [Fact]
     public async Task DeleteIfOrphanedAsync_deletes_the_file_when_no_longer_referenced()
@@ -458,8 +435,6 @@ public sealed class FileServiceTests
     [Fact]
     public async Task DeleteIfOrphanedAsync_swallows_storage_exceptions()
     {
-        // Best-effort contract: a blob locked by a concurrent read must not bubble an exception
-        // into the entity operation that already succeeded.
         var file = NewFile();
         FileFound(file);
         FileReferenced(false);
@@ -470,15 +445,12 @@ public sealed class FileServiceTests
         await act.Should().NotThrowAsync();
     }
 
-    // ---- Shared assertions -------------------------------------------------
-
     private async Task AssertNothingPersisted()
     {
         await files.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
-    /// <summary>A readable but non-seekable stream, to exercise the seekability guard.</summary>
     private sealed class NonSeekableStream(byte[] data) : Stream
     {
         private readonly MemoryStream inner = new(data, writable: false);

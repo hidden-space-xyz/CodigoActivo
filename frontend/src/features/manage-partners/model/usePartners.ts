@@ -18,7 +18,6 @@ import { partnerQueryKeys } from '@/entities/partner'
 
 export function usePartners() {
   const queryClient = useQueryClient()
-  // Invalidating the entity root also refreshes the public sponsors query after admin edits.
   const invalidate = () => queryClient.invalidateQueries({ queryKey: partnerQueryKeys.all })
 
   const table = useServerTable<PartnerResponse, GetApiPartnersParams>({
@@ -45,7 +44,6 @@ export function usePartners() {
   })
 
   const remove = useMutation({
-    // The backend cascades orphaned thumbnail files, so no client-side file cleanup is needed.
     mutationFn: (id: string) => deleteApiPartnersPartnerId(id),
     onSuccess: invalidate,
   })

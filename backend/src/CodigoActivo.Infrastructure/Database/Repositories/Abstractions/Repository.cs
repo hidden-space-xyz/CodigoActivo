@@ -74,10 +74,6 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         return entities.Count;
     }
 
-    // Sets Featured=true on the target and false on every other row in a single atomic UPDATE.
-    // Doing it as one statement (rather than two) means concurrent calls can't interleave into a
-    // state with zero — or two — featured rows. EF.Property is required because EF cannot bind
-    // interface members directly.
     protected static async Task<bool> SetExclusiveFeaturedAsync<TFeaturable>(
         DbSet<TFeaturable> set,
         Guid id,

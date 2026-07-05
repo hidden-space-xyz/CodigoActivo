@@ -47,8 +47,6 @@ export function useEventsAdmin() {
   })
 
   const remove = useMutation({
-    // The backend cascades orphaned thumbnail files (including the event's activities' ones),
-    // so no client-side file cleanup is needed here.
     mutationFn: (id: string) => deleteApiEventsEventId(id),
     onSuccess: invalidate,
   })
@@ -58,7 +56,6 @@ export function useEventsAdmin() {
     onSuccess: invalidate,
   })
 
-  // The slim list rows omit the description, so the edit dialog must prefill from this detail read.
   const fetchOne = (id: string) => unwrapOrNull<EventResponse>(getApiEventsEventId(id))
 
   return { table, create, update, remove, feature, fetchOne }

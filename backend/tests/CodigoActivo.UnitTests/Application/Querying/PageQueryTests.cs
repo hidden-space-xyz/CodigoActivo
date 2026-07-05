@@ -4,10 +4,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Querying;
 
-/// <summary>
-/// Unit tests for the self-clamping <see cref="PageQuery"/> base. Exercised through a concrete
-/// subclass since the type is abstract.
-/// </summary>
 public sealed class PageQueryTests
 {
     private sealed class TestPageQuery : PageQuery;

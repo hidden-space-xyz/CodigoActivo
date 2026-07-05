@@ -26,7 +26,6 @@ public class User : IdentifiableEntity
     public Guid UserTypeId { get; set; }
     public UserType UserType { get; set; } = null!;
 
-    // Admin/non-admin is a plain flag on the user, independent of the (single) UserType.
     public bool IsAdmin { get; set; }
 
     public Guid? OtpCode { get; set; }

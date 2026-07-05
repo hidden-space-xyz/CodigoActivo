@@ -4,14 +4,8 @@ using CodigoActivo.Infrastructure.Database.Context;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-/// <summary>Login credentials for a seeded user.</summary>
 public sealed record TestCredentials(string Identifier, string Password);
 
-/// <summary>
-/// Fixed test users layered on top of the real <c>DatabaseSeeder</c> reference data. Every seeded
-/// account shares <see cref="Password"/>; hashes use the <see cref="FakePasswordHasher"/> scheme.
-/// Ids are fixed so tests can reference them directly.
-/// </summary>
 public static class TestSeedData
 {
     public const string Password = "Str0ngPass!";

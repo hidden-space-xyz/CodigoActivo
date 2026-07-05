@@ -1,10 +1,5 @@
 namespace CodigoActivo.Domain.Common;
 
-/// <summary>
-/// Materializes composed <see cref="IQueryable{T}"/> read queries. The abstraction lives in
-/// Domain so the Application layer can stay free of any EF Core dependency: services compose the
-/// query (Where/OrderBy/Select over the projections) and hand it here to be executed.
-/// </summary>
 public interface IQueryExecutor
 {
     Task<PagedResult<T>> ToPagedAsync<T>(

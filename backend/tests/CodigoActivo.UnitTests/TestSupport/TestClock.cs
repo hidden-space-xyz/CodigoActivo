@@ -2,7 +2,6 @@ using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 
-/// <summary>Deterministic <see cref="IClock"/>; both fields are settable so a test can pin "now".</summary>
 public sealed class TestClock : IClock
 {
     public TestClock(DateTimeOffset? utcNow = null, DateOnly? today = null)

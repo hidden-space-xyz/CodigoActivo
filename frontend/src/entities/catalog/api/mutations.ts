@@ -5,11 +5,6 @@ import type { CreateEventCategoryTypeRequest } from '@/shared/api/generated/mode
 
 import { catalogQueryKeys } from './query-keys'
 
-/**
- * Creates an event category and refreshes the category list before resolving, so callers can
- * select the new category as soon as the mutation settles. Shared by the catalog admin section
- * and the inline "new category" flow in the event form.
- */
 export function useCreateEventCategoryType() {
   const queryClient = useQueryClient()
   return useMutation({

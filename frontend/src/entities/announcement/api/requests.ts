@@ -27,8 +27,6 @@ export async function getAnnouncementsByYearRequest(
 }
 
 export async function getHomeAnnouncementsRequest(): Promise<HomeAnnouncements> {
-  // Single featured-first read: the first item is the featured announcement (or the latest one
-  // when none is featured) and the most recent items backfill the rest of the section.
   const { data } = await getApiAnnouncements({ sort: FEATURED_FIRST_SORT, pageSize: 4 })
   const [featured = null, ...items] = (data.items ?? []).map(toAnnouncementSummary)
   return { featured, items }

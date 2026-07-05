@@ -4,10 +4,6 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
-/// <summary>
-/// Unit tests for <see cref="RichTextFileReferences"/>, the single place that knows how rich-text
-/// descriptions embed uploaded files ("/api/files/{id}/content" URLs with no FK backing them).
-/// </summary>
 public sealed class RichTextFileReferencesTests
 {
     [Fact]

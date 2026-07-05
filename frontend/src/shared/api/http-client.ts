@@ -43,9 +43,6 @@ async function fetchCsrfToken(): Promise<void> {
 
 async function ensureCsrfToken(): Promise<void> {
   if (csrfToken) return
-  // Share one in-flight fetch across concurrent unsafe requests: the antiforgery endpoint mints a
-  // fresh cookie per call, so parallel fetches would each get a different cookie/token pair and all
-  // but the last would fail validation.
   csrfTokenPromise ??= fetchCsrfToken().finally(() => {
     csrfTokenPromise = null
   })
@@ -110,9 +107,6 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
 
   if (!response.ok) {
     const error = await buildApiError(response)
-    // Only a genuine CSRF-token rejection is worth retrying (the token may have expired). Retrying
-    // on every 400/403 re-sends the whole request — doubling server work and re-running the body
-    // upload — for ordinary validation failures and authorization denials that a retry can't fix.
     if (UNSAFE_METHODS.has(method) && retry && error.code === ErrorCode.InvalidCsrfToken) {
       resetCsrfToken()
       return request<T>(url, init, false)

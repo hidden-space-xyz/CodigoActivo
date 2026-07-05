@@ -39,7 +39,6 @@ export function richTextExtensions(): AnyExtension[] {
 
 let rendererExtensions: AnyExtension[] | undefined
 
-/** Renders stored TipTap JSON to static HTML — no editor instance needed for read-only display. */
 export function renderRichTextHtml(value?: string | null): string {
   rendererExtensions ??= richTextExtensions()
   return generateHTML(parseRichText(value), rendererExtensions)

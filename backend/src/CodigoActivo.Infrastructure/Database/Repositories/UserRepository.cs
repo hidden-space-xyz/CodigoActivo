@@ -17,8 +17,6 @@ public class UserRepository(CodigoActivoDbContext context)
 
     public async Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default)
     {
-        // Emails are stored lower-cased; fold the identifier so an email login is case-insensitive
-        // (phones have no case, so the same folded value matches them too).
         var email = identifier.ToLowerInvariant();
         return await QueryWithDetails(tracked: true)
             .FirstOrDefaultAsync(u => u.Email == email || u.Phone == identifier, ct);
