@@ -391,7 +391,7 @@ public sealed class RepositoryTests
         var children = await repo.ListChildrenWithDetailsAsync(parent.Id);
 
         children.Select(c => c.FirstName).Should().Equal("Amy", "Zoe");
-        children.First().UserStatusType.Name.Should().Be("Dependent");
+        children[0].UserStatusType.Name.Should().Be("Dependent");
     }
 
     [Fact]

@@ -40,7 +40,7 @@ public sealed class GlobalExceptionHandlerTests
     {
         var context = NewContext();
 
-        await Sut.TryHandleAsync(context, new Exception(), default);
+        await Sut.TryHandleAsync(context, new InvalidOperationException(), default);
 
         context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
@@ -50,7 +50,7 @@ public sealed class GlobalExceptionHandlerTests
     {
         var context = NewContext("abc-999");
 
-        await Sut.TryHandleAsync(context, new Exception("secret detail"), default);
+        await Sut.TryHandleAsync(context, new InvalidOperationException("secret detail"), default);
 
         var body = await ReadBodyAsync(context);
         body.Code.Should().Be(ErrorCode.UnexpectedError);

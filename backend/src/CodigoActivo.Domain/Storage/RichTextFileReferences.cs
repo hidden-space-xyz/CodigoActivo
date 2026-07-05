@@ -17,29 +17,31 @@ public static partial class RichTextFileReferences
     }
 
     /// <summary>File ids embedded as content URLs in the document (absolute or relative).</summary>
-    public static HashSet<Guid> Extract(string? richTextJson)
+    public static IReadOnlySet<Guid> Extract(string? richTextJson)
     {
         var ids = new HashSet<Guid>();
         if (string.IsNullOrEmpty(richTextJson)) return ids;
 
         foreach (Match match in ContentUrl().Matches(richTextJson))
         {
-            if (Guid.TryParse(match.Groups[1].Value, out var id)) ids.Add(id);
+            if (Guid.TryParse(match.Groups["id"].Value, out var id)) ids.Add(id);
         }
 
         return ids;
     }
 
     /// <summary>File ids embedded in the previous document but no longer in the current one.</summary>
-    public static HashSet<Guid> ExtractRemoved(string? previous, string? current)
+    public static IReadOnlySet<Guid> ExtractRemoved(string? previous, string? current)
     {
-        var removed = Extract(previous);
+        var removed = new HashSet<Guid>(Extract(previous));
         removed.ExceptWith(Extract(current));
         return removed;
     }
 
     [GeneratedRegex(
-        "/api/files/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/content"
+        "/api/files/(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/content",
+        RegexOptions.ExplicitCapture,
+        matchTimeoutMilliseconds: 1000
     )]
     private static partial Regex ContentUrl();
 }

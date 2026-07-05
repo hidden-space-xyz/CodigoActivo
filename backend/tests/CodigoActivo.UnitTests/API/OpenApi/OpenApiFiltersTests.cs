@@ -19,7 +19,7 @@ public sealed class OpenApiFiltersTests
 {
     // ---- helpers -----------------------------------------------------------
 
-    private static IDictionary<string, OpenApiMediaType> Content(params string[] mediaTypes) =>
+    private static Dictionary<string, OpenApiMediaType> Content(params string[] mediaTypes) =>
         mediaTypes.ToDictionary(m => m, _ => new OpenApiMediaType());
 
     private static OpenApiParameter QueryParam(string name) =>

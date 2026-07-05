@@ -107,7 +107,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
 
     // ---- Verify -------------------------------------------------------------
 
-    private async Task<(Guid UserId, Guid Otp)> RegisterPendingAdultAsync(HttpClient client)
+    private static async Task<(Guid UserId, Guid Otp)> RegisterPendingAdultAsync(HttpClient client)
     {
         using var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
         response.StatusCode.Should().Be(HttpStatusCode.Created);

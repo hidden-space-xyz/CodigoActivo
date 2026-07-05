@@ -203,6 +203,9 @@ dotnet_naming_rule.locals_and_parameters_rule.severity = warning
 
 [**/Migrations/*.cs]
 generated_code = true
+# EF-scaffolded migrations are generated code; SonarAnalyzer (unlike the Roslyn analyzers) does not honor
+# generated_code here, so silence its "use Guid.Empty" nudge on the scaffolded default-GUID literal.
+dotnet_diagnostic.S4581.severity = none
 
 [**/Security/Argon2idPasswordHasher.cs]
 # "Argon2id" is the algorithm's actual name per RFC 9106; don't rename it to satisfy an acronym-casing heuristic.
