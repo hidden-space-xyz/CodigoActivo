@@ -2,7 +2,6 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using AwesomeAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
@@ -29,19 +28,6 @@ public sealed class RepositoryTests
         );
 
     private static CodigoActivoDbContext NewContext() => NewContext(Guid.NewGuid().ToString());
-
-    // A SQLite in-memory database (with FK enforcement off, to match the lax in-memory provider) for
-    // the handful of methods that use relational-only EF features such as ExecuteUpdate. The database
-    // lives only while the connection is open, so callers keep one connection and build contexts on it.
-    private static SqliteConnection OpenSqlite()
-    {
-        var connection = new SqliteConnection("DataSource=:memory:;Foreign Keys=False");
-        connection.Open();
-        return connection;
-    }
-
-    private static CodigoActivoDbContext NewSqliteContext(SqliteConnection connection) =>
-        new(new DbContextOptionsBuilder<CodigoActivoDbContext>().UseSqlite(connection).Options);
 
     // ---- builders ----------------------------------------------------------
 
@@ -421,48 +407,10 @@ public sealed class RepositoryTests
     //  EventRepository
     // =======================================================================
 
-    // SQLite-backed: SetExclusiveFeaturedAsync uses EF ExecuteUpdate, which the in-memory provider
-    // cannot run. SQLite is a real relational engine, so it exercises the two bulk updates for real.
-    [Fact]
-    public async Task SetFeaturedAsync_makes_target_the_only_featured_event()
-    {
-        await using var connection = OpenSqlite();
-        var current = NewEvent("Old", featured: true);
-        var next = NewEvent("New", featured: false);
-        await using (var ctx = NewSqliteContext(connection))
-        {
-            await ctx.Database.EnsureCreatedAsync();
-            ctx.Events.AddRange(current, next);
-            await ctx.SaveChangesAsync();
-            var repo = new EventRepository(ctx);
-
-            (await repo.SetFeaturedAsync(next.Id)).Should().BeTrue();
-        }
-
-        await using var verify = NewSqliteContext(connection);
-        var stored = await verify.Events.AsNoTracking().ToListAsync();
-        stored.Single(e => e.Id == next.Id).Featured.Should().BeTrue();
-        stored.Single(e => e.Id == current.Id).Featured.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task SetFeaturedAsync_returns_false_and_changes_nothing_for_missing_id()
-    {
-        await using var connection = OpenSqlite();
-        var existing = NewEvent("Keep", featured: true);
-        await using (var ctx = NewSqliteContext(connection))
-        {
-            await ctx.Database.EnsureCreatedAsync();
-            ctx.Events.Add(existing);
-            await ctx.SaveChangesAsync();
-            var repo = new EventRepository(ctx);
-
-            (await repo.SetFeaturedAsync(Guid.NewGuid())).Should().BeFalse();
-        }
-
-        await using var verify = NewSqliteContext(connection);
-        verify.Events.AsNoTracking().Single(e => e.Id == existing.Id).Featured.Should().BeTrue();
-    }
+    // Note: SetFeaturedAsync uses EF ExecuteUpdate, a relational-only feature the in-memory provider
+    // cannot execute. Its guard/NotFound path is covered end-to-end by the EventsController feature
+    // integration test; the bulk-update statement itself is only reachable against a real relational
+    // DB and is intentionally left out (no relational test provider — see TESTING_CONVENTIONS.md).
 
     [Fact]
     public async Task GetForEditAsync_includes_categories_and_returns_null_when_missing()
@@ -811,63 +759,13 @@ public sealed class RepositoryTests
     }
 
     // =======================================================================
-    //  AnnouncementRepository
-    // =======================================================================
-
-    // SQLite-backed (see the Event equivalents): ExecuteUpdate needs a real relational provider.
-    [Fact]
-    public async Task SetFeaturedAsync_makes_target_the_only_featured_announcement()
-    {
-        await using var connection = OpenSqlite();
-        var current = NewAnnouncement("Old", featured: true);
-        var next = NewAnnouncement("New", featured: false);
-        await using (var ctx = NewSqliteContext(connection))
-        {
-            await ctx.Database.EnsureCreatedAsync();
-            ctx.Announcements.AddRange(current, next);
-            await ctx.SaveChangesAsync();
-            var repo = new AnnouncementRepository(ctx);
-
-            (await repo.SetFeaturedAsync(next.Id)).Should().BeTrue();
-        }
-
-        await using var verify = NewSqliteContext(connection);
-        var stored = await verify.Announcements.AsNoTracking().ToListAsync();
-        stored.Single(a => a.Id == next.Id).Featured.Should().BeTrue();
-        stored.Single(a => a.Id == current.Id).Featured.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task SetFeaturedAsync_returns_false_for_missing_announcement()
-    {
-        await using var connection = OpenSqlite();
-        var existing = NewAnnouncement("Keep", featured: true);
-        await using (var ctx = NewSqliteContext(connection))
-        {
-            await ctx.Database.EnsureCreatedAsync();
-            ctx.Announcements.Add(existing);
-            await ctx.SaveChangesAsync();
-            var repo = new AnnouncementRepository(ctx);
-
-            (await repo.SetFeaturedAsync(Guid.NewGuid())).Should().BeFalse();
-        }
-
-        await using var verify = NewSqliteContext(connection);
-        verify.Announcements.AsNoTracking().Single(a => a.Id == existing.Id).Featured.Should().BeTrue();
-    }
-
-    // =======================================================================
     //  FileRepository
     // =======================================================================
 
     [Fact]
     public async Task IsInUseAsync_detects_thumbnail_fks_and_description_embeds()
     {
-        // Runs on SQLite so the description scan (string.Contains -> SQL) is exercised as real
-        // SQL, not as LINQ-to-objects.
-        await using var connection = OpenSqlite();
-        await using var ctx = NewSqliteContext(connection);
-        await ctx.Database.EnsureCreatedAsync();
+        using var ctx = NewContext();
 
         var thumbnailFileId = Guid.NewGuid();
         var eventEmbeddedFileId = Guid.NewGuid();

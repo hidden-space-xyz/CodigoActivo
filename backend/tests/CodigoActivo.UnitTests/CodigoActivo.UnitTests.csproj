@@ -15,7 +15,7 @@
 
   <!-- Unit tests reach every layer: API + Composition transitively pull Application/Domain/Infrastructure. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\CodigoActivo.API\CodigoActivo.API.csproj" />
-    <ProjectReference Include="..\..\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
+    <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

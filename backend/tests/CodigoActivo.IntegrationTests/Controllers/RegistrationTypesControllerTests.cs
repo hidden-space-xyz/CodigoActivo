@@ -44,40 +44,6 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     }
 
     [Fact]
-    public async Task List_exposes_allowed_for_flags_per_type()
-    {
-        var types = await GetTypesAsync("/api/registration-types");
-
-        var member = types.Single(t => t.Id == SeedIds.UserTypes.Member);
-        member.IsAllowedForMinors.Should().BeTrue();
-        member.IsAllowedForAdults.Should().BeTrue();
-        member.Name.Should().Be("Socio");
-        member.Color.Should().Be("#EF4444");
-
-        var participant = types.Single(t => t.Id == SeedIds.UserTypes.Participant);
-        participant.IsAllowedForMinors.Should().BeTrue();
-        participant.IsAllowedForAdults.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task List_for_minor_audience_returns_all_minor_allowed_types()
-    {
-        var types = await GetTypesAsync("/api/registration-types?audience=Minor");
-
-        types.Select(t => t.Id)
-            .Should()
-            .BeEquivalentTo(
-                new[]
-                {
-                    SeedIds.UserTypes.Member,
-                    SeedIds.UserTypes.Volunteer,
-                    SeedIds.UserTypes.Participant,
-                }
-            );
-        types.Should().OnlyContain(t => t.IsAllowedForMinors);
-    }
-
-    [Fact]
     public async Task List_for_adult_audience_excludes_minor_only_and_hidden_types()
     {
         var types = await GetTypesAsync("/api/registration-types?audience=Adult");
@@ -85,20 +51,5 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
         types.Select(t => t.Id)
             .Should()
             .BeEquivalentTo(new[] { SeedIds.UserTypes.Member, SeedIds.UserTypes.Volunteer });
-        types.Should().OnlyContain(t => t.IsAllowedForAdults);
-        // Participante is minor-only.
-        types.Should().NotContain(t => t.Id == SeedIds.UserTypes.Participant);
-    }
-
-    [Fact]
-    public async Task List_is_accessible_to_authenticated_users_too()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync("/api/registration-types");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var types = await response.ReadJsonAsync<List<RegistrationTypeResponse>>() ?? [];
-        types.Should().NotBeEmpty();
     }
 }

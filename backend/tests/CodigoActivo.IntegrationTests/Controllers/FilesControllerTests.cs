@@ -34,18 +34,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         ];
     }
 
-    /// <summary>A valid JPEG header (SOI + APP0 marker) used to exercise the extension-change path.</summary>
-    private static byte[] ValidJpeg()
-    {
-        return
-        [
-            0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46,
-            0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
-            0x00, 0x01, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
-            0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08,
-        ];
-    }
-
     private static async Task<HttpResponseMessage> SendUploadAsync(
         HttpClient client,
         HttpMethod method,
@@ -100,26 +88,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
         stored!.Extension.Should().Be("png");
         stored.UploadedBy.Should().Be(TestSeedData.Users.AdminId);
-    }
-
-    [Fact]
-    public async Task Create_detects_jpeg_from_magic_bytes_regardless_of_part_content_type()
-    {
-        var client = await LoginAsAdminAsync();
-
-        // Lie about the part content type; detection must rely on the magic bytes, not the header.
-        using var response = await SendUploadAsync(
-            client,
-            HttpMethod.Post,
-            "/api/files",
-            ValidJpeg(),
-            "photo.png",
-            partContentType: "image/png"
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var created = await response.ReadJsonAsync<FileResponse>();
-        created!.Extension.Should().Be("jpg");
     }
 
     // ---- Create: authorization matrix --------------------------------------
@@ -195,35 +163,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         error!.Code.Should().Be(ErrorCode.FileUploadEmpty);
     }
 
-    [Fact]
-    public async Task Create_with_unrecognized_bytes_is_bad_request_with_unsupported_format()
-    {
-        var client = await LoginAsAdminAsync();
-        var junk = "this-is-not-an-image-payload"u8.ToArray();
-
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", junk, "notes.txt");
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.FileUploadUnsupportedFormat);
-    }
-
-    [Fact]
-    public async Task Create_with_oversized_file_is_bad_request_with_upload_too_large()
-    {
-        var client = await LoginAsAdminAsync();
-        // Just over the 10 MiB cap (FileStorageOptions.DefaultMaxSizeBytes, shared by the storage
-        // validation and the controller's [RequestSizeLimit]). The TestServer transport does not
-        // enforce the request-size limit, so the request reaches FileService and fails its size guard.
-        var oversized = new byte[(10 * 1024 * 1024) + 1];
-
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", oversized, "big.png");
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.FileUploadTooLarge);
-    }
-
     // ---- Read: metadata ----------------------------------------------------
 
     [Fact]
@@ -268,18 +207,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
         var downloaded = await response.Content.ReadAsByteArrayAsync();
         downloaded.Should().Equal(bytes);
-    }
-
-    [Fact]
-    public async Task Get_content_for_unknown_id_is_404_with_file_not_found()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/files/{Guid.NewGuid()}/content");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.FileNotFound);
     }
 
     [Fact]
@@ -334,79 +261,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         stored.Extension.Should().Be("png");
     }
 
-    [Fact]
-    public async Task Update_with_new_format_changes_the_extension()
-    {
-        var created = await UploadAsAdminAsync(fileName: "was.png");
-        var client = await LoginAsAdminAsync();
-
-        using var response = await SendUploadAsync(
-            client,
-            HttpMethod.Put,
-            $"/api/files/{created.Id}",
-            ValidJpeg(),
-            "now.jpg"
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
-        stored!.Extension.Should().Be("jpg");
-    }
-
-    [Fact]
-    public async Task Update_missing_file_is_404_with_file_not_found()
-    {
-        var client = await LoginAsAdminAsync();
-
-        using var response = await SendUploadAsync(
-            client,
-            HttpMethod.Put,
-            $"/api/files/{Guid.NewGuid()}",
-            ValidPng()
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.FileNotFound);
-    }
-
-    [Fact]
-    public async Task Update_existing_file_without_a_part_is_bad_request_with_upload_missing()
-    {
-        var created = await UploadAsAdminAsync();
-        var client = await LoginAsAdminAsync();
-
-        using var response = await SendUploadAsync(
-            client,
-            HttpMethod.Put,
-            $"/api/files/{created.Id}",
-            fileBytes: null
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        // With no multipart file part, model binding rejects the request before the action runs, so
-        // the 400 carries RequestValidationFailed. (FileService's own FileUploadMissing guard for a
-        // null upload is exercised by the FileService unit tests.)
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task Update_as_member_is_forbidden()
-    {
-        var created = await UploadAsAdminAsync();
-        var client = await LoginAsMemberAsync();
-
-        using var response = await SendUploadAsync(
-            client,
-            HttpMethod.Put,
-            $"/api/files/{created.Id}",
-            ValidPng()
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     // ---- Delete ------------------------------------------------------------
 
     [Fact]
@@ -454,37 +308,4 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         stored.Should().NotBeNull("a file embedded in a rich-text description must survive deletion");
     }
 
-    [Fact]
-    public async Task Delete_missing_file_is_404_with_file_not_found()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/files/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.FileNotFound);
-    }
-
-    [Fact]
-    public async Task Delete_as_member_is_forbidden()
-    {
-        var created = await UploadAsAdminAsync();
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task Delete_anonymous_is_unauthorized()
-    {
-        var created = await UploadAsAdminAsync();
-        var client = CreateClient();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
 }

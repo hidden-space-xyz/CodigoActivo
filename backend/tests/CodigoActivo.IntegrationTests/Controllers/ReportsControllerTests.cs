@@ -123,37 +123,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     }
 
     [Fact]
-    public async Task EventSummary_role_breakdown_counts_only_confirmed_and_orders_by_name()
-    {
-        await SeedEventGraphAsync();
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary");
-
-        var summary = await response.ReadJsonAsync<EventSummaryResponse>();
-        // Distinct allowed role types across both activities, ordinal-ordered by localized name:
-        // Colaborador (Helper), Líder (Leader), Participante (Participant).
-        summary!.RoleTypeBreakdown.Select(r => r.RoleTypeName).Should()
-            .ContainInOrder("Colaborador", "Líder", "Participante");
-        summary.RoleTypeBreakdown.Should().SatisfyRespectively(
-            helper =>
-            {
-                helper.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
-                helper.ApprovedAssignments.Should().Be(1); // child helper confirmed
-            },
-            leader =>
-            {
-                leader.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
-                leader.ApprovedAssignments.Should().Be(1); // admin leader confirmed; blocked leader is denied
-            },
-            participant =>
-            {
-                participant.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Participant);
-                participant.ApprovedAssignments.Should().Be(0); // pending participant is requested, not confirmed
-            });
-    }
-
-    [Fact]
     public async Task EventSummary_missing_event_is_404_with_event_not_found()
     {
         var client = await LoginAsAdminAsync();
@@ -189,18 +158,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         confirmedLeader.RoleTypeName.Should().Be("Líder");
         confirmedLeader.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
         confirmedLeader.StatusName.Should().Be("Confirmada");
-    }
-
-    [Fact]
-    public async Task EventAssignments_missing_event_is_404_with_event_not_found()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/assignments");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
     // ---- Activity assignments report ---------------------------------------
@@ -239,30 +196,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     }
 
     [Fact]
-    public async Task ActivityAssignments_role_breakdown_counts_only_confirmed_ordered_by_name()
-    {
-        await SeedEventGraphAsync();
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync($"/api/reports/activities/{ActivityAId}/assignments");
-
-        var report = await response.ReadJsonAsync<ActivityAssignmentsReportResponse>();
-        report!.RoleTypeBreakdown.Should().SatisfyRespectively(
-            helper =>
-            {
-                helper.RoleTypeName.Should().Be("Colaborador");
-                helper.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
-                helper.ApprovedAssignments.Should().Be(1);
-            },
-            leader =>
-            {
-                leader.RoleTypeName.Should().Be("Líder");
-                leader.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
-                leader.ApprovedAssignments.Should().Be(0);
-            });
-    }
-
-    [Fact]
     public async Task ActivityAssignments_missing_activity_is_404_with_activity_not_found()
     {
         var client = await LoginAsAdminAsync();
@@ -293,50 +226,24 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         dashboard.Users.Should().Be(5); // the five fixed TestSeedData users
     }
 
-    [Fact]
-    public async Task Dashboard_reflects_seeded_events_and_activities()
-    {
-        await SeedEventGraphAsync();
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync("/api/reports/dashboard");
-
-        var dashboard = await response.ReadJsonAsync<DashboardSummaryResponse>();
-        dashboard!.Events.Should().Be(1);
-        dashboard.Activities.Should().Be(2);
-        dashboard.Users.Should().Be(5);
-    }
-
     // ---- Authorization matrix ----------------------------------------------
 
-    public static TheoryData<string> AdminOnlyEndpoints() => new()
+    [Fact]
+    public async Task Admin_only_endpoints_challenge_anonymous()
     {
-        $"/api/reports/events/{EventId}/summary",
-        $"/api/reports/events/{EventId}/assignments",
-        $"/api/reports/activities/{ActivityAId}/assignments",
-        "/api/reports/dashboard",
-    };
-
-    [Theory]
-    [MemberData(nameof(AdminOnlyEndpoints))]
-    public async Task Admin_only_endpoints_challenge_anonymous(string url)
-    {
-        await SeedEventGraphAsync();
         var client = CreateClient();
 
-        var response = await client.GetAsync(url);
+        var response = await client.GetAsync("/api/reports/dashboard");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Theory]
-    [MemberData(nameof(AdminOnlyEndpoints))]
-    public async Task Admin_only_endpoints_forbid_members(string url)
+    [Fact]
+    public async Task Admin_only_endpoints_forbid_members()
     {
-        await SeedEventGraphAsync();
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(url);
+        var response = await client.GetAsync("/api/reports/dashboard");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

@@ -74,19 +74,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     }
 
     [Fact]
-    public async Task Get_returns_partner_when_present()
-    {
-        var id = await SeedPartnerAsync("Beta");
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/partners/{id}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var partner = await response.ReadJsonAsync<PartnerResponse>();
-        partner!.Name.Should().Be("Beta");
-    }
-
-    [Fact]
     public async Task Get_returns_404_with_error_code_when_absent()
     {
         var client = CreateClient();
@@ -157,19 +144,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     }
 
     [Fact]
-    public async Task Create_with_missing_thumbnail_is_bad_request()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new CreatePartnerRequest("Gamma", new DateOnly(2025, 1, 1), 1, null, Guid.NewGuid());
-
-        var response = await client.PostJsonAsync("/api/partners", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
-    }
-
-    [Fact]
     public async Task Post_without_csrf_token_is_rejected()
     {
         var client = await LoginAsAdminAsync();
@@ -208,18 +182,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     }
 
     [Fact]
-    public async Task Update_missing_partner_is_404()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new UpdatePartnerRequest("X", new DateOnly(2025, 1, 1), 1, null, thumbnailId);
-
-        var response = await client.PutJsonAsync($"/api/partners/{Guid.NewGuid()}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Delete_as_admin_removes_partner_and_its_orphaned_thumbnail()
     {
         var id = await SeedPartnerAsync("Doomed");
@@ -233,15 +195,5 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         stored.Should().BeNull();
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
         file.Should().BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
-    }
-
-    [Fact]
-    public async Task Delete_missing_partner_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/partners/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

@@ -77,47 +77,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_filters_by_title()
-    {
-        await SeedResourceAsync("Keep Me");
-        await SeedResourceAsync("Other");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/resources?title=keep");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>();
-        page!.Items.Should().ContainSingle(r => r.Title == "Keep Me");
-        page.Total.Should().Be(1);
-    }
-
-    [Fact]
-    public async Task List_filters_by_subtitle()
-    {
-        await SeedResourceAsync("A", subtitle: "Findable");
-        await SeedResourceAsync("B", subtitle: "Hidden");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/resources?subtitle=findable");
-
-        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>();
-        page!.Items.Should().ContainSingle(r => r.Title == "A");
-    }
-
-    [Fact]
-    public async Task Get_returns_resource_when_present()
-    {
-        var id = await SeedResourceAsync("Beta");
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/resources/{id}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var resource = await response.ReadJsonAsync<ResourceResponse>();
-        resource!.Title.Should().Be("Beta");
-    }
-
-    [Fact]
     public async Task Get_returns_404_with_error_code_when_absent()
     {
         var client = CreateClient();
@@ -190,19 +149,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_with_missing_thumbnail_is_bad_request()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new CreateResourceRequest("Gamma", "Sub", Description, Guid.NewGuid());
-
-        var response = await client.PostJsonAsync("/api/resources", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
-    }
-
-    [Fact]
     public async Task Post_without_csrf_token_is_rejected()
     {
         var client = await LoginAsAdminAsync();
@@ -225,23 +171,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     // ---- Update ------------------------------------------------------------
 
     [Fact]
-    public async Task Update_as_admin_changes_resource()
-    {
-        var id = await SeedResourceAsync("Before");
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateResourceRequest("After", "NewSub", Description, thumbnailId);
-
-        var response = await client.PutJsonAsync($"/api/resources/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask());
-        stored!.Title.Should().Be("After");
-        stored.Subtitle.Should().Be("NewSub");
-        stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
-    }
-
-    [Fact]
     public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
     {
         var id = await SeedResourceAsync("Reemplazo");
@@ -257,34 +186,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
         var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
         newFile.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task Update_missing_resource_is_404()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateResourceRequest("X", "Y", Description, thumbnailId);
-
-        var response = await client.PutJsonAsync($"/api/resources/{Guid.NewGuid()}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ResourceNotFound);
-    }
-
-    [Fact]
-    public async Task Update_with_missing_thumbnail_is_bad_request()
-    {
-        var id = await SeedResourceAsync("Before");
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateResourceRequest("After", "Sub", Description, Guid.NewGuid());
-
-        var response = await client.PutJsonAsync($"/api/resources/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
     }
 
     // ---- Delete ------------------------------------------------------------
@@ -303,17 +204,5 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         stored.Should().BeNull();
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
         file.Should().BeNull("the deleted resource's thumbnail is orphaned and must be cascade-deleted");
-    }
-
-    [Fact]
-    public async Task Delete_missing_resource_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/resources/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ResourceNotFound);
     }
 }

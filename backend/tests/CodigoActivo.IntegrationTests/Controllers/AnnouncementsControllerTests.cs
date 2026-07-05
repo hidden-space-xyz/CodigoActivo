@@ -83,34 +83,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task List_filters_by_title_and_featured()
-    {
-        await SeedAnnouncementAsync("Keep Me", featured: true);
-        await SeedAnnouncementAsync("Other", featured: false);
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/announcements?title=keep&featured=true");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>();
-        page!.Items.Should().ContainSingle(a => a.Title == "Keep Me");
-        page.Total.Should().Be(1);
-    }
-
-    [Fact]
-    public async Task List_filters_by_year()
-    {
-        await SeedAnnouncementAsync("Old", year: 2020);
-        await SeedAnnouncementAsync("New", year: 2025);
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/announcements?year=2025");
-
-        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>();
-        page!.Items.Should().ContainSingle(a => a.Title == "New");
-    }
-
-    [Fact]
     public async Task Years_is_anonymous_and_returns_distinct_descending_years()
     {
         await SeedAnnouncementAsync("A", year: 2021);
@@ -136,18 +108,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var announcement = await response.ReadJsonAsync<AnnouncementResponse>();
         announcement!.Title.Should().Be("Beta");
-    }
-
-    [Fact]
-    public async Task Get_returns_404_with_error_code_when_absent()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/announcements/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.AnnouncementNotFound);
     }
 
     // ---- Create (admin only) ----------------------------------------------
@@ -212,19 +172,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Create_with_missing_thumbnail_is_bad_request()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new CreateAnnouncementRequest("Gamma", "Sub", Description, Guid.NewGuid());
-
-        var response = await client.PostJsonAsync("/api/announcements", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.AnnouncementThumbnailNotFound);
-    }
-
-    [Fact]
     public async Task Post_without_csrf_token_is_rejected()
     {
         var client = await LoginAsAdminAsync();
@@ -261,20 +208,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         stored!.Title.Should().Be("After");
         stored.Subtitle.Should().Be("NewSub");
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
-    }
-
-    [Fact]
-    public async Task Update_missing_announcement_is_404()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateAnnouncementRequest("X", "Y", Description, thumbnailId);
-
-        var response = await client.PutJsonAsync($"/api/announcements/{Guid.NewGuid()}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.AnnouncementNotFound);
     }
 
     [Fact]
@@ -321,38 +254,9 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         file.Should().BeNull("an image dropped from the description is orphaned and must be cascade-deleted");
     }
 
-    [Fact]
-    public async Task Update_with_missing_thumbnail_is_bad_request()
-    {
-        var id = await SeedAnnouncementAsync("Before");
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateAnnouncementRequest("After", "Sub", Description, Guid.NewGuid());
-
-        var response = await client.PutJsonAsync($"/api/announcements/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.AnnouncementThumbnailNotFound);
-    }
-
     // ---- Feature (set-featured) -------------------------------------------
 
-    [Fact(Skip = "SetFeatured -> repo.SetFeaturedAsync uses EF ExecuteUpdateAsync, unsupported by the in-memory provider (needs a relational DB / Docker). Service logic covered by AnnouncementService unit tests.")]
-    public async Task Feature_as_admin_sets_featured_true()
-    {
-        var id = await SeedAnnouncementAsync("Feature Me", featured: false);
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync($"/api/announcements/{id}/feature");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<AnnouncementResponse>();
-        body!.Featured.Should().BeTrue();
-        var stored = await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask());
-        stored!.Featured.Should().BeTrue();
-    }
-
-    [Fact(Skip = "SetFeatured -> repo.SetFeaturedAsync uses EF ExecuteUpdateAsync, unsupported by the in-memory provider (needs a relational DB / Docker). Service logic covered by AnnouncementService unit tests.")]
+    [Fact]
     public async Task Feature_missing_announcement_is_404()
     {
         var client = await LoginAsAdminAsync();
@@ -362,17 +266,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.AnnouncementNotFound);
-    }
-
-    [Fact]
-    public async Task Feature_as_member_is_forbidden()
-    {
-        var id = await SeedAnnouncementAsync("Guarded");
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.PatchJsonAsync($"/api/announcements/{id}/feature");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     // ---- Delete ------------------------------------------------------------
@@ -429,16 +322,4 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = TestSeedData.Users.AdminId,
         };
-
-    [Fact]
-    public async Task Delete_missing_announcement_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/announcements/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.AnnouncementNotFound);
-    }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- WebApplicationFactory<Program> boots the real host; the content root is the API project. -->
@@ -14,12 +14,10 @@
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-    <PackageReference Include="Microsoft.Data.Sqlite" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CodigoActivo.API\CodigoActivo.API.csproj" />
-    <ProjectReference Include="..\..\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
+    <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

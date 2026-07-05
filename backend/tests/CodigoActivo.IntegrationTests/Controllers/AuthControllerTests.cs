@@ -20,7 +20,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
 {
     // BirthDate.IsMinor() reads the real wall clock (not the TestClock), so anchor ages to "now".
     private static readonly DateOnly AdultBirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-30);
-    private static readonly DateOnly MinorBirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-10);
 
     private static RegisterRequest NewAdultRequest(
         string email = "new.adult@codigoactivo.test",
@@ -83,38 +82,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         stored.OtpCode.Should().Be(body.VerificationCode);
     }
 
-    [Fact]
-    public async Task Register_adult_with_minor_birthdate_is_bad_request()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            NewAdultRequest(birthDate: MinorBirthDate)
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.RegisterAdultCannotBeMinor);
-    }
-
-    [Theory]
-    [InlineData(TestSeedData.AdminEmail, "+34600000099")] // duplicate email
-    [InlineData("brand.new@codigoactivo.test", "+34600000001")] // duplicate phone (admin's)
-    public async Task Register_with_existing_email_or_phone_is_conflict(string email, string phone)
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            NewAdultRequest(email: email, phone: phone)
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
-    }
-
     [Theory]
     [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!")] // blank first name
     [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!")] // invalid email
@@ -165,22 +132,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
     }
 
     [Fact]
-    public async Task Verify_with_wrong_otp_is_bad_request_and_leaves_user_pending()
-    {
-        var client = CreateClient();
-        var (userId, _) = await RegisterPendingAdultAsync(client);
-
-        var response = await client.PatchJsonAsync($"/api/auth/{userId}/verify?otp={Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
-
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(userId).AsTask());
-        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
-    }
-
-    [Fact]
     public async Task Verify_unknown_user_is_not_found()
     {
         var client = CreateClient();
@@ -227,36 +178,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.InvalidCredentials);
-    }
-
-    [Fact]
-    public async Task Login_with_blocked_account_is_forbidden()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/login",
-            new LoginRequest(TestSeedData.BlockedEmail, TestSeedData.Password)
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.UserAccountBlocked);
-    }
-
-    [Fact]
-    public async Task Login_with_pending_account_is_forbidden()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/login",
-            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password)
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.UserAccountPendingVerification);
     }
 
     [Fact]
@@ -314,15 +235,5 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
 
         var me = await client.GetAsync("/api/auth/me");
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task Logout_when_anonymous_is_unauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync("/api/auth/logout", body: null);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

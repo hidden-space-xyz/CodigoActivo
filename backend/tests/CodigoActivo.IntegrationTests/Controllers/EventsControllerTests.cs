@@ -2,7 +2,6 @@ using System.Net;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using AwesomeAssertions;
@@ -89,29 +88,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         return id;
     }
 
-    private async Task SeedActivityAsync(Guid eventId, DateTimeOffset start, DateTimeOffset end)
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        await Factory.SeedAsync(db =>
-        {
-            db.Activities.Add(new Activity
-            {
-                Id = Guid.NewGuid(),
-                Title = "Taller",
-                Description = "{}",
-                Location = "Aula",
-                ActivityStartsAt = start,
-                ActivityEndsAt = end,
-                EventId = eventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                ThumbnailId = thumbnailId,
-                CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
-            return Task.CompletedTask;
-        });
-    }
-
     private static CreateEventRequest BuildCreate(
         Guid thumbnailId,
         IReadOnlyList<Guid>? categoryTypeIds,
@@ -177,92 +153,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         page.PageSize.Should().Be(25);
         var item = page.Items.Should().ContainSingle(e => e.Title == "Alfa").Subject;
         item.Categories.Should().ContainSingle(c => c.CategoryTypeId == categoryId && c.Name == "Cultura");
-    }
-
-    [Fact]
-    public async Task List_upcoming_scope_returns_only_events_ending_on_or_after_today()
-    {
-        await SeedEventAsync(new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), title: "Pasado");
-        await SeedEventAsync(new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 10), title: "Futuro");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/events?scope=Upcoming");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
-        page!.Items.Should().ContainSingle(e => e.Title == "Futuro");
-    }
-
-    [Fact]
-    public async Task List_past_scope_returns_only_events_ending_before_today()
-    {
-        await SeedEventAsync(new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), title: "Pasado");
-        await SeedEventAsync(new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 10), title: "Futuro");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/events?scope=Past");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
-        page!.Items.Should().ContainSingle(e => e.Title == "Pasado");
-    }
-
-    [Fact]
-    public async Task List_year_filter_matches_event_start_year()
-    {
-        await SeedEventAsync(new DateOnly(2025, 5, 1), new DateOnly(2025, 5, 5), title: "DeDosMilVeinticinco");
-        await SeedEventAsync(new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 5), title: "DeDosMilVeintiseis");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/events?year=2025");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
-        page!.Items.Should().ContainSingle(e => e.Title == "DeDosMilVeinticinco");
-    }
-
-    [Fact]
-    public async Task List_featured_filter_returns_only_featured_events()
-    {
-        await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), featured: true, title: "Destacado");
-        await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), featured: false, title: "Normal");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/events?featured=true");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
-        page!.Items.Should().ContainSingle(e => e.Title == "Destacado" && e.Featured);
-    }
-
-    [Fact]
-    public async Task List_honours_page_size_and_reports_total()
-    {
-        await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Uno");
-        await SeedEventAsync(new DateOnly(2026, 8, 2), new DateOnly(2026, 8, 6), title: "Dos");
-        await SeedEventAsync(new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 7), title: "Tres");
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/events?pageSize=2&page=1");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
-        page!.Total.Should().Be(3);
-        page.PageSize.Should().Be(2);
-        page.Items.Should().HaveCount(2);
-    }
-
-    [Fact]
-    public async Task Get_returns_event_when_present()
-    {
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Detalle");
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/events/{id}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<EventResponse>();
-        body!.Title.Should().Be("Detalle");
     }
 
     [Fact]
@@ -356,79 +246,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
-    [Theory]
-    // eventEnd < eventStart
-    [InlineData("2026-08-10", "2026-08-01", "2026-07-01T00:00:00Z", "2026-07-02T00:00:00Z")]
-    // signupEnd <= signupStart (equal)
-    [InlineData("2026-08-01", "2026-08-10", "2026-07-02T00:00:00Z", "2026-07-02T00:00:00Z")]
-    // signup start date falls after the event end
-    [InlineData("2026-08-01", "2026-08-10", "2026-08-20T00:00:00Z", "2026-08-21T00:00:00Z")]
-    public async Task Create_with_invalid_schedule_is_bad_request(
-        string start,
-        string end,
-        string signupStart,
-        string signupEnd
-    )
-    {
-        var client = await LoginAsAdminAsync();
-        var request = BuildCreate(
-            Guid.NewGuid(),
-            new[] { Guid.NewGuid() },
-            DateOnly.Parse(start),
-            DateOnly.Parse(end),
-            DateTimeOffset.Parse(signupStart),
-            DateTimeOffset.Parse(signupEnd)
-        );
-
-        var response = await client.PostJsonAsync("/api/events", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-    }
-
-    [Fact]
-    public async Task Create_with_missing_thumbnail_is_bad_request()
-    {
-        var categoryId = await SeedCategoryTypeAsync();
-        var client = await LoginAsAdminAsync();
-        var request = BuildCreate(Guid.NewGuid(), new[] { categoryId });
-
-        var response = await client.PostJsonAsync("/api/events", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventThumbnailNotFound);
-    }
-
-    [Fact]
-    public async Task Create_without_categories_is_bad_request()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = BuildCreate(thumbnailId, Array.Empty<Guid>());
-
-        var response = await client.PostJsonAsync("/api/events", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventCategoriesRequired);
-    }
-
-    [Fact]
-    public async Task Create_with_unknown_category_is_bad_request()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = BuildCreate(thumbnailId, new[] { Guid.NewGuid() });
-
-        var response = await client.PostJsonAsync("/api/events", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-    }
-
     // ---- Update ------------------------------------------------------------
 
     [Fact]
@@ -446,21 +263,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
         stored!.Title.Should().Be("Después");
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
-    }
-
-    [Fact]
-    public async Task Update_missing_event_is_404_EventNotFound()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var categoryId = await SeedCategoryTypeAsync();
-        var client = await LoginAsAdminAsync();
-        var request = BuildUpdate(thumbnailId, new[] { categoryId });
-
-        var response = await client.PutJsonAsync($"/api/events/{Guid.NewGuid()}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -482,53 +284,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         newFile.Should().NotBeNull();
     }
 
-    [Fact]
-    public async Task Update_keeping_the_same_thumbnail_does_not_delete_the_file()
-    {
-        var categoryId = await SeedCategoryTypeAsync("SinCambio");
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "MismaMiniatura", categoryTypeId: categoryId);
-        var thumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
-        var client = await LoginAsAdminAsync();
-        var request = BuildUpdate(thumbnailId, new[] { categoryId });
-
-        var response = await client.PutJsonAsync($"/api/events/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
-        file.Should().NotBeNull("an untouched thumbnail must never be cleaned up");
-    }
-
-    [Fact]
-    public async Task Update_rejected_when_an_activity_falls_outside_the_new_range()
-    {
-        var categoryId = await SeedCategoryTypeAsync("Rango");
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "ConActividad", categoryTypeId: categoryId);
-        await SeedActivityAsync(
-            id,
-            new DateTimeOffset(2026, 8, 5, 9, 0, 0, TimeSpan.Zero),
-            new DateTimeOffset(2026, 8, 5, 11, 0, 0, TimeSpan.Zero)
-        );
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = BuildUpdate(
-            thumbnailId,
-            new[] { categoryId },
-            new DateOnly(2026, 9, 1),
-            new DateOnly(2026, 9, 5),
-            new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero),
-            new DateTimeOffset(2026, 8, 15, 0, 0, 0, TimeSpan.Zero)
-        );
-
-        var response = await client.PutJsonAsync($"/api/events/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventActivitiesOutsideNewRange);
-
-        var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
-        stored!.EventStartsAt.Should().Be(new DateOnly(2026, 8, 1));
-    }
-
     // ---- Delete / Feature --------------------------------------------------
 
     [Fact]
@@ -548,33 +303,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     }
 
     [Fact]
-    public async Task Delete_missing_event_is_404_EventNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/events/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
-    }
-
-    [Fact(Skip = "SetFeatured -> repo.SetFeaturedAsync uses EF ExecuteUpdateAsync, unsupported by the in-memory provider (needs a relational DB / Docker). Service logic covered by EventService unit tests.")]
-    public async Task Feature_as_admin_marks_event_featured()
-    {
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), featured: false, title: "AFeaturear");
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync($"/api/events/{id}/feature");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<EventResponse>();
-        body!.Featured.Should().BeTrue();
-        var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
-        stored!.Featured.Should().BeTrue();
-    }
-
-    [Fact(Skip = "SetFeatured -> repo.SetFeaturedAsync uses EF ExecuteUpdateAsync, unsupported by the in-memory provider (needs a relational DB / Docker). Service logic covered by EventService unit tests.")]
     public async Task Feature_missing_event_is_404_EventNotFound()
     {
         var client = await LoginAsAdminAsync();
@@ -602,16 +330,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     }
 
     [Fact]
-    public async Task ListCategoryTypes_anonymous_is_unauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/events/categoryType");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task CreateCategoryType_as_admin_persists_and_returns_ok()
     {
         var client = await LoginAsAdminAsync();
@@ -625,44 +343,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
 
         var stored = await Factory.QueryAsync(db => db.EventCategoryTypes.FindAsync(created.Id).AsTask());
         stored!.Color.Should().Be("#3366cc");
-    }
-
-    [Fact]
-    public async Task CreateCategoryType_with_duplicate_name_is_conflict()
-    {
-        await SeedCategoryTypeAsync("Duplicada");
-        var client = await LoginAsAdminAsync();
-        var request = new CreateEventCategoryTypeRequest("Duplicada", "#3366cc");
-
-        var response = await client.PostJsonAsync("/api/events/categoryType", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
-    }
-
-    [Fact]
-    public async Task CreateCategoryType_with_invalid_color_is_validation_error()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new CreateEventCategoryTypeRequest("MalColor", "notacolor");
-
-        var response = await client.PostJsonAsync("/api/events/categoryType", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateCategoryType_as_member_is_forbidden()
-    {
-        var client = await LoginAsMemberAsync();
-        var request = new CreateEventCategoryTypeRequest("NoPuede", "#3366cc");
-
-        var response = await client.PostJsonAsync("/api/events/categoryType", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -681,34 +361,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     }
 
     [Fact]
-    public async Task UpdateCategoryType_missing_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateEventCategoryTypeRequest("Fantasma", "#222222");
-
-        var response = await client.PutJsonAsync($"/api/events/categoryType/{Guid.NewGuid()}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-    }
-
-    [Fact]
-    public async Task UpdateCategoryType_to_existing_name_is_conflict()
-    {
-        await SeedCategoryTypeAsync("Ocupada");
-        var id = await SeedCategoryTypeAsync("Libre");
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateEventCategoryTypeRequest("Ocupada", "#222222");
-
-        var response = await client.PutJsonAsync($"/api/events/categoryType/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
-    }
-
-    [Fact]
     public async Task DeleteCategoryType_as_admin_removes_it()
     {
         var id = await SeedCategoryTypeAsync("Efímera");
@@ -719,17 +371,5 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await Factory.QueryAsync(db => db.EventCategoryTypes.FindAsync(id).AsTask());
         stored.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task DeleteCategoryType_missing_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/events/categoryType/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
     }
 }

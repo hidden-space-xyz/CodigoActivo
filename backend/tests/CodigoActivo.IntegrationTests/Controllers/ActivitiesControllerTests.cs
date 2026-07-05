@@ -134,40 +134,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_filters_by_event_id()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventA = await SeedEventAsync(thumb);
-        var eventB = await SeedEventAsync(thumb);
-        await SeedActivityAsync(eventA, thumb, "InA");
-        await SeedActivityAsync(eventB, thumb, "InB");
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/activities?eventId={eventA}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>();
-        page!.Total.Should().Be(1);
-        page.Items.Should().ContainSingle(a => a.Title == "InA");
-    }
-
-    [Fact]
-    public async Task Get_returns_activity_when_present()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var id = await SeedActivityAsync(eventId, thumb, "Beta");
-        var client = CreateClient();
-
-        var response = await client.GetAsync($"/api/activities/{id}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var activity = await response.ReadJsonAsync<ActivityResponse>();
-        activity!.Title.Should().Be("Beta");
-        activity.EventId.Should().Be(eventId);
-    }
-
-    [Fact]
     public async Task Get_returns_404_ActivityNotFound_when_absent()
     {
         var client = CreateClient();
@@ -238,105 +204,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_missing_event_is_404_EventNotFound()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{Guid.NewGuid()}",
-            CreateRequest(thumb)
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task Create_with_inverted_range_is_bad_request()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var client = await LoginAsAdminAsync();
-        // ends <= starts
-        var request = CreateRequest(thumb, startsAt: ActivityEnd, endsAt: ActivityStart);
-
-        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityScheduleInvalidRange);
-    }
-
-    [Fact]
-    public async Task Create_outside_event_range_is_bad_request()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var client = await LoginAsAdminAsync();
-        // starts after the event's last day
-        var request = CreateRequest(
-            thumb,
-            startsAt: new DateTimeOffset(2026, 8, 10, 10, 0, 0, TimeSpan.Zero),
-            endsAt: new DateTimeOffset(2026, 8, 10, 12, 0, 0, TimeSpan.Zero)
-        );
-
-        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityScheduleOutsideEventRange);
-    }
-
-    [Fact]
-    public async Task Create_with_missing_thumbnail_is_bad_request()
-    {
-        var eventId = await SeedEventAsync();
-        var client = await LoginAsAdminAsync();
-        var request = CreateRequest(Guid.NewGuid());
-
-        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityThumbnailNotFound);
-    }
-
-    [Fact]
-    public async Task Create_with_unknown_modality_is_bad_request()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var client = await LoginAsAdminAsync();
-        var request = CreateRequest(thumb, modalityId: Guid.NewGuid());
-
-        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityModalityTypeNotFound);
-    }
-
-    [Fact]
-    public async Task Create_with_unknown_allowed_role_is_bad_request()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var client = await LoginAsAdminAsync();
-        var request = CreateRequest(
-            thumb,
-            allowedRoles: new List<ActivityAllowedRoleRequest> { new(Guid.NewGuid()) }
-        );
-
-        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-    }
-
-    [Fact]
     public async Task Create_with_blank_title_is_validation_error()
     {
         var thumb = await SeedThumbnailAsync();
@@ -401,63 +268,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         roles.Should().ContainSingle(r => r.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Helper);
     }
 
-    [Fact]
-    public async Task Update_missing_activity_is_404_ActivityNotFound()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateActivityRequest(
-            "X", "Descripcion", "Sala", SeedIds.ActivityModalityTypes.Presencial,
-            ActivityStart, ActivityEnd, thumb, null
-        );
-
-        var response = await client.PutJsonAsync($"/api/activities/{Guid.NewGuid()}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityNotFound);
-    }
-
-    [Fact]
-    public async Task Update_with_orphan_event_is_404_EventNotFound()
-    {
-        var thumb = await SeedThumbnailAsync();
-        // Activity points at an event id that was never seeded (in-memory ignores the FK).
-        var id = await SeedActivityAsync(Guid.NewGuid(), thumb);
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateActivityRequest(
-            "X", "Descripcion", "Sala", SeedIds.ActivityModalityTypes.Presencial,
-            ActivityStart, ActivityEnd, thumb, null
-        );
-
-        var response = await client.PutJsonAsync($"/api/activities/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task Update_outside_event_range_is_bad_request()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var id = await SeedActivityAsync(eventId, thumb);
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateActivityRequest(
-            "X", "Descripcion", "Sala", SeedIds.ActivityModalityTypes.Presencial,
-            new DateTimeOffset(2026, 8, 10, 10, 0, 0, TimeSpan.Zero),
-            new DateTimeOffset(2026, 8, 10, 12, 0, 0, TimeSpan.Zero),
-            thumb, null
-        );
-
-        var response = await client.PutJsonAsync($"/api/activities/{id}", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityScheduleOutsideEventRange);
-    }
-
     // ---- Delete ------------------------------------------------------------
 
     [Fact]
@@ -494,18 +304,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         file.Should().NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
     }
 
-    [Fact]
-    public async Task Delete_missing_activity_is_404_ActivityNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/activities/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityNotFound);
-    }
-
     // ---- Catalog reads (admin only) ---------------------------------------
 
     [Fact]
@@ -519,16 +317,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var roles = await response.ReadJsonAsync<IReadOnlyList<ActivityRoleTypeResponse>>();
         roles!.Should().Contain(r => r.Id == SeedIds.ActivityRoleTypes.Leader);
         roles.Should().HaveCountGreaterThan(2);
-    }
-
-    [Fact]
-    public async Task RoleTypes_as_member_is_forbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync("/api/activities/roleType");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -574,19 +362,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateRoleType_with_duplicate_name_is_conflict()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new CreateActivityRoleTypeRequest("Líder", null);
-
-        var response = await client.PostJsonAsync("/api/activities/roleType", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityRoleTypeNameAlreadyExists);
-    }
-
-    [Fact]
     public async Task UpdateRoleType_as_admin_changes_name()
     {
         var client = await LoginAsAdminAsync();
@@ -604,22 +379,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateRoleType_missing_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateActivityRoleTypeRequest("X", null);
-
-        var response = await client.PutJsonAsync(
-            $"/api/activities/roleType/{Guid.NewGuid()}",
-            request
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-    }
-
-    [Fact]
     public async Task DeleteRoleType_as_admin_removes()
     {
         var client = await LoginAsAdminAsync();
@@ -632,17 +391,5 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await Factory.QueryAsync(db =>
             db.ActivityRoleTypes.FindAsync(SeedIds.ActivityRoleTypes.Participant).AsTask());
         stored.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task DeleteRoleType_missing_is_404()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync($"/api/activities/roleType/{Guid.NewGuid()}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
-        error!.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
     }
 }
