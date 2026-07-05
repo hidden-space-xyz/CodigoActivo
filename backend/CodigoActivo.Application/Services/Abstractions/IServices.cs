@@ -67,7 +67,7 @@ public interface IUserService
 
 public interface IEventService
 {
-    Task<PagedResult<EventResponse>> ListAsync(
+    Task<PagedResult<EventListItemResponse>> ListAsync(
         EventListQuery query,
         CancellationToken ct = default
     );
@@ -213,7 +213,7 @@ public interface IActivityService
 
 public interface IResourceService
 {
-    Task<PagedResult<ResourceResponse>> ListAsync(
+    Task<PagedResult<ResourceListItemResponse>> ListAsync(
         ResourceListQuery query,
         CancellationToken ct = default
     );
@@ -238,7 +238,7 @@ public interface IResourceService
 
 public interface IAnnouncementService
 {
-    Task<PagedResult<AnnouncementResponse>> ListAsync(
+    Task<PagedResult<AnnouncementListItemResponse>> ListAsync(
         AnnouncementListQuery query,
         CancellationToken ct = default
     );
@@ -306,7 +306,15 @@ public interface IFileService
         CancellationToken ct = default
     );
 
+    /// <summary>Deletes the file row and its stored content; fails with FileNotFound / FileInUse.</summary>
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Best-effort cascade cleanup used by the entity services after dropping a thumbnail
+    /// reference: a file that is still referenced elsewhere (FileInUse) or already gone
+    /// (FileNotFound) is silently kept/skipped.
+    /// </summary>
+    Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default);
 }
 
 public interface IReportService

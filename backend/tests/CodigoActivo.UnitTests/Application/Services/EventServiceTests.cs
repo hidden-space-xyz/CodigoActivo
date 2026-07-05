@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -23,6 +24,7 @@ public sealed class EventServiceTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
@@ -31,7 +33,16 @@ public sealed class EventServiceTests
 
     public EventServiceTests()
     {
-        sut = new EventService(events, activities, files, categoryTypes, new FakeQueryExecutor(), clock, uow);
+        sut = new EventService(
+            events,
+            activities,
+            files,
+            fileService,
+            categoryTypes,
+            new FakeQueryExecutor(),
+            clock,
+            uow
+        );
     }
 
     // ---- helpers -----------------------------------------------------------
@@ -106,12 +117,13 @@ public sealed class EventServiceTests
         DateTimeOffset? signupEnd = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
         Guid? thumbnailId = null,
-        string title = "  New title  "
+        string title = "  New title  ",
+        string description = "{}"
     ) =>
         new(
             Title: title,
             Subtitle: "  New subtitle  ",
-            Description: "{}",
+            Description: description,
             EventStartsAt: eventStart ?? new DateOnly(2026, 8, 1),
             EventEndsAt: eventEnd ?? new DateOnly(2026, 8, 3),
             SignupStartsAt: signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
@@ -131,7 +143,7 @@ public sealed class EventServiceTests
 
         result.Total.Should().Be(2);
         result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<EventResponse>();
+        result.Items.Should().AllBeOfType<EventListItemResponse>();
     }
 
     [Fact]
@@ -583,33 +595,140 @@ public sealed class EventServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    {
+        var ev = NewEvent();
+        var previousThumbnailId = ev.ThumbnailId;
+        PrepareUpdate(ev);
+        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() }, thumbnailId: Guid.NewGuid());
+
+        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    {
+        var ev = NewEvent();
+        PrepareUpdate(ev);
+        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() }, thumbnailId: ev.ThumbnailId);
+
+        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_cleans_up_images_dropped_from_the_description_but_keeps_the_rest()
+    {
+        var ev = NewEvent();
+        var removedId = Guid.NewGuid();
+        var keptId = Guid.NewGuid();
+        ev.Description = $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        PrepareUpdate(ev);
+        var request = UpdateReq(
+            categoryTypeIds: new[] { Guid.NewGuid() },
+            thumbnailId: ev.ThumbnailId,
+            description: $"{{\"b\":\"/api/files/{keptId}/content\"}}"
+        );
+
+        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
+        await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Stubs a happy-path update for <paramref name="ev"/>: found for edit, thumbnail + category
+    /// checks pass, and SaveChanges backfills the category navigation the projection dereferences.
+    /// </summary>
+    private void PrepareUpdate(Event ev)
+    {
+        HasEvents(ev);
+        events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        ThumbnailExists(true);
+        HasCategoryCount(1);
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                foreach (var category in ev.Categories)
+                    category.EventCategoryType ??= new EventCategoryType
+                    {
+                        Id = category.EventCategoryTypeId,
+                        Name = "Charlas",
+                        Color = "#654321",
+                    };
+                return 1;
+            });
+    }
+
     // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteAsync_returns_not_found_when_event_missing()
     {
         events
-            .RemoveAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(0);
+            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((Event?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
 
     [Fact]
-    public async Task DeleteAsync_saves_when_event_removed()
+    public async Task DeleteAsync_removes_event_and_cleans_event_and_activity_thumbnails_once_each()
     {
+        var ev = NewEvent();
         events
-            .RemoveAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
+            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(ev);
+        var sharedActivityThumbnailId = Guid.NewGuid();
+        var foreignActivity = new Activity { EventId = Guid.NewGuid(), ThumbnailId = Guid.NewGuid() };
+        activities.Query().Returns(
+            new[]
+            {
+                new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
+                // Two activities sharing one thumbnail -> cleaned up once (Distinct).
+                new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
+                // Another event's activity -> untouched.
+                foreignActivity,
+            }.AsQueryable()
+        );
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(ev.Id);
 
         result.IsSuccess.Should().BeTrue();
+        events.Received(1).Remove(ev);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await fileService.Received(1).DeleteIfOrphanedAsync(ev.ThumbnailId, Arg.Any<CancellationToken>());
+        await fileService.Received(1).DeleteIfOrphanedAsync(sharedActivityThumbnailId, Arg.Any<CancellationToken>());
+        await fileService.DidNotReceive().DeleteIfOrphanedAsync(foreignActivity.ThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_cleans_up_images_embedded_in_the_description()
+    {
+        var ev = NewEvent();
+        var embeddedId = Guid.NewGuid();
+        ev.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
+        events
+            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(ev);
+        activities.Query().Returns(Array.Empty<Activity>().AsQueryable());
+
+        var result = await sut.DeleteAsync(ev.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
 
     // ---- SetFeaturedAsync --------------------------------------------------

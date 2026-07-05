@@ -91,8 +91,11 @@ public interface IPartnerRepository : IDbRepository<Partner>;
 
 public interface IFileRepository : IDbRepository<FileEntity>
 {
-    /// <summary>True when any entity still references the file as its thumbnail (a restricted FK).</summary>
-    Task<bool> IsReferencedAsThumbnailAsync(Guid fileId, CancellationToken ct = default);
+    /// <summary>
+    /// True when any entity still references the file — as its thumbnail (a restricted FK) or
+    /// embedded as a content URL inside a rich-text description (plain text, no FK).
+    /// </summary>
+    Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default);
 }
 
 public interface IUserTypeRepository : IDbRepository<UserType>;

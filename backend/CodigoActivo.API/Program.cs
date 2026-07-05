@@ -166,6 +166,11 @@ finally
     await Log.CloseAndFlushAsync();
 }
 
+// The SPA and the API are deployed under the SAME site (one domain fronting both), so SameSite=Lax
+// is the correct and secure default for the session/antiforgery cookies: it flows on all same-site
+// requests while still blocking cross-site POSTs. None+Secure would only be needed if the frontend
+// and the API were ever split across unrelated domains. "Auth:SameSite" stays configurable, and any
+// unknown value deliberately falls back to Lax.
 static SameSiteMode ResolveSameSite(string? value)
 {
     return value?.Trim().ToLowerInvariant() switch

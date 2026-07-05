@@ -76,7 +76,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var response = await client.GetAsync("/api/announcements");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<AnnouncementResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>();
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(a => a.Title == "Alpha");
@@ -92,7 +92,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var response = await client.GetAsync("/api/announcements?title=keep&featured=true");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<AnnouncementResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>();
         page!.Items.Should().ContainSingle(a => a.Title == "Keep Me");
         page.Total.Should().Be(1);
     }
@@ -106,7 +106,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
 
         var response = await client.GetAsync("/api/announcements?year=2025");
 
-        var page = await response.ReadJsonAsync<PagedResult<AnnouncementResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>();
         page!.Items.Should().ContainSingle(a => a.Title == "New");
     }
 
@@ -278,6 +278,50 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
+    public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
+    {
+        var id = await SeedAnnouncementAsync("Reemplazo");
+        var oldThumbnailId = (await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask()))!.ThumbnailId;
+        var newThumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new UpdateAnnouncementRequest("Reemplazo", "Sub", Description, newThumbnailId);
+
+        var response = await client.PutJsonAsync($"/api/announcements/{id}", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var oldFile = await Factory.QueryAsync(db => db.Files.FindAsync(oldThumbnailId).AsTask());
+        oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
+        var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
+        newFile.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Update_removing_an_embedded_description_image_deletes_the_orphaned_file()
+    {
+        var id = await SeedAnnouncementAsync("Con imagen");
+        var thumbnailId = (await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask()))!.ThumbnailId;
+        var embeddedFileId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var withImage = new UpdateAnnouncementRequest(
+            "Con imagen",
+            "Sub",
+            $"{{\"img\":\"/api/files/{embeddedFileId}/content\"}}",
+            thumbnailId
+        );
+        using (var seeded = await client.PutJsonAsync($"/api/announcements/{id}", withImage))
+        {
+            seeded.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+        var withoutImage = new UpdateAnnouncementRequest("Con imagen", "Sub", Description, thumbnailId);
+
+        var response = await client.PutJsonAsync($"/api/announcements/{id}", withoutImage);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(embeddedFileId).AsTask());
+        file.Should().BeNull("an image dropped from the description is orphaned and must be cascade-deleted");
+    }
+
+    [Fact]
     public async Task Update_with_missing_thumbnail_is_bad_request()
     {
         var id = await SeedAnnouncementAsync("Before");
@@ -334,9 +378,10 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     // ---- Delete ------------------------------------------------------------
 
     [Fact]
-    public async Task Delete_as_admin_removes_announcement()
+    public async Task Delete_as_admin_removes_announcement_and_its_orphaned_thumbnail()
     {
         var id = await SeedAnnouncementAsync("Doomed");
+        var thumbnailId = (await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask()))!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
         var response = await client.DeleteWithCsrfAsync($"/api/announcements/{id}");
@@ -344,7 +389,46 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask());
         stored.Should().BeNull();
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        file.Should().BeNull("the deleted announcement's thumbnail is orphaned and must be cascade-deleted");
     }
+
+    [Fact]
+    public async Task Delete_keeps_a_thumbnail_still_shared_with_another_announcement()
+    {
+        var sharedThumbnailId = await SeedThumbnailAsync();
+        var doomedId = Guid.NewGuid();
+        var survivorId = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Announcements.AddRange(
+                NewSharedThumbnailAnnouncement(doomedId, "Doomed", sharedThumbnailId),
+                NewSharedThumbnailAnnouncement(survivorId, "Survivor", sharedThumbnailId)
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/announcements/{doomedId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(sharedThumbnailId).AsTask());
+        file.Should().NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
+        var survivor = await Factory.QueryAsync(db => db.Announcements.FindAsync(survivorId).AsTask());
+        survivor.Should().NotBeNull();
+    }
+
+    private static Announcement NewSharedThumbnailAnnouncement(Guid id, string title, Guid thumbnailId) =>
+        new()
+        {
+            Id = id,
+            Title = title,
+            Subtitle = "Sub",
+            Description = Description,
+            ThumbnailId = thumbnailId,
+            CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            CreatedBy = TestSeedData.Users.AdminId,
+        };
 
     [Fact]
     public async Task Delete_missing_announcement_is_404()

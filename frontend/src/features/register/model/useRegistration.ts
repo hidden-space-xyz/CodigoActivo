@@ -2,7 +2,7 @@ import { reactive, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 
 import { scrollToTop } from '@/shared/lib'
-import { getRegistrationTypesRequest } from '@/entities/account'
+import { accountQueryKeys, getRegistrationTypesRequest } from '@/entities/account'
 
 import { registerRequest, verifyRegistrationRequest } from '../api/requests'
 import { createEmptyRegistrationForm, type RegistrationForm } from './registration-form'
@@ -19,11 +19,11 @@ export function useRegistration() {
   const isVerified = ref(false)
 
   const adultRoles = useQuery({
-    queryKey: ['registration-types', 'adult'],
+    queryKey: accountQueryKeys.registrationTypes(false),
     queryFn: () => getRegistrationTypesRequest(false),
   })
   const minorRoles = useQuery({
-    queryKey: ['registration-types', 'minor'],
+    queryKey: accountQueryKeys.registrationTypes(true),
     queryFn: () => getRegistrationTypesRequest(true),
   })
 

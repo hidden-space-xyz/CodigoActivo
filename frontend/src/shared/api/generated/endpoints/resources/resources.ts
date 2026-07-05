@@ -31,8 +31,8 @@ import type {
 import type {
   CreateResourceRequest,
   GetApiResourcesParams,
+  ResourceListItemResponsePagedResult,
   ResourceResponse,
-  ResourceResponsePagedResult,
   UpdateResourceRequest
 } from '../../models';
 
@@ -44,7 +44,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 export type getApiResourcesResponse200 = {
-  data: ResourceResponsePagedResult
+  data: ResourceListItemResponsePagedResult
   status: 200
 }
 

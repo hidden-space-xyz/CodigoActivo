@@ -43,6 +43,45 @@ public record EventResponse(
     }
 }
 
+/// <summary>List-read shape: the full <see cref="EventResponse"/> minus the heavy Description.</summary>
+public record EventListItemResponse(
+    Guid Id,
+    string Title,
+    string Subtitle,
+    DateOnly EventStartsAt,
+    DateOnly EventEndsAt,
+    DateTimeOffset SignupStartsAt,
+    DateTimeOffset SignupEndsAt,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt,
+    Guid CreatedBy,
+    Guid? UpdatedBy,
+    Guid ThumbnailId,
+    bool Featured,
+    IReadOnlyList<EventCategoryResponse> Categories
+)
+{
+    public EventListItemResponse()
+        : this(
+            Guid.Empty,
+            string.Empty,
+            string.Empty,
+            default,
+            default,
+            default,
+            default,
+            default,
+            null,
+            Guid.Empty,
+            null,
+            Guid.Empty,
+            false,
+            []
+        )
+    {
+    }
+}
+
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);
 
 public record CreateEventRequest(

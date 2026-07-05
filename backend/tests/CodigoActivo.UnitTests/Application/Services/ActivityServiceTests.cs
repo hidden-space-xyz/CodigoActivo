@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -23,6 +24,7 @@ public sealed class ActivityServiceTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IAssignmentStatusTypeRepository statuses =
         Substitute.For<IAssignmentStatusTypeRepository>();
     private readonly IActivityRoleTypeRepository roleTypes =
@@ -40,6 +42,7 @@ public sealed class ActivityServiceTests
             activities,
             events,
             files,
+            fileService,
             statuses,
             roleTypes,
             modalityTypes,
@@ -123,7 +126,8 @@ public sealed class ActivityServiceTests
         string title = "  New  ",
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null,
-        IReadOnlyList<ActivityAllowedRoleRequest>? roles = null
+        IReadOnlyList<ActivityAllowedRoleRequest>? roles = null,
+        Guid? thumbnailId = null
     ) =>
         new(
             title,
@@ -132,7 +136,7 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid(),
+            thumbnailId ?? Guid.NewGuid(),
             roles
         );
 
@@ -542,31 +546,72 @@ public sealed class ActivityServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    {
+        var activity = NewActivity();
+        var previousThumbnailId = activity.ThumbnailId;
+        HasActivities(activity);
+        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+
+        var result = await sut.UpdateAsync(activity.Id, UpdateRequest(thumbnailId: Guid.NewGuid()), Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    {
+        var activity = NewActivity();
+        HasActivities(activity);
+        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(thumbnailId: activity.ThumbnailId),
+            Guid.NewGuid()
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+    }
+
     // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteAsync_returns_not_found_when_activity_missing()
     {
-        activities.RemoveAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(0);
+        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((Activity?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
 
     [Fact]
-    public async Task DeleteAsync_saves_when_removed()
+    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
-        activities.RemoveAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
+        var activity = NewActivity();
+        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(activity);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(activity.Id);
 
         result.IsSuccess.Should().BeTrue();
+        activities.Received(1).Remove(activity);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await fileService.Received(1).DeleteIfOrphanedAsync(activity.ThumbnailId, Arg.Any<CancellationToken>());
     }
 
     // ---- Catalog list methods ---------------------------------------------

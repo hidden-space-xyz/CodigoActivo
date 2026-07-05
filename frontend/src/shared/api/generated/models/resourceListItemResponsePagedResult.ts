@@ -4,11 +4,11 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { AnnouncementResponse } from './announcementResponse';
+import type { ResourceListItemResponse } from './resourceListItemResponse';
 
-export interface AnnouncementResponsePagedResult {
+export interface ResourceListItemResponsePagedResult {
   /** @nullable */
-  items?: AnnouncementResponse[] | null;
+  items?: ResourceListItemResponse[] | null;
   total?: number;
   page?: number;
   pageSize?: number;

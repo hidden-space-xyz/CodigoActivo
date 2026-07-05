@@ -14,6 +14,7 @@ const previewUrl = ref<string | null>(null)
 const fileName = ref<string>('')
 const pickedFile = ref<File | null>(null)
 const sizeError = ref('')
+// Mirrors the backend upload cap (FileStorageOptions.DefaultMaxSizeBytes = 10 MiB).
 const MAX_SIZE = 10 * 1024 * 1024
 let objectUrl: string | null = null
 

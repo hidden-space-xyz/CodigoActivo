@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useServerTable, type ServerTableColumn, type ServerTablePage } from '@/shared/lib'
-import { deleteThumbnail } from '@/entities/file'
 
 export interface ContentItem {
   id?: string
@@ -53,11 +52,10 @@ export function useContentEntity<TParams = Record<string, unknown>>(api: Content
   })
 
   const remove = useMutation({
-    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) => api.remove(vars.id),
-    onSuccess: (_data, vars) => {
-      void deleteThumbnail(vars.thumbnailId)
-      return invalidate()
-    },
+    // The backend cascades orphaned thumbnail files on entity delete/replace, so no client-side
+    // file cleanup is needed here.
+    mutationFn: (id: string) => api.remove(id),
+    onSuccess: invalidate,
   })
 
   const feature = useMutation({

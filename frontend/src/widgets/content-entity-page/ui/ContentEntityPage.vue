@@ -62,6 +62,10 @@ watch([dialogVisible, editing], ([open]) => {
 })
 
 function openCreate(): void {
+  // Don't open a create dialog while an edit-detail fetch is in flight: the late fetch would set
+  // `editing` under the already-open dialog, clobbering the form (the watch repopulates on
+  // `editing` changes) and retargeting the save at that item instead of creating a new one.
+  if (loadingDetail.value) return
   editing.value = null
   dialogVisible.value = true
 }
@@ -140,13 +144,10 @@ function confirmDelete(item: ContentItem): void {
     message: `¿Seguro que quieres eliminar "${item.title}"? Esta acción no se puede deshacer.`,
     accept: () => {
       if (!item.id) return
-      props.controller.remove.mutate(
-        { id: item.id, thumbnailId: item.thumbnailId },
-        {
-          onSuccess: () => feedback.success('Eliminado.'),
-          onError: (error) => feedback.error(error),
-        },
-      )
+      props.controller.remove.mutate(item.id, {
+        onSuccess: () => feedback.success('Eliminado.'),
+        onError: (error) => feedback.error(error),
+      })
     },
   })
 }
@@ -156,7 +157,7 @@ function confirmDelete(item: ContentItem): void {
   <div>
     <AdminPageHeader :title="title" :subtitle="subtitle">
       <template #actions>
-        <Button :label="newLabel" icon="pi pi-plus" @click="openCreate" />
+        <Button :label="newLabel" icon="pi pi-plus" :disabled="loadingDetail" @click="openCreate" />
       </template>
     </AdminPageHeader>
 
@@ -229,7 +230,14 @@ function confirmDelete(item: ContentItem): void {
               :class="{ 'is-featured': data.featured }"
               @click="onFeature(data)"
             />
-            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              aria-label="Editar"
+              :disabled="loadingDetail"
+              @click="openEdit(data)"
+            />
             <Button
               icon="pi pi-trash"
               text

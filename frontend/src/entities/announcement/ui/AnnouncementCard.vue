@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Announcement } from '../model/types'
+import type { AnnouncementSummary } from '../model/types'
 import { ListThumbnail } from '@/shared/ui'
 
-defineProps<{ announcement: Announcement }>()
+defineProps<{ announcement: AnnouncementSummary }>()
 </script>
 
 <template>

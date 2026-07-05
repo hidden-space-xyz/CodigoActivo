@@ -171,7 +171,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var response = await client.GetAsync("/api/events");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.PageSize.Should().Be(25);
@@ -189,7 +189,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var response = await client.GetAsync("/api/events?scope=Upcoming");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
         page!.Items.Should().ContainSingle(e => e.Title == "Futuro");
     }
 
@@ -203,7 +203,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var response = await client.GetAsync("/api/events?scope=Past");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
         page!.Items.Should().ContainSingle(e => e.Title == "Pasado");
     }
 
@@ -217,7 +217,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var response = await client.GetAsync("/api/events?year=2025");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
         page!.Items.Should().ContainSingle(e => e.Title == "DeDosMilVeinticinco");
     }
 
@@ -231,7 +231,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var response = await client.GetAsync("/api/events?featured=true");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
         page!.Items.Should().ContainSingle(e => e.Title == "Destacado" && e.Featured);
     }
 
@@ -246,7 +246,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var response = await client.GetAsync("/api/events?pageSize=2&page=1");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
         page!.Total.Should().Be(3);
         page.PageSize.Should().Be(2);
         page.Items.Should().HaveCount(2);
@@ -464,6 +464,41 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     }
 
     [Fact]
+    public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
+    {
+        var categoryId = await SeedCategoryTypeAsync("Cascada");
+        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "ConMiniatura", categoryTypeId: categoryId);
+        var oldThumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
+        var newThumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = BuildUpdate(newThumbnailId, new[] { categoryId });
+
+        var response = await client.PutJsonAsync($"/api/events/{id}", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var oldFile = await Factory.QueryAsync(db => db.Files.FindAsync(oldThumbnailId).AsTask());
+        oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
+        var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
+        newFile.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Update_keeping_the_same_thumbnail_does_not_delete_the_file()
+    {
+        var categoryId = await SeedCategoryTypeAsync("SinCambio");
+        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "MismaMiniatura", categoryTypeId: categoryId);
+        var thumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
+        var client = await LoginAsAdminAsync();
+        var request = BuildUpdate(thumbnailId, new[] { categoryId });
+
+        var response = await client.PutJsonAsync($"/api/events/{id}", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        file.Should().NotBeNull("an untouched thumbnail must never be cleaned up");
+    }
+
+    [Fact]
     public async Task Update_rejected_when_an_activity_falls_outside_the_new_range()
     {
         var categoryId = await SeedCategoryTypeAsync("Rango");
@@ -497,9 +532,10 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     // ---- Delete / Feature --------------------------------------------------
 
     [Fact]
-    public async Task Delete_as_admin_removes_event()
+    public async Task Delete_as_admin_removes_event_and_its_orphaned_thumbnail()
     {
         var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Borrar");
+        var thumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
         var response = await client.DeleteWithCsrfAsync($"/api/events/{id}");
@@ -507,6 +543,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
         stored.Should().BeNull();
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        file.Should().BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
     }
 
     [Fact]

@@ -6,19 +6,21 @@ using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Services;
 
 public class AnnouncementService(
     IAnnouncementRepository announcements,
     IFileRepository files,
+    IFileService fileService,
     IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow
 ) : IAnnouncementService
 {
-    private static readonly SortMap<AnnouncementResponse> Sort =
-        new SortMap<AnnouncementResponse>()
+    private static readonly SortMap<AnnouncementListItemResponse> Sort =
+        new SortMap<AnnouncementListItemResponse>()
             .Add("createdAt", a => a.CreatedAt)
             .Add("title", a => a.Title)
             .Add("subtitle", a => a.Subtitle)
@@ -26,25 +28,25 @@ public class AnnouncementService(
             .Default("-createdAt")
             .Tie(a => a.Id);
 
-    public Task<PagedResult<AnnouncementResponse>> ListAsync(
+    public Task<PagedResult<AnnouncementListItemResponse>> ListAsync(
         AnnouncementListQuery query,
         CancellationToken ct = default
     )
     {
-        var source = announcements.Query().Select(Projections.Announcement);
+        var source = announcements.Query().Select(Projections.AnnouncementListItem);
 
         if (query.Year is { } year) source = source.Where(a => a.CreatedAt.Year == year);
         if (query.Featured is { } featured) source = source.Where(a => a.Featured == featured);
         if (!string.IsNullOrWhiteSpace(query.Title))
             source = source.Where(
-                TextSearch.Contains<AnnouncementResponse>(
+                TextSearch.Contains<AnnouncementListItemResponse>(
                     a => a.Title,
                     TextSearch.Normalize(query.Title)
                 )
             );
         if (!string.IsNullOrWhiteSpace(query.Subtitle))
             source = source.Where(
-                TextSearch.Contains<AnnouncementResponse>(
+                TextSearch.Contains<AnnouncementListItemResponse>(
                     a => a.Subtitle,
                     TextSearch.Normalize(query.Subtitle)
                 )
@@ -123,6 +125,9 @@ public class AnnouncementService(
         );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
+        var previousThumbnailId = announcement.ThumbnailId;
+        var previousDescription = announcement.Description;
+
         announcement.Title = request.Title.Trim();
         announcement.Subtitle = request.Subtitle.Trim();
         announcement.Description = request.Description;
@@ -131,15 +136,28 @@ public class AnnouncementService(
         announcement.UpdatedBy = userId;
 
         await uow.SaveChangesAsync(ct);
+
+        if (previousThumbnailId != request.ThumbnailId)
+            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+
+        foreach (var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, announcement.Description))
+            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+
         return announcement.ToResponse();
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (await announcements.RemoveAsync(a => a.Id == id, ct) == 0)
-            return Error.NotFound(ErrorCode.AnnouncementNotFound);
+        var announcement = await announcements.FindAsync(a => a.Id == id, ct);
+        if (announcement is null) return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
+        announcements.Remove(announcement);
         await uow.SaveChangesAsync(ct);
+
+        await fileService.DeleteIfOrphanedAsync(announcement.ThumbnailId, ct);
+        foreach (var fileId in RichTextFileReferences.Extract(announcement.Description))
+            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+
         return Result.Success();
     }
 

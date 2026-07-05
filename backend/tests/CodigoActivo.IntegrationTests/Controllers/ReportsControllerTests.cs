@@ -11,11 +11,11 @@ using Xunit;
 namespace CodigoActivo.IntegrationTests.Controllers;
 
 /// <summary>
-/// Integration coverage for the reports controller: the admin-only summary/assignment endpoints and
-/// the anonymous dashboard, the full authorization matrix (anonymous 401 / member 403 / admin 200),
-/// the not-found contracts (<see cref="ErrorCode.EventNotFound"/>, <see cref="ErrorCode.ActivityNotFound"/>),
-/// and the exact computed aggregates including the non-signed-up parent row and the confirmed-only
-/// role-type breakdown.
+/// Integration coverage for the reports controller: the admin-only event/activity summary and
+/// assignment endpoints and the dashboard, the full authorization matrix (anonymous 401 / member
+/// 403 / admin 200), the not-found contracts (<see cref="ErrorCode.EventNotFound"/>,
+/// <see cref="ErrorCode.ActivityNotFound"/>), and the exact computed aggregates including the
+/// non-signed-up parent row and the confirmed-only role-type breakdown.
 /// </summary>
 public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {

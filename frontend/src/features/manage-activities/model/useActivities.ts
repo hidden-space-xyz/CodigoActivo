@@ -8,21 +8,24 @@ import {
   putApiActivitiesActivityId,
 } from '@/shared/api/generated/endpoints/activities/activities'
 import type { CreateActivityRequest, UpdateActivityRequest } from '@/shared/api/generated/models'
-import { getActivityByIdRequest, listEventActivitiesRequest } from '@/entities/activity'
-import { deleteThumbnail } from '@/entities/file'
+import {
+  activityQueryKeys,
+  getActivityByIdRequest,
+  listEventActivitiesRequest,
+} from '@/entities/activity'
 
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
-  const queryKey = computed(() => ['activities', 'event', toValue(eventId)] as const)
+  const queryKey = computed(() => activityQueryKeys.adminByEvent(toValue(eventId)))
   // Creating/removing activities also changes the event summary report's counts, and the public
-  // event page caches the same activities under its own ['public', 'event-activities', id] key.
+  // event page caches the same activities under the entity's public key.
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: queryKey.value })
     void queryClient.invalidateQueries({
       queryKey: ['reports', 'event-summary', toValue(eventId)],
     })
     void queryClient.invalidateQueries({
-      queryKey: ['public', 'event-activities', toValue(eventId)],
+      queryKey: activityQueryKeys.publicByEvent(toValue(eventId)),
     })
   }
 
@@ -44,12 +47,9 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
   })
 
   const remove = useMutation({
-    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) =>
-      deleteApiActivitiesActivityId(vars.id),
-    onSuccess: (_data, vars) => {
-      void deleteThumbnail(vars.thumbnailId)
-      invalidate()
-    },
+    // The backend cascades orphaned thumbnail files, so no client-side file cleanup is needed.
+    mutationFn: (id: string) => deleteApiActivitiesActivityId(id),
+    onSuccess: invalidate,
   })
 
   function fetchOne(activityId: string) {

@@ -220,9 +220,10 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     }
 
     [Fact]
-    public async Task Delete_as_admin_removes_partner()
+    public async Task Delete_as_admin_removes_partner_and_its_orphaned_thumbnail()
     {
         var id = await SeedPartnerAsync("Doomed");
+        var thumbnailId = (await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask()))!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
         var response = await client.DeleteWithCsrfAsync($"/api/partners/{id}");
@@ -230,6 +231,8 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask());
         stored.Should().BeNull();
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        file.Should().BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
     }
 
     [Fact]

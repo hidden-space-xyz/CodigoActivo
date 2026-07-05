@@ -64,7 +64,15 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     for (const [key, column] of Object.entries(columns)) {
       const value = filters.value[key]?.value
       if (value === null || value === undefined || value === '') continue
-      result[column.param ?? key] = column.type === 'number' ? Number(value) : value
+      if (column.type === 'number') {
+        const parsed = Number(value)
+        // A non-numeric or overflowing value would serialize as `?param=NaN` / `?param=Infinity`
+        // and fail backend model binding; omit the param entirely instead.
+        if (!Number.isFinite(parsed)) continue
+        result[column.param ?? key] = parsed
+      } else {
+        result[column.param ?? key] = value
+      }
     }
 
     return result

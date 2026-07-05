@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
+  accountQueryKeys,
   addAccountChildRequest,
   changeAccountPasswordRequest,
   deleteAccountChildRequest,
@@ -13,6 +14,7 @@ import {
   updateAccountChildRequest,
   updateAccountProfileRequest,
 } from '@/entities/account'
+import { activityQueryKeys } from '@/entities/activity'
 import type {
   AccountProfile,
   AddMinorInput,
@@ -28,8 +30,8 @@ export function useAccount() {
   const router = useRouter()
 
   const userId = computed(() => session.user?.id ?? null)
-  const profileKey = ['account', 'me'] as const
-  const childrenKey = ['account', 'children'] as const
+  const profileKey = accountQueryKeys.me()
+  const childrenKey = accountQueryKeys.children()
 
   const profile = useQuery({
     queryKey: profileKey,
@@ -46,15 +48,15 @@ export function useAccount() {
   })
 
   const minorRoles = useQuery({
-    queryKey: ['registration-types', 'minor'],
+    queryKey: accountQueryKeys.registrationTypes(true),
     queryFn: () => getRegistrationTypesRequest(true),
   })
 
   function invalidateChildren(): void {
     void queryClient.invalidateQueries({ queryKey: childrenKey })
-    // The event-signup household dialog caches the same members under its own key; keep it in sync
-    // so a newly added/removed minor shows up there without waiting for staleTime.
-    void queryClient.invalidateQueries({ queryKey: ['public', 'my-children'] })
+    // The event-signup household dialog caches the same members under the activity entity's key;
+    // keep it in sync so a newly added/removed minor shows up there without waiting for staleTime.
+    void queryClient.invalidateQueries({ queryKey: activityQueryKeys.householdMembers() })
   }
 
   function syncProfile(updated: AccountProfile): void {

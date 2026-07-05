@@ -29,8 +29,8 @@ import type {
 } from 'vue';
 
 import type {
+  AnnouncementListItemResponsePagedResult,
   AnnouncementResponse,
-  AnnouncementResponsePagedResult,
   CreateAnnouncementRequest,
   GetApiAnnouncementsParams,
   UpdateAnnouncementRequest
@@ -44,7 +44,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 export type getApiAnnouncementsResponse200 = {
-  data: AnnouncementResponsePagedResult
+  data: AnnouncementListItemResponsePagedResult
   status: 200
 }
 

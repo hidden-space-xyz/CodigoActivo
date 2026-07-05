@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -21,13 +22,14 @@ public sealed class ResourceServiceTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ResourceService sut;
 
     public ResourceServiceTests()
     {
-        sut = new ResourceService(resources, files, new FakeQueryExecutor(), clock, uow);
+        sut = new ResourceService(resources, files, fileService, new FakeQueryExecutor(), clock, uow);
     }
 
     private void HasResources(params Resource[] items) =>
@@ -65,7 +67,7 @@ public sealed class ResourceServiceTests
 
         result.Total.Should().Be(2);
         result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<ResourceResponse>();
+        result.Items.Should().AllBeOfType<ResourceListItemResponse>();
     }
 
     [Fact]
@@ -242,13 +244,69 @@ public sealed class ResourceServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    {
+        var resource = NewResource();
+        var previousThumbnailId = resource.ThumbnailId;
+        resources.FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
+        ThumbnailExists(true);
+        var request = new UpdateResourceRequest("Title", "Subtitle", "{}", Guid.NewGuid());
+
+        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    {
+        var resource = NewResource();
+        resources.FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
+        ThumbnailExists(true);
+        var request = new UpdateResourceRequest("Title", "Subtitle", "{}", resource.ThumbnailId);
+
+        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_cleans_up_images_dropped_from_the_description_but_keeps_the_rest()
+    {
+        var resource = NewResource();
+        var removedId = Guid.NewGuid();
+        var keptId = Guid.NewGuid();
+        resource.Description =
+            $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        resources.FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
+        ThumbnailExists(true);
+        var request = new UpdateResourceRequest(
+            "Title",
+            "Subtitle",
+            $"{{\"b\":\"/api/files/{keptId}/content\"}}",
+            resource.ThumbnailId
+        );
+
+        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
+        await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+    }
+
     // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteAsync_returns_not_found_when_resource_missing()
     {
-        resources.RemoveAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(0);
+        resources.FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((Resource?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
 
@@ -256,17 +314,36 @@ public sealed class ResourceServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
 
     [Fact]
-    public async Task DeleteAsync_saves_when_removed()
+    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
-        resources.RemoveAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
+        var resource = NewResource();
+        resources.FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(resource.Id);
 
         result.IsSuccess.Should().BeTrue();
+        resources.Received(1).Remove(resource);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await fileService.Received(1).DeleteIfOrphanedAsync(resource.ThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_cleans_up_images_embedded_in_the_description()
+    {
+        var resource = NewResource();
+        var embeddedId = Guid.NewGuid();
+        resource.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
+        resources.FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
+
+        var result = await sut.DeleteAsync(resource.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
 }

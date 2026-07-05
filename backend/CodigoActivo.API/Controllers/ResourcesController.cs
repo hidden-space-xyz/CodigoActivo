@@ -15,7 +15,7 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedResult<ResourceResponse>>> List(
+    public async Task<ActionResult<PagedResult<ResourceListItemResponse>>> List(
         [FromQuery] ResourceListQuery query,
         CancellationToken ct
     )

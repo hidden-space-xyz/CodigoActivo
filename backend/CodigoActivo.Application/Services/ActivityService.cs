@@ -14,6 +14,7 @@ public class ActivityService(
     IActivityRepository activities,
     IEventRepository events,
     IFileRepository files,
+    IFileService fileService,
     IAssignmentStatusTypeRepository statuses,
     IActivityRoleTypeRepository roleTypes,
     IActivityModalityTypeRepository modalityTypes,
@@ -193,6 +194,8 @@ public class ActivityService(
         var allowedRoles = await EnsureAllowedRolesAsync(request.AllowedRoleTypes, ct);
         if (allowedRoles.IsFailure) return allowedRoles.Error!;
 
+        var previousThumbnailId = activity.ThumbnailId;
+
         activity.Title = request.Title.Trim();
         activity.Description = request.Description;
         activity.Location = request.Location.Trim();
@@ -208,15 +211,21 @@ public class ActivityService(
 
         await uow.SaveChangesAsync(ct);
 
+        if (previousThumbnailId != request.ThumbnailId)
+            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+
         return await GetByIdAsync(activityId, ct);
     }
 
     public async Task<Result> DeleteAsync(Guid activityId, CancellationToken ct = default)
     {
-        if (await activities.RemoveAsync(a => a.Id == activityId, ct) == 0)
-            return Error.NotFound(ErrorCode.ActivityNotFound);
+        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
+        if (activity is null) return Error.NotFound(ErrorCode.ActivityNotFound);
 
+        activities.Remove(activity);
         await uow.SaveChangesAsync(ct);
+
+        await fileService.DeleteIfOrphanedAsync(activity.ThumbnailId, ct);
         return Result.Success();
     }
 

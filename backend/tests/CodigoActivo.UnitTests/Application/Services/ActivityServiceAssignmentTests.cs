@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
@@ -45,6 +46,7 @@ public sealed class ActivityServiceAssignmentTests
             activities,
             events,
             files,
+            Substitute.For<IFileService>(),
             statuses,
             roleTypes,
             modalityTypes,

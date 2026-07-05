@@ -32,8 +32,8 @@ import type {
   CreateEventCategoryTypeRequest,
   CreateEventRequest,
   EventCategoryTypeResponse,
+  EventListItemResponsePagedResult,
   EventResponse,
-  EventResponsePagedResult,
   GetApiEventsParams,
   UpdateEventCategoryTypeRequest,
   UpdateEventRequest
@@ -47,7 +47,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 export type getApiEventsResponse200 = {
-  data: EventResponsePagedResult
+  data: EventListItemResponsePagedResult
   status: 200
 }
 

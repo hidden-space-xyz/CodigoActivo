@@ -59,13 +59,10 @@ function confirmDelete(partner: PartnerResponse): void {
     message: `¿Seguro que quieres eliminar a "${partner.name}"? Esta acción no se puede deshacer.`,
     accept: () => {
       if (!partner.id) return
-      remove.mutate(
-        { id: partner.id, thumbnailId: partner.thumbnailId },
-        {
-          onSuccess: () => feedback.success('Patrocinador eliminado.'),
-          onError: (error) => feedback.error(error),
-        },
-      )
+      remove.mutate(partner.id, {
+        onSuccess: () => feedback.success('Patrocinador eliminado.'),
+        onError: (error) => feedback.error(error),
+      })
     },
   })
 }

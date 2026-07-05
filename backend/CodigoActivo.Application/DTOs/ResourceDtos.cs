@@ -21,6 +21,24 @@ public record ResourceResponse(
     }
 }
 
+/// <summary>List-read shape: the full <see cref="ResourceResponse"/> minus the heavy Description.</summary>
+public record ResourceListItemResponse(
+    Guid Id,
+    string Title,
+    string Subtitle,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt,
+    Guid CreatedBy,
+    Guid? UpdatedBy,
+    Guid ThumbnailId
+)
+{
+    public ResourceListItemResponse()
+        : this(Guid.Empty, string.Empty, string.Empty, default, null, Guid.Empty, null, Guid.Empty)
+    {
+    }
+}
+
 public record CreateResourceRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,

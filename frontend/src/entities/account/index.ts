@@ -5,6 +5,7 @@ export type {
   UpdateProfileInput,
 } from './model/account-inputs'
 export type { AccountChild, AccountProfile, RegistrationType } from './model/types'
+export { accountQueryKeys } from './api/query-keys'
 export {
   addAccountChildRequest,
   changeAccountPasswordRequest,

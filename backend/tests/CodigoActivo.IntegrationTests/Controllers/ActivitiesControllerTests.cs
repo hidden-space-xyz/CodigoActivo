@@ -461,8 +461,27 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     // ---- Delete ------------------------------------------------------------
 
     [Fact]
-    public async Task Delete_as_admin_removes_activity()
+    public async Task Delete_as_admin_removes_activity_and_its_orphaned_thumbnail()
     {
+        var eventThumb = await SeedThumbnailAsync();
+        var activityThumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(eventThumb);
+        var id = await SeedActivityAsync(eventId, activityThumb);
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/activities/{id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var stored = await Factory.QueryAsync(db => db.Activities.FindAsync(id).AsTask());
+        stored.Should().BeNull();
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(activityThumb).AsTask());
+        file.Should().BeNull("the deleted activity's thumbnail is orphaned and must be cascade-deleted");
+    }
+
+    [Fact]
+    public async Task Delete_keeps_a_thumbnail_still_shared_with_the_event()
+    {
+        // Event and activity deliberately share one file: deleting the activity must leave it alone.
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
         var id = await SeedActivityAsync(eventId, thumb);
@@ -471,8 +490,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.DeleteWithCsrfAsync($"/api/activities/{id}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Activities.FindAsync(id).AsTask());
-        stored.Should().BeNull();
+        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumb).AsTask());
+        file.Should().NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
     }
 
     [Fact]

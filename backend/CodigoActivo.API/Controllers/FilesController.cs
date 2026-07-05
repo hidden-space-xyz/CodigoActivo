@@ -2,6 +2,7 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Domain.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -12,7 +13,11 @@ namespace CodigoActivo.API.Controllers;
 [Route("api/files")]
 public class FilesController(IFileService files) : ApiControllerBase
 {
-    private const long MaxUploadBytes = 10 * 1024 * 1024;
+    // The multipart envelope (boundary lines + part headers) adds a little on top of the raw file
+    // bytes, so the request-body cap needs headroom above the storage limit — otherwise a file of
+    // exactly MaxSizeBytes would be rejected by Kestrel with a 413 before the storage-size guard
+    // (which is the single source of truth) could accept it.
+    private const long MaxRequestBodyBytes = FileStorageOptions.DefaultMaxSizeBytes + (64 * 1024);
 
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
@@ -46,7 +51,7 @@ public class FilesController(IFileService files) : ApiControllerBase
     [HttpPost]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(MaxUploadBytes)]
+    [RequestSizeLimit(MaxRequestBodyBytes)]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
     {
         return ToCreated(await files.CreateAsync(ToUploadRequest(file), UserId, ct), f => $"/api/files/{f.Id}");
@@ -55,7 +60,7 @@ public class FilesController(IFileService files) : ApiControllerBase
     [HttpPut("{fileId:guid}")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(MaxUploadBytes)]
+    [RequestSizeLimit(MaxRequestBodyBytes)]
     public async Task<ActionResult<FileResponse>> Update(
         Guid fileId,
         IFormFile? file,

@@ -110,13 +110,10 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
     message: `¿Seguro que quieres eliminar "${activity.title}"?`,
     accept: () => {
       if (!activity.id) return
-      activities.remove.mutate(
-        { id: activity.id, thumbnailId: activity.thumbnailId },
-        {
-          onSuccess: () => feedback.success('Actividad eliminada.'),
-          onError: (error) => feedback.error(error),
-        },
-      )
+      activities.remove.mutate(activity.id, {
+        onSuccess: () => feedback.success('Actividad eliminada.'),
+        onError: (error) => feedback.error(error),
+      })
     },
   })
 }

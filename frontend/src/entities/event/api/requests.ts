@@ -3,14 +3,14 @@ import {
   getApiEventsEventId,
   getApiEventsPastYears,
 } from '@/shared/api/generated/endpoints/events/events'
-import type { EventResponse } from '@/shared/api/generated/models'
-import { fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
+import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
+import { FEATURED_FIRST_SORT, fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
 
 import type { EventDetail, HomeEvents, PastEvent, UpcomingEvent } from '../model/types'
 import { toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
 export async function getUpcomingEventsRequest(): Promise<readonly UpcomingEvent[]> {
-  const items = await fetchAllPages<EventResponse>((page, pageSize) =>
+  const items = await fetchAllPages<EventListItemResponse>((page, pageSize) =>
     getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize }).then(toPage),
   )
   return items.map(toUpcomingEvent)
@@ -22,7 +22,7 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
 }
 
 export async function getPastEventsRequest(year: string): Promise<readonly PastEvent[]> {
-  const items = await fetchAllPages<EventResponse>((page, pageSize) =>
+  const items = await fetchAllPages<EventListItemResponse>((page, pageSize) =>
     getApiEvents({ scope: 'Past', year: Number(year), sort: '-eventStartsAt', page, pageSize }).then(
       toPage,
     ),
@@ -30,14 +30,11 @@ export async function getPastEventsRequest(year: string): Promise<readonly PastE
   return items.map(toPastEvent)
 }
 
+/** Featured-first single read: the featured event, or the latest one when none is featured. */
 async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
-  const flagged = await getApiEvents({ featured: true, pageSize: 1 })
-  const flaggedFirst = flagged.data.items?.[0]
-  if (flaggedFirst) return toUpcomingEvent(flaggedFirst)
-
-  const mostRecent = await getApiEvents({ sort: '-createdAt', pageSize: 1 })
-  const recentFirst = mostRecent.data.items?.[0]
-  return recentFirst ? toUpcomingEvent(recentFirst) : null
+  const { data } = await getApiEvents({ sort: FEATURED_FIRST_SORT, pageSize: 1 })
+  const first = data.items?.[0]
+  return first ? toUpcomingEvent(first) : null
 }
 
 export async function getEventByIdRequest(id: string): Promise<EventDetail | null> {

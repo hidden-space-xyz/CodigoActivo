@@ -1,9 +1,11 @@
-import type { EventResponse } from '@/shared/api/generated/models'
+import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
 import { formatDate, formatDateTime, parseDateOnly } from '@/shared/lib'
 
 import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
 
-function toCategoryTags(event: EventResponse): EventCategoryTag[] {
+// List mappers accept the slim list-item shape (no description); the full EventResponse is
+// structurally assignable to it, so the shared helpers work for both reads.
+function toCategoryTags(event: EventListItemResponse): EventCategoryTag[] {
   return (event.categories ?? [])
     .filter((category) => category.categoryTypeId)
     .map((category) => ({
@@ -13,7 +15,7 @@ function toCategoryTags(event: EventResponse): EventCategoryTag[] {
     }))
 }
 
-function isSignupOpen(event: EventResponse): boolean {
+function isSignupOpen(event: EventListItemResponse): boolean {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
   const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
@@ -22,7 +24,7 @@ function isSignupOpen(event: EventResponse): boolean {
   return start !== null || end !== null
 }
 
-function isSignupWindowOpen(event: EventResponse): boolean {
+function isSignupWindowOpen(event: EventListItemResponse): boolean {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
   const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
@@ -30,7 +32,7 @@ function isSignupWindowOpen(event: EventResponse): boolean {
   return now >= start && now <= end
 }
 
-export function toUpcomingEvent(event: EventResponse): UpcomingEvent {
+export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
   return {
     id: event.id ?? '',
     title: event.title ?? '',
@@ -68,7 +70,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
   }
 }
 
-export function toPastEvent(event: EventResponse): PastEvent {
+export function toPastEvent(event: EventListItemResponse): PastEvent {
   // Read the year off the local calendar day, not new Date()'s UTC parse, so it matches the
   // backend's year grouping (a Jan-1 event stays in its own year in UTC-negative timezones).
   const localStart = parseDateOnly(event.eventStartsAt)

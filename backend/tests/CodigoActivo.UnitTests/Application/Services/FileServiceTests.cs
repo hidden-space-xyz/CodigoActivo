@@ -60,6 +60,11 @@ public sealed class FileServiceTests
             .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((FileEntity?)null);
 
+    private void FileReferenced(bool referenced) =>
+        files
+            .IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(referenced);
+
     private static FileEntity NewFile(string name = "photo.png", string extension = "png") =>
         new()
         {
@@ -377,10 +382,27 @@ public sealed class FileServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_returns_conflict_when_file_is_still_in_use()
+    {
+        var file = NewFile();
+        FileFound(file);
+        FileReferenced(true);
+
+        var result = await sut.DeleteAsync(file.Id);
+
+        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
+        result.Error.Code.Should().Be(ErrorCode.FileInUse);
+        files.DidNotReceiveWithAnyArgs().Remove(default!);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        storage.DidNotReceiveWithAnyArgs().Delete(default!);
+    }
+
+    [Fact]
     public async Task DeleteAsync_removes_row_saves_and_deletes_stored_content()
     {
         var file = NewFile(name: "gone.png", extension: "png");
         FileFound(file);
+        FileReferenced(false);
 
         var result = await sut.DeleteAsync(file.Id);
 
@@ -388,6 +410,64 @@ public sealed class FileServiceTests
         files.Received(1).Remove(file);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{file.Id}.png");
+    }
+
+    // ---- DeleteIfOrphanedAsync ---------------------------------------------
+
+    [Fact]
+    public async Task DeleteIfOrphanedAsync_deletes_the_file_when_no_longer_referenced()
+    {
+        var file = NewFile();
+        FileFound(file);
+        FileReferenced(false);
+
+        await sut.DeleteIfOrphanedAsync(file.Id);
+
+        files.Received(1).Remove(file);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        storage.Received(1).Delete($"{file.Id}.png");
+    }
+
+    [Fact]
+    public async Task DeleteIfOrphanedAsync_silently_keeps_a_file_still_in_use()
+    {
+        var file = NewFile();
+        FileFound(file);
+        FileReferenced(true);
+
+        var act = async () => await sut.DeleteIfOrphanedAsync(file.Id);
+
+        await act.Should().NotThrowAsync();
+        files.DidNotReceiveWithAnyArgs().Remove(default!);
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        storage.DidNotReceiveWithAnyArgs().Delete(default!);
+    }
+
+    [Fact]
+    public async Task DeleteIfOrphanedAsync_silently_ignores_a_missing_file()
+    {
+        FileMissing();
+
+        var act = async () => await sut.DeleteIfOrphanedAsync(Guid.NewGuid());
+
+        await act.Should().NotThrowAsync();
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        storage.DidNotReceiveWithAnyArgs().Delete(default!);
+    }
+
+    [Fact]
+    public async Task DeleteIfOrphanedAsync_swallows_storage_exceptions()
+    {
+        // Best-effort contract: a blob locked by a concurrent read must not bubble an exception
+        // into the entity operation that already succeeded.
+        var file = NewFile();
+        FileFound(file);
+        FileReferenced(false);
+        storage.When(s => s.Delete(Arg.Any<string>())).Do(_ => throw new IOException("locked"));
+
+        var act = async () => await sut.DeleteIfOrphanedAsync(file.Id);
+
+        await act.Should().NotThrowAsync();
     }
 
     // ---- Shared assertions -------------------------------------------------

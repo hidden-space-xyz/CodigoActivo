@@ -855,4 +855,37 @@ public sealed class RepositoryTests
         await using var verify = NewSqliteContext(connection);
         verify.Announcements.AsNoTracking().Single(a => a.Id == existing.Id).Featured.Should().BeTrue();
     }
+
+    // =======================================================================
+    //  FileRepository
+    // =======================================================================
+
+    [Fact]
+    public async Task IsInUseAsync_detects_thumbnail_fks_and_description_embeds()
+    {
+        // Runs on SQLite so the description scan (string.Contains -> SQL) is exercised as real
+        // SQL, not as LINQ-to-objects.
+        await using var connection = OpenSqlite();
+        await using var ctx = NewSqliteContext(connection);
+        await ctx.Database.EnsureCreatedAsync();
+
+        var thumbnailFileId = Guid.NewGuid();
+        var eventEmbeddedFileId = Guid.NewGuid();
+        var announcementEmbeddedFileId = Guid.NewGuid();
+
+        var ev = NewEvent();
+        ev.ThumbnailId = thumbnailFileId;
+        ev.Description = $"{{\"img\":\"/api/files/{eventEmbeddedFileId}/content\"}}";
+        var announcement = NewAnnouncement();
+        announcement.Description =
+            $"{{\"img\":\"https://api.example.org/api/files/{announcementEmbeddedFileId}/content\"}}";
+        ctx.AddRange(ev, announcement);
+        await ctx.SaveChangesAsync();
+        var repo = new FileRepository(ctx);
+
+        (await repo.IsInUseAsync(thumbnailFileId)).Should().BeTrue();
+        (await repo.IsInUseAsync(eventEmbeddedFileId)).Should().BeTrue();
+        (await repo.IsInUseAsync(announcementEmbeddedFileId)).Should().BeTrue();
+        (await repo.IsInUseAsync(Guid.NewGuid())).Should().BeFalse();
+    }
 }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Announcement } from '../model/types'
+import type { AnnouncementSummary } from '../model/types'
 import { BaseButton } from '@/shared/ui'
 import { fileContentUrl } from '@/shared/lib'
 
-const props = defineProps<{ announcement: Announcement }>()
+const props = defineProps<{ announcement: AnnouncementSummary }>()
 
 const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
 </script>

@@ -698,7 +698,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnnouncementResponsePagedResult"
+                  "$ref": "#/components/schemas/AnnouncementListItemResponsePagedResult"
                 }
               }
             }
@@ -1088,7 +1088,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EventResponsePagedResult"
+                  "$ref": "#/components/schemas/EventListItemResponsePagedResult"
                 }
               }
             }
@@ -1924,7 +1924,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResourceResponsePagedResult"
+                  "$ref": "#/components/schemas/ResourceListItemResponsePagedResult"
                 }
               }
             }
@@ -2649,6 +2649,74 @@
         },
         "additionalProperties": false
       },
+      "AnnouncementListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "subtitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "thumbnailId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "featured": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnnouncementListItemResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnouncementListItemResponse"
+            },
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "AnnouncementResponse": {
         "type": "object",
         "properties": {
@@ -2692,31 +2760,6 @@
           },
           "featured": {
             "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "AnnouncementResponsePagedResult": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AnnouncementResponse"
-            },
-            "nullable": true
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -3326,6 +3369,97 @@
         },
         "additionalProperties": false
       },
+      "EventListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "subtitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventStartsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "eventEndsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "signupStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signupEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "thumbnailId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventCategoryResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventListItemResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventListItemResponse"
+            },
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "EventResponse": {
         "type": "object",
         "properties": {
@@ -3392,31 +3526,6 @@
               "$ref": "#/components/schemas/EventCategoryResponse"
             },
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventResponsePagedResult": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventResponse"
-            },
-            "nullable": true
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -3797,6 +3906,71 @@
         },
         "additionalProperties": false
       },
+      "ResourceListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "subtitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "thumbnailId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResourceListItemResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceListItemResponse"
+            },
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ResourceResponse": {
         "type": "object",
         "properties": {
@@ -3837,31 +4011,6 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
-          }
-        },
-        "additionalProperties": false
-      },
-      "ResourceResponsePagedResult": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ResourceResponse"
-            },
-            "nullable": true
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false

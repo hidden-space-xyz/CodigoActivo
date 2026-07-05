@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
+  activityQueryKeys,
   assignActivityRequest,
   assignHouseholdRequest,
   getEventActivitiesRequest,
@@ -21,10 +22,10 @@ export function useEventActivities(eventId: () => string) {
   const userId = computed(() => session.user?.id ?? null)
   const isAuthenticated = computed(() => userId.value !== null)
 
-  const activitiesKey = computed(() => ['public', 'event-activities', eventId()] as const)
-  const assignedKey = ['public', 'my-assignments'] as const
-  const membersKey = ['public', 'my-children'] as const
-  const householdKey = computed(() => ['public', 'household-assignments', eventId()] as const)
+  const activitiesKey = computed(() => activityQueryKeys.publicByEvent(eventId()))
+  const assignedKey = activityQueryKeys.myAssignments()
+  const membersKey = activityQueryKeys.householdMembers()
+  const householdKey = computed(() => activityQueryKeys.householdAssignments(eventId()))
 
   const activities = useQuery({
     queryKey: activitiesKey,

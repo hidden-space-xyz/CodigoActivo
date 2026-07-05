@@ -14,16 +14,17 @@ import Tag from 'primevue/tag'
 import { EventFormDialog, useEventsAdmin } from '@/features/manage-events'
 import type {
   CreateEventRequest,
+  EventListItemResponse,
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
 import { formatDate, formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
-const { table, create, update, remove, feature } = useEventsAdmin()
+const { table, create, update, remove, feature, fetchOne } = useEventsAdmin()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
-function onFeature(event: EventResponse): void {
+function onFeature(event: EventListItemResponse): void {
   if (!event.id || event.featured) return
   feature.mutate(event.id, {
     onSuccess: () => feedback.success('Evento destacado.'),
@@ -33,16 +34,38 @@ function onFeature(event: EventResponse): void {
 
 const dialogVisible = ref(false)
 const selected = ref<EventResponse | null>(null)
+const loadingDetail = ref(false)
 const saving = computed(() => create.isPending.value || update.isPending.value)
 
 function openCreate(): void {
+  // Don't open a create dialog while an edit-detail fetch is in flight: the late fetch would set
+  // `selected` under the already-open dialog and the submit would update that event instead of
+  // creating a new one.
+  if (loadingDetail.value) return
   selected.value = null
   dialogVisible.value = true
 }
 
-function openEdit(event: EventResponse): void {
-  selected.value = event
-  dialogVisible.value = true
+async function openEdit(event: EventListItemResponse): Promise<void> {
+  if (!event.id || loadingDetail.value) return
+  // Load the full detail (which carries the description the list row omits) BEFORE opening, so the
+  // form is populated once from complete data. Populating from the list row and then letting a late
+  // fetch re-trigger the form watch would clobber anything the user had already typed.
+  loadingDetail.value = true
+  try {
+    const detail = await fetchOne(event.id)
+    if (!detail) {
+      // 404: the row was deleted between listing and editing — don't fall through to a create.
+      feedback.error('Este evento ya no existe.')
+      return
+    }
+    selected.value = detail
+    dialogVisible.value = true
+  } catch (error) {
+    feedback.error(error)
+  } finally {
+    loadingDetail.value = false
+  }
 }
 
 function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
@@ -68,19 +91,16 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
   })
 }
 
-function confirmDelete(event: EventResponse): void {
+function confirmDelete(event: EventListItemResponse): void {
   requireDelete({
     header: 'Eliminar evento',
     message: `¿Seguro que quieres eliminar "${event.title}"? Se perderán también sus actividades.`,
     accept: () => {
       if (!event.id) return
-      remove.mutate(
-        { id: event.id, thumbnailId: event.thumbnailId },
-        {
-          onSuccess: () => feedback.success('Evento eliminado.'),
-          onError: (error) => feedback.error(error),
-        },
-      )
+      remove.mutate(event.id, {
+        onSuccess: () => feedback.success('Evento eliminado.'),
+        onError: (error) => feedback.error(error),
+      })
     },
   })
 }
@@ -90,7 +110,7 @@ function confirmDelete(event: EventResponse): void {
   <div>
     <AdminPageHeader title="Eventos" subtitle="Gestión de eventos y sus actividades">
       <template #actions>
-        <Button label="Nuevo evento" icon="pi pi-plus" @click="openCreate" />
+        <Button label="Nuevo evento" icon="pi pi-plus" :disabled="loadingDetail" @click="openCreate" />
       </template>
     </AdminPageHeader>
 
@@ -178,7 +198,14 @@ function confirmDelete(event: EventResponse): void {
             <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: data.id } }">
               <Button icon="pi pi-cog" text rounded aria-label="Gestionar" />
             </RouterLink>
-            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              aria-label="Editar"
+              :disabled="loadingDetail"
+              @click="openEdit(data)"
+            />
             <Button
               icon="pi pi-trash"
               text

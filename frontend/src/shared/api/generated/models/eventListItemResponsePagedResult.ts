@@ -4,11 +4,11 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { ResourceResponse } from './resourceResponse';
+import type { EventListItemResponse } from './eventListItemResponse';
 
-export interface ResourceResponsePagedResult {
+export interface EventListItemResponsePagedResult {
   /** @nullable */
-  items?: ResourceResponse[] | null;
+  items?: EventListItemResponse[] | null;
   total?: number;
   page?: number;
   pageSize?: number;

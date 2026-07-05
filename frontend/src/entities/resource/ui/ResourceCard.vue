@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { LearningResource } from '../model/types'
+import type { LearningResourceSummary } from '../model/types'
 import { ListThumbnail } from '@/shared/ui'
 
-defineProps<{ resource: LearningResource }>()
+defineProps<{ resource: LearningResourceSummary }>()
 </script>
 
 <template>

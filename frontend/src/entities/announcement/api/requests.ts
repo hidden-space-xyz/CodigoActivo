@@ -3,11 +3,14 @@ import {
   getApiAnnouncementsAnnouncementId,
   getApiAnnouncementsYears,
 } from '@/shared/api/generated/endpoints/announcements/announcements'
-import type { AnnouncementResponse } from '@/shared/api/generated/models'
-import { fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
+import type {
+  AnnouncementListItemResponse,
+  AnnouncementResponse,
+} from '@/shared/api/generated/models'
+import { FEATURED_FIRST_SORT, fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
 
-import type { Announcement, HomeAnnouncements } from '../model/types'
-import { toAnnouncement } from './mapper'
+import type { Announcement, AnnouncementSummary, HomeAnnouncements } from '../model/types'
+import { toAnnouncement, toAnnouncementSummary } from './mapper'
 
 export async function getAnnouncementYearsRequest(): Promise<readonly string[]> {
   const { data } = await getApiAnnouncementsYears()
@@ -16,34 +19,18 @@ export async function getAnnouncementYearsRequest(): Promise<readonly string[]> 
 
 export async function getAnnouncementsByYearRequest(
   year: string,
-): Promise<readonly Announcement[]> {
-  const items = await fetchAllPages<AnnouncementResponse>((page, pageSize) =>
+): Promise<readonly AnnouncementSummary[]> {
+  const items = await fetchAllPages<AnnouncementListItemResponse>((page, pageSize) =>
     getApiAnnouncements({ year: Number(year), sort: '-createdAt', page, pageSize }).then(toPage),
   )
-  return items.map(toAnnouncement)
-}
-
-async function getFeaturedAnnouncementRequest(): Promise<Announcement | null> {
-  const featured = await getApiAnnouncements({ featured: true, sort: '-createdAt', pageSize: 1 })
-  const first = featured.data.items?.[0]
-  if (first) return toAnnouncement(first)
-
-  const latest = await getApiAnnouncements({ sort: '-createdAt', pageSize: 1 })
-  const latestFirst = latest.data.items?.[0]
-  return latestFirst ? toAnnouncement(latestFirst) : null
+  return items.map(toAnnouncementSummary)
 }
 
 export async function getHomeAnnouncementsRequest(): Promise<HomeAnnouncements> {
-  const [featured, recent] = await Promise.all([
-    getFeaturedAnnouncementRequest(),
-    getApiAnnouncements({ sort: '-createdAt', pageSize: 4 }),
-  ])
-
-  const items = (recent.data.items ?? [])
-    .map(toAnnouncement)
-    .filter((announcement) => announcement.id !== featured?.id)
-    .slice(0, 3)
-
+  // Single featured-first read: the first item is the featured announcement (or the latest one
+  // when none is featured) and the most recent items backfill the rest of the section.
+  const { data } = await getApiAnnouncements({ sort: FEATURED_FIRST_SORT, pageSize: 4 })
+  const [featured = null, ...items] = (data.items ?? []).map(toAnnouncementSummary)
   return { featured, items }
 }
 

@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -21,13 +22,14 @@ public sealed class AnnouncementServiceTests
 {
     private readonly IAnnouncementRepository announcements = Substitute.For<IAnnouncementRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly AnnouncementService sut;
 
     public AnnouncementServiceTests()
     {
-        sut = new AnnouncementService(announcements, files, new FakeQueryExecutor(), clock, uow);
+        sut = new AnnouncementService(announcements, files, fileService, new FakeQueryExecutor(), clock, uow);
     }
 
     private void HasAnnouncements(params Announcement[] items) =>
@@ -67,7 +69,7 @@ public sealed class AnnouncementServiceTests
 
         result.Total.Should().Be(2);
         result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<AnnouncementResponse>();
+        result.Items.Should().AllBeOfType<AnnouncementListItemResponse>();
     }
 
     [Fact]
@@ -273,13 +275,69 @@ public sealed class AnnouncementServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    {
+        var announcement = NewAnnouncement();
+        var previousThumbnailId = announcement.ThumbnailId;
+        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(announcement);
+        ThumbnailExists(true);
+        var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
+
+        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    {
+        var announcement = NewAnnouncement();
+        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(announcement);
+        ThumbnailExists(true);
+        var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", announcement.ThumbnailId);
+
+        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_cleans_up_images_dropped_from_the_description_but_keeps_the_rest()
+    {
+        var announcement = NewAnnouncement();
+        var removedId = Guid.NewGuid();
+        var keptId = Guid.NewGuid();
+        announcement.Description =
+            $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(announcement);
+        ThumbnailExists(true);
+        var request = new UpdateAnnouncementRequest(
+            "Title",
+            "Subtitle",
+            $"{{\"b\":\"/api/files/{keptId}/content\"}}",
+            announcement.ThumbnailId
+        );
+
+        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
+        await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+    }
+
     // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteAsync_returns_not_found_when_announcement_missing()
     {
-        announcements.RemoveAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(0);
+        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((Announcement?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
 
@@ -287,18 +345,37 @@ public sealed class AnnouncementServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
 
     [Fact]
-    public async Task DeleteAsync_saves_when_removed()
+    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
-        announcements.RemoveAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
+        var announcement = NewAnnouncement();
+        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(announcement);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(announcement.Id);
 
         result.IsSuccess.Should().BeTrue();
+        announcements.Received(1).Remove(announcement);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await fileService.Received(1).DeleteIfOrphanedAsync(announcement.ThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_cleans_up_images_embedded_in_the_description()
+    {
+        var announcement = NewAnnouncement();
+        var embeddedId = Guid.NewGuid();
+        announcement.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
+        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(announcement);
+
+        var result = await sut.DeleteAsync(announcement.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
 
     // ---- SetFeaturedAsync --------------------------------------------------

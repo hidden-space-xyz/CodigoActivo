@@ -14,7 +14,6 @@ import type {
 } from '@/shared/api/generated/models'
 import { toPage } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
-import { deleteThumbnail } from '@/entities/file'
 import { partnerQueryKeys } from '@/entities/partner'
 
 export function usePartners() {
@@ -46,12 +45,9 @@ export function usePartners() {
   })
 
   const remove = useMutation({
-    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) =>
-      deleteApiPartnersPartnerId(vars.id),
-    onSuccess: (_data, vars) => {
-      void deleteThumbnail(vars.thumbnailId)
-      return invalidate()
-    },
+    // The backend cascades orphaned thumbnail files, so no client-side file cleanup is needed.
+    mutationFn: (id: string) => deleteApiPartnersPartnerId(id),
+    onSuccess: invalidate,
   })
 
   return { table, create, update, remove }

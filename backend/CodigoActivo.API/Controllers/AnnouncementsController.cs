@@ -15,7 +15,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 {
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedResult<AnnouncementResponse>>> List(
+    public async Task<ActionResult<PagedResult<AnnouncementListItemResponse>>> List(
         [FromQuery] AnnouncementListQuery query,
         CancellationToken ct
     )

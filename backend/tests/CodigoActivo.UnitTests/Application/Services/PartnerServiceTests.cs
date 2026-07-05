@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -21,13 +22,14 @@ public sealed class PartnerServiceTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly PartnerService sut;
 
     public PartnerServiceTests()
     {
-        sut = new PartnerService(partners, files, new FakeQueryExecutor(), clock, uow);
+        sut = new PartnerService(partners, files, fileService, new FakeQueryExecutor(), clock, uow);
     }
 
     private void HasPartners(params Partner[] items) =>
@@ -234,29 +236,64 @@ public sealed class PartnerServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    {
+        var partner = NewPartner();
+        var previousThumbnailId = partner.ThumbnailId;
+        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(partner);
+        ThumbnailExists(true);
+        var request = new UpdatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 1, null, Guid.NewGuid());
+
+        var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    {
+        var partner = NewPartner();
+        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(partner);
+        ThumbnailExists(true);
+        var request = new UpdatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 1, null, partner.ThumbnailId);
+
+        var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+    }
+
     // ---- DeleteAsync -------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteAsync_returns_not_found_when_partner_missing()
     {
-        partners.RemoveAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(0);
+        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((Partner?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
 
         result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
     }
 
     [Fact]
-    public async Task DeleteAsync_saves_when_removed()
+    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
-        partners.RemoveAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
+        var partner = NewPartner();
+        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(partner);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(partner.Id);
 
         result.IsSuccess.Should().BeTrue();
+        partners.Received(1).Remove(partner);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await fileService.Received(1).DeleteIfOrphanedAsync(partner.ThumbnailId, Arg.Any<CancellationToken>());
     }
 }

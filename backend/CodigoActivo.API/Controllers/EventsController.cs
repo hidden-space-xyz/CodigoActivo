@@ -15,7 +15,7 @@ public class EventsController(IEventService events) : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedResult<EventResponse>>> List(
+    public async Task<ActionResult<PagedResult<EventListItemResponse>>> List(
         [FromQuery] EventListQuery query,
         CancellationToken ct
     )

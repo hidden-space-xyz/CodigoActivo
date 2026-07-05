@@ -1,6 +1,13 @@
 import { ApiError } from './http-client'
 
 /**
+ * Sort expression for "featured first, then most recent" list reads: featured items lead and the
+ * latest items backfill, so a single request replaces the featured-or-latest fallback pair.
+ * The `featured` sort key must stay in sync with the backend's whitelisted sort map.
+ */
+export const FEATURED_FIRST_SORT = '-featured,-createdAt'
+
+/**
  * Unwraps a generated read request, returning `null` when the resource does not exist (404)
  * instead of throwing. Detail/edit screens rely on this to render a "not found" state.
  */

@@ -32,6 +32,32 @@ public static class Projections
                 .ToList(),
         };
 
+    /// <summary>List projection: same as <see cref="Event"/> but without the heavy Description.</summary>
+    public static readonly Expression<Func<Event, EventListItemResponse>> EventListItem =
+        @event => new EventListItemResponse
+        {
+            Id = @event.Id,
+            Title = @event.Title,
+            Subtitle = @event.Subtitle,
+            EventStartsAt = @event.EventStartsAt,
+            EventEndsAt = @event.EventEndsAt,
+            SignupStartsAt = @event.SignupStartsAt,
+            SignupEndsAt = @event.SignupEndsAt,
+            CreatedAt = @event.CreatedAt,
+            UpdatedAt = @event.UpdatedAt,
+            CreatedBy = @event.CreatedBy,
+            UpdatedBy = @event.UpdatedBy,
+            ThumbnailId = @event.ThumbnailId,
+            Featured = @event.Featured,
+            Categories = @event
+                .Categories.Select(category => new EventCategoryResponse(
+                    category.EventCategoryTypeId,
+                    category.EventCategoryType.Name,
+                    category.EventCategoryType.Color
+                ))
+                .ToList(),
+        };
+
     public static readonly Expression<Func<Announcement, AnnouncementResponse>> Announcement =
         announcement => new AnnouncementResponse
         {
@@ -47,6 +73,22 @@ public static class Projections
             Featured = announcement.Featured,
         };
 
+    /// <summary>List projection: same as <see cref="Announcement"/> but without the heavy Description.</summary>
+    public static readonly Expression<
+        Func<Announcement, AnnouncementListItemResponse>
+    > AnnouncementListItem = announcement => new AnnouncementListItemResponse
+    {
+        Id = announcement.Id,
+        Title = announcement.Title,
+        Subtitle = announcement.Subtitle,
+        CreatedAt = announcement.CreatedAt,
+        UpdatedAt = announcement.UpdatedAt,
+        CreatedBy = announcement.CreatedBy,
+        UpdatedBy = announcement.UpdatedBy,
+        ThumbnailId = announcement.ThumbnailId,
+        Featured = announcement.Featured,
+    };
+
     public static readonly Expression<Func<Resource, ResourceResponse>> Resource =
         resource => new ResourceResponse
         {
@@ -54,6 +96,20 @@ public static class Projections
             Title = resource.Title,
             Subtitle = resource.Subtitle,
             Description = resource.Description,
+            CreatedAt = resource.CreatedAt,
+            UpdatedAt = resource.UpdatedAt,
+            CreatedBy = resource.CreatedBy,
+            UpdatedBy = resource.UpdatedBy,
+            ThumbnailId = resource.ThumbnailId,
+        };
+
+    /// <summary>List projection: same as <see cref="Resource"/> but without the heavy Description.</summary>
+    public static readonly Expression<Func<Resource, ResourceListItemResponse>> ResourceListItem =
+        resource => new ResourceListItemResponse
+        {
+            Id = resource.Id,
+            Title = resource.Title,
+            Subtitle = resource.Subtitle,
             CreatedAt = resource.CreatedAt,
             UpdatedAt = resource.UpdatedAt,
             CreatedBy = resource.CreatedBy,

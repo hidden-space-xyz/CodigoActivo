@@ -4,11 +4,11 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { EventResponse } from './eventResponse';
+import type { AnnouncementListItemResponse } from './announcementListItemResponse';
 
-export interface EventResponsePagedResult {
+export interface AnnouncementListItemResponsePagedResult {
   /** @nullable */
-  items?: EventResponse[] | null;
+  items?: AnnouncementListItemResponse[] | null;
   total?: number;
   page?: number;
   pageSize?: number;

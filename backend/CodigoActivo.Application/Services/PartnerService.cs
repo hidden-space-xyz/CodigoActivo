@@ -12,6 +12,7 @@ namespace CodigoActivo.Application.Services;
 public class PartnerService(
     IPartnerRepository partners,
     IFileRepository files,
+    IFileService fileService,
     IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow
@@ -108,6 +109,8 @@ public class PartnerService(
         );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
+        var previousThumbnailId = partner.ThumbnailId;
+
         partner.Name = request.Name.Trim();
         partner.FromDate = request.FromDate!.Value;
         partner.Tier = request.Tier;
@@ -117,15 +120,22 @@ public class PartnerService(
         partner.UpdatedBy = userId;
 
         await uow.SaveChangesAsync(ct);
+
+        if (previousThumbnailId != request.ThumbnailId)
+            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+
         return partner.ToResponse();
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (await partners.RemoveAsync(p => p.Id == id, ct) == 0)
-            return Error.NotFound(ErrorCode.PartnerNotFound);
+        var partner = await partners.FindAsync(p => p.Id == id, ct);
+        if (partner is null) return Error.NotFound(ErrorCode.PartnerNotFound);
 
+        partners.Remove(partner);
         await uow.SaveChangesAsync(ct);
+
+        await fileService.DeleteIfOrphanedAsync(partner.ThumbnailId, ct);
         return Result.Success();
     }
 }

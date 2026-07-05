@@ -80,6 +80,46 @@ public sealed class ProjectionsTests
         Project(Projections.Event, @event).Categories.Should().BeEmpty();
     }
 
+    [Fact]
+    public void EventListItem_projection_maps_scalars_and_categories_without_description()
+    {
+        var categoryTypeId = Guid.NewGuid();
+        var @event = new Event
+        {
+            Id = Guid.NewGuid(),
+            Title = "Conf",
+            Subtitle = "Sub",
+            Description = "{\"heavy\":true}",
+            EventStartsAt = new DateOnly(2024, 8, 1),
+            EventEndsAt = new DateOnly(2024, 8, 3),
+            SignupStartsAt = Created,
+            SignupEndsAt = Updated,
+            CreatedAt = Created,
+            UpdatedAt = Updated,
+            CreatedBy = Guid.NewGuid(),
+            UpdatedBy = Guid.NewGuid(),
+            ThumbnailId = Guid.NewGuid(),
+            Featured = true,
+            Categories =
+            [
+                new EventCategory
+                {
+                    EventCategoryTypeId = categoryTypeId,
+                    EventCategoryType = new EventCategoryType { Id = categoryTypeId, Name = "Tech", Color = "#111" },
+                },
+            ],
+        };
+
+        var response = Project(Projections.EventListItem, @event);
+
+        response.Should().BeEquivalentTo(new EventListItemResponse(
+            @event.Id, "Conf", "Sub", new DateOnly(2024, 8, 1), new DateOnly(2024, 8, 3), Created,
+            Updated, Created, Updated, @event.CreatedBy, @event.UpdatedBy, @event.ThumbnailId, true,
+            [new EventCategoryResponse(categoryTypeId, "Tech", "#111")]));
+        // The list DTO deliberately has no Description member at all.
+        typeof(EventListItemResponse).GetProperty("Description").Should().BeNull();
+    }
+
     // ---- Announcement ------------------------------------------------------
 
     [Fact]
@@ -106,6 +146,31 @@ public sealed class ProjectionsTests
             announcement.ThumbnailId, true));
     }
 
+    [Fact]
+    public void AnnouncementListItem_projection_maps_all_fields_without_description()
+    {
+        var announcement = new Announcement
+        {
+            Id = Guid.NewGuid(),
+            Title = "T",
+            Subtitle = "S",
+            Description = "{\"heavy\":true}",
+            CreatedAt = Created,
+            UpdatedAt = Updated,
+            CreatedBy = Guid.NewGuid(),
+            UpdatedBy = Guid.NewGuid(),
+            ThumbnailId = Guid.NewGuid(),
+            Featured = true,
+        };
+
+        var response = Project(Projections.AnnouncementListItem, announcement);
+
+        response.Should().BeEquivalentTo(new AnnouncementListItemResponse(
+            announcement.Id, "T", "S", Created, Updated, announcement.CreatedBy,
+            announcement.UpdatedBy, announcement.ThumbnailId, true));
+        typeof(AnnouncementListItemResponse).GetProperty("Description").Should().BeNull();
+    }
+
     // ---- Resource ----------------------------------------------------------
 
     [Fact]
@@ -129,6 +194,30 @@ public sealed class ProjectionsTests
         response.Should().BeEquivalentTo(new ResourceResponse(
             resource.Id, "T", "S", "{}", Created, Updated, resource.CreatedBy, resource.UpdatedBy,
             resource.ThumbnailId));
+    }
+
+    [Fact]
+    public void ResourceListItem_projection_maps_all_fields_without_description()
+    {
+        var resource = new Resource
+        {
+            Id = Guid.NewGuid(),
+            Title = "T",
+            Subtitle = "S",
+            Description = "{\"heavy\":true}",
+            CreatedAt = Created,
+            UpdatedAt = Updated,
+            CreatedBy = Guid.NewGuid(),
+            UpdatedBy = Guid.NewGuid(),
+            ThumbnailId = Guid.NewGuid(),
+        };
+
+        var response = Project(Projections.ResourceListItem, resource);
+
+        response.Should().BeEquivalentTo(new ResourceListItemResponse(
+            resource.Id, "T", "S", Created, Updated, resource.CreatedBy, resource.UpdatedBy,
+            resource.ThumbnailId));
+        typeof(ResourceListItemResponse).GetProperty("Description").Should().BeNull();
     }
 
     // ---- Partner -----------------------------------------------------------

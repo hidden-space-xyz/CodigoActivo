@@ -6,6 +6,7 @@ using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Services;
 
@@ -13,13 +14,14 @@ public class EventService(
     IEventRepository events,
     IActivityRepository activities,
     IFileRepository files,
+    IFileService fileService,
     IEventCategoryTypeRepository categoryTypes,
     IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow
 ) : IEventService
 {
-    private static readonly SortMap<EventResponse> Sort = new SortMap<EventResponse>()
+    private static readonly SortMap<EventListItemResponse> Sort = new SortMap<EventListItemResponse>()
         .Add("eventStartsAt", e => e.EventStartsAt)
         .Add("eventEndsAt", e => e.EventEndsAt)
         .Add("createdAt", e => e.CreatedAt)
@@ -29,13 +31,13 @@ public class EventService(
         .Default("eventStartsAt")
         .Tie(e => e.Id);
 
-    public Task<PagedResult<EventResponse>> ListAsync(
+    public Task<PagedResult<EventListItemResponse>> ListAsync(
         EventListQuery query,
         CancellationToken ct = default
     )
     {
         var today = clock.Today;
-        var source = events.Query().Select(Projections.Event);
+        var source = events.Query().Select(Projections.EventListItem);
 
         source = query.Scope switch
         {
@@ -48,11 +50,14 @@ public class EventService(
         if (query.Featured is { } featured) source = source.Where(e => e.Featured == featured);
         if (!string.IsNullOrWhiteSpace(query.Title))
             source = source.Where(
-                TextSearch.Contains<EventResponse>(e => e.Title, TextSearch.Normalize(query.Title))
+                TextSearch.Contains<EventListItemResponse>(
+                    e => e.Title,
+                    TextSearch.Normalize(query.Title)
+                )
             );
         if (!string.IsNullOrWhiteSpace(query.Subtitle))
             source = source.Where(
-                TextSearch.Contains<EventResponse>(
+                TextSearch.Contains<EventListItemResponse>(
                     e => e.Subtitle,
                     TextSearch.Normalize(query.Subtitle)
                 )
@@ -166,6 +171,9 @@ public class EventService(
         );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
+        var previousThumbnailId = ev.ThumbnailId;
+        var previousDescription = ev.Description;
+
         ev.Title = request.Title.Trim();
         ev.Subtitle = request.Subtitle.Trim();
         ev.Description = request.Description;
@@ -182,15 +190,37 @@ public class EventService(
 
         await uow.SaveChangesAsync(ct);
 
+        if (previousThumbnailId != request.ThumbnailId)
+            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+
+        foreach (var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, ev.Description))
+            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+
         return await GetByIdAsync(id, ct);
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (await events.RemoveAsync(e => e.Id == id, ct) == 0)
-            return Error.NotFound(ErrorCode.EventNotFound);
+        var ev = await events.FindAsync(e => e.Id == id, ct);
+        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
 
+        // Deleting the event cascades to its activities, so their thumbnails become orphans too.
+        var activityThumbnailIds = await executor.ToListAsync(
+            activities.Query().Where(a => a.EventId == id).Select(a => a.ThumbnailId),
+            ct
+        );
+
+        events.Remove(ev);
         await uow.SaveChangesAsync(ct);
+
+        // Thumbnails (event + cascaded activities) plus the images embedded in the description.
+        var orphanCandidates = activityThumbnailIds
+            .Append(ev.ThumbnailId)
+            .Concat(RichTextFileReferences.Extract(ev.Description))
+            .Distinct();
+        foreach (var fileId in orphanCandidates)
+            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+
         return Result.Success();
     }
 

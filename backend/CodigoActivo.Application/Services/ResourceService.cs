@@ -6,41 +6,44 @@ using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Services;
 
 public class ResourceService(
     IResourceRepository resources,
     IFileRepository files,
+    IFileService fileService,
     IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow
 ) : IResourceService
 {
-    private static readonly SortMap<ResourceResponse> Sort = new SortMap<ResourceResponse>()
-        .Add("createdAt", r => r.CreatedAt)
-        .Add("title", r => r.Title)
-        .Add("subtitle", r => r.Subtitle)
-        .Default("-createdAt")
-        .Tie(r => r.Id);
+    private static readonly SortMap<ResourceListItemResponse> Sort =
+        new SortMap<ResourceListItemResponse>()
+            .Add("createdAt", r => r.CreatedAt)
+            .Add("title", r => r.Title)
+            .Add("subtitle", r => r.Subtitle)
+            .Default("-createdAt")
+            .Tie(r => r.Id);
 
-    public Task<PagedResult<ResourceResponse>> ListAsync(
+    public Task<PagedResult<ResourceListItemResponse>> ListAsync(
         ResourceListQuery query,
         CancellationToken ct = default
     )
     {
-        var source = resources.Query().Select(Projections.Resource);
+        var source = resources.Query().Select(Projections.ResourceListItem);
 
         if (!string.IsNullOrWhiteSpace(query.Title))
             source = source.Where(
-                TextSearch.Contains<ResourceResponse>(
+                TextSearch.Contains<ResourceListItemResponse>(
                     r => r.Title,
                     TextSearch.Normalize(query.Title)
                 )
             );
         if (!string.IsNullOrWhiteSpace(query.Subtitle))
             source = source.Where(
-                TextSearch.Contains<ResourceResponse>(
+                TextSearch.Contains<ResourceListItemResponse>(
                     r => r.Subtitle,
                     TextSearch.Normalize(query.Subtitle)
                 )
@@ -107,6 +110,9 @@ public class ResourceService(
         );
         if (thumbnail.IsFailure) return thumbnail.Error!;
 
+        var previousThumbnailId = resource.ThumbnailId;
+        var previousDescription = resource.Description;
+
         resource.Title = request.Title.Trim();
         resource.Subtitle = request.Subtitle.Trim();
         resource.Description = request.Description;
@@ -115,15 +121,28 @@ public class ResourceService(
         resource.UpdatedBy = userId;
 
         await uow.SaveChangesAsync(ct);
+
+        if (previousThumbnailId != request.ThumbnailId)
+            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+
+        foreach (var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, resource.Description))
+            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+
         return resource.ToResponse();
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        if (await resources.RemoveAsync(r => r.Id == id, ct) == 0)
-            return Error.NotFound(ErrorCode.ResourceNotFound);
+        var resource = await resources.FindAsync(r => r.Id == id, ct);
+        if (resource is null) return Error.NotFound(ErrorCode.ResourceNotFound);
 
+        resources.Remove(resource);
         await uow.SaveChangesAsync(ct);
+
+        await fileService.DeleteIfOrphanedAsync(resource.ThumbnailId, ct);
+        foreach (var fileId in RichTextFileReferences.Extract(resource.Description))
+            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+
         return Result.Success();
     }
 }

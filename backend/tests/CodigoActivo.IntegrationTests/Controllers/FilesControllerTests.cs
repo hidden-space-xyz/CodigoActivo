@@ -212,8 +212,10 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
     public async Task Create_with_oversized_file_is_bad_request_with_upload_too_large()
     {
         var client = await LoginAsAdminAsync();
-        // Just over the 5 MiB configured cap but under the 10 MiB request-size limit.
-        var oversized = new byte[(5 * 1024 * 1024) + 1];
+        // Just over the 10 MiB cap (FileStorageOptions.DefaultMaxSizeBytes, shared by the storage
+        // validation and the controller's [RequestSizeLimit]). The TestServer transport does not
+        // enforce the request-size limit, so the request reaches FileService and fails its size guard.
+        var oversized = new byte[(10 * 1024 * 1024) + 1];
 
         using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", oversized, "big.png");
 
@@ -421,6 +423,35 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
 
         using var followUp = await CreateClient().GetAsync($"/api/files/{created.Id}");
         followUp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Delete_file_embedded_in_a_description_is_conflict_file_in_use()
+    {
+        var created = await UploadAsAdminAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.Announcements.Add(new Announcement
+            {
+                Id = Guid.NewGuid(),
+                Title = "Con imagen",
+                Subtitle = "Sub",
+                Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
+                ThumbnailId = Guid.NewGuid(),
+                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                CreatedBy = TestSeedData.Users.AdminId,
+            });
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.FileInUse);
+        var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
+        stored.Should().NotBeNull("a file embedded in a rich-text description must survive deletion");
     }
 
     [Fact]

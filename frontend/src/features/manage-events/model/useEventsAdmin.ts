@@ -12,6 +12,7 @@ import {
 } from '@/shared/api/generated/endpoints/events/events'
 import type {
   CreateEventRequest,
+  EventListItemResponse,
   EventResponse,
   GetApiEventsParams,
   UpdateEventRequest,
@@ -19,13 +20,12 @@ import type {
 import { toPage, unwrapOrNull } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
 import { eventQueryKeys } from '@/entities/event'
-import { deleteThumbnail } from '@/entities/file'
 
 export function useEventsAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: eventQueryKeys.all })
 
-  const table = useServerTable<EventResponse, GetApiEventsParams>({
+  const table = useServerTable<EventListItemResponse, GetApiEventsParams>({
     queryKey: [...eventQueryKeys.all, 'admin'],
     fetchPage: (params) => getApiEvents(params).then(toPage),
     defaultSort: { field: 'eventStartsAt', order: 1 },
@@ -47,14 +47,10 @@ export function useEventsAdmin() {
   })
 
   const remove = useMutation({
-    mutationFn: (vars: { id: string; thumbnailId?: string | null | undefined }) =>
-      deleteApiEventsEventId(vars.id),
-    // The backend does not cascade to the thumbnail file; removing it here keeps the rule with
-    // the mutation instead of in every delete-confirmation callback.
-    onSuccess: (_data, vars) => {
-      void deleteThumbnail(vars.thumbnailId)
-      return invalidate()
-    },
+    // The backend cascades orphaned thumbnail files (including the event's activities' ones),
+    // so no client-side file cleanup is needed here.
+    mutationFn: (id: string) => deleteApiEventsEventId(id),
+    onSuccess: invalidate,
   })
 
   const feature = useMutation({
@@ -62,7 +58,10 @@ export function useEventsAdmin() {
     onSuccess: invalidate,
   })
 
-  return { table, create, update, remove, feature }
+  // The slim list rows omit the description, so the edit dialog must prefill from this detail read.
+  const fetchOne = (id: string) => unwrapOrNull<EventResponse>(getApiEventsEventId(id))
+
+  return { table, create, update, remove, feature, fetchOne }
 }
 
 export function useEvent(eventId: MaybeRefOrGetter<string>) {
