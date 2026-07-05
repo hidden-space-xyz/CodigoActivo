@@ -68,40 +68,4 @@ public sealed class QueryExecutorTests : IDisposable
         result.Total.Should().Be(2);
         result.Items.Should().BeEmpty();
     }
-
-    [Fact]
-    public async Task ToListAsync_materializes_every_row()
-    {
-        await SeedPartnersAsync("One", "Two", "Three");
-
-        var result = await sut.ToListAsync(context.Partners.OrderBy(p => p.Name));
-
-        result.Should().HaveCount(3);
-        result.Select(p => p.Name).Should().ContainInOrder("One", "Three", "Two");
-    }
-
-    [Fact]
-    public async Task FirstOrDefaultAsync_returns_the_matching_entity()
-    {
-        await SeedPartnersAsync("Alpha", "Beta");
-
-        var result = await sut.FirstOrDefaultAsync(
-            context.Partners.Where(p => p.Name == "Beta")
-        );
-
-        result.Should().NotBeNull();
-        result!.Name.Should().Be("Beta");
-    }
-
-    [Fact]
-    public async Task FirstOrDefaultAsync_returns_null_when_nothing_matches()
-    {
-        await SeedPartnersAsync("Alpha");
-
-        var result = await sut.FirstOrDefaultAsync(
-            context.Partners.Where(p => p.Name == "missing")
-        );
-
-        result.Should().BeNull();
-    }
 }

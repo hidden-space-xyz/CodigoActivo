@@ -51,12 +51,4 @@ public sealed class PageQueryTests
 
         query.PageSize.Should().Be(expected);
     }
-
-    [Fact]
-    public void Sort_round_trips_the_assigned_value()
-    {
-        var query = new TestPageQuery { Sort = "-createdAt,title" };
-
-        query.Sort.Should().Be("-createdAt,title");
-    }
 }

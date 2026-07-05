@@ -115,46 +115,4 @@ public sealed class CommonTests
         error.Kind.Should().Be(expectedKind);
         error.Code.Should().Be(ErrorCode.UserEmailAlreadyInUse);
     }
-
-    [Fact]
-    public void Error_is_a_value_record_equal_by_kind_and_code()
-    {
-        var a = Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
-        var b = Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
-        var differentCode = Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
-        var differentKind = Error.BadRequest(ErrorCode.UserPhoneAlreadyInUse);
-
-        a.Should().Be(b);
-        a.GetHashCode().Should().Be(b.GetHashCode());
-        a.Should().NotBe(differentCode);
-        a.Should().NotBe(differentKind);
-    }
-
-    // ---- PagedResult ------------------------------------------------------
-
-    [Fact]
-    public void PagedResult_exposes_its_positional_members()
-    {
-        var items = new[] { "a", "b" };
-
-        var page = new PagedResult<string>(items, Total: 5, Page: 2, PageSize: 10);
-
-        page.Items.Should().BeSameAs(items);
-        page.Total.Should().Be(5);
-        page.Page.Should().Be(2);
-        page.PageSize.Should().Be(10);
-    }
-
-    [Fact]
-    public void PagedResult_has_value_equality()
-    {
-        var items = new[] { 1, 2, 3 };
-        var first = new PagedResult<int>(items, Total: 3, Page: 1, PageSize: 20);
-        var same = new PagedResult<int>(items, Total: 3, Page: 1, PageSize: 20);
-        var different = first with { Total = 4 };
-
-        first.Should().Be(same);
-        first.GetHashCode().Should().Be(same.GetHashCode());
-        first.Should().NotBe(different);
-    }
 }

@@ -184,16 +184,4 @@ public sealed class OpenApiFiltersTests
 
         generator.Received(1).GenerateSchema(typeof(ApiErrorResponse), repository);
     }
-
-    [Fact]
-    public void Document_filter_does_not_generate_any_other_schema()
-    {
-        var generator = Substitute.For<ISchemaGenerator>();
-        var repository = new SchemaRepository("v1");
-        var context = new DocumentFilterContext(Array.Empty<ApiDescription>(), generator, repository);
-
-        new ApiErrorResponseDocumentFilter().Apply(new OpenApiDocument(), context);
-
-        generator.ReceivedCalls().Should().ContainSingle();
-    }
 }

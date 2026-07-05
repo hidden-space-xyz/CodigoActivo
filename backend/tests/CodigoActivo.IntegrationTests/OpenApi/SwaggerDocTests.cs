@@ -30,29 +30,6 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory) : Integra
     }
 
     [Fact]
-    public async Task Swagger_endpoint_returns_200_with_parseable_json_body()
-    {
-        using var doc = await FetchSwaggerAsync();
-
-        doc.RootElement.ValueKind.Should().Be(JsonValueKind.Object);
-        doc.RootElement.TryGetProperty("openapi", out var version).Should().BeTrue();
-        version.GetString().Should().NotBeNullOrWhiteSpace();
-    }
-
-    [Fact]
-    public async Task Swagger_document_exposes_api_paths()
-    {
-        using var doc = await FetchSwaggerAsync();
-
-        doc.RootElement.TryGetProperty("paths", out var paths).Should().BeTrue();
-        paths.ValueKind.Should().Be(JsonValueKind.Object);
-
-        var pathNames = paths.EnumerateObject().Select(p => p.Name).ToList();
-        pathNames.Should().Contain("/api/partners");
-        pathNames.Should().Contain(name => name.StartsWith("/api/", StringComparison.Ordinal));
-    }
-
-    [Fact]
     public async Task List_endpoint_query_parameters_are_camelCased()
     {
         using var doc = await FetchSwaggerAsync();

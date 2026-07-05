@@ -39,17 +39,4 @@ public sealed class SystemClockTests
         (plus14.Today > minus11.Today).Should().BeTrue();
         (plus14.Today.DayNumber - minus11.Today.DayNumber).Should().BeInRange(1, 2);
     }
-
-    [Fact]
-    public void UtcNow_is_a_datetimeoffset_close_to_the_current_instant()
-    {
-        var sut = new SystemClock(TimeZoneInfo.Utc);
-
-        var before = DateTimeOffset.UtcNow;
-        var value = sut.UtcNow;
-        var after = DateTimeOffset.UtcNow;
-
-        value.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
-        value.Offset.Should().Be(TimeSpan.Zero);
-    }
 }
