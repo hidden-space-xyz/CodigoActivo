@@ -330,5 +330,10 @@ public interface IReportService
         CancellationToken ct = default
     );
 
+    Task<Result<EventBadgesResponse>> GetEventBadgesAsync(
+        Guid eventId,
+        CancellationToken ct = default
+    );
+
     Task<DashboardSummaryResponse> GetDashboardSummaryAsync(CancellationToken ct = default);
 }

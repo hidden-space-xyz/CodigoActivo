@@ -11,7 +11,7 @@ import Tag from 'primevue/tag'
 import { useActivityAssignments, useAssignments } from '@/features/manage-activities'
 import { useAssignmentStatusTypesList } from '@/entities/catalog'
 import type { ActivityAssignmentRowResponse } from '@/shared/api/generated/models'
-import { groupByParent, useCrudFeedback } from '@/shared/lib'
+import { ageFrom, groupByParent, useCrudFeedback } from '@/shared/lib'
 
 const route = useRoute()
 const eventId = computed(() => String(route.params.eventId))
@@ -183,6 +183,9 @@ function submitChangeRole(): void {
           </Column>
           <Column header="Apellidos">
             <template #body="{ data }">{{ data.lastName || '—' }}</template>
+          </Column>
+          <Column header="Edad" style="width: 70px">
+            <template #body="{ data }">{{ ageFrom(data.birthDate) ?? '—' }}</template>
           </Column>
           <Column header="Correo">
             <template #body="{ data }">{{ data.email || '—' }}</template>

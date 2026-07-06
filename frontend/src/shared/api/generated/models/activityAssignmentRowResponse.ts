@@ -15,6 +15,7 @@ export interface ActivityAssignmentRowResponse {
   email?: string | null;
   /** @nullable */
   phone?: string | null;
+  birthDate?: string;
   /** @nullable */
   parentId?: string | null;
   signedUp?: boolean;

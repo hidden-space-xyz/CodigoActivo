@@ -159,6 +159,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         var child = report.Rows.Single(r => r.UserId == TestSeedData.Users.MemberChildId);
         child.SignedUp.Should().BeTrue();
         child.FirstName.Should().Be("Mateo");
+        child.BirthDate.Should().Be(new DateOnly(2015, 5, 5));
         child.ParentId.Should().Be(TestSeedData.Users.MemberId);
         child.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
         child.RoleTypeName.Should().Be("Colaborador");
@@ -168,6 +169,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         var parent = report.Rows.Single(r => r.UserId == TestSeedData.Users.MemberId);
         parent.SignedUp.Should().BeFalse();
         parent.FirstName.Should().Be("Marta");
+        parent.BirthDate.Should().Be(new DateOnly(1992, 7, 30));
         parent.RoleTypeId.Should().BeNull();
         parent.RoleTypeName.Should().BeNull();
         parent.StatusId.Should().BeNull();
@@ -184,6 +186,72 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.ActivityNotFound);
+    }
+
+    [Fact]
+    public async Task EventBadges_as_admin_returns_confirmed_badges_with_guardian_and_activities()
+    {
+        await SeedEventGraphAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.ActivityUserRoleAssignments.Add(
+                Assignment(ActivityBId, TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant, SeedIds.AssignmentStatusTypes.Confirmed)
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var report = await response.ReadJsonAsync<EventBadgesResponse>();
+        report!.EventId.Should().Be(EventId);
+        report.Title.Should().Be("Feria de Voluntariado");
+
+        // Only confirmed assignments produce badges: Ada (Leader) and Mateo (Helper + Participant).
+        report.Badges.Should().HaveCount(2);
+
+        var admin = report.Badges[0];
+        admin.UserId.Should().Be(TestSeedData.Users.AdminId);
+        admin.FirstName.Should().Be("Ada");
+        admin.LastName.Should().Be("Admin");
+        admin.UserTypeName.Should().Be("Socio");
+        admin.UserTypeColor.Should().Be("#EF4444");
+        admin.Guardian.Should().BeNull();
+        admin.Activities.Should().Equal("Charla");
+
+        var child = report.Badges[1];
+        child.UserId.Should().Be(TestSeedData.Users.MemberChildId);
+        child.FirstName.Should().Be("Mateo");
+        child.LastName.Should().Be("Miembro");
+        child.UserTypeName.Should().Be("Participante");
+        child.Guardian.Should().NotBeNull();
+        child.Guardian!.FirstName.Should().Be("Marta");
+        child.Guardian.LastName.Should().Be("Miembro");
+        child.Guardian.Phone.Should().Be("+34600000002");
+        child.Activities.Should().BeEquivalentTo("Taller", "Charla");
+    }
+
+    [Fact]
+    public async Task EventBadges_missing_event_is_404_with_event_not_found()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/badges");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.EventNotFound);
+    }
+
+    [Fact]
+    public async Task EventBadges_forbids_members()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]

@@ -1880,6 +1880,36 @@
         }
       }
     },
+    "/api/reports/events/{eventId}/badges": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventBadgesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/reports/dashboard": {
       "get": {
         "tags": [
@@ -2466,6 +2496,10 @@
           "phone": {
             "type": "string",
             "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
           },
           "parentId": {
             "type": "string",
@@ -3354,6 +3388,85 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AssignmentReportItemResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventBadgeGuardianResponse": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventBadgeResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTypeColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "guardian": {
+            "$ref": "#/components/schemas/EventBadgeGuardianResponse"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventBadgesResponse": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventBadgeResponse"
             },
             "nullable": true
           }

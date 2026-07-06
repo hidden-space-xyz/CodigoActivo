@@ -26,6 +26,13 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
 
+        // AddEmail's fail-fast runs while AddCodigoActivo registers services, before the
+        // in-memory overrides below are applied, so it can only be satisfied through real
+        // environment variables (visible to WebApplication.CreateBuilder's configuration).
+        // The real IEmailSender is replaced with FakeEmailSender below, so these are never dialed.
+        Environment.SetEnvironmentVariable("Smtp__Host", "smtp.test");
+        Environment.SetEnvironmentVariable("Smtp__FromAddress", "no-reply@codigoactivo.test");
+
         builder.ConfigureAppConfiguration(
             (_, config) =>
                 config.AddInMemoryCollection(
@@ -36,11 +43,6 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
                         ["ConnectionStrings:Default"] = "Host=localhost;Database=unused",
                         ["Cors:AllowedOrigins:0"] = "http://localhost",
                         ["Auth:SameSite"] = "Lax",
-                        // Satisfy AddEmail's startup fail-fast without relying on the git-ignored
-                        // appsettings.Development.json (absent on a clean checkout / CI). The real
-                        // IEmailSender is replaced with FakeEmailSender below, so these are never dialed.
-                        ["Smtp:Host"] = "smtp.test",
-                        ["Smtp:FromAddress"] = "no-reply@codigoactivo.test",
                     }
                 )
         );

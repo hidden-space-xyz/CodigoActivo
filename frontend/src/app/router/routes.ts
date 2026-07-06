@@ -92,6 +92,15 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/events/:eventId/activities/:activityId', 'admin-activity-detail', () =>
     import('@/pages/admin/activity-assignments').then((m) => m.ActivityAssignmentsPage),
   ),
+  {
+    // Printable badge sheet: admin-only but rendered without the admin chrome so the
+    // printed pages contain nothing but the labels.
+    path: '/admin/events/:eventId/badges',
+    name: 'admin-event-badges',
+    component: () => import('@/pages/admin/event-badges').then((m) => m.EventBadgesPage),
+    meta: { layout: 'blank' },
+    beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
+  },
   adminRoute('/admin/announcements', 'admin-announcements', () =>
     import('@/pages/admin/announcements').then((m) => m.AnnouncementsPage),
   ),

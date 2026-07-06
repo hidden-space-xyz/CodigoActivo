@@ -14,7 +14,8 @@ public class ReportService(
     IResourceRepository resources,
     IAnnouncementRepository announcements,
     IPartnerRepository partners,
-    IUserRepository users
+    IUserRepository users,
+    IQueryExecutor executor
 ) : IReportService
 {
     public async Task<Result<EventSummaryResponse>> GetEventSummaryAsync(
@@ -104,6 +105,7 @@ public class ReportService(
                 a.User.LastName,
                 a.User.Email,
                 a.User.Phone,
+                a.User.BirthDate,
                 a.User.ParentId,
                 true,
                 a.ActivityRoleTypeId,
@@ -131,6 +133,7 @@ public class ReportService(
                     parent.LastName,
                     parent.Email,
                     parent.Phone,
+                    parent.BirthDate,
                     parent.ParentId,
                     false,
                     null,
@@ -160,6 +163,71 @@ public class ReportService(
             roleTypeBreakdown,
             rows
         );
+    }
+
+    public async Task<Result<EventBadgesResponse>> GetEventBadgesAsync(
+        Guid eventId,
+        CancellationToken ct = default
+    )
+    {
+        var ev = await events.FindAsync(e => e.Id == eventId, ct);
+        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+
+        var rows = await executor.ToListAsync(
+            activities
+                .QueryAssignments()
+                .Where(a =>
+                    a.Activity.EventId == eventId
+                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                )
+                .Select(a => new
+                {
+                    a.UserId,
+                    a.User.FirstName,
+                    a.User.LastName,
+                    UserTypeName = a.User.UserType.Name,
+                    UserTypeColor = a.User.UserType.Color,
+                    a.User.CreatedAt,
+                    Guardian = a.User.Parent == null
+                        ? null
+                        : new EventBadgeGuardianResponse(
+                            a.User.Parent.FirstName,
+                            a.User.Parent.LastName,
+                            a.User.Parent.Phone
+                        ),
+                    a.ActivityId,
+                    ActivityTitle = a.Activity.Title,
+                    a.Activity.ActivityStartsAt,
+                }),
+            ct
+        );
+
+        var badges = rows
+            .GroupBy(r => r.UserId)
+            .Select(g =>
+            {
+                var user = g.First();
+                return new EventBadgeResponse(
+                    g.Key,
+                    user.FirstName,
+                    user.LastName,
+                    user.UserTypeName,
+                    user.UserTypeColor,
+                    user.CreatedAt,
+                    user.Guardian,
+                    g.OrderBy(r => r.ActivityStartsAt)
+                        .ThenBy(r => r.ActivityTitle, StringComparer.Ordinal)
+                        .DistinctBy(r => r.ActivityId)
+                        .Select(r => r.ActivityTitle)
+                        .ToList()
+                );
+            })
+            .OrderBy(b => b.LastName, StringComparer.Ordinal)
+            .ThenBy(b => b.FirstName, StringComparer.Ordinal)
+            .ThenBy(b => b.UserId)
+            .ToList();
+
+        return new EventBadgesResponse(ev.Id, ev.Title, badges);
     }
 
     public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(

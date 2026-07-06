@@ -63,6 +63,10 @@ function openCreateActivity(): void {
   activityDialogVisible.value = true
 }
 
+function openBadges(): void {
+  void router.push({ name: 'admin-event-badges', params: { eventId: eventId.value } })
+}
+
 function openActivityAssignments(activity: ActivityResponse): void {
   if (!activity.id) return
   void router.push({
@@ -159,6 +163,12 @@ function onAssignSubmit(payload: {
           icon="pi pi-plus"
           severity="secondary"
           @click="openCreateActivity"
+        />
+        <Button
+          label="Imprimir etiquetas"
+          icon="pi pi-print"
+          severity="secondary"
+          @click="openBadges"
         />
       </template>
     </AdminPageHeader>

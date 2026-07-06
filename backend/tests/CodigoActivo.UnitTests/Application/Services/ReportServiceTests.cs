@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.UnitTests.TestSupport;
 using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
@@ -23,6 +24,8 @@ public sealed class ReportServiceTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly ReportService sut;
 
+    private static readonly Guid EventIdForBadges = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
     private static readonly Guid AlphaRoleId = new("11111111-1111-1111-1111-111111111111");
     private static readonly Guid BetaRoleId = new("22222222-2222-2222-2222-222222222222");
     private static readonly Guid GhostRoleId = new("33333333-3333-3333-3333-333333333333");
@@ -33,7 +36,7 @@ public sealed class ReportServiceTests
 
     public ReportServiceTests()
     {
-        sut = new ReportService(events, roleTypes, statusTypes, activities, resources, announcements, partners, users);
+        sut = new ReportService(events, roleTypes, statusTypes, activities, resources, announcements, partners, users, new FakeQueryExecutor());
     }
 
     private void HasRoleTypes(params (Guid Id, string Name)[] roles) =>
@@ -85,6 +88,7 @@ public sealed class ReportServiceTests
             LastName = first + "-last",
             Email = first + "@test.local",
             Phone = "555-" + first,
+            BirthDate = new DateOnly(1990, 6, 15),
             Parent = parent,
             ParentId = parent?.Id,
         };
@@ -287,6 +291,7 @@ public sealed class ReportServiceTests
         parentRow.UserId.Should().Be(parentP.Id);
         parentRow.FirstName.Should().Be("Padre");
         parentRow.Email.Should().Be(parentP.Email);
+        parentRow.BirthDate.Should().Be(new DateOnly(1990, 6, 15));
         parentRow.RoleTypeId.Should().BeNull();
         parentRow.RoleTypeName.Should().BeNull();
         parentRow.StatusId.Should().BeNull();
@@ -318,6 +323,130 @@ public sealed class ReportServiceTests
         result.Value.TotalSignups.Should().Be(0);
         result.Value.Rows.Should().BeEmpty();
         result.Value.RoleTypeBreakdown.Should().BeEmpty();
+    }
+
+    private void HasBadgeEvent(Event? ev) =>
+        events.FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(ev);
+
+    private void HasAssignments(params ActivityUserRoleAssignment[] assignments) =>
+        activities.QueryAssignments().Returns(assignments.AsQueryable());
+
+    private static User BadgeUser(
+        string first,
+        string last,
+        string typeName,
+        string typeColor,
+        DateTimeOffset createdAt,
+        User? parent = null
+    ) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            FirstName = first,
+            LastName = last,
+            Phone = "600-" + first,
+            CreatedAt = createdAt,
+            Parent = parent,
+            ParentId = parent?.Id,
+            UserType = new UserType { Name = typeName, Color = typeColor },
+        };
+
+    private static ActivityUserRoleAssignment BadgeAsg(
+        User user,
+        string activityTitle,
+        DateTimeOffset startsAt,
+        Guid statusId,
+        Guid? eventId = null
+    ) =>
+        new()
+        {
+            UserId = user.Id,
+            User = user,
+            ActivityId = Guid.NewGuid(),
+            Activity = new Activity
+            {
+                EventId = eventId ?? EventIdForBadges,
+                Title = activityTitle,
+                ActivityStartsAt = startsAt,
+            },
+            ActivityRoleTypeId = Guid.NewGuid(),
+            AssignmentStatusId = statusId,
+        };
+
+    [Fact]
+    public async Task GetEventBadgesAsync_returns_not_found_when_event_missing()
+    {
+        HasBadgeEvent(null);
+
+        var result = await sut.GetEventBadgesAsync(EventIdForBadges);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
+        activities.DidNotReceive().QueryAssignments();
+    }
+
+    [Fact]
+    public async Task GetEventBadgesAsync_groups_confirmed_assignments_per_user_with_guardian()
+    {
+        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+        var createdAt = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
+
+        var parent = BadgeUser("Marta", "Miembro", "Socio", "#EF4444", createdAt);
+        var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", createdAt, parent);
+        var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444", createdAt);
+
+        HasBadgeEvent(new Event { Id = EventIdForBadges, Title = "Feria" });
+        HasAssignments(
+            BadgeAsg(adult, "Charla", when.AddHours(2), Confirmed),
+            BadgeAsg(adult, "Taller", when, Confirmed),
+            // A different activity that happens to share title and start time must not be merged.
+            BadgeAsg(adult, "Taller", when, Confirmed),
+            BadgeAsg(adult, "Otro evento", when, Confirmed, eventId: Guid.NewGuid()),
+            BadgeAsg(child, "Taller infantil", when, Confirmed),
+            BadgeAsg(child, "Cuentacuentos", when, Requested),
+            BadgeAsg(parent, "Charla", when, Denied)
+        );
+
+        var result = await sut.GetEventBadgesAsync(EventIdForBadges);
+
+        result.IsSuccess.Should().BeTrue();
+        var report = result.Value;
+        report.EventId.Should().Be(EventIdForBadges);
+        report.Title.Should().Be("Feria");
+        report.Badges.Should().HaveCount(2);
+
+        var adultBadge = report.Badges[0];
+        adultBadge.UserId.Should().Be(adult.Id);
+        adultBadge.FirstName.Should().Be("Ada");
+        adultBadge.LastName.Should().Be("Admin");
+        adultBadge.UserTypeName.Should().Be("Socio");
+        adultBadge.UserTypeColor.Should().Be("#EF4444");
+        adultBadge.CreatedAt.Should().Be(createdAt);
+        adultBadge.Guardian.Should().BeNull();
+        adultBadge.Activities.Should().Equal("Taller", "Taller", "Charla");
+
+        var childBadge = report.Badges[1];
+        childBadge.UserId.Should().Be(child.Id);
+        childBadge.UserTypeName.Should().Be("Participante");
+        childBadge.Guardian.Should().NotBeNull();
+        childBadge.Guardian!.FirstName.Should().Be("Marta");
+        childBadge.Guardian.LastName.Should().Be("Miembro");
+        childBadge.Guardian.Phone.Should().Be("600-Marta");
+        childBadge.Activities.Should().Equal("Taller infantil");
+    }
+
+    [Fact]
+    public async Task GetEventBadgesAsync_returns_empty_badges_when_no_confirmed_assignments()
+    {
+        HasBadgeEvent(new Event { Id = EventIdForBadges, Title = "Feria" });
+        HasAssignments();
+
+        var result = await sut.GetEventBadgesAsync(EventIdForBadges);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Badges.Should().BeEmpty();
     }
 
     [Fact]

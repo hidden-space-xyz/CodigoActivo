@@ -3,13 +3,18 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AdminLayout from '@/app/layouts/AdminLayout.vue'
+import BlankLayout from '@/app/layouts/BlankLayout.vue'
 import DefaultLayout from '@/app/layouts/DefaultLayout.vue'
 import { useAuth } from '@/features/auth'
 
 const route = useRoute()
 const { bootstrap } = useAuth()
 
-const layout = computed(() => (route.meta.layout === 'admin' ? AdminLayout : DefaultLayout))
+const layout = computed(() => {
+  if (route.meta.layout === 'admin') return AdminLayout
+  if (route.meta.layout === 'blank') return BlankLayout
+  return DefaultLayout
+})
 
 onMounted(() => {
   void bootstrap()

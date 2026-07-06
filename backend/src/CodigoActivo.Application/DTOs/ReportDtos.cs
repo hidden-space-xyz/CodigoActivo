@@ -40,6 +40,7 @@ public record ActivityAssignmentRowResponse(
     string? LastName,
     string? Email,
     string? Phone,
+    DateOnly BirthDate,
     Guid? ParentId,
     bool SignedUp,
     Guid? RoleTypeId,
@@ -60,6 +61,25 @@ public record EventAssignmentsReportResponse(
     Guid EventId,
     string Title,
     IReadOnlyList<AssignmentReportItemResponse> Items
+);
+
+public record EventBadgeGuardianResponse(string FirstName, string LastName, string? Phone);
+
+public record EventBadgeResponse(
+    Guid UserId,
+    string FirstName,
+    string LastName,
+    string UserTypeName,
+    string UserTypeColor,
+    DateTimeOffset CreatedAt,
+    EventBadgeGuardianResponse? Guardian,
+    IReadOnlyList<string> Activities
+);
+
+public record EventBadgesResponse(
+    Guid EventId,
+    string Title,
+    IReadOnlyList<EventBadgeResponse> Badges
 );
 
 public record DashboardSummaryResponse(
