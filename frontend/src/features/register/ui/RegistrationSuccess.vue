@@ -134,9 +134,9 @@ function submitVerify(): void {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(91, 229, 132, 0.15);
-  border: 1px solid var(--ca-green);
-  color: var(--ca-green);
+  background: var(--ca-success-soft);
+  border: 1px solid var(--ca-success);
+  color: var(--ca-success);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,7 +165,7 @@ function submitVerify(): void {
   margin-top: 18px;
   font-size: 16px;
   line-height: 1.6;
-  color: #c4cad6;
+  color: var(--ca-text-muted);
 }
 
 .reg-success__reminder {
@@ -190,7 +190,7 @@ function submitVerify(): void {
 .reg-success__verify {
   margin-top: 22px;
   text-align: left;
-  background: rgba(45, 212, 217, 0.06);
+  background: var(--ca-orange-soft);
   border: 1px solid var(--ca-border-strong);
   border-radius: 12px;
   padding: 18px;
@@ -226,7 +226,7 @@ function submitVerify(): void {
 .reg-success__verify-error {
   display: block;
   margin-top: 8px;
-  color: var(--ca-red, #ef4444);
+  color: var(--ca-danger);
   font-size: 13px;
 }
 
@@ -242,8 +242,8 @@ function submitVerify(): void {
 
 .reg-success__verified {
   margin-top: 22px;
-  background: rgba(91, 229, 132, 0.12);
-  border: 1px solid var(--ca-green);
+  background: var(--ca-success-soft);
+  border: 1px solid var(--ca-success);
   border-radius: 12px;
   padding: 14px;
   color: var(--ca-text);

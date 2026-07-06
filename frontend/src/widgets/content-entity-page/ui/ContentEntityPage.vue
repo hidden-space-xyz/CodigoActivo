@@ -321,7 +321,7 @@ function confirmDelete(item: ContentItem): void {
 }
 
 .is-featured:deep(.p-button-icon) {
-  color: var(--ca-amber);
+  color: var(--ca-orange);
 }
 
 .form {
@@ -344,7 +344,7 @@ function confirmDelete(item: ContentItem): void {
 }
 
 .form__error {
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
   font-size: 12.5px;
 }
 </style>

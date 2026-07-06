@@ -360,7 +360,7 @@ function confirmDeleteAccount(): void {
 }
 
 .acc-form__error {
-  color: var(--ca-amber);
+  color: var(--ca-danger-ink);
   font-size: 13.5px;
   margin: 0 0 10px;
 }

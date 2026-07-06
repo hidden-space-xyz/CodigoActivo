@@ -176,7 +176,7 @@ function confirmDelete(partner: PartnerResponse): void {
 }
 
 .link {
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
   text-decoration: none;
 }
 

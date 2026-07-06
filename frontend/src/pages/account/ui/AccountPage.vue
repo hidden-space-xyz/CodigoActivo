@@ -8,7 +8,7 @@ import { SectionEyebrow } from '@/shared/ui'
     <section class="account-head">
       <div class="account-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow account-head__inner">
-        <SectionEyebrow text="// mi cuenta" color="var(--ca-cyan)" />
+        <SectionEyebrow text="// mi cuenta" color="var(--ca-orange-ink)" />
         <h1 class="account-head__title">Mi área de usuario</h1>
         <p class="account-head__intro">
           Gestiona tus datos, tu contraseña y los menores a tu cargo.
@@ -35,7 +35,7 @@ import { SectionEyebrow } from '@/shared/ui'
 .account-head__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, rgba(45, 212, 217, 0.1), transparent 60%);
+  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
 }
 
 .account-head__inner {

@@ -54,12 +54,12 @@
 .rich-text :where(blockquote) {
   margin: 0 0 12px;
   padding-left: 14px;
-  border-left: 3px solid var(--ca-cyan);
+  border-left: 3px solid var(--ca-orange);
   color: var(--ca-text-muted);
 }
 
 .rich-text :where(a) {
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
   text-decoration: underline;
 }
 
@@ -154,7 +154,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(45, 212, 217, 0.18);
+  background: var(--ca-orange-soft);
   pointer-events: none;
 }
 
@@ -164,7 +164,7 @@
   top: 0;
   bottom: -2px;
   width: 3px;
-  background: var(--ca-cyan);
+  background: var(--ca-orange);
   pointer-events: none;
 }
 
@@ -173,7 +173,7 @@
 }
 
 .rich-text .ProseMirror-selectednode {
-  outline: 2px solid var(--ca-cyan);
+  outline: 2px solid var(--ca-orange);
 }
 
 .rich-text > :where(:last-child) {

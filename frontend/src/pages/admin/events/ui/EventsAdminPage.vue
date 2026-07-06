@@ -248,6 +248,6 @@ function confirmDelete(event: EventListItemResponse): void {
 }
 
 .is-featured:deep(.p-button-icon) {
-  color: var(--ca-amber);
+  color: var(--ca-orange);
 }
 </style>

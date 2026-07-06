@@ -11,7 +11,7 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
   <div>
     <section class="events-head">
       <div class="ca-container">
-        <SectionEyebrow text="// eventos" color="var(--ca-cyan)" />
+        <SectionEyebrow text="// eventos" color="var(--ca-orange-ink)" />
         <h1 class="events-head__title">Eventos</h1>
         <p class="events-head__intro">
           Todo lo que tenemos por delante y todo lo que ya hemos hecho juntos. Explora los próximos
@@ -23,7 +23,7 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
     <section class="events-section">
       <div class="ca-container">
         <div class="events-section__head">
-          <SectionEyebrow text="// próximamente" color="var(--ca-green)" />
+          <SectionEyebrow text="// próximamente" color="var(--ca-lime-ink)" />
           <h2 class="events-section__title">Próximos eventos</h2>
         </div>
         <p v-if="isLoadingUpcoming" class="events-loading">Cargando…</p>
@@ -34,7 +34,7 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
     <section class="events-section events-section--past">
       <div class="ca-container">
         <div class="events-section__head">
-          <SectionEyebrow text="// archivo" color="var(--ca-amber)" />
+          <SectionEyebrow text="// archivo" color="var(--ca-orange-ink)" />
           <h2 class="events-section__title">Eventos anteriores</h2>
           <YearFilter
             class="events-section__filter"

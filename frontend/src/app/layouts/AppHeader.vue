@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 
 import { useAuth } from '@/features/auth'
 import { PRIMARY_NAV } from '@/shared/config'
-import { BaseButton, BrandLogo } from '@/shared/ui'
+import { BaseButton, BrandLogo, ThemeToggle } from '@/shared/ui'
 
 const route = useRoute()
 const { isAuthenticated, isAdmin, displayName, logout } = useAuth()
@@ -33,6 +33,8 @@ function isActive(routeName: string): boolean {
         >
           {{ item.label }}
         </RouterLink>
+
+        <ThemeToggle class="header__theme" />
 
         <template v-if="isAuthenticated">
           <RouterLink v-if="isAdmin" :to="{ name: 'admin-dashboard' }" class="header__link"
@@ -68,7 +70,7 @@ function isActive(routeName: string): boolean {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(12, 14, 19, 0.82);
+  background: var(--ca-glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--ca-border);
@@ -121,7 +123,7 @@ function isActive(routeName: string): boolean {
   bottom: -7px;
   height: 2px;
   border-radius: 2px;
-  background: var(--ca-cyan);
+  background: var(--ca-orange);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -129,7 +131,7 @@ function isActive(routeName: string): boolean {
 
 .header__link:hover,
 .header__link--active {
-  color: #ffffff;
+  color: var(--ca-text-bright);
 }
 
 .header__link:hover::after,

@@ -42,7 +42,7 @@ defineProps<{ event: PastEvent }>()
 
 .past-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--ca-border-strong);
 }
 
 .past-card__body {

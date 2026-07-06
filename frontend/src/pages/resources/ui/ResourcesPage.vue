@@ -9,7 +9,7 @@ const { resources, isLoading } = useResources()
   <div>
     <section class="resources-head">
       <div class="ca-container">
-        <SectionEyebrow text="// recursos" color="var(--ca-green)" />
+        <SectionEyebrow text="// recursos" color="var(--ca-lime-ink)" />
         <h1 class="resources-head__title">Aprende por tu cuenta</h1>
         <p class="resources-head__intro">Material de nuestros talleres, abierto y gratuito.</p>
       </div>

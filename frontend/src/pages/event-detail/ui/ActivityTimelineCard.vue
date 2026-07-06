@@ -164,8 +164,8 @@ function onSignup(): void {
 }
 
 .act--mine {
-  border-color: var(--ca-cyan);
-  background: rgba(45, 212, 217, 0.06);
+  border-color: var(--ca-orange);
+  background: var(--ca-orange-soft);
 }
 
 .act__head {
@@ -258,7 +258,7 @@ function onSignup(): void {
 
 .act__member-remove:hover:not(:disabled) {
   color: var(--ca-text-bright);
-  border-color: var(--ca-amber);
+  border-color: var(--ca-danger);
 }
 
 .act__member-remove:disabled {

@@ -54,8 +54,8 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  border: 1px solid var(--ca-amber);
-  background: rgba(255, 194, 75, 0.12);
+  border: 1px solid var(--ca-orange);
+  background: var(--ca-orange-soft);
 }
 
 .featured__grid {
@@ -75,8 +75,8 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--ca-amber);
-  background: rgba(12, 14, 19, 0.45);
+  color: var(--ca-orange-ink);
+  background: var(--ca-surface-2);
   padding: 5px 11px;
   border-radius: 999px;
   margin-bottom: 18px;
@@ -95,7 +95,7 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
   font-family: var(--ca-font-display);
   font-size: 21px;
   margin-top: 8px;
-  color: var(--ca-amber);
+  color: var(--ca-orange-ink);
 }
 
 .featured__meta {

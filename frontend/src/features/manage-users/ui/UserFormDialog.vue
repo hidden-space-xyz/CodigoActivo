@@ -193,7 +193,7 @@ function save(): void {
 }
 
 .form__error {
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
   font-size: 12.5px;
 }
 </style>

@@ -4,9 +4,9 @@ import { FOUNDING_YEAR } from '@/shared/config'
 import { BaseButton } from '@/shared/ui'
 
 const stats = [
-  { value: '8–18', label: 'años', color: 'var(--ca-amber)' },
-  { value: '100%', label: 'gratuito', color: 'var(--ca-coral)' },
-  { value: '+15', label: 'eventos', color: 'var(--ca-purple)' },
+  { value: '8–18', label: 'años', color: 'var(--ca-orange-ink)' },
+  { value: '100%', label: 'gratuito', color: 'var(--ca-success-ink)' },
+  { value: '+15', label: 'eventos', color: 'var(--ca-azure-ink)' },
 ] as const
 </script>
 
@@ -16,7 +16,7 @@ const stats = [
       <div>
         <div class="hero__badge">● Asociación sin ánimo de lucro · desde {{ FOUNDING_YEAR }}</div>
         <h1 class="hero__title">
-          Programación<br />para <span style="color: #2dd4d9">tod@s</span>.
+          Programación<br />para <span style="color: var(--ca-orange)">tod@s</span>.
         </h1>
         <p class="hero__subtitle">
           Acercamos el código y el pensamiento computacional a niñas, niños y jóvenes de 8 a 18
@@ -64,8 +64,8 @@ const stats = [
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: var(--ca-green);
-  background: rgba(91, 229, 132, 0.12);
+  color: var(--ca-lime-ink);
+  background: var(--ca-lime-soft);
   padding: 6px 12px;
   border-radius: 999px;
   margin-bottom: 22px;

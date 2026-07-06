@@ -1,6 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{ text: string; color?: string }>(), {
-  color: 'var(--ca-cyan)',
+  color: 'var(--ca-orange-ink)',
 })
 </script>
 

@@ -23,7 +23,7 @@ onMounted(() => {
     <section class="verify-head">
       <div class="verify-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow verify-head__inner">
-        <SectionEyebrow text="// verificación" color="var(--ca-cyan)" />
+        <SectionEyebrow text="// verificación" color="var(--ca-orange-ink)" />
         <h1 class="verify-head__title">Verifica tu cuenta</h1>
       </div>
     </section>
@@ -82,7 +82,7 @@ onMounted(() => {
 .verify-head__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, rgba(45, 212, 217, 0.1), transparent 60%);
+  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
 }
 
 .verify-head__inner {
@@ -123,15 +123,15 @@ onMounted(() => {
 }
 
 .verify-card__icon--ok {
-  background: rgba(91, 229, 132, 0.15);
-  border: 1px solid var(--ca-green);
-  color: var(--ca-green);
+  background: var(--ca-success-soft);
+  border: 1px solid var(--ca-success);
+  color: var(--ca-success);
 }
 
 .verify-card__icon--error {
-  background: rgba(239, 68, 68, 0.14);
-  border: 1px solid var(--ca-red, #ef4444);
-  color: var(--ca-red, #ef4444);
+  background: var(--ca-danger-soft);
+  border: 1px solid var(--ca-danger);
+  color: var(--ca-danger);
   font-weight: 700;
 }
 

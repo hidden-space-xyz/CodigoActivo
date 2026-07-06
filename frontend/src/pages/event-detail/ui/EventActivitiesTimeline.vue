@@ -417,15 +417,15 @@ function onUnassign(activity: TimelineActivity): void {
   gap: 8px;
   margin-bottom: 20px;
   padding: 12px 16px;
-  border: 1px solid var(--ca-amber);
-  background: rgba(255, 194, 75, 0.12);
+  border: 1px solid var(--ca-warning);
+  background: var(--ca-warning-soft);
   border-radius: 12px;
   color: var(--ca-text);
   font-size: 14.5px;
 }
 
 .signup-closed .pi {
-  color: var(--ca-amber);
+  color: var(--ca-warning);
 }
 
 .timeline {
@@ -451,8 +451,8 @@ function onUnassign(activity: TimelineActivity): void {
   height: 14px;
   margin-top: 4px;
   border-radius: 50%;
-  background: var(--ca-cyan);
-  box-shadow: 0 0 0 4px rgba(45, 212, 217, 0.16);
+  background: var(--ca-orange);
+  box-shadow: 0 0 0 4px var(--ca-orange-soft);
 }
 
 .tl-rail::after {
@@ -480,7 +480,7 @@ function onUnassign(activity: TimelineActivity): void {
 }
 
 .tl-simul {
-  color: var(--ca-amber);
+  color: var(--ca-warning-ink);
 }
 
 .tl-cards {

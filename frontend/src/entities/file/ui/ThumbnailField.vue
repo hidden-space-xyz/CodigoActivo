@@ -141,7 +141,7 @@ onBeforeUnmount(revokeObjectUrl)
 }
 
 .thumb__preview--invalid {
-  border-color: var(--ca-coral);
+  border-color: var(--ca-danger);
 }
 
 .thumb__img {
@@ -170,7 +170,7 @@ onBeforeUnmount(revokeObjectUrl)
 
 .thumb__error {
   font-size: 12.5px;
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
 }
 
 .thumb__input {

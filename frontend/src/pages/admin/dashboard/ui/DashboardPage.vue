@@ -13,33 +13,33 @@ const cards = computed(() => {
       label: 'Eventos',
       value: summary?.events ?? 0,
       icon: 'pi pi-calendar',
-      color: 'var(--ca-cyan)',
+      color: 'var(--ca-orange)',
     },
     {
       label: 'Actividades',
       value: summary?.activities ?? 0,
       icon: 'pi pi-check-square',
-      color: 'var(--ca-green)',
+      color: 'var(--ca-lime)',
     },
     {
       label: 'Recursos',
       value: summary?.resources ?? 0,
       icon: 'pi pi-book',
-      color: 'var(--ca-amber)',
+      color: 'var(--ca-azure)',
     },
     {
       label: 'Anuncios',
       value: summary?.announcements ?? 0,
       icon: 'pi pi-megaphone',
-      color: 'var(--ca-coral)',
+      color: 'var(--ca-orange)',
     },
     {
       label: 'Socios',
       value: summary?.partners ?? 0,
       icon: 'pi pi-building',
-      color: 'var(--ca-purple)',
+      color: 'var(--ca-lime)',
     },
-    { label: 'Usuarios', value: summary?.users ?? 0, icon: 'pi pi-users', color: 'var(--ca-blue)' },
+    { label: 'Usuarios', value: summary?.users ?? 0, icon: 'pi pi-users', color: 'var(--ca-azure)' },
   ]
 })
 </script>

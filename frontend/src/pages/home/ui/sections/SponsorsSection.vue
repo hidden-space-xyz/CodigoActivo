@@ -7,12 +7,12 @@ const { sponsors } = useSponsors()
 const { cards, next, prev, pause, resume } = useSponsorCarousel(sponsors)
 
 const LOGO_PALETTE = [
-  'var(--ca-cyan)',
-  'var(--ca-purple)',
-  'var(--ca-green)',
-  'var(--ca-coral)',
-  'var(--ca-amber)',
-  'var(--ca-blue)',
+  'var(--ca-orange)',
+  'var(--ca-lime)',
+  'var(--ca-azure)',
+  'var(--ca-orange)',
+  'var(--ca-lime)',
+  'var(--ca-azure)',
 ] as const
 
 function colorFor(id: string): string {
@@ -141,8 +141,8 @@ function distanceOf(offset: number): number {
 }
 
 .sponsors__arrow:hover {
-  border-color: var(--ca-cyan);
-  color: var(--ca-cyan);
+  border-color: var(--ca-orange);
+  color: var(--ca-orange-ink);
   transform: translateY(-1px);
 }
 
@@ -189,8 +189,8 @@ function distanceOf(offset: number): number {
   font-family: var(--ca-font-display);
   font-weight: 700;
   font-size: 28px;
-  color: var(--ca-bg);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  color: var(--ca-on-primary);
+  box-shadow: var(--ca-shadow-md);
 }
 
 .sponsor__logo--color {
@@ -198,7 +198,7 @@ function distanceOf(offset: number): number {
   background: linear-gradient(
     140deg,
     var(--logo-color),
-    color-mix(in srgb, var(--logo-color) 55%, #ffffff)
+    color-mix(in srgb, var(--logo-color) 55%, var(--ca-surface))
   );
 }
 

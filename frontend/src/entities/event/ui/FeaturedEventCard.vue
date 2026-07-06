@@ -56,8 +56,8 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  border: 1px solid var(--ca-cyan);
-  background: rgba(45, 212, 217, 0.14);
+  border: 1px solid var(--ca-orange);
+  background: var(--ca-orange-soft);
 }
 
 .featured__grid {
@@ -77,8 +77,8 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--ca-cyan);
-  background: rgba(12, 14, 19, 0.45);
+  color: var(--ca-orange-ink);
+  background: var(--ca-surface-2);
   padding: 5px 11px;
   border-radius: 999px;
   margin-bottom: 18px;
@@ -97,7 +97,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   font-family: var(--ca-font-display);
   font-size: 21px;
   margin-top: 8px;
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
 }
 
 .featured__cats {

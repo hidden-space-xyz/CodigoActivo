@@ -37,7 +37,7 @@ const {
     <section class="register-head">
       <div class="register-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow register-head__inner">
-        <SectionEyebrow text="// regístrate" color="var(--ca-cyan)" />
+        <SectionEyebrow text="// regístrate" color="var(--ca-orange-ink)" />
         <h1 class="register-head__title">Únete a Código Activo</h1>
         <p class="register-head__intro">
           Regístrate y, si tienes menores a tu cargo, inscríbelos a todos en un solo paso.
@@ -90,7 +90,7 @@ const {
 .register-head__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, rgba(45, 212, 217, 0.1), transparent 60%);
+  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
 }
 
 .register-head__inner {

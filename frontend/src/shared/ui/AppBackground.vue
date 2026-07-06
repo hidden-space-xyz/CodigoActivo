@@ -10,30 +10,30 @@ interface FloatingGlyph {
 }
 
 const glyphs: readonly FloatingGlyph[] = [
-  { char: '{ }', top: 14, left: 7, color: 'var(--ca-cyan)', size: 26, duration: 22, delay: 0 },
-  { char: '</>', top: 68, left: 13, color: 'var(--ca-purple)', size: 23, duration: 26, delay: 3 },
+  { char: '{ }', top: 14, left: 7, color: 'var(--ca-orange)', size: 26, duration: 22, delay: 0 },
+  { char: '</>', top: 68, left: 13, color: 'var(--ca-azure)', size: 23, duration: 26, delay: 3 },
   {
     char: 'print()',
     top: 31,
     left: 79,
-    color: 'var(--ca-green)',
+    color: 'var(--ca-lime)',
     size: 18,
     duration: 24,
     delay: 1,
   },
-  { char: 'def', top: 81, left: 58, color: 'var(--ca-amber)', size: 21, duration: 20, delay: 5 },
-  { char: ';', top: 19, left: 45, color: 'var(--ca-coral)', size: 30, duration: 18, delay: 2 },
-  { char: 'for', top: 54, left: 89, color: 'var(--ca-blue)', size: 19, duration: 23, delay: 4 },
-  { char: '( )', top: 87, left: 28, color: 'var(--ca-cyan)', size: 25, duration: 25, delay: 6 },
-  { char: '#', top: 9, left: 67, color: 'var(--ca-green)', size: 22, duration: 19, delay: 1.5 },
-  { char: '=>', top: 43, left: 4, color: 'var(--ca-amber)', size: 21, duration: 21, delay: 3.5 },
-  { char: '[ ]', top: 61, left: 47, color: 'var(--ca-purple)', size: 22, duration: 27, delay: 2.5 },
-  { char: '0 1', top: 37, left: 31, color: 'var(--ca-coral)', size: 16, duration: 24, delay: 5.5 },
-  { char: 'if', top: 90, left: 83, color: 'var(--ca-cyan)', size: 19, duration: 20, delay: 0.5 },
-  { char: '< >', top: 23, left: 91, color: 'var(--ca-blue)', size: 22, duration: 22, delay: 4.5 },
-  { char: '★', top: 49, left: 21, color: 'var(--ca-green)', size: 22, duration: 18, delay: 6.5 },
-  { char: '&&', top: 75, left: 4, color: 'var(--ca-amber)', size: 18, duration: 26, delay: 1.2 },
-  { char: '//', top: 6, left: 25, color: 'var(--ca-purple)', size: 20, duration: 23, delay: 3.2 },
+  { char: 'def', top: 81, left: 58, color: 'var(--ca-orange)', size: 21, duration: 20, delay: 5 },
+  { char: ';', top: 19, left: 45, color: 'var(--ca-azure)', size: 30, duration: 18, delay: 2 },
+  { char: 'for', top: 54, left: 89, color: 'var(--ca-lime)', size: 19, duration: 23, delay: 4 },
+  { char: '( )', top: 87, left: 28, color: 'var(--ca-orange)', size: 25, duration: 25, delay: 6 },
+  { char: '#', top: 9, left: 67, color: 'var(--ca-lime)', size: 22, duration: 19, delay: 1.5 },
+  { char: '=>', top: 43, left: 4, color: 'var(--ca-azure)', size: 21, duration: 21, delay: 3.5 },
+  { char: '[ ]', top: 61, left: 47, color: 'var(--ca-orange)', size: 22, duration: 27, delay: 2.5 },
+  { char: '0 1', top: 37, left: 31, color: 'var(--ca-lime)', size: 16, duration: 24, delay: 5.5 },
+  { char: 'if', top: 90, left: 83, color: 'var(--ca-azure)', size: 19, duration: 20, delay: 0.5 },
+  { char: '< >', top: 23, left: 91, color: 'var(--ca-orange)', size: 22, duration: 22, delay: 4.5 },
+  { char: '★', top: 49, left: 21, color: 'var(--ca-lime)', size: 22, duration: 18, delay: 6.5 },
+  { char: '&&', top: 75, left: 4, color: 'var(--ca-azure)', size: 18, duration: 26, delay: 1.2 },
+  { char: '//', top: 6, left: 25, color: 'var(--ca-orange)', size: 20, duration: 23, delay: 3.2 },
 ]
 </script>
 
@@ -72,8 +72,8 @@ const glyphs: readonly FloatingGlyph[] = [
   position: absolute;
   inset: -2px;
   background-image:
-    linear-gradient(to right, rgba(45, 212, 217, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(45, 212, 217, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, var(--ca-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ca-grid-line) 1px, transparent 1px);
   background-size: 54px 54px;
   animation: ca-bg-grid 14s linear infinite;
 }
@@ -84,8 +84,8 @@ const glyphs: readonly FloatingGlyph[] = [
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  opacity: 0.12;
-  will-change: transform, opacity;
+  opacity: var(--ca-glyph-op);
+  will-change: transform;
   animation-name: ca-bg-float;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
@@ -97,7 +97,7 @@ const glyphs: readonly FloatingGlyph[] = [
   background: radial-gradient(
     ellipse 100% 90% at 50% 40%,
     transparent 45%,
-    rgba(0, 0, 0, 0.55) 100%
+    var(--ca-vignette) 100%
   );
 }
 
@@ -118,11 +118,9 @@ const glyphs: readonly FloatingGlyph[] = [
   0%,
   100% {
     transform: translateY(0) rotate(-3deg);
-    opacity: 0.1;
   }
   50% {
     transform: translateY(-24px) rotate(3deg);
-    opacity: 0.2;
   }
 }
 </style>

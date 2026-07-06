@@ -48,7 +48,7 @@ const emit = defineEmits<{ select: [year: string] }>()
 }
 
 .year-filter__pill:hover {
-  color: #ffffff;
+  color: var(--ca-text-bright);
 }
 
 .year-filter__pill--active {

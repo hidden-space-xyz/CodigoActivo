@@ -97,7 +97,7 @@ const currentYear = new Date().getFullYear()
 }
 
 .footer__link:hover {
-  color: #ffffff;
+  color: var(--ca-text-bright);
 }
 
 .footer__link--static {
@@ -118,14 +118,14 @@ const currentYear = new Date().getFullYear()
 }
 
 .footer__social-link:hover {
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
 }
 
 .footer__legal {
   max-width: var(--ca-container);
   margin: 34px auto 0;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--ca-border);
   font-size: 13px;
   color: var(--ca-text-ghost);
   font-family: var(--ca-font-mono);

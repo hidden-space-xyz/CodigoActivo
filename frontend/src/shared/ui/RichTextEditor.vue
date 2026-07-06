@@ -352,7 +352,7 @@ onBeforeUnmount(() => editor.value?.destroy())
 }
 
 .rt--invalid {
-  border-color: var(--ca-coral);
+  border-color: var(--ca-danger);
 }
 
 .rt__toolbar {
@@ -402,12 +402,12 @@ onBeforeUnmount(() => editor.value?.destroy())
 }
 
 .rt__btn--active {
-  background: rgba(45, 212, 217, 0.16);
-  color: var(--ca-cyan);
+  background: var(--ca-orange-soft);
+  color: var(--ca-orange-ink);
 }
 
 .rt__btn--danger:hover:not(:disabled) {
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
 }
 
 .rt__btn:disabled {
@@ -421,7 +421,7 @@ onBeforeUnmount(() => editor.value?.destroy())
 
 .rt__color-letter {
   text-decoration: underline;
-  text-decoration-color: var(--ca-cyan);
+  text-decoration-color: var(--ca-orange);
   text-underline-offset: 2px;
 }
 
@@ -471,7 +471,7 @@ onBeforeUnmount(() => editor.value?.destroy())
 .rt__error {
   display: block;
   padding: 0 14px 10px;
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
   font-size: 12.5px;
 }
 </style>

@@ -5,10 +5,10 @@ withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 <template>
   <div class="brand" :class="`brand--${size}`">
     <div class="brand__mark" aria-hidden="true">
-      <span class="brand__cell" style="background: var(--ca-coral)" />
-      <span class="brand__cell" style="background: var(--ca-amber)" />
-      <span class="brand__cell" style="background: var(--ca-purple)" />
-      <span class="brand__cell" style="background: var(--ca-cyan)" />
+      <span class="brand__cell" style="background: var(--ca-orange)" />
+      <span class="brand__cell" style="background: var(--ca-lime)" />
+      <span class="brand__cell" style="background: var(--ca-azure)" />
+      <span class="brand__cell" style="background: var(--ca-orange-strong)" />
     </div>
     <div class="brand__word">Código<span class="brand__accent">Activo</span></div>
   </div>
@@ -44,7 +44,7 @@ withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 }
 
 .brand__accent {
-  color: var(--ca-cyan);
+  color: var(--ca-orange);
 }
 
 .brand--sm .brand__mark {

@@ -80,20 +80,20 @@ const bindings = computed(() => {
 }
 
 .base-button--primary {
-  color: var(--ca-bg);
-  background: var(--ca-cyan);
+  color: var(--ca-on-primary);
+  background: var(--ca-orange);
 }
 .base-button--primary:hover {
-  background: var(--ca-green);
+  background: var(--ca-orange-strong);
   transform: translateY(-2px);
 }
 
 .base-button--purple {
-  color: var(--ca-bg);
-  background: var(--ca-purple);
+  color: var(--ca-on-primary);
+  background: var(--ca-azure);
 }
 .base-button--purple:hover {
-  background: #bfa6ff;
+  background: color-mix(in srgb, var(--ca-azure) 82%, #ffffff);
 }
 
 .base-button--light {
@@ -101,7 +101,7 @@ const bindings = computed(() => {
   background: var(--ca-text);
 }
 .base-button--light:hover {
-  background: #ffffff;
+  background: var(--ca-text-bright);
 }
 
 .base-button--ghost {
@@ -110,7 +110,7 @@ const bindings = computed(() => {
   border-color: var(--ca-border-strong);
 }
 .base-button--ghost:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--ca-border-strong-2);
 }
 
 .base-button--link {
@@ -122,7 +122,7 @@ const bindings = computed(() => {
   font-size: 15px;
 }
 .base-button--link:hover {
-  color: #ffffff;
+  color: var(--ca-text-bright);
 }
 
 .base-button--disabled,

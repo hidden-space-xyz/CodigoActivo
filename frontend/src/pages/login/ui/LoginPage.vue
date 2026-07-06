@@ -13,7 +13,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
     <section class="login-head">
       <div class="login-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow login-head__inner">
-        <SectionEyebrow text="// iniciar sesión" color="var(--ca-cyan)" />
+        <SectionEyebrow text="// iniciar sesión" color="var(--ca-orange-ink)" />
         <h1 class="login-head__title">Bienvenido de nuevo</h1>
         <p class="login-head__intro">
           Inicia sesión en tu cuenta para participar en nuestras actividades.
@@ -68,7 +68,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
 .login-head__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, rgba(45, 212, 217, 0.1), transparent 60%);
+  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
 }
 
 .login-head__inner {
@@ -124,7 +124,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
 
 .login-error {
   font-size: 13.5px;
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
 }
 
 .login-alt {
@@ -135,7 +135,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
 }
 
 .login-alt__link {
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
   font-weight: 600;
   text-decoration: none;
 }

@@ -1,30 +1,69 @@
 :root {
-  --ca-bg: #0c0e13;
-  --ca-bg-deep: #0a0c10;
-  --ca-surface-2: #10131a;
-  --ca-bg-elevated: #11141c;
-  --ca-surface: #161a23;
-  --ca-input-bg: #0f1218;
+  color-scheme: light;
 
-  --ca-border: rgba(255, 255, 255, 0.07);
-  --ca-border-soft: rgba(255, 255, 255, 0.08);
-  --ca-border-strong: rgba(255, 255, 255, 0.12);
-  --ca-border-strong-2: rgba(255, 255, 255, 0.14);
+  --ca-bg: #f5f5f5;
+  --ca-bg-deep: #f5f5f5;
+  --ca-surface-2: #ededed;
+  --ca-bg-elevated: #ffffff;
+  --ca-surface: #ffffff;
+  --ca-input-bg: #ffffff;
 
-  --ca-text-bright: #f4f6fa;
-  --ca-text: #eef1f6;
-  --ca-text-muted: #9ba3b4;
-  --ca-text-dim: #8a92a3;
-  --ca-text-faint-2: #7a8294;
-  --ca-text-faint: #6a7283;
-  --ca-text-ghost: #5b6273;
+  --ca-border: rgba(0, 0, 0, 0.09);
+  --ca-border-soft: rgba(0, 0, 0, 0.06);
+  --ca-border-strong: rgba(0, 0, 0, 0.14);
+  --ca-border-strong-2: rgba(0, 0, 0, 0.2);
 
-  --ca-cyan: #2dd4d9;
-  --ca-purple: #a78bfa;
-  --ca-green: #5be584;
-  --ca-coral: #ff6b5e;
-  --ca-amber: #ffc24b;
-  --ca-blue: #5b8def;
+  --ca-text-bright: #171717;
+  --ca-text: #262626;
+  --ca-text-muted: #616161;
+  --ca-text-dim: #737373;
+  --ca-text-faint-2: #858585;
+  --ca-text-faint: #979797;
+  --ca-text-ghost: #ababab;
+
+  --ca-orange: #ff8c38;
+  --ca-orange-strong: #fb7518;
+  --ca-orange-ink: #c2510c;
+  --ca-orange-soft: rgba(255, 140, 56, 0.13);
+
+  --ca-lime: #7cb518;
+  --ca-lime-ink: #567f10;
+  --ca-lime-soft: rgba(124, 181, 24, 0.15);
+
+  --ca-azure: #159fde;
+  --ca-azure-ink: #0b6fa0;
+  --ca-azure-soft: rgba(21, 159, 222, 0.13);
+
+  --ca-success: #2e9e57;
+  --ca-success-ink: #257f46;
+  --ca-success-soft: rgba(46, 158, 87, 0.13);
+
+  --ca-warning: #c98a00;
+  --ca-warning-ink: #9c6b00;
+  --ca-warning-soft: rgba(201, 138, 0, 0.15);
+
+  --ca-danger: #d84a3b;
+  --ca-danger-ink: #c13b2e;
+  --ca-danger-soft: rgba(216, 74, 59, 0.13);
+
+  --ca-info: var(--ca-azure);
+  --ca-info-ink: var(--ca-azure-ink);
+  --ca-info-soft: var(--ca-azure-soft);
+
+  --ca-primary: var(--ca-orange);
+  --ca-primary-ink: var(--ca-orange-ink);
+  --ca-primary-soft: var(--ca-orange-soft);
+  --ca-on-primary: #2a1400;
+
+  --ca-glass-bg: rgba(245, 245, 245, 0.82);
+  --ca-grid-line: rgba(255, 140, 56, 0.11);
+  --ca-vignette: rgba(0, 0, 0, 0.04);
+  --ca-glyph-op: 0.24;
+  --ca-mask: rgba(0, 0, 0, 0.32);
+
+  --ca-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --ca-shadow-md: 0 4px 18px rgba(0, 0, 0, 0.09);
+  --ca-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.14);
 
   --ca-font-display: 'Space Grotesk', system-ui, sans-serif;
   --ca-font-body: 'Hanken Grotesk', system-ui, sans-serif;
@@ -32,4 +71,61 @@
 
   --ca-container: 1200px;
   --ca-container-narrow: 1100px;
+}
+
+.ca-dark {
+  color-scheme: dark;
+
+  --ca-bg: #12100e;
+  --ca-bg-deep: #0d0b09;
+  --ca-surface-2: #17140f;
+  --ca-bg-elevated: #221d17;
+  --ca-surface: #1e1a15;
+  --ca-input-bg: #16130f;
+
+  --ca-border: rgba(255, 255, 255, 0.08);
+  --ca-border-soft: rgba(255, 255, 255, 0.07);
+  --ca-border-strong: rgba(255, 255, 255, 0.13);
+  --ca-border-strong-2: rgba(255, 255, 255, 0.16);
+
+  --ca-text-bright: #f7f3ec;
+  --ca-text: #ece7dd;
+  --ca-text-muted: #a79d8c;
+  --ca-text-dim: #978d7c;
+  --ca-text-faint-2: #877e6e;
+  --ca-text-faint: #776f60;
+  --ca-text-ghost: #675f52;
+
+  --ca-orange-ink: #ffab74;
+  --ca-orange-soft: rgba(255, 140, 56, 0.18);
+
+  --ca-lime: #86c31c;
+  --ca-lime-ink: #a6e22e;
+  --ca-lime-soft: rgba(134, 195, 28, 0.18);
+
+  --ca-azure: #22a6e4;
+  --ca-azure-ink: #5cc5f2;
+  --ca-azure-soft: rgba(34, 166, 228, 0.18);
+
+  --ca-success: #4ed07e;
+  --ca-success-ink: #4ed07e;
+  --ca-success-soft: rgba(78, 208, 126, 0.16);
+
+  --ca-warning: #f5c24b;
+  --ca-warning-ink: #f5c24b;
+  --ca-warning-soft: rgba(245, 194, 75, 0.16);
+
+  --ca-danger: #ff6f62;
+  --ca-danger-ink: #ff8a80;
+  --ca-danger-soft: rgba(255, 111, 98, 0.16);
+
+  --ca-glass-bg: rgba(18, 16, 14, 0.82);
+  --ca-grid-line: rgba(255, 140, 60, 0.055);
+  --ca-vignette: rgba(0, 0, 0, 0.55);
+  --ca-glyph-op: 0.2;
+  --ca-mask: rgba(0, 0, 0, 0.66);
+
+  --ca-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ca-shadow-md: 0 8px 28px rgba(0, 0, 0, 0.42);
+  --ca-shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.5);
 }

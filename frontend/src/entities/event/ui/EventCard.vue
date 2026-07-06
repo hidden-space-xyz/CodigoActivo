@@ -42,7 +42,7 @@ defineProps<{ event: UpcomingEvent }>()
 
 .event-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--ca-border-strong);
 }
 
 .event-card__title {
@@ -56,7 +56,7 @@ defineProps<{ event: UpcomingEvent }>()
 .event-card__slogan {
   font-size: 15px;
   margin-top: -6px;
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
 }
 
 .event-card__cats {
@@ -77,7 +77,7 @@ defineProps<{ event: UpcomingEvent }>()
 .event-card__status {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ca-green);
+  color: var(--ca-success-ink);
 }
 
 .event-card__more {

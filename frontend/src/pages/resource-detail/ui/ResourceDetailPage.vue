@@ -93,7 +93,7 @@ const hasDescription = computed(() => !isRichTextEmpty(resource.value?.descripti
   margin-top: 20px;
   font-size: 16.5px;
   line-height: 1.7;
-  color: #b6bdca;
+  color: var(--ca-text-muted);
   white-space: pre-line;
 }
 

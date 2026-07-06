@@ -82,7 +82,7 @@ const hasDescription = computed(() => !isRichTextEmpty(announcement.value?.descr
   font-family: var(--ca-font-display);
   font-size: 21px;
   margin-top: 10px;
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
 }
 
 .detail__poster {
@@ -98,7 +98,7 @@ const hasDescription = computed(() => !isRichTextEmpty(announcement.value?.descr
   margin-top: 20px;
   font-size: 16.5px;
   line-height: 1.7;
-  color: #b6bdca;
+  color: var(--ca-text-muted);
   white-space: pre-line;
 }
 </style>

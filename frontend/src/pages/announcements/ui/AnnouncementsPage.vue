@@ -13,7 +13,7 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
   <div>
     <section class="announcements-head">
       <div class="ca-container">
-        <SectionEyebrow text="// anuncios" color="var(--ca-amber)" />
+        <SectionEyebrow text="// anuncios" color="var(--ca-orange-ink)" />
         <h1 class="announcements-head__title">Anuncios</h1>
         <p class="announcements-head__intro">
           Novedades y comunicaciones de la comunidad de Código Activo.

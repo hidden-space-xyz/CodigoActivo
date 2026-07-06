@@ -9,7 +9,7 @@ const { values } = useOrganizationContent()
   <section class="about-preview">
     <div class="ca-container about-preview__grid">
       <div>
-        <SectionEyebrow text="// quiénes somos" color="var(--ca-purple)" />
+        <SectionEyebrow text="// quiénes somos" color="var(--ca-azure-ink)" />
         <h2 class="about-preview__title">Voluntariado que enseña a crear con código</h2>
         <p class="about-preview__text">
           Somos educadores, profesionales del sector tech y familias que creemos que aprender a

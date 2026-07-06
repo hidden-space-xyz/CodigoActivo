@@ -40,7 +40,7 @@ defineProps<{ resource: LearningResourceSummary }>()
 
 .resource-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--ca-border-strong);
 }
 
 .resource-card__title {
@@ -68,6 +68,6 @@ defineProps<{ resource: LearningResourceSummary }>()
 .resource-card__open {
   font-size: 14px;
   font-weight: 600;
-  color: var(--ca-cyan);
+  color: var(--ca-orange-ink);
 }
 </style>

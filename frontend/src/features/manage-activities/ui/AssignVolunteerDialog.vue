@@ -163,7 +163,7 @@ function submit(): void {
 }
 
 .form__hint {
-  color: var(--ca-amber);
+  color: var(--ca-warning-ink);
   font-size: 12.5px;
 }
 </style>

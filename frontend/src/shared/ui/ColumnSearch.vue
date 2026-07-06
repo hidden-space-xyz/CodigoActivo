@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
 }
 
 .column-search__toggle--active {
-  color: var(--ca-cyan);
+  color: var(--ca-orange);
 }
 
 .column-search__toggle i {
@@ -179,6 +179,6 @@ onBeforeUnmount(() => {
 }
 
 .column-search__clear:hover {
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
 }
 </style>

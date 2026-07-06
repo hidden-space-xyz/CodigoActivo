@@ -307,7 +307,7 @@ function removeMinor(index: number): void {
 }
 
 .reg__date:focus {
-  border-color: var(--ca-cyan);
+  border-color: var(--ca-orange);
 }
 
 .reg__role-desc {
@@ -320,7 +320,7 @@ function removeMinor(index: number): void {
 .reg__error {
   margin-top: 6px;
   font-size: 12.5px;
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
 }
 
 .reg__minors {
@@ -377,7 +377,7 @@ function removeMinor(index: number): void {
 
 .reg__minor-remove:hover {
   color: var(--ca-text-bright);
-  border-color: var(--ca-amber);
+  border-color: var(--ca-danger);
 }
 
 .reg__submit {

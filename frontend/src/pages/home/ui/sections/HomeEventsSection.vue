@@ -10,7 +10,7 @@ const { featured, items, isLoading } = useHomeEvents()
     <div class="ca-container">
       <div class="home-section__head">
         <div>
-          <SectionEyebrow text="// eventos" color="var(--ca-cyan)" />
+          <SectionEyebrow text="// eventos" color="var(--ca-orange-ink)" />
           <h2 class="home-section__title">Eventos</h2>
         </div>
         <BaseButton variant="link" :to="{ name: 'events' }"> Ver todos los eventos → </BaseButton>

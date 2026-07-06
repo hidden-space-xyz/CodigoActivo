@@ -3,9 +3,9 @@
 <template>
   <div class="code-window" aria-hidden="true">
     <div class="code-window__bar">
-      <span class="code-window__dot" style="background: var(--ca-coral)" />
-      <span class="code-window__dot" style="background: var(--ca-amber)" />
-      <span class="code-window__dot" style="background: var(--ca-green)" />
+      <span class="code-window__dot" style="background: var(--ca-danger)" />
+      <span class="code-window__dot" style="background: var(--ca-warning)" />
+      <span class="code-window__dot" style="background: var(--ca-success)" />
       <span class="code-window__file">codigo_activo.py</span>
     </div>
     <div class="code-window__body">
@@ -34,10 +34,11 @@
 
 <style scoped>
 .code-window {
-  background: var(--ca-bg-elevated);
+  background: #1c1813;
+  color: #d9d2c4;
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 16px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--ca-shadow-lg);
   overflow: hidden;
   animation: ca-float 6s ease-in-out infinite;
 }
@@ -47,8 +48,8 @@
   align-items: center;
   gap: 8px;
   padding: 13px 16px;
-  border-bottom: 1px solid var(--ca-border);
-  background: var(--ca-input-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: #15110b;
 }
 
 .code-window__dot {
@@ -61,7 +62,7 @@
   margin-left: 8px;
   font-family: var(--ca-font-mono);
   font-size: 12px;
-  color: var(--ca-text-faint);
+  color: #7a7264;
 }
 
 .code-window__body {
@@ -72,7 +73,7 @@
 }
 
 .code-window__comment {
-  color: var(--ca-text-faint);
+  color: #7a7264;
 }
 
 .code-window__indent {
@@ -87,22 +88,22 @@
   display: inline-block;
   width: 9px;
   height: 17px;
-  background: var(--ca-green);
+  background: var(--ca-lime);
   margin-left: 6px;
   vertical-align: -3px;
   animation: ca-blink 1.1s step-end infinite;
 }
 
 .t-purple {
-  color: var(--ca-purple);
+  color: var(--ca-azure);
 }
 .t-cyan {
-  color: var(--ca-cyan);
+  color: var(--ca-orange);
 }
 .t-amber {
-  color: var(--ca-amber);
+  color: var(--ca-lime);
 }
 .t-coral {
-  color: var(--ca-coral);
+  color: #ffb37a;
 }
 </style>

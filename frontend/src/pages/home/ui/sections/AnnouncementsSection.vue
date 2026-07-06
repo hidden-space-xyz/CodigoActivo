@@ -14,7 +14,7 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
     <div class="ca-container">
       <div class="home-section__head">
         <div>
-          <SectionEyebrow text="// anuncios" color="var(--ca-amber)" />
+          <SectionEyebrow text="// anuncios" color="var(--ca-orange-ink)" />
           <h2 class="home-section__title">Anuncios</h2>
         </div>
         <BaseButton variant="link" :to="{ name: 'announcements' }">

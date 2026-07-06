@@ -2,7 +2,7 @@
 import ConfirmDialog from 'primevue/confirmdialog'
 
 import { useAuth } from '@/features/auth'
-import { AppToast } from '@/shared/ui'
+import { AppToast, ThemeToggle } from '@/shared/ui'
 import { ADMIN_NAV } from '@/shared/config'
 
 const { displayName, logout } = useAuth()
@@ -30,6 +30,7 @@ const { displayName, logout } = useAuth()
       <header class="admin__topbar">
         <RouterLink :to="{ name: 'home' }" class="admin__home">← Ir al sitio</RouterLink>
         <div class="admin__user">
+          <ThemeToggle />
           <span class="admin__username">{{ displayName }}</span>
           <button type="button" class="admin__logout" title="Cerrar sesión" @click="logout()">
             Cerrar sesión
@@ -105,10 +106,10 @@ const { displayName, logout } = useAuth()
 }
 
 .admin__link--active {
-  background: rgba(45, 212, 217, 0.14);
-  color: var(--ca-cyan);
+  background: var(--ca-orange-soft);
+  color: var(--ca-orange-ink);
   font-weight: 600;
-  box-shadow: inset 2px 0 0 var(--ca-cyan);
+  box-shadow: inset 2px 0 0 var(--ca-orange);
 }
 
 .admin__body {
@@ -123,7 +124,7 @@ const { displayName, logout } = useAuth()
   justify-content: space-between;
   padding: 14px 28px;
   border-bottom: 1px solid var(--ca-border);
-  background: rgba(12, 14, 19, 0.82);
+  background: var(--ca-glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   position: sticky;
@@ -164,7 +165,7 @@ const { displayName, logout } = useAuth()
 
 .admin__logout:hover {
   color: var(--ca-text);
-  border-color: var(--ca-cyan);
+  border-color: var(--ca-orange);
 }
 
 .admin__main {

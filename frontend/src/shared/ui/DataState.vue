@@ -39,6 +39,6 @@ withDefaults(
 }
 
 .data-state--error {
-  color: var(--ca-coral);
+  color: var(--ca-danger-ink);
 }
 </style>

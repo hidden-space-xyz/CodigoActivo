@@ -10,9 +10,9 @@ const { values, activities } = useOrganizationContent()
     <section class="about-hero">
       <div class="about-hero__glow" aria-hidden="true" />
       <div class="about-hero__inner">
-        <SectionEyebrow text="// nosotros" color="var(--ca-purple)" />
+        <SectionEyebrow text="// nosotros" color="var(--ca-azure-ink)" />
         <h1 class="about-hero__title">
-          Hacemos que programar<br />sea de <span style="color: #a78bfa">tod@s</span>
+          Hacemos que programar<br />sea de <span style="color: var(--ca-azure)">tod@s</span>
         </h1>
         <p class="about-hero__lead">
           Código Activo es una asociación sin ánimo de lucro nacida en 2018 en León. Llevamos la
@@ -34,7 +34,7 @@ const { values, activities } = useOrganizationContent()
           foto del equipo / taller en acción 1200 × 900
         </div>
         <div>
-          <SectionEyebrow text="// qué hacemos" color="var(--ca-green)" />
+          <SectionEyebrow text="// qué hacemos" color="var(--ca-lime-ink)" />
           <h2 class="about-what__title">De Scratch a la IA</h2>
           <div class="about-what__list">
             <ActivityStep v-for="activity in activities" :key="activity.id" :activity="activity" />
@@ -68,7 +68,7 @@ const { values, activities } = useOrganizationContent()
 .about-hero__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, rgba(167, 139, 250, 0.1), transparent 60%);
+  background: radial-gradient(700px 400px at 80% -20%, var(--ca-azure-soft), transparent 60%);
 }
 
 .about-hero__inner {
@@ -119,7 +119,13 @@ const { values, activities } = useOrganizationContent()
 .about-what__photo {
   min-height: 340px;
   border-radius: 18px;
-  background: repeating-linear-gradient(135deg, #171b25, #171b25 11px, #13161e 11px, #13161e 22px);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ca-border),
+    var(--ca-border) 11px,
+    transparent 11px,
+    transparent 22px
+  );
   border: 1px solid var(--ca-border);
   display: flex;
   align-items: center;
@@ -150,7 +156,7 @@ const { values, activities } = useOrganizationContent()
 }
 
 .about-cta__card {
-  background: linear-gradient(120deg, rgba(45, 212, 217, 0.1), rgba(167, 139, 250, 0.1));
+  background: linear-gradient(120deg, var(--ca-orange-soft), var(--ca-azure-soft));
   border: 1px solid var(--ca-border-strong);
   border-radius: 20px;
   padding: 44px;
@@ -169,7 +175,7 @@ const { values, activities } = useOrganizationContent()
   margin: 14px auto 0;
   font-size: 16px;
   line-height: 1.6;
-  color: #c4cad6;
+  color: var(--ca-text-muted);
   max-width: 540px;
 }
 

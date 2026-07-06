@@ -2,8 +2,8 @@
   --p-inputtext-background: var(--ca-input-bg);
   --p-inputtext-color: var(--ca-text);
   --p-inputtext-border-color: var(--ca-border-strong);
-  --p-inputtext-hover-border-color: rgba(255, 255, 255, 0.2);
-  --p-inputtext-focus-border-color: var(--ca-cyan);
+  --p-inputtext-hover-border-color: var(--ca-border-strong-2);
+  --p-inputtext-focus-border-color: var(--ca-orange);
   --p-inputtext-placeholder-color: var(--ca-text-faint);
   --p-inputtext-border-radius: 10px;
   --p-inputtext-padding-y: 12px;
@@ -13,7 +13,7 @@
   --p-textarea-background: var(--ca-input-bg);
   --p-textarea-color: var(--ca-text);
   --p-textarea-border-color: var(--ca-border-strong);
-  --p-textarea-focus-border-color: var(--ca-cyan);
+  --p-textarea-focus-border-color: var(--ca-orange);
   --p-textarea-border-radius: 10px;
   --p-textarea-padding-y: 12px;
   --p-textarea-padding-x: 14px;
@@ -21,15 +21,136 @@
 
   --p-checkbox-background: var(--ca-input-bg);
   --p-checkbox-border-color: var(--ca-border-strong);
-  --p-checkbox-checked-background: var(--ca-cyan);
-  --p-checkbox-checked-border-color: var(--ca-cyan);
+  --p-checkbox-checked-background: var(--ca-orange);
+  --p-checkbox-checked-border-color: var(--ca-orange);
 
-  --p-button-primary-color: var(--ca-bg);
-  --p-button-primary-background: var(--ca-cyan);
-  --p-button-primary-border-color: var(--ca-cyan);
-  --p-button-primary-hover-background: var(--ca-green);
-  --p-button-primary-hover-border-color: var(--ca-green);
+  --p-button-primary-color: var(--ca-on-primary);
+  --p-button-primary-background: var(--ca-orange);
+  --p-button-primary-border-color: var(--ca-orange);
+  --p-button-primary-hover-background: var(--ca-orange-strong);
+  --p-button-primary-hover-border-color: var(--ca-orange-strong);
   --p-button-border-radius: 11px;
+
+  --p-content-background: var(--ca-surface);
+  --p-content-hover-background: var(--ca-surface-2);
+  --p-content-border-color: var(--ca-border);
+  --p-content-color: var(--ca-text);
+  --p-content-hover-color: var(--ca-text-bright);
+  --p-content-border-radius: 14px;
+
+  --p-text-color: var(--ca-text);
+  --p-text-hover-color: var(--ca-text-bright);
+  --p-text-muted-color: var(--ca-text-muted);
+  --p-text-hover-muted-color: var(--ca-text);
+
+  --p-highlight-background: var(--ca-orange-soft);
+  --p-highlight-focus-background: var(--ca-orange-soft);
+  --p-highlight-color: var(--ca-orange-ink);
+  --p-highlight-focus-color: var(--ca-orange-ink);
+
+  --p-form-field-background: var(--ca-input-bg);
+  --p-form-field-disabled-background: var(--ca-bg-deep);
+  --p-form-field-filled-background: var(--ca-input-bg);
+  --p-form-field-filled-hover-background: var(--ca-input-bg);
+  --p-form-field-filled-focus-background: var(--ca-input-bg);
+  --p-form-field-border-color: var(--ca-border-strong);
+  --p-form-field-hover-border-color: var(--ca-border-strong-2);
+  --p-form-field-focus-border-color: var(--ca-orange);
+  --p-form-field-invalid-border-color: var(--ca-danger);
+  --p-form-field-color: var(--ca-text);
+  --p-form-field-disabled-color: var(--ca-text-faint);
+  --p-form-field-placeholder-color: var(--ca-text-faint);
+  --p-form-field-icon-color: var(--ca-text-muted);
+  --p-form-field-border-radius: 10px;
+
+  --p-overlay-select-background: var(--ca-bg-elevated);
+  --p-overlay-select-border-color: var(--ca-border-strong);
+  --p-overlay-select-color: var(--ca-text);
+  --p-overlay-select-border-radius: 14px;
+
+  --p-overlay-popover-background: var(--ca-bg-elevated);
+  --p-overlay-popover-border-color: var(--ca-border-strong);
+  --p-overlay-popover-color: var(--ca-text);
+  --p-overlay-popover-border-radius: 14px;
+
+  --p-overlay-modal-background: var(--ca-bg-elevated);
+  --p-overlay-modal-border-color: var(--ca-border-strong);
+  --p-overlay-modal-color: var(--ca-text);
+  --p-overlay-modal-border-radius: 16px;
+
+  --p-mask-background: var(--ca-mask);
+
+  --p-list-option-color: var(--ca-text);
+  --p-list-option-focus-background: var(--ca-surface-2);
+  --p-list-option-focus-color: var(--ca-text-bright);
+  --p-list-option-selected-background: var(--ca-orange-soft);
+  --p-list-option-selected-color: var(--ca-orange-ink);
+  --p-list-option-selected-focus-background: var(--ca-orange-soft);
+  --p-list-option-selected-focus-color: var(--ca-orange-ink);
+  --p-list-option-border-radius: 8px;
+
+  --p-datatable-border-color: var(--ca-border);
+  --p-datatable-header-cell-background: var(--ca-surface-2);
+  --p-datatable-header-cell-color: var(--ca-text-muted);
+  --p-datatable-header-cell-border-color: var(--ca-border-strong);
+  --p-datatable-body-cell-border-color: var(--ca-border);
+  --p-datatable-row-background: var(--ca-surface);
+  --p-datatable-row-hover-background: var(--ca-surface-2);
+  --p-datatable-row-color: var(--ca-text);
+  --p-datatable-row-hover-color: var(--ca-text-bright);
+  --p-datatable-row-striped-background: var(--ca-bg-deep);
+  --p-datatable-footer-cell-background: var(--ca-surface-2);
+  --p-datatable-footer-cell-border-color: var(--ca-border);
+  --p-datatable-paginator-top-border-color: var(--ca-border);
+  --p-datatable-paginator-bottom-border-color: var(--ca-border);
+
+  --p-paginator-background: var(--ca-surface);
+  --p-paginator-color: var(--ca-text-muted);
+  --p-paginator-nav-button-color: var(--ca-text-muted);
+  --p-paginator-nav-button-hover-background: var(--ca-surface-2);
+  --p-paginator-nav-button-hover-color: var(--ca-text-bright);
+  --p-paginator-nav-button-selected-background: var(--ca-orange-soft);
+  --p-paginator-nav-button-selected-color: var(--ca-orange-ink);
+  --p-paginator-current-page-report-color: var(--ca-text-muted);
+
+  --p-dialog-title-font-size: 1.15rem;
+  --p-dialog-title-font-weight: 700;
+
+  --p-tag-font-weight: 600;
+  --p-tag-border-radius: 8px;
+  --p-tag-info-background: var(--ca-info-soft);
+  --p-tag-info-color: var(--ca-info-ink);
+  --p-tag-secondary-background: var(--ca-surface-2);
+  --p-tag-secondary-color: var(--ca-text-muted);
+  --p-tag-success-background: var(--ca-success-soft);
+  --p-tag-success-color: var(--ca-success-ink);
+  --p-tag-warn-background: var(--ca-warning-soft);
+  --p-tag-warn-color: var(--ca-warning-ink);
+  --p-tag-danger-background: var(--ca-danger-soft);
+  --p-tag-danger-color: var(--ca-danger-ink);
+
+  --p-button-secondary-background: var(--ca-surface-2);
+  --p-button-secondary-border-color: var(--ca-border-strong);
+  --p-button-secondary-color: var(--ca-text);
+  --p-button-secondary-hover-background: var(--ca-bg-elevated);
+  --p-button-secondary-hover-border-color: var(--ca-border-strong-2);
+  --p-button-secondary-hover-color: var(--ca-text-bright);
+  --p-button-secondary-active-background: var(--ca-bg-elevated);
+  --p-button-text-secondary-color: var(--ca-text-muted);
+  --p-button-text-secondary-hover-background: var(--ca-surface-2);
+  --p-button-text-secondary-hover-color: var(--ca-text-bright);
+  --p-button-danger-background: var(--ca-danger);
+  --p-button-danger-border-color: var(--ca-danger);
+  --p-button-danger-color: var(--ca-bg);
+  --p-button-danger-hover-background: color-mix(in srgb, var(--ca-danger) 85%, #ffffff);
+  --p-button-danger-hover-border-color: color-mix(in srgb, var(--ca-danger) 85%, #ffffff);
+  --p-button-danger-hover-color: var(--ca-bg);
+  --p-button-text-danger-color: var(--ca-danger-ink);
+  --p-button-text-danger-hover-background: var(--ca-danger-soft);
+  --p-button-text-danger-hover-color: var(--ca-danger-ink);
+  --p-button-outlined-danger-color: var(--ca-danger-ink);
+  --p-button-outlined-danger-border-color: var(--ca-border-strong);
+  --p-button-outlined-danger-hover-background: var(--ca-danger-soft);
 }
 
 .p-inputtext,
@@ -54,129 +175,6 @@
 .p-password,
 .p-password .p-password-input {
   width: 100%;
-}
-
-.ca-dark {
-  --p-content-background: var(--ca-surface);
-  --p-content-hover-background: var(--ca-bg-elevated);
-  --p-content-border-color: var(--ca-border);
-  --p-content-color: var(--ca-text);
-  --p-content-hover-color: var(--ca-text-bright);
-  --p-content-border-radius: 14px;
-
-  --p-text-color: var(--ca-text);
-  --p-text-hover-color: var(--ca-text-bright);
-  --p-text-muted-color: var(--ca-text-muted);
-  --p-text-hover-muted-color: var(--ca-text);
-
-  --p-highlight-background: rgba(45, 212, 217, 0.14);
-  --p-highlight-focus-background: rgba(45, 212, 217, 0.22);
-  --p-highlight-color: var(--ca-cyan);
-  --p-highlight-focus-color: var(--ca-cyan);
-
-  --p-form-field-background: var(--ca-input-bg);
-  --p-form-field-disabled-background: var(--ca-bg-deep);
-  --p-form-field-filled-background: var(--ca-input-bg);
-  --p-form-field-filled-hover-background: var(--ca-input-bg);
-  --p-form-field-filled-focus-background: var(--ca-input-bg);
-  --p-form-field-border-color: var(--ca-border-strong);
-  --p-form-field-hover-border-color: rgba(255, 255, 255, 0.2);
-  --p-form-field-focus-border-color: var(--ca-cyan);
-  --p-form-field-invalid-border-color: var(--ca-coral);
-  --p-form-field-color: var(--ca-text);
-  --p-form-field-disabled-color: var(--ca-text-faint);
-  --p-form-field-placeholder-color: var(--ca-text-faint);
-  --p-form-field-icon-color: var(--ca-text-muted);
-  --p-form-field-border-radius: 10px;
-
-  --p-overlay-select-background: var(--ca-bg-elevated);
-  --p-overlay-select-border-color: var(--ca-border-strong);
-  --p-overlay-select-color: var(--ca-text);
-  --p-overlay-select-border-radius: 14px;
-
-  --p-overlay-popover-background: var(--ca-bg-elevated);
-  --p-overlay-popover-border-color: var(--ca-border-strong);
-  --p-overlay-popover-color: var(--ca-text);
-  --p-overlay-popover-border-radius: 14px;
-
-  --p-overlay-modal-background: var(--ca-bg-elevated);
-  --p-overlay-modal-border-color: var(--ca-border-strong);
-  --p-overlay-modal-color: var(--ca-text);
-  --p-overlay-modal-border-radius: 16px;
-
-  --p-mask-background: rgba(8, 10, 14, 0.66);
-
-  --p-list-option-color: var(--ca-text);
-  --p-list-option-focus-background: var(--ca-surface);
-  --p-list-option-focus-color: var(--ca-text-bright);
-  --p-list-option-selected-background: rgba(45, 212, 217, 0.14);
-  --p-list-option-selected-color: var(--ca-cyan);
-  --p-list-option-selected-focus-background: rgba(45, 212, 217, 0.22);
-  --p-list-option-selected-focus-color: var(--ca-cyan);
-  --p-list-option-border-radius: 8px;
-
-  --p-datatable-border-color: var(--ca-border);
-  --p-datatable-header-cell-background: var(--ca-bg-elevated);
-  --p-datatable-header-cell-color: var(--ca-text-muted);
-  --p-datatable-header-cell-border-color: var(--ca-border-strong);
-  --p-datatable-body-cell-border-color: var(--ca-border);
-  --p-datatable-row-background: var(--ca-surface);
-  --p-datatable-row-hover-background: var(--ca-bg-elevated);
-  --p-datatable-row-color: var(--ca-text);
-  --p-datatable-row-hover-color: var(--ca-text-bright);
-  --p-datatable-row-striped-background: var(--ca-bg-deep);
-  --p-datatable-footer-cell-background: var(--ca-bg-elevated);
-  --p-datatable-footer-cell-border-color: var(--ca-border);
-  --p-datatable-paginator-top-border-color: var(--ca-border);
-  --p-datatable-paginator-bottom-border-color: var(--ca-border);
-
-  --p-paginator-background: var(--ca-surface);
-  --p-paginator-color: var(--ca-text-muted);
-  --p-paginator-nav-button-color: var(--ca-text-muted);
-  --p-paginator-nav-button-hover-background: var(--ca-bg-elevated);
-  --p-paginator-nav-button-hover-color: var(--ca-text-bright);
-  --p-paginator-nav-button-selected-background: rgba(45, 212, 217, 0.14);
-  --p-paginator-nav-button-selected-color: var(--ca-cyan);
-  --p-paginator-current-page-report-color: var(--ca-text-muted);
-
-  --p-dialog-title-font-size: 1.15rem;
-  --p-dialog-title-font-weight: 700;
-
-  --p-tag-font-weight: 600;
-  --p-tag-border-radius: 8px;
-  --p-tag-info-background: rgba(45, 212, 217, 0.14);
-  --p-tag-info-color: var(--ca-cyan);
-  --p-tag-secondary-background: var(--ca-surface);
-  --p-tag-secondary-color: var(--ca-text-muted);
-  --p-tag-success-background: rgba(91, 229, 132, 0.14);
-  --p-tag-success-color: var(--ca-green);
-  --p-tag-warn-background: rgba(255, 194, 75, 0.14);
-  --p-tag-warn-color: var(--ca-amber);
-  --p-tag-danger-background: rgba(255, 107, 94, 0.14);
-  --p-tag-danger-color: var(--ca-coral);
-
-  --p-button-secondary-background: var(--ca-surface);
-  --p-button-secondary-border-color: var(--ca-border-strong);
-  --p-button-secondary-color: var(--ca-text);
-  --p-button-secondary-hover-background: var(--ca-bg-elevated);
-  --p-button-secondary-hover-border-color: var(--ca-border-strong-2);
-  --p-button-secondary-hover-color: var(--ca-text-bright);
-  --p-button-secondary-active-background: var(--ca-bg-elevated);
-  --p-button-text-secondary-color: var(--ca-text-muted);
-  --p-button-text-secondary-hover-background: var(--ca-surface);
-  --p-button-text-secondary-hover-color: var(--ca-text-bright);
-  --p-button-danger-background: var(--ca-coral);
-  --p-button-danger-border-color: var(--ca-coral);
-  --p-button-danger-color: var(--ca-bg);
-  --p-button-danger-hover-background: #ff8278;
-  --p-button-danger-hover-border-color: #ff8278;
-  --p-button-danger-hover-color: var(--ca-bg);
-  --p-button-text-danger-color: var(--ca-coral);
-  --p-button-text-danger-hover-background: rgba(255, 107, 94, 0.12);
-  --p-button-text-danger-hover-color: var(--ca-coral);
-  --p-button-outlined-danger-color: var(--ca-coral);
-  --p-button-outlined-danger-border-color: rgba(255, 107, 94, 0.5);
-  --p-button-outlined-danger-hover-background: rgba(255, 107, 94, 0.12);
 }
 
 .p-datatable-header-cell,

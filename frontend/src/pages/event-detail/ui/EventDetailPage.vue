@@ -11,7 +11,7 @@ const props = defineProps<{ eventId: string }>()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 
 const tab = ref<'info' | 'activities'>('info')
-const accentColor = 'var(--ca-cyan)'
+const accentColor = 'var(--ca-orange)'
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
@@ -198,7 +198,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   bottom: -1px;
   height: 2px;
   border-radius: 2px;
-  background: var(--ca-cyan);
+  background: var(--ca-orange);
 }
 
 .detail-body {
@@ -232,7 +232,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   margin-top: 12px;
   font-size: 16.5px;
   line-height: 1.7;
-  color: #b6bdca;
+  color: var(--ca-text-muted);
   white-space: pre-line;
 }
 
@@ -248,7 +248,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   border: 1px solid var(--ca-border-strong);
   border-radius: 18px;
   padding: 26px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 24px 60px var(--ca-shadow-lg);
 }
 
 .detail-panel__title {

@@ -35,8 +35,8 @@ a {
 }
 
 ::selection {
-  background: var(--ca-cyan);
-  color: #06121a;
+  background: var(--ca-orange);
+  color: var(--ca-on-primary);
 }
 
 .ca-container {
