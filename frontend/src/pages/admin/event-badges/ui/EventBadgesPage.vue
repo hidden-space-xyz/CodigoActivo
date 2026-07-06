@@ -127,7 +127,7 @@ function fullName(badge: EventBadgeResponse): string {
 }
 
 function guardianName(badge: EventBadgeResponse): string {
-  return [badge.guardian?.firstName, badge.guardian?.lastName].filter(Boolean).join(' ')
+  return [badge.guardian?.firstName].filter(Boolean).join(' ')
 }
 
 function visibleActivities(badge: EventBadgeResponse): string[] {
@@ -228,14 +228,17 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
 }
 
 .sheet {
+  box-sizing: border-box;
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto 24px;
+  padding: 1mm;
   background: #fff;
   box-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
   display: grid;
-  grid-template-columns: repeat(2, 105mm);
-  grid-auto-rows: 37mm;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 41mm;
+  gap: 1mm;
   align-content: start;
 }
 
