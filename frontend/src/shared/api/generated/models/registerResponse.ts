@@ -10,6 +10,5 @@ export interface RegisterResponse {
   adult?: UserResponse;
   /** @nullable */
   minors?: UserResponse[] | null;
-  /** @nullable */
-  verificationCode?: string | null;
+  requiresVerification?: boolean;
 }

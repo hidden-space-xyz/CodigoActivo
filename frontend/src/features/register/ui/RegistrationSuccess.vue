@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import InputText from 'primevue/inputtext'
 
 import { BaseButton } from '@/shared/ui'
@@ -7,13 +7,27 @@ import { BaseButton } from '@/shared/ui'
 const props = defineProps<{
   roleName: string
   minorCount: number
-  verificationCode: string | null
+  email: string
+  requiresVerification: boolean
   isVerified: boolean
   isVerifying: boolean
+  isResending: boolean
+  verifyError: string | null
+  resendCooldown: number
+  resendCount: number
 }>()
-const emit = defineEmits<{ reset: []; verify: [otp: string] }>()
+const emit = defineEmits<{ reset: []; verify: [otp: string]; resend: [] }>()
 
-const otp = ref(props.verificationCode ?? '')
+const otp = ref('')
+
+// After a successful resend the previous code is invalidated, so clear the stale value
+// instead of letting the user submit it against the freshly issued code.
+watch(
+  () => props.resendCount,
+  () => {
+    otp.value = ''
+  },
+)
 
 function submitVerify(): void {
   if (otp.value.trim()) emit('verify', otp.value.trim())
@@ -42,15 +56,56 @@ function submitVerify(): void {
       sección de eventos.
     </p>
 
-    <div v-if="isVerified" class="reg-success__verified">Tu cuenta ha sido verificada.</div>
+    <div v-if="isVerified || !props.requiresVerification" class="reg-success__verified">
+      {{
+        props.requiresVerification
+          ? 'Tu cuenta ha sido verificada. Ya puedes iniciar sesión.'
+          : 'Tu cuenta está activa. Ya puedes iniciar sesión.'
+      }}
+      <BaseButton :to="{ name: 'login' }" variant="primary" class="reg-success__login">
+        Iniciar sesión
+      </BaseButton>
+    </div>
+
     <form v-else class="reg-success__verify" @submit.prevent="submitVerify">
-      <label class="reg-success__verify-label" for="reg-otp"
-        >Verifica tu cuenta con el código</label
-      >
+      <p class="reg-success__verify-intro">
+        Te hemos enviado un correo electrónico de verificación a <b>{{ email }}</b
+        >. Pulsa el enlace del mensaje para activar tu cuenta, o pega aquí el código que aparece en
+        el correo.
+      </p>
+      <label class="reg-success__verify-label" for="reg-otp">Código de verificación</label>
       <div class="reg-success__verify-row">
-        <InputText id="reg-otp" v-model="otp" placeholder="Código de verificación" fluid />
-        <BaseButton type="submit" variant="primary" :loading="isVerifying">Verificar</BaseButton>
+        <InputText
+          id="reg-otp"
+          v-model="otp"
+          placeholder="Pega aquí el código del correo"
+          :invalid="verifyError !== null"
+          fluid
+        />
+        <BaseButton
+          type="submit"
+          variant="primary"
+          :loading="isVerifying"
+          :disabled="!otp.trim()"
+        >
+          Verificar
+        </BaseButton>
       </div>
+      <small v-if="verifyError" class="reg-success__verify-error" role="alert">
+        {{ verifyError }}
+      </small>
+      <p class="reg-success__resend">
+        ¿No has recibido el correo? Revisa la carpeta de spam o
+        <BaseButton
+          variant="link"
+          class="reg-success__resend-button"
+          :disabled="resendCooldown > 0 || isResending"
+          :loading="isResending"
+          @click="emit('resend')"
+        >
+          {{ resendCooldown > 0 ? `reenviar código (${resendCooldown}s)` : 'reenviar código' }}
+        </BaseButton>
+      </p>
     </form>
 
     <div class="reg-success__actions">
@@ -135,6 +190,22 @@ function submitVerify(): void {
 .reg-success__verify {
   margin-top: 22px;
   text-align: left;
+  background: rgba(45, 212, 217, 0.06);
+  border: 1px solid var(--ca-border-strong);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.reg-success__verify-intro {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ca-text-muted);
+  margin-bottom: 14px;
+}
+
+.reg-success__verify-intro b {
+  color: var(--ca-text);
+  overflow-wrap: anywhere;
 }
 
 .reg-success__verify-label {
@@ -148,7 +219,25 @@ function submitVerify(): void {
 .reg-success__verify-row {
   display: flex;
   gap: 10px;
-  align-items: stretch;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.reg-success__verify-error {
+  display: block;
+  margin-top: 8px;
+  color: var(--ca-red, #ef4444);
+  font-size: 13px;
+}
+
+.reg-success__resend {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--ca-text-muted);
+}
+
+.reg-success__resend-button {
+  font-size: 13.5px;
 }
 
 .reg-success__verified {
@@ -159,5 +248,11 @@ function submitVerify(): void {
   padding: 14px;
   color: var(--ca-text);
   font-size: 14.5px;
+}
+
+.reg-success__login {
+  display: block;
+  margin: 12px auto 0;
+  width: fit-content;
 }
 </style>

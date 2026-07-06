@@ -1,21 +1,26 @@
 using System.Net;
 using System.Net.Http.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
-    private static readonly DateOnly AdultBirthDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-30);
+    private const string NewAdultEmail = "new.adult@codigoactivo.test";
+
+    private static readonly DateOnly AdultBirthDate = DateOnly
+        .FromDateTime(DateTime.UtcNow)
+        .AddYears(-30);
 
     private static RegisterRequest NewAdultRequest(
-        string email = "new.adult@codigoactivo.test",
+        string email = NewAdultEmail,
         string phone = "+34600000099",
         string password = "Str0ngPass!",
         string firstName = "Nadia",
@@ -34,6 +39,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         );
     }
 
+    private async Task<(Guid UserId, string Otp)> RegisterPendingAdultAsync(HttpClient client)
+    {
+        using var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.ReadJsonAsync<RegisterResponse>();
+        return (body!.Adult.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
+    }
+
     [Fact]
     public async Task Csrf_is_anonymous_and_returns_token_and_sets_cookie()
     {
@@ -50,7 +63,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
     }
 
     [Fact]
-    public async Task Register_new_adult_returns_201_with_verification_code_and_persists_pending()
+    public async Task Register_new_adult_returns_201_sends_the_otp_by_email_and_persists_pending()
     {
         var client = CreateClient();
 
@@ -58,17 +71,25 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
+        var raw = await response.Content.ReadAsStringAsync();
         var body = await response.ReadJsonAsync<RegisterResponse>();
-        body!.VerificationCode.Should().NotBeNull().And.NotBe(Guid.Empty);
+        body!.RequiresVerification.Should().BeTrue();
         body.Minors.Should().BeEmpty();
-        body.Adult.Email.Should().Be("new.adult@codigoactivo.test");
+        body.Adult.Email.Should().Be(NewAdultEmail);
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Pending);
         body.Adult.IsAdmin.Should().BeFalse();
         body.Adult.Type.Id.Should().Be(SeedIds.UserTypes.Member);
 
+        var otp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
+        raw.Should()
+            .NotContain($"\"{otp}\"", "the OTP must never be returned in the HTTP response");
+
         var stored = await Factory.QueryAsync(db => db.Users.FindAsync(body.Adult.Id).AsTask());
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
-        stored.OtpCode.Should().Be(body.VerificationCode);
+        stored.OtpCodeHash.Should().NotBeNullOrEmpty();
+        stored.OtpCodeHash.Should().NotBe(otp, "the OTP must be stored hashed, not in plaintext");
+        stored.OtpExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored.OtpLastSentAt.Should().Be(Factory.Clock.UtcNow);
     }
 
     [Theory]
@@ -94,21 +115,16 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
-    private static async Task<(Guid UserId, Guid Otp)> RegisterPendingAdultAsync(HttpClient client)
-    {
-        using var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>();
-        return (body!.Adult.Id, body.VerificationCode!.Value);
-    }
-
     [Fact]
     public async Task Verify_with_correct_otp_activates_the_user()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
 
-        var response = await client.PatchJsonAsync($"/api/auth/{userId}/verify?otp={otp}");
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(otp)
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<UserResponse>();
@@ -116,6 +132,82 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
 
         var stored = await Factory.QueryAsync(db => db.Users.FindAsync(userId).AsTask());
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        stored.OtpCodeHash.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Verify_then_login_succeeds_end_to_end()
+    {
+        var client = CreateClient();
+        var (userId, otp) = await RegisterPendingAdultAsync(client);
+
+        using var verify = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(otp)
+        );
+        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var login = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(NewAdultEmail, "Str0ngPass!")
+        );
+
+        login.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await login.ReadJsonAsync<UserResponse>();
+        body!.Id.Should().Be(userId);
+    }
+
+    [Fact]
+    public async Task Verify_with_wrong_otp_is_rejected_and_leaves_the_account_pending()
+    {
+        var client = CreateClient();
+        var (userId, _) = await RegisterPendingAdultAsync(client);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(Guid.NewGuid().ToString())
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+
+        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(userId).AsTask());
+        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored.OtpCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+    }
+
+    [Fact]
+    public async Task Verify_with_expired_otp_is_rejected()
+    {
+        var client = CreateClient();
+        var (userId, otp) = await RegisterPendingAdultAsync(client);
+
+        Factory.Clock.UtcNow += TimeSpan.FromMinutes(16);
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(otp)
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+    }
+
+    [Fact]
+    public async Task Verify_with_blank_otp_is_validation_error()
+    {
+        var client = CreateClient();
+        var (userId, _) = await RegisterPendingAdultAsync(client);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest("   ")
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -123,11 +215,129 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
     {
         var client = CreateClient();
 
-        var response = await client.PatchJsonAsync($"/api/auth/{Guid.NewGuid()}/verify?otp={Guid.NewGuid()}");
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{Guid.NewGuid()}/verify",
+            new VerifyRequest("123456")
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.UserNotFound);
+    }
+
+    [Fact]
+    public async Task Resend_verification_within_the_cooldown_is_rejected()
+    {
+        var client = CreateClient();
+        var (userId, _) = await RegisterPendingAdultAsync(client);
+
+        var response = await client.PostJsonAsync(
+            $"/api/auth/{userId}/resend-verification",
+            body: null
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.OtpResendCooldownActive);
+    }
+
+    [Fact]
+    public async Task Resend_verification_after_the_cooldown_sends_a_new_working_code()
+    {
+        var client = CreateClient();
+        var (userId, _) = await RegisterPendingAdultAsync(client);
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        var resend = await client.PostJsonAsync(
+            $"/api/auth/{userId}/resend-verification",
+            body: null
+        );
+
+        resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().HaveCount(2);
+
+        var newOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
+        var verify = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(newOtp)
+        );
+        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Resend_verification_invalidates_the_previously_issued_code()
+    {
+        var client = CreateClient();
+        var (userId, firstOtp) = await RegisterPendingAdultAsync(client);
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        using var resend = await client.PostJsonAsync(
+            $"/api/auth/{userId}/resend-verification",
+            body: null
+        );
+        resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var secondOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
+        secondOtp.Should().NotBe(firstOtp);
+
+        // The old code must no longer work once a new one has been issued.
+        using var stale = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(firstOtp)
+        );
+        stale.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await stale.ReadJsonAsync<ApiErrorResponse>())!
+            .Code.Should()
+            .Be(ErrorCode.OtpInvalidOrExpired);
+
+        // The freshly issued code still activates the account.
+        var verify = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(secondOtp)
+        );
+        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Resend_verification_for_an_active_user_is_rejected()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/resend-verification",
+            body: null
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
+    }
+
+    [Fact]
+    public async Task Resend_verification_for_unknown_user_is_not_found()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            $"/api/auth/{Guid.NewGuid()}/resend-verification",
+            body: null
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Login_of_a_pending_user_is_forbidden_when_verification_is_required()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password)
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        error!.Code.Should().Be(ErrorCode.UserAccountPendingVerification);
     }
 
     [Fact]
@@ -146,7 +356,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory) : Int
         var body = await response.ReadJsonAsync<UserResponse>();
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
 
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.AdminId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.AdminId).AsTask()
+        );
         stored!.LastLoginAt.Should().NotBeNull();
     }
 

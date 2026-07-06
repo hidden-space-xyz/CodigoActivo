@@ -1,5 +1,5 @@
-using CodigoActivo.Domain.Entities;
 using AwesomeAssertions;
+using CodigoActivo.Domain.Entities;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -15,8 +15,9 @@ public sealed class UserEntityTests
             Email = "ada@test.local",
             BirthDate = new DateOnly(1990, 1, 1),
             UserStatusTypeId = Guid.NewGuid(),
-            OtpCode = Guid.NewGuid(),
+            OtpCodeHash = "ABCDEF",
             OtpExpiresAt = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            OtpLastSentAt = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedAt = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
 
@@ -31,8 +32,9 @@ public sealed class UserEntityTests
 
         var after = DateTimeOffset.UtcNow;
         user.UserStatusTypeId.Should().Be(activeStatusId);
-        user.OtpCode.Should().BeNull();
+        user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
+        user.OtpLastSentAt.Should().BeNull();
         user.UpdatedAt.Should().NotBeNull();
         user.UpdatedAt!.Value.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
     }
@@ -46,6 +48,31 @@ public sealed class UserEntityTests
         user.Verify(Guid.NewGuid());
 
         user.LastLoginAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void IssueOtp_stores_the_hash_and_the_timestamps()
+    {
+        var user = NewPendingUser();
+        var now = new DateTimeOffset(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
+
+        user.IssueOtp("NEWHASH", now, TimeSpan.FromMinutes(15));
+
+        user.OtpCodeHash.Should().Be("NEWHASH");
+        user.OtpExpiresAt.Should().Be(now.AddMinutes(15));
+        user.OtpLastSentAt.Should().Be(now);
+    }
+
+    [Fact]
+    public void ClearOtp_removes_all_otp_state()
+    {
+        var user = NewPendingUser();
+
+        user.ClearOtp();
+
+        user.OtpCodeHash.Should().BeNull();
+        user.OtpExpiresAt.Should().BeNull();
+        user.OtpLastSentAt.Should().BeNull();
     }
 
     [Fact]
@@ -67,12 +94,12 @@ public sealed class UserEntityTests
     {
         var user = NewPendingUser();
         var status = user.UserStatusTypeId;
-        var otp = user.OtpCode;
+        var otpHash = user.OtpCodeHash;
 
         user.RegisterLogin();
 
         user.UserStatusTypeId.Should().Be(status);
-        user.OtpCode.Should().Be(otp);
+        user.OtpCodeHash.Should().Be(otpHash);
         user.UpdatedAt.Should().BeNull();
     }
 }

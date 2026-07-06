@@ -1,6 +1,7 @@
 import {
   patchApiAuthUserIdVerify,
   postApiAuthRegister,
+  postApiAuthUserIdResendVerification,
 } from '@/shared/api/generated/endpoints/auth/auth'
 
 import type { RegistrationForm } from '../model/registration-form'
@@ -14,4 +15,8 @@ export async function registerRequest(form: RegistrationForm): Promise<Registrat
 
 export async function verifyRegistrationRequest(userId: string, otp: string): Promise<void> {
   await patchApiAuthUserIdVerify(userId, { otp })
+}
+
+export async function resendVerificationRequest(userId: string): Promise<void> {
+  await postApiAuthUserIdResendVerification(userId)
 }

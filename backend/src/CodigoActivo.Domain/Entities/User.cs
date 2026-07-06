@@ -28,16 +28,30 @@ public class User : IdentifiableEntity
 
     public bool IsAdmin { get; set; }
 
-    public Guid? OtpCode { get; set; }
+    public string? OtpCodeHash { get; set; }
     public DateTimeOffset? OtpExpiresAt { get; set; }
+    public DateTimeOffset? OtpLastSentAt { get; set; }
 
     public ICollection<User> Children { get; set; } = [];
+
+    public void IssueOtp(string codeHash, DateTimeOffset now, TimeSpan lifetime)
+    {
+        OtpCodeHash = codeHash;
+        OtpExpiresAt = now + lifetime;
+        OtpLastSentAt = now;
+    }
+
+    public void ClearOtp()
+    {
+        OtpCodeHash = null;
+        OtpExpiresAt = null;
+        OtpLastSentAt = null;
+    }
 
     public void Verify(Guid activeStatusId)
     {
         UserStatusTypeId = activeStatusId;
-        OtpCode = null;
-        OtpExpiresAt = null;
+        ClearOtp();
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

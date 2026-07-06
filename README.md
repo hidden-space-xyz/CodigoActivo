@@ -113,6 +113,11 @@ The SPA is served at <http://localhost:5173>.
 | `FileStorage:RootPath`       | Local directory for uploaded files                      | `files`                       |
 | `FileStorage:MaxSizeBytes`   | Max upload size                                          | `5 MiB`                       |
 | `Auth:CookieName` · `SameSite` · `ExpireHours` | Session cookie settings               | `CodigoActivo.Session` · `Lax` · `8` |
+| `AccountVerification:Required` | Require email (OTP) verification before login. Disable it in `appsettings.Development.json` (git-ignored) for local work | `true` |
+| `AccountVerification:OtpLifetimeMinutes` · `MaxFailedAttempts` · `ResendCooldownSeconds` | OTP policy | `15` · `5` · `60` |
+| `Smtp:Host` · `Port` · `Security` | SMTP server used to send verification emails (`Security`: `StartTls`, `SslOnConnect`, `None`, `Auto`) | *(empty)* · `587` · `StartTls` |
+| `Smtp:Username` · `Password`  | SMTP credentials (prefer the `Smtp__Password` env var over the JSON file in production) | *(empty)* |
+| `Smtp:FromAddress` · `FromName` | Sender identity for outgoing email                    | *(empty)* · `Código Activo`   |
 | `Cors:AllowedOrigins`        | Origins allowed to call the API with credentials        | `localhost:5173`, …           |
 
 ### Frontend — `frontend/.env.local`

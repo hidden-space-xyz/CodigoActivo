@@ -34,5 +34,7 @@ public record RegisterMinorRequest(
 public record RegisterResponse(
     UserResponse Adult,
     IReadOnlyList<UserResponse> Minors,
-    Guid? VerificationCode
+    bool RequiresVerification
 );
+
+public record VerifyRequest([Required] [MaxLength(64)] [NotBlank] string Otp);

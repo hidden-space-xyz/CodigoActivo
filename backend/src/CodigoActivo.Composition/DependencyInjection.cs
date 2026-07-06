@@ -2,9 +2,11 @@ using System.Globalization;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.Domain.Storage;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
@@ -29,8 +31,121 @@ public static class DependencyInjection
         AddRepositories(services);
         AddFileStorage(services, configuration);
         AddClock(services, configuration);
+        AddApplicationOptions(services, configuration);
+        AddAccountVerification(services, configuration);
+        AddEmail(services, configuration);
         AddApplicationServices(services);
         return services;
+    }
+
+    private static void AddApplicationOptions(
+        IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var baseUrl = configuration["App:BaseUrl"];
+        services.AddSingleton(
+            new ApplicationOptions
+            {
+                BaseUrl = string.IsNullOrWhiteSpace(baseUrl)
+                    ? ApplicationOptions.DefaultBaseUrl
+                    : baseUrl,
+            }
+        );
+    }
+
+    private static bool IsVerificationRequired(IConfiguration configuration)
+    {
+        return !bool.TryParse(configuration["AccountVerification:Required"], out var required)
+            || required;
+    }
+
+    private static void AddAccountVerification(
+        IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var options = new AccountVerificationOptions
+        {
+            Required = IsVerificationRequired(configuration),
+            OtpLifetime = ReadTimeSpan(
+                configuration["AccountVerification:OtpLifetimeMinutes"],
+                TimeSpan.FromMinutes,
+                AccountVerificationOptions.DefaultOtpLifetime
+            ),
+            ResendCooldown = ReadTimeSpan(
+                configuration["AccountVerification:ResendCooldownSeconds"],
+                TimeSpan.FromSeconds,
+                AccountVerificationOptions.DefaultResendCooldown
+            ),
+        };
+        services.AddSingleton(options);
+    }
+
+    private static TimeSpan ReadTimeSpan(
+        string? value,
+        Func<double, TimeSpan> convert,
+        TimeSpan fallback
+    )
+    {
+        if (
+            !double.TryParse(value, CultureInfo.InvariantCulture, out var parsed)
+            || !double.IsFinite(parsed)
+            || parsed <= 0
+        )
+            return fallback;
+
+        // A finite but huge value overflows TimeSpan.From* — fall back rather than crash at startup.
+        try
+        {
+            return convert(parsed);
+        }
+        catch (OverflowException)
+        {
+            return fallback;
+        }
+    }
+
+    private static void AddEmail(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = new SmtpOptions
+        {
+            Host = configuration["Smtp:Host"] ?? string.Empty,
+            Port =
+                int.TryParse(configuration["Smtp:Port"], CultureInfo.InvariantCulture, out var port)
+                && port > 0
+                    ? port
+                    : SmtpOptions.DefaultPort,
+            Security = Enum.TryParse<SmtpSecurityMode>(
+                configuration["Smtp:Security"],
+                ignoreCase: true,
+                out var security
+            )
+                ? security
+                : SmtpSecurityMode.StartTls,
+            Username = configuration["Smtp:Username"] ?? string.Empty,
+            Password = configuration["Smtp:Password"] ?? string.Empty,
+            FromAddress = configuration["Smtp:FromAddress"] ?? string.Empty,
+            FromName = configuration["Smtp:FromName"] ?? "Código Activo",
+        };
+
+        // Fail fast on a misconfigured deployment: if account verification is required but no SMTP
+        // server is set, registrations would persist yet never be able to send a code, silently
+        // stranding every new user. Development turns verification off, so this does not fire there.
+        if (
+            IsVerificationRequired(configuration)
+            && (
+                string.IsNullOrWhiteSpace(options.Host)
+                || string.IsNullOrWhiteSpace(options.FromAddress)
+            )
+        )
+            throw new InvalidOperationException(
+                "SMTP is not configured (Smtp:Host and Smtp:FromAddress are required) while "
+                    + "AccountVerification:Required is true. Configure SMTP or disable verification."
+            );
+
+        services.AddSingleton(options);
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
     }
 
     private static void AddClock(IServiceCollection services, IConfiguration configuration)
@@ -41,8 +156,10 @@ public static class DependencyInjection
 
     private static TimeZoneInfo ResolveTimeZone(string? id)
     {
-        if (string.IsNullOrWhiteSpace(id)) return TimeZoneInfo.Local;
-        if (TimeZoneInfo.TryFindSystemTimeZoneById(id, out var direct)) return direct;
+        if (string.IsNullOrWhiteSpace(id))
+            return TimeZoneInfo.Local;
+        if (TimeZoneInfo.TryFindSystemTimeZoneById(id, out var direct))
+            return direct;
 
         if (
             TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var windowsId)
@@ -104,7 +221,8 @@ public static class DependencyInjection
                     configuration["FileStorage:MaxSizeBytes"],
                     CultureInfo.InvariantCulture,
                     out var maxSize
-                ) && maxSize > 0
+                )
+                && maxSize > 0
                     ? maxSize
                     : FileStorageOptions.DefaultMaxSizeBytes,
         };

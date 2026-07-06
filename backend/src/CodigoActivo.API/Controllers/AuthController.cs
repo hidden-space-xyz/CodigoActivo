@@ -42,11 +42,18 @@ public class AuthController(IAuthService auth) : ApiControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<UserResponse>> Verify(
         Guid userId,
-        [FromQuery] string otp,
+        [FromBody] VerifyRequest request,
         CancellationToken ct
     )
     {
-        return ToOk(await auth.VerifyAsync(userId, otp, ct));
+        return ToOk(await auth.VerifyAsync(userId, request.Otp, ct));
+    }
+
+    [HttpPost("{userId:guid}/resend-verification")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ResendVerification(Guid userId, CancellationToken ct)
+    {
+        return ToNoContent(await auth.ResendVerificationAsync(userId, ct));
     }
 
     [HttpPost("login")]

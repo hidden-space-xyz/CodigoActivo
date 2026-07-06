@@ -24,7 +24,7 @@ export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
 export function toRegistrationResult(response: RegisterResponse): RegistrationResult {
   return {
     adultId: response.adult?.id ?? null,
-    verificationCode: response.verificationCode ?? null,
+    requiresVerification: response.requiresVerification ?? false,
     minorCount: response.minors?.length ?? 0,
   }
 }

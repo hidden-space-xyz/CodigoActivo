@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export type PatchApiAuthUserIdVerifyParams = {
-otp?: string;
-};
+export interface VerifyRequest {
+  /** @nullable */
+  otp?: string | null;
+}

@@ -31,10 +31,10 @@ import type {
 import type {
   CsrfTokenResponse,
   LoginRequest,
-  PatchApiAuthUserIdVerifyParams,
   RegisterRequest,
   RegisterResponse,
-  UserResponse
+  UserResponse,
+  VerifyRequest
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -216,31 +216,23 @@ export type patchApiAuthUserIdVerifyResponseSuccess = (patchApiAuthUserIdVerifyR
 
 export type patchApiAuthUserIdVerifyResponse = (patchApiAuthUserIdVerifyResponseSuccess)
 
-export const getPatchApiAuthUserIdVerifyUrl = (userId: string,
-    params?: PatchApiAuthUserIdVerifyParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getPatchApiAuthUserIdVerifyUrl = (userId: string,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/auth/${userId}/verify?${stringifiedParams}` : `/api/auth/${userId}/verify`
+  return `/api/auth/${userId}/verify`
 }
 
 export const patchApiAuthUserIdVerify = async (userId: string,
-    params?: PatchApiAuthUserIdVerifyParams, options?: RequestInit): Promise<patchApiAuthUserIdVerifyResponse> => {
+    verifyRequest?: VerifyRequest, options?: RequestInit): Promise<patchApiAuthUserIdVerifyResponse> => {
 
-  return httpClient<patchApiAuthUserIdVerifyResponse>(getPatchApiAuthUserIdVerifyUrl(userId,params),
+  return httpClient<patchApiAuthUserIdVerifyResponse>(getPatchApiAuthUserIdVerifyUrl(userId),
   {
     ...options,
-    method: 'PATCH'
-
-
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(verifyRequest)
   }
 );}
 
@@ -249,24 +241,24 @@ export const patchApiAuthUserIdVerify = async (userId: string,
 
 
 export const getPatchApiAuthUserIdVerifyQueryKey = (userId: MaybeRef<string>,
-    params?: MaybeRef<PatchApiAuthUserIdVerifyParams>,) => {
+    verifyRequest?: MaybeRef<VerifyRequest>,) => {
     return [
-    'PATCH', 'api','auth',userId,'verify', ...(params ? [params] : [])
+    'PATCH', 'api','auth',userId,'verify', verifyRequest
     ] as const;
     }
 
 
 export const getPatchApiAuthUserIdVerifyQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError = unknown>(userId: MaybeRef<string>,
-    params?: MaybeRef<PatchApiAuthUserIdVerifyParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+    verifyRequest?: MaybeRef<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  getPatchApiAuthUserIdVerifyQueryKey(userId,params);
+  const queryKey =  getPatchApiAuthUserIdVerifyQueryKey(userId,verifyRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>> = ({ signal }) => patchApiAuthUserIdVerify(unref(userId),unref(params), { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>> = ({ signal }) => patchApiAuthUserIdVerify(unref(userId),unref(verifyRequest), { signal, ...requestOptions });
 
 
 
@@ -282,11 +274,95 @@ export type PatchApiAuthUserIdVerifyQueryError = unknown
 
 export function usePatchApiAuthUserIdVerify<TData = Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError = unknown>(
  userId: MaybeRef<string>,
-    params?: MaybeRef<PatchApiAuthUserIdVerifyParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+    verifyRequest?: MaybeRef<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPatchApiAuthUserIdVerifyQueryOptions(userId,params,options)
+  const queryOptions = getPatchApiAuthUserIdVerifyQueryOptions(userId,verifyRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiAuthUserIdResendVerificationResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiAuthUserIdResendVerificationResponseSuccess = (postApiAuthUserIdResendVerificationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthUserIdResendVerificationResponse = (postApiAuthUserIdResendVerificationResponseSuccess)
+
+export const getPostApiAuthUserIdResendVerificationUrl = (userId: string,) => {
+
+
+
+
+  return `/api/auth/${userId}/resend-verification`
+}
+
+export const postApiAuthUserIdResendVerification = async (userId: string, options?: RequestInit): Promise<postApiAuthUserIdResendVerificationResponse> => {
+
+  return httpClient<postApiAuthUserIdResendVerificationResponse>(getPostApiAuthUserIdResendVerificationUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthUserIdResendVerificationQueryKey = (userId: MaybeRef<string>,) => {
+    return [
+    'POST', 'api','auth',userId,'resend-verification'
+    ] as const;
+    }
+
+
+export const getPostApiAuthUserIdResendVerificationQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError = unknown>(userId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthUserIdResendVerificationQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>> = ({ signal }) => postApiAuthUserIdResendVerification(unref(userId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError, TData>
+}
+
+export type PostApiAuthUserIdResendVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>>
+export type PostApiAuthUserIdResendVerificationQueryError = unknown
+
+
+
+export function usePostApiAuthUserIdResendVerification<TData = Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError = unknown>(
+ userId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthUserIdResendVerificationQueryOptions(userId,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

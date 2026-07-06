@@ -12,17 +12,23 @@ const {
   form,
   adultRoles,
   minorRoles,
+  submittedEmail,
   submittedRoleName,
   submittedMinorCount,
-  verificationCode,
+  requiresVerification,
   isVerified,
+  verifyError,
+  resendCooldown,
+  resendCount,
   confirmAdult,
   backToGate,
   submit,
   verify,
+  resend,
   reset,
   isSubmitting,
   isVerifying,
+  isResending,
 } = useRegistration()
 </script>
 
@@ -57,10 +63,16 @@ const {
           v-else-if="step === 'success'"
           :role-name="submittedRoleName"
           :minor-count="submittedMinorCount"
-          :verification-code="verificationCode"
+          :email="submittedEmail"
+          :requires-verification="requiresVerification"
           :is-verified="isVerified"
           :is-verifying="isVerifying"
+          :is-resending="isResending"
+          :verify-error="verifyError"
+          :resend-cooldown="resendCooldown"
+          :resend-count="resendCount"
           @verify="verify"
+          @resend="resend"
           @reset="reset"
         />
       </div>

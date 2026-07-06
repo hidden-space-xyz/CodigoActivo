@@ -15,6 +15,8 @@ public interface IAuthService
     );
 
     Task<Result<UserResponse>> VerifyAsync(Guid id, string otp, CancellationToken ct = default);
+
+    Task<Result> ResendVerificationAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IUserService

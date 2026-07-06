@@ -934,15 +934,17 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          {
-            "name": "otp",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -953,6 +955,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/{userId}/resend-verification": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -3304,6 +3329,8 @@
           "RegisterEmailOrPhoneAlreadyInUse",
           "RegisterMinorBirthDateNotMinor",
           "OtpInvalidOrExpired",
+          "OtpResendNotAllowed",
+          "OtpResendCooldownActive",
           "AuthenticationRequired",
           "AccessDenied",
           "InvalidCsrfToken",
@@ -3863,10 +3890,8 @@
             },
             "nullable": true
           },
-          "verificationCode": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+          "requiresVerification": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -4420,6 +4445,16 @@
             "nullable": true
           },
           "color": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "properties": {
+          "otp": {
             "type": "string",
             "nullable": true
           }

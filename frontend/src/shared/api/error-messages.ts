@@ -75,6 +75,8 @@ export const errorMessages: Record<ErrorCode, string> = {
   RegisterEmailOrPhoneAlreadyInUse: 'El correo electrónico o el teléfono ya están en uso.',
   RegisterMinorBirthDateNotMinor: 'La fecha de nacimiento indicada no corresponde a un menor de edad.',
   OtpInvalidOrExpired: 'El código de verificación no es válido o ha expirado.',
+  OtpResendNotAllowed: 'No se puede reenviar el código de verificación para esta cuenta.',
+  OtpResendCooldownActive: 'Espera un momento antes de solicitar un nuevo código.',
 
   AuthenticationRequired: 'Debes iniciar sesión para continuar.',
   AccessDenied: 'No tienes permiso para realizar esta acción.',

@@ -384,7 +384,7 @@ public sealed class UserServiceTests
         var parentId = Guid.NewGuid();
         var user = NewUser(id: id, email: "old@test.com", phone: "111");
         user.PasswordHash = "hash";
-        user.OtpCode = Guid.NewGuid();
+        user.OtpCodeHash = "ABCDEF";
         user.OtpExpiresAt = DateTimeOffset.UtcNow;
         FindReturns(user, NewUser(id: parentId));
         DetailsReturns(NewUser(id: id));
@@ -397,7 +397,7 @@ public sealed class UserServiceTests
         user.Email.Should().BeNull();
         user.Phone.Should().BeNull();
         user.PasswordHash.Should().BeNull();
-        user.OtpCode.Should().BeNull();
+        user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

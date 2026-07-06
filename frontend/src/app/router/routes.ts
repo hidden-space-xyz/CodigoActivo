@@ -69,7 +69,12 @@ export const routes: readonly RouteRecordRaw[] = [
     beforeEnter: () => redirectIfAuthenticated(),
   },
   {
-    path: '/cuenta',
+    path: '/verify-account',
+    name: 'verify-account',
+    component: () => import('@/pages/verify-account').then((m) => m.VerifyAccountPage),
+  },
+  {
+    path: '/account',
     name: 'account',
     component: () => import('@/pages/account').then((m) => m.AccountPage),
     beforeEnter: (to: RouteLocationNormalized) => requireAuth(to),

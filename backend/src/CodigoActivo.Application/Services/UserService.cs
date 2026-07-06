@@ -283,8 +283,7 @@ public class UserService(
         user.Email = null;
         user.Phone = null;
         user.PasswordHash = null;
-        user.OtpCode = null;
-        user.OtpExpiresAt = null;
+        user.ClearOtp();
         return Result.Success();
     }
 

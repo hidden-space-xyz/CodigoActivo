@@ -74,6 +74,8 @@ export const ErrorCode = {
   RegisterEmailOrPhoneAlreadyInUse: 'RegisterEmailOrPhoneAlreadyInUse',
   RegisterMinorBirthDateNotMinor: 'RegisterMinorBirthDateNotMinor',
   OtpInvalidOrExpired: 'OtpInvalidOrExpired',
+  OtpResendNotAllowed: 'OtpResendNotAllowed',
+  OtpResendCooldownActive: 'OtpResendCooldownActive',
   AuthenticationRequired: 'AuthenticationRequired',
   AccessDenied: 'AccessDenied',
   InvalidCsrfToken: 'InvalidCsrfToken',

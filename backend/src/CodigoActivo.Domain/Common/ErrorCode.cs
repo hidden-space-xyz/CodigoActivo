@@ -70,6 +70,8 @@ public enum ErrorCode
     RegisterEmailOrPhoneAlreadyInUse,
     RegisterMinorBirthDateNotMinor,
     OtpInvalidOrExpired,
+    OtpResendNotAllowed,
+    OtpResendCooldownActive,
     AuthenticationRequired,
     AccessDenied,
     InvalidCsrfToken,
