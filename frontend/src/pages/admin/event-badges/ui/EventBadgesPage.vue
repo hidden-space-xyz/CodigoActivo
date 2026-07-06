@@ -58,16 +58,21 @@ function fitBadge(el: HTMLElement): void {
 
   const name = el.querySelector<HTMLElement>('.badge__name')
   let nameFit = 1
-  if (name) {
+  if (name && name.scrollWidth > 0) {
     setNameFit(1)
     const style = getComputedStyle(body)
     const available =
       body.clientWidth -
       Number.parseFloat(style.paddingLeft) -
       Number.parseFloat(style.paddingRight)
-    const ratio = name.scrollWidth > 0 ? available / name.scrollWidth : 1
-    nameFit = Math.min(NAME_MAX_FIT, Math.max(NAME_MIN_FIT, ratio * 0.98))
+    nameFit = Math.min(NAME_MAX_FIT, (available / name.scrollWidth) * 0.97)
     setNameFit(nameFit)
+    // Glyph widths don't scale perfectly linearly with font-size, so re-measure
+    // and correct until the name truly fits: it must never overflow the label.
+    for (let i = 0; i < 5 && name.scrollWidth > available; i += 1) {
+      nameFit *= Math.min((available / name.scrollWidth) * 0.97, 0.97)
+      setNameFit(nameFit)
+    }
   }
 
   if (fits(MAX_FIT)) return
@@ -160,7 +165,10 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
         :style="{ '--accent': accentColor(badge) }"
       >
         <header class="badge__band">
-          <span class="badge__brand">Código Activo</span>
+          <span class="badge__brand">
+            <span class="badge__brand-mark">&lt;/&gt;</span>
+            Código Activo
+          </span>
           <span class="badge__event">{{ eventTitle }}</span>
         </header>
 
@@ -236,14 +244,50 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   --name-fit: 1;
   --accent-ink: color-mix(in srgb, var(--accent) 72%, #111827);
 
+  position: relative;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  background:
+    radial-gradient(
+      140% 120% at 100% 0%,
+      color-mix(in srgb, var(--accent) 22%, #fff) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      #fff 0%,
+      color-mix(in srgb, var(--accent) 10%, #fff) 55%,
+      color-mix(in srgb, var(--accent) 18%, #fff) 100%
+    );
   break-inside: avoid;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
+}
+
+/* Python-code watermark filling the whole label body behind the content. */
+.badge::after {
+  content: 'def confirmar_asistencia(usuario, actividad):\A     asistente = {"nombre": usuario.nombre, "confirmado": True}\A     actividad.inscritos.append(asistente)\A     return f"¡Nos vemos alli, {usuario.nombre}!"\A \A actividades = ["robotica", "scratch", "huerto_urbano", "gymkhana"]\A evento = Evento("Feria de Voluntariado", anio=2026)\A \A for titulo in actividades:\A     taller = evento.crear_actividad(titulo, plazas=20)\A     for peque in taller.lista_espera:\A         confirmar_asistencia(peque, taller)\A \A print(f"{evento.nombre}: {len(evento.inscritos)} inscritos")';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  padding: 9mm 2.5mm 0;
+  font-family: 'Cascadia Code', Consolas, ui-monospace, monospace;
+  font-size: 2.4mm;
+  line-height: 1.4;
+  white-space: pre;
+  text-align: right;
+  overflow: hidden;
+  color: var(--accent);
+  opacity: 0.24;
+}
+
+.badge__band,
+.badge__body,
+.badge__footer {
+  position: relative;
+  z-index: 1;
 }
 
 .badge__band {
@@ -253,17 +297,34 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   gap: 3mm;
   min-height: 8mm;
   padding: 1.2mm 3.5mm;
-  background: linear-gradient(120deg, var(--accent), var(--accent-ink));
+  border-bottom: 0.5mm solid color-mix(in srgb, var(--accent) 45%, #fff);
+  background:
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.07) 0 1.2mm, transparent 1.2mm 3.6mm),
+    linear-gradient(120deg, var(--accent), var(--accent-ink));
   color: #fff;
 }
 
 .badge__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.6mm;
+  font-family: var(--ca-font-display, inherit);
   font-size: 8pt;
   font-weight: 800;
   line-height: 1.1;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   white-space: nowrap;
+}
+
+.badge__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4mm 1mm;
+  border-radius: 1mm;
+  background: rgb(255 255 255 / 0.18);
+  font-size: 6.5pt;
+  letter-spacing: 0;
 }
 
 .badge__event {
@@ -290,11 +351,13 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
 .badge__name {
   align-self: flex-start;
   max-width: 100%;
+  font-family: var(--ca-font-display, inherit);
   font-size: calc(16pt * var(--name-fit));
   font-weight: 800;
   line-height: 1.05;
+  letter-spacing: -0.01em;
   white-space: nowrap;
-  color: #111827;
+  color: #0f172a;
   margin: 0;
 }
 
@@ -306,10 +369,18 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   gap: 0.4mm 3mm;
   min-height: 5.5mm;
   padding: 0.9mm 3.5mm;
-  background: color-mix(in srgb, var(--accent) 22%, #fff);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent) 32%, #fff),
+    color-mix(in srgb, var(--accent) 16%, #fff)
+  );
 }
 
 .badge__type {
+  font-family: var(--ca-font-display, inherit);
+  padding: 0.3mm 1.8mm;
+  border-radius: 3mm;
+  background: rgb(255 255 255 / 0.55);
   font-size: 8pt;
   font-weight: 800;
   text-transform: uppercase;
@@ -362,6 +433,9 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
 }
 
 .badge__activity {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(1.2mm * var(--fit));
   font-size: calc(7pt * var(--fit));
   line-height: 1;
   padding: calc(1mm * var(--fit)) calc(2mm * var(--fit));
@@ -370,9 +444,22 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   color: #374151;
 }
 
+.badge__activity::before {
+  content: '';
+  flex-shrink: 0;
+  width: calc(1.1mm * var(--fit));
+  height: calc(1.1mm * var(--fit));
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 .badge__activity--more {
   font-weight: 700;
   color: var(--accent-ink);
+}
+
+.badge__activity--more::before {
+  display: none;
 }
 
 @media print {
