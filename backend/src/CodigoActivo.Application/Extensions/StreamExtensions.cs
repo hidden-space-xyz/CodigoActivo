@@ -28,9 +28,7 @@ public static class StreamExtensions
 
         if (IsPng(header)) return new ImageFormat("png", "image/png");
 
-        if (IsGif(header)) return new ImageFormat("gif", "image/gif");
-
-        return IsWebp(header, length) ? new ImageFormat("webp", "image/webp") : null;
+        return IsGif(header) ? new ImageFormat("gif", "image/gif") : IsWebp(header, length) ? new ImageFormat("webp", "image/webp") : null;
     }
 
     private static bool IsJpeg(ReadOnlySpan<byte> header)
@@ -60,7 +58,9 @@ public static class StreamExtensions
             header.Length < 10
             || (!header[..6].SequenceEqual("GIF87a"u8) && !header[..6].SequenceEqual("GIF89a"u8))
         )
+        {
             return false;
+        }
 
         var width = BinaryPrimitives.ReadUInt16LittleEndian(header[6..8]);
         var height = BinaryPrimitives.ReadUInt16LittleEndian(header[8..10]);
@@ -74,7 +74,9 @@ public static class StreamExtensions
             || !header[..4].SequenceEqual("RIFF"u8)
             || !header[8..12].SequenceEqual("WEBP"u8)
         )
+        {
             return false;
+        }
 
         var chunk = header[12..16];
         var knownChunk =

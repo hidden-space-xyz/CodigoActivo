@@ -42,12 +42,11 @@ public sealed partial class FakeEmailSender : IEmailSender
 
         // The OTP is the `code=` parameter of the verification link.
         var match = OtpPattern().Match(message.TextBody);
-        if (!match.Success)
-            throw new InvalidOperationException(
+        return !match.Success
+            ? throw new InvalidOperationException(
                 $"The email sent to '{address}' does not contain a verification code."
-            );
-
-        return match.Groups[1].Value;
+            )
+            : match.Groups[1].Value;
     }
 
     [GeneratedRegex(@"[?&]code=([^\s&]+)")]

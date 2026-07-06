@@ -7,6 +7,4 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 public class PartnerRepository(CodigoActivoDbContext context)
     : Repository<Partner>(context),
-        IPartnerRepository
-{
-}
+        IPartnerRepository;

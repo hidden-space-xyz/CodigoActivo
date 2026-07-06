@@ -19,9 +19,7 @@ public abstract class ApiControllerBase : ControllerBase
 
     protected ActionResult<T> ToCreated<T>(Result<T> result, Func<T, string> location)
     {
-        if (result.IsFailure) return ToProblem(result.Error!);
-
-        return Created(location(result.Value), result.Value);
+        return result.IsFailure ? (ActionResult<T>)ToProblem(result.Error!) : (ActionResult<T>)Created(location(result.Value), result.Value);
     }
 
     protected ActionResult ToNoContent(Result result)

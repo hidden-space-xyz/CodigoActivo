@@ -97,7 +97,7 @@ public sealed class OpenApiFiltersTests
     public void CamelCase_filter_lowercases_first_letter_of_pascal_query_params(string given, string expected)
     {
         var parameter = QueryParam(given);
-        var operation = new OpenApiOperation { Parameters = new List<IOpenApiParameter> { parameter } };
+        var operation = new OpenApiOperation { Parameters = [parameter] };
 
         new CamelCaseQueryParametersFilter().Apply(operation, null!);
 
@@ -111,7 +111,7 @@ public sealed class OpenApiFiltersTests
         var headerParam = new OpenApiParameter { Name = "ApiKey", In = ParameterLocation.Header };
         var operation = new OpenApiOperation
         {
-            Parameters = new List<IOpenApiParameter> { pathParam, headerParam },
+            Parameters = [pathParam, headerParam],
         };
 
         new CamelCaseQueryParametersFilter().Apply(operation, null!);
@@ -126,7 +126,7 @@ public sealed class OpenApiFiltersTests
     public void CamelCase_filter_leaves_already_camel_case_names_untouched(string name)
     {
         var parameter = QueryParam(name);
-        var operation = new OpenApiOperation { Parameters = new List<IOpenApiParameter> { parameter } };
+        var operation = new OpenApiOperation { Parameters = [parameter] };
 
         new CamelCaseQueryParametersFilter().Apply(operation, null!);
 
@@ -137,7 +137,7 @@ public sealed class OpenApiFiltersTests
     public void CamelCase_filter_skips_empty_named_query_parameter()
     {
         var parameter = new OpenApiParameter { Name = string.Empty, In = ParameterLocation.Query };
-        var operation = new OpenApiOperation { Parameters = new List<IOpenApiParameter> { parameter } };
+        var operation = new OpenApiOperation { Parameters = [parameter] };
 
         new CamelCaseQueryParametersFilter().Apply(operation, null!);
 

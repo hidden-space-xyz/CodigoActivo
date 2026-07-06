@@ -26,12 +26,11 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
         types.Select(t => t.Id)
             .Should()
             .BeEquivalentTo(
-                new[]
-                {
+                [
                     SeedIds.UserTypes.Member,
                     SeedIds.UserTypes.Volunteer,
                     SeedIds.UserTypes.Participant,
-                }
+                ]
             );
         types.Select(t => t.Name).Should().ContainInOrder("Participante", "Socio", "Voluntario puntual");
     }
@@ -43,6 +42,6 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
 
         types.Select(t => t.Id)
             .Should()
-            .BeEquivalentTo(new[] { SeedIds.UserTypes.Member, SeedIds.UserTypes.Volunteer });
+            .BeEquivalentTo([SeedIds.UserTypes.Member, SeedIds.UserTypes.Volunteer]);
     }
 }

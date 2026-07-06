@@ -47,12 +47,14 @@ public static class TextSearch
             ToLowerMethod
         );
         foreach (var (accented, plain) in Folds)
+        {
             body = Expression.Call(
                 body,
                 ReplaceMethod,
                 Expression.Constant(accented),
                 Expression.Constant(plain)
             );
+        }
 
         var termAccess = Expression.Property(
             Expression.Constant(new Term(term)),

@@ -10,11 +10,13 @@ public sealed class CamelCaseQueryParametersFilter : IOperationFilter
         if (operation.Parameters is null) return;
 
         foreach (var parameter in operation.Parameters)
+        {
             if (
                 parameter is OpenApiParameter { In: ParameterLocation.Query } concrete
                 && !string.IsNullOrEmpty(concrete.Name)
                 && char.IsUpper(concrete.Name[0])
             )
                 concrete.Name = char.ToLowerInvariant(concrete.Name[0]) + concrete.Name[1..];
+        }
     }
 }

@@ -177,7 +177,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync("Taller");
         var client = await LoginAsAdminAsync();
-        var request = BuildCreate(thumbnailId, new[] { categoryId }, title: "Creado");
+        var request = BuildCreate(thumbnailId, [categoryId], title: "Creado");
 
         var response = await client.PostJsonAsync("/api/events", request);
 
@@ -199,7 +199,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
         var client = await LoginAsMemberAsync();
-        var request = BuildCreate(thumbnailId, new[] { categoryId });
+        var request = BuildCreate(thumbnailId, [categoryId]);
 
         var response = await client.PostJsonAsync("/api/events", request);
 
@@ -210,7 +210,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     public async Task Create_anonymous_is_unauthorized()
     {
         var client = CreateClient();
-        var request = BuildCreate(Guid.NewGuid(), new[] { Guid.NewGuid() });
+        var request = BuildCreate(Guid.NewGuid(), [Guid.NewGuid()]);
 
         var response = await client.PostJsonAsync("/api/events", request);
 
@@ -223,7 +223,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
         var client = await LoginAsAdminAsync();
-        var request = BuildCreate(thumbnailId, new[] { categoryId }, title: "   ");
+        var request = BuildCreate(thumbnailId, [categoryId], title: "   ");
 
         var response = await client.PostJsonAsync("/api/events", request);
 
@@ -239,7 +239,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "Antes", categoryTypeId: categoryId);
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = BuildUpdate(thumbnailId, new[] { categoryId }, title: "Después");
+        var request = BuildUpdate(thumbnailId, [categoryId], title: "Después");
 
         var response = await client.PutJsonAsync($"/api/events/{id}", request);
 
@@ -257,7 +257,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var oldThumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = BuildUpdate(newThumbnailId, new[] { categoryId });
+        var request = BuildUpdate(newThumbnailId, [categoryId]);
 
         var response = await client.PutJsonAsync($"/api/events/{id}", request);
 

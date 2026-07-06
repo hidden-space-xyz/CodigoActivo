@@ -12,8 +12,6 @@ public static class FileRepositoryExtensions
         CancellationToken ct
     )
     {
-        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct)) return Error.BadRequest(missingCode);
-
-        return Result.Success();
+        return !await files.ExistsAsync(f => f.Id == thumbnailId, ct) ? (Result)Error.BadRequest(missingCode) : Result.Success();
     }
 }

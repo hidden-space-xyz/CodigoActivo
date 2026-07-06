@@ -8,8 +8,10 @@ public sealed class JsonResponseMediaTypeFilter : IOperationFilter
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         if (operation.Responses is { } responses)
+        {
             foreach (var response in responses.Values)
                 KeepJsonOnly(response.Content);
+        }
 
         KeepJsonOnly(operation.RequestBody?.Content);
     }

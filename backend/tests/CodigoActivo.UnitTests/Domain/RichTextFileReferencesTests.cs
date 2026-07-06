@@ -37,7 +37,7 @@ public sealed class RichTextFileReferencesTests
             + $"\"img2\":\"https://api.example.org/api/files/{b}/content\","
             + $"\"again\":\"/api/files/{a}/content\"}}";
 
-        RichTextFileReferences.Extract(json).Should().BeEquivalentTo(new[] { a, b });
+        RichTextFileReferences.Extract(json).Should().BeEquivalentTo([a, b]);
     }
 
     [Fact]
@@ -51,6 +51,6 @@ public sealed class RichTextFileReferencesTests
         RichTextFileReferences
             .ExtractRemoved(previous, current)
             .Should()
-            .BeEquivalentTo(new[] { removed });
+            .BeEquivalentTo([removed]);
     }
 }

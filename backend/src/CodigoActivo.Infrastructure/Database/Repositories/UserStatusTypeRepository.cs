@@ -7,6 +7,4 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 public class UserStatusTypeRepository(CodigoActivoDbContext context)
     : Repository<UserStatusType>(context),
-        IUserStatusTypeRepository
-{
-}
+        IUserStatusTypeRepository;

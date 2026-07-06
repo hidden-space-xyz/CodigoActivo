@@ -43,23 +43,31 @@ public class UserService(
 
         if (query.ParentId is { } parentId) source = source.Where(u => u.ParentId == parentId);
         if (!string.IsNullOrWhiteSpace(query.FirstName))
+        {
             source = source.Where(
                 TextSearch.Contains<UserResponse>(
                     u => u.FirstName,
                     TextSearch.Normalize(query.FirstName)
                 )
             );
+        }
+
         if (!string.IsNullOrWhiteSpace(query.LastName))
+        {
             source = source.Where(
                 TextSearch.Contains<UserResponse>(
                     u => u.LastName,
                     TextSearch.Normalize(query.LastName)
                 )
             );
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Email))
+        {
             source = source.Where(
                 TextSearch.Contains<UserResponse>(u => u.Email, TextSearch.Normalize(query.Email))
             );
+        }
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
@@ -71,8 +79,7 @@ public class UserService(
             users.Query().Where(u => u.Id == id).Select(Projections.User),
             ct
         );
-        if (response is null) return Error.NotFound(ErrorCode.UserNotFound);
-        return response;
+        return response is null ? (Result<UserResponse>)Error.NotFound(ErrorCode.UserNotFound) : (Result<UserResponse>)response;
     }
 
     public async Task<Result<UserResponse>> UpdateAsync(
@@ -149,9 +156,11 @@ public class UserService(
 
         var isMinor = user.BirthDate.IsMinor();
         if (role.Hidden || (isMinor ? !role.IsAllowedForMinors : !role.IsAllowedForAdults))
+        {
             return Error.BadRequest(
                 isMinor ? ErrorCode.UserTypeNotAllowedForMinors : ErrorCode.UserTypeNotAllowedForAdults
             );
+        }
 
         if (user.UserTypeId != userTypeId)
         {

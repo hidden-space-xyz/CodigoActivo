@@ -38,19 +38,24 @@ public class AnnouncementService(
         if (query.Year is { } year) source = source.Where(a => a.CreatedAt.Year == year);
         if (query.Featured is { } featured) source = source.Where(a => a.Featured == featured);
         if (!string.IsNullOrWhiteSpace(query.Title))
+        {
             source = source.Where(
                 TextSearch.Contains<AnnouncementListItemResponse>(
                     a => a.Title,
                     TextSearch.Normalize(query.Title)
                 )
             );
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Subtitle))
+        {
             source = source.Where(
                 TextSearch.Contains<AnnouncementListItemResponse>(
                     a => a.Subtitle,
                     TextSearch.Normalize(query.Subtitle)
                 )
             );
+        }
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
@@ -65,8 +70,7 @@ public class AnnouncementService(
             announcements.Query().Where(a => a.Id == id).Select(Projections.Announcement),
             ct
         );
-        if (response is null) return Error.NotFound(ErrorCode.AnnouncementNotFound);
-        return response;
+        return response is null ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound) : (Result<AnnouncementResponse>)response;
     }
 
     public async Task<IReadOnlyList<int>> GetYearsAsync(CancellationToken ct = default)
@@ -166,9 +170,6 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        if (!await announcements.SetFeaturedAsync(id, ct))
-            return Error.NotFound(ErrorCode.AnnouncementNotFound);
-
-        return await GetByIdAsync(id, ct);
+        return !await announcements.SetFeaturedAsync(id, ct) ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound) : await GetByIdAsync(id, ct);
     }
 }

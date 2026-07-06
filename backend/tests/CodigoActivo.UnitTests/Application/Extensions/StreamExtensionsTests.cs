@@ -26,7 +26,7 @@ public sealed class StreamExtensionsTests
     [MemberData(nameof(ValidHeaders))]
     public async Task DetectImageFormatAsync_recognises_valid_headers(byte[] header, ImageFormat expected)
     {
-        using var stream = new MemoryStream(header);
+        await using var stream = new MemoryStream(header);
 
         var result = await stream.DetectImageFormatAsync();
 
@@ -34,8 +34,7 @@ public sealed class StreamExtensionsTests
     }
 
     public static TheoryData<byte[]> RejectedHeaders() =>
-        new()
-        {
+        [
             new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 },
             new byte[] { 0xFF, 0xD8, 0xFF },
             Jpeg(0xBF),
@@ -50,13 +49,13 @@ public sealed class StreamExtensionsTests
             Truncate(Webp("VP8 "), 12),
             Webp("XXXX"),
             Webp("VP8 ", riffSize: 100),
-        };
+        ];
 
     [Theory]
     [MemberData(nameof(RejectedHeaders))]
     public async Task DetectImageFormatAsync_returns_null_for_unrecognised_headers(byte[] header)
     {
-        using var stream = new MemoryStream(header);
+        await using var stream = new MemoryStream(header);
 
         var result = await stream.DetectImageFormatAsync();
 
@@ -66,7 +65,7 @@ public sealed class StreamExtensionsTests
     [Fact]
     public async Task DetectImageFormatAsync_returns_null_for_empty_stream()
     {
-        using var stream = new MemoryStream([]);
+        await using var stream = new MemoryStream([]);
 
         var result = await stream.DetectImageFormatAsync();
 
@@ -76,7 +75,7 @@ public sealed class StreamExtensionsTests
     [Fact]
     public async Task DetectImageFormatAsync_uses_bytes_read_as_length_when_stream_is_not_seekable()
     {
-        using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 12, length: 20));
+        await using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 12, length: 20));
 
         var result = await stream.DetectImageFormatAsync();
 
@@ -86,7 +85,7 @@ public sealed class StreamExtensionsTests
     [Fact]
     public async Task DetectImageFormatAsync_rejects_oversized_webp_on_non_seekable_stream()
     {
-        using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 40, length: 20));
+        await using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 40, length: 20));
 
         var result = await stream.DetectImageFormatAsync();
 

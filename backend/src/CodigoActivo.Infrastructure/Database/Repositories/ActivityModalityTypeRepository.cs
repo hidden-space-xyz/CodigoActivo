@@ -7,6 +7,4 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 public class ActivityModalityTypeRepository(CodigoActivoDbContext context)
     : Repository<ActivityModalityType>(context),
-        IActivityModalityTypeRepository
-{
-}
+        IActivityModalityTypeRepository;

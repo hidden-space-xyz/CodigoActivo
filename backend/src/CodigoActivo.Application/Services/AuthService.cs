@@ -41,7 +41,9 @@ public class AuthService(
             || string.IsNullOrEmpty(user.PasswordHash)
             || !hasher.Verify(request.Password, user.PasswordHash)
         )
+        {
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
+        }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked)
             return Error.Forbidden(ErrorCode.UserAccountBlocked);
@@ -64,10 +66,7 @@ public class AuthService(
 
         // Verify() only changes the status FK, not the loaded UserStatusType navigation, so the
         // self-healed response would otherwise carry the stale "Pending" name/color; reload it.
-        if (selfHealed)
-            return (await users.GetByIdWithDetailsAsync(user.Id, ct))!.ToResponse();
-
-        return user.ToResponse();
+        return selfHealed ? (Result<UserResponse>)(await users.GetByIdWithDetailsAsync(user.Id, ct))!.ToResponse() : (Result<UserResponse>)user.ToResponse();
     }
 
     public async Task<Result<UserResponse>> GetCurrentAsync(
@@ -76,10 +75,7 @@ public class AuthService(
     )
     {
         var user = await users.GetByIdWithDetailsAsync(userId, ct);
-        if (user is null)
-            return Error.Unauthorized(ErrorCode.CurrentUserNotFound);
-
-        return user.ToResponse();
+        return user is null ? (Result<UserResponse>)Error.Unauthorized(ErrorCode.CurrentUserNotFound) : (Result<UserResponse>)user.ToResponse();
     }
 
     public async Task<Result<RegisterResponse>> RegisterAsync(
@@ -201,7 +197,9 @@ public class AuthService(
             || user.OtpExpiresAt < clock.UtcNow
             || !hasher.Verify(NormalizeOtp(otp), user.OtpCodeHash)
         )
+        {
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
+        }
 
         user.Verify(SeedIds.UserStatusTypes.Active);
         await uow.SaveChangesAsync(ct);
@@ -221,14 +219,18 @@ public class AuthService(
             || user.UserStatusTypeId != SeedIds.UserStatusTypes.Pending
             || string.IsNullOrWhiteSpace(user.Email)
         )
+        {
             return Error.Conflict(ErrorCode.OtpResendNotAllowed);
+        }
 
         var now = clock.UtcNow;
         if (
             user.OtpLastSentAt is not null
             && now < user.OtpLastSentAt + verification.ResendCooldown
         )
+        {
             return Error.Conflict(ErrorCode.OtpResendCooldownActive);
+        }
 
         var otpCode = Guid.NewGuid().ToString();
         await SendVerificationEmailAsync(user, otpCode, ct);
@@ -276,10 +278,8 @@ public class AuthService(
 
     private string BuildVerificationUrl(Guid userId, string otpCode)
     {
-        return string.Create(
-            System.Globalization.CultureInfo.InvariantCulture,
-            $"{application.BaseUrl.TrimEnd('/')}{VerificationPath}?userId={userId}&code={Uri.EscapeDataString(otpCode)}"
-        );
+        return $"{application.BaseUrl.TrimEnd('/')}{VerificationPath}?userId={userId}&code={Uri.EscapeDataString(otpCode)}"
+;
     }
 
     // The OTP is a GUID (case-insensitive by convention) generated lowercase; normalize the

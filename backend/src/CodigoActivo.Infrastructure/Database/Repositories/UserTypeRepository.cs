@@ -7,6 +7,4 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 public class UserTypeRepository(CodigoActivoDbContext context)
     : Repository<UserType>(context),
-        IUserTypeRepository
-{
-}
+        IUserTypeRepository;

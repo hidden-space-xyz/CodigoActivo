@@ -42,7 +42,9 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
             || !int.TryParse(parts[2], CultureInfo.InvariantCulture, out var memoryKiB)
             || !int.TryParse(parts[3], CultureInfo.InvariantCulture, out var parallelism)
         )
+        {
             return false;
+        }
 
         byte[] salt,
             expected;

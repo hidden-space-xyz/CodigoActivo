@@ -4,14 +4,9 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public abstract class IntegrationTestBase : IClassFixture<CodigoActivoWebAppFactory>, IAsyncLifetime
+public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory) : IClassFixture<CodigoActivoWebAppFactory>, IAsyncLifetime
 {
-    protected IntegrationTestBase(CodigoActivoWebAppFactory factory)
-    {
-        Factory = factory;
-    }
-
-    protected CodigoActivoWebAppFactory Factory { get; }
+    protected CodigoActivoWebAppFactory Factory { get; } = factory;
 
     public async ValueTask InitializeAsync()
     {
@@ -35,12 +30,11 @@ public abstract class IntegrationTestBase : IClassFixture<CodigoActivoWebAppFact
             "/api/auth/login",
             new LoginRequest(credentials.Identifier, credentials.Password)
         );
-        if (response.StatusCode != HttpStatusCode.OK)
-            throw new InvalidOperationException(
+        return response.StatusCode != HttpStatusCode.OK
+            ? throw new InvalidOperationException(
                 $"Test login failed for '{credentials.Identifier}' with status {(int)response.StatusCode}."
-            );
-
-        return client;
+            )
+            : client;
     }
 
     protected Task<HttpClient> LoginAsAdminAsync()

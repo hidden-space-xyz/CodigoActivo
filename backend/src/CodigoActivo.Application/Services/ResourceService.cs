@@ -35,19 +35,24 @@ public class ResourceService(
         var source = resources.Query().Select(Projections.ResourceListItem);
 
         if (!string.IsNullOrWhiteSpace(query.Title))
+        {
             source = source.Where(
                 TextSearch.Contains<ResourceListItemResponse>(
                     r => r.Title,
                     TextSearch.Normalize(query.Title)
                 )
             );
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Subtitle))
+        {
             source = source.Where(
                 TextSearch.Contains<ResourceListItemResponse>(
                     r => r.Subtitle,
                     TextSearch.Normalize(query.Subtitle)
                 )
             );
+        }
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
@@ -62,8 +67,7 @@ public class ResourceService(
             resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
             ct
         );
-        if (response is null) return Error.NotFound(ErrorCode.ResourceNotFound);
-        return response;
+        return response is null ? (Result<ResourceResponse>)Error.NotFound(ErrorCode.ResourceNotFound) : (Result<ResourceResponse>)response;
     }
 
     public async Task<Result<ResourceResponse>> CreateAsync(

@@ -96,7 +96,7 @@ public sealed class ActivityServiceTests
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
-            AllowedRoleTypes = new List<ActivityAllowedRoleType>(),
+            AllowedRoleTypes = [],
         };
 
     private static CreateActivityRequest CreateRequest(

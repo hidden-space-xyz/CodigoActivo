@@ -21,6 +21,7 @@ public sealed class CsrfValidationMiddleware(
     public async Task InvokeAsync(HttpContext context)
     {
         if (!SafeMethods.Contains(context.Request.Method) && RequiresValidation(context))
+        {
             try
             {
                 await antiforgery.ValidateRequestAsync(context);
@@ -32,6 +33,7 @@ public sealed class CsrfValidationMiddleware(
                 await context.WriteApiErrorAsync(Error.BadRequest(ErrorCode.InvalidCsrfToken));
                 return;
             }
+        }
 
         await next(context);
     }

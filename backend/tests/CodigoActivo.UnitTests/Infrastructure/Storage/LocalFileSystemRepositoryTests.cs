@@ -46,7 +46,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
 
         await using var stream = await sut.OpenReadAsync("greeting.txt");
         stream.Should().NotBeNull();
-        using var buffer = new MemoryStream();
+        await using var buffer = new MemoryStream();
         await stream!.CopyToAsync(buffer);
         buffer.ToArray().Should().Equal(payload);
     }

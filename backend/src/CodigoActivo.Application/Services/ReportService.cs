@@ -124,7 +124,9 @@ public class ReportService(
                 || signedUpUserIds.Contains(parent.Id)
                 || !addedParents.Add(parent.Id)
             )
+            {
                 continue;
+            }
 
             rows.Add(
                 new ActivityAssignmentRowResponse(

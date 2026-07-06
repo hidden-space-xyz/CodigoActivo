@@ -36,16 +36,21 @@ public class PartnerService(
 
         if (query.Tier is { } tier) source = source.Where(p => p.Tier == tier);
         if (!string.IsNullOrWhiteSpace(query.Name))
+        {
             source = source.Where(
                 TextSearch.Contains<PartnerResponse>(p => p.Name, TextSearch.Normalize(query.Name))
             );
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Website))
+        {
             source = source.Where(
                 TextSearch.Contains<PartnerResponse>(
                     p => p.Website,
                     TextSearch.Normalize(query.Website)
                 )
             );
+        }
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
@@ -60,8 +65,7 @@ public class PartnerService(
             partners.Query().Where(p => p.Id == id).Select(Projections.Partner),
             ct
         );
-        if (response is null) return Error.NotFound(ErrorCode.PartnerNotFound);
-        return response;
+        return response is null ? (Result<PartnerResponse>)Error.NotFound(ErrorCode.PartnerNotFound) : (Result<PartnerResponse>)response;
     }
 
     public async Task<Result<PartnerResponse>> CreateAsync(

@@ -179,10 +179,9 @@ static SameSiteMode ResolveSameSite(string? value)
 
 static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
 {
-    if (ex is not null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError)
-        return LogEventLevel.Error;
-
-    return httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
+    return ex is not null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError
+        ? LogEventLevel.Error
+        : httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
         ? LogEventLevel.Warning
         : LogEventLevel.Information;
 }
@@ -194,7 +193,9 @@ static async Task InitializeDatabaseAsync(WebApplication app)
         !config.GetValue("Database:MigrateOnStartup", true)
         && !config.GetValue("Database:SeedOnStartup", true)
     )
+    {
         return;
+    }
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();

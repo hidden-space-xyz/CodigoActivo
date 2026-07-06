@@ -78,7 +78,7 @@ public sealed class EventServiceTests
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
-            Categories = new List<EventCategory>(),
+            Categories = [],
         };
     }
 
@@ -287,7 +287,7 @@ public sealed class EventServiceTests
             SignupStartsAt: missing == 2 ? null : new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             SignupEndsAt: missing == 3 ? null : new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: Guid.NewGuid(),
-            CategoryTypeIds: new[] { Guid.NewGuid() }
+            CategoryTypeIds: [Guid.NewGuid()]
         );
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
@@ -304,7 +304,7 @@ public sealed class EventServiceTests
         var request = CreateReq(
             eventStart: new DateOnly(2026, 8, 5),
             eventEnd: new DateOnly(2026, 8, 1),
-            categoryTypeIds: new[] { Guid.NewGuid() }
+            categoryTypeIds: [Guid.NewGuid()]
         );
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
@@ -318,7 +318,7 @@ public sealed class EventServiceTests
     public async Task CreateAsync_returns_invalid_range_when_signup_end_not_after_start()
     {
         var signup = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = CreateReq(signupStart: signup, signupEnd: signup, categoryTypeIds: new[] { Guid.NewGuid() });
+        var request = CreateReq(signupStart: signup, signupEnd: signup, categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
 
@@ -334,7 +334,7 @@ public sealed class EventServiceTests
             eventEnd: new DateOnly(2026, 8, 3),
             signupStart: new DateTimeOffset(2026, 8, 10, 0, 0, 0, TimeSpan.Zero),
             signupEnd: new DateTimeOffset(2026, 8, 11, 0, 0, 0, TimeSpan.Zero),
-            categoryTypeIds: new[] { Guid.NewGuid() }
+            categoryTypeIds: [Guid.NewGuid()]
         );
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
@@ -347,7 +347,7 @@ public sealed class EventServiceTests
     public async Task CreateAsync_returns_thumbnail_not_found_when_file_missing()
     {
         ThumbnailExists(false);
-        var request = CreateReq(categoryTypeIds: new[] { Guid.NewGuid() });
+        var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
 
@@ -377,7 +377,7 @@ public sealed class EventServiceTests
     {
         ThumbnailExists(true);
         HasCategoryCount(1);
-        var request = CreateReq(categoryTypeIds: new[] { Guid.NewGuid(), Guid.NewGuid() });
+        var request = CreateReq(categoryTypeIds: [Guid.NewGuid(), Guid.NewGuid()]);
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
 
@@ -404,16 +404,19 @@ public sealed class EventServiceTests
             {
                 var ev = ci.Arg<Event>();
                 foreach (var category in ev.Categories)
+                {
                     category.EventCategoryType = new EventCategoryType
                     {
                         Id = category.EventCategoryTypeId,
                         Name = "Talleres",
                         Color = "#112233",
                     };
+                }
+
                 store.Add(ev);
             });
 
-        var request = CreateReq(categoryTypeIds: new[] { categoryId }, thumbnailId: thumbnailId);
+        var request = CreateReq(categoryTypeIds: [categoryId], thumbnailId: thumbnailId);
 
         var result = await sut.CreateAsync(request, caller);
 
@@ -439,13 +442,13 @@ public sealed class EventServiceTests
         var request = UpdateReq(
             eventStart: new DateOnly(2026, 8, 5),
             eventEnd: new DateOnly(2026, 8, 1),
-            categoryTypeIds: new[] { Guid.NewGuid() }
+            categoryTypeIds: [Guid.NewGuid()]
         );
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
 
         result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await events.DidNotReceiveWithAnyArgs().GetForEditAsync(default, default);
+        await events.DidNotReceiveWithAnyArgs().GetForEditAsync(Guid.Empty, default);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
@@ -465,7 +468,7 @@ public sealed class EventServiceTests
     {
         HasCategoryCount(1);
         events.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Event?)null);
-        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() });
+        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
 
@@ -488,7 +491,7 @@ public sealed class EventServiceTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(true);
-        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() });
+        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
 
@@ -512,7 +515,7 @@ public sealed class EventServiceTests
             )
             .Returns(false);
         ThumbnailExists(false);
-        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() });
+        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
 
@@ -547,17 +550,20 @@ public sealed class EventServiceTests
             .Returns(_ =>
             {
                 foreach (var category in ev.Categories)
+                {
                     category.EventCategoryType ??= new EventCategoryType
                     {
                         Id = category.EventCategoryTypeId,
                         Name = "Charlas",
                         Color = "#654321",
                     };
+                }
+
                 return 1;
             });
 
         var request = UpdateReq(
-            categoryTypeIds: new[] { newCategoryId },
+            categoryTypeIds: [newCategoryId],
             thumbnailId: thumbnailId,
             title: "  New title  "
         );
@@ -580,7 +586,7 @@ public sealed class EventServiceTests
         var ev = NewEvent();
         var previousThumbnailId = ev.ThumbnailId;
         PrepareUpdate(ev);
-        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() }, thumbnailId: Guid.NewGuid());
+        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: Guid.NewGuid());
 
         var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
 
@@ -593,12 +599,12 @@ public sealed class EventServiceTests
     {
         var ev = NewEvent();
         PrepareUpdate(ev);
-        var request = UpdateReq(categoryTypeIds: new[] { Guid.NewGuid() }, thumbnailId: ev.ThumbnailId);
+        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: ev.ThumbnailId);
 
         var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(Guid.Empty, default);
     }
 
     [Fact]
@@ -610,7 +616,7 @@ public sealed class EventServiceTests
         ev.Description = $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
         PrepareUpdate(ev);
         var request = UpdateReq(
-            categoryTypeIds: new[] { Guid.NewGuid() },
+            categoryTypeIds: [Guid.NewGuid()],
             thumbnailId: ev.ThumbnailId,
             description: $"{{\"b\":\"/api/files/{keptId}/content\"}}"
         );
@@ -632,12 +638,15 @@ public sealed class EventServiceTests
             .Returns(_ =>
             {
                 foreach (var category in ev.Categories)
+                {
                     category.EventCategoryType ??= new EventCategoryType
                     {
                         Id = category.EventCategoryTypeId,
                         Name = "Charlas",
                         Color = "#654321",
                     };
+                }
+
                 return 1;
             });
     }
@@ -654,7 +663,7 @@ public sealed class EventServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(Guid.Empty, default);
     }
 
     [Fact]

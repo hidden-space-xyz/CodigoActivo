@@ -144,7 +144,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task Query_returns_all_rows_untracked()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         ctx.Partners.AddRange(NewPartner("A"), NewPartner("B"));
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
@@ -179,7 +179,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task FindAsync_returns_first_match_or_null()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var target = NewPartner("Target");
         ctx.Partners.AddRange(target, NewPartner("Other"));
         await ctx.SaveChangesAsync();
@@ -194,7 +194,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetAsync_returns_only_matching_rows()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         ctx.Partners.AddRange(NewPartner("Keep", tier: 5), NewPartner("Drop", tier: 1));
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
@@ -207,7 +207,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetAllAsync_and_CountAsync_and_ExistsAsync_reflect_store()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         ctx.Partners.AddRange(NewPartner("A", tier: 2), NewPartner("B", tier: 2), NewPartner("C", tier: 9));
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
@@ -221,7 +221,7 @@ public sealed class RepositoryTests
     [InlineData(99, false)]
     public async Task ExistsAsync_reports_presence(int tier, bool expected)
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         ctx.Partners.Add(NewPartner("A", tier: 9));
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
@@ -232,7 +232,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task Remove_then_save_deletes_the_entity()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var partner = NewPartner();
         ctx.Partners.Add(partner);
         await ctx.SaveChangesAsync();
@@ -247,7 +247,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task RemoveAsync_deletes_matching_rows_and_returns_count()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         ctx.Partners.AddRange(NewPartner("X", tier: 1), NewPartner("Y", tier: 1), NewPartner("Z", tier: 8));
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
@@ -262,7 +262,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task RemoveAsync_returns_zero_when_no_rows_match()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         ctx.Partners.Add(NewPartner("Only", tier: 3));
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
@@ -274,7 +274,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetByIdWithDetailsAsync_includes_status_and_type()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var status = NewStatus("Active");
         var type = NewUserType("Socio");
         var user = NewUser("Ada", "Admin", statusId: status.Id, userTypeId: type.Id);
@@ -293,7 +293,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetByIdWithDetailsAsync_returns_null_when_missing()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var repo = new UserRepository(ctx);
 
         (await repo.GetByIdWithDetailsAsync(Guid.NewGuid())).Should().BeNull();
@@ -305,7 +305,7 @@ public sealed class RepositoryTests
     [InlineData("nobody@x.test", false)]
     public async Task GetByEmailOrPhoneAsync_matches_either_identifier(string identifier, bool expectFound)
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var status = NewStatus();
         var type = NewUserType();
         var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000", statusId: status.Id, userTypeId: type.Id);
@@ -329,7 +329,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task EmailExistsAsync_honours_exclude_id()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync();
@@ -344,7 +344,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task PhoneExistsAsync_honours_exclude_id()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser(phone: "+100");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync();
@@ -359,7 +359,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task ListChildrenWithDetailsAsync_returns_children_ordered_with_details()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var status = NewStatus("Dependent");
         var type = NewUserType();
         var parent = NewUser("Parent", "P", statusId: status.Id, userTypeId: type.Id);
@@ -380,7 +380,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task ListChildrenWithDetailsAsync_returns_empty_when_no_children()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var repo = new UserRepository(ctx);
 
         (await repo.ListChildrenWithDetailsAsync(Guid.NewGuid())).Should().BeEmpty();
@@ -389,7 +389,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetForEditAsync_includes_categories_and_returns_null_when_missing()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var category = new EventCategoryType { Id = Guid.NewGuid(), Name = "Cat", Color = "#111" };
         var ev = NewEvent();
         ctx.AddRange(category, ev);
@@ -408,7 +408,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetWithActivitiesAndAssignmentsAsync_loads_activity_graph()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -440,7 +440,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetWithAssignmentsAndUsersAsync_loads_nested_user_and_role_graph()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var parent = NewUser("Parent", "P");
         var child = NewUser("Child", "C", parentId: parent.Id);
         var role = NewRoleType("Ponente");
@@ -474,7 +474,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetForEditAsync_includes_allowed_roles_and_returns_null_when_missing()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var role = NewRoleType();
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
@@ -502,7 +502,7 @@ public sealed class RepositoryTests
         bool expected
     )
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var ev = NewEvent();
         var lower = Fixed;
         var upper = Fixed.AddMinutes(60);
@@ -519,7 +519,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task AnyOutsideRangeAsync_ignores_activities_of_other_events()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var target = NewEvent("Target");
         var other = NewEvent("Other");
         ctx.Events.AddRange(target, other);
@@ -534,7 +534,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task AllowedRoleExistsAsync_reports_presence()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var role = NewRoleType();
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
@@ -550,7 +550,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetAssignmentAsync_returns_assignment_with_includes_or_null()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser();
         var role = NewRoleType("Voluntario");
         var status = NewAssignmentStatus("Pending");
@@ -615,7 +615,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task RemoveAssignment_deletes_the_row_on_save()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -642,7 +642,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetUserAssignmentsAsync_returns_user_rows_ordered_by_activity_start()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser();
         var other = NewUser();
         var role = NewRoleType();
@@ -670,7 +670,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task GetAssignmentsForUsersByEventAsync_filters_by_event_and_user_set()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var wanted = NewUser();
         var alsoWanted = NewUser();
         var excludedUser = NewUser();
@@ -691,7 +691,7 @@ public sealed class RepositoryTests
         var repo = new ActivityRepository(ctx);
 
         var result = await repo.GetAssignmentsForUsersByEventAsync(
-            new[] { wanted.Id, alsoWanted.Id },
+            [wanted.Id, alsoWanted.Id],
             targetEvent.Id
         );
 
@@ -703,7 +703,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task QueryAssignments_exposes_all_rows_untracked()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -730,7 +730,7 @@ public sealed class RepositoryTests
     [Fact]
     public async Task IsInUseAsync_detects_thumbnail_fks_and_description_embeds()
     {
-        using var ctx = NewContext();
+        await using var ctx = NewContext();
 
         var thumbnailFileId = Guid.NewGuid();
         var eventEmbeddedFileId = Guid.NewGuid();

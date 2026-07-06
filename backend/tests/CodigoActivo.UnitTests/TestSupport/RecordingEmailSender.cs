@@ -22,12 +22,11 @@ public sealed partial class RecordingEmailSender : IEmailSender
     public string LastCode()
     {
         var match = CodePattern().Match(Sent[^1].TextBody);
-        if (!match.Success)
-            throw new InvalidOperationException(
+        return !match.Success
+            ? throw new InvalidOperationException(
                 "The last email does not contain a verification code."
-            );
-
-        return match.Groups[1].Value;
+            )
+            : match.Groups[1].Value;
     }
 
     [GeneratedRegex(@"[?&]code=([^\s&]+)")]

@@ -49,7 +49,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var thumb = await SeedThumbnailAsync();
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
-        var roles = allowedRoles.Length == 0 ? new[] { SeedIds.ActivityRoleTypes.Leader } : allowedRoles;
+        var roles = allowedRoles.Length == 0 ? [SeedIds.ActivityRoleTypes.Leader] : allowedRoles;
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(new Event
@@ -161,11 +161,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
-        var request = new AssignHouseholdRequest(new List<HouseholdAssignmentRequest>
-        {
+        var request = new AssignHouseholdRequest(
+        [
             new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
             new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Leader),
-        });
+        ]);
 
         var response = await client.PostJsonAsync(
             $"/api/activities/{activityId}/assign-household",
@@ -218,7 +218,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     public async Task ChangeRole_as_admin_updates_and_persists()
     {
         var (_, activityId) = await SeedActivityAsync(
-            allowedRoles: new[] { SeedIds.ActivityRoleTypes.Leader, SeedIds.ActivityRoleTypes.Helper }
+            allowedRoles: [SeedIds.ActivityRoleTypes.Leader, SeedIds.ActivityRoleTypes.Helper]
         );
         await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader);
         var client = await LoginAsAdminAsync();

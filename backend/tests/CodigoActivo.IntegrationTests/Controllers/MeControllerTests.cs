@@ -62,11 +62,11 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
         });
     }
 
-    private static async Task<List<CodigoActivo.Application.DTOs.AssignedActivityResponse>> ReadAssignedAsync(
+    private static async Task<List<Application.DTOs.AssignedActivityResponse>> ReadAssignedAsync(
         HttpResponseMessage response
     )
     {
-        return await response.ReadJsonAsync<List<CodigoActivo.Application.DTOs.AssignedActivityResponse>>()
+        return await response.ReadJsonAsync<List<Application.DTOs.AssignedActivityResponse>>()
             ?? [];
     }
 

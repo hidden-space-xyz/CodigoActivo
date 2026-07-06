@@ -36,8 +36,6 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 {
     public override bool IsValid(object? value)
     {
-        if (value is not DateOnly date) return true;
-
-        return date != default && date <= DateOnly.FromDateTime(DateTime.UtcNow);
+        return value is not DateOnly date || (date != default && date <= DateOnly.FromDateTime(DateTime.UtcNow));
     }
 }

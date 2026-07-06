@@ -12,9 +12,11 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailSender
         if (string.IsNullOrWhiteSpace(options.Host))
             throw new InvalidOperationException("The SMTP host is not configured (Smtp:Host).");
         if (string.IsNullOrWhiteSpace(options.FromAddress))
+        {
             throw new InvalidOperationException(
                 "The SMTP sender address is not configured (Smtp:FromAddress)."
             );
+        }
 
         var mime = new MimeMessage();
         mime.From.Add(new MailboxAddress(options.FromName, options.FromAddress));

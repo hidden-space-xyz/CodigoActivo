@@ -230,7 +230,7 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.AssignHouseholdAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new AssignHouseholdRequest(new List<HouseholdAssignmentRequest>()),
+            new AssignHouseholdRequest([]),
             isAdmin: true
         );
 
@@ -249,7 +249,7 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             Guid.NewGuid(),
             new AssignHouseholdRequest(
-                new List<HouseholdAssignmentRequest> { new(Guid.NewGuid(), Guid.NewGuid()) }
+                [new(Guid.NewGuid(), Guid.NewGuid())]
             ),
             isAdmin: false
         );
@@ -272,7 +272,7 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             actingUserId,
             new AssignHouseholdRequest(
-                new List<HouseholdAssignmentRequest> { new(strangerId, Guid.NewGuid()) }
+                [new(strangerId, Guid.NewGuid())]
             ),
             isAdmin: true
         );
@@ -293,7 +293,7 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             actingUserId,
             new AssignHouseholdRequest(
-                new List<HouseholdAssignmentRequest> { new(actingUserId, Guid.NewGuid()) }
+                [new(actingUserId, Guid.NewGuid())]
             ),
             isAdmin: true
         );
@@ -331,12 +331,11 @@ public sealed class ActivityServiceAssignmentTests
         );
 
         var request = new AssignHouseholdRequest(
-            new List<HouseholdAssignmentRequest>
-            {
+            [
                 new(actingUserId, roleId),
                 new(actingUserId, roleId),
                 new(childId, roleId),
-            }
+            ]
         );
 
         var result = await sut.AssignHouseholdAsync(activityId, actingUserId, request, isAdmin: true);
@@ -584,11 +583,10 @@ public sealed class ActivityServiceAssignmentTests
 
         var overlappingId = Guid.NewGuid();
         activities.GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>()).Returns(
-            new List<ActivityUserRoleAssignment>
-            {
+            [
                 new() { ActivityId = activityId, Activity = OverlapActivity(activityId, 10, 12) },
                 new() { ActivityId = overlappingId, Activity = OverlapActivity(overlappingId, 11, 13, "Choque") },
-            }
+            ]
         );
 
         var result = await sut.VerifyTimeOverlapsAsync(activityId, userId);
@@ -608,10 +606,9 @@ public sealed class ActivityServiceAssignmentTests
         activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(OverlapActivity(activityId, 10, 12));
         activities.GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>()).Returns(
-            new List<ActivityUserRoleAssignment>
-            {
+            [
                 new() { ActivityId = Guid.NewGuid(), Activity = OverlapActivity(Guid.NewGuid(), 13, 14) },
-            }
+            ]
         );
 
         var result = await sut.VerifyTimeOverlapsAsync(activityId, userId);
@@ -639,7 +636,7 @@ public sealed class ActivityServiceAssignmentTests
         var childId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
         users.ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>()).Returns(
-            new List<User> { new() { Id = childId, FirstName = "Kid", LastName = "One" } }
+            [new() { Id = childId, FirstName = "Kid", LastName = "One" }]
         );
 
         var withNavs = new ActivityUserRoleAssignment
@@ -666,7 +663,7 @@ public sealed class ActivityServiceAssignmentTests
             Arg.Any<IReadOnlyList<Guid>>(),
             eventId,
             Arg.Any<CancellationToken>()
-        ).Returns(new List<ActivityUserRoleAssignment> { withNavs, withoutNavs });
+        ).Returns([withNavs, withoutNavs]);
 
         var result = await sut.GetHouseholdAssignmentsAsync(actingUserId, eventId);
 

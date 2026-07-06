@@ -376,7 +376,7 @@ public sealed class AuthServiceTests
         ExistsReturns(false, false);
         userTypes
             .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new List<UserType>());
+            .Returns([]);
 
         var result = await sut.RegisterAsync(NewRegister(minors: [NewMinor()]));
 
@@ -398,14 +398,13 @@ public sealed class AuthServiceTests
         userTypes
             .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(
-                new List<UserType>
-                {
+                [
                     NewUserType(
                         id: minorRoleId,
                         hidden: hidden,
                         allowedForMinors: allowedForMinors
                     ),
-                }
+                ]
             );
 
         var result = await sut.RegisterAsync(NewRegister(minors: [NewMinor(roleId: minorRoleId)]));
@@ -425,7 +424,7 @@ public sealed class AuthServiceTests
             .Returns(NewUser());
         users
             .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new List<User>());
+            .Returns([]);
 
         var result = await sut.RegisterAsync(NewRegister());
 
@@ -467,7 +466,7 @@ public sealed class AuthServiceTests
             .Returns(NewUser());
         users
             .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new List<User>());
+            .Returns([]);
 
         var result = await sut.RegisterAsync(NewRegister());
 
@@ -502,7 +501,7 @@ public sealed class AuthServiceTests
             .Returns(NewUser());
         users
             .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new List<User>());
+            .Returns([]);
 
         var result = await sut.RegisterAsync(NewRegister());
 
@@ -528,7 +527,7 @@ public sealed class AuthServiceTests
             .Returns(NewUser());
         users
             .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new List<User>());
+            .Returns([]);
 
         var result = await sut.RegisterAsync(NewRegister());
 
@@ -560,13 +559,13 @@ public sealed class AuthServiceTests
             .Returns(NewUserType(id: adultRoleId));
         userTypes
             .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new List<UserType> { NewUserType(id: minorRoleId) });
+            .Returns([NewUserType(id: minorRoleId)]);
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(NewUser());
         users
             .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new List<User> { NewUser(email: null) });
+            .Returns([NewUser(email: null)]);
 
         var result = await sut.RegisterAsync(
             NewRegister(roleId: adultRoleId, minors: [NewMinor(roleId: minorRoleId)])

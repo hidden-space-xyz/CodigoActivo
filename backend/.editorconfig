@@ -109,6 +109,8 @@ dotnet_diagnostic.CA1069.severity = warning
 # Meziantou/Sonar rules not applicable to this codebase
 # ASP.NET Core has no SynchronizationContext to marshal back to, so ConfigureAwait(false) is a no-op noise generator here.
 dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0003.severity = none
+dotnet_diagnostic.MA0038.severity = none
 # Method length is a subjective metric better enforced via review than a hard line count.
 dotnet_diagnostic.MA0051.severity = none
 # StructLayout only matters for interop/marshaling; none of our structs cross a native boundary.
@@ -129,6 +131,7 @@ dotnet_diagnostic.CA1848.severity = none
 
 # Naming conventions (types, members, variables) - all as warnings
 dotnet_diagnostic.IDE1006.severity = warning
+dotnet_diagnostic.IDE0305.severity = none
 
 # Naming styles
 dotnet_naming_style.pascal_case.capitalization = pascal_case
@@ -200,6 +203,7 @@ dotnet_naming_symbols.locals_and_parameters.applicable_kinds = local, parameter
 dotnet_naming_rule.locals_and_parameters_rule.symbols = locals_and_parameters
 dotnet_naming_rule.locals_and_parameters_rule.style = camel_case
 dotnet_naming_rule.locals_and_parameters_rule.severity = warning
+dotnet_diagnostic.S107.severity = none
 
 [**/Migrations/*.cs]
 generated_code = true

@@ -93,7 +93,9 @@ public static class DependencyInjection
             || !double.IsFinite(parsed)
             || parsed <= 0
         )
+        {
             return fallback;
+        }
 
         // A finite but huge value overflows TimeSpan.From* — fall back rather than crash at startup.
         try
@@ -139,10 +141,12 @@ public static class DependencyInjection
                 || string.IsNullOrWhiteSpace(options.FromAddress)
             )
         )
+        {
             throw new InvalidOperationException(
                 "SMTP is not configured (Smtp:Host and Smtp:FromAddress are required) while "
                     + "AccountVerification:Required is true. Configure SMTP or disable verification."
             );
+        }
 
         services.AddSingleton(options);
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
@@ -165,15 +169,14 @@ public static class DependencyInjection
             TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var windowsId)
             && TimeZoneInfo.TryFindSystemTimeZoneById(windowsId, out var viaWindows)
         )
+        {
             return viaWindows;
+        }
 
-        if (
-            TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
+        return TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
             && TimeZoneInfo.TryFindSystemTimeZoneById(ianaId, out var viaIana)
-        )
-            return viaIana;
-
-        return TimeZoneInfo.Local;
+            ? viaIana
+            : TimeZoneInfo.Local;
     }
 
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)

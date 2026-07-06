@@ -145,10 +145,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var request = CreateRequest(
             thumb,
             title: "Taller",
-            allowedRoles: new List<ActivityAllowedRoleRequest>
-            {
+            allowedRoles:
+            [
                 new(SeedIds.ActivityRoleTypes.Leader),
-            }
+            ]
         );
 
         var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
@@ -240,7 +240,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             ActivityStart,
             ActivityEnd,
             thumb,
-            new List<ActivityAllowedRoleRequest> { new(SeedIds.ActivityRoleTypes.Helper) }
+            [new(SeedIds.ActivityRoleTypes.Helper)]
         );
 
         var response = await client.PutJsonAsync($"/api/activities/{id}", request);

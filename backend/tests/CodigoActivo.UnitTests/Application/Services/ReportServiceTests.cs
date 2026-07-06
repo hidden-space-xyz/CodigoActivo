@@ -41,13 +41,13 @@ public sealed class ReportServiceTests
 
     private void HasRoleTypes(params (Guid Id, string Name)[] roles) =>
         roleTypes.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<ActivityRoleType>)roles
+            .Returns(roles
                 .Select(r => new ActivityRoleType { Id = r.Id, Name = r.Name })
                 .ToList());
 
     private void HasStatusTypes(params (Guid Id, string Name)[] statuses) =>
         statusTypes.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<AssignmentStatusType>)statuses
+            .Returns(statuses
                 .Select(s => new AssignmentStatusType { Id = s.Id, Name = s.Name, Color = "#fff" })
                 .ToList());
 

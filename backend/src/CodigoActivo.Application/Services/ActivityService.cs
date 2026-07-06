@@ -41,12 +41,14 @@ public class ActivityService(
 
         if (query.EventId is { } eventId) source = source.Where(a => a.EventId == eventId);
         if (!string.IsNullOrWhiteSpace(query.Title))
+        {
             source = source.Where(
                 TextSearch.Contains<ActivityResponse>(
                     a => a.Title,
                     TextSearch.Normalize(query.Title)
                 )
             );
+        }
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
@@ -58,8 +60,7 @@ public class ActivityService(
             activities.Query().Where(a => a.Id == id).Select(Projections.Activity),
             ct
         );
-        if (response is null) return Error.NotFound(ErrorCode.ActivityNotFound);
-        return response;
+        return response is null ? (Result<ActivityResponse>)Error.NotFound(ErrorCode.ActivityNotFound) : (Result<ActivityResponse>)response;
     }
 
     public async Task<IReadOnlyList<AssignedActivityResponse>> ListAssignedAsync(
@@ -309,7 +310,7 @@ public class ActivityService(
         if (items.Exists(item => !allowedRoleIds.Contains(item.ActivityRoleTypeId)))
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
 
-        var userIds = items.Select(item => item.UserId).ToList();
+        var userIds = items.ConvertAll(item => item.UserId);
         var alreadyAssigned = (
             await executor.ToListAsync(
                 activities
@@ -414,6 +415,7 @@ public class ActivityService(
         if (role is null) return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
 
         if (assignment.ActivityRoleTypeId == role.Id)
+        {
             return new AssignmentResponse(
                 userId,
                 activityId,
@@ -424,6 +426,7 @@ public class ActivityService(
                     assignment.AssignmentStatus?.Name ?? string.Empty
                 )
             );
+        }
 
         var statusId = assignment.AssignmentStatusId;
         var statusName = assignment.AssignmentStatus?.Name ?? string.Empty;
@@ -553,9 +556,7 @@ public class ActivityService(
         if (distinct.Count == 0) return Result.Success();
 
         var existing = await roleTypes.CountAsync(r => distinct.Contains(r.Id), ct);
-        if (existing != distinct.Count) return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
-
-        return Result.Success();
+        return existing != distinct.Count ? (Result)Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound) : Result.Success();
     }
 
     private static void ApplyAllowedRoles(
@@ -566,6 +567,7 @@ public class ActivityService(
         if (roles is null) return;
 
         foreach (var role in roles.DistinctBy(r => r.ActivityRoleTypeId))
+        {
             activity.AllowedRoleTypes.Add(
                 new ActivityAllowedRoleType
                 {
@@ -573,6 +575,7 @@ public class ActivityService(
                     ActivityRoleTypeId = role.ActivityRoleTypeId,
                 }
             );
+        }
     }
 
     private static bool Overlaps(Activity a, Activity b)
@@ -596,10 +599,9 @@ public class ActivityService(
         if (window is null) return Error.NotFound(ErrorCode.ActivityNotFound);
 
         var now = clock.UtcNow;
-        if (!isAdmin && (now < window.StartsAt || now > window.EndsAt))
-            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
-
-        return Result.Success();
+        return !isAdmin && (now < window.StartsAt || now > window.EndsAt)
+            ? (Result)Error.BadRequest(ErrorCode.ActivitySignupClosed)
+            : Result.Success();
     }
 
     private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
@@ -627,10 +629,9 @@ public class ActivityService(
 
         var startDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(start, clock.TimeZone).DateTime);
         var endDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end, clock.TimeZone).DateTime);
-        if (startDate < ev.EventStartsAt || endDate > ev.EventEndsAt)
-            return Error.BadRequest(ErrorCode.ActivityScheduleOutsideEventRange);
-
-        return new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime());
+        return startDate < ev.EventStartsAt || endDate > ev.EventEndsAt
+            ? (Result<ActivitySchedule>)Error.BadRequest(ErrorCode.ActivityScheduleOutsideEventRange)
+            : (Result<ActivitySchedule>)new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime());
     }
 
     private readonly record struct ActivitySchedule(DateTimeOffset StartsAt, DateTimeOffset EndsAt);

@@ -61,7 +61,7 @@ public class SmokeTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase
         var response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<CodigoActivo.API.Extensions.ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<API.Extensions.ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 }
