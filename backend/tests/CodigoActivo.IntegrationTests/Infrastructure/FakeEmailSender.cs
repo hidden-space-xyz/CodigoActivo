@@ -40,7 +40,6 @@ public sealed partial class FakeEmailSender : IEmailSender
         if (message is null)
             throw new InvalidOperationException($"No email was sent to '{address}'.");
 
-        // The OTP is the `code=` parameter of the verification link.
         var match = OtpPattern().Match(message.TextBody);
         return !match.Success
             ? throw new InvalidOperationException(

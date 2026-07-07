@@ -30,7 +30,6 @@ public sealed class VerificationEmailTests
             .And.Contain("123456")
             .And.Contain(VerifyUrl)
             .And.Contain("15 minutos");
-        // The HTML body HTML-encodes the URL (& -> &amp;), so assert on its stable fragments.
         message
             .HtmlBody.Should()
             .Contain("Ana")

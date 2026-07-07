@@ -18,7 +18,6 @@ public sealed partial class RecordingEmailSender : IEmailSender
         return Task.CompletedTask;
     }
 
-    /// <summary>The verification code carried by the last sent email (the `code=` link parameter).</summary>
     public string LastCode()
     {
         var match = CodePattern().Match(Sent[^1].TextBody);

@@ -208,7 +208,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         report!.EventId.Should().Be(EventId);
         report.Title.Should().Be("Feria de Voluntariado");
 
-        // Only confirmed assignments produce badges: Ada (Leader) and Mateo (Helper + Participant).
         report.Badges.Should().HaveCount(2);
 
         var admin = report.Badges[0];

@@ -279,7 +279,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var secondOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
         secondOtp.Should().NotBe(firstOtp);
 
-        // The old code must no longer work once a new one has been issued.
         using var stale = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(firstOtp)
@@ -289,7 +288,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             .Code.Should()
             .Be(ErrorCode.OtpInvalidOrExpired);
 
-        // The freshly issued code still activates the account.
         var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(secondOtp)

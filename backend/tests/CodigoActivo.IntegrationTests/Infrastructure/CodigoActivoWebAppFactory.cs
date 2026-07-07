@@ -26,10 +26,6 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
 
-        // AddEmail's fail-fast runs while AddCodigoActivo registers services, before the
-        // in-memory overrides below are applied, so it can only be satisfied through real
-        // environment variables (visible to WebApplication.CreateBuilder's configuration).
-        // The real IEmailSender is replaced with FakeEmailSender below, so these are never dialed.
         Environment.SetEnvironmentVariable("Smtp__Host", "smtp.test");
         Environment.SetEnvironmentVariable("Smtp__FromAddress", "no-reply@codigoactivo.test");
 
@@ -60,8 +56,6 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<IEmailSender>(EmailSender);
 
-            // The options singleton binds eagerly from configuration inside Program, before
-            // this factory's configuration overrides apply, so it must be replaced here.
             services.RemoveAll<AccountVerificationOptions>();
             services.AddSingleton(new AccountVerificationOptions { Required = true });
         });

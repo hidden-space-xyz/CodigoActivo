@@ -97,7 +97,6 @@ public static class DependencyInjection
             return fallback;
         }
 
-        // A finite but huge value overflows TimeSpan.From* — fall back rather than crash at startup.
         try
         {
             return convert(parsed);
@@ -131,9 +130,6 @@ public static class DependencyInjection
             FromName = configuration["Smtp:FromName"] ?? "Código Activo",
         };
 
-        // Fail fast on a misconfigured deployment: if account verification is required but no SMTP
-        // server is set, registrations would persist yet never be able to send a code, silently
-        // stranding every new user. Development turns verification off, so this does not fire there.
         if (
             IsVerificationRequired(configuration)
             && (

@@ -401,7 +401,6 @@ public sealed class ReportServiceTests
         HasAssignments(
             BadgeAsg(adult, "Charla", when.AddHours(2), Confirmed),
             BadgeAsg(adult, "Taller", when, Confirmed),
-            // A different activity that happens to share title and start time must not be merged.
             BadgeAsg(adult, "Taller", when, Confirmed),
             BadgeAsg(adult, "Otro evento", when, Confirmed, eventId: Guid.NewGuid()),
             BadgeAsg(child, "Taller infantil", when, Confirmed),

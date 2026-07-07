@@ -230,7 +230,6 @@ public sealed class AuthServiceTests
         result.IsSuccess.Should().BeTrue();
         user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
         user.OtpCodeHash.Should().BeNull();
-        // The self-healed response must reflect Active, not the stale loaded Pending navigation.
         result.Value.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -480,12 +479,9 @@ public sealed class AuthServiceTests
         email.ToName.Should().Be("Ana");
         email.TextBody.Should().Contain(code);
         email.Subject.Should().NotContain(code);
-        // The email carries a self-contained verification link (userId + code) so a user who loses
-        // the registration tab can still verify.
         email.TextBody.Should().Contain("https://app.test/verify-account?userId=");
         email.HtmlBody.Should().Contain("/verify-account?userId=");
 
-        // The OTP is stored hashed, never in plaintext.
         added.Should().ContainSingle();
         added[0].OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
     }
@@ -507,13 +503,11 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RequiresVerification.Should().BeTrue();
-        // OtpLastSentAt is cleared so the failed delivery does not block the first resend.
         added.Should().ContainSingle();
         added[0].OtpLastSentAt.Should().BeNull();
         added[0]
             .OtpCodeHash.Should()
             .NotBeNull("the code is still issued so a resend can replace it");
-        // One save to persist the account, one to clear OtpLastSentAt after the send failed.
         await uow.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -632,7 +626,6 @@ public sealed class AuthServiceTests
     public static TheoryData<string, bool, int?> InvalidOtpCases() =>
         new()
         {
-            // otp argument, has stored hash, expiry offset in minutes (null = no expiry)
             { "   ", true, 5 },
             { "123456", false, 5 },
             { "123456", true, null },
@@ -735,8 +728,6 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task ResendVerificationAsync_allows_an_immediate_resend_when_never_sent_before()
     {
-        // A pending row with a null OtpLastSentAt (and null OtpCodeHash) can resend immediately;
-        // the cooldown must not block it.
         var user = FindReturns(
             NewUser(
                 statusId: SeedIds.UserStatusTypes.Pending,

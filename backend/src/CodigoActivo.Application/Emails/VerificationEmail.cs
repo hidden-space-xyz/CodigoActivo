@@ -19,9 +19,7 @@ public static class VerificationEmail
         var encodedName = WebUtility.HtmlEncode(toName);
         var encodedUrl = WebUtility.HtmlEncode(verificationUrl);
 
-        // The code stays out of the subject: subjects surface in lock-screen/notification previews
-        // and relay logs, so keeping the OTP only in the body reduces its exposure.
-        const string subject = "Verifica tu cuenta de Código Activo";
+        const string Subject = "Verifica tu cuenta de Código Activo";
 
         var textBody = $"""
             Hola {toName}:
@@ -55,6 +53,6 @@ public static class VerificationEmail
             </div>
             """;
 
-        return new EmailMessage(toAddress, toName, subject, htmlBody, textBody);
+        return new EmailMessage(toAddress, toName, Subject, htmlBody, textBody);
     }
 }

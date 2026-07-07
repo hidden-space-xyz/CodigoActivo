@@ -21,8 +21,6 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     public AuthControllerVerificationDisabledTests(CodigoActivoWebAppFactory factory)
         : base(factory)
     {
-        // Same host (and same in-memory database) as the shared factory, but with the
-        // account-verification requirement switched off, as in appsettings.Development.json.
         disabledFactory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services =>
             {

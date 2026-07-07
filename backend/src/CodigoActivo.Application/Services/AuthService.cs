@@ -25,7 +25,6 @@ public class AuthService(
     ILogger<AuthService> logger
 ) : IAuthService
 {
-    // Client-side route of the SPA's account-verification page (see the frontend router).
     private const string VerificationPath = "/verify-account";
 
     public async Task<Result<UserResponse>> LoginAsync(
@@ -64,8 +63,6 @@ public class AuthService(
         user.RegisterLogin();
         await uow.SaveChangesAsync(ct);
 
-        // Verify() only changes the status FK, not the loaded UserStatusType navigation, so the
-        // self-healed response would otherwise carry the stale "Pending" name/color; reload it.
         return selfHealed ? (Result<UserResponse>)(await users.GetByIdWithDetailsAsync(user.Id, ct))!.ToResponse() : (Result<UserResponse>)user.ToResponse();
     }
 
@@ -253,12 +250,8 @@ public class AuthService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // The account is already persisted; the user can request a new code from the
-            // verification screen, so a failed delivery must not fail the registration.
             logger.LogError(ex, "Failed to send the verification email for user {UserId}", user.Id);
 
-            // OtpLastSentAt was stamped optimistically; since nothing was delivered, clear it so the
-            // resend cooldown does not block the user's first retry.
             user.OtpLastSentAt = null;
             await uow.SaveChangesAsync(ct);
         }
@@ -278,12 +271,9 @@ public class AuthService(
 
     private string BuildVerificationUrl(Guid userId, string otpCode)
     {
-        return $"{application.BaseUrl.TrimEnd('/')}{VerificationPath}?userId={userId}&code={Uri.EscapeDataString(otpCode)}"
-;
+        return $"{application.BaseUrl.TrimEnd('/')}{VerificationPath}?userId={userId}&code={Uri.EscapeDataString(otpCode)}";
     }
 
-    // The OTP is a GUID (case-insensitive by convention) generated lowercase; normalize the
-    // submitted value so a code retyped with different casing still matches.
     private static string NormalizeOtp(string otp)
     {
         return otp.Trim().ToLowerInvariant();
