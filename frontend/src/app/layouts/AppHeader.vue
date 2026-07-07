@@ -34,8 +34,6 @@ function isActive(routeName: string): boolean {
           {{ item.label }}
         </RouterLink>
 
-        <ThemeToggle class="header__theme" />
-
         <template v-if="isAuthenticated">
           <RouterLink v-if="isAdmin" :to="{ name: 'admin-dashboard' }" class="header__link"
             >Administración</RouterLink
@@ -48,11 +46,13 @@ function isActive(routeName: string): boolean {
             Mi cuenta
           </RouterLink>
           <span class="header__greeting">Hola, {{ displayName }}</span>
+          <ThemeToggle class="header__theme" />
           <BaseButton variant="ghost" class="header__cta" @click="logout()">
             Cerrar sesión
           </BaseButton>
         </template>
         <template v-else>
+          <ThemeToggle class="header__theme" />
           <BaseButton :to="{ name: 'login' }" variant="link" class="header__login">
             Iniciar sesión
           </BaseButton>

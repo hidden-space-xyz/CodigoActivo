@@ -76,7 +76,8 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
 
 .announcements-list {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
 }
 
 .announcements-loading {

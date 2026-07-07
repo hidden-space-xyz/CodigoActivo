@@ -21,10 +21,10 @@
   --ca-text-faint: #979797;
   --ca-text-ghost: #ababab;
 
-  --ca-orange: #ff8c38;
-  --ca-orange-strong: #fb7518;
-  --ca-orange-ink: #c2510c;
-  --ca-orange-soft: rgba(255, 140, 56, 0.13);
+  --ca-orange: #f9a320;
+  --ca-orange-strong: #ee9410;
+  --ca-orange-ink: #8f5900;
+  --ca-orange-soft: rgba(249, 163, 32, 0.13);
 
   --ca-lime: #7cb518;
   --ca-lime-ink: #567f10;
@@ -56,7 +56,7 @@
   --ca-on-primary: #2a1400;
 
   --ca-glass-bg: rgba(245, 245, 245, 0.82);
-  --ca-grid-line: rgba(255, 140, 56, 0.11);
+  --ca-grid-line: rgba(249, 163, 32, 0.11);
   --ca-vignette: rgba(0, 0, 0, 0.04);
   --ca-glyph-op: 0.24;
   --ca-mask: rgba(0, 0, 0, 0.32);
@@ -96,8 +96,11 @@
   --ca-text-faint: #776f60;
   --ca-text-ghost: #675f52;
 
-  --ca-orange-ink: #ffab74;
-  --ca-orange-soft: rgba(255, 140, 56, 0.18);
+  --ca-orange: #22d3ee;
+  --ca-orange-strong: #06b6d4;
+  --ca-orange-ink: #5ce1f2;
+  --ca-orange-soft: rgba(34, 211, 238, 0.18);
+  --ca-on-primary: #04252b;
 
   --ca-lime: #86c31c;
   --ca-lime-ink: #a6e22e;
@@ -120,7 +123,7 @@
   --ca-danger-soft: rgba(255, 111, 98, 0.16);
 
   --ca-glass-bg: rgba(18, 16, 14, 0.82);
-  --ca-grid-line: rgba(255, 140, 60, 0.055);
+  --ca-grid-line: rgba(34, 211, 238, 0.055);
   --ca-vignette: rgba(0, 0, 0, 0.55);
   --ca-glyph-op: 0.2;
   --ca-mask: rgba(0, 0, 0, 0.66);

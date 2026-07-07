@@ -191,6 +191,7 @@ public static class DependencyInjection
         services.AddSingleton<IQueryExecutor, QueryExecutor>();
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<DemoDataSeeder>();
     }
 
     private static void AddRepositories(IServiceCollection services)

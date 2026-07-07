@@ -199,4 +199,31 @@ static async Task InitializeDatabaseAsync(WebApplication app)
     logger.LogInformation("Seeding database");
     await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
     logger.LogInformation("Database seeding complete");
+
+    await SyncDemoDataAsync(scope.ServiceProvider, app.Configuration, logger);
+}
+
+static async Task SyncDemoDataAsync(
+    IServiceProvider services,
+    IConfiguration config,
+    ILogger<Program> logger
+)
+{
+    var demoSeeder = services.GetRequiredService<DemoDataSeeder>();
+    try
+    {
+        if (config.GetValue("DemoMode", false))
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            await demoSeeder.SeedAsync(cts.Token);
+        }
+        else
+        {
+            await demoSeeder.RemoveAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Demo data synchronization failed");
+    }
 }

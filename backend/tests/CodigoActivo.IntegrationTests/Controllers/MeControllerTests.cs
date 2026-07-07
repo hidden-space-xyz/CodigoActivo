@@ -11,6 +11,16 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
+    private static FileEntity Thumbnail(Guid id) =>
+        new()
+        {
+            Id = id,
+            Name = "thumb",
+            Extension = "png",
+            UploadedAt = SeededAt,
+            UploadedBy = TestSeedData.Users.AdminId,
+        };
+
     private async Task SeedAssignmentAsync(
         Guid userId,
         string activityTitle,
@@ -21,8 +31,11 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
     {
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
+        var eventThumbnailId = Guid.NewGuid();
+        var activityThumbnailId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
+            db.Files.AddRange(Thumbnail(eventThumbnailId), Thumbnail(activityThumbnailId));
             db.Events.Add(new Event
             {
                 Id = eventId,
@@ -33,7 +46,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
                 EventEndsAt = new DateOnly(2026, 2, 2),
                 SignupStartsAt = SeededAt,
                 SignupEndsAt = SeededAt.AddDays(10),
-                ThumbnailId = Guid.NewGuid(),
+                ThumbnailId = eventThumbnailId,
                 CreatedAt = SeededAt,
                 CreatedBy = TestSeedData.Users.AdminId,
             });
@@ -47,7 +60,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
                 ActivityEndsAt = activityStartsAt.AddHours(2),
                 EventId = eventId,
                 ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                ThumbnailId = Guid.NewGuid(),
+                ThumbnailId = activityThumbnailId,
                 CreatedAt = SeededAt,
                 CreatedBy = TestSeedData.Users.AdminId,
             });

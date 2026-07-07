@@ -13,21 +13,38 @@ public class FileRepository(CodigoActivoDbContext context)
 {
     public async Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default)
     {
+        var thumbnailInUse =
+            await Context.Events.AnyAsync(e => e.ThumbnailId == fileId, ct)
+            || await Context.Activities.AnyAsync(a => a.ThumbnailId == fileId, ct)
+            || await Context.Announcements.AnyAsync(a => a.ThumbnailId == fileId, ct)
+            || await Context.Resources.AnyAsync(r => r.ThumbnailId == fileId, ct)
+            || await Context.Partners.AnyAsync(p => p.ThumbnailId == fileId, ct);
+
+        return thumbnailInUse || await IsEmbeddedInDescriptionAsync(fileId, ct);
+    }
+
+    private async Task<bool> IsEmbeddedInDescriptionAsync(Guid fileId, CancellationToken ct)
+    {
         var marker = RichTextFileReferences.ContentUrlMarker(fileId);
 
-        return await Context.Events.AnyAsync(
-                e => e.ThumbnailId == fileId || e.Description.Contains(marker),
-                ct
-            )
-            || await Context.Activities.AnyAsync(a => a.ThumbnailId == fileId, ct)
-            || await Context.Announcements.AnyAsync(
-                a => a.ThumbnailId == fileId || a.Description.Contains(marker),
-                ct
-            )
-            || await Context.Resources.AnyAsync(
-                r => r.ThumbnailId == fileId || r.Description.Contains(marker),
-                ct
-            )
-            || await Context.Partners.AnyAsync(p => p.ThumbnailId == fileId, ct);
+        if (!Context.Database.IsNpgsql())
+        {
+            return await Context.Events.AnyAsync(e => e.Description.Contains(marker), ct)
+                || await Context.Announcements.AnyAsync(a => a.Description.Contains(marker), ct)
+                || await Context.Resources.AnyAsync(r => r.Description.Contains(marker), ct);
+        }
+
+        var pattern = $"%{marker}%";
+        FormattableString sql = $"""
+            SELECT EXISTS (
+                SELECT 1 FROM events WHERE description::text LIKE {pattern}
+                UNION ALL
+                SELECT 1 FROM announcements WHERE description::text LIKE {pattern}
+                UNION ALL
+                SELECT 1 FROM resources WHERE description::text LIKE {pattern}
+            ) AS "Value"
+            """;
+
+        return await Context.Database.SqlQuery<bool>(sql).SingleAsync(ct);
     }
 }

@@ -7,17 +7,15 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
 public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 {
-    private readonly string databaseName = "codigoactivo-tests-" + Guid.NewGuid().ToString("N");
-
     public TestClock Clock { get; } = new();
 
     public FakeEmailSender EmailSender { get; } = new();
@@ -31,21 +29,22 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
         builder.ConfigureAppConfiguration(
             (_, config) =>
+            {
+                config.AddUserSecrets(typeof(Program).Assembly, optional: true);
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["Database:MigrateOnStartup"] = "false",
-                        ["Database:SeedOnStartup"] = "false",
-                        ["ConnectionStrings:Default"] = "Host=localhost;Database=unused",
                         ["Cors:AllowedOrigins:0"] = "http://localhost",
                         ["Auth:SameSite"] = "Lax",
+                        ["DemoMode"] = "false",
                     }
-                )
+                );
+            }
         );
 
         builder.ConfigureTestServices(services =>
         {
-            ReplaceDbContext(services);
+            UseTestDatabase(services);
 
             services.RemoveAll<IPasswordHasher>();
             services.AddSingleton<IPasswordHasher, FakePasswordHasher>();
@@ -61,7 +60,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         });
     }
 
-    private void ReplaceDbContext(IServiceCollection services)
+    private static void UseTestDatabase(IServiceCollection services)
     {
         var toRemove = services
             .Where(d =>
@@ -75,11 +74,34 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         foreach (var descriptor in toRemove)
             services.Remove(descriptor);
 
-        services.AddDbContext<CodigoActivoDbContext>(options =>
-            options
-                .UseInMemoryDatabase(databaseName)
-                .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+        services.AddDbContext<CodigoActivoDbContext>(
+            (sp, options) =>
+                options
+                    .UseNpgsql(
+                        BuildTestConnectionString(sp.GetRequiredService<IConfiguration>()),
+                        npgsql =>
+                            npgsql.MigrationsAssembly(
+                                typeof(CodigoActivoDbContext).Assembly.FullName
+                            )
+                    )
+                    .UseSnakeCaseNamingConvention()
         );
+    }
+
+    private static string BuildTestConnectionString(IConfiguration configuration)
+    {
+        var baseConnectionString = configuration.GetConnectionString("Default");
+        if (string.IsNullOrWhiteSpace(baseConnectionString))
+        {
+            throw new InvalidOperationException(
+                "ConnectionStrings:Default must be configured with the application's Postgres "
+                    + "credentials to run the integration tests."
+            );
+        }
+
+        var builder = new NpgsqlConnectionStringBuilder(baseConnectionString);
+        builder.Database = $"{builder.Database ?? "codigoactivo"}test";
+        return builder.ConnectionString;
     }
 
     public async Task ResetDatabaseAsync()
@@ -90,8 +112,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         var provider = scope.ServiceProvider;
         var db = provider.GetRequiredService<CodigoActivoDbContext>();
 
-        await db.Database.EnsureDeletedAsync();
-        await db.Database.EnsureCreatedAsync();
+        await TruncateAllTablesAsync(db);
 
         await provider.GetRequiredService<DatabaseSeeder>().SeedAsync();
         await TestSeedData.SeedUsersAsync(db);
@@ -110,5 +131,25 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
         return await query(db);
+    }
+
+    private static async Task TruncateAllTablesAsync(CodigoActivoDbContext db)
+    {
+        var tables = db.Model.GetEntityTypes()
+            .Select(entity => (Schema: entity.GetSchema(), Table: entity.GetTableName()))
+            .Where(entity => entity.Table is not null)
+            .Select(entity =>
+                entity.Schema is null
+                    ? $"\"{entity.Table}\""
+                    : $"\"{entity.Schema}\".\"{entity.Table}\""
+            )
+            .Distinct()
+            .ToList();
+
+        if (tables.Count == 0)
+            return;
+
+        var sql = $"TRUNCATE TABLE {string.Join(", ", tables)} RESTART IDENTITY CASCADE";
+        await db.Database.ExecuteSqlRawAsync(sql);
     }
 }

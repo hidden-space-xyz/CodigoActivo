@@ -31,6 +31,12 @@
   --p-button-primary-hover-border-color: var(--ca-orange-strong);
   --p-button-border-radius: 11px;
 
+  --p-primary-color: var(--ca-orange);
+  --p-primary-contrast-color: var(--ca-on-primary);
+  --p-primary-hover-color: var(--ca-orange-strong);
+  --p-primary-active-color: var(--ca-orange-strong);
+  --p-focus-ring-color: var(--ca-orange-ink);
+
   --p-content-background: var(--ca-surface);
   --p-content-hover-background: var(--ca-surface-2);
   --p-content-border-color: var(--ca-border);
@@ -151,6 +157,20 @@
   --p-button-outlined-danger-color: var(--ca-danger-ink);
   --p-button-outlined-danger-border-color: var(--ca-border-strong);
   --p-button-outlined-danger-hover-background: var(--ca-danger-soft);
+}
+
+.ca-dark {
+  --p-primary-50: #ecfeff;
+  --p-primary-100: #cffafe;
+  --p-primary-200: #a5f3fc;
+  --p-primary-300: #67e8f9;
+  --p-primary-400: #22d3ee;
+  --p-primary-500: #06b6d4;
+  --p-primary-600: #0891b2;
+  --p-primary-700: #0e7490;
+  --p-primary-800: #155e75;
+  --p-primary-900: #164e63;
+  --p-primary-950: #083344;
 }
 
 .p-inputtext,

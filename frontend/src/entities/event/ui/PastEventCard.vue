@@ -73,7 +73,7 @@ defineProps<{ event: PastEvent }>()
 
 .past-card__event {
   font-size: 14px;
-  color: var(--ca-text-dim);
+  color: var(--ca-orange-ink);
   margin-top: 5px;
 }
 

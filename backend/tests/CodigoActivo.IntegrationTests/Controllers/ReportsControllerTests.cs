@@ -15,6 +15,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     private static readonly Guid EventId = new("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid ActivityAId = new("bbbbbbbb-0000-0000-0000-000000000001");
     private static readonly Guid ActivityBId = new("bbbbbbbb-0000-0000-0000-000000000002");
+    private static readonly Guid EventThumbnailId = new("cccccccc-0000-0000-0000-000000000001");
+    private static readonly Guid ActivityAThumbnailId = new("cccccccc-0000-0000-0000-000000000002");
+    private static readonly Guid ActivityBThumbnailId = new("cccccccc-0000-0000-0000-000000000003");
 
     private static readonly DateTimeOffset At = new(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -22,6 +25,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     {
         return Factory.SeedAsync(db =>
         {
+            db.Files.AddRange(
+                Thumbnail(EventThumbnailId),
+                Thumbnail(ActivityAThumbnailId),
+                Thumbnail(ActivityBThumbnailId)
+            );
+
             db.Events.Add(new Event
             {
                 Id = EventId,
@@ -32,13 +41,13 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
                 EventEndsAt = new DateOnly(2026, 5, 2),
                 SignupStartsAt = At,
                 SignupEndsAt = At,
-                ThumbnailId = Guid.NewGuid(),
+                ThumbnailId = EventThumbnailId,
                 CreatedAt = At,
                 CreatedBy = TestSeedData.Users.AdminId,
             });
 
-            db.Activities.Add(BuildActivity(ActivityAId, "Taller"));
-            db.Activities.Add(BuildActivity(ActivityBId, "Charla"));
+            db.Activities.Add(BuildActivity(ActivityAId, "Taller", ActivityAThumbnailId));
+            db.Activities.Add(BuildActivity(ActivityBId, "Charla", ActivityBThumbnailId));
 
             db.ActivityAllowedRoleTypes.AddRange(
                 Allowed(ActivityAId, SeedIds.ActivityRoleTypes.Leader),
@@ -58,7 +67,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         });
     }
 
-    private static Activity BuildActivity(Guid id, string title) => new()
+    private static Activity BuildActivity(Guid id, string title, Guid thumbnailId) => new()
     {
         Id = id,
         Title = title,
@@ -68,10 +77,20 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         ActivityEndsAt = At.AddHours(2),
         EventId = EventId,
         ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-        ThumbnailId = Guid.NewGuid(),
+        ThumbnailId = thumbnailId,
         CreatedAt = At,
         CreatedBy = TestSeedData.Users.AdminId,
     };
+
+    private static FileEntity Thumbnail(Guid id) =>
+        new()
+        {
+            Id = id,
+            Name = "thumb",
+            Extension = "png",
+            UploadedAt = At,
+            UploadedBy = TestSeedData.Users.AdminId,
+        };
 
     private static ActivityAllowedRoleType Allowed(Guid activityId, Guid roleTypeId) =>
         new() { ActivityId = activityId, ActivityRoleTypeId = roleTypeId };

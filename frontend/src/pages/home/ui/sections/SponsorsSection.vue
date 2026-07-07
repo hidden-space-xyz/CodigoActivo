@@ -154,11 +154,11 @@ function distanceOf(offset: number): number {
 
 .sponsors__track {
   position: relative;
-  height: 160px;
+  height: 220px;
 }
 
 .sponsor {
-  --step: clamp(94px, 22vw, 150px);
+  --step: clamp(124px, 26vw, 196px);
   --scale: 1;
   position: absolute;
   left: 50%;
@@ -180,15 +180,15 @@ function distanceOf(offset: number): number {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 82px;
-  height: 82px;
-  border-radius: 18px;
+  width: 124px;
+  height: 124px;
+  border-radius: 24px;
   overflow: hidden;
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 28px;
+  font-size: 40px;
   color: var(--ca-on-primary);
   box-shadow: var(--ca-shadow-md);
 }
@@ -212,7 +212,7 @@ function distanceOf(offset: number): number {
 .sponsor__name {
   font-family: var(--ca-font-display);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 17px;
   color: var(--ca-text);
   white-space: nowrap;
 }
@@ -244,13 +244,16 @@ function distanceOf(offset: number): number {
 }
 
 @media (max-width: 640px) {
+  .sponsors__track {
+    height: 180px;
+  }
   .sponsor__logo {
-    width: 64px;
-    height: 64px;
-    font-size: 22px;
+    width: 92px;
+    height: 92px;
+    font-size: 30px;
   }
   .sponsor__name {
-    font-size: 13px;
+    font-size: 15px;
   }
 }
 </style>

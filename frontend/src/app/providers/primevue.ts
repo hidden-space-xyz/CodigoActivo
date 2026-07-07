@@ -9,17 +9,17 @@ import '@/assets/styles/primevue-overrides.css'
 const CodigoActivoPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#fff6ee',
-      100: '#ffe9d6',
-      200: '#ffcfa6',
-      300: '#ffb075',
-      400: '#ff9a4f',
-      500: '#ff8c38',
-      600: '#fb7518',
-      700: '#cc5c10',
-      800: '#a24713',
-      900: '#833b15',
-      950: '#471b07',
+      50: '#fff8ed',
+      100: '#fdeccb',
+      200: '#fbd68e',
+      300: '#f9bd51',
+      400: '#f9ac2f',
+      500: '#f9a320',
+      600: '#e58e0f',
+      700: '#be6f10',
+      800: '#975715',
+      900: '#7c4817',
+      950: '#452507',
     },
   },
 })

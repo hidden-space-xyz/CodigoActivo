@@ -258,15 +258,24 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
     public async Task Delete_file_embedded_in_a_description_is_conflict_file_in_use()
     {
         var created = await UploadAsAdminAsync();
+        var thumbnailId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
+            db.Files.Add(new FileEntity
+            {
+                Id = thumbnailId,
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = Factory.Clock.UtcNow,
+                UploadedBy = TestSeedData.Users.AdminId,
+            });
             db.Announcements.Add(new Announcement
             {
                 Id = Guid.NewGuid(),
                 Title = "Con imagen",
                 Subtitle = "Sub",
                 Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
-                ThumbnailId = Guid.NewGuid(),
+                ThumbnailId = thumbnailId,
                 CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 CreatedBy = TestSeedData.Users.AdminId,
             });
