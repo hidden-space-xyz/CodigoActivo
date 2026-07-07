@@ -8,7 +8,6 @@ example/
 .claude/settings.local.json
 
 # Secrets and local configuration
-*.Development.json
 *.env
 .env
 .env.*

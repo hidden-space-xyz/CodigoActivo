@@ -73,10 +73,10 @@ CodigoActivo/
 ```bash
 cd backend
 
-# Point the API at your PostgreSQL instance (edit appsettings.json or set an environment variable):
-#   ConnectionStrings:Default = Host=localhost;Port=5432;Database=codigoactivo;Username=postgres;Password=...
+# One-time setup: store your PostgreSQL credentials in user secrets
+dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Database=codigoactivo;Username=postgres;Password=..." --project src/CodigoActivo.API
 
-dotnet run --project CodigoActivo.API
+dotnet run --project src/CodigoActivo.API
 ```
 
 On startup the API **applies migrations and seeds the catalogs automatically** (toggle with
@@ -102,22 +102,33 @@ The SPA is served at <http://localhost:5173>.
 
 ## ⚙️ Configuration
 
-### Backend — `backend/CodigoActivo.API/appsettings.json`
+### Backend — `backend/src/CodigoActivo.API/appsettings.json`
+
+All settings live in the single `appsettings.json`. Credentials are never committed: they are stored
+per developer with [user secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets)
+(loaded automatically in the `Development` environment):
+
+```bash
+dotnet user-secrets set "ConnectionStrings:Default" "Host=...;Password=..." --project src/CodigoActivo.API
+dotnet user-secrets set "Smtp:Username" "..." --project src/CodigoActivo.API
+dotnet user-secrets set "Smtp:Password" "..." --project src/CodigoActivo.API
+```
 
 | Key                          | Description                                              | Default                       |
 | ---------------------------- | ------------------------------------------------------- | ----------------------------- |
 | `App:TimeZone`               | IANA time zone the app operates in                      | `Europe/Madrid`               |
-| `ConnectionStrings:Default`  | PostgreSQL connection string                            | local `codigoactivo` database |
+| `App:BaseUrl`                | Public base URL used in outgoing links                  | `http://localhost:5173`       |
+| `ConnectionStrings:Default`  | PostgreSQL connection string                            | *(user secrets)*              |
 | `Database:MigrateOnStartup`  | Apply EF Core migrations on boot                        | `true`                        |
 | `Database:SeedOnStartup`     | Seed catalog data on boot                               | `true`                        |
 | `FileStorage:RootPath`       | Local directory for uploaded files                      | `files`                       |
-| `FileStorage:MaxSizeBytes`   | Max upload size                                          | `5 MiB`                       |
+| `FileStorage:MaxSizeBytes`   | Max upload size                                          | `10 MiB`                      |
 | `Auth:CookieName` · `SameSite` · `ExpireHours` | Session cookie settings               | `CodigoActivo.Session` · `Lax` · `8` |
-| `AccountVerification:Required` | Require email (OTP) verification before login. Disable it in `appsettings.Development.json` (git-ignored) for local work | `true` |
-| `AccountVerification:OtpLifetimeMinutes` · `MaxFailedAttempts` · `ResendCooldownSeconds` | OTP policy | `15` · `5` · `60` |
-| `Smtp:Host` · `Port` · `Security` | SMTP server used to send verification emails (`Security`: `StartTls`, `SslOnConnect`, `None`, `Auto`) | *(empty)* · `587` · `StartTls` |
-| `Smtp:Username` · `Password`  | SMTP credentials (prefer the `Smtp__Password` env var over the JSON file in production) | *(empty)* |
-| `Smtp:FromAddress` · `FromName` | Sender identity for outgoing email                    | *(empty)* · `Código Activo`   |
+| `AccountVerification:Required` | Require email (OTP) verification before login. Enable it in production | `false` |
+| `AccountVerification:OtpLifetimeMinutes` · `ResendCooldownSeconds` | OTP policy          | `15` · `60`                   |
+| `Smtp:Host` · `Port` · `Security` | SMTP server used to send verification emails (`Security`: `StartTls`, `SslOnConnect`, `None`, `Auto`) | `localhost` · `587` · `StartTls` |
+| `Smtp:Username` · `Password`  | SMTP credentials                                        | *(user secrets)*              |
+| `Smtp:FromAddress` · `FromName` | Sender identity for outgoing email                    | `` · `Código Activo` |
 | `Cors:AllowedOrigins`        | Origins allowed to call the API with credentials        | `localhost:5173`, …           |
 
 ### Frontend — `frontend/.env.local`
@@ -135,13 +146,13 @@ The SPA is served at <http://localhost:5173>.
 
 ```bash
 dotnet build                                   # build + run analyzers (style violations fail the build)
-dotnet run --project CodigoActivo.API          # run the API
+dotnet run --project src/CodigoActivo.API      # run the API
 
 # Add a migration (requires the EF tool: dotnet tool install -g dotnet-ef).
 # Migrations are applied automatically on next startup:
 dotnet ef migrations add <Name> \
-  --project CodigoActivo.Infrastructure \
-  --startup-project CodigoActivo.API
+  --project src/CodigoActivo.Infrastructure \
+  --startup-project src/CodigoActivo.API
 ```
 
 **Frontend** (run from `frontend/`)
