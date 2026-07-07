@@ -188,30 +188,15 @@ static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? 
 
 static async Task InitializeDatabaseAsync(WebApplication app)
 {
-    var config = app.Configuration;
-    if (
-        !config.GetValue("Database:MigrateOnStartup", true)
-        && !config.GetValue("Database:SeedOnStartup", true)
-    )
-    {
-        return;
-    }
-
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    if (config.GetValue("Database:MigrateOnStartup", true))
-    {
-        logger.LogInformation("Applying database migrations");
-        await db.Database.MigrateAsync();
-        logger.LogInformation("Database migrations applied");
-    }
+    logger.LogInformation("Applying database migrations");
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Database migrations applied");
 
-    if (config.GetValue("Database:SeedOnStartup", true))
-    {
-        logger.LogInformation("Seeding database");
-        await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
-        logger.LogInformation("Database seeding complete");
-    }
+    logger.LogInformation("Seeding database");
+    await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
+    logger.LogInformation("Database seeding complete");
 }
