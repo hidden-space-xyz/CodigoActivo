@@ -36,5 +36,4 @@ Changes that cross the API boundary follow this pipeline — keep every step in 
 - **Demo mode**: backend config key `DemoMode` (currently `true` in `appsettings.json`) seeds a full realistic demo dataset at startup and removes it when flipped off. It is backend-only; the frontend has no demo awareness.
 - Credentials are never committed — backend uses dotnet user-secrets, frontend uses `.env.local`.
 - Both sides enforce style at build/lint time: backend via Roslyn analyzers (Meziantou + Sonar, style violations fail `dotnet build`) and CSharpier; frontend via ESLint + Prettier + `vue-tsc` (very strict tsconfig) + Steiger (FSD layer rules).
-- The workspace-level `C:\Code\AGENTS.md` describes the **Rutile** multi-repo system and does **not** apply to this repository (no Nexus feed, no copyright headers, different error-handling pattern).
 - License: GPL-3.0.
