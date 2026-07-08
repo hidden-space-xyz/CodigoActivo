@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/out/
+**/publish/
+files/
+logs/
+tests/
+.git/
+.gitignore
+.vs/
+.vscode/
+.idea/
+*.user
+Dockerfile
+.dockerignore

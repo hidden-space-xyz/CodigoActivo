@@ -1,0 +1,113 @@
+name: codigoactivo
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-codigoactivo}
+      POSTGRES_USER: ${POSTGRES_USER:-codigoactivo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your .env file}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codigoactivo} -d ${POSTGRES_DB:-codigoactivo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt: [no-new-privileges:true]
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-codigoactivo};Username=${POSTGRES_USER:-codigoactivo};Password=${POSTGRES_PASSWORD}"
+      App__BaseUrl: ${APP_BASE_URL:-https://localhost}
+      App__TimeZone: ${APP_TIMEZONE:-Europe/Madrid}
+      # appsettings ships 3 dev origins; blank the extra indices so only APP_BASE_URL survives the merge.
+      Cors__AllowedOrigins__0: ${APP_BASE_URL:-https://localhost}
+      Cors__AllowedOrigins__1: ""
+      Cors__AllowedOrigins__2: ""
+      DemoMode: ${DEMO_MODE:-false}
+      Auth__SameSite: ${AUTH_SAMESITE:-Lax}
+      FileStorage__RootPath: /app/files
+      AccountVerification__Required: ${ACCOUNT_VERIFICATION_REQUIRED:-false}
+      Smtp__Host: ${SMTP_HOST:-}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__Security: ${SMTP_SECURITY:-StartTls}
+      Smtp__Username: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-}
+      Smtp__FromName: ${SMTP_FROM_NAME:-Código Activo}
+    volumes:
+      - api-files:/app/files
+      - api-logs:/app/logs
+      - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
+    networks: [backend, frontend]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME in your .env file}
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+      - "${HTTPS_PORT:-443}:8443"
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    networks: [frontend]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME in your .env file}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?Set LETSENCRYPT_EMAIL in your .env file}
+      LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-0}
+    entrypoint: ["/bin/sh", "/certbot-entrypoint.sh"]
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+      - ./frontend/docker/certbot-entrypoint.sh:/certbot-entrypoint.sh:ro
+    networks: [frontend]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true   # no internet route: the DB is fully isolated
+
+volumes:
+  db-data:
+  api-files:
+  api-logs:
+  api-dataprotection:
+  letsencrypt:
+  certbot-webroot:

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.git/
+.gitignore
+.vs/
+.vscode/
+.idea/
+*.log
+Dockerfile
+.dockerignore
