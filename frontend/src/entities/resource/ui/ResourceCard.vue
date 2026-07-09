@@ -47,7 +47,8 @@ defineProps<{ resource: LearningResourceSummary }>()
   font-family: var(--ca-font-display);
   font-weight: 600;
   font-size: 20px;
-  color: var(--ca-text);
+  line-height: 1.2;
+  color: var(--ca-text-bright);
 }
 
 .resource-card__footer {

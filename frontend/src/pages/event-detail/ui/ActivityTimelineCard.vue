@@ -4,7 +4,7 @@ import { AppButton as Button, BaseButton } from '@/shared/ui'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 
-import { formatDateTime } from '@/shared/lib'
+import { formatTimeRange } from '@/shared/lib'
 
 import type { TimelineActivity } from '../model/activity-timeline.types'
 
@@ -14,6 +14,7 @@ const props = defineProps<{
   authenticated: boolean
   signupOpen: boolean
   hasHousehold: boolean
+  referenceDate?: Date | null
 }>()
 const emit = defineEmits<{
   signup: [roleId: string]
@@ -30,8 +31,7 @@ const selectedRoleId = ref(
 function scheduleLabel(): string {
   const { start, end } = props.activity
   if (!start) return 'Sin horario'
-  const startLabel = formatDateTime(start.toISOString())
-  return end ? `${startLabel} – ${formatDateTime(end.toISOString())}` : startLabel
+  return formatTimeRange(start, end, props.referenceDate)
 }
 
 function statusSeverity(name: string): 'success' | 'danger' | 'info' {

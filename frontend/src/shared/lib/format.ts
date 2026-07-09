@@ -5,6 +5,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-ES', {
 
 const dateFormatter = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
 
+const timeFormatter = new Intl.DateTimeFormat('es-ES', { timeStyle: 'short' })
+
+const dayMonthFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
+
+const RANGE_SEPARATOR = '–'
+
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
 export function parseDateOnly(value?: string | null): Date | null {
@@ -66,4 +72,53 @@ export function toDateInput(value?: string | null): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toISOString().slice(0, 10)
+}
+
+function toDate(value?: Date | string | null): Date | null {
+  if (value == null) return null
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+export function formatDateTimeRange(
+  start?: Date | string | null,
+  end?: Date | string | null,
+): string {
+  const startDate = toDate(start)
+  if (!startDate) return '—'
+  const startText = dateTimeFormatter.format(startDate)
+  const endDate = toDate(end)
+  if (!endDate) return startText
+  const endText = isSameDay(startDate, endDate)
+    ? timeFormatter.format(endDate)
+    : dateTimeFormatter.format(endDate)
+  return `${startText} ${RANGE_SEPARATOR} ${endText}`
+}
+
+export function formatTimeRange(
+  start?: Date | string | null,
+  end?: Date | string | null,
+  referenceDay?: Date | string | null,
+): string {
+  const startDate = toDate(start)
+  if (!startDate) return '—'
+  const reference = toDate(referenceDay)
+  const startText =
+    reference && !isSameDay(startDate, reference)
+      ? `${dayMonthFormatter.format(startDate)}, ${timeFormatter.format(startDate)}`
+      : timeFormatter.format(startDate)
+  const endDate = toDate(end)
+  if (!endDate) return startText
+  const endText = isSameDay(startDate, endDate)
+    ? timeFormatter.format(endDate)
+    : `${dayMonthFormatter.format(endDate)}, ${timeFormatter.format(endDate)}`
+  return `${startText} ${RANGE_SEPARATOR} ${endText}`
 }

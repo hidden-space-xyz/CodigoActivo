@@ -57,23 +57,23 @@ defineProps<{ event: PastEvent }>()
 }
 
 .past-card__year {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--ca-text-faint);
+  font-family: var(--ca-font-mono);
+  font-size: 12px;
+  color: var(--ca-text-faint-2);
 }
 
 .past-card__title {
   font-family: var(--ca-font-display);
   font-weight: 600;
-  font-size: 19px;
+  font-size: 20px;
   line-height: 1.2;
-  color: var(--ca-text);
+  color: var(--ca-text-bright);
 }
 
 .past-card__event {
-  font-size: 14px;
-  color: var(--ca-orange-ink);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
   margin-top: 5px;
 }
 

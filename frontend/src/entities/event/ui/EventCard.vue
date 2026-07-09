@@ -13,7 +13,12 @@ defineProps<{ event: UpcomingEvent }>()
     <div v-if="event.slogan" class="event-card__slogan">«{{ event.slogan }}»</div>
 
     <div v-if="event.categories.length" class="event-card__cats">
-      <ColorTag v-for="cat in event.categories" :key="cat.id" :value="cat.name" :color="cat.color" />
+      <ColorTag
+        v-for="cat in event.categories"
+        :key="cat.id"
+        :value="cat.name"
+        :color="cat.color"
+      />
     </div>
 
     <div class="event-card__footer">
@@ -48,15 +53,16 @@ defineProps<{ event: UpcomingEvent }>()
 .event-card__title {
   font-family: var(--ca-font-display);
   font-weight: 600;
-  font-size: 21px;
-  line-height: 1.15;
-  color: var(--ca-text);
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--ca-text-bright);
 }
 
 .event-card__slogan {
-  font-size: 15px;
+  font-size: 14.5px;
+  line-height: 1.5;
   margin-top: -6px;
-  color: var(--ca-orange-ink);
+  color: var(--ca-text-muted);
 }
 
 .event-card__cats {
@@ -75,7 +81,8 @@ defineProps<{ event: UpcomingEvent }>()
 }
 
 .event-card__status {
-  font-size: 13px;
+  font-family: var(--ca-font-mono);
+  font-size: 12px;
   font-weight: 600;
   color: var(--ca-success-ink);
 }
@@ -83,6 +90,6 @@ defineProps<{ event: UpcomingEvent }>()
 .event-card__more {
   font-size: 14px;
   font-weight: 600;
-  color: var(--ca-text);
+  color: var(--ca-orange-ink);
 }
 </style>

@@ -11,7 +11,6 @@ const props = defineProps<{ eventId: string }>()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 
 const tab = ref<'info' | 'activities'>('info')
-const accentColor = 'var(--ca-orange)'
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
@@ -46,9 +45,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
       <section class="detail-head">
         <div class="ca-container--narrow">
           <h1 class="detail-head__title">{{ event.title }}</h1>
-          <div v-if="event.subtitle" class="detail-head__slogan" :style="{ color: accentColor }">
-            «{{ event.subtitle }}»
-          </div>
+          <div v-if="event.subtitle" class="detail-head__slogan">«{{ event.subtitle }}»</div>
           <div v-if="event.categories.length" class="detail-head__cats">
             <ColorTag
               v-for="cat in event.categories"
@@ -149,6 +146,7 @@ const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
   font-family: var(--ca-font-display);
   font-size: 23px;
   margin-top: 8px;
+  color: var(--ca-text-muted);
 }
 
 .detail-head__cats {

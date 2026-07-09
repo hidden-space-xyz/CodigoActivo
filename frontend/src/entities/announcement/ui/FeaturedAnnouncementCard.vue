@@ -95,7 +95,7 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
   font-family: var(--ca-font-display);
   font-size: 21px;
   margin-top: 8px;
-  color: var(--ca-orange-ink);
+  color: var(--ca-text-muted);
 }
 
 .featured__meta {
