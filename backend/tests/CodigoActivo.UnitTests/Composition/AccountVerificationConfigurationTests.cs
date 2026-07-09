@@ -21,11 +21,11 @@ public sealed class AccountVerificationConfigurationTests
         var provider = Build(
             new Dictionary<string, string?>
             {
-                ["AccountVerification:Required"] = "true",
+                ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
                 ["AccountVerification:OtpLifetimeMinutes"] = "10",
                 ["AccountVerification:ResendCooldownSeconds"] = "30",
-                ["Smtp:Host"] = "smtp.example.test",
-                ["Smtp:FromAddress"] = "no-reply@example.test",
+                ["SMTP_HOST"] = "smtp.example.test",
+                ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
             }
         );
 
@@ -41,7 +41,7 @@ public sealed class AccountVerificationConfigurationTests
         var provider = Build(
             new Dictionary<string, string?>
             {
-                ["AccountVerification:Required"] = "false",
+                ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
                 ["AccountVerification:OtpLifetimeMinutes"] = "Infinity",
                 ["AccountVerification:ResendCooldownSeconds"] = "not-a-number",
             }
@@ -59,8 +59,8 @@ public sealed class AccountVerificationConfigurationTests
         var provider = Build(
             new Dictionary<string, string?>
             {
-                ["Smtp:Host"] = "smtp.example.test",
-                ["Smtp:FromAddress"] = "no-reply@example.test",
+                ["SMTP_HOST"] = "smtp.example.test",
+                ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
             }
         );
 
@@ -78,12 +78,12 @@ public sealed class AccountVerificationConfigurationTests
     {
         var settings = new Dictionary<string, string?>
         {
-            ["AccountVerification:Required"] = "true",
+            ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
         };
         if (host is not null)
-            settings["Smtp:Host"] = host;
+            settings["SMTP_HOST"] = host;
         if (from is not null)
-            settings["Smtp:FromAddress"] = from;
+            settings["SMTP_FROM_ADDRESS"] = from;
 
         var act = () => Build(settings);
 
@@ -94,7 +94,7 @@ public sealed class AccountVerificationConfigurationTests
     public void Does_not_require_smtp_when_verification_is_disabled()
     {
         var act = () =>
-            Build(new Dictionary<string, string?> { ["AccountVerification:Required"] = "false" });
+            Build(new Dictionary<string, string?> { ["ACCOUNT_VERIFICATION_REQUIRED"] = "false" });
 
         act.Should().NotThrow();
     }

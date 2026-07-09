@@ -17,6 +17,7 @@ using CodigoActivo.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace CodigoActivo.Composition;
 
@@ -43,7 +44,7 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
-        var baseUrl = configuration["App:BaseUrl"];
+        var baseUrl = configuration["APP_BASE_URL"];
         services.AddSingleton(
             new ApplicationOptions
             {
@@ -56,7 +57,7 @@ public static class DependencyInjection
 
     private static bool IsVerificationRequired(IConfiguration configuration)
     {
-        return !bool.TryParse(configuration["AccountVerification:Required"], out var required)
+        return !bool.TryParse(configuration["ACCOUNT_VERIFICATION_REQUIRED"], out var required)
             || required;
     }
 
@@ -111,23 +112,23 @@ public static class DependencyInjection
     {
         var options = new SmtpOptions
         {
-            Host = configuration["Smtp:Host"] ?? string.Empty,
+            Host = configuration["SMTP_HOST"] ?? string.Empty,
             Port =
-                int.TryParse(configuration["Smtp:Port"], CultureInfo.InvariantCulture, out var port)
+                int.TryParse(configuration["SMTP_PORT"], CultureInfo.InvariantCulture, out var port)
                 && port > 0
                     ? port
                     : SmtpOptions.DefaultPort,
             Security = Enum.TryParse<SmtpSecurityMode>(
-                configuration["Smtp:Security"],
+                configuration["SMTP_SECURITY"],
                 ignoreCase: true,
                 out var security
             )
                 ? security
                 : SmtpSecurityMode.StartTls,
-            Username = configuration["Smtp:Username"] ?? string.Empty,
-            Password = configuration["Smtp:Password"] ?? string.Empty,
-            FromAddress = configuration["Smtp:FromAddress"] ?? string.Empty,
-            FromName = configuration["Smtp:FromName"] ?? "Código Activo",
+            Username = configuration["SMTP_USERNAME"] ?? string.Empty,
+            Password = configuration["SMTP_PASSWORD"] ?? string.Empty,
+            FromAddress = configuration["SMTP_FROM_ADDRESS"] ?? string.Empty,
+            FromName = configuration["SMTP_FROM_NAME"] ?? "Código Activo",
         };
 
         if (
@@ -139,8 +140,8 @@ public static class DependencyInjection
         )
         {
             throw new InvalidOperationException(
-                "SMTP is not configured (Smtp:Host and Smtp:FromAddress are required) while "
-                    + "AccountVerification:Required is true. Configure SMTP or disable verification."
+                "SMTP is not configured (SMTP_HOST and SMTP_FROM_ADDRESS are required) while "
+                    + "ACCOUNT_VERIFICATION_REQUIRED is true. Configure SMTP or disable verification."
             );
         }
 
@@ -150,7 +151,7 @@ public static class DependencyInjection
 
     private static void AddClock(IServiceCollection services, IConfiguration configuration)
     {
-        var timeZone = ResolveTimeZone(configuration["App:TimeZone"]);
+        var timeZone = ResolveTimeZone(configuration["APP_TIMEZONE"]);
         services.AddSingleton<IClock>(new SystemClock(timeZone));
     }
 
@@ -180,7 +181,7 @@ public static class DependencyInjection
         services.AddDbContext<CodigoActivoDbContext>(options =>
             options
                 .UseNpgsql(
-                    configuration.GetConnectionString("Default"),
+                    BuildConnectionString(configuration),
                     npgsql =>
                         npgsql.MigrationsAssembly(typeof(CodigoActivoDbContext).Assembly.FullName)
                 )
@@ -192,6 +193,24 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<DemoDataSeeder>();
+    }
+
+    private static string BuildConnectionString(IConfiguration configuration)
+    {
+        return new NpgsqlConnectionStringBuilder
+        {
+            Host = configuration["POSTGRES_HOST"] ?? "localhost",
+            Port = int.TryParse(
+                configuration["POSTGRES_PORT"],
+                CultureInfo.InvariantCulture,
+                out var port
+            )
+                ? port
+                : 5432,
+            Database = configuration["POSTGRES_DB"] ?? "codigoactivo",
+            Username = configuration["POSTGRES_USER"] ?? "codigoactivo",
+            Password = configuration["POSTGRES_PASSWORD"] ?? string.Empty,
+        }.ConnectionString;
     }
 
     private static void AddRepositories(IServiceCollection services)
@@ -215,7 +234,7 @@ public static class DependencyInjection
     {
         var storageOptions = new FileStorageOptions
         {
-            RootPath = configuration["FileStorage:RootPath"] ?? "files",
+            RootPath = configuration["FILE_STORAGE_ROOT"] ?? "files",
             MaxSizeBytes =
                 long.TryParse(
                     configuration["FileStorage:MaxSizeBytes"],

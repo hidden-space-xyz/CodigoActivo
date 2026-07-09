@@ -69,7 +69,7 @@ try
         options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
-        options.Cookie.SameSite = ResolveSameSite(builder.Configuration["Auth:SameSite"]);
+        options.Cookie.SameSite = ResolveSameSite(builder.Configuration["AUTH_SAMESITE"]);
     });
 
     builder
@@ -81,7 +81,7 @@ try
             options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
-            options.Cookie.SameSite = ResolveSameSite(builder.Configuration["Auth:SameSite"]);
+            options.Cookie.SameSite = ResolveSameSite(builder.Configuration["AUTH_SAMESITE"]);
             options.SlidingExpiration = true;
             options.ExpireTimeSpan = TimeSpan.FromHours(
                 builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
@@ -201,7 +201,7 @@ static async Task SyncDemoDataAsync(
     var demoSeeder = services.GetRequiredService<DemoDataSeeder>();
     try
     {
-        if (config.GetValue("DemoMode", false))
+        if (config.GetValue("DEMO_MODE", false))
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
             await demoSeeder.SeedAsync(cts.Token);

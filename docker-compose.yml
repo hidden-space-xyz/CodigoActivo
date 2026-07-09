@@ -31,20 +31,24 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-codigoactivo};Username=${POSTGRES_USER:-codigoactivo};Password=${POSTGRES_PASSWORD}"
-      App__BaseUrl: ${APP_BASE_URL:-https://localhost}
-      App__TimeZone: ${APP_TIMEZONE:-Europe/Madrid}
-      DemoMode: ${DEMO_MODE:-false}
-      Auth__SameSite: ${AUTH_SAMESITE:-Lax}
-      FileStorage__RootPath: /app/files
-      AccountVerification__Required: ${ACCOUNT_VERIFICATION_REQUIRED:-false}
-      Smtp__Host: ${SMTP_HOST:-}
-      Smtp__Port: ${SMTP_PORT:-587}
-      Smtp__Security: ${SMTP_SECURITY:-StartTls}
-      Smtp__Username: ${SMTP_USERNAME:-}
-      Smtp__Password: ${SMTP_PASSWORD:-}
-      Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-}
-      Smtp__FromName: ${SMTP_FROM_NAME:-Código Activo}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-codigoactivo}
+      POSTGRES_USER: ${POSTGRES_USER:-codigoactivo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_BASE_URL: ${APP_BASE_URL:-https://localhost}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      AUTH_SAMESITE: ${AUTH_SAMESITE:-Lax}
+      FILE_STORAGE_ROOT: /app/files
+      ACCOUNT_VERIFICATION_REQUIRED: ${ACCOUNT_VERIFICATION_REQUIRED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-StartTls}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Código Activo}
     volumes:
       - api-files:/app/files
       - api-logs:/app/logs

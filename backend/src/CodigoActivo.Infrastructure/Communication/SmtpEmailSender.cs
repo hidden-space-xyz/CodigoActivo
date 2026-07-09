@@ -10,11 +10,11 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailSender
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(options.Host))
-            throw new InvalidOperationException("The SMTP host is not configured (Smtp:Host).");
+            throw new InvalidOperationException("The SMTP host is not configured (SMTP_HOST).");
         if (string.IsNullOrWhiteSpace(options.FromAddress))
         {
             throw new InvalidOperationException(
-                "The SMTP sender address is not configured (Smtp:FromAddress)."
+                "The SMTP sender address is not configured (SMTP_FROM_ADDRESS)."
             );
         }
 

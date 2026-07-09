@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Security;
@@ -24,18 +25,17 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
 
-        Environment.SetEnvironmentVariable("Smtp__Host", "smtp.test");
-        Environment.SetEnvironmentVariable("Smtp__FromAddress", "no-reply@codigoactivo.test");
+        Environment.SetEnvironmentVariable("SMTP_HOST", "smtp.test");
+        Environment.SetEnvironmentVariable("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
 
         builder.ConfigureAppConfiguration(
             (_, config) =>
             {
-                config.AddUserSecrets(typeof(Program).Assembly, optional: true);
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["Auth:SameSite"] = "Lax",
-                        ["DemoMode"] = "false",
+                        ["AUTH_SAMESITE"] = "Lax",
+                        ["DEMO_MODE"] = "false",
                     }
                 );
             }
@@ -89,18 +89,30 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
     private static string BuildTestConnectionString(IConfiguration configuration)
     {
-        var baseConnectionString = configuration.GetConnectionString("Default");
-        if (string.IsNullOrWhiteSpace(baseConnectionString))
+        var password = configuration["POSTGRES_PASSWORD"];
+        if (string.IsNullOrWhiteSpace(password))
         {
             throw new InvalidOperationException(
-                "ConnectionStrings:Default must be configured with the application's Postgres "
-                    + "credentials to run the integration tests."
+                "POSTGRES_PASSWORD (and optionally POSTGRES_HOST/POSTGRES_PORT/POSTGRES_DB/"
+                    + "POSTGRES_USER) must be set as environment variables to run the integration tests."
             );
         }
 
-        var builder = new NpgsqlConnectionStringBuilder(baseConnectionString);
-        builder.Database = $"{builder.Database ?? "codigoactivo"}test";
-        return builder.ConnectionString;
+        var database = configuration["POSTGRES_DB"] ?? "codigoactivo";
+        return new NpgsqlConnectionStringBuilder
+        {
+            Host = configuration["POSTGRES_HOST"] ?? "localhost",
+            Port = int.TryParse(
+                configuration["POSTGRES_PORT"],
+                CultureInfo.InvariantCulture,
+                out var port
+            )
+                ? port
+                : 5432,
+            Database = $"{database}test",
+            Username = configuration["POSTGRES_USER"] ?? "codigoactivo",
+            Password = password,
+        }.ConnectionString;
     }
 
     public async Task ResetDatabaseAsync()
