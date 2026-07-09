@@ -1,0 +1,26 @@
+name: codigoactivo
+
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5150:8080"
+    read_only: false
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+  web:
+    depends_on:
+      api:
+        condition: service_started
+
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+networks:
+  backend:
+    internal: false

@@ -66,6 +66,9 @@ artifacts/
 publish/
 dist/
 
+# Visual Studio container tooling generated compose files
+**/docker-compose.vs.*.yml
+
 # MSBuild / Visual Studio generated files
 *.rsp
 !Directory.Build.rsp

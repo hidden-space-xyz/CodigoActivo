@@ -1,4 +1,3 @@
-import { env } from '@/shared/config'
 import { ErrorCode } from '@/shared/api/generated/models'
 
 const UNSAFE_METHODS: ReadonlySet<string> = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
@@ -99,7 +98,7 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
     if (csrfToken) headers.set(csrfHeaderName, csrfToken)
   }
 
-  const response = await fetch(`${env.apiBaseUrl}${url}`, {
+  const response = await fetch(url, {
     ...init,
     headers,
     credentials: 'include',

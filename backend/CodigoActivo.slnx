@@ -1,5 +1,9 @@
 <Solution>
 	<Folder Name="/docker/">
+		<File Path="../.env" />
+		<File Path="../.env.example" />
+		<File Path="../docker-compose.override.yml" />
+		<File Path="../docker-compose.yml" />
 		<Project Path="docker-compose.dcproj">
 			<Build />
 		</Project>

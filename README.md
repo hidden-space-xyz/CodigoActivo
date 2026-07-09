@@ -129,14 +129,12 @@ dotnet user-secrets set "Smtp:Password" "..." --project src/CodigoActivo.API
 | `Smtp:Host` · `Port` · `Security` | SMTP server used to send verification emails (`Security`: `StartTls`, `SslOnConnect`, `None`, `Auto`) | `localhost` · `587` · `StartTls` |
 | `Smtp:Username` · `Password`  | SMTP credentials                                        | *(user secrets)*              |
 | `Smtp:FromAddress` · `FromName` | Sender identity for outgoing email                    | `` · `Código Activo` |
-| `Cors:AllowedOrigins`        | Origins allowed to call the API with credentials        | `localhost:5173`, …           |
 
 ### Frontend — `frontend/.env.local`
 
 | Variable                 | Description                                          | Default                  |
 | ------------------------ | --------------------------------------------------- | ------------------------ |
 | `VITE_API_PROXY_TARGET`  | Backend the Vite dev server proxies `/api` to       | `https://localhost:5001` |
-| `VITE_API_BASE_URL`      | Base URL for the API client (empty = same-origin)   | *(empty)*                |
 
 ## 🛠️ Development
 
@@ -164,6 +162,29 @@ npm run lint         # ESLint   ·   npm run format → Prettier
 npm run lint:fsd     # Steiger — enforce Feature-Sliced Design rules
 npm run api:generate # regenerate the typed API client from swagger.json (Orval)
 ```
+
+## 🐳 Running with Docker
+
+The repository ships a Compose stack (`db` + `api` + `web`). Copy `.env.example` to `.env`
+and set at least `POSTGRES_PASSWORD` first.
+
+- **Local development / debugging** — `docker compose up`. This automatically layers
+  `docker-compose.override.yml` on top of the base stack: it switches the API to the
+  `Development` environment, publishes it on <http://localhost:5150> (Swagger at `/swagger`),
+  and relaxes the container hardening so the debugger can attach. **Visual Studio** picks up
+  the same override on **F5**: set `docker-compose` as the startup project to build the API in
+  `Debug`, mount the debugger, and step through the containerized backend.
+
+- **Production** — deploy the hardened base stack only, explicitly excluding the dev override:
+
+  ```bash
+  docker compose -f docker-compose.yml up -d --build
+  ```
+
+  The base `docker-compose.yml` runs the API as a non-root user with a read-only filesystem,
+  all capabilities dropped, and `ASPNETCORE_ENVIRONMENT=Production`. Running a bare
+  `docker compose up` on a server would pull in the dev override — always pass
+  `-f docker-compose.yml`.
 
 ## 📝 License
 

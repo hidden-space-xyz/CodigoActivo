@@ -34,7 +34,6 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["Cors:AllowedOrigins:0"] = "http://localhost",
                         ["Auth:SameSite"] = "Lax",
                         ["DemoMode"] = "false",
                     }

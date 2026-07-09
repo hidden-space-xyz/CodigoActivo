@@ -11,5 +11,5 @@ tests/
 .vscode/
 .idea/
 *.user
-Dockerfile
+**/Dockerfile
 .dockerignore

@@ -23,6 +23,7 @@ services:
   api:
     build:
       context: ./backend
+      dockerfile: src/CodigoActivo.API/Dockerfile
     restart: unless-stopped
     depends_on:
       db:
@@ -33,9 +34,6 @@ services:
       ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-codigoactivo};Username=${POSTGRES_USER:-codigoactivo};Password=${POSTGRES_PASSWORD}"
       App__BaseUrl: ${APP_BASE_URL:-https://localhost}
       App__TimeZone: ${APP_TIMEZONE:-Europe/Madrid}
-      Cors__AllowedOrigins__0: ${APP_BASE_URL:-https://localhost}
-      Cors__AllowedOrigins__1: ""
-      Cors__AllowedOrigins__2: ""
       DemoMode: ${DEMO_MODE:-false}
       Auth__SameSite: ${AUTH_SAMESITE:-Lax}
       FileStorage__RootPath: /app/files
@@ -60,8 +58,6 @@ services:
   web:
     build:
       context: ./frontend
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     restart: unless-stopped
     depends_on:
       api:
