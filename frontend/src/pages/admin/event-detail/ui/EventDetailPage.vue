@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { AdminPageHeader, AppButton as Button, DataState, ListThumbnail } from '@/shared/ui'
+import {
+  AdminPageHeader,
+  AppButton as Button,
+  ColumnFilterSelect,
+  ColumnSearch,
+  DataState,
+  ListThumbnail,
+} from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
@@ -19,7 +26,7 @@ import type {
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +58,29 @@ const summaryCards = computed(() => {
 function roleNames(activity: ActivityResponse): string {
   return (activity.allowedRoleTypes ?? []).map((role) => role.roleTypeName).join(', ') || '—'
 }
+
+const titleQuery = ref<string | number | null>(null)
+const modalityFilter = ref<string | boolean | null>(null)
+
+const modalityOptions = computed(() => {
+  const names = new Set<string>()
+  for (const activity of activities.list.data.value ?? []) {
+    if (activity.modalityName) names.add(activity.modalityName)
+  }
+  return [...names].sort().map((name) => ({ label: name, value: name }))
+})
+
+const filteredActivities = computed(() => {
+  const query = String(titleQuery.value ?? '')
+    .trim()
+    .toLowerCase()
+  const modality = modalityFilter.value
+  return (activities.list.data.value ?? []).filter((activity) => {
+    if (query && !(activity.title ?? '').toLowerCase().includes(query)) return false
+    if (modality != null && activity.modalityName !== modality) return false
+    return true
+  })
+})
 
 const activityDialogVisible = ref(false)
 const selectedActivity = ref<ActivityResponse | null>(null)
@@ -188,7 +218,9 @@ function onAssignSubmit(payload: {
         :empty="(activities.list.data.value?.length ?? 0) === 0"
         empty-text="Este evento aún no tiene actividades."
       >
-        <DataTable :value="activities.list.data.value" data-key="id" striped-rows>
+        <DataTable :value="filteredActivities" data-key="id" striped-rows removable-sort>
+          <template #empty>Sin coincidencias.</template>
+
           <Column header="Imagen" style="width: 110px">
             <template #body="{ data }">
               <ListThumbnail
@@ -198,14 +230,24 @@ function onAssignSubmit(payload: {
               />
             </template>
           </Column>
-          <Column field="title" header="Título" />
-          <Column header="Horario">
-            <template #body="{ data }">
-              {{ formatDateTime(data.activityStartsAt) }} –
-              {{ formatDateTime(data.activityEndsAt) }}
+          <Column field="title" sortable>
+            <template #header>
+              <ColumnSearch v-model="titleQuery" label="Título" placeholder="Buscar título" />
             </template>
           </Column>
-          <Column header="Modalidad">
+          <Column field="activityStartsAt" header="Horario" sortable>
+            <template #body="{ data }">
+              {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
+            </template>
+          </Column>
+          <Column field="modalityName" sortable>
+            <template #header>
+              <ColumnFilterSelect
+                v-model="modalityFilter"
+                label="Modalidad"
+                :options="modalityOptions"
+              />
+            </template>
             <template #body="{ data }">
               <div class="modality-cell">
                 <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>

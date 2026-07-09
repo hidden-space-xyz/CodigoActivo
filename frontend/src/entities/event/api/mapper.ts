@@ -1,5 +1,5 @@
 import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
-import { formatDate, formatDateTime, parseDateOnly } from '@/shared/lib'
+import { formatDate, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
 
 import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
 
@@ -50,10 +50,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
       ? `${formatDate(start)} – ${formatDate(end)}`
       : formatDate(start)
     : 'Próximamente'
-  const signupLabel =
-    event.signupStartsAt || event.signupEndsAt
-      ? `${formatDateTime(event.signupStartsAt)} – ${formatDateTime(event.signupEndsAt)}`
-      : '—'
+  const signupLabel = formatDateTimeRange(event.signupStartsAt, event.signupEndsAt)
   return {
     id: event.id ?? '',
     title: event.title ?? '',

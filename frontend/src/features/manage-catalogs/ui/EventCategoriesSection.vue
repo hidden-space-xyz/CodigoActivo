@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { AppButton as Button, ColorTag, DataState } from '@/shared/ui'
+import { AppButton as Button, ColorTag, ColumnSearch, DataState } from '@/shared/ui'
 import ColorPicker from 'primevue/colorpicker'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -22,6 +22,15 @@ const form = reactive<{ name: string; color: string }>({ name: '', color: '6366F
 
 const saving = computed(() => create.isPending.value || update.isPending.value)
 const colorHex = computed(() => `#${form.color.replace(/^#/, '')}`)
+
+const nameQuery = ref<string | number | null>(null)
+
+const rows = computed<EventCategoryTypeResponse[]>(() => {
+  const items = list.data.value ?? []
+  const query = nameQuery.value == null ? '' : String(nameQuery.value).trim().toLowerCase()
+  if (!query) return items
+  return items.filter((item) => (item.name ?? '').toLowerCase().includes(query))
+})
 
 watch(dialogVisible, (open) => {
   if (!open) return
@@ -94,8 +103,13 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       :empty="(list.data.value?.length ?? 0) === 0"
       empty-text="Sin categorías."
     >
-      <DataTable :value="list.data.value" data-key="id" striped-rows>
-        <Column field="name" header="Nombre" />
+      <DataTable :value="rows" data-key="id" striped-rows removable-sort>
+        <template #empty>Sin coincidencias.</template>
+        <Column field="name" sortable>
+          <template #header>
+            <ColumnSearch v-model="nameQuery" label="Nombre" placeholder="Buscar nombre" />
+          </template>
+        </Column>
         <Column header="Color" style="width: 160px">
           <template #body="{ data }">
             <ColorTag :value="data.name ?? ''" :color="data.color" />

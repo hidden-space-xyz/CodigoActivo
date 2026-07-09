@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { AppButton as Button, DataState } from '@/shared/ui'
+import { AppButton as Button, ColumnSearch, DataState } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
@@ -23,6 +23,15 @@ const form = reactive<{ name: string; description: string }>({ name: '', descrip
 const saving = computed(
   () => props.controller.create.isPending.value || props.controller.update.isPending.value,
 )
+
+const nameQuery = ref<string | number | null>(null)
+
+const rows = computed<CatalogItem[]>(() => {
+  const items = props.controller.list.data.value ?? []
+  const query = nameQuery.value == null ? '' : String(nameQuery.value).trim().toLowerCase()
+  if (!query) return items
+  return items.filter((item) => (item.name ?? '').toLowerCase().includes(query))
+})
 
 watch(dialogVisible, (open) => {
   if (!open) return
@@ -95,9 +104,14 @@ function confirmDelete(item: CatalogItem): void {
       :empty="(controller.list.data.value?.length ?? 0) === 0"
       empty-text="Sin elementos."
     >
-      <DataTable :value="controller.list.data.value" data-key="id" striped-rows>
-        <Column field="name" header="Nombre" />
-        <Column field="description" header="Descripción">
+      <DataTable :value="rows" data-key="id" striped-rows removable-sort>
+        <template #empty>Sin coincidencias.</template>
+        <Column field="name" sortable>
+          <template #header>
+            <ColumnSearch v-model="nameQuery" label="Nombre" placeholder="Buscar nombre" />
+          </template>
+        </Column>
+        <Column field="description" header="Descripción" sortable>
           <template #body="{ data }">{{ data.description || '—' }}</template>
         </Column>
         <Column header="Acciones" style="width: 120px">

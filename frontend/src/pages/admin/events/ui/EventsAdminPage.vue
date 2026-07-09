@@ -18,7 +18,7 @@ import type {
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { formatDate, formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { formatDate, formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { table, create, update, remove, feature, fetchOne } = useEventsAdmin()
 const feedback = useCrudFeedback()
@@ -110,7 +110,12 @@ function confirmDelete(event: EventListItemResponse): void {
   <div>
     <AdminPageHeader title="Eventos" subtitle="Gestión de eventos y sus actividades">
       <template #actions>
-        <Button label="Nuevo evento" icon="pi pi-plus" :disabled="loadingDetail" @click="openCreate" />
+        <Button
+          label="Nuevo evento"
+          icon="pi pi-plus"
+          :disabled="loadingDetail"
+          @click="openCreate"
+        />
       </template>
     </AdminPageHeader>
 
@@ -157,7 +162,15 @@ function confirmDelete(event: EventListItemResponse): void {
           </span>
         </template>
       </Column>
-      <Column field="subtitle" header="Subtítulo" sortable>
+      <Column field="subtitle" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('subtitle').value"
+            label="Subtítulo"
+            placeholder="Buscar subtítulo"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">{{ data.subtitle || '—' }}</template>
       </Column>
       <Column header="Categorías">
@@ -169,7 +182,7 @@ function confirmDelete(event: EventListItemResponse): void {
               :value="cat.name ?? ''"
               :color="cat.color"
             />
-            <span v-if="!(data.categories?.length)">—</span>
+            <span v-if="!data.categories?.length">—</span>
           </div>
         </template>
       </Column>
@@ -180,7 +193,7 @@ function confirmDelete(event: EventListItemResponse): void {
       </Column>
       <Column header="Inscripción">
         <template #body="{ data }">
-          {{ formatDateTime(data.signupStartsAt) }} – {{ formatDateTime(data.signupEndsAt) }}
+          {{ formatDateTimeRange(data.signupStartsAt, data.signupEndsAt) }}
         </template>
       </Column>
       <Column header="Acciones" style="width: 230px">

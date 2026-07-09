@@ -11,7 +11,7 @@ import { useEventActivities } from '../model/useEventActivities'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
 import type { TimelineActivity, TimelineMemberAssignment } from '../model/activity-timeline.types'
 import type { ActivityOverlap } from '@/entities/activity'
-import { formatDateTime, useCrudFeedback } from '@/shared/lib'
+import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
 
 const props = defineProps<{ eventId: string; signupOpen: boolean }>()
 
@@ -198,9 +198,7 @@ function confirmHousehold(): void {
   const activity = householdDialog.activity
   if (!activity) return
 
-  const includedRows = householdDialog.rows.filter(
-    (row) => row.include && !row.alreadyAssigned,
-  )
+  const includedRows = householdDialog.rows.filter((row) => row.include && !row.alreadyAssigned)
   const missingRole = includedRows.some((row) => !row.roleId)
   if (missingRole) {
     toast.add({
@@ -288,6 +286,7 @@ function onUnassign(activity: TimelineActivity): void {
                 v-for="act in cluster.items"
                 :key="act.id"
                 :activity="act"
+                :reference-date="cluster.start"
                 :authenticated="isAuthenticated"
                 :signup-open="signupOpen"
                 :has-household="hasHousehold"
@@ -391,7 +390,7 @@ function onUnassign(activity: TimelineActivity): void {
         <li v-for="o in overlapDialog.overlaps" :key="o.activityId">
           <strong>{{ o.title }}</strong>
           <span class="overlap__when">
-            {{ formatDateTime(o.startsAt) }} – {{ formatDateTime(o.endsAt) }}
+            {{ formatDateTimeRange(o.startsAt, o.endsAt) }}
           </span>
         </li>
       </ul>

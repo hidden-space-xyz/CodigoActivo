@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { AdminPageHeader, AppButton as Button, ColorTag, DataState } from '@/shared/ui'
+import {
+  AdminPageHeader,
+  AppButton as Button,
+  ColorTag,
+  ColumnFilterSelect,
+  ColumnSearch,
+  DataState,
+} from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
+import type { DataTablePageEvent, DataTableSortEvent } from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
@@ -11,7 +19,7 @@ import Tag from 'primevue/tag'
 import { useActivityAssignments, useAssignments } from '@/features/manage-activities'
 import { useAssignmentStatusTypesList } from '@/entities/catalog'
 import type { ActivityAssignmentRowResponse } from '@/shared/api/generated/models'
-import { ageFrom, groupByParent, useCrudFeedback } from '@/shared/lib'
+import { ageFrom, useCrudFeedback, useHierarchyFilter } from '@/shared/lib'
 
 const route = useRoute()
 const eventId = computed(() => String(route.params.eventId))
@@ -22,6 +30,14 @@ const report = useActivityAssignments(activityId)
 const assignments = useAssignments(eventId)
 const statusTypes = useAssignmentStatusTypesList()
 
+const NOT_SIGNED_UP = 'not-signed-up'
+
+type AssignmentRow = ActivityAssignmentRowResponse & { age: number | null }
+
+const assignmentRows = computed<AssignmentRow[]>(() =>
+  (report.data.value?.rows ?? []).map((row) => ({ ...row, age: ageFrom(row.birthDate) })),
+)
+
 const summaryCards = computed(() => {
   const data = report.data.value
   const cards = [{ label: 'Apuntados', value: data?.totalSignups ?? 0 }]
@@ -31,28 +47,96 @@ const summaryCards = computed(() => {
   return cards
 })
 
-const grouped = computed(() =>
-  groupByParent(
-    report.data.value?.rows ?? [],
-    (row) => row.userId,
-    (row) => row.parentId,
-  ),
+function fullName(row: ActivityAssignmentRowResponse): string {
+  return `${row.firstName ?? ''} ${row.lastName ?? ''}`.trim() || '—'
+}
+
+const firstNameQuery = ref<string | number | null>(null)
+const lastNameQuery = ref<string | number | null>(null)
+const emailQuery = ref<string | number | null>(null)
+const phoneQuery = ref<string | number | null>(null)
+const roleFilter = ref<string | boolean | null>(null)
+const statusFilter = ref<string | boolean | null>(null)
+
+const roleFilterOptions = computed(() =>
+  (report.data.value?.roleTypeBreakdown ?? []).map((role) => ({
+    label: role.roleTypeName ?? '—',
+    value: role.roleTypeId ?? '',
+  })),
 )
 
-function userDepth(row: ActivityAssignmentRowResponse): number {
-  return row.userId ? (grouped.value.depthById.get(row.userId) ?? 0) : 0
+const statusFilterOptions = computed(() => {
+  const options = (statusTypes.data.value ?? []).map((status) => ({
+    label: status.name ?? '—',
+    value: status.id ?? '',
+  }))
+  options.push({ label: 'No apuntado', value: NOT_SIGNED_UP })
+  return options
+})
+
+function textMatch(haystack: string, query: string | number | null): boolean {
+  if (query == null || query === '') return true
+  return haystack.toLowerCase().includes(String(query).toLowerCase())
 }
 
-function isChild(row: ActivityAssignmentRowResponse): boolean {
-  return userDepth(row) > 0
+function matchesStatus(row: ActivityAssignmentRowResponse): boolean {
+  const value = statusFilter.value
+  if (value == null) return true
+  if (value === NOT_SIGNED_UP) return !row.signedUp
+  return !!row.signedUp && row.statusId === value
 }
 
-function childCount(row: ActivityAssignmentRowResponse): number {
-  return row.userId ? (grouped.value.childrenByParent.get(row.userId)?.length ?? 0) : 0
+function matches(row: ActivityAssignmentRowResponse): boolean {
+  return (
+    textMatch(row.firstName ?? '', firstNameQuery.value) &&
+    textMatch(row.lastName ?? '', lastNameQuery.value) &&
+    textMatch(row.email ?? '', emailQuery.value) &&
+    textMatch(row.phone ?? '', phoneQuery.value) &&
+    (roleFilter.value == null || (!!row.signedUp && row.roleTypeId === roleFilter.value)) &&
+    matchesStatus(row)
+  )
 }
 
-function rowClass(row: ActivityAssignmentRowResponse): string {
-  return isChild(row) ? 'assignment-row--child' : ''
+const filterActive = computed(
+  () =>
+    (firstNameQuery.value != null && firstNameQuery.value !== '') ||
+    (lastNameQuery.value != null && lastNameQuery.value !== '') ||
+    (emailQuery.value != null && emailQuery.value !== '') ||
+    (phoneQuery.value != null && phoneQuery.value !== '') ||
+    roleFilter.value != null ||
+    statusFilter.value != null,
+)
+
+const sortField = ref<string | undefined>(undefined)
+const sortOrder = ref<1 | -1>(1)
+
+function onSort(event: DataTableSortEvent): void {
+  sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
+  sortOrder.value = event.sortOrder === -1 ? -1 : 1
+}
+
+const first = ref(0)
+
+function onPage(event: DataTablePageEvent): void {
+  first.value = event.first
+}
+
+watch([firstNameQuery, lastNameQuery, emailQuery, phoneQuery, roleFilter, statusFilter], () => {
+  first.value = 0
+})
+
+const table = useHierarchyFilter<AssignmentRow>({
+  items: () => assignmentRows.value,
+  getId: (row) => row.userId,
+  getParentId: (row) => row.parentId,
+  getName: (row) => fullName(row),
+  matches,
+  filterActive,
+  sortActive: () => !!sortField.value,
+})
+
+function rowClass(row: AssignmentRow): string {
+  return table.treeMode.value && table.isChild(row) ? 'assignment-row--child' : ''
 }
 
 const statusColorById = computed(() => {
@@ -155,25 +239,45 @@ function submitChangeRole(): void {
         empty-text="Todavía no hay usuarios apuntados a esta actividad."
       >
         <DataTable
-          :value="grouped.rows"
+          :value="table.rows.value"
           :row-class="rowClass"
           data-key="userId"
           striped-rows
           paginator
           :rows="10"
+          :first="first"
+          :sort-field="sortField"
+          :sort-order="sortOrder"
+          removable-sort
+          @page="onPage"
+          @sort="onSort"
         >
-          <Column header="Nombre">
+          <template #empty>Sin coincidencias.</template>
+
+          <Column field="firstName" sortable>
+            <template #header>
+              <ColumnSearch v-model="firstNameQuery" label="Nombre" placeholder="Buscar nombre" />
+            </template>
             <template #body="{ data }">
               <div
                 class="assignment-name"
-                :class="{ 'assignment-name--child': isChild(data) }"
-                :style="{ paddingLeft: userDepth(data) * 22 + 'px' }"
+                :class="{
+                  'assignment-name--child': table.treeMode.value && table.isChild(data),
+                }"
+                :style="
+                  table.treeMode.value
+                    ? { paddingLeft: table.depthOf(data) * 22 + 'px' }
+                    : undefined
+                "
               >
-                <i v-if="isChild(data)" class="pi pi-angle-right assignment-name__child-icon" />
+                <i
+                  v-if="table.treeMode.value && table.isChild(data)"
+                  class="pi pi-angle-right assignment-name__child-icon"
+                />
                 <span>{{ data.firstName || '—' }}</span>
                 <Tag
-                  v-if="childCount(data) > 0"
-                  :value="String(childCount(data))"
+                  v-if="table.treeMode.value && table.childCountOf(data) > 0"
+                  :value="String(table.childCountOf(data))"
                   icon="pi pi-users"
                   severity="secondary"
                   class="assignment-name__count"
@@ -181,24 +285,47 @@ function submitChangeRole(): void {
               </div>
             </template>
           </Column>
-          <Column header="Apellidos">
+          <Column field="lastName" sortable>
+            <template #header>
+              <ColumnSearch
+                v-model="lastNameQuery"
+                label="Apellidos"
+                placeholder="Buscar apellidos"
+              />
+            </template>
             <template #body="{ data }">{{ data.lastName || '—' }}</template>
           </Column>
-          <Column header="Edad" style="width: 70px">
+          <Column field="age" header="Edad" sortable style="width: 70px">
             <template #body="{ data }">{{ ageFrom(data.birthDate) ?? '—' }}</template>
           </Column>
-          <Column header="Correo">
+          <Column field="email" sortable>
+            <template #header>
+              <ColumnSearch v-model="emailQuery" label="Correo" placeholder="Buscar correo" />
+            </template>
             <template #body="{ data }">{{ data.email || '—' }}</template>
           </Column>
-          <Column header="Teléfono">
+          <Column field="phone" sortable>
+            <template #header>
+              <ColumnSearch v-model="phoneQuery" label="Teléfono" placeholder="Buscar teléfono" />
+            </template>
             <template #body="{ data }">{{ data.phone || '—' }}</template>
           </Column>
-          <Column header="Rol">
+          <Column field="roleTypeName" sortable>
+            <template #header>
+              <ColumnFilterSelect v-model="roleFilter" label="Rol" :options="roleFilterOptions" />
+            </template>
             <template #body="{ data }">
               {{ data.signedUp && data.roleTypeName ? data.roleTypeName : '—' }}
             </template>
           </Column>
-          <Column header="Estado">
+          <Column field="statusName" sortable>
+            <template #header>
+              <ColumnFilterSelect
+                v-model="statusFilter"
+                label="Estado"
+                :options="statusFilterOptions"
+              />
+            </template>
             <template #body="{ data }">
               <ColorTag
                 v-if="data.signedUp"
@@ -207,6 +334,9 @@ function submitChangeRole(): void {
               />
               <Tag v-else value="No apuntado" severity="secondary" />
             </template>
+          </Column>
+          <Column v-if="!table.treeMode.value" header="Tutor">
+            <template #body="{ data }">{{ table.parentName(data.parentId) }}</template>
           </Column>
           <Column header="Acciones" style="width: 130px">
             <template #body="{ data }">

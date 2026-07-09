@@ -51,7 +51,7 @@ defineProps<{ announcement: AnnouncementSummary }>()
 .announcement-card__title {
   font-family: var(--ca-font-display);
   font-weight: 600;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.2;
   color: var(--ca-text-bright);
 }
