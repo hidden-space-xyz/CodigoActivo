@@ -16,7 +16,10 @@ public sealed class FakeQueryExecutor : IQueryExecutor
         return Task.FromResult(new PagedResult<T>(items, total, page, pageSize));
     }
 
-    public Task<IReadOnlyList<T>> ToListAsync<T>(IQueryable<T> source, CancellationToken ct = default)
+    public Task<IReadOnlyList<T>> ToListAsync<T>(
+        IQueryable<T> source,
+        CancellationToken ct = default
+    )
     {
         return Task.FromResult<IReadOnlyList<T>>(source.ToList());
     }

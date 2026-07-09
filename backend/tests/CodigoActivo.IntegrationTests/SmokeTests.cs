@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests;

@@ -20,9 +20,21 @@ public record UserResponse(
 )
 {
     public UserResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, null, null, default, null, default, null, null, null!, false, null!)
-    {
-    }
+        : this(
+            Guid.Empty,
+            string.Empty,
+            string.Empty,
+            null,
+            null,
+            default,
+            null,
+            default,
+            null,
+            null,
+            null!,
+            false,
+            null!
+        ) { }
 }
 
 public record UserStatusResponse(Guid Id, string Name, string Color);
@@ -42,26 +54,19 @@ public record UpdateUserRequest(
 
 public record ChangePasswordRequest(
     [Required] string CurrentPassword,
-    [Required]
-    [MinLength(8)]
-    [MaxLength(128)]
-    string NewPassword
+    [Required] [MinLength(8)] [MaxLength(128)] string NewPassword
 );
 
 public record UserStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     public UserStatusTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty)
-    {
-    }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty) { }
 }
 
 public record UserTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     public UserTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty)
-    {
-    }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty) { }
 }
 
 public record RegistrationTypeResponse(
@@ -74,7 +79,5 @@ public record RegistrationTypeResponse(
 )
 {
     public RegistrationTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, false)
-    {
-    }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, false) { }
 }

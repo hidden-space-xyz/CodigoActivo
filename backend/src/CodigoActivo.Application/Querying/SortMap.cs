@@ -31,11 +31,17 @@ public sealed class SortMap<T>
     public IQueryable<T> Apply(IQueryable<T> source, string? sort)
     {
         var terms = ParseAll(sort).Where(term => selectors.ContainsKey(term.Key)).ToList();
-        if (terms.Count == 0) terms = defaults.ToList();
+        if (terms.Count == 0)
+            terms = defaults.ToList();
 
         IOrderedQueryable<T>? ordered = null;
         foreach (var term in terms)
-            ordered = ApplyOrder(ordered ?? source, selectors[term.Key], term.Descending, ordered is null);
+            ordered = ApplyOrder(
+                ordered ?? source,
+                selectors[term.Key],
+                term.Descending,
+                ordered is null
+            );
 
         if (tieBreaker is not null)
             ordered = ApplyOrder(ordered ?? source, tieBreaker, descending: false, ordered is null);

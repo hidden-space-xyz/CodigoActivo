@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -20,14 +20,16 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Files.Add(new FileEntity
-            {
-                Id = id,
-                Name = "thumb",
-                Extension = "png",
-                UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                UploadedBy = TestSeedData.Users.AdminId,
-            });
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = id,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -39,16 +41,18 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Resources.Add(new Resource
-            {
-                Id = id,
-                Title = title,
-                Subtitle = subtitle,
-                Description = Description,
-                ThumbnailId = thumbnailId,
-                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
+            db.Resources.Add(
+                new Resource
+                {
+                    Id = id,
+                    Title = title,
+                    Subtitle = subtitle,
+                    Description = Description,
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -163,7 +167,9 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
     {
         var id = await SeedResourceAsync("Reemplazo");
-        var oldThumbnailId = (await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask()))!.ThumbnailId;
+        var oldThumbnailId = (
+            await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask())
+        )!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
         var request = new UpdateResourceRequest("Reemplazo", "Sub", Description, newThumbnailId);
@@ -181,7 +187,9 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     public async Task Delete_as_admin_removes_resource_and_its_orphaned_thumbnail()
     {
         var id = await SeedResourceAsync("Doomed");
-        var thumbnailId = (await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask()))!.ThumbnailId;
+        var thumbnailId = (
+            await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask())
+        )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
         var response = await client.DeleteWithCsrfAsync($"/api/resources/{id}");
@@ -190,6 +198,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask());
         stored.Should().BeNull();
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
-        file.Should().BeNull("the deleted resource's thumbnail is orphaned and must be cascade-deleted");
+        file.Should()
+            .BeNull("the deleted resource's thumbnail is orphaned and must be cascade-deleted");
     }
 }

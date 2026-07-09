@@ -17,7 +17,10 @@ const SEVERITY_ICON: Record<string, string> = {
   <Toast>
     <template #message="slotProps">
       <div class="app-toast">
-        <i class="pi app-toast__icon" :class="SEVERITY_ICON[slotProps.message.severity ?? 'info']" />
+        <i
+          class="pi app-toast__icon"
+          :class="SEVERITY_ICON[slotProps.message.severity ?? 'info']"
+        />
         <div class="app-toast__text">
           <span class="app-toast__summary">{{ slotProps.message.summary }}</span>
           <div v-if="slotProps.message.detail" class="app-toast__detail">

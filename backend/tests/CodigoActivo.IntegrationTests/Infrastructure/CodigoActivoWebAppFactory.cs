@@ -146,7 +146,8 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
     private static async Task TruncateAllTablesAsync(CodigoActivoDbContext db)
     {
-        var tables = db.Model.GetEntityTypes()
+        var tables = db
+            .Model.GetEntityTypes()
             .Select(entity => (Schema: entity.GetSchema(), Table: entity.GetTableName()))
             .Where(entity => entity.Table is not null)
             .Select(entity =>

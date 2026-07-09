@@ -7,14 +7,21 @@ public sealed record ApiErrorResponse(string Title, int Status, ErrorCode Code, 
 
 public static class ApiErrorResponseExtensions
 {
-    public static ActionResult<T> ToActionResult<T>(this ControllerBase controller, Result<T> result)
+    public static ActionResult<T> ToActionResult<T>(
+        this ControllerBase controller,
+        Result<T> result
+    )
     {
-        return result.IsSuccess ? controller.Ok(result.Value) : controller.ToProblemResult(result.Error!);
+        return result.IsSuccess
+            ? controller.Ok(result.Value)
+            : controller.ToProblemResult(result.Error!);
     }
 
     public static ActionResult ToActionResult(this ControllerBase controller, Result result)
     {
-        return result.IsSuccess ? controller.NoContent() : controller.ToProblemResult(result.Error!);
+        return result.IsSuccess
+            ? controller.NoContent()
+            : controller.ToProblemResult(result.Error!);
     }
 
     public static ActionResult ToProblemResult(this ControllerBase controller, Error error)
@@ -34,7 +41,12 @@ public static class ApiErrorResponseExtensions
         const int Status = StatusCodes.Status500InternalServerError;
         return (
             Status,
-            new ApiErrorResponse("Internal Server Error", Status, ErrorCode.UnexpectedError, context.TraceIdentifier)
+            new ApiErrorResponse(
+                "Internal Server Error",
+                Status,
+                ErrorCode.UnexpectedError,
+                context.TraceIdentifier
+            )
         );
     }
 
@@ -47,7 +59,11 @@ public static class ApiErrorResponseExtensions
             ErrorKind.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden"),
             ErrorKind.NotFound => (StatusCodes.Status404NotFound, "Not Found"),
             ErrorKind.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported error kind."),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind),
+                kind,
+                "Unsupported error kind."
+            ),
         };
     }
 }

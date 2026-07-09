@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Entities;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Mapping;
@@ -12,8 +12,10 @@ public sealed class ProjectionsTests
     private static readonly DateTimeOffset Created = new(2024, 1, 2, 3, 4, 5, TimeSpan.Zero);
     private static readonly DateTimeOffset Updated = new(2025, 6, 7, 8, 9, 10, TimeSpan.Zero);
 
-    private static TResult Project<TSource, TResult>(Expression<Func<TSource, TResult>> projection, TSource source) =>
-        projection.Compile().Invoke(source);
+    private static TResult Project<TSource, TResult>(
+        Expression<Func<TSource, TResult>> projection,
+        TSource source
+    ) => projection.Compile().Invoke(source);
 
     [Fact]
     public void Event_projection_maps_scalars_and_categories()
@@ -40,7 +42,12 @@ public sealed class ProjectionsTests
                 new EventCategory
                 {
                     EventCategoryTypeId = categoryTypeId,
-                    EventCategoryType = new EventCategoryType { Id = categoryTypeId, Name = "Tech", Color = "#111" },
+                    EventCategoryType = new EventCategoryType
+                    {
+                        Id = categoryTypeId,
+                        Name = "Tech",
+                        Color = "#111",
+                    },
                 },
             ],
         };
@@ -61,7 +68,10 @@ public sealed class ProjectionsTests
         response.UpdatedBy.Should().Be(@event.UpdatedBy);
         response.ThumbnailId.Should().Be(@event.ThumbnailId);
         response.Featured.Should().BeTrue();
-        response.Categories.Should().ContainSingle().Which.Should()
+        response
+            .Categories.Should()
+            .ContainSingle()
+            .Which.Should()
             .Be(new EventCategoryResponse(categoryTypeId, "Tech", "#111"));
     }
 
@@ -98,17 +108,38 @@ public sealed class ProjectionsTests
                 new EventCategory
                 {
                     EventCategoryTypeId = categoryTypeId,
-                    EventCategoryType = new EventCategoryType { Id = categoryTypeId, Name = "Tech", Color = "#111" },
+                    EventCategoryType = new EventCategoryType
+                    {
+                        Id = categoryTypeId,
+                        Name = "Tech",
+                        Color = "#111",
+                    },
                 },
             ],
         };
 
         var response = Project(Projections.EventListItem, @event);
 
-        response.Should().BeEquivalentTo(new EventListItemResponse(
-            @event.Id, "Conf", "Sub", new DateOnly(2024, 8, 1), new DateOnly(2024, 8, 3), Created,
-            Updated, Created, Updated, @event.CreatedBy, @event.UpdatedBy, @event.ThumbnailId, true,
-            [new EventCategoryResponse(categoryTypeId, "Tech", "#111")]));
+        response
+            .Should()
+            .BeEquivalentTo(
+                new EventListItemResponse(
+                    @event.Id,
+                    "Conf",
+                    "Sub",
+                    new DateOnly(2024, 8, 1),
+                    new DateOnly(2024, 8, 3),
+                    Created,
+                    Updated,
+                    Created,
+                    Updated,
+                    @event.CreatedBy,
+                    @event.UpdatedBy,
+                    @event.ThumbnailId,
+                    true,
+                    [new EventCategoryResponse(categoryTypeId, "Tech", "#111")]
+                )
+            );
         typeof(EventListItemResponse).GetProperty("Description").Should().BeNull();
     }
 
@@ -131,9 +162,22 @@ public sealed class ProjectionsTests
 
         var response = Project(Projections.Partner, partner);
 
-        response.Should().BeEquivalentTo(new PartnerResponse(
-            partner.Id, "Acme", new DateOnly(2024, 5, 6), 2, "https://acme.test", Created, Updated,
-            partner.CreatedBy, partner.UpdatedBy, partner.ThumbnailId));
+        response
+            .Should()
+            .BeEquivalentTo(
+                new PartnerResponse(
+                    partner.Id,
+                    "Acme",
+                    new DateOnly(2024, 5, 6),
+                    2,
+                    "https://acme.test",
+                    Created,
+                    Updated,
+                    partner.CreatedBy,
+                    partner.UpdatedBy,
+                    partner.ThumbnailId
+                )
+            );
     }
 
     [Fact]
@@ -183,7 +227,10 @@ public sealed class ProjectionsTests
         response.UpdatedAt.Should().Be(Updated);
         response.CreatedBy.Should().Be(activity.CreatedBy);
         response.UpdatedBy.Should().Be(activity.UpdatedBy);
-        response.AllowedRoleTypes.Should().ContainSingle().Which.Should()
+        response
+            .AllowedRoleTypes.Should()
+            .ContainSingle()
+            .Which.Should()
             .Be(new ActivityAllowedRoleResponse(roleTypeId, "Speaker"));
     }
 
@@ -206,10 +253,20 @@ public sealed class ProjectionsTests
             UpdatedAt = Updated,
             ParentId = parentId,
             UserStatusTypeId = statusId,
-            UserStatusType = new UserStatusType { Id = statusId, Name = "Active", Color = "#0f0" },
+            UserStatusType = new UserStatusType
+            {
+                Id = statusId,
+                Name = "Active",
+                Color = "#0f0",
+            },
             IsAdmin = true,
             UserTypeId = typeId,
-            UserType = new UserType { Id = typeId, Name = "Member", Color = "#00f" },
+            UserType = new UserType
+            {
+                Id = typeId,
+                Name = "Member",
+                Color = "#00f",
+            },
         };
 
         var response = Project(Projections.User, user);
@@ -242,8 +299,11 @@ public sealed class ProjectionsTests
             IsAllowedForAdults = false,
         };
 
-        Project(Projections.RegistrationType, userType).Should()
-            .Be(new RegistrationTypeResponse(userType.Id, "Member", "Standard", "#00f", true, false));
+        Project(Projections.RegistrationType, userType)
+            .Should()
+            .Be(
+                new RegistrationTypeResponse(userType.Id, "Member", "Standard", "#00f", true, false)
+            );
     }
 
     [Fact]

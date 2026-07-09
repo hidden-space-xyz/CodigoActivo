@@ -23,9 +23,13 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
 
 export async function getPastEventsRequest(year: string): Promise<readonly PastEvent[]> {
   const items = await fetchAllPages<EventListItemResponse>((page, pageSize) =>
-    getApiEvents({ scope: 'Past', year: Number(year), sort: '-eventStartsAt', page, pageSize }).then(
-      toPage,
-    ),
+    getApiEvents({
+      scope: 'Past',
+      year: Number(year),
+      sort: '-eventStartsAt',
+      page,
+      pageSize,
+    }).then(toPage),
   )
   return items.map(toPastEvent)
 }

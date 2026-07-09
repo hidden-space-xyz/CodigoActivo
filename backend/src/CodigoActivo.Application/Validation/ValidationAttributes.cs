@@ -17,7 +17,8 @@ public sealed class JsonStringAttribute : ValidationAttribute
 {
     public override bool IsValid(object? value)
     {
-        if (value is not string text) return true;
+        if (value is not string text)
+            return true;
 
         try
         {
@@ -36,6 +37,7 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 {
     public override bool IsValid(object? value)
     {
-        return value is not DateOnly date || (date != default && date <= DateOnly.FromDateTime(DateTime.UtcNow));
+        return value is not DateOnly date
+            || (date != default && date <= DateOnly.FromDateTime(DateTime.UtcNow));
     }
 }

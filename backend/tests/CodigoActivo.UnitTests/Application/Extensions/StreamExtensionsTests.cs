@@ -1,14 +1,13 @@
 using System.Buffers.Binary;
 using System.Text;
-using CodigoActivo.Application.Extensions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Extensions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Extensions;
 
 public sealed class StreamExtensionsTests
 {
-
     public static TheoryData<byte[], ImageFormat> ValidHeaders() =>
         new()
         {
@@ -24,7 +23,10 @@ public sealed class StreamExtensionsTests
 
     [Theory]
     [MemberData(nameof(ValidHeaders))]
-    public async Task DetectImageFormatAsync_recognises_valid_headers(byte[] header, ImageFormat expected)
+    public async Task DetectImageFormatAsync_recognises_valid_headers(
+        byte[] header,
+        ImageFormat expected
+    )
     {
         await using var stream = new MemoryStream(header);
 
@@ -102,7 +104,12 @@ public sealed class StreamExtensionsTests
         return b;
     }
 
-    private static byte[] Png(uint width = 16, uint height = 16, uint ihdrLen = 13, string tag = "IHDR")
+    private static byte[] Png(
+        uint width = 16,
+        uint height = 16,
+        uint ihdrLen = 13,
+        string tag = "IHDR"
+    )
     {
         var b = new byte[32];
         ReadOnlySpan<byte> sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -153,22 +160,28 @@ public sealed class StreamExtensionsTests
             set => throw new NotSupportedException();
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+        public override int Read(byte[] buffer, int offset, int count) =>
+            inner.Read(buffer, offset, count);
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-            inner.ReadAsync(buffer, cancellationToken);
+        public override ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default
+        ) => inner.ReadAsync(buffer, cancellationToken);
 
         public override void Flush() { }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
 
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) inner.Dispose();
+            if (disposing)
+                inner.Dispose();
             base.Dispose(disposing);
         }
     }

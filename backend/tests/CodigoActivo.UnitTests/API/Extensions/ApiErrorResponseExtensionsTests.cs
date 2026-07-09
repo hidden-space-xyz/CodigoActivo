@@ -1,6 +1,6 @@
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
-using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
@@ -11,8 +11,7 @@ public sealed class ApiErrorResponseExtensionsTests
 {
     private const string TraceId = "trace-xyz-123";
 
-    private static DefaultHttpContext ContextWithTrace() =>
-        new() { TraceIdentifier = TraceId };
+    private static DefaultHttpContext ContextWithTrace() => new() { TraceIdentifier = TraceId };
 
     private sealed class TestController : ControllerBase;
 
@@ -37,7 +36,11 @@ public sealed class ApiErrorResponseExtensionsTests
 
     [Theory]
     [MemberData(nameof(KindMappings))]
-    public void Create_maps_each_kind_to_status_and_title(ErrorKind kind, int expectedStatus, string expectedTitle)
+    public void Create_maps_each_kind_to_status_and_title(
+        ErrorKind kind,
+        int expectedStatus,
+        string expectedTitle
+    )
     {
         var error = new Error(kind, ErrorCode.PartnerNotFound);
 
@@ -115,8 +118,11 @@ public sealed class ApiErrorResponseExtensionsTests
 
         var actionResult = controller.ToActionResult(Result.Success());
 
-        actionResult.Should().BeOfType<NoContentResult>()
-            .Which.StatusCode.Should().Be(StatusCodes.Status204NoContent);
+        actionResult
+            .Should()
+            .BeOfType<NoContentResult>()
+            .Which.StatusCode.Should()
+            .Be(StatusCodes.Status204NoContent);
     }
 
     [Fact]
@@ -129,8 +135,7 @@ public sealed class ApiErrorResponseExtensionsTests
 
         var problem = actionResult.Should().BeOfType<ObjectResult>().Subject;
         problem.StatusCode.Should().Be(StatusCodes.Status409Conflict);
-        problem.Value.Should().BeOfType<ApiErrorResponse>()
-            .Which.Title.Should().Be("Conflict");
+        problem.Value.Should().BeOfType<ApiErrorResponse>().Which.Title.Should().Be("Conflict");
     }
 
     [Fact]

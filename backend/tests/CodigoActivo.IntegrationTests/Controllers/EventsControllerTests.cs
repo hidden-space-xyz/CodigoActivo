@@ -1,16 +1,17 @@
 using System.Net;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -19,25 +20,37 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Files.Add(new FileEntity
-            {
-                Id = id,
-                Name = "thumb",
-                Extension = "png",
-                UploadedAt = SeededAt,
-                UploadedBy = TestSeedData.Users.AdminId,
-            });
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = id,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = SeededAt,
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
     }
 
-    private async Task<Guid> SeedCategoryTypeAsync(string name = "Formación", string color = "#112233")
+    private async Task<Guid> SeedCategoryTypeAsync(
+        string name = "Formación",
+        string color = "#112233"
+    )
     {
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.EventCategoryTypes.Add(new EventCategoryType { Id = id, Name = name, Color = color });
+            db.EventCategoryTypes.Add(
+                new EventCategoryType
+                {
+                    Id = id,
+                    Name = name,
+                    Color = color,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -52,27 +65,30 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     )
     {
         var thumbnailId = await SeedThumbnailAsync();
-        var categoryId = categoryTypeId ?? await SeedCategoryTypeAsync(Guid.NewGuid().ToString("N"));
+        var categoryId =
+            categoryTypeId ?? await SeedCategoryTypeAsync(Guid.NewGuid().ToString("N"));
         var id = Guid.NewGuid();
         var startAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         await Factory.SeedAsync(db =>
         {
-            db.Events.Add(new Event
-            {
-                Id = id,
-                Title = title,
-                Subtitle = "Sub",
-                Description = "{}",
-                EventStartsAt = start,
-                EventEndsAt = end,
-                SignupStartsAt = startAt.AddDays(-10),
-                SignupEndsAt = startAt.AddDays(-1),
-                Featured = featured,
-                ThumbnailId = thumbnailId,
-                CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
-                Categories = { new EventCategory { EventCategoryTypeId = categoryId } },
-            });
+            db.Events.Add(
+                new Event
+                {
+                    Id = id,
+                    Title = title,
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    EventStartsAt = start,
+                    EventEndsAt = end,
+                    SignupStartsAt = startAt.AddDays(-10),
+                    SignupEndsAt = startAt.AddDays(-1),
+                    Featured = featured,
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                    Categories = { new EventCategory { EventCategoryTypeId = categoryId } },
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -129,7 +145,12 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     public async Task List_is_anonymous_and_returns_paged_envelope_with_categories()
     {
         var categoryId = await SeedCategoryTypeAsync("Cultura");
-        await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Alfa", categoryTypeId: categoryId);
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 5),
+            title: "Alfa",
+            categoryTypeId: categoryId
+        );
         var client = CreateClient();
 
         var response = await client.GetAsync("/api/events");
@@ -140,7 +161,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         page.Page.Should().Be(1);
         page.PageSize.Should().Be(25);
         var item = page.Items.Should().ContainSingle(e => e.Title == "Alfa").Subject;
-        item.Categories.Should().ContainSingle(c => c.CategoryTypeId == categoryId && c.Name == "Cultura");
+        item.Categories.Should()
+            .ContainSingle(c => c.CategoryTypeId == categoryId && c.Name == "Cultura");
     }
 
     [Fact]
@@ -236,7 +258,12 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     public async Task Update_as_admin_changes_event_and_persists()
     {
         var categoryId = await SeedCategoryTypeAsync("Original");
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "Antes", categoryTypeId: categoryId);
+        var id = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 10),
+            title: "Antes",
+            categoryTypeId: categoryId
+        );
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
         var request = BuildUpdate(thumbnailId, [categoryId], title: "Después");
@@ -253,8 +280,15 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
     {
         var categoryId = await SeedCategoryTypeAsync("Cascada");
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "ConMiniatura", categoryTypeId: categoryId);
-        var oldThumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
+        var id = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 10),
+            title: "ConMiniatura",
+            categoryTypeId: categoryId
+        );
+        var oldThumbnailId = (
+            await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask())
+        )!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
         var request = BuildUpdate(newThumbnailId, [categoryId]);
@@ -271,8 +305,14 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
     [Fact]
     public async Task Delete_as_admin_removes_event_and_its_orphaned_thumbnail()
     {
-        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Borrar");
-        var thumbnailId = (await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask()))!.ThumbnailId;
+        var id = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 5),
+            title: "Borrar"
+        );
+        var thumbnailId = (
+            await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask())
+        )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
         var response = await client.DeleteWithCsrfAsync($"/api/events/{id}");
@@ -281,7 +321,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
         stored.Should().BeNull();
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
-        file.Should().BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
+        file.Should()
+            .BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
     }
 
     [Fact]
@@ -321,7 +362,9 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory) : I
         var created = await response.ReadJsonAsync<EventCategoryTypeResponse>();
         created!.Name.Should().Be("Innovación");
 
-        var stored = await Factory.QueryAsync(db => db.EventCategoryTypes.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.EventCategoryTypes.FindAsync(created.Id).AsTask()
+        );
         stored!.Color.Should().Be("#3366cc");
     }
 

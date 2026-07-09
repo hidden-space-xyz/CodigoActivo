@@ -16,9 +16,17 @@ public record ResourceResponse(
 )
 {
     public ResourceResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, default, null, Guid.Empty, null, Guid.Empty)
-    {
-    }
+        : this(
+            Guid.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            default,
+            null,
+            Guid.Empty,
+            null,
+            Guid.Empty
+        ) { }
 }
 
 public record ResourceListItemResponse(
@@ -34,8 +42,7 @@ public record ResourceListItemResponse(
 {
     public ResourceListItemResponse()
         : this(Guid.Empty, string.Empty, string.Empty, default, null, Guid.Empty, null, Guid.Empty)
-    {
-    }
+    { }
 }
 
 public record CreateResourceRequest(

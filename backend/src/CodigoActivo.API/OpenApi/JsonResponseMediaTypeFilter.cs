@@ -18,12 +18,14 @@ public sealed class JsonResponseMediaTypeFilter : IOperationFilter
 
     private static void KeepJsonOnly(IDictionary<string, OpenApiMediaType>? content)
     {
-        if (content?.ContainsKey("application/json") != true) return;
+        if (content?.ContainsKey("application/json") != true)
+            return;
 
         var mediaTypesToRemove = content
             .Keys.Where(key => !string.Equals(key, "application/json", StringComparison.Ordinal))
             .ToList();
 
-        foreach (var mediaType in mediaTypesToRemove) content.Remove(mediaType);
+        foreach (var mediaType in mediaTypesToRemove)
+            content.Remove(mediaType);
     }
 }

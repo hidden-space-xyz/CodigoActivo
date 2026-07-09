@@ -184,8 +184,14 @@ public sealed class DemoDataSeederTests
         fileIds.Should().HaveSameCount(graph.Files);
 
         graph.Events.Select(e => e.ThumbnailId).Should().OnlyContain(id => fileIds.Contains(id));
-        graph.Activities.Select(a => a.ThumbnailId).Should().OnlyContain(id => fileIds.Contains(id));
-        graph.Announcements.Select(a => a.ThumbnailId).Should().OnlyContain(id => fileIds.Contains(id));
+        graph
+            .Activities.Select(a => a.ThumbnailId)
+            .Should()
+            .OnlyContain(id => fileIds.Contains(id));
+        graph
+            .Announcements.Select(a => a.ThumbnailId)
+            .Should()
+            .OnlyContain(id => fileIds.Contains(id));
         graph.Resources.Select(r => r.ThumbnailId).Should().OnlyContain(id => fileIds.Contains(id));
         graph.Partners.Select(p => p.ThumbnailId).Should().OnlyContain(id => fileIds.Contains(id));
 

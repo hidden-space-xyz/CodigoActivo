@@ -1,16 +1,17 @@
 using System.Net;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private static readonly DateOnly MinorBirthDate = new(2016, 1, 1);
     private static readonly DateOnly ChildBirthDate = new(2015, 5, 5);
@@ -23,7 +24,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         Guid? parentId = null
     )
     {
-        return new UpdateUserRequest(firstName, lastName, email, phone, new DateOnly(1992, 7, 30), parentId);
+        return new UpdateUserRequest(
+            firstName,
+            lastName,
+            email,
+            phone,
+            new DateOnly(1992, 7, 30),
+            parentId
+        );
     }
 
     private static UpdateUserRequest ChildUpdate(string firstName = "MateoX", Guid? parentId = null)
@@ -65,9 +73,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>();
         page!.Total.Should().Be(2);
-        page.Items.Select(u => u.Id).Should().BeEquivalentTo(
-            [TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]
-        );
+        page.Items.Select(u => u.Id)
+            .Should()
+            .BeEquivalentTo([TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]);
     }
 
     [Fact]
@@ -133,7 +141,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
     {
         var client = CreateClient();
 
-        var response = await client.PutJsonAsync($"/api/users/{TestSeedData.Users.MemberId}", AdultUpdate());
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate()
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -149,7 +160,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask()
+        );
         stored!.FirstName.Should().Be("Marta Renombrada");
     }
 
@@ -177,7 +190,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.MemberChildId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.MemberChildId).AsTask()
+        );
         stored!.FirstName.Should().Be("Mateo Renombrado");
     }
 
@@ -201,10 +216,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/users/{TestSeedData.Users.PendingId}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.PendingId}"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.PendingId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.PendingId).AsTask()
+        );
         stored.Should().BeNull();
     }
 
@@ -228,9 +247,17 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
     public async Task AddChild_as_member_creates_dependent()
     {
         var client = await LoginAsMemberAsync();
-        var request = new RegisterMinorRequest("Nino", "Miembro", MinorBirthDate, SeedIds.UserTypes.Participant);
+        var request = new RegisterMinorRequest(
+            "Nino",
+            "Miembro",
+            MinorBirthDate,
+            SeedIds.UserTypes.Participant
+        );
 
-        var response = await client.PostJsonAsync($"/api/users/{TestSeedData.Users.MemberId}/children", request);
+        var response = await client.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/children",
+            request
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var created = await response.ReadJsonAsync<UserResponse>();
@@ -247,10 +274,15 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         var client = await LoginAsMemberAsync();
         var request = new ChangePasswordRequest(TestSeedData.Password, "NewStr0ngPass!");
 
-        var response = await client.PatchJsonAsync($"/api/users/{TestSeedData.Users.MemberId}/password", request);
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/password",
+            request
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(TestSeedData.Users.MemberId).AsTask()
+        );
         stored!.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NewStr0ngPass!");
     }
 
@@ -270,5 +302,4 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory) : In
         );
         user!.IsAdmin.Should().BeTrue();
     }
-
 }

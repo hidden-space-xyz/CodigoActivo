@@ -42,9 +42,7 @@ const emailInvalid = computed(() => {
   const value = form.email.trim()
   return value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 })
-const contactMissing = computed(
-  () => !isMinor.value && (!form.email.trim() || !form.phone.trim()),
-)
+const contactMissing = computed(() => !isMinor.value && (!form.email.trim() || !form.phone.trim()))
 
 watch(
   () => props.visible,

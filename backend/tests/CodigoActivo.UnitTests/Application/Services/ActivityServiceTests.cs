@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -7,7 +8,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -52,12 +52,18 @@ public sealed class ActivityServiceTests
 
     private void ModalityExists(bool exists) =>
         modalityTypes
-            .ExistsAsync(Arg.Any<Expression<Func<ActivityModalityType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<ActivityModalityType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
 
     private void ThumbnailExists(bool exists) =>
         files
-            .ExistsAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
 
     private void EventFound(Event? ev) =>
@@ -307,7 +313,10 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(true);
         roleTypes
-            .CountAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+            .CountAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
         var roles = new List<ActivityAllowedRoleRequest>
         {
@@ -353,16 +362,18 @@ public sealed class ActivityServiceTests
         result.Value.Title.Should().Be("Taller");
         result.Value.Location.Should().Be("Sala");
         result.Value.EventId.Should().Be(eventId);
-        await activities.Received(1).AddAsync(
-            Arg.Is<Activity>(a =>
-                a.Title == "Taller"
-                && a.Location == "Sala"
-                && a.EventId == eventId
-                && a.CreatedBy == caller
-                && a.CreatedAt == clock.UtcNow
-            ),
-            Arg.Any<CancellationToken>()
-        );
+        await activities
+            .Received(1)
+            .AddAsync(
+                Arg.Is<Activity>(a =>
+                    a.Title == "Taller"
+                    && a.Location == "Sala"
+                    && a.EventId == eventId
+                    && a.CreatedBy == caller
+                    && a.CreatedAt == clock.UtcNow
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -374,7 +385,10 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(true);
         roleTypes
-            .CountAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+            .CountAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
 
         var stored = new List<Activity>();
@@ -392,16 +406,25 @@ public sealed class ActivityServiceTests
             });
 
         var roles = new List<ActivityAllowedRoleRequest> { new(duplicate), new(duplicate) };
-        var result = await sut.CreateAsync(Guid.NewGuid(), CreateRequest(roles: roles), Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(roles: roles),
+            Guid.NewGuid()
+        );
 
         result.IsSuccess.Should().BeTrue();
-        captured!.AllowedRoleTypes.Should().ContainSingle().Which.ActivityRoleTypeId.Should().Be(duplicate);
+        captured!
+            .AllowedRoleTypes.Should()
+            .ContainSingle()
+            .Which.ActivityRoleTypeId.Should()
+            .Be(duplicate);
     }
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_activity_missing()
     {
-        activities.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        activities
+            .GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((Activity?)null);
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), UpdateRequest(), Guid.NewGuid());
@@ -488,7 +511,10 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(true);
         roleTypes
-            .CountAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+            .CountAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(0);
         var roles = new List<ActivityAllowedRoleRequest> { new(Guid.NewGuid()) };
 
@@ -510,7 +536,9 @@ public sealed class ActivityServiceTests
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var activity = NewActivity(title: "Old", id: activityId, eventId: eventId);
-        activity.AllowedRoleTypes.Add(new ActivityAllowedRoleType { ActivityRoleTypeId = Guid.NewGuid() });
+        activity.AllowedRoleTypes.Add(
+            new ActivityAllowedRoleType { ActivityRoleTypeId = Guid.NewGuid() }
+        );
 
         var stored = new List<Activity> { activity };
         activities.Query().Returns(_ => stored.AsQueryable());
@@ -541,10 +569,16 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(true);
 
-        var result = await sut.UpdateAsync(activity.Id, UpdateRequest(thumbnailId: Guid.NewGuid()), Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(thumbnailId: Guid.NewGuid()),
+            Guid.NewGuid()
+        );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -570,7 +604,8 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_activity_missing()
     {
-        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Activity?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
@@ -585,7 +620,8 @@ public sealed class ActivityServiceTests
     public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
         var activity = NewActivity();
-        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(activity);
 
         var result = await sut.DeleteAsync(activity.Id);
@@ -593,19 +629,23 @@ public sealed class ActivityServiceTests
         result.IsSuccess.Should().BeTrue();
         activities.Received(1).Remove(activity);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService.Received(1).DeleteIfOrphanedAsync(activity.ThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(activity.ThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ListRoleTypesAsync_orders_by_name_and_projects()
     {
-        roleTypes.Query().Returns(
-            new List<ActivityRoleType>
-            {
-                new() { Name = "Zeta", Description = "z" },
-                new() { Name = "Alpha", Description = "a" },
-            }.AsQueryable()
-        );
+        roleTypes
+            .Query()
+            .Returns(
+                new List<ActivityRoleType>
+                {
+                    new() { Name = "Zeta", Description = "z" },
+                    new() { Name = "Alpha", Description = "a" },
+                }.AsQueryable()
+            );
 
         var result = await sut.ListRoleTypesAsync();
 
@@ -616,13 +656,25 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task ListAssignmentStatusTypesAsync_orders_by_name_and_projects()
     {
-        statuses.Query().Returns(
-            new List<AssignmentStatusType>
-            {
-                new() { Name = "Confirmado", Description = "c", Color = "#0f0" },
-                new() { Name = "Aprobado", Description = "a", Color = "#00f" },
-            }.AsQueryable()
-        );
+        statuses
+            .Query()
+            .Returns(
+                new List<AssignmentStatusType>
+                {
+                    new()
+                    {
+                        Name = "Confirmado",
+                        Description = "c",
+                        Color = "#0f0",
+                    },
+                    new()
+                    {
+                        Name = "Aprobado",
+                        Description = "a",
+                        Color = "#00f",
+                    },
+                }.AsQueryable()
+            );
 
         var result = await sut.ListAssignmentStatusTypesAsync();
 
@@ -633,13 +685,15 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task ListModalityTypesAsync_orders_by_name_and_projects()
     {
-        modalityTypes.Query().Returns(
-            new List<ActivityModalityType>
-            {
-                new() { Name = "Presencial" },
-                new() { Name = "Online" },
-            }.AsQueryable()
-        );
+        modalityTypes
+            .Query()
+            .Returns(
+                new List<ActivityModalityType>
+                {
+                    new() { Name = "Presencial" },
+                    new() { Name = "Online" },
+                }.AsQueryable()
+            );
 
         var result = await sut.ListModalityTypesAsync();
 
@@ -651,14 +705,28 @@ public sealed class ActivityServiceTests
     public async Task ListAssignedAsync_filters_by_user_and_orders_by_start()
     {
         var userId = Guid.NewGuid();
-        activities.QueryAssignments().Returns(
-            new List<ActivityUserRoleAssignment>
-            {
-                Assignment(userId, "Late", new DateTimeOffset(2026, 7, 10, 14, 0, 0, TimeSpan.Zero)),
-                Assignment(userId, "Early", new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)),
-                Assignment(Guid.NewGuid(), "Other", new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)),
-            }.AsQueryable()
-        );
+        activities
+            .QueryAssignments()
+            .Returns(
+                new List<ActivityUserRoleAssignment>
+                {
+                    Assignment(
+                        userId,
+                        "Late",
+                        new DateTimeOffset(2026, 7, 10, 14, 0, 0, TimeSpan.Zero)
+                    ),
+                    Assignment(
+                        userId,
+                        "Early",
+                        new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)
+                    ),
+                    Assignment(
+                        Guid.NewGuid(),
+                        "Other",
+                        new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
+                    ),
+                }.AsQueryable()
+            );
 
         var result = await sut.ListAssignedAsync(userId);
 
@@ -666,7 +734,11 @@ public sealed class ActivityServiceTests
         result.Should().HaveCount(2);
     }
 
-    private static ActivityUserRoleAssignment Assignment(Guid userId, string title, DateTimeOffset startsAt) =>
+    private static ActivityUserRoleAssignment Assignment(
+        Guid userId,
+        string title,
+        DateTimeOffset startsAt
+    ) =>
         new()
         {
             UserId = userId,
@@ -689,10 +761,15 @@ public sealed class ActivityServiceTests
     public async Task CreateActivityRoleTypeAsync_returns_conflict_when_name_exists()
     {
         roleTypes
-            .ExistsAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(true);
 
-        var result = await sut.CreateActivityRoleTypeAsync(new CreateActivityRoleTypeRequest("Líder", null));
+        var result = await sut.CreateActivityRoleTypeAsync(
+            new CreateActivityRoleTypeRequest("Líder", null)
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNameAlreadyExists);
@@ -703,7 +780,10 @@ public sealed class ActivityServiceTests
     public async Task CreateActivityRoleTypeAsync_trims_and_persists()
     {
         roleTypes
-            .ExistsAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
 
         var result = await sut.CreateActivityRoleTypeAsync(
@@ -713,10 +793,12 @@ public sealed class ActivityServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Name.Should().Be("Líder");
         result.Value.Description.Should().Be("Guía");
-        await roleTypes.Received(1).AddAsync(
-            Arg.Is<ActivityRoleType>(r => r.Name == "Líder" && r.Description == "Guía"),
-            Arg.Any<CancellationToken>()
-        );
+        await roleTypes
+            .Received(1)
+            .AddAsync(
+                Arg.Is<ActivityRoleType>(r => r.Name == "Líder" && r.Description == "Guía"),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -724,10 +806,15 @@ public sealed class ActivityServiceTests
     public async Task CreateActivityRoleTypeAsync_defaults_null_description_to_empty()
     {
         roleTypes
-            .ExistsAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
 
-        var result = await sut.CreateActivityRoleTypeAsync(new CreateActivityRoleTypeRequest("Ayudante", null));
+        var result = await sut.CreateActivityRoleTypeAsync(
+            new CreateActivityRoleTypeRequest("Ayudante", null)
+        );
 
         result.Value.Description.Should().BeEmpty();
     }
@@ -735,7 +822,11 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task UpdateActivityRoleTypeAsync_returns_not_found_when_missing()
     {
-        roleTypes.FindAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        roleTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns((ActivityRoleType?)null);
 
         var result = await sut.UpdateActivityRoleTypeAsync(
@@ -752,9 +843,24 @@ public sealed class ActivityServiceTests
     public async Task UpdateActivityRoleTypeAsync_returns_conflict_when_name_taken_by_other()
     {
         var id = Guid.NewGuid();
-        roleTypes.FindAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new ActivityRoleType { Id = id, Name = "Old", Description = "d" });
-        roleTypes.ExistsAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        roleTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new ActivityRoleType
+                {
+                    Id = id,
+                    Name = "Old",
+                    Description = "d",
+                }
+            );
+        roleTypes
+            .ExistsAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(true);
 
         var result = await sut.UpdateActivityRoleTypeAsync(
@@ -771,10 +877,23 @@ public sealed class ActivityServiceTests
     public async Task UpdateActivityRoleTypeAsync_mutates_and_persists()
     {
         var id = Guid.NewGuid();
-        var roleType = new ActivityRoleType { Id = id, Name = "Old", Description = "old" };
-        roleTypes.FindAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        var roleType = new ActivityRoleType
+        {
+            Id = id,
+            Name = "Old",
+            Description = "old",
+        };
+        roleTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(roleType);
-        roleTypes.ExistsAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        roleTypes
+            .ExistsAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
 
         var result = await sut.UpdateActivityRoleTypeAsync(
@@ -792,7 +911,11 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task DeleteActivityRoleTypeAsync_returns_not_found_when_nothing_removed()
     {
-        roleTypes.RemoveAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        roleTypes
+            .RemoveAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(0);
 
         var result = await sut.DeleteActivityRoleTypeAsync(Guid.NewGuid());
@@ -805,7 +928,11 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task DeleteActivityRoleTypeAsync_saves_when_removed()
     {
-        roleTypes.RemoveAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        roleTypes
+            .RemoveAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
 
         var result = await sut.DeleteActivityRoleTypeAsync(Guid.NewGuid());

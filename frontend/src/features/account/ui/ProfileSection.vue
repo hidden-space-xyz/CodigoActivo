@@ -149,19 +149,45 @@ function confirmDeleteAccount(): void {
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="p-firstname">Nombre</label>
-            <InputText id="p-firstname" v-model="editForm.firstName" :maxlength="120" required fluid />
+            <InputText
+              id="p-firstname"
+              v-model="editForm.firstName"
+              :maxlength="120"
+              required
+              fluid
+            />
           </div>
           <div class="acc-form__field">
             <label for="p-lastname">Apellidos</label>
-            <InputText id="p-lastname" v-model="editForm.lastName" :maxlength="120" required fluid />
+            <InputText
+              id="p-lastname"
+              v-model="editForm.lastName"
+              :maxlength="120"
+              required
+              fluid
+            />
           </div>
           <div class="acc-form__field">
             <label for="p-email">Correo</label>
-            <InputText id="p-email" v-model="editForm.email" type="email" :maxlength="256" required fluid />
+            <InputText
+              id="p-email"
+              v-model="editForm.email"
+              type="email"
+              :maxlength="256"
+              required
+              fluid
+            />
           </div>
           <div class="acc-form__field">
             <label for="p-phone">Teléfono</label>
-            <InputText id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required fluid />
+            <InputText
+              id="p-phone"
+              v-model="editForm.phone"
+              type="tel"
+              :maxlength="40"
+              required
+              fluid
+            />
           </div>
           <div class="acc-form__field">
             <label for="p-dob">Fecha de nacimiento</label>
@@ -249,7 +275,9 @@ function confirmDeleteAccount(): void {
         tus inscripciones. Esta acción no se puede deshacer.
       </p>
       <div class="acc-form__actions">
-        <BaseButton variant="link" type="button" @click="deleteVisible = false">Cancelar</BaseButton>
+        <BaseButton variant="link" type="button" @click="deleteVisible = false"
+          >Cancelar</BaseButton
+        >
         <BaseButton
           variant="primary"
           :loading="deleteOwnAccount.isPending.value"

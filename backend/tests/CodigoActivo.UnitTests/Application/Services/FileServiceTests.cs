@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
@@ -6,7 +7,6 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -16,7 +16,8 @@ public sealed class FileServiceTests
 {
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ILocalFileSystemRepository storage = Substitute.For<ILocalFileSystemRepository>();
+    private readonly ILocalFileSystemRepository storage =
+        Substitute.For<ILocalFileSystemRepository>();
     private readonly TestClock clock = new();
     private readonly FileStorageOptions options = new();
     private readonly FileService sut;
@@ -31,8 +32,14 @@ public sealed class FileServiceTests
         var bytes = new byte[32];
         byte[] signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         signature.CopyTo(bytes, 0);
-        bytes[8] = 0x00; bytes[9] = 0x00; bytes[10] = 0x00; bytes[11] = 0x0D;
-        bytes[12] = (byte)'I'; bytes[13] = (byte)'H'; bytes[14] = (byte)'D'; bytes[15] = (byte)'R';
+        bytes[8] = 0x00;
+        bytes[9] = 0x00;
+        bytes[10] = 0x00;
+        bytes[11] = 0x0D;
+        bytes[12] = (byte)'I';
+        bytes[13] = (byte)'H';
+        bytes[14] = (byte)'D';
+        bytes[15] = (byte)'R';
         bytes[19] = 0x01;
         bytes[23] = 0x01;
         return bytes;
@@ -53,9 +60,7 @@ public sealed class FileServiceTests
             .Returns((FileEntity?)null);
 
     private void FileReferenced(bool referenced) =>
-        files
-            .IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(referenced);
+        files.IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(referenced);
 
     private static FileEntity NewFile(string name = "photo.png", string extension = "png") =>
         new()
@@ -128,9 +133,7 @@ public sealed class FileServiceTests
         var file = NewFile(name: "avatar.png");
         FileFound(file);
         var stream = PngStream();
-        storage
-            .OpenReadAsync($"{file.Id}.png", Arg.Any<CancellationToken>())
-            .Returns(stream);
+        storage.OpenReadAsync($"{file.Id}.png", Arg.Any<CancellationToken>()).Returns(stream);
 
         var result = await sut.GetContentAsync(file.Id);
 
@@ -233,15 +236,20 @@ public sealed class FileServiceTests
         result.Value.UploadedBy.Should().Be(caller);
         result.Value.UploadedAt.Should().Be(clock.UtcNow);
 
-        await storage.Received(1).SaveAsync($"{result.Value.Id}.png", content, Arg.Any<CancellationToken>());
-        await files.Received(1).AddAsync(
-            Arg.Is<FileEntity>(f =>
-                f.Name == "avatar.png"
-                && f.Extension == "png"
-                && f.UploadedBy == caller
-                && f.UploadedAt == clock.UtcNow),
-            Arg.Any<CancellationToken>()
-        );
+        await storage
+            .Received(1)
+            .SaveAsync($"{result.Value.Id}.png", content, Arg.Any<CancellationToken>());
+        await files
+            .Received(1)
+            .AddAsync(
+                Arg.Is<FileEntity>(f =>
+                    f.Name == "avatar.png"
+                    && f.Extension == "png"
+                    && f.UploadedBy == caller
+                    && f.UploadedAt == clock.UtcNow
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -310,7 +318,9 @@ public sealed class FileServiceTests
         result.Value.Name.Should().Be("renamed.png");
         file.Name.Should().Be("renamed.png");
         file.Extension.Should().Be("png");
-        await storage.Received(1).SaveAsync($"{file.Id}.png", content, Arg.Any<CancellationToken>());
+        await storage
+            .Received(1)
+            .SaveAsync($"{file.Id}.png", content, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
     }
@@ -326,7 +336,9 @@ public sealed class FileServiceTests
 
         result.IsSuccess.Should().BeTrue();
         file.Extension.Should().Be("png");
-        await storage.Received(1).SaveAsync($"{file.Id}.png", Arg.Any<Stream>(), Arg.Any<CancellationToken>());
+        await storage
+            .Received(1)
+            .SaveAsync($"{file.Id}.png", Arg.Any<Stream>(), Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{file.Id}.jpg");
     }

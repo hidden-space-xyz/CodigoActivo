@@ -35,7 +35,8 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     public bool Verify(string password, string hash)
     {
         var parts = hash.Split('$');
-        if (parts.Length != 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal)) return false;
+        if (parts.Length != 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal))
+            return false;
 
         if (
             !int.TryParse(parts[1], CultureInfo.InvariantCulture, out var iterations)
@@ -58,14 +59,7 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
             return false;
         }
 
-        var actual = Compute(
-            password,
-            salt,
-            iterations,
-            memoryKiB,
-            parallelism,
-            expected.Length
-        );
+        var actual = Compute(password, salt, iterations, memoryKiB, parallelism, expected.Length);
         return CryptographicOperations.FixedTimeEquals(actual, expected);
     }
 

@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
-public sealed class ActivityModalityTypeConfiguration : IEntityTypeConfiguration<ActivityModalityType>
+public sealed class ActivityModalityTypeConfiguration
+    : IEntityTypeConfiguration<ActivityModalityType>
 {
     public void Configure(EntityTypeBuilder<ActivityModalityType> builder)
     {

@@ -40,9 +40,7 @@ public record ActivityResponse(
             Guid.Empty,
             null,
             []
-        )
-    {
-    }
+        ) { }
 }
 
 public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId);
@@ -130,8 +128,7 @@ public record AssignedActivityResponse(
 {
     public AssignedActivityResponse()
         : this(Guid.Empty, string.Empty, string.Empty, default, default, Guid.Empty, null!, null!)
-    {
-    }
+    { }
 }
 
 public record AssignedActivityRoleResponse(Guid Id, string Name);
@@ -141,9 +138,7 @@ public record AssignedActivityStatusResponse(Guid Id, string Name);
 public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
 {
     public ActivityRoleTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty)
-    {
-    }
+        : this(Guid.Empty, string.Empty, string.Empty) { }
 }
 
 public record CreateActivityRoleTypeRequest(
@@ -159,15 +154,11 @@ public record UpdateActivityRoleTypeRequest(
 public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     public AssignmentStatusTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty)
-    {
-    }
+        : this(Guid.Empty, string.Empty, string.Empty, string.Empty) { }
 }
 
 public record ActivityModalityTypeResponse(Guid Id, string Name)
 {
     public ActivityModalityTypeResponse()
-        : this(Guid.Empty, string.Empty)
-    {
-    }
+        : this(Guid.Empty, string.Empty) { }
 }

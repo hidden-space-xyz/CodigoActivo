@@ -10,15 +10,9 @@ public record CsrfTokenResponse(string Token, string HeaderName);
 public record RegisterRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
-    [Required]
-    [EmailAddress]
-    [MaxLength(256)]
-    string Email,
+    [Required] [EmailAddress] [MaxLength(256)] string Email,
     [Required] [Phone] [MaxLength(40)] string Phone,
-    [Required]
-    [MinLength(8)]
-    [MaxLength(128)]
-    string Password,
+    [Required] [MinLength(8)] [MaxLength(128)] string Password,
     [NotDefaultOrFutureDate] DateOnly BirthDate,
     Guid RoleId,
     IReadOnlyList<RegisterMinorRequest>? Minors

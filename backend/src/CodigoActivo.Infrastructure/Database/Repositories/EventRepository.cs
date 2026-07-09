@@ -17,9 +17,9 @@ public class EventRepository(CodigoActivoDbContext context)
     {
         return await Set.AsNoTracking()
             .Include(e => e.Activities)
-            .ThenInclude(a => a.Assignments)
+                .ThenInclude(a => a.Assignments)
             .Include(e => e.Activities)
-            .ThenInclude(a => a.AllowedRoleTypes)
+                .ThenInclude(a => a.AllowedRoleTypes)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 

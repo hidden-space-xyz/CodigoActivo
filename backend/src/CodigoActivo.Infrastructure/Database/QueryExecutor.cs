@@ -15,9 +15,7 @@ public sealed class QueryExecutor : IQueryExecutor
         var total = await source.CountAsync(ct);
         var skip = (long)(page - 1) * pageSize;
         var items =
-            skip >= total
-                ? []
-                : await source.Skip((int)skip).Take(pageSize).ToListAsync(ct);
+            skip >= total ? [] : await source.Skip((int)skip).Take(pageSize).ToListAsync(ct);
         return new PagedResult<T>(items, total, page, pageSize);
     }
 

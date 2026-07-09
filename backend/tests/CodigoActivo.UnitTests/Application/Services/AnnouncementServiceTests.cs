@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -7,7 +8,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -15,7 +15,8 @@ namespace CodigoActivo.UnitTests.Application.Services;
 
 public sealed class AnnouncementServiceTests
 {
-    private readonly IAnnouncementRepository announcements = Substitute.For<IAnnouncementRepository>();
+    private readonly IAnnouncementRepository announcements =
+        Substitute.For<IAnnouncementRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
@@ -24,7 +25,14 @@ public sealed class AnnouncementServiceTests
 
     public AnnouncementServiceTests()
     {
-        sut = new AnnouncementService(announcements, files, fileService, new FakeQueryExecutor(), clock, uow);
+        sut = new AnnouncementService(
+            announcements,
+            files,
+            fileService,
+            new FakeQueryExecutor(),
+            clock,
+            uow
+        );
     }
 
     private void HasAnnouncements(params Announcement[] items) =>
@@ -32,7 +40,10 @@ public sealed class AnnouncementServiceTests
 
     private void ThumbnailExists(bool exists) =>
         files
-            .ExistsAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
 
     private static Announcement NewAnnouncement(
@@ -116,7 +127,11 @@ public sealed class AnnouncementServiceTests
     [Fact]
     public async Task ListAsync_honours_explicit_ascending_title_sort()
     {
-        HasAnnouncements(NewAnnouncement("Charlie"), NewAnnouncement("Alpha"), NewAnnouncement("Bravo"));
+        HasAnnouncements(
+            NewAnnouncement("Charlie"),
+            NewAnnouncement("Alpha"),
+            NewAnnouncement("Bravo")
+        );
 
         var result = await sut.ListAsync(new AnnouncementListQuery { Sort = "title" });
 
@@ -185,7 +200,12 @@ public sealed class AnnouncementServiceTests
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
-        var request = new CreateAnnouncementRequest("  Title  ", "  Subtitle  ", "{\"x\":1}", thumbnailId);
+        var request = new CreateAnnouncementRequest(
+            "  Title  ",
+            "  Subtitle  ",
+            "{\"x\":1}",
+            thumbnailId
+        );
 
         var result = await sut.CreateAsync(request, caller);
 
@@ -196,19 +216,25 @@ public sealed class AnnouncementServiceTests
         result.Value.ThumbnailId.Should().Be(thumbnailId);
         result.Value.CreatedBy.Should().Be(caller);
         result.Value.CreatedAt.Should().Be(clock.UtcNow);
-        await announcements.Received(1).AddAsync(
-            Arg.Is<Announcement>(a =>
-                a.Title == "Title" && a.Subtitle == "Subtitle" && a.CreatedBy == caller
-            ),
-            Arg.Any<CancellationToken>()
-        );
+        await announcements
+            .Received(1)
+            .AddAsync(
+                Arg.Is<Announcement>(a =>
+                    a.Title == "Title" && a.Subtitle == "Subtitle" && a.CreatedBy == caller
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_missing()
     {
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns((Announcement?)null);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
@@ -224,7 +250,11 @@ public sealed class AnnouncementServiceTests
     public async Task UpdateAsync_returns_bad_request_when_thumbnail_missing()
     {
         var announcement = NewAnnouncement();
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
         ThumbnailExists(false);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
@@ -240,13 +270,22 @@ public sealed class AnnouncementServiceTests
     public async Task UpdateAsync_mutates_and_persists()
     {
         var announcement = NewAnnouncement("Old", "OldSub");
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
         ThumbnailExists(true);
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = new UpdateAnnouncementRequest("  New  ", "  NewSub  ", "{\"y\":2}", thumbnailId);
+        var request = new UpdateAnnouncementRequest(
+            "  New  ",
+            "  NewSub  ",
+            "{\"y\":2}",
+            thumbnailId
+        );
 
         var result = await sut.UpdateAsync(announcement.Id, request, caller);
 
@@ -265,7 +304,11 @@ public sealed class AnnouncementServiceTests
     {
         var announcement = NewAnnouncement();
         var previousThumbnailId = announcement.ThumbnailId;
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
         ThumbnailExists(true);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
@@ -273,17 +316,28 @@ public sealed class AnnouncementServiceTests
         var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
     {
         var announcement = NewAnnouncement();
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
         ThumbnailExists(true);
-        var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", announcement.ThumbnailId);
+        var request = new UpdateAnnouncementRequest(
+            "Title",
+            "Subtitle",
+            "{}",
+            announcement.ThumbnailId
+        );
 
         var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
 
@@ -299,7 +353,11 @@ public sealed class AnnouncementServiceTests
         var keptId = Guid.NewGuid();
         announcement.Description =
             $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
         ThumbnailExists(true);
         var request = new UpdateAnnouncementRequest(
@@ -312,14 +370,22 @@ public sealed class AnnouncementServiceTests
         var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
-        await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
+        await fileService
+            .DidNotReceive()
+            .DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_announcement_missing()
     {
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns((Announcement?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
@@ -335,7 +401,11 @@ public sealed class AnnouncementServiceTests
     public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
         var announcement = NewAnnouncement();
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
 
         var result = await sut.DeleteAsync(announcement.Id);
@@ -343,7 +413,9 @@ public sealed class AnnouncementServiceTests
         result.IsSuccess.Should().BeTrue();
         announcements.Received(1).Remove(announcement);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService.Received(1).DeleteIfOrphanedAsync(announcement.ThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(announcement.ThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -352,19 +424,27 @@ public sealed class AnnouncementServiceTests
         var announcement = NewAnnouncement();
         var embeddedId = Guid.NewGuid();
         announcement.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
-        announcements.FindAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>())
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(announcement);
 
         var result = await sut.DeleteAsync(announcement.Id);
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task SetFeaturedAsync_returns_not_found_when_id_missing()
     {
-        announcements.SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
+        announcements
+            .SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(false);
 
         var result = await sut.SetFeaturedAsync(Guid.NewGuid());
 

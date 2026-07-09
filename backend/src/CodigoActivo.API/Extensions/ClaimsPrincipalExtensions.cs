@@ -8,7 +8,9 @@ public static class ClaimsPrincipalExtensions
 
     public static Guid? GetUserId(this ClaimsPrincipal principal)
     {
-        return Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+        return Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+            ? id
+            : null;
     }
 
     public static bool IsAdmin(this ClaimsPrincipal principal)

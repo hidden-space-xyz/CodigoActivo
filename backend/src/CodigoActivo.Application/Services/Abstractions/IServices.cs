@@ -58,7 +58,9 @@ public interface IUserService
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(
+        CancellationToken ct = default
+    );
     Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(CancellationToken ct = default);
 
     Task<IReadOnlyList<RegistrationTypeResponse>> ListRegistrationTypesAsync(
@@ -126,7 +128,9 @@ public interface IActivityService
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<ActivityRoleTypeResponse>> ListRoleTypesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<ActivityRoleTypeResponse>> ListRoleTypesAsync(
+        CancellationToken ct = default
+    );
     Task<IReadOnlyList<AssignmentStatusTypeResponse>> ListAssignmentStatusTypesAsync(
         CancellationToken ct = default
     );

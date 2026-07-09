@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Diagnostics;
 
 namespace CodigoActivo.API.Middlewares;
 
-public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
+public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,

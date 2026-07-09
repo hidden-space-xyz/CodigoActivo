@@ -37,7 +37,8 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
     public Task<Stream?> OpenReadAsync(string storedName, CancellationToken ct = default)
     {
         var path = ResolvePath(storedName);
-        if (!File.Exists(path)) return Task.FromResult<Stream?>(null);
+        if (!File.Exists(path))
+            return Task.FromResult<Stream?>(null);
 
         Stream stream = new FileStream(
             path,
@@ -53,7 +54,8 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
     public void Delete(string storedName)
     {
         var path = ResolvePath(storedName);
-        if (File.Exists(path)) File.Delete(path);
+        if (File.Exists(path))
+            File.Delete(path);
     }
 
     private string ResolvePath(string storedName)

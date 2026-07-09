@@ -1,5 +1,5 @@
-using CodigoActivo.Application.Extensions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Extensions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Extensions;
@@ -21,7 +21,10 @@ public sealed class StringExtensionsTests
     [InlineData("  Acme  ", "Acme")]
     [InlineData("\tAcme\n", "Acme")]
     [InlineData("a b", "a b")]
-    public void NormalizeOrNull_trims_and_returns_value_when_meaningful(string value, string expected)
+    public void NormalizeOrNull_trims_and_returns_value_when_meaningful(
+        string value,
+        string expected
+    )
     {
         value.NormalizeOrNull().Should().Be(expected);
     }

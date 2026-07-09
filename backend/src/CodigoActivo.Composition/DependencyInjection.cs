@@ -170,7 +170,8 @@ public static class DependencyInjection
             return viaWindows;
         }
 
-        return TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
+        return
+            TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
             && TimeZoneInfo.TryFindSystemTimeZoneById(ianaId, out var viaIana)
             ? viaIana
             : TimeZoneInfo.Local;

@@ -1,12 +1,11 @@
-using CodigoActivo.Domain.Common;
 using AwesomeAssertions;
+using CodigoActivo.Domain.Common;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
 public sealed class CommonTests
 {
-
     [Fact]
     public void Success_produces_a_successful_result_with_no_error()
     {

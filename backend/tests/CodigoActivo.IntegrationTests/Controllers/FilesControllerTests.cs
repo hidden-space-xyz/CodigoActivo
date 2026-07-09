@@ -1,29 +1,55 @@
 using System.Net;
 using System.Net.Http.Headers;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
-
     private static byte[] ValidPng()
     {
         return
         [
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-            0x00, 0x00, 0x00, 0x0D,
-            0x49, 0x48, 0x44, 0x52,
-            0x00, 0x00, 0x00, 0x01,
-            0x00, 0x00, 0x00, 0x01,
-            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+            0x89,
+            0x50,
+            0x4E,
+            0x47,
+            0x0D,
+            0x0A,
+            0x1A,
+            0x0A,
+            0x00,
+            0x00,
+            0x00,
+            0x0D,
+            0x49,
+            0x48,
+            0x44,
+            0x52,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x08,
+            0x06,
+            0x00,
+            0x00,
+            0x00,
+            0x1F,
+            0x15,
+            0xC4,
         ];
     }
 
@@ -38,7 +64,8 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
     )
     {
         using var request = new HttpRequestMessage(method, url);
-        if (withCsrf) request.Headers.Add("X-CSRF-TOKEN", await client.FetchCsrfTokenAsync());
+        if (withCsrf)
+            request.Headers.Add("X-CSRF-TOKEN", await client.FetchCsrfTokenAsync());
 
         var form = new MultipartFormDataContent();
         if (fileBytes is not null)
@@ -52,10 +79,19 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         return await client.SendAsync(request);
     }
 
-    private async Task<FileResponse> UploadAsAdminAsync(byte[]? bytes = null, string fileName = "image.png")
+    private async Task<FileResponse> UploadAsAdminAsync(
+        byte[]? bytes = null,
+        string fileName = "image.png"
+    )
     {
         var client = await LoginAsAdminAsync();
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", bytes ?? ValidPng(), fileName);
+        using var response = await SendUploadAsync(
+            client,
+            HttpMethod.Post,
+            "/api/files",
+            bytes ?? ValidPng(),
+            fileName
+        );
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         return (await response.ReadJsonAsync<FileResponse>())!;
     }
@@ -66,7 +102,13 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         var bytes = ValidPng();
         var client = await LoginAsAdminAsync();
 
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", bytes, "picture.png");
+        using var response = await SendUploadAsync(
+            client,
+            HttpMethod.Post,
+            "/api/files",
+            bytes,
+            "picture.png"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await response.ReadJsonAsync<FileResponse>();
@@ -86,7 +128,12 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
     {
         var client = await LoginAsMemberAsync();
 
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", ValidPng());
+        using var response = await SendUploadAsync(
+            client,
+            HttpMethod.Post,
+            "/api/files",
+            ValidPng()
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -96,7 +143,12 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
     {
         var client = CreateClient();
 
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", ValidPng());
+        using var response = await SendUploadAsync(
+            client,
+            HttpMethod.Post,
+            "/api/files",
+            ValidPng()
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -125,7 +177,12 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         var client = await LoginAsAdminAsync();
         var before = await Factory.QueryAsync(db => db.Files.CountAsync());
 
-        using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", fileBytes: null);
+        using var response = await SendUploadAsync(
+            client,
+            HttpMethod.Post,
+            "/api/files",
+            fileBytes: null
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
@@ -195,14 +252,16 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Files.Add(new FileEntity
-            {
-                Id = id,
-                Name = "orphan",
-                Extension = "png",
-                UploadedAt = Factory.Clock.UtcNow,
-                UploadedBy = TestSeedData.Users.AdminId,
-            });
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = id,
+                    Name = "orphan",
+                    Extension = "png",
+                    UploadedAt = Factory.Clock.UtcNow,
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         var client = CreateClient();
@@ -261,24 +320,28 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         var thumbnailId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Files.Add(new FileEntity
-            {
-                Id = thumbnailId,
-                Name = "thumb",
-                Extension = "png",
-                UploadedAt = Factory.Clock.UtcNow,
-                UploadedBy = TestSeedData.Users.AdminId,
-            });
-            db.Announcements.Add(new Announcement
-            {
-                Id = Guid.NewGuid(),
-                Title = "Con imagen",
-                Subtitle = "Sub",
-                Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
-                ThumbnailId = thumbnailId,
-                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = thumbnailId,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = Factory.Clock.UtcNow,
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            db.Announcements.Add(
+                new Announcement
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Con imagen",
+                    Subtitle = "Sub",
+                    Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         var client = await LoginAsAdminAsync();
@@ -289,7 +352,8 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory) : In
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
         error!.Code.Should().Be(ErrorCode.FileInUse);
         var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
-        stored.Should().NotBeNull("a file embedded in a rich-text description must survive deletion");
+        stored
+            .Should()
+            .NotBeNull("a file embedded in a rich-text description must survive deletion");
     }
-
 }

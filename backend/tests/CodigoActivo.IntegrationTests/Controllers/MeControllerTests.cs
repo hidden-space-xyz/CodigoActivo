@@ -1,13 +1,14 @@
 using System.Net;
+using AwesomeAssertions;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -36,41 +37,47 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
         await Factory.SeedAsync(db =>
         {
             db.Files.AddRange(Thumbnail(eventThumbnailId), Thumbnail(activityThumbnailId));
-            db.Events.Add(new Event
-            {
-                Id = eventId,
-                Title = "Evento",
-                Subtitle = "Sub",
-                Description = "{}",
-                EventStartsAt = new DateOnly(2026, 2, 1),
-                EventEndsAt = new DateOnly(2026, 2, 2),
-                SignupStartsAt = SeededAt,
-                SignupEndsAt = SeededAt.AddDays(10),
-                ThumbnailId = eventThumbnailId,
-                CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
-            db.Activities.Add(new Activity
-            {
-                Id = activityId,
-                Title = activityTitle,
-                Description = "Descripción",
-                Location = "Sala",
-                ActivityStartsAt = activityStartsAt,
-                ActivityEndsAt = activityStartsAt.AddHours(2),
-                EventId = eventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                ThumbnailId = activityThumbnailId,
-                CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
-            db.ActivityUserRoleAssignments.Add(new ActivityUserRoleAssignment
-            {
-                UserId = userId,
-                ActivityId = activityId,
-                ActivityRoleTypeId = roleTypeId,
-                AssignmentStatusId = statusId,
-            });
+            db.Events.Add(
+                new Event
+                {
+                    Id = eventId,
+                    Title = "Evento",
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    EventStartsAt = new DateOnly(2026, 2, 1),
+                    EventEndsAt = new DateOnly(2026, 2, 2),
+                    SignupStartsAt = SeededAt,
+                    SignupEndsAt = SeededAt.AddDays(10),
+                    ThumbnailId = eventThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            db.Activities.Add(
+                new Activity
+                {
+                    Id = activityId,
+                    Title = activityTitle,
+                    Description = "Descripción",
+                    Location = "Sala",
+                    ActivityStartsAt = activityStartsAt,
+                    ActivityEndsAt = activityStartsAt.AddHours(2),
+                    EventId = eventId,
+                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    ThumbnailId = activityThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            db.ActivityUserRoleAssignments.Add(
+                new ActivityUserRoleAssignment
+                {
+                    UserId = userId,
+                    ActivityId = activityId,
+                    ActivityRoleTypeId = roleTypeId,
+                    AssignmentStatusId = statusId,
+                }
+            );
             return Task.CompletedTask;
         });
     }
@@ -117,5 +124,4 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory) : Integ
         assigned.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
         assigned.Status.Name.Should().Be("Confirmada");
     }
-
 }

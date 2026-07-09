@@ -55,12 +55,7 @@ onMounted(() => {
               Si el enlace ha caducado, pídenos un enlace nuevo y te lo enviaremos por correo.
             </p>
             <div class="verify-card__actions">
-              <BaseButton
-                v-if="canResend"
-                variant="primary"
-                :loading="isResending"
-                @click="resend"
-              >
+              <BaseButton v-if="canResend" variant="primary" :loading="isResending" @click="resend">
                 Enviarme un enlace nuevo
               </BaseButton>
               <BaseButton :to="{ name: 'home' }" variant="ghost">Volver al inicio</BaseButton>

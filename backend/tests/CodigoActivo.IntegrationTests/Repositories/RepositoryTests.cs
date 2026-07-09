@@ -1,7 +1,7 @@
+using AwesomeAssertions;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
-using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
@@ -167,7 +167,9 @@ public sealed class RepositoryTests
             await repo.AddAsync(partner);
 
             await using var probe = NewContext(database);
-            (await probe.Partners.CountAsync()).Should().Be(0, "the repository must not call SaveChanges");
+            (await probe.Partners.CountAsync())
+                .Should()
+                .Be(0, "the repository must not call SaveChanges");
 
             await ctx.SaveChangesAsync();
         }
@@ -208,7 +210,11 @@ public sealed class RepositoryTests
     public async Task GetAllAsync_and_CountAsync_and_ExistsAsync_reflect_store()
     {
         await using var ctx = NewContext();
-        ctx.Partners.AddRange(NewPartner("A", tier: 2), NewPartner("B", tier: 2), NewPartner("C", tier: 9));
+        ctx.Partners.AddRange(
+            NewPartner("A", tier: 2),
+            NewPartner("B", tier: 2),
+            NewPartner("C", tier: 9)
+        );
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
 
@@ -248,7 +254,11 @@ public sealed class RepositoryTests
     public async Task RemoveAsync_deletes_matching_rows_and_returns_count()
     {
         await using var ctx = NewContext();
-        ctx.Partners.AddRange(NewPartner("X", tier: 1), NewPartner("Y", tier: 1), NewPartner("Z", tier: 8));
+        ctx.Partners.AddRange(
+            NewPartner("X", tier: 1),
+            NewPartner("Y", tier: 1),
+            NewPartner("Z", tier: 8)
+        );
         await ctx.SaveChangesAsync();
         var repo = new PartnerRepository(ctx);
 
@@ -303,12 +313,22 @@ public sealed class RepositoryTests
     [InlineData("user@x.test", true)]
     [InlineData("+34600000000", true)]
     [InlineData("nobody@x.test", false)]
-    public async Task GetByEmailOrPhoneAsync_matches_either_identifier(string identifier, bool expectFound)
+    public async Task GetByEmailOrPhoneAsync_matches_either_identifier(
+        string identifier,
+        bool expectFound
+    )
     {
         await using var ctx = NewContext();
         var status = NewStatus();
         var type = NewUserType();
-        var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000", statusId: status.Id, userTypeId: type.Id);
+        var user = NewUser(
+            "Match",
+            "Me",
+            email: "user@x.test",
+            phone: "+34600000000",
+            statusId: status.Id,
+            userTypeId: type.Id
+        );
         ctx.AddRange(status, type, user);
         await ctx.SaveChangesAsync();
         var repo = new UserRepository(ctx);
@@ -337,8 +357,12 @@ public sealed class RepositoryTests
 
         (await repo.EmailExistsAsync("dup@x.test")).Should().BeTrue();
         (await repo.EmailExistsAsync("free@x.test")).Should().BeFalse();
-        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: user.Id)).Should().BeFalse("owner is excluded");
-        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: Guid.NewGuid())).Should().BeTrue("another user still collides");
+        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: user.Id))
+            .Should()
+            .BeFalse("owner is excluded");
+        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: Guid.NewGuid()))
+            .Should()
+            .BeTrue("another user still collides");
     }
 
     [Fact]
@@ -363,8 +387,20 @@ public sealed class RepositoryTests
         var status = NewStatus("Dependent");
         var type = NewUserType();
         var parent = NewUser("Parent", "P", statusId: status.Id, userTypeId: type.Id);
-        var zoe = NewUser("Zoe", "Child", statusId: status.Id, parentId: parent.Id, userTypeId: type.Id);
-        var amy = NewUser("Amy", "Child", statusId: status.Id, parentId: parent.Id, userTypeId: type.Id);
+        var zoe = NewUser(
+            "Zoe",
+            "Child",
+            statusId: status.Id,
+            parentId: parent.Id,
+            userTypeId: type.Id
+        );
+        var amy = NewUser(
+            "Amy",
+            "Child",
+            statusId: status.Id,
+            parentId: parent.Id,
+            userTypeId: type.Id
+        );
         var stranger = NewUser("Stranger", "S", statusId: status.Id, userTypeId: type.Id);
         ctx.AddRange(status, type, parent, zoe, amy, stranger);
         await ctx.SaveChangesAsync();
@@ -390,10 +426,17 @@ public sealed class RepositoryTests
     public async Task GetForEditAsync_includes_categories_and_returns_null_when_missing()
     {
         await using var ctx = NewContext();
-        var category = new EventCategoryType { Id = Guid.NewGuid(), Name = "Cat", Color = "#111" };
+        var category = new EventCategoryType
+        {
+            Id = Guid.NewGuid(),
+            Name = "Cat",
+            Color = "#111",
+        };
         var ev = NewEvent();
         ctx.AddRange(category, ev);
-        ctx.EventCategories.Add(new EventCategory { EventId = ev.Id, EventCategoryTypeId = category.Id });
+        ctx.EventCategories.Add(
+            new EventCategory { EventId = ev.Id, EventCategoryTypeId = category.Id }
+        );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new EventRepository(ctx);
@@ -415,14 +458,18 @@ public sealed class RepositoryTests
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(user, role, status, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id });
-        ctx.ActivityUserRoleAssignments.Add(new ActivityUserRoleAssignment
-        {
-            UserId = user.Id,
-            ActivityId = activity.Id,
-            ActivityRoleTypeId = role.Id,
-            AssignmentStatusId = status.Id,
-        });
+        ctx.ActivityAllowedRoleTypes.Add(
+            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
+        );
+        ctx.ActivityUserRoleAssignments.Add(
+            new ActivityUserRoleAssignment
+            {
+                UserId = user.Id,
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
+        );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new EventRepository(ctx);
@@ -448,14 +495,18 @@ public sealed class RepositoryTests
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(parent, child, role, status, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id });
-        ctx.ActivityUserRoleAssignments.Add(new ActivityUserRoleAssignment
-        {
-            UserId = child.Id,
-            ActivityId = activity.Id,
-            ActivityRoleTypeId = role.Id,
-            AssignmentStatusId = status.Id,
-        });
+        ctx.ActivityAllowedRoleTypes.Add(
+            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
+        );
+        ctx.ActivityUserRoleAssignments.Add(
+            new ActivityUserRoleAssignment
+            {
+                UserId = child.Id,
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
+        );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
@@ -479,7 +530,9 @@ public sealed class RepositoryTests
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(role, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id });
+        ctx.ActivityAllowedRoleTypes.Add(
+            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
+        );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
@@ -508,7 +561,11 @@ public sealed class RepositoryTests
         var upper = Fixed.AddMinutes(60);
         ctx.Events.Add(ev);
         ctx.Activities.Add(
-            NewActivity(ev.Id, startsAt: Fixed.AddMinutes(startOffsetMinutes), endsAt: Fixed.AddMinutes(endOffsetMinutes))
+            NewActivity(
+                ev.Id,
+                startsAt: Fixed.AddMinutes(startOffsetMinutes),
+                endsAt: Fixed.AddMinutes(endOffsetMinutes)
+            )
         );
         await ctx.SaveChangesAsync();
         var repo = new ActivityRepository(ctx);
@@ -524,11 +581,15 @@ public sealed class RepositoryTests
         var other = NewEvent("Other");
         ctx.Events.AddRange(target, other);
         ctx.Activities.Add(NewActivity(other.Id, startsAt: Fixed.AddMinutes(-120), endsAt: Fixed));
-        ctx.Activities.Add(NewActivity(target.Id, startsAt: Fixed.AddMinutes(10), endsAt: Fixed.AddMinutes(50)));
+        ctx.Activities.Add(
+            NewActivity(target.Id, startsAt: Fixed.AddMinutes(10), endsAt: Fixed.AddMinutes(50))
+        );
         await ctx.SaveChangesAsync();
         var repo = new ActivityRepository(ctx);
 
-        (await repo.AnyOutsideRangeAsync(target.Id, Fixed, Fixed.AddMinutes(60))).Should().BeFalse();
+        (await repo.AnyOutsideRangeAsync(target.Id, Fixed, Fixed.AddMinutes(60)))
+            .Should()
+            .BeFalse();
     }
 
     [Fact]
@@ -539,7 +600,9 @@ public sealed class RepositoryTests
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(role, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id });
+        ctx.ActivityAllowedRoleTypes.Add(
+            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
+        );
         await ctx.SaveChangesAsync();
         var repo = new ActivityRepository(ctx);
 
@@ -557,13 +620,15 @@ public sealed class RepositoryTests
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(user, role, status, ev, activity);
-        ctx.ActivityUserRoleAssignments.Add(new ActivityUserRoleAssignment
-        {
-            UserId = user.Id,
-            ActivityId = activity.Id,
-            ActivityRoleTypeId = role.Id,
-            AssignmentStatusId = status.Id,
-        });
+        ctx.ActivityUserRoleAssignments.Add(
+            new ActivityUserRoleAssignment
+            {
+                UserId = user.Id,
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
+        );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
@@ -653,9 +718,27 @@ public sealed class RepositoryTests
         var foreign = NewActivity(ev.Id, "Foreign", startsAt: Fixed);
         ctx.AddRange(user, other, role, status, ev, late, early, foreign);
         ctx.ActivityUserRoleAssignments.AddRange(
-            new ActivityUserRoleAssignment { UserId = user.Id, ActivityId = late.Id, ActivityRoleTypeId = role.Id, AssignmentStatusId = status.Id },
-            new ActivityUserRoleAssignment { UserId = user.Id, ActivityId = early.Id, ActivityRoleTypeId = role.Id, AssignmentStatusId = status.Id },
-            new ActivityUserRoleAssignment { UserId = other.Id, ActivityId = foreign.Id, ActivityRoleTypeId = role.Id, AssignmentStatusId = status.Id }
+            new ActivityUserRoleAssignment
+            {
+                UserId = user.Id,
+                ActivityId = late.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = user.Id,
+                ActivityId = early.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = other.Id,
+                ActivityId = foreign.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
         );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
@@ -680,11 +763,39 @@ public sealed class RepositoryTests
         var otherEvent = NewEvent("Other");
         var targetActivity = NewActivity(targetEvent.Id);
         var otherActivity = NewActivity(otherEvent.Id);
-        ctx.AddRange(wanted, alsoWanted, excludedUser, role, status, targetEvent, otherEvent, targetActivity, otherActivity);
+        ctx.AddRange(
+            wanted,
+            alsoWanted,
+            excludedUser,
+            role,
+            status,
+            targetEvent,
+            otherEvent,
+            targetActivity,
+            otherActivity
+        );
         ctx.ActivityUserRoleAssignments.AddRange(
-            new ActivityUserRoleAssignment { UserId = wanted.Id, ActivityId = targetActivity.Id, ActivityRoleTypeId = role.Id, AssignmentStatusId = status.Id },
-            new ActivityUserRoleAssignment { UserId = excludedUser.Id, ActivityId = targetActivity.Id, ActivityRoleTypeId = role.Id, AssignmentStatusId = status.Id },
-            new ActivityUserRoleAssignment { UserId = alsoWanted.Id, ActivityId = otherActivity.Id, ActivityRoleTypeId = role.Id, AssignmentStatusId = status.Id }
+            new ActivityUserRoleAssignment
+            {
+                UserId = wanted.Id,
+                ActivityId = targetActivity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = excludedUser.Id,
+                ActivityId = targetActivity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = alsoWanted.Id,
+                ActivityId = otherActivity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
         );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
@@ -710,13 +821,15 @@ public sealed class RepositoryTests
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(user, role, status, ev, activity);
-        ctx.ActivityUserRoleAssignments.Add(new ActivityUserRoleAssignment
-        {
-            UserId = user.Id,
-            ActivityId = activity.Id,
-            ActivityRoleTypeId = role.Id,
-            AssignmentStatusId = status.Id,
-        });
+        ctx.ActivityUserRoleAssignments.Add(
+            new ActivityUserRoleAssignment
+            {
+                UserId = user.Id,
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
+        );
         await ctx.SaveChangesAsync();
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);

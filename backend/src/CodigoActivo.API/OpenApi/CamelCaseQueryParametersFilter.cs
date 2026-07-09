@@ -7,7 +7,8 @@ public sealed class CamelCaseQueryParametersFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        if (operation.Parameters is null) return;
+        if (operation.Parameters is null)
+            return;
 
         foreach (var parameter in operation.Parameters)
         {

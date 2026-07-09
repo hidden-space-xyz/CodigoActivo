@@ -66,14 +66,17 @@ export const errorMessages: Record<ErrorCode, string> = {
 
   InvalidCredentials: 'El correo electrónico o la contraseña no son correctos.',
   UserAccountBlocked: 'Tu cuenta está bloqueada. Contacta al administrador.',
-  UserAccountIsDependent: 'Esta cuenta depende de un responsable y no puede iniciar sesión directamente.',
+  UserAccountIsDependent:
+    'Esta cuenta depende de un responsable y no puede iniciar sesión directamente.',
   UserAccountPendingVerification: 'Tu cuenta aún no ha sido verificada.',
   CurrentUserNotFound: 'No se encontró el usuario de la sesión actual.',
-  RegisterAdultCannotBeMinor: 'Un usuario adulto no puede tener una fecha de nacimiento de menor de edad.',
+  RegisterAdultCannotBeMinor:
+    'Un usuario adulto no puede tener una fecha de nacimiento de menor de edad.',
   UserTypeNotAllowedForAdults: 'Este tipo de usuario no está permitido para personas adultas.',
   RegisterContactInfoRequired: 'Debes indicar al menos un dato de contacto para registrarte.',
   RegisterEmailOrPhoneAlreadyInUse: 'El correo electrónico o el teléfono ya están en uso.',
-  RegisterMinorBirthDateNotMinor: 'La fecha de nacimiento indicada no corresponde a un menor de edad.',
+  RegisterMinorBirthDateNotMinor:
+    'La fecha de nacimiento indicada no corresponde a un menor de edad.',
   OtpInvalidOrExpired: 'El código de verificación no es válido o ha expirado.',
   OtpResendNotAllowed: 'No se puede reenviar el código de verificación para esta cuenta.',
   OtpResendCooldownActive: 'Espera un momento antes de solicitar un nuevo código.',
@@ -81,6 +84,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   AuthenticationRequired: 'Debes iniciar sesión para continuar.',
   AccessDenied: 'No tienes permiso para realizar esta acción.',
   InvalidCsrfToken: 'La sesión ha expirado. Recarga la página e inténtalo de nuevo.',
-  RequestValidationFailed: 'Los datos enviados no son válidos. Revisa el formulario e inténtalo de nuevo.',
+  RequestValidationFailed:
+    'Los datos enviados no son válidos. Revisa el formulario e inténtalo de nuevo.',
   UnexpectedError: 'Ha ocurrido un error inesperado. Inténtalo de nuevo.',
 }

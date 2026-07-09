@@ -38,9 +38,7 @@ public record EventResponse(
             Guid.Empty,
             false,
             []
-        )
-    {
-    }
+        ) { }
 }
 
 public record EventListItemResponse(
@@ -76,9 +74,7 @@ public record EventListItemResponse(
             Guid.Empty,
             false,
             []
-        )
-    {
-    }
+        ) { }
 }
 
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);
@@ -110,9 +106,7 @@ public record UpdateEventRequest(
 public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
 {
     public EventCategoryTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty)
-    {
-    }
+        : this(Guid.Empty, string.Empty, string.Empty) { }
 }
 
 public record CreateEventCategoryTypeRequest(

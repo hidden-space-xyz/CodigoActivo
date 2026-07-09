@@ -1,5 +1,5 @@
-using CodigoActivo.Application.Querying;
 using AwesomeAssertions;
+using CodigoActivo.Application.Querying;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Querying;
@@ -9,11 +9,7 @@ public sealed class SortMapTests
     private sealed record Row(int A, int B, int Id, string Name);
 
     private static SortMap<Row> FullMap() =>
-        new SortMap<Row>()
-            .Add("a", r => r.A)
-            .Add("b", r => r.B)
-            .Default("a")
-            .Tie(r => r.Id);
+        new SortMap<Row>().Add("a", r => r.A).Add("b", r => r.B).Default("a").Tie(r => r.Id);
 
     private static List<Row> Rows(params Row[] rows) => rows.ToList();
 
@@ -22,13 +18,11 @@ public sealed class SortMapTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("unknown")]
-    public void Apply_falls_back_to_default_terms_then_tie_when_sort_is_missing_or_unknown(string? sort)
+    public void Apply_falls_back_to_default_terms_then_tie_when_sort_is_missing_or_unknown(
+        string? sort
+    )
     {
-        var rows = Rows(
-            new Row(2, 0, 30, "x"),
-            new Row(1, 0, 20, "y"),
-            new Row(1, 0, 10, "z")
-        );
+        var rows = Rows(new Row(2, 0, 30, "x"), new Row(1, 0, 20, "y"), new Row(1, 0, 10, "z"));
 
         var ordered = FullMap().Apply(rows.AsQueryable(), sort).ToList();
 

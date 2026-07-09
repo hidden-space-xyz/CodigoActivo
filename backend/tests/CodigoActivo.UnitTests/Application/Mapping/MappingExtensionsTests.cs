@@ -1,7 +1,7 @@
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Entities;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Mapping;
@@ -30,10 +30,20 @@ public sealed class MappingExtensionsTests
             UpdatedAt = Updated,
             ParentId = parentId,
             UserStatusTypeId = statusId,
-            UserStatusType = new UserStatusType { Id = statusId, Name = "Active", Color = "#00ff00" },
+            UserStatusType = new UserStatusType
+            {
+                Id = statusId,
+                Name = "Active",
+                Color = "#00ff00",
+            },
             IsAdmin = true,
             UserTypeId = typeId,
-            UserType = new UserType { Id = typeId, Name = "Member", Color = "#123456" },
+            UserType = new UserType
+            {
+                Id = typeId,
+                Name = "Member",
+                Color = "#123456",
+            },
         };
 
         var response = user.ToResponse();

@@ -1,15 +1,14 @@
 using System.Text;
+using AwesomeAssertions;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Storage;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Storage;
 
 public sealed class LocalFileSystemRepositoryTests : IDisposable
 {
-    private readonly string rootPath =
-        Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+    private readonly string rootPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
     private readonly LocalFileSystemRepository sut;
 
@@ -20,7 +19,8 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(rootPath)) Directory.Delete(rootPath, recursive: true);
+        if (Directory.Exists(rootPath))
+            Directory.Delete(rootPath, recursive: true);
     }
 
     [Fact]

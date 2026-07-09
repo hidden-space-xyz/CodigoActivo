@@ -50,8 +50,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
       pageSize: rows.value,
     }
 
-    if (sortField.value)
-      result.sort = `${sortOrder.value === -1 ? '-' : ''}${sortField.value}`
+    if (sortField.value) result.sort = `${sortOrder.value === -1 ? '-' : ''}${sortField.value}`
 
     for (const [key, column] of Object.entries(columns)) {
       const value = filters.value[key]?.value
@@ -74,9 +73,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     placeholderData: keepPreviousData,
   })
 
-  const page = computed<ServerTablePage<T>>(
-    () => tableQuery.data.value ?? { items: [], total: 0 },
-  )
+  const page = computed<ServerTablePage<T>>(() => tableQuery.data.value ?? { items: [], total: 0 })
 
   function onPage(event: DataTablePageEvent): void {
     first.value = event.first

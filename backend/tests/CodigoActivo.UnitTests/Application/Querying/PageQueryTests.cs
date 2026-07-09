@@ -1,5 +1,5 @@
-using CodigoActivo.Application.Querying;
 using AwesomeAssertions;
+using CodigoActivo.Application.Querying;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Querying;

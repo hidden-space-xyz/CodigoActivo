@@ -1,8 +1,8 @@
 using System.Text.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
-using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -13,7 +13,9 @@ public sealed class GlobalExceptionHandlerTests
 {
     private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 
-    private static readonly GlobalExceptionHandler Sut = new(NullLogger<GlobalExceptionHandler>.Instance);
+    private static readonly GlobalExceptionHandler Sut = new(
+        NullLogger<GlobalExceptionHandler>.Instance
+    );
 
     private static DefaultHttpContext NewContext(string traceId = "trace-123") =>
         new() { Response = { Body = new MemoryStream() }, TraceIdentifier = traceId };
@@ -21,7 +23,10 @@ public sealed class GlobalExceptionHandlerTests
     private static async Task<ApiErrorResponse> ReadBodyAsync(HttpContext context)
     {
         context.Response.Body.Position = 0;
-        var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(context.Response.Body, WebJson);
+        var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(
+            context.Response.Body,
+            WebJson
+        );
         return body!;
     }
 
@@ -30,7 +35,11 @@ public sealed class GlobalExceptionHandlerTests
     {
         var context = NewContext();
 
-        var handled = await Sut.TryHandleAsync(context, new InvalidOperationException("boom"), default);
+        var handled = await Sut.TryHandleAsync(
+            context,
+            new InvalidOperationException("boom"),
+            default
+        );
 
         handled.Should().BeTrue();
     }

@@ -1,22 +1,31 @@
 <Solution>
-	<Folder Name="/docker/">
-		<File Path="../.env" />
-		<File Path="../.env.example" />
-		<File Path="../docker-compose.override.yml" />
-		<File Path="../docker-compose.yml" />
-		<Project Path="docker-compose.dcproj">
-			<Build />
-		</Project>
-	</Folder>
-    <Folder Name="/tests/">
-        <Project Path="tests/CodigoActivo.IntegrationTests/CodigoActivo.IntegrationTests.csproj" />
-        <Project Path="tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj" />
-    </Folder>
-	<Folder Name="/src/">
-		<Project Path="src/CodigoActivo.API/CodigoActivo.API.csproj" />
-		<Project Path="src/CodigoActivo.Application/CodigoActivo.Application.csproj" Id="c54cbc42-5520-42e9-8b98-b1c2f03e0540" />
-		<Project Path="src/CodigoActivo.Composition/CodigoActivo.Composition.csproj" />
-		<Project Path="src/CodigoActivo.Domain/CodigoActivo.Domain.csproj" Id="91fd5e47-aea1-4eea-a890-fb607a7f98b0" />
-		<Project Path="src/CodigoActivo.Infrastructure/CodigoActivo.Infrastructure.csproj" Id="cef76ff9-2947-46b9-8107-7b8738594652" />
-	</Folder>
+  <Folder Name="/docker/">
+    <File Path="../.env" />
+    <File Path="../.env.example" />
+    <File Path="../docker-compose.override.yml" />
+    <File Path="../docker-compose.yml" />
+    <Project Path="docker-compose.dcproj">
+      <Build />
+    </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CodigoActivo.IntegrationTests/CodigoActivo.IntegrationTests.csproj" />
+    <Project Path="tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/CodigoActivo.API/CodigoActivo.API.csproj" />
+    <Project
+      Path="src/CodigoActivo.Application/CodigoActivo.Application.csproj"
+      Id="c54cbc42-5520-42e9-8b98-b1c2f03e0540"
+    />
+    <Project Path="src/CodigoActivo.Composition/CodigoActivo.Composition.csproj" />
+    <Project
+      Path="src/CodigoActivo.Domain/CodigoActivo.Domain.csproj"
+      Id="91fd5e47-aea1-4eea-a890-fb607a7f98b0"
+    />
+    <Project
+      Path="src/CodigoActivo.Infrastructure/CodigoActivo.Infrastructure.csproj"
+      Id="cef76ff9-2947-46b9-8107-7b8738594652"
+    />
+  </Folder>
 </Solution>

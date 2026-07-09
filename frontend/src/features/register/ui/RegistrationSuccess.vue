@@ -82,12 +82,7 @@ function submitVerify(): void {
           :invalid="verifyError !== null"
           fluid
         />
-        <BaseButton
-          type="submit"
-          variant="primary"
-          :loading="isVerifying"
-          :disabled="!otp.trim()"
-        >
+        <BaseButton type="submit" variant="primary" :loading="isVerifying" :disabled="!otp.trim()">
           Verificar
         </BaseButton>
       </div>

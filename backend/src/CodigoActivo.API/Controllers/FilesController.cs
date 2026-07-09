@@ -27,7 +27,8 @@ public class FilesController(IFileService files) : ApiControllerBase
     public async Task<IActionResult> GetContent(Guid fileId, CancellationToken ct)
     {
         var result = await files.GetContentAsync(fileId, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
+        if (result.IsFailure)
+            return ToProblem(result.Error!);
 
         var content = result.Value;
 
@@ -47,7 +48,10 @@ public class FilesController(IFileService files) : ApiControllerBase
     [RequestSizeLimit(MaxRequestBodyBytes)]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
     {
-        return ToCreated(await files.CreateAsync(ToUploadRequest(file), UserId, ct), f => $"/api/files/{f.Id}");
+        return ToCreated(
+            await files.CreateAsync(ToUploadRequest(file), UserId, ct),
+            f => $"/api/files/{f.Id}"
+        );
     }
 
     [HttpPut("{fileId:guid}")]
@@ -72,6 +76,8 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     private static FileUploadRequest? ToUploadRequest(IFormFile? file)
     {
-        return file is null ? null : new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
+        return file is null
+            ? null
+            : new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
     }
 }

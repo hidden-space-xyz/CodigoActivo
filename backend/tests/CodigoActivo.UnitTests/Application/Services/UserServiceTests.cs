@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -7,7 +8,6 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -17,7 +17,8 @@ public sealed class UserServiceTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUserTypeRepository userTypes = Substitute.For<IUserTypeRepository>();
-    private readonly IUserStatusTypeRepository userStatusTypes = Substitute.For<IUserStatusTypeRepository>();
+    private readonly IUserStatusTypeRepository userStatusTypes =
+        Substitute.For<IUserStatusTypeRepository>();
     private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
@@ -29,12 +30,21 @@ public sealed class UserServiceTests
 
     public UserServiceTests()
     {
-        sut = new UserService(users, userTypes, userStatusTypes, hasher, new FakeQueryExecutor(), clock, uow);
+        sut = new UserService(
+            users,
+            userTypes,
+            userStatusTypes,
+            hasher,
+            new FakeQueryExecutor(),
+            clock,
+            uow
+        );
     }
 
     private void HasUsers(params User[] items) => users.Query().Returns(items.AsQueryable());
 
-    private void HasUserTypes(params UserType[] items) => userTypes.Query().Returns(items.AsQueryable());
+    private void HasUserTypes(params UserType[] items) =>
+        userTypes.Query().Returns(items.AsQueryable());
 
     private void HasStatusTypes(params UserStatusType[] items) =>
         userStatusTypes.Query().Returns(items.AsQueryable());
@@ -82,10 +92,20 @@ public sealed class UserServiceTests
             BirthDate = dob ?? AdultDob,
             ParentId = parentId,
             UserStatusTypeId = Guid.NewGuid(),
-            UserStatusType = new UserStatusType { Name = "Active", Color = "#111", Description = "" },
+            UserStatusType = new UserStatusType
+            {
+                Name = "Active",
+                Color = "#111",
+                Description = "",
+            },
             IsAdmin = isAdmin,
             UserTypeId = Guid.NewGuid(),
-            UserType = new UserType { Name = "Socio", Color = "#111", Description = "" },
+            UserType = new UserType
+            {
+                Name = "Socio",
+                Color = "#111",
+                Description = "",
+            },
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
 
@@ -118,7 +138,11 @@ public sealed class UserServiceTests
     [Fact]
     public async Task ListAsync_admin_sees_all_users()
     {
-        HasUsers(NewUser(id: Guid.NewGuid()), NewUser(id: Guid.NewGuid()), NewUser(id: Guid.NewGuid()));
+        HasUsers(
+            NewUser(id: Guid.NewGuid()),
+            NewUser(id: Guid.NewGuid()),
+            NewUser(id: Guid.NewGuid())
+        );
 
         var result = await sut.ListAsync(new UserListQuery(), Guid.NewGuid(), isAdmin: true);
 
@@ -146,9 +170,16 @@ public sealed class UserServiceTests
     public async Task ListAsync_filters_by_parent_id()
     {
         var parent = Guid.NewGuid();
-        HasUsers(NewUser(first: "Kid", parentId: parent), NewUser(first: "Other", parentId: Guid.NewGuid()));
+        HasUsers(
+            NewUser(first: "Kid", parentId: parent),
+            NewUser(first: "Other", parentId: Guid.NewGuid())
+        );
 
-        var result = await sut.ListAsync(new UserListQuery { ParentId = parent }, Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery { ParentId = parent },
+            Guid.NewGuid(),
+            isAdmin: true
+        );
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Kid");
     }
@@ -158,7 +189,11 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(first: "Ávila"), NewUser(first: "Benito"));
 
-        var result = await sut.ListAsync(new UserListQuery { FirstName = "avila" }, Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery { FirstName = "avila" },
+            Guid.NewGuid(),
+            isAdmin: true
+        );
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Ávila");
     }
@@ -168,7 +203,11 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(last: "Gonzalez"), NewUser(last: "Martinez"));
 
-        var result = await sut.ListAsync(new UserListQuery { LastName = "gonz" }, Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery { LastName = "gonz" },
+            Guid.NewGuid(),
+            isAdmin: true
+        );
 
         result.Items.Should().ContainSingle().Which.LastName.Should().Be("Gonzalez");
     }
@@ -178,7 +217,11 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(email: "alpha@test.com"), NewUser(email: "beta@test.com"));
 
-        var result = await sut.ListAsync(new UserListQuery { Email = "beta" }, Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery { Email = "beta" },
+            Guid.NewGuid(),
+            isAdmin: true
+        );
 
         result.Items.Should().ContainSingle().Which.Email.Should().Be("beta@test.com");
     }
@@ -188,7 +231,11 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(last: "Aaa"), NewUser(last: "Zzz"), NewUser(last: "Mmm"));
 
-        var result = await sut.ListAsync(new UserListQuery { Sort = "-lastName" }, Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery { Sort = "-lastName" },
+            Guid.NewGuid(),
+            isAdmin: true
+        );
 
         result.Items.Select(u => u.LastName).Should().ContainInOrder("Zzz", "Mmm", "Aaa");
     }
@@ -198,7 +245,11 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(first: "A"), NewUser(first: "B"), NewUser(first: "C"));
 
-        var result = await sut.ListAsync(new UserListQuery { Page = 2, PageSize = 2 }, Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery { Page = 2, PageSize = 2 },
+            Guid.NewGuid(),
+            isAdmin: true
+        );
 
         result.Total.Should().Be(3);
         result.Items.Should().ContainSingle();
@@ -247,7 +298,14 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_adult_with_parent_is_rejected()
     {
         FindReturns(NewUser());
-        var request = new UpdateUserRequest("F", "L", "a@test.com", "555", AdultDob, Guid.NewGuid());
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            "a@test.com",
+            "555",
+            AdultDob,
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), request);
 
@@ -259,7 +317,10 @@ public sealed class UserServiceTests
     [Theory]
     [InlineData(null, "555")]
     [InlineData("a@test.com", "   ")]
-    public async Task UpdateAsync_adult_missing_contact_info_is_rejected(string? email, string? phone)
+    public async Task UpdateAsync_adult_missing_contact_info_is_rejected(
+        string? email,
+        string? phone
+    )
     {
         FindReturns(NewUser());
         var request = new UpdateUserRequest("F", "L", email, phone, AdultDob, null);
@@ -275,7 +336,9 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_adult_email_already_in_use_is_conflict()
     {
         FindReturns(NewUser());
-        users.EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(true);
+        users
+            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(true);
         var request = new UpdateUserRequest("F", "L", "dup@test.com", "555", AdultDob, null);
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), request);
@@ -289,8 +352,12 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_adult_phone_already_in_use_is_conflict()
     {
         FindReturns(NewUser());
-        users.EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
-        users.PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(true);
+        users
+            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        users
+            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(true);
         var request = new UpdateUserRequest("F", "L", "a@test.com", "555", AdultDob, null);
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), request);
@@ -306,11 +373,22 @@ public sealed class UserServiceTests
         var id = Guid.NewGuid();
         var user = NewUser(id: id, parentId: Guid.NewGuid());
         FindReturns(user);
-        users.EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
-        users.PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
+        users
+            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        users
+            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
         DetailsReturns(NewUser(first: "Updated", id: id));
         clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = new UpdateUserRequest("  New  ", "  Name  ", "  NEW@test.com  ", "  999  ", AdultDob, null);
+        var request = new UpdateUserRequest(
+            "  New  ",
+            "  Name  ",
+            "  NEW@test.com  ",
+            "  999  ",
+            AdultDob,
+            null
+        );
 
         var result = await sut.UpdateAsync(id, request);
 
@@ -388,7 +466,14 @@ public sealed class UserServiceTests
         user.OtpExpiresAt = DateTimeOffset.UtcNow;
         FindReturns(user, NewUser(id: parentId));
         DetailsReturns(NewUser(id: id));
-        var request = new UpdateUserRequest("Kid", "Doe", "ignored@test.com", "222", MinorDob, parentId);
+        var request = new UpdateUserRequest(
+            "Kid",
+            "Doe",
+            "ignored@test.com",
+            "222",
+            MinorDob,
+            parentId
+        );
 
         var result = await sut.UpdateAsync(id, request);
 
@@ -483,7 +568,9 @@ public sealed class UserServiceTests
     {
         var user = NewUser(isAdmin: true);
         FindReturns(user);
-        users.CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(2);
+        users
+            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(2);
 
         var result = await sut.SetAdminAsync(user.Id, false);
 
@@ -497,7 +584,9 @@ public sealed class UserServiceTests
     {
         var user = NewUser(isAdmin: true);
         FindReturns(user);
-        users.CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(1);
+        users
+            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(1);
 
         var result = await sut.SetAdminAsync(user.Id, false);
 
@@ -688,17 +777,19 @@ public sealed class UserServiceTests
         var result = await sut.AddChildAsync(parentId, request);
 
         result.IsSuccess.Should().BeTrue();
-        await users.Received(1).AddAsync(
-            Arg.Is<User>(u =>
-                u.FirstName == "Kid"
-                && u.LastName == "Doe"
-                && u.ParentId == parentId
-                && u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-                && u.UserTypeId == roleId
-                && u.CreatedAt == clock.UtcNow
-            ),
-            Arg.Any<CancellationToken>()
-        );
+        await users
+            .Received(1)
+            .AddAsync(
+                Arg.Is<User>(u =>
+                    u.FirstName == "Kid"
+                    && u.LastName == "Doe"
+                    && u.ParentId == parentId
+                    && u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+                    && u.UserTypeId == roleId
+                    && u.CreatedAt == clock.UtcNow
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

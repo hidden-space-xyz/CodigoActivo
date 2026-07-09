@@ -35,8 +35,10 @@ public class AnnouncementService(
     {
         var source = announcements.Query().Select(Projections.AnnouncementListItem);
 
-        if (query.Year is { } year) source = source.Where(a => a.CreatedAt.Year == year);
-        if (query.Featured is { } featured) source = source.Where(a => a.Featured == featured);
+        if (query.Year is { } year)
+            source = source.Where(a => a.CreatedAt.Year == year);
+        if (query.Featured is { } featured)
+            source = source.Where(a => a.Featured == featured);
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
             source = source.Where(
@@ -70,7 +72,9 @@ public class AnnouncementService(
             announcements.Query().Where(a => a.Id == id).Select(Projections.Announcement),
             ct
         );
-        return response is null ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound) : (Result<AnnouncementResponse>)response;
+        return response is null
+            ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound)
+            : (Result<AnnouncementResponse>)response;
     }
 
     public async Task<IReadOnlyList<int>> GetYearsAsync(CancellationToken ct = default)
@@ -96,7 +100,8 @@ public class AnnouncementService(
             ErrorCode.AnnouncementThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var announcement = new Announcement
         {
@@ -120,14 +125,16 @@ public class AnnouncementService(
     )
     {
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
-        if (announcement is null) return Error.NotFound(ErrorCode.AnnouncementNotFound);
+        if (announcement is null)
+            return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
         var thumbnail = await files.EnsureThumbnailExistsAsync(
             request.ThumbnailId,
             ErrorCode.AnnouncementThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var previousThumbnailId = announcement.ThumbnailId;
         var previousDescription = announcement.Description;
@@ -144,7 +151,12 @@ public class AnnouncementService(
         if (previousThumbnailId != request.ThumbnailId)
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
 
-        foreach (var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, announcement.Description))
+        foreach (
+            var fileId in RichTextFileReferences.ExtractRemoved(
+                previousDescription,
+                announcement.Description
+            )
+        )
             await fileService.DeleteIfOrphanedAsync(fileId, ct);
 
         return announcement.ToResponse();
@@ -153,7 +165,8 @@ public class AnnouncementService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
-        if (announcement is null) return Error.NotFound(ErrorCode.AnnouncementNotFound);
+        if (announcement is null)
+            return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
         announcements.Remove(announcement);
         await uow.SaveChangesAsync(ct);
@@ -170,6 +183,8 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        return !await announcements.SetFeaturedAsync(id, ct) ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound) : await GetByIdAsync(id, ct);
+        return !await announcements.SetFeaturedAsync(id, ct)
+            ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound)
+            : await GetByIdAsync(id, ct);
     }
 }

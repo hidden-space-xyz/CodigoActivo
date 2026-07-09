@@ -21,15 +21,16 @@ public class EventService(
     IUnitOfWork uow
 ) : IEventService
 {
-    private static readonly SortMap<EventListItemResponse> Sort = new SortMap<EventListItemResponse>()
-        .Add("eventStartsAt", e => e.EventStartsAt)
-        .Add("eventEndsAt", e => e.EventEndsAt)
-        .Add("createdAt", e => e.CreatedAt)
-        .Add("title", e => e.Title)
-        .Add("subtitle", e => e.Subtitle)
-        .Add("featured", e => e.Featured)
-        .Default("eventStartsAt")
-        .Tie(e => e.Id);
+    private static readonly SortMap<EventListItemResponse> Sort =
+        new SortMap<EventListItemResponse>()
+            .Add("eventStartsAt", e => e.EventStartsAt)
+            .Add("eventEndsAt", e => e.EventEndsAt)
+            .Add("createdAt", e => e.CreatedAt)
+            .Add("title", e => e.Title)
+            .Add("subtitle", e => e.Subtitle)
+            .Add("featured", e => e.Featured)
+            .Default("eventStartsAt")
+            .Tie(e => e.Id);
 
     public Task<PagedResult<EventListItemResponse>> ListAsync(
         EventListQuery query,
@@ -46,8 +47,10 @@ public class EventService(
             _ => source,
         };
 
-        if (query.Year is { } year) source = source.Where(e => e.EventStartsAt.Year == year);
-        if (query.Featured is { } featured) source = source.Where(e => e.Featured == featured);
+        if (query.Year is { } year)
+            source = source.Where(e => e.EventStartsAt.Year == year);
+        if (query.Featured is { } featured)
+            source = source.Where(e => e.Featured == featured);
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
             source = source.Where(
@@ -78,7 +81,9 @@ public class EventService(
             events.Query().Where(e => e.Id == id).Select(Projections.Event),
             ct
         );
-        return response is null ? (Result<EventResponse>)Error.NotFound(ErrorCode.EventNotFound) : (Result<EventResponse>)response;
+        return response is null
+            ? (Result<EventResponse>)Error.NotFound(ErrorCode.EventNotFound)
+            : (Result<EventResponse>)response;
     }
 
     public async Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default)
@@ -107,17 +112,20 @@ public class EventService(
             request.SignupStartsAt,
             request.SignupEndsAt
         );
-        if (schedule.IsFailure) return schedule.Error!;
+        if (schedule.IsFailure)
+            return schedule.Error!;
 
         var thumbnail = await files.EnsureThumbnailExistsAsync(
             request.ThumbnailId,
             ErrorCode.EventThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
-        if (categories.IsFailure) return categories.Error!;
+        if (categories.IsFailure)
+            return categories.Error!;
 
         var ev = new Event
         {
@@ -153,13 +161,16 @@ public class EventService(
             request.SignupStartsAt,
             request.SignupEndsAt
         );
-        if (schedule.IsFailure) return schedule.Error!;
+        if (schedule.IsFailure)
+            return schedule.Error!;
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
-        if (categories.IsFailure) return categories.Error!;
+        if (categories.IsFailure)
+            return categories.Error!;
 
         var ev = await events.GetForEditAsync(id, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+        if (ev is null)
+            return Error.NotFound(ErrorCode.EventNotFound);
 
         var (lowerInclusive, upperExclusive) = DayBounds(
             schedule.Value.EventStartsAt,
@@ -173,7 +184,8 @@ public class EventService(
             ErrorCode.EventThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var previousThumbnailId = ev.ThumbnailId;
         var previousDescription = ev.Description;
@@ -197,7 +209,9 @@ public class EventService(
         if (previousThumbnailId != request.ThumbnailId)
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
 
-        foreach (var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, ev.Description))
+        foreach (
+            var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, ev.Description)
+        )
             await fileService.DeleteIfOrphanedAsync(fileId, ct);
 
         return await GetByIdAsync(id, ct);
@@ -206,7 +220,8 @@ public class EventService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var ev = await events.FindAsync(e => e.Id == id, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+        if (ev is null)
+            return Error.NotFound(ErrorCode.EventNotFound);
 
         var activityThumbnailIds = await executor.ToListAsync(
             activities.Query().Where(a => a.EventId == id).Select(a => a.ThumbnailId),
@@ -231,7 +246,9 @@ public class EventService(
         CancellationToken ct = default
     )
     {
-        return !await events.SetFeaturedAsync(id, ct) ? (Result<EventResponse>)Error.NotFound(ErrorCode.EventNotFound) : await GetByIdAsync(id, ct);
+        return !await events.SetFeaturedAsync(id, ct)
+            ? (Result<EventResponse>)Error.NotFound(ErrorCode.EventNotFound)
+            : await GetByIdAsync(id, ct);
     }
 
     public async Task<IReadOnlyList<EventCategoryTypeResponse>> ListCategoryTypesAsync(
@@ -266,7 +283,8 @@ public class EventService(
     )
     {
         var categoryType = await categoryTypes.FindAsync(x => x.Id == id, ct);
-        if (categoryType is null) return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
+        if (categoryType is null)
+            return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
 
         var name = request.Name.Trim();
         if (await categoryTypes.ExistsAsync(x => x.Name == name && x.Id != id, ct))
@@ -297,7 +315,9 @@ public class EventService(
 
         var distinct = categoryTypeIds.Distinct().ToList();
         var existing = await categoryTypes.CountAsync(c => distinct.Contains(c.Id), ct);
-        return existing != distinct.Count ? (Result)Error.BadRequest(ErrorCode.EventCategoryTypeNotFound) : Result.Success();
+        return existing != distinct.Count
+            ? (Result)Error.BadRequest(ErrorCode.EventCategoryTypeNotFound)
+            : Result.Success();
     }
 
     private static void ApplyCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)
@@ -332,12 +352,13 @@ public class EventService(
 
         return DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd
             ? (Result<EventSchedule>)Error.BadRequest(ErrorCode.EventScheduleInvalidRange)
-            : (Result<EventSchedule>)new EventSchedule(
-            eventStart,
-            eventEnd,
-            signupStart.ToUniversalTime(),
-            signupEnd.ToUniversalTime()
-        );
+            : (Result<EventSchedule>)
+                new EventSchedule(
+                    eventStart,
+                    eventEnd,
+                    signupStart.ToUniversalTime(),
+                    signupEnd.ToUniversalTime()
+                );
     }
 
     private (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) DayBounds(
