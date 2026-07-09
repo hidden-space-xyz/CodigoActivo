@@ -24,7 +24,8 @@ public class ReportService(
     )
     {
         var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+        if (ev is null)
+            return Error.NotFound(ErrorCode.EventNotFound);
 
         var assignments = ev.Activities.SelectMany(a => a.Assignments).ToList();
 
@@ -66,7 +67,8 @@ public class ReportService(
     )
     {
         var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+        if (ev is null)
+            return Error.NotFound(ErrorCode.EventNotFound);
 
         var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
         var statusNames = (await statusTypes.GetAllAsync(ct)).ToDictionary(s => s.Id, s => s.Name);
@@ -94,7 +96,8 @@ public class ReportService(
     )
     {
         var activity = await activities.GetWithAssignmentsAndUsersAsync(activityId, ct);
-        if (activity is null) return Error.NotFound(ErrorCode.ActivityNotFound);
+        if (activity is null)
+            return Error.NotFound(ErrorCode.ActivityNotFound);
 
         var signedUpUserIds = activity.Assignments.Select(a => a.UserId).ToHashSet();
 
@@ -173,7 +176,8 @@ public class ReportService(
     )
     {
         var ev = await events.FindAsync(e => e.Id == eventId, ct);
-        if (ev is null) return Error.NotFound(ErrorCode.EventNotFound);
+        if (ev is null)
+            return Error.NotFound(ErrorCode.EventNotFound);
 
         var rows = await executor.ToListAsync(
             activities
@@ -204,8 +208,7 @@ public class ReportService(
             ct
         );
 
-        var badges = rows
-            .GroupBy(r => r.UserId)
+        var badges = rows.GroupBy(r => r.UserId)
             .Select(g =>
             {
                 var user = g.First();

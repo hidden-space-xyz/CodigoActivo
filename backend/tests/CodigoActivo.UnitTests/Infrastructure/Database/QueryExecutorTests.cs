@@ -1,7 +1,7 @@
+using AwesomeAssertions;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
-using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 

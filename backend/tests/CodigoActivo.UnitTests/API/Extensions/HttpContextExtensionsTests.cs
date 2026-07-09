@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
-using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 

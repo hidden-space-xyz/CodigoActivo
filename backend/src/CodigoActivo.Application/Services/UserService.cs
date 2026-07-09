@@ -41,7 +41,8 @@ public class UserService(
         if (!isAdmin)
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
 
-        if (query.ParentId is { } parentId) source = source.Where(u => u.ParentId == parentId);
+        if (query.ParentId is { } parentId)
+            source = source.Where(u => u.ParentId == parentId);
         if (!string.IsNullOrWhiteSpace(query.FirstName))
         {
             source = source.Where(
@@ -79,7 +80,9 @@ public class UserService(
             users.Query().Where(u => u.Id == id).Select(Projections.User),
             ct
         );
-        return response is null ? (Result<UserResponse>)Error.NotFound(ErrorCode.UserNotFound) : (Result<UserResponse>)response;
+        return response is null
+            ? (Result<UserResponse>)Error.NotFound(ErrorCode.UserNotFound)
+            : (Result<UserResponse>)response;
     }
 
     public async Task<Result<UserResponse>> UpdateAsync(
@@ -89,7 +92,8 @@ public class UserService(
     )
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
-        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
 
         var rules = request.BirthDate.IsMinor()
             ? await ApplyMinorContactRulesAsync(user, request.ParentId, id, ct)
@@ -101,7 +105,8 @@ public class UserService(
                 id,
                 ct
             );
-        if (rules.IsFailure) return rules.Error!;
+        if (rules.IsFailure)
+            return rules.Error!;
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
@@ -117,9 +122,11 @@ public class UserService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
-        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (user.IsAdmin) return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
+        if (user.IsAdmin)
+            return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
 
         users.Remove(user);
         await uow.SaveChangesAsync(ct);
@@ -129,9 +136,11 @@ public class UserService(
     public async Task<Result> SetAdminAsync(Guid id, bool isAdmin, CancellationToken ct = default)
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
-        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (user.IsAdmin == isAdmin) return Result.Success();
+        if (user.IsAdmin == isAdmin)
+            return Result.Success();
 
         if (!isAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
             return Error.Forbidden(ErrorCode.UserCannotRemoveLastAdmin);
@@ -149,16 +158,20 @@ public class UserService(
     )
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
-        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
 
         var role = await userTypes.FindAsync(ut => ut.Id == userTypeId, ct);
-        if (role is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
+        if (role is null)
+            return Error.NotFound(ErrorCode.UserTypeNotFound);
 
         var isMinor = user.BirthDate.IsMinor();
         if (role.Hidden || (isMinor ? !role.IsAllowedForMinors : !role.IsAllowedForAdults))
         {
             return Error.BadRequest(
-                isMinor ? ErrorCode.UserTypeNotAllowedForMinors : ErrorCode.UserTypeNotAllowedForAdults
+                isMinor
+                    ? ErrorCode.UserTypeNotAllowedForMinors
+                    : ErrorCode.UserTypeNotAllowedForAdults
             );
         }
 
@@ -180,16 +193,21 @@ public class UserService(
     )
     {
         var parent = await users.FindAsync(u => u.Id == parentId, ct);
-        if (parent is null) return Error.NotFound(ErrorCode.ParentUserNotFound);
+        if (parent is null)
+            return Error.NotFound(ErrorCode.ParentUserNotFound);
 
-        if (parent.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserParentIsMinor);
+        if (parent.BirthDate.IsMinor())
+            return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
-        if (!request.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
+        if (!request.BirthDate.IsMinor())
+            return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
 
         var role = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
-        if (role is null) return Error.NotFound(ErrorCode.UserTypeNotFound);
+        if (role is null)
+            return Error.NotFound(ErrorCode.UserTypeNotFound);
 
-        if (role.Hidden || !role.IsAllowedForMinors) return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
+        if (role.Hidden || !role.IsAllowedForMinors)
+            return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
 
         var now = clock.UtcNow;
         var child = new User
@@ -216,9 +234,11 @@ public class UserService(
     )
     {
         var user = await users.FindAsync(u => u.Id == userId, ct);
-        if (user is null) return Error.NotFound(ErrorCode.UserNotFound);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (string.IsNullOrEmpty(user.PasswordHash)) return Error.BadRequest(ErrorCode.UserPasswordNotSet);
+        if (string.IsNullOrEmpty(user.PasswordHash))
+            return Error.BadRequest(ErrorCode.UserPasswordNotSet);
 
         if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
@@ -276,14 +296,18 @@ public class UserService(
         CancellationToken ct
     )
     {
-        if (parentId is not { } parent) return Error.BadRequest(ErrorCode.UserParentIdRequired);
+        if (parentId is not { } parent)
+            return Error.BadRequest(ErrorCode.UserParentIdRequired);
 
-        if (parent == excludeUserId) return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
+        if (parent == excludeUserId)
+            return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
 
         var parentUser = await users.FindAsync(u => u.Id == parent, ct);
-        if (parentUser is null) return Error.NotFound(ErrorCode.ParentUserNotFound);
+        if (parentUser is null)
+            return Error.NotFound(ErrorCode.ParentUserNotFound);
 
-        if (parentUser.BirthDate.IsMinor()) return Error.BadRequest(ErrorCode.UserParentIsMinor);
+        if (parentUser.BirthDate.IsMinor())
+            return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
         if (user.ParentId is { } currentParent && currentParent != parent)
             return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
@@ -305,11 +329,13 @@ public class UserService(
         CancellationToken ct
     )
     {
-        if (parentId is not null) return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
+        if (parentId is not null)
+            return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
 
         var email = rawEmail.NormalizeEmailOrNull();
         var phone = rawPhone.NormalizeOrNull();
-        if (email is null || phone is null) return Error.BadRequest(ErrorCode.UserContactInfoRequired);
+        if (email is null || phone is null)
+            return Error.BadRequest(ErrorCode.UserContactInfoRequired);
 
         if (await users.EmailExistsAsync(email, excludeUserId, ct))
             return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);

@@ -4,7 +4,11 @@ import { useMutation, useQuery } from '@tanstack/vue-query'
 import { getErrorMessage, scrollToTop, useCrudFeedback } from '@/shared/lib'
 import { accountQueryKeys, getRegistrationTypesRequest } from '@/entities/account'
 
-import { registerRequest, resendVerificationRequest, verifyRegistrationRequest } from '../api/requests'
+import {
+  registerRequest,
+  resendVerificationRequest,
+  verifyRegistrationRequest,
+} from '../api/requests'
 import { createEmptyRegistrationForm, type RegistrationForm } from './registration-form'
 
 export type RegistrationStep = 'age-gate' | 'form' | 'success'

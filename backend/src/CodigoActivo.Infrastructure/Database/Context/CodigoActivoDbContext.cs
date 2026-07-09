@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Context;
 
-public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> options) : DbContext(options),
-    IUnitOfWork
+public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> options)
+    : DbContext(options),
+        IUnitOfWork
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<UserStatusType> UserStatusTypes => Set<UserStatusType>();

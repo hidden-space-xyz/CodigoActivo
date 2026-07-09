@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -15,7 +15,10 @@ public sealed class FileRepositoryExtensionsTests
 
     private void ThumbnailExists(bool exists) =>
         files
-            .ExistsAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
 
     [Fact]

@@ -11,9 +11,10 @@ export async function unwrapOrNull<T>(request: Promise<{ data: T }>): Promise<T 
   }
 }
 
-export function toPage<T>(response: {
-  data: { items?: T[] | null; total?: number | null }
-}): { items: T[]; total: number } {
+export function toPage<T>(response: { data: { items?: T[] | null; total?: number | null } }): {
+  items: T[]
+  total: number
+} {
   return { items: response.data.items ?? [], total: response.data.total ?? 0 }
 }
 

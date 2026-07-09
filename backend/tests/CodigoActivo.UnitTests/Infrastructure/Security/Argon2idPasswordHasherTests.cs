@@ -1,5 +1,5 @@
-using CodigoActivo.Infrastructure.Security;
 using AwesomeAssertions;
+using CodigoActivo.Infrastructure.Security;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Security;
@@ -33,7 +33,9 @@ public sealed class Argon2idPasswordHasherTests
         parts.Should().HaveCount(6);
         parts[0].Should().Be("argon2id");
         parts[1].Should().Be("3");
-        parts[2].Should().Be((64 * 1024).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        parts[2]
+            .Should()
+            .Be((64 * 1024).ToString(System.Globalization.CultureInfo.InvariantCulture));
         parts[3].Should().Be("4");
         FluentActions.Invoking(() => Convert.FromBase64String(parts[4])).Should().NotThrow();
         FluentActions.Invoking(() => Convert.FromBase64String(parts[5])).Should().NotThrow();

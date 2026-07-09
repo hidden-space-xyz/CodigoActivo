@@ -396,15 +396,9 @@ public sealed class AuthServiceTests
         ExistsReturns(false, false);
         userTypes
             .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(
-                [
-                    NewUserType(
-                        id: minorRoleId,
-                        hidden: hidden,
-                        allowedForMinors: allowedForMinors
-                    ),
-                ]
-            );
+            .Returns([
+                NewUserType(id: minorRoleId, hidden: hidden, allowedForMinors: allowedForMinors),
+            ]);
 
         var result = await sut.RegisterAsync(NewRegister(minors: [NewMinor(roleId: minorRoleId)]));
 

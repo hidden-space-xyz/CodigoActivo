@@ -1,5 +1,5 @@
-using CodigoActivo.Application.Querying;
 using AwesomeAssertions;
+using CodigoActivo.Application.Querying;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Querying;
@@ -28,9 +28,15 @@ public sealed class TextSearchTests
     [InlineData("Hello World", "world", true)]
     [InlineData("Banco", "avila", false)]
     [InlineData("Alpha", "beta", false)]
-    public void Contains_matches_folded_case_insensitive_substrings(string value, string rawTerm, bool expected)
+    public void Contains_matches_folded_case_insensitive_substrings(
+        string value,
+        string rawTerm,
+        bool expected
+    )
     {
-        var predicate = TextSearch.Contains<Row>(r => r.Name, TextSearch.Normalize(rawTerm)).Compile();
+        var predicate = TextSearch
+            .Contains<Row>(r => r.Name, TextSearch.Normalize(rawTerm))
+            .Compile();
 
         predicate(new Row(value)).Should().Be(expected);
     }

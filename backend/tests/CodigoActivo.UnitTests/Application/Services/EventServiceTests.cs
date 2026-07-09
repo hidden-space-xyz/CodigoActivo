@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -7,7 +8,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -46,12 +46,18 @@ public sealed class EventServiceTests
 
     private void ThumbnailExists(bool exists) =>
         files
-            .ExistsAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
 
     private void HasCategoryCount(int count) =>
         categoryTypes
-            .CountAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .CountAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(count);
 
     private static Event NewEvent(
@@ -225,7 +231,14 @@ public sealed class EventServiceTests
     {
         HasEvents(NewEvent("Alpha"), NewEvent("Mint"), NewEvent("Zeta"));
 
-        var result = await sut.ListAsync(new EventListQuery { Page = 2, PageSize = 2, Sort = "title" });
+        var result = await sut.ListAsync(
+            new EventListQuery
+            {
+                Page = 2,
+                PageSize = 2,
+                Sort = "title",
+            }
+        );
 
         result.Total.Should().Be(3);
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Zeta");
@@ -284,8 +297,12 @@ public sealed class EventServiceTests
             Description: "{}",
             EventStartsAt: missing == 0 ? null : new DateOnly(2026, 8, 1),
             EventEndsAt: missing == 1 ? null : new DateOnly(2026, 8, 3),
-            SignupStartsAt: missing == 2 ? null : new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-            SignupEndsAt: missing == 3 ? null : new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+            SignupStartsAt: missing == 2
+                ? null
+                : new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+            SignupEndsAt: missing == 3
+                ? null
+                : new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: Guid.NewGuid(),
             CategoryTypeIds: [Guid.NewGuid()]
         );
@@ -318,7 +335,11 @@ public sealed class EventServiceTests
     public async Task CreateAsync_returns_invalid_range_when_signup_end_not_after_start()
     {
         var signup = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = CreateReq(signupStart: signup, signupEnd: signup, categoryTypeIds: [Guid.NewGuid()]);
+        var request = CreateReq(
+            signupStart: signup,
+            signupEnd: signup,
+            categoryTypeIds: [Guid.NewGuid()]
+        );
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
 
@@ -426,13 +447,19 @@ public sealed class EventServiceTests
         result.Value.CreatedBy.Should().Be(caller);
         result.Value.CreatedAt.Should().Be(clock.UtcNow);
         result.Value.ThumbnailId.Should().Be(thumbnailId);
-        result.Value.Categories.Should().ContainSingle().Which.CategoryTypeId.Should().Be(categoryId);
-        await events.Received(1).AddAsync(
-            Arg.Is<Event>(e =>
-                e.Title == "Hackathon" && e.Subtitle == "Innovación" && e.CreatedBy == caller
-            ),
-            Arg.Any<CancellationToken>()
-        );
+        result
+            .Value.Categories.Should()
+            .ContainSingle()
+            .Which.CategoryTypeId.Should()
+            .Be(categoryId);
+        await events
+            .Received(1)
+            .AddAsync(
+                Arg.Is<Event>(e =>
+                    e.Title == "Hackathon" && e.Subtitle == "Innovación" && e.CreatedBy == caller
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -532,7 +559,9 @@ public sealed class EventServiceTests
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
         var ev = NewEvent("Old title", "Old subtitle");
-        ev.Categories.Add(new EventCategory { EventId = ev.Id, EventCategoryTypeId = Guid.NewGuid() });
+        ev.Categories.Add(
+            new EventCategory { EventId = ev.Id, EventCategoryTypeId = Guid.NewGuid() }
+        );
         var store = new List<Event> { ev };
         events.Query().Returns(_ => store.AsQueryable());
         events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
@@ -591,7 +620,9 @@ public sealed class EventServiceTests
         var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -613,7 +644,8 @@ public sealed class EventServiceTests
         var ev = NewEvent();
         var removedId = Guid.NewGuid();
         var keptId = Guid.NewGuid();
-        ev.Description = $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        ev.Description =
+            $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
         PrepareUpdate(ev);
         var request = UpdateReq(
             categoryTypeIds: [Guid.NewGuid()],
@@ -624,8 +656,12 @@ public sealed class EventServiceTests
         var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
-        await fileService.DidNotReceive().DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
+        await fileService
+            .DidNotReceive()
+            .DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
     }
 
     private void PrepareUpdate(Event ev)
@@ -674,24 +710,36 @@ public sealed class EventServiceTests
             .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(ev);
         var sharedActivityThumbnailId = Guid.NewGuid();
-        var foreignActivity = new Activity { EventId = Guid.NewGuid(), ThumbnailId = Guid.NewGuid() };
-        activities.Query().Returns(
-            new[]
-            {
-                new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
-                new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
-                foreignActivity,
-            }.AsQueryable()
-        );
+        var foreignActivity = new Activity
+        {
+            EventId = Guid.NewGuid(),
+            ThumbnailId = Guid.NewGuid(),
+        };
+        activities
+            .Query()
+            .Returns(
+                new[]
+                {
+                    new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
+                    new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
+                    foreignActivity,
+                }.AsQueryable()
+            );
 
         var result = await sut.DeleteAsync(ev.Id);
 
         result.IsSuccess.Should().BeTrue();
         events.Received(1).Remove(ev);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService.Received(1).DeleteIfOrphanedAsync(ev.ThumbnailId, Arg.Any<CancellationToken>());
-        await fileService.Received(1).DeleteIfOrphanedAsync(sharedActivityThumbnailId, Arg.Any<CancellationToken>());
-        await fileService.DidNotReceive().DeleteIfOrphanedAsync(foreignActivity.ThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(ev.ThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(sharedActivityThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .DidNotReceive()
+            .DeleteIfOrphanedAsync(foreignActivity.ThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -708,7 +756,9 @@ public sealed class EventServiceTests
         var result = await sut.DeleteAsync(ev.Id);
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -740,8 +790,18 @@ public sealed class EventServiceTests
     public async Task ListCategoryTypesAsync_returns_types_ordered_by_name()
     {
         HasCategoryTypes(
-            new EventCategoryType { Id = Guid.NewGuid(), Name = "Zeta", Color = "#000000" },
-            new EventCategoryType { Id = Guid.NewGuid(), Name = "Alpha", Color = "#ffffff" }
+            new EventCategoryType
+            {
+                Id = Guid.NewGuid(),
+                Name = "Zeta",
+                Color = "#000000",
+            },
+            new EventCategoryType
+            {
+                Id = Guid.NewGuid(),
+                Name = "Alpha",
+                Color = "#ffffff",
+            }
         );
 
         var result = await sut.ListCategoryTypesAsync();
@@ -753,10 +813,15 @@ public sealed class EventServiceTests
     public async Task CreateCategoryTypeAsync_returns_conflict_when_name_exists()
     {
         categoryTypes
-            .ExistsAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(true);
 
-        var result = await sut.CreateCategoryTypeAsync(new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  "));
+        var result = await sut.CreateCategoryTypeAsync(
+            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ")
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
@@ -768,18 +833,25 @@ public sealed class EventServiceTests
     public async Task CreateCategoryTypeAsync_persists_trimmed_type()
     {
         categoryTypes
-            .ExistsAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
 
-        var result = await sut.CreateCategoryTypeAsync(new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  "));
+        var result = await sut.CreateCategoryTypeAsync(
+            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ")
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Name.Should().Be("Talleres");
         result.Value.Color.Should().Be("#112233");
-        await categoryTypes.Received(1).AddAsync(
-            Arg.Is<EventCategoryType>(c => c.Name == "Talleres" && c.Color == "#112233"),
-            Arg.Any<CancellationToken>()
-        );
+        await categoryTypes
+            .Received(1)
+            .AddAsync(
+                Arg.Is<EventCategoryType>(c => c.Name == "Talleres" && c.Color == "#112233"),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -787,7 +859,10 @@ public sealed class EventServiceTests
     public async Task UpdateCategoryTypeAsync_returns_not_found_when_type_missing()
     {
         categoryTypes
-            .FindAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .FindAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns((EventCategoryType?)null);
 
         var result = await sut.UpdateCategoryTypeAsync(
@@ -804,12 +879,23 @@ public sealed class EventServiceTests
     public async Task UpdateCategoryTypeAsync_returns_conflict_when_name_taken_by_another()
     {
         var id = Guid.NewGuid();
-        var existing = new EventCategoryType { Id = id, Name = "Old", Color = "#000000" };
+        var existing = new EventCategoryType
+        {
+            Id = id,
+            Name = "Old",
+            Color = "#000000",
+        };
         categoryTypes
-            .FindAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .FindAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(existing);
         categoryTypes
-            .ExistsAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(true);
 
         var result = await sut.UpdateCategoryTypeAsync(
@@ -826,12 +912,23 @@ public sealed class EventServiceTests
     public async Task UpdateCategoryTypeAsync_mutates_and_persists()
     {
         var id = Guid.NewGuid();
-        var existing = new EventCategoryType { Id = id, Name = "Old", Color = "#000000" };
+        var existing = new EventCategoryType
+        {
+            Id = id,
+            Name = "Old",
+            Color = "#000000",
+        };
         categoryTypes
-            .FindAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .FindAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(existing);
         categoryTypes
-            .ExistsAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
 
         var result = await sut.UpdateCategoryTypeAsync(
@@ -851,7 +948,10 @@ public sealed class EventServiceTests
     public async Task DeleteCategoryTypeAsync_returns_not_found_when_nothing_removed()
     {
         categoryTypes
-            .RemoveAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .RemoveAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(0);
 
         var result = await sut.DeleteCategoryTypeAsync(Guid.NewGuid());
@@ -865,7 +965,10 @@ public sealed class EventServiceTests
     public async Task DeleteCategoryTypeAsync_saves_when_removed()
     {
         categoryTypes
-            .RemoveAsync(Arg.Any<Expression<Func<EventCategoryType, bool>>>(), Arg.Any<CancellationToken>())
+            .RemoveAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
 
         var result = await sut.DeleteCategoryTypeAsync(Guid.NewGuid());

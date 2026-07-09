@@ -8,7 +8,8 @@ public static class DateAndTimeExtensions
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var age = today.Year - birthDate.Year;
-        if (birthDate > today.AddYears(-age)) age--;
+        if (birthDate > today.AddYears(-age))
+            age--;
 
         return age;
     }

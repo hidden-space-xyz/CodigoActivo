@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
@@ -7,7 +8,6 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -57,25 +57,27 @@ public sealed class ActivityServiceAssignmentTests
         DateTimeOffset signupEnd,
         params Guid[] allowedRoleIds
     ) =>
-        activities.Query().Returns(
-            new List<Activity>
-            {
-                new()
+        activities
+            .Query()
+            .Returns(
+                new List<Activity>
                 {
-                    Id = activityId,
-                    Event = new Event
+                    new()
                     {
-                        Title = "e",
-                        Subtitle = "s",
-                        SignupStartsAt = signupStart,
-                        SignupEndsAt = signupEnd,
+                        Id = activityId,
+                        Event = new Event
+                        {
+                            Title = "e",
+                            Subtitle = "s",
+                            SignupStartsAt = signupStart,
+                            SignupEndsAt = signupEnd,
+                        },
+                        AllowedRoleTypes = allowedRoleIds
+                            .Select(r => new ActivityAllowedRoleType { ActivityRoleTypeId = r })
+                            .ToList(),
                     },
-                    AllowedRoleTypes = allowedRoleIds
-                        .Select(r => new ActivityAllowedRoleType { ActivityRoleTypeId = r })
-                        .ToList(),
-                },
-            }.AsQueryable()
-        );
+                }.AsQueryable()
+            );
 
     private void AllowedRoleExists(bool exists) =>
         activities
@@ -89,13 +91,18 @@ public sealed class ActivityServiceAssignmentTests
 
     private void RequestedStatusNamed(string name) =>
         statuses
-            .FindAsync(Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new AssignmentStatusType
-            {
-                Id = SeedIds.AssignmentStatusTypes.Requested,
-                Name = name,
-                Color = "#000",
-            });
+            .FindAsync(
+                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new AssignmentStatusType
+                {
+                    Id = SeedIds.AssignmentStatusTypes.Requested,
+                    Name = name,
+                    Color = "#000",
+                }
+            );
 
     private static ActivityUserRoleAssignment Assignment(
         Guid userId,
@@ -212,15 +219,17 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.RoleTypeId.Should().Be(roleId);
         result.Value.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
         result.Value.Status.Name.Should().Be("Solicitado");
-        await activities.Received(1).AddAssignmentAsync(
-            Arg.Is<ActivityUserRoleAssignment>(a =>
-                a.UserId == userId
-                && a.ActivityId == activityId
-                && a.ActivityRoleTypeId == roleId
-                && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested
-            ),
-            Arg.Any<CancellationToken>()
-        );
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == userId
+                    && a.ActivityId == activityId
+                    && a.ActivityRoleTypeId == roleId
+                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -248,9 +257,7 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.AssignHouseholdAsync(
             activityId,
             Guid.NewGuid(),
-            new AssignHouseholdRequest(
-                [new(Guid.NewGuid(), Guid.NewGuid())]
-            ),
+            new AssignHouseholdRequest([new(Guid.NewGuid(), Guid.NewGuid())]),
             isAdmin: false
         );
 
@@ -271,9 +278,7 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.AssignHouseholdAsync(
             activityId,
             actingUserId,
-            new AssignHouseholdRequest(
-                [new(strangerId, Guid.NewGuid())]
-            ),
+            new AssignHouseholdRequest([new(strangerId, Guid.NewGuid())]),
             isAdmin: true
         );
 
@@ -292,9 +297,7 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.AssignHouseholdAsync(
             activityId,
             actingUserId,
-            new AssignHouseholdRequest(
-                [new(actingUserId, Guid.NewGuid())]
-            ),
+            new AssignHouseholdRequest([new(actingUserId, Guid.NewGuid())]),
             isAdmin: true
         );
 
@@ -311,48 +314,59 @@ public sealed class ActivityServiceAssignmentTests
         var childId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
         HasActivityWindow(activityId, OpenStart, OpenEnd, roleId);
-        users.Query().Returns(
-            new List<User>
-            {
-                new()
+        users
+            .Query()
+            .Returns(
+                new List<User>
                 {
-                    Id = childId,
-                    FirstName = "Kid",
-                    LastName = "One",
-                    ParentId = actingUserId,
-                },
-            }.AsQueryable()
-        );
-        activities.QueryAssignments().Returns(
-            new List<ActivityUserRoleAssignment>
-            {
-                new() { UserId = childId, ActivityId = activityId },
-            }.AsQueryable()
-        );
+                    new()
+                    {
+                        Id = childId,
+                        FirstName = "Kid",
+                        LastName = "One",
+                        ParentId = actingUserId,
+                    },
+                }.AsQueryable()
+            );
+        activities
+            .QueryAssignments()
+            .Returns(
+                new List<ActivityUserRoleAssignment>
+                {
+                    new() { UserId = childId, ActivityId = activityId },
+                }.AsQueryable()
+            );
 
-        var request = new AssignHouseholdRequest(
-            [
-                new(actingUserId, roleId),
-                new(actingUserId, roleId),
-                new(childId, roleId),
-            ]
-        );
+        var request = new AssignHouseholdRequest([
+            new(actingUserId, roleId),
+            new(actingUserId, roleId),
+            new(childId, roleId),
+        ]);
 
-        var result = await sut.AssignHouseholdAsync(activityId, actingUserId, request, isAdmin: true);
+        var result = await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            request,
+            isAdmin: true
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
         result.Value[0].UserId.Should().Be(actingUserId);
         result.Value[0].Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
         result.Value[0].Status.Name.Should().BeEmpty();
-        await activities.Received(1).AddAssignmentAsync(
-            Arg.Is<ActivityUserRoleAssignment>(a => a.UserId == actingUserId),
-            Arg.Any<CancellationToken>()
-        );
-        await activities.DidNotReceive().AddAssignmentAsync(
-            Arg.Is<ActivityUserRoleAssignment>(a => a.UserId == childId),
-            Arg.Any<CancellationToken>()
-        );
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a => a.UserId == actingUserId),
+                Arg.Any<CancellationToken>()
+            );
+        await activities
+            .DidNotReceive()
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a => a.UserId == childId),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -374,7 +388,11 @@ public sealed class ActivityServiceAssignmentTests
         var assignment = Assignment(Guid.NewGuid(), Guid.NewGuid());
         ExistingAssignment(assignment);
 
-        var result = await sut.UnassignAsync(assignment.ActivityId, assignment.UserId, isAdmin: true);
+        var result = await sut.UnassignAsync(
+            assignment.ActivityId,
+            assignment.UserId,
+            isAdmin: true
+        );
 
         result.IsSuccess.Should().BeTrue();
         activities.Received(1).RemoveAssignment(assignment);
@@ -432,7 +450,11 @@ public sealed class ActivityServiceAssignmentTests
     public async Task ChangeStatusAsync_returns_not_found_when_status_missing()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
-        statuses.FindAsync(Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(), Arg.Any<CancellationToken>())
+        statuses
+            .FindAsync(
+                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns((AssignmentStatusType?)null);
 
         var result = await sut.ChangeStatusAsync(
@@ -454,8 +476,19 @@ public sealed class ActivityServiceAssignmentTests
         var statusId = Guid.NewGuid();
         var assignment = Assignment(userId, activityId);
         ExistingAssignment(assignment);
-        statuses.FindAsync(Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new AssignmentStatusType { Id = statusId, Name = "Confirmado", Color = "#0f0" });
+        statuses
+            .FindAsync(
+                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new AssignmentStatusType
+                {
+                    Id = statusId,
+                    Name = "Confirmado",
+                    Color = "#0f0",
+                }
+            );
 
         var result = await sut.ChangeStatusAsync(
             activityId,
@@ -509,7 +542,11 @@ public sealed class ActivityServiceAssignmentTests
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
         AllowedRoleExists(true);
-        roleTypes.FindAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
+        roleTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns((ActivityRoleType?)null);
 
         var result = await sut.ChangeRoleAsync(
@@ -532,8 +569,19 @@ public sealed class ActivityServiceAssignmentTests
         var assignment = Assignment(userId, activityId);
         ExistingAssignment(assignment);
         AllowedRoleExists(true);
-        roleTypes.FindAsync(Arg.Any<Expression<Func<ActivityRoleType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(new ActivityRoleType { Id = roleId, Name = "Líder", Description = "d" });
+        roleTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new ActivityRoleType
+                {
+                    Id = roleId,
+                    Name = "Líder",
+                    Description = "d",
+                }
+            );
 
         var result = await sut.ChangeRoleAsync(
             activityId,
@@ -563,7 +611,8 @@ public sealed class ActivityServiceAssignmentTests
     [Fact]
     public async Task VerifyTimeOverlapsAsync_returns_not_found_when_activity_missing()
     {
-        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Activity?)null);
 
         var result = await sut.VerifyTimeOverlapsAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -578,16 +627,21 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var target = OverlapActivity(activityId, 10, 12);
-        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(target);
 
         var overlappingId = Guid.NewGuid();
-        activities.GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>()).Returns(
-            [
+        activities
+            .GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>())
+            .Returns([
                 new() { ActivityId = activityId, Activity = OverlapActivity(activityId, 10, 12) },
-                new() { ActivityId = overlappingId, Activity = OverlapActivity(overlappingId, 11, 13, "Choque") },
-            ]
-        );
+                new()
+                {
+                    ActivityId = overlappingId,
+                    Activity = OverlapActivity(overlappingId, 11, 13, "Choque"),
+                },
+            ]);
 
         var result = await sut.VerifyTimeOverlapsAsync(activityId, userId);
 
@@ -603,13 +657,18 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        activities.FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(OverlapActivity(activityId, 10, 12));
-        activities.GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>()).Returns(
-            [
-                new() { ActivityId = Guid.NewGuid(), Activity = OverlapActivity(Guid.NewGuid(), 13, 14) },
-            ]
-        );
+        activities
+            .GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>())
+            .Returns([
+                new()
+                {
+                    ActivityId = Guid.NewGuid(),
+                    Activity = OverlapActivity(Guid.NewGuid(), 13, 14),
+                },
+            ]);
 
         var result = await sut.VerifyTimeOverlapsAsync(activityId, userId);
 
@@ -618,7 +677,12 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.Overlaps.Should().BeEmpty();
     }
 
-    private static Activity OverlapActivity(Guid id, int startHour, int endHour, string title = "Act") =>
+    private static Activity OverlapActivity(
+        Guid id,
+        int startHour,
+        int endHour,
+        string title = "Act"
+    ) =>
         new()
         {
             Id = id,
@@ -635,9 +699,16 @@ public sealed class ActivityServiceAssignmentTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
-        users.ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>()).Returns(
-            [new() { Id = childId, FirstName = "Kid", LastName = "One" }]
-        );
+        users
+            .ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>())
+            .Returns([
+                new()
+                {
+                    Id = childId,
+                    FirstName = "Kid",
+                    LastName = "One",
+                },
+            ]);
 
         var withNavs = new ActivityUserRoleAssignment
         {
@@ -659,11 +730,13 @@ public sealed class ActivityServiceAssignmentTests
             AssignmentStatusId = Guid.NewGuid(),
             AssignmentStatus = null!,
         };
-        activities.GetAssignmentsForUsersByEventAsync(
-            Arg.Any<IReadOnlyList<Guid>>(),
-            eventId,
-            Arg.Any<CancellationToken>()
-        ).Returns([withNavs, withoutNavs]);
+        activities
+            .GetAssignmentsForUsersByEventAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                eventId,
+                Arg.Any<CancellationToken>()
+            )
+            .Returns([withNavs, withoutNavs]);
 
         var result = await sut.GetHouseholdAssignmentsAsync(actingUserId, eventId);
 
@@ -673,6 +746,8 @@ public sealed class ActivityServiceAssignmentTests
         result[0].StatusName.Should().Be("Confirmado");
         result[1].RoleName.Should().BeEmpty();
         result[1].StatusName.Should().BeEmpty();
-        await users.Received(1).ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>());
+        await users
+            .Received(1)
+            .ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>());
     }
 }

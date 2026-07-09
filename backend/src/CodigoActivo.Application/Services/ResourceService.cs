@@ -67,7 +67,9 @@ public class ResourceService(
             resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
             ct
         );
-        return response is null ? (Result<ResourceResponse>)Error.NotFound(ErrorCode.ResourceNotFound) : (Result<ResourceResponse>)response;
+        return response is null
+            ? (Result<ResourceResponse>)Error.NotFound(ErrorCode.ResourceNotFound)
+            : (Result<ResourceResponse>)response;
     }
 
     public async Task<Result<ResourceResponse>> CreateAsync(
@@ -81,7 +83,8 @@ public class ResourceService(
             ErrorCode.ResourceThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var resource = new Resource
         {
@@ -105,14 +108,16 @@ public class ResourceService(
     )
     {
         var resource = await resources.FindAsync(r => r.Id == id, ct);
-        if (resource is null) return Error.NotFound(ErrorCode.ResourceNotFound);
+        if (resource is null)
+            return Error.NotFound(ErrorCode.ResourceNotFound);
 
         var thumbnail = await files.EnsureThumbnailExistsAsync(
             request.ThumbnailId,
             ErrorCode.ResourceThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var previousThumbnailId = resource.ThumbnailId;
         var previousDescription = resource.Description;
@@ -129,7 +134,12 @@ public class ResourceService(
         if (previousThumbnailId != request.ThumbnailId)
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
 
-        foreach (var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, resource.Description))
+        foreach (
+            var fileId in RichTextFileReferences.ExtractRemoved(
+                previousDescription,
+                resource.Description
+            )
+        )
             await fileService.DeleteIfOrphanedAsync(fileId, ct);
 
         return resource.ToResponse();
@@ -138,7 +148,8 @@ public class ResourceService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var resource = await resources.FindAsync(r => r.Id == id, ct);
-        if (resource is null) return Error.NotFound(ErrorCode.ResourceNotFound);
+        if (resource is null)
+            return Error.NotFound(ErrorCode.ResourceNotFound);
 
         resources.Remove(resource);
         await uow.SaveChangesAsync(ct);

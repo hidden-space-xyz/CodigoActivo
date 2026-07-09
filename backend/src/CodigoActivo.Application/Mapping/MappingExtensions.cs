@@ -84,7 +84,13 @@ public static class MappingExtensions
 
     public static FileResponse ToResponse(this FileEntity file)
     {
-        return new FileResponse(file.Id, file.Name, file.Extension, file.UploadedAt, file.UploadedBy);
+        return new FileResponse(
+            file.Id,
+            file.Name,
+            file.Extension,
+            file.UploadedAt,
+            file.UploadedBy
+        );
     }
 
     public static ActivityRoleTypeResponse ToResponse(this ActivityRoleType roleType)
@@ -94,6 +100,10 @@ public static class MappingExtensions
 
     public static EventCategoryTypeResponse ToResponse(this EventCategoryType categoryType)
     {
-        return new EventCategoryTypeResponse(categoryType.Id, categoryType.Name, categoryType.Color);
+        return new EventCategoryTypeResponse(
+            categoryType.Id,
+            categoryType.Name,
+            categoryType.Color
+        );
     }
 }

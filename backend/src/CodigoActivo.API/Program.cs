@@ -25,7 +25,8 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    builder.Host.UseSerilog(
+        (context, services, loggerConfiguration) =>
         {
             loggerConfiguration
                 .ReadFrom.Configuration(context.Configuration)
@@ -33,7 +34,11 @@ try
                 .Enrich.FromLogContext()
                 .WriteTo.File(
                     new RenderedCompactJsonFormatter(),
-                    Path.Combine(context.HostingEnvironment.ContentRootPath, "logs", "codigoactivo-.log"),
+                    Path.Combine(
+                        context.HostingEnvironment.ContentRootPath,
+                        "logs",
+                        "codigoactivo-.log"
+                    ),
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 14
                 );
@@ -76,7 +81,8 @@ try
         .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
         .AddCookie(options =>
         {
-            options.Cookie.Name = builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
+            options.Cookie.Name =
+                builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
                 ? CookieSecurePolicy.SameAsRequest
@@ -112,7 +118,8 @@ try
 
     await InitializeDatabaseAsync(app);
 
-    app.Use(async (httpContext, next) =>
+    app.Use(
+        async (httpContext, next) =>
         {
             using (LogContext.PushProperty("CorrelationId", httpContext.TraceIdentifier))
             {
@@ -168,10 +175,10 @@ static SameSiteMode ResolveSameSite(string? value)
 
 static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
 {
-    return ex is not null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError
-        ? LogEventLevel.Error
-        : httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
-        ? LogEventLevel.Warning
+    return ex is not null
+        || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError
+            ? LogEventLevel.Error
+        : httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest ? LogEventLevel.Warning
         : LogEventLevel.Information;
 }
 

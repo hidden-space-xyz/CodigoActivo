@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
@@ -6,7 +7,6 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -15,11 +15,14 @@ namespace CodigoActivo.UnitTests.Application.Services;
 public sealed class ReportServiceTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes = Substitute.For<IActivityRoleTypeRepository>();
-    private readonly IAssignmentStatusTypeRepository statusTypes = Substitute.For<IAssignmentStatusTypeRepository>();
+    private readonly IActivityRoleTypeRepository roleTypes =
+        Substitute.For<IActivityRoleTypeRepository>();
+    private readonly IAssignmentStatusTypeRepository statusTypes =
+        Substitute.For<IAssignmentStatusTypeRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IAnnouncementRepository announcements = Substitute.For<IAnnouncementRepository>();
+    private readonly IAnnouncementRepository announcements =
+        Substitute.For<IAnnouncementRepository>();
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly ReportService sut;
@@ -36,29 +39,53 @@ public sealed class ReportServiceTests
 
     public ReportServiceTests()
     {
-        sut = new ReportService(events, roleTypes, statusTypes, activities, resources, announcements, partners, users, new FakeQueryExecutor());
+        sut = new ReportService(
+            events,
+            roleTypes,
+            statusTypes,
+            activities,
+            resources,
+            announcements,
+            partners,
+            users,
+            new FakeQueryExecutor()
+        );
     }
 
     private void HasRoleTypes(params (Guid Id, string Name)[] roles) =>
-        roleTypes.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(roles
-                .Select(r => new ActivityRoleType { Id = r.Id, Name = r.Name })
-                .ToList());
+        roleTypes
+            .GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(roles.Select(r => new ActivityRoleType { Id = r.Id, Name = r.Name }).ToList());
 
     private void HasStatusTypes(params (Guid Id, string Name)[] statuses) =>
-        statusTypes.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(statuses
-                .Select(s => new AssignmentStatusType { Id = s.Id, Name = s.Name, Color = "#fff" })
-                .ToList());
+        statusTypes
+            .GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(
+                statuses
+                    .Select(s => new AssignmentStatusType
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        Color = "#fff",
+                    })
+                    .ToList()
+            );
 
     private void EventGraph(Guid id, Event? ev) =>
         events.GetWithActivitiesAndAssignmentsAsync(id, Arg.Any<CancellationToken>()).Returns(ev);
 
     private void ActivityGraph(Guid id, Activity? activity) =>
-        activities.GetWithAssignmentsAndUsersAsync(id, Arg.Any<CancellationToken>()).Returns(activity);
+        activities
+            .GetWithAssignmentsAndUsersAsync(id, Arg.Any<CancellationToken>())
+            .Returns(activity);
 
     private static ActivityUserRoleAssignment Asg(Guid userId, Guid roleId, Guid statusId) =>
-        new() { UserId = userId, ActivityRoleTypeId = roleId, AssignmentStatusId = statusId };
+        new()
+        {
+            UserId = userId,
+            ActivityRoleTypeId = roleId,
+            AssignmentStatusId = statusId,
+        };
 
     private static ActivityAllowedRoleType Allowed(Guid roleId, string? name) =>
         new()
@@ -93,7 +120,13 @@ public sealed class ReportServiceTests
             ParentId = parent?.Id,
         };
 
-    private static ActivityUserRoleAssignment FullAsg(User user, Guid roleId, string roleName, Guid statusId, string statusName) =>
+    private static ActivityUserRoleAssignment FullAsg(
+        User user,
+        Guid roleId,
+        string roleName,
+        Guid statusId,
+        string statusName
+    ) =>
         new()
         {
             UserId = user.Id,
@@ -101,7 +134,12 @@ public sealed class ReportServiceTests
             ActivityRoleTypeId = roleId,
             ActivityRoleType = new ActivityRoleType { Id = roleId, Name = roleName },
             AssignmentStatusId = statusId,
-            AssignmentStatus = new AssignmentStatusType { Id = statusId, Name = statusName, Color = "#000" },
+            AssignmentStatus = new AssignmentStatusType
+            {
+                Id = statusId,
+                Name = statusName,
+                Color = "#000",
+            },
         };
 
     [Fact]
@@ -133,16 +171,19 @@ public sealed class ReportServiceTests
                 Asg(user1, AlphaRoleId, Confirmed),
                 Asg(user2, AlphaRoleId, Confirmed),
                 Asg(user1, BetaRoleId, Confirmed),
-            ]);
+            ]
+        );
         var activity2 = ActivityWith(
             allowed: [Allowed(BetaRoleId, "Beta"), Allowed(GhostRoleId, "unused")],
-            assignments:
-            [
-                Asg(user3, BetaRoleId, Requested),
-                Asg(user2, GhostRoleId, Denied),
-            ]);
+            assignments: [Asg(user3, BetaRoleId, Requested), Asg(user2, GhostRoleId, Denied)]
+        );
 
-        var ev = new Event { Id = eventId, Title = "Feria", Activities = [activity1, activity2] };
+        var ev = new Event
+        {
+            Id = eventId,
+            Title = "Feria",
+            Activities = [activity1, activity2],
+        };
         EventGraph(eventId, ev);
         HasRoleTypes((AlphaRoleId, "Alpha"), (BetaRoleId, "Beta"));
 
@@ -160,19 +201,30 @@ public sealed class ReportServiceTests
         summary.DistinctVolunteers.Should().Be(3);
 
         summary.RoleTypeBreakdown.Should().HaveCount(3);
-        summary.RoleTypeBreakdown[0].Should().BeEquivalentTo(
-            new EventRoleTypeSummaryResponse(GhostRoleId, null, 0));
-        summary.RoleTypeBreakdown[1].Should().BeEquivalentTo(
-            new EventRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 2));
-        summary.RoleTypeBreakdown[2].Should().BeEquivalentTo(
-            new EventRoleTypeSummaryResponse(BetaRoleId, "Beta", 1));
+        summary
+            .RoleTypeBreakdown[0]
+            .Should()
+            .BeEquivalentTo(new EventRoleTypeSummaryResponse(GhostRoleId, null, 0));
+        summary
+            .RoleTypeBreakdown[1]
+            .Should()
+            .BeEquivalentTo(new EventRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 2));
+        summary
+            .RoleTypeBreakdown[2]
+            .Should()
+            .BeEquivalentTo(new EventRoleTypeSummaryResponse(BetaRoleId, "Beta", 1));
     }
 
     [Fact]
     public async Task GetEventSummaryAsync_returns_empty_breakdown_when_no_activities()
     {
         var eventId = Guid.NewGuid();
-        var ev = new Event { Id = eventId, Title = "Vacío", Activities = [] };
+        var ev = new Event
+        {
+            Id = eventId,
+            Title = "Vacío",
+            Activities = [],
+        };
         EventGraph(eventId, ev);
         HasRoleTypes();
 
@@ -207,14 +259,16 @@ public sealed class ReportServiceTests
 
         var activity = ActivityWith(
             allowed: [Allowed(AlphaRoleId, "Alpha")],
-            assignments:
-            [
-                Asg(user1, AlphaRoleId, Confirmed),
-                Asg(user2, GhostRoleId, Requested),
-            ],
-            title: "Taller");
+            assignments: [Asg(user1, AlphaRoleId, Confirmed), Asg(user2, GhostRoleId, Requested)],
+            title: "Taller"
+        );
 
-        var ev = new Event { Id = eventId, Title = "Congreso", Activities = [activity] };
+        var ev = new Event
+        {
+            Id = eventId,
+            Title = "Congreso",
+            Activities = [activity],
+        };
         EventGraph(eventId, ev);
         HasRoleTypes((AlphaRoleId, "Alpha"));
         HasStatusTypes((Confirmed, "Confirmado"));
@@ -272,7 +326,8 @@ public sealed class ReportServiceTests
                 FullAsg(parentQ, BetaRoleId, "Beta", Denied, "Denegado"),
                 FullAsg(solo, AlphaRoleId, "Alpha", Confirmed, "Confirmado"),
             ],
-            title: "Limpieza");
+            title: "Limpieza"
+        );
         var activityId = activity.Id;
         ActivityGraph(activityId, activity);
 
@@ -305,10 +360,14 @@ public sealed class ReportServiceTests
         childRow.ParentId.Should().Be(parentP.Id);
 
         report.RoleTypeBreakdown.Should().HaveCount(2);
-        report.RoleTypeBreakdown[0].Should().BeEquivalentTo(
-            new ActivityRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 3));
-        report.RoleTypeBreakdown[1].Should().BeEquivalentTo(
-            new ActivityRoleTypeSummaryResponse(BetaRoleId, "Beta", 0));
+        report
+            .RoleTypeBreakdown[0]
+            .Should()
+            .BeEquivalentTo(new ActivityRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 3));
+        report
+            .RoleTypeBreakdown[1]
+            .Should()
+            .BeEquivalentTo(new ActivityRoleTypeSummaryResponse(BetaRoleId, "Beta", 0));
     }
 
     [Fact]
@@ -326,7 +385,8 @@ public sealed class ReportServiceTests
     }
 
     private void HasBadgeEvent(Event? ev) =>
-        events.FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+        events
+            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(ev);
 
     private void HasAssignments(params ActivityUserRoleAssignment[] assignments) =>
@@ -451,12 +511,27 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetDashboardSummaryAsync_maps_each_repository_count_in_order()
     {
-        events.CountAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>()).Returns(1);
-        activities.CountAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>()).Returns(2);
-        resources.CountAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>()).Returns(3);
-        announcements.CountAsync(Arg.Any<Expression<Func<Announcement, bool>>>(), Arg.Any<CancellationToken>()).Returns(4);
-        partners.CountAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>()).Returns(5);
-        users.CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>()).Returns(6);
+        events
+            .CountAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(1);
+        activities
+            .CountAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(2);
+        resources
+            .CountAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(3);
+        announcements
+            .CountAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(4);
+        partners
+            .CountAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(5);
+        users
+            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(6);
 
         var result = await sut.GetDashboardSummaryAsync();
 

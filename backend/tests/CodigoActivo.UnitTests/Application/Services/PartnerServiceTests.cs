@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -7,7 +8,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -32,10 +32,17 @@ public sealed class PartnerServiceTests
 
     private void ThumbnailExists(bool exists) =>
         files
-            .ExistsAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ExistsAsync(
+                Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
 
-    private static Partner NewPartner(string name = "Acme", int tier = 1, string? web = "https://acme.test") =>
+    private static Partner NewPartner(
+        string name = "Acme",
+        int tier = 1,
+        string? web = "https://acme.test"
+    ) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -83,7 +90,10 @@ public sealed class PartnerServiceTests
     [Fact]
     public async Task ListAsync_website_search_matches_substring()
     {
-        HasPartners(NewPartner("A", web: "https://alpha.org"), NewPartner("B", web: "https://beta.org"));
+        HasPartners(
+            NewPartner("A", web: "https://alpha.org"),
+            NewPartner("B", web: "https://beta.org")
+        );
 
         var result = await sut.ListAsync(new PartnerListQuery { Website = "beta" });
 
@@ -128,7 +138,13 @@ public sealed class PartnerServiceTests
     public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
     {
         ThumbnailExists(false);
-        var request = new CreatePartnerRequest("  Acme  ", new DateOnly(2024, 1, 1), 1, " https://acme.test ", Guid.NewGuid());
+        var request = new CreatePartnerRequest(
+            "  Acme  ",
+            new DateOnly(2024, 1, 1),
+            1,
+            " https://acme.test ",
+            Guid.NewGuid()
+        );
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
 
@@ -146,7 +162,13 @@ public sealed class PartnerServiceTests
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
-        var request = new CreatePartnerRequest("  Acme  ", new DateOnly(2024, 3, 4), 2, " https://acme.test ", thumbnailId);
+        var request = new CreatePartnerRequest(
+            "  Acme  ",
+            new DateOnly(2024, 3, 4),
+            2,
+            " https://acme.test ",
+            thumbnailId
+        );
 
         var result = await sut.CreateAsync(request, caller);
 
@@ -156,10 +178,14 @@ public sealed class PartnerServiceTests
         result.Value.Tier.Should().Be(2);
         result.Value.CreatedBy.Should().Be(caller);
         result.Value.CreatedAt.Should().Be(clock.UtcNow);
-        await partners.Received(1).AddAsync(
-            Arg.Is<Partner>(p => p.Name == "Acme" && p.Web == "https://acme.test" && p.CreatedBy == caller),
-            Arg.Any<CancellationToken>()
-        );
+        await partners
+            .Received(1)
+            .AddAsync(
+                Arg.Is<Partner>(p =>
+                    p.Name == "Acme" && p.Web == "https://acme.test" && p.CreatedBy == caller
+                ),
+                Arg.Any<CancellationToken>()
+            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -167,7 +193,13 @@ public sealed class PartnerServiceTests
     public async Task CreateAsync_stores_null_website_when_blank()
     {
         ThumbnailExists(true);
-        var request = new CreatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 0, "   ", Guid.NewGuid());
+        var request = new CreatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            0,
+            "   ",
+            Guid.NewGuid()
+        );
 
         var result = await sut.CreateAsync(request, Guid.NewGuid());
 
@@ -177,9 +209,16 @@ public sealed class PartnerServiceTests
     [Fact]
     public async Task UpdateAsync_returns_not_found_when_partner_missing()
     {
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Partner?)null);
-        var request = new UpdatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 1, null, Guid.NewGuid());
+        var request = new UpdatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            1,
+            null,
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
 
@@ -191,10 +230,17 @@ public sealed class PartnerServiceTests
     public async Task UpdateAsync_returns_bad_request_when_thumbnail_missing()
     {
         var partner = NewPartner();
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(partner);
         ThumbnailExists(false);
-        var request = new UpdatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 1, null, Guid.NewGuid());
+        var request = new UpdatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            1,
+            null,
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
 
@@ -206,12 +252,19 @@ public sealed class PartnerServiceTests
     public async Task UpdateAsync_mutates_and_persists()
     {
         var partner = NewPartner("Old", tier: 1);
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(partner);
         ThumbnailExists(true);
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = new UpdatePartnerRequest("  New  ", new DateOnly(2025, 2, 2), 5, "https://new.test", Guid.NewGuid());
+        var request = new UpdatePartnerRequest(
+            "  New  ",
+            new DateOnly(2025, 2, 2),
+            5,
+            "https://new.test",
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(partner.Id, request, caller);
 
@@ -228,25 +281,41 @@ public sealed class PartnerServiceTests
     {
         var partner = NewPartner();
         var previousThumbnailId = partner.ThumbnailId;
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(partner);
         ThumbnailExists(true);
-        var request = new UpdatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 1, null, Guid.NewGuid());
+        var request = new UpdatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            1,
+            null,
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.Received(1).DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
     {
         var partner = NewPartner();
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(partner);
         ThumbnailExists(true);
-        var request = new UpdatePartnerRequest("Acme", new DateOnly(2024, 1, 1), 1, null, partner.ThumbnailId);
+        var request = new UpdatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            1,
+            null,
+            partner.ThumbnailId
+        );
 
         var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
 
@@ -257,7 +326,8 @@ public sealed class PartnerServiceTests
     [Fact]
     public async Task DeleteAsync_returns_not_found_when_partner_missing()
     {
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Partner?)null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid());
@@ -271,7 +341,8 @@ public sealed class PartnerServiceTests
     public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
     {
         var partner = NewPartner();
-        partners.FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(partner);
 
         var result = await sut.DeleteAsync(partner.Id);
@@ -279,6 +350,8 @@ public sealed class PartnerServiceTests
         result.IsSuccess.Should().BeTrue();
         partners.Received(1).Remove(partner);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService.Received(1).DeleteIfOrphanedAsync(partner.ThumbnailId, Arg.Any<CancellationToken>());
+        await fileService
+            .Received(1)
+            .DeleteIfOrphanedAsync(partner.ThumbnailId, Arg.Any<CancellationToken>());
     }
 }

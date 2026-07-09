@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using System.Security.Claims;
+using AwesomeAssertions;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Entities;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -29,9 +29,7 @@ public sealed class AllowOnlySelfAttributeTests
         var httpContext = new DefaultHttpContext
         {
             User = principal,
-            RequestServices = new ServiceCollection()
-                .AddSingleton(users)
-                .BuildServiceProvider(),
+            RequestServices = new ServiceCollection().AddSingleton(users).BuildServiceProvider(),
         };
         var routeData = new RouteData();
         if (includeRouteKey)
@@ -48,7 +46,8 @@ public sealed class AllowOnlySelfAttributeTests
     private static ClaimsPrincipal User(Guid id, bool isAdmin = false)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id.ToString()) };
-        if (isAdmin) claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+        if (isAdmin)
+            claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
     }
 
@@ -121,7 +120,8 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeNull();
-        await users.Received(1)
+        await users
+            .Received(1)
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
     }
 
@@ -136,7 +136,8 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
-        await users.Received(1)
+        await users
+            .Received(1)
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
     }
 }

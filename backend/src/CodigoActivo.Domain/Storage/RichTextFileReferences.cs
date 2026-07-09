@@ -12,11 +12,13 @@ public static partial class RichTextFileReferences
     public static IReadOnlySet<Guid> Extract(string? richTextJson)
     {
         var ids = new HashSet<Guid>();
-        if (string.IsNullOrEmpty(richTextJson)) return ids;
+        if (string.IsNullOrEmpty(richTextJson))
+            return ids;
 
         foreach (Match match in ContentUrl().Matches(richTextJson))
         {
-            if (Guid.TryParse(match.Groups["id"].Value, out var id)) ids.Add(id);
+            if (Guid.TryParse(match.Groups["id"].Value, out var id))
+                ids.Add(id);
         }
 
         return ids;

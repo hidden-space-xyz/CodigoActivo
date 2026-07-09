@@ -1,5 +1,5 @@
-using CodigoActivo.Infrastructure.Time;
 using AwesomeAssertions;
+using CodigoActivo.Infrastructure.Time;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Time;

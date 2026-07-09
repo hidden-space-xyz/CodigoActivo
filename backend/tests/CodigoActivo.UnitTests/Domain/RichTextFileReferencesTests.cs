@@ -1,5 +1,5 @@
-using CodigoActivo.Domain.Storage;
 using AwesomeAssertions;
+using CodigoActivo.Domain.Storage;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -45,12 +45,10 @@ public sealed class RichTextFileReferencesTests
     {
         var removed = Guid.NewGuid();
         var kept = Guid.NewGuid();
-        var previous = $"{{\"a\":\"/api/files/{removed}/content\",\"b\":\"/api/files/{kept}/content\"}}";
+        var previous =
+            $"{{\"a\":\"/api/files/{removed}/content\",\"b\":\"/api/files/{kept}/content\"}}";
         var current = $"{{\"b\":\"/api/files/{kept}/content\"}}";
 
-        RichTextFileReferences
-            .ExtractRemoved(previous, current)
-            .Should()
-            .BeEquivalentTo([removed]);
+        RichTextFileReferences.ExtractRemoved(previous, current).Should().BeEquivalentTo([removed]);
     }
 }

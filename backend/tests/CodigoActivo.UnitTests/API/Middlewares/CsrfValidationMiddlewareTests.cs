@@ -1,8 +1,8 @@
 using System.Text.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
-using AwesomeAssertions;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,19 +29,31 @@ public sealed class CsrfValidationMiddlewareTests
             NullLogger<CsrfValidationMiddleware>.Instance
         );
 
-    private static DefaultHttpContext NewContext(string method, IAntiforgeryMetadata? metadata = null)
+    private static DefaultHttpContext NewContext(
+        string method,
+        IAntiforgeryMetadata? metadata = null
+    )
     {
         var context = new DefaultHttpContext { Response = { Body = new MemoryStream() } };
         context.Request.Method = method;
         if (metadata is not null)
-            context.SetEndpoint(new Endpoint(_ => Task.CompletedTask, new EndpointMetadataCollection(metadata), "test"));
+            context.SetEndpoint(
+                new Endpoint(
+                    _ => Task.CompletedTask,
+                    new EndpointMetadataCollection(metadata),
+                    "test"
+                )
+            );
         return context;
     }
 
     private static async Task<ApiErrorResponse> ReadBodyAsync(HttpContext context)
     {
         context.Response.Body.Position = 0;
-        var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(context.Response.Body, WebJson);
+        var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(
+            context.Response.Body,
+            WebJson
+        );
         return body!;
     }
 

@@ -39,7 +39,12 @@ const cards = computed(() => {
       icon: 'pi pi-building',
       color: 'var(--ca-lime)',
     },
-    { label: 'Usuarios', value: summary?.users ?? 0, icon: 'pi pi-users', color: 'var(--ca-azure)' },
+    {
+      label: 'Usuarios',
+      value: summary?.users ?? 0,
+      icon: 'pi pi-users',
+      color: 'var(--ca-azure)',
+    },
   ]
 })
 </script>

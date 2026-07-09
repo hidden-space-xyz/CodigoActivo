@@ -17,9 +17,18 @@ public record AnnouncementResponse(
 )
 {
     public AnnouncementResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, default, null, Guid.Empty, null, Guid.Empty, false)
-    {
-    }
+        : this(
+            Guid.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            default,
+            null,
+            Guid.Empty,
+            null,
+            Guid.Empty,
+            false
+        ) { }
 }
 
 public record AnnouncementListItemResponse(
@@ -35,9 +44,17 @@ public record AnnouncementListItemResponse(
 )
 {
     public AnnouncementListItemResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, default, null, Guid.Empty, null, Guid.Empty, false)
-    {
-    }
+        : this(
+            Guid.Empty,
+            string.Empty,
+            string.Empty,
+            default,
+            null,
+            Guid.Empty,
+            null,
+            Guid.Empty,
+            false
+        ) { }
 }
 
 public record CreateAnnouncementRequest(

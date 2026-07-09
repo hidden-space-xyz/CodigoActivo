@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -19,7 +19,15 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     private static readonly DateOnly EventEnd = new(2026, 7, 31);
     private static readonly DateTimeOffset SignupStart = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset SignupEnd = new(2026, 7, 30, 0, 0, 0, TimeSpan.Zero);
-    private static readonly DateTimeOffset ActivityStart = new(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset ActivityStart = new(
+        2026,
+        7,
+        10,
+        10,
+        0,
+        0,
+        TimeSpan.Zero
+    );
     private static readonly DateTimeOffset ActivityEnd = new(2026, 7, 10, 12, 0, 0, TimeSpan.Zero);
 
     private async Task<Guid> SeedThumbnailAsync()
@@ -27,62 +35,76 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Files.Add(new FileEntity
-            {
-                Id = id,
-                Name = "thumb",
-                Extension = "png",
-                UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                UploadedBy = TestSeedData.Users.AdminId,
-            });
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = id,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
     }
 
-    private async Task<Guid> SeedEventAsync(Guid? thumbnailId = null, DateOnly? startsAt = null, DateOnly? endsAt = null)
+    private async Task<Guid> SeedEventAsync(
+        Guid? thumbnailId = null,
+        DateOnly? startsAt = null,
+        DateOnly? endsAt = null
+    )
     {
         var thumb = thumbnailId ?? await SeedThumbnailAsync();
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Events.Add(new Event
-            {
-                Id = id,
-                Title = "Evento",
-                Subtitle = "Sub",
-                EventStartsAt = startsAt ?? EventStart,
-                EventEndsAt = endsAt ?? EventEnd,
-                SignupStartsAt = SignupStart,
-                SignupEndsAt = SignupEnd,
-                ThumbnailId = thumb,
-                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
+            db.Events.Add(
+                new Event
+                {
+                    Id = id,
+                    Title = "Evento",
+                    Subtitle = "Sub",
+                    EventStartsAt = startsAt ?? EventStart,
+                    EventEndsAt = endsAt ?? EventEnd,
+                    SignupStartsAt = SignupStart,
+                    SignupEndsAt = SignupEnd,
+                    ThumbnailId = thumb,
+                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
     }
 
-    private async Task<Guid> SeedActivityAsync(Guid eventId, Guid thumbnailId, string title = "Actividad")
+    private async Task<Guid> SeedActivityAsync(
+        Guid eventId,
+        Guid thumbnailId,
+        string title = "Actividad"
+    )
     {
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Activities.Add(new Activity
-            {
-                Id = id,
-                Title = title,
-                Description = "Descripcion",
-                Location = "Sala",
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                ActivityStartsAt = ActivityStart,
-                ActivityEndsAt = ActivityEnd,
-                EventId = eventId,
-                ThumbnailId = thumbnailId,
-                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
+            db.Activities.Add(
+                new Activity
+                {
+                    Id = id,
+                    Title = title,
+                    Description = "Descripcion",
+                    Location = "Sala",
+                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    ActivityStartsAt = ActivityStart,
+                    ActivityEndsAt = ActivityEnd,
+                    EventId = eventId,
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -145,10 +167,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var request = CreateRequest(
             thumb,
             title: "Taller",
-            allowedRoles:
-            [
-                new(SeedIds.ActivityRoleTypes.Leader),
-            ]
+            allowedRoles: [new(SeedIds.ActivityRoleTypes.Leader)]
         );
 
         var response = await client.PostJsonAsync($"/api/activities/{eventId}", request);
@@ -157,13 +176,16 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         response.Headers.Location.Should().NotBeNull();
         var created = await response.ReadJsonAsync<ActivityResponse>();
         created!.Title.Should().Be("Taller");
-        created.AllowedRoleTypes.Should().ContainSingle(r => r.RoleTypeId == SeedIds.ActivityRoleTypes.Leader);
+        created
+            .AllowedRoleTypes.Should()
+            .ContainSingle(r => r.RoleTypeId == SeedIds.ActivityRoleTypes.Leader);
 
         var stored = await Factory.QueryAsync(db => db.Activities.FindAsync(created.Id).AsTask());
         stored!.EventId.Should().Be(eventId);
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
         var roles = await Factory.QueryAsync(db =>
-            db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == created.Id).ToListAsync());
+            db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == created.Id).ToListAsync()
+        );
         roles.Should().ContainSingle(r => r.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader);
     }
 
@@ -174,7 +196,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var eventId = await SeedEventAsync(thumb);
         var client = await LoginAsMemberAsync();
 
-        var response = await client.PostJsonAsync($"/api/activities/{eventId}", CreateRequest(thumb));
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{eventId}",
+            CreateRequest(thumb)
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -251,7 +276,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         stored.ActivityModalityTypeId.Should().Be(SeedIds.ActivityModalityTypes.Online);
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
         var roles = await Factory.QueryAsync(db =>
-            db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == id).ToListAsync());
+            db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == id).ToListAsync()
+        );
         roles.Should().ContainSingle(r => r.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Helper);
     }
 
@@ -270,7 +296,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await Factory.QueryAsync(db => db.Activities.FindAsync(id).AsTask());
         stored.Should().BeNull();
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(activityThumb).AsTask());
-        file.Should().BeNull("the deleted activity's thumbnail is orphaned and must be cascade-deleted");
+        file.Should()
+            .BeNull("the deleted activity's thumbnail is orphaned and must be cascade-deleted");
     }
 
     [Fact]
@@ -285,7 +312,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumb).AsTask());
-        file.Should().NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
+        file.Should()
+            .NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
     }
 
     [Fact]
@@ -321,7 +349,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.GetAsync("/api/activities/modality-types");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var modalities = await response.ReadJsonAsync<IReadOnlyList<ActivityModalityTypeResponse>>();
+        var modalities = await response.ReadJsonAsync<
+            IReadOnlyList<ActivityModalityTypeResponse>
+        >();
         modalities!.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
     }
 
@@ -337,7 +367,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await response.ReadJsonAsync<ActivityRoleTypeResponse>();
         created!.Name.Should().Be("Coordinador");
         var stored = await Factory.QueryAsync(db =>
-            db.ActivityRoleTypes.FirstOrDefaultAsync(r => r.Name == "Coordinador"));
+            db.ActivityRoleTypes.FirstOrDefaultAsync(r => r.Name == "Coordinador")
+        );
         stored.Should().NotBeNull();
     }
 
@@ -354,7 +385,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await Factory.QueryAsync(db =>
-            db.ActivityRoleTypes.FindAsync(SeedIds.ActivityRoleTypes.Helper).AsTask());
+            db.ActivityRoleTypes.FindAsync(SeedIds.ActivityRoleTypes.Helper).AsTask()
+        );
         stored!.Name.Should().Be("Ayudante Senior");
     }
 
@@ -369,7 +401,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await Factory.QueryAsync(db =>
-            db.ActivityRoleTypes.FindAsync(SeedIds.ActivityRoleTypes.Participant).AsTask());
+            db.ActivityRoleTypes.FindAsync(SeedIds.ActivityRoleTypes.Participant).AsTask()
+        );
         stored.Should().BeNull();
     }
 }

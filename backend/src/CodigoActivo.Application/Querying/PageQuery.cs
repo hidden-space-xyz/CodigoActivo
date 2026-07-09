@@ -19,9 +19,12 @@ public abstract class PageQuery
         get => pageSize;
         set
         {
-            if (value < 1) pageSize = DefaultPageSize;
-            else if (value > MaxPageSize) pageSize = MaxPageSize;
-            else pageSize = value;
+            if (value < 1)
+                pageSize = DefaultPageSize;
+            else if (value > MaxPageSize)
+                pageSize = MaxPageSize;
+            else
+                pageSize = value;
         }
     }
 

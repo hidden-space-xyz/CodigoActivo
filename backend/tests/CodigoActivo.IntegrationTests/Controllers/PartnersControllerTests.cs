@@ -1,30 +1,33 @@
 using System.Net;
 using System.Net.Http.Json;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private async Task<Guid> SeedThumbnailAsync()
     {
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Files.Add(new FileEntity
-            {
-                Id = id,
-                Name = "thumb",
-                Extension = "png",
-                UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                UploadedBy = TestSeedData.Users.AdminId,
-            });
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = id,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -36,16 +39,18 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Partners.Add(new Partner
-            {
-                Id = id,
-                Name = name,
-                Tier = 1,
-                FromDate = new DateOnly(2024, 1, 1),
-                ThumbnailId = thumbnailId,
-                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
+            db.Partners.Add(
+                new Partner
+                {
+                    Id = id,
+                    Name = name,
+                    Tier = 1,
+                    FromDate = new DateOnly(2024, 1, 1),
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
             return Task.CompletedTask;
         });
         return id;
@@ -83,7 +88,13 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = new CreatePartnerRequest("Gamma", new DateOnly(2025, 4, 1), 3, "https://gamma.test", thumbnailId);
+        var request = new CreatePartnerRequest(
+            "Gamma",
+            new DateOnly(2025, 4, 1),
+            3,
+            "https://gamma.test",
+            thumbnailId
+        );
 
         var response = await client.PostJsonAsync("/api/partners", request);
 
@@ -102,7 +113,13 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsMemberAsync();
-        var request = new CreatePartnerRequest("Nope", new DateOnly(2025, 1, 1), 1, null, thumbnailId);
+        var request = new CreatePartnerRequest(
+            "Nope",
+            new DateOnly(2025, 1, 1),
+            1,
+            null,
+            thumbnailId
+        );
 
         var response = await client.PostJsonAsync("/api/partners", request);
 
@@ -113,7 +130,13 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     public async Task Create_anonymous_is_unauthorized()
     {
         var client = CreateClient();
-        var request = new CreatePartnerRequest("Nope", new DateOnly(2025, 1, 1), 1, null, Guid.NewGuid());
+        var request = new CreatePartnerRequest(
+            "Nope",
+            new DateOnly(2025, 1, 1),
+            1,
+            null,
+            Guid.NewGuid()
+        );
 
         var response = await client.PostJsonAsync("/api/partners", request);
 
@@ -125,7 +148,13 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = new CreatePartnerRequest("   ", new DateOnly(2025, 1, 1), 1, null, thumbnailId);
+        var request = new CreatePartnerRequest(
+            "   ",
+            new DateOnly(2025, 1, 1),
+            1,
+            null,
+            thumbnailId
+        );
 
         var response = await client.PostJsonAsync("/api/partners", request);
 
@@ -160,7 +189,13 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         var id = await SeedPartnerAsync("Before");
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = new UpdatePartnerRequest("After", new DateOnly(2025, 6, 6), 4, "https://after.test", thumbnailId);
+        var request = new UpdatePartnerRequest(
+            "After",
+            new DateOnly(2025, 6, 6),
+            4,
+            "https://after.test",
+            thumbnailId
+        );
 
         var response = await client.PutJsonAsync($"/api/partners/{id}", request);
 
@@ -174,7 +209,9 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
     public async Task Delete_as_admin_removes_partner_and_its_orphaned_thumbnail()
     {
         var id = await SeedPartnerAsync("Doomed");
-        var thumbnailId = (await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask()))!.ThumbnailId;
+        var thumbnailId = (
+            await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask())
+        )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
         var response = await client.DeleteWithCsrfAsync($"/api/partners/{id}");
@@ -183,6 +220,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory) :
         var stored = await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask());
         stored.Should().BeNull();
         var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
-        file.Should().BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
+        file.Should()
+            .BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
     }
 }

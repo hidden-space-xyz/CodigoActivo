@@ -15,7 +15,10 @@ public class UserRepository(CodigoActivoDbContext context)
         return await QueryWithDetails().FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
-    public async Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default)
+    public async Task<User?> GetByEmailOrPhoneAsync(
+        string identifier,
+        CancellationToken ct = default
+    )
     {
         var email = identifier.ToLowerInvariant();
         return await QueryWithDetails(tracked: true)
@@ -60,8 +63,6 @@ public class UserRepository(CodigoActivoDbContext context)
     private IQueryable<User> QueryWithDetails(bool tracked = false)
     {
         var query = tracked ? Set : Set.AsNoTracking();
-        return query
-            .Include(u => u.UserStatusType)
-            .Include(u => u.UserType);
+        return query.Include(u => u.UserStatusType).Include(u => u.UserType);
     }
 }

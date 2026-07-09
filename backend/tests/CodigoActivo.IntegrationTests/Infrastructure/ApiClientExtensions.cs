@@ -12,7 +12,10 @@ public static class ApiClientExtensions
     {
         using var response = await client.GetAsync("/api/auth/csrf", ct);
         response.EnsureSuccessStatusCode();
-        var body = await response.Content.ReadFromJsonAsync<CsrfTokenResponse>(TestJson.Options, ct);
+        var body = await response.Content.ReadFromJsonAsync<CsrfTokenResponse>(
+            TestJson.Options,
+            ct
+        );
         return body!.Token;
     }
 
@@ -28,7 +31,12 @@ public static class ApiClientExtensions
         using var request = new HttpRequestMessage(method, url);
         request.Headers.Add("X-CSRF-TOKEN", token);
         if (body is not null)
-            request.Content = JsonContent.Create(body, body.GetType(), mediaType: null, TestJson.Options);
+            request.Content = JsonContent.Create(
+                body,
+                body.GetType(),
+                mediaType: null,
+                TestJson.Options
+            );
 
         return await client.SendAsync(request, ct);
     }

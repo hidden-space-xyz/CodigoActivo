@@ -1,16 +1,17 @@
 using System.Net;
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private static readonly Guid EventId = new("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid ActivityAId = new("bbbbbbbb-0000-0000-0000-000000000001");
@@ -31,20 +32,22 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
                 Thumbnail(ActivityBThumbnailId)
             );
 
-            db.Events.Add(new Event
-            {
-                Id = EventId,
-                Title = "Feria de Voluntariado",
-                Subtitle = "Edición 2026",
-                Description = "{}",
-                EventStartsAt = new DateOnly(2026, 5, 1),
-                EventEndsAt = new DateOnly(2026, 5, 2),
-                SignupStartsAt = At,
-                SignupEndsAt = At,
-                ThumbnailId = EventThumbnailId,
-                CreatedAt = At,
-                CreatedBy = TestSeedData.Users.AdminId,
-            });
+            db.Events.Add(
+                new Event
+                {
+                    Id = EventId,
+                    Title = "Feria de Voluntariado",
+                    Subtitle = "Edición 2026",
+                    Description = "{}",
+                    EventStartsAt = new DateOnly(2026, 5, 1),
+                    EventEndsAt = new DateOnly(2026, 5, 2),
+                    SignupStartsAt = At,
+                    SignupEndsAt = At,
+                    ThumbnailId = EventThumbnailId,
+                    CreatedAt = At,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
 
             db.Activities.Add(BuildActivity(ActivityAId, "Taller", ActivityAThumbnailId));
             db.Activities.Add(BuildActivity(ActivityBId, "Charla", ActivityBThumbnailId));
@@ -57,30 +60,51 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
             );
 
             db.ActivityUserRoleAssignments.AddRange(
-                Assignment(ActivityAId, TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Helper, SeedIds.AssignmentStatusTypes.Confirmed),
-                Assignment(ActivityBId, TestSeedData.Users.AdminId, SeedIds.ActivityRoleTypes.Leader, SeedIds.AssignmentStatusTypes.Confirmed),
-                Assignment(ActivityBId, TestSeedData.Users.PendingId, SeedIds.ActivityRoleTypes.Participant, SeedIds.AssignmentStatusTypes.Requested),
-                Assignment(ActivityBId, TestSeedData.Users.BlockedId, SeedIds.ActivityRoleTypes.Leader, SeedIds.AssignmentStatusTypes.Denied)
+                Assignment(
+                    ActivityAId,
+                    TestSeedData.Users.MemberChildId,
+                    SeedIds.ActivityRoleTypes.Helper,
+                    SeedIds.AssignmentStatusTypes.Confirmed
+                ),
+                Assignment(
+                    ActivityBId,
+                    TestSeedData.Users.AdminId,
+                    SeedIds.ActivityRoleTypes.Leader,
+                    SeedIds.AssignmentStatusTypes.Confirmed
+                ),
+                Assignment(
+                    ActivityBId,
+                    TestSeedData.Users.PendingId,
+                    SeedIds.ActivityRoleTypes.Participant,
+                    SeedIds.AssignmentStatusTypes.Requested
+                ),
+                Assignment(
+                    ActivityBId,
+                    TestSeedData.Users.BlockedId,
+                    SeedIds.ActivityRoleTypes.Leader,
+                    SeedIds.AssignmentStatusTypes.Denied
+                )
             );
 
             return Task.CompletedTask;
         });
     }
 
-    private static Activity BuildActivity(Guid id, string title, Guid thumbnailId) => new()
-    {
-        Id = id,
-        Title = title,
-        Description = "desc",
-        Location = "Sala",
-        ActivityStartsAt = At,
-        ActivityEndsAt = At.AddHours(2),
-        EventId = EventId,
-        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-        ThumbnailId = thumbnailId,
-        CreatedAt = At,
-        CreatedBy = TestSeedData.Users.AdminId,
-    };
+    private static Activity BuildActivity(Guid id, string title, Guid thumbnailId) =>
+        new()
+        {
+            Id = id,
+            Title = title,
+            Description = "desc",
+            Location = "Sala",
+            ActivityStartsAt = At,
+            ActivityEndsAt = At.AddHours(2),
+            EventId = EventId,
+            ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+            ThumbnailId = thumbnailId,
+            CreatedAt = At,
+            CreatedBy = TestSeedData.Users.AdminId,
+        };
 
     private static FileEntity Thumbnail(Guid id) =>
         new()
@@ -95,7 +119,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     private static ActivityAllowedRoleType Allowed(Guid activityId, Guid roleTypeId) =>
         new() { ActivityId = activityId, ActivityRoleTypeId = roleTypeId };
 
-    private static ActivityUserRoleAssignment Assignment(Guid activityId, Guid userId, Guid roleTypeId, Guid statusId) =>
+    private static ActivityUserRoleAssignment Assignment(
+        Guid activityId,
+        Guid userId,
+        Guid roleTypeId,
+        Guid statusId
+    ) =>
         new()
         {
             ActivityId = activityId,
@@ -150,8 +179,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         report.Title.Should().Be("Feria de Voluntariado");
         report.Items.Should().HaveCount(4);
 
-        var confirmedLeader = report.Items.Single(i =>
-            i.UserId == TestSeedData.Users.AdminId);
+        var confirmedLeader = report.Items.Single(i => i.UserId == TestSeedData.Users.AdminId);
         confirmedLeader.ActivityId.Should().Be(ActivityBId);
         confirmedLeader.ActivityTitle.Should().Be("Charla");
         confirmedLeader.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
@@ -200,7 +228,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/activities/{Guid.NewGuid()}/assignments");
+        var response = await client.GetAsync(
+            $"/api/reports/activities/{Guid.NewGuid()}/assignments"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var error = await response.ReadJsonAsync<ApiErrorResponse>();
@@ -214,7 +244,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory) : 
         await Factory.SeedAsync(db =>
         {
             db.ActivityUserRoleAssignments.Add(
-                Assignment(ActivityBId, TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant, SeedIds.AssignmentStatusTypes.Confirmed)
+                Assignment(
+                    ActivityBId,
+                    TestSeedData.Users.MemberChildId,
+                    SeedIds.ActivityRoleTypes.Participant,
+                    SeedIds.AssignmentStatusTypes.Confirmed
+                )
             );
             return Task.CompletedTask;
         });

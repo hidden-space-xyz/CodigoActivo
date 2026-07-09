@@ -34,7 +34,8 @@ public class PartnerService(
     {
         var source = partners.Query().Select(Projections.Partner);
 
-        if (query.Tier is { } tier) source = source.Where(p => p.Tier == tier);
+        if (query.Tier is { } tier)
+            source = source.Where(p => p.Tier == tier);
         if (!string.IsNullOrWhiteSpace(query.Name))
         {
             source = source.Where(
@@ -56,16 +57,15 @@ public class PartnerService(
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public async Task<Result<PartnerResponse>> GetByIdAsync(
-        Guid id,
-        CancellationToken ct = default
-    )
+    public async Task<Result<PartnerResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var response = await executor.FirstOrDefaultAsync(
             partners.Query().Where(p => p.Id == id).Select(Projections.Partner),
             ct
         );
-        return response is null ? (Result<PartnerResponse>)Error.NotFound(ErrorCode.PartnerNotFound) : (Result<PartnerResponse>)response;
+        return response is null
+            ? (Result<PartnerResponse>)Error.NotFound(ErrorCode.PartnerNotFound)
+            : (Result<PartnerResponse>)response;
     }
 
     public async Task<Result<PartnerResponse>> CreateAsync(
@@ -79,7 +79,8 @@ public class PartnerService(
             ErrorCode.PartnerThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var partner = new Partner
         {
@@ -104,14 +105,16 @@ public class PartnerService(
     )
     {
         var partner = await partners.FindAsync(p => p.Id == id, ct);
-        if (partner is null) return Error.NotFound(ErrorCode.PartnerNotFound);
+        if (partner is null)
+            return Error.NotFound(ErrorCode.PartnerNotFound);
 
         var thumbnail = await files.EnsureThumbnailExistsAsync(
             request.ThumbnailId,
             ErrorCode.PartnerThumbnailNotFound,
             ct
         );
-        if (thumbnail.IsFailure) return thumbnail.Error!;
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
 
         var previousThumbnailId = partner.ThumbnailId;
 
@@ -134,7 +137,8 @@ public class PartnerService(
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var partner = await partners.FindAsync(p => p.Id == id, ct);
-        if (partner is null) return Error.NotFound(ErrorCode.PartnerNotFound);
+        if (partner is null)
+            return Error.NotFound(ErrorCode.PartnerNotFound);
 
         partners.Remove(partner);
         await uow.SaveChangesAsync(ct);

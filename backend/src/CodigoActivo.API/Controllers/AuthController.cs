@@ -64,7 +64,8 @@ public class AuthController(IAuthService auth) : ApiControllerBase
     )
     {
         var result = await auth.LoginAsync(request, ct);
-        if (result.IsFailure) return ToProblem(result.Error!);
+        if (result.IsFailure)
+            return ToProblem(result.Error!);
 
         var user = result.Value;
         await HttpContext.SignInAsync(
@@ -97,9 +98,11 @@ public class AuthController(IAuthService auth) : ApiControllerBase
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
         };
-        if (!string.IsNullOrEmpty(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
+        if (!string.IsNullOrEmpty(user.Email))
+            claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
-        if (user.IsAdmin) claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+        if (user.IsAdmin)
+            claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
 
         var identity = new ClaimsIdentity(
             claims,

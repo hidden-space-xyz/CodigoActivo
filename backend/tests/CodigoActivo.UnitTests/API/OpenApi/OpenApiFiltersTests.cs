@@ -1,6 +1,6 @@
+using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.OpenApi;
-using AwesomeAssertions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.OpenApi;
 using NSubstitute;
@@ -11,7 +11,6 @@ namespace CodigoActivo.UnitTests.API.OpenApi;
 
 public sealed class OpenApiFiltersTests
 {
-
     private static Dictionary<string, OpenApiMediaType> Content(params string[] mediaTypes) =>
         mediaTypes.ToDictionary(m => m, _ => new OpenApiMediaType());
 
@@ -25,8 +24,14 @@ public sealed class OpenApiFiltersTests
         {
             Responses = new OpenApiResponses
             {
-                ["200"] = new OpenApiResponse { Content = Content("application/json", "application/xml", "text/plain") },
-                ["400"] = new OpenApiResponse { Content = Content("application/json", "application/problem+json") },
+                ["200"] = new OpenApiResponse
+                {
+                    Content = Content("application/json", "application/xml", "text/plain"),
+                },
+                ["400"] = new OpenApiResponse
+                {
+                    Content = Content("application/json", "application/problem+json"),
+                },
             },
         };
 
@@ -41,7 +46,10 @@ public sealed class OpenApiFiltersTests
     {
         var operation = new OpenApiOperation
         {
-            RequestBody = new OpenApiRequestBody { Content = Content("application/json", "multipart/form-data") },
+            RequestBody = new OpenApiRequestBody
+            {
+                Content = Content("application/json", "multipart/form-data"),
+            },
         };
 
         new JsonResponseMediaTypeFilter().Apply(operation, null!);
@@ -56,13 +64,19 @@ public sealed class OpenApiFiltersTests
         {
             Responses = new OpenApiResponses
             {
-                ["200"] = new OpenApiResponse { Content = Content("application/xml", "text/plain") },
+                ["200"] = new OpenApiResponse
+                {
+                    Content = Content("application/xml", "text/plain"),
+                },
             },
         };
 
         new JsonResponseMediaTypeFilter().Apply(operation, null!);
 
-        operation.Responses["200"].Content!.Keys.Should().BeEquivalentTo("application/xml", "text/plain");
+        operation
+            .Responses["200"]
+            .Content!.Keys.Should()
+            .BeEquivalentTo("application/xml", "text/plain");
     }
 
     [Fact]
@@ -94,7 +108,10 @@ public sealed class OpenApiFiltersTests
     [InlineData("PageSize", "pageSize")]
     [InlineData("Sort", "sort")]
     [InlineData("X", "x")]
-    public void CamelCase_filter_lowercases_first_letter_of_pascal_query_params(string given, string expected)
+    public void CamelCase_filter_lowercases_first_letter_of_pascal_query_params(
+        string given,
+        string expected
+    )
     {
         var parameter = QueryParam(given);
         var operation = new OpenApiOperation { Parameters = [parameter] };
@@ -109,10 +126,7 @@ public sealed class OpenApiFiltersTests
     {
         var pathParam = new OpenApiParameter { Name = "Id", In = ParameterLocation.Path };
         var headerParam = new OpenApiParameter { Name = "ApiKey", In = ParameterLocation.Header };
-        var operation = new OpenApiOperation
-        {
-            Parameters = [pathParam, headerParam],
-        };
+        var operation = new OpenApiOperation { Parameters = [pathParam, headerParam] };
 
         new CamelCaseQueryParametersFilter().Apply(operation, null!);
 
@@ -159,7 +173,11 @@ public sealed class OpenApiFiltersTests
     {
         var generator = Substitute.For<ISchemaGenerator>();
         var repository = new SchemaRepository("v1");
-        var context = new DocumentFilterContext(Array.Empty<ApiDescription>(), generator, repository);
+        var context = new DocumentFilterContext(
+            Array.Empty<ApiDescription>(),
+            generator,
+            repository
+        );
 
         new ApiErrorResponseDocumentFilter().Apply(new OpenApiDocument(), context);
 

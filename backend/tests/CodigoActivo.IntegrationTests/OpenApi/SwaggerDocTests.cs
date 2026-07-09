@@ -1,12 +1,13 @@
 using System.Net;
 using System.Text.Json;
-using CodigoActivo.IntegrationTests.Infrastructure;
 using AwesomeAssertions;
+using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;
 
-public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
+public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private const string SwaggerUrl = "/swagger/v1/swagger.json";
 
@@ -31,7 +32,10 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory) : Integra
             .RootElement.GetProperty("paths")
             .EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject())
-            .Where(op => op.Value.ValueKind == JsonValueKind.Object && op.Value.TryGetProperty("parameters", out _))
+            .Where(op =>
+                op.Value.ValueKind == JsonValueKind.Object
+                && op.Value.TryGetProperty("parameters", out _)
+            )
             .SelectMany(op => op.Value.GetProperty("parameters").EnumerateArray())
             .Where(param =>
                 param.TryGetProperty("in", out var loc)
@@ -55,9 +59,15 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory) : Integra
             .RootElement.GetProperty("paths")
             .EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject())
-            .Where(op => op.Value.ValueKind == JsonValueKind.Object && op.Value.TryGetProperty("responses", out _))
+            .Where(op =>
+                op.Value.ValueKind == JsonValueKind.Object
+                && op.Value.TryGetProperty("responses", out _)
+            )
             .SelectMany(op => op.Value.GetProperty("responses").EnumerateObject())
-            .Where(resp => resp.Value.ValueKind == JsonValueKind.Object && resp.Value.TryGetProperty("content", out _))
+            .Where(resp =>
+                resp.Value.ValueKind == JsonValueKind.Object
+                && resp.Value.TryGetProperty("content", out _)
+            )
             .Select(resp => resp.Value.GetProperty("content"))
             .ToList();
 

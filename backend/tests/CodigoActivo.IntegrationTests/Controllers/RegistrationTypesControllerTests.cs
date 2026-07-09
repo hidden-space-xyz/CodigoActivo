@@ -1,8 +1,8 @@
 using System.Net;
+using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using AwesomeAssertions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -23,16 +23,18 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     {
         var types = await GetTypesAsync("/api/registration-types");
 
-        types.Select(t => t.Id)
+        types
+            .Select(t => t.Id)
             .Should()
-            .BeEquivalentTo(
-                [
-                    SeedIds.UserTypes.Member,
-                    SeedIds.UserTypes.Volunteer,
-                    SeedIds.UserTypes.Participant,
-                ]
-            );
-        types.Select(t => t.Name).Should().ContainInOrder("Participante", "Socio", "Voluntario puntual");
+            .BeEquivalentTo([
+                SeedIds.UserTypes.Member,
+                SeedIds.UserTypes.Volunteer,
+                SeedIds.UserTypes.Participant,
+            ]);
+        types
+            .Select(t => t.Name)
+            .Should()
+            .ContainInOrder("Participante", "Socio", "Voluntario puntual");
     }
 
     [Fact]
@@ -40,7 +42,8 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     {
         var types = await GetTypesAsync("/api/registration-types?audience=Adult");
 
-        types.Select(t => t.Id)
+        types
+            .Select(t => t.Id)
             .Should()
             .BeEquivalentTo([SeedIds.UserTypes.Member, SeedIds.UserTypes.Volunteer]);
     }

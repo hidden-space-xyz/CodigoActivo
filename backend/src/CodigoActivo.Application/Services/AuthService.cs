@@ -63,7 +63,9 @@ public class AuthService(
         user.RegisterLogin();
         await uow.SaveChangesAsync(ct);
 
-        return selfHealed ? (Result<UserResponse>)(await users.GetByIdWithDetailsAsync(user.Id, ct))!.ToResponse() : (Result<UserResponse>)user.ToResponse();
+        return selfHealed
+            ? (Result<UserResponse>)(await users.GetByIdWithDetailsAsync(user.Id, ct))!.ToResponse()
+            : (Result<UserResponse>)user.ToResponse();
     }
 
     public async Task<Result<UserResponse>> GetCurrentAsync(
@@ -72,7 +74,9 @@ public class AuthService(
     )
     {
         var user = await users.GetByIdWithDetailsAsync(userId, ct);
-        return user is null ? (Result<UserResponse>)Error.Unauthorized(ErrorCode.CurrentUserNotFound) : (Result<UserResponse>)user.ToResponse();
+        return user is null
+            ? (Result<UserResponse>)Error.Unauthorized(ErrorCode.CurrentUserNotFound)
+            : (Result<UserResponse>)user.ToResponse();
     }
 
     public async Task<Result<RegisterResponse>> RegisterAsync(

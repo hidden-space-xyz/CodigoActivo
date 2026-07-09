@@ -32,7 +32,10 @@ public static class TestSeedData
 
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    public static async Task SeedUsersAsync(CodigoActivoDbContext db, CancellationToken ct = default)
+    public static async Task SeedUsersAsync(
+        CodigoActivoDbContext db,
+        CancellationToken ct = default
+    )
     {
         var admin = new User
         {

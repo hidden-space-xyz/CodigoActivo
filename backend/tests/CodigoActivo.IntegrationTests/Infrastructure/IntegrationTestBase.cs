@@ -4,7 +4,9 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory) : IClassFixture<CodigoActivoWebAppFactory>, IAsyncLifetime
+public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
+    : IClassFixture<CodigoActivoWebAppFactory>,
+        IAsyncLifetime
 {
     protected CodigoActivoWebAppFactory Factory { get; } = factory;
 
