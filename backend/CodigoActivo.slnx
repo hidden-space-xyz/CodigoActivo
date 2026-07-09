@@ -1,4 +1,9 @@
 <Solution>
+	<Folder Name="/docker/">
+		<Project Path="docker-compose.dcproj">
+			<Build />
+		</Project>
+	</Folder>
     <Folder Name="/tests/">
         <Project Path="tests/CodigoActivo.IntegrationTests/CodigoActivo.IntegrationTests.csproj" />
         <Project Path="tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj" />

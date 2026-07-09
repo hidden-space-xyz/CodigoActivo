@@ -13,11 +13,8 @@ FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
 USER root
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY docker/default.conf /etc/nginx/conf.d/default.conf
-COPY docker/https.conf.template /etc/nginx/https.conf.template
-COPY docker/snippets/security-headers.conf /etc/nginx/snippets/security-headers.conf
-COPY docker/docker-entrypoint.d/40-enable-tls.sh /docker-entrypoint.d/40-enable-tls.sh
-RUN chmod +x /docker-entrypoint.d/40-enable-tls.sh && chown -R 101:101 /etc/nginx/conf.d
+RUN chown -R 101:101 /etc/nginx/conf.d
 USER 101
-EXPOSE 8080 8443
+EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
