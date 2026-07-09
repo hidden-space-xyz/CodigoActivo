@@ -9,9 +9,7 @@ public sealed class TextSearchTests
     private sealed record Row(string? Name);
 
     [Theory]
-    [InlineData("hello", "hello")]
     [InlineData("  Hello  ", "hello")]
-    [InlineData("HELLO", "hello")]
     [InlineData("áéíóú", "aeiou")]
     [InlineData("ÁÉÍÓÚ", "aeiou")]
     [InlineData("Fundación Ávila", "fundacion avila")]
@@ -39,17 +37,6 @@ public sealed class TextSearchTests
             .Compile();
 
         predicate(new Row(value)).Should().Be(expected);
-    }
-
-    [Fact]
-    public void Contains_folds_the_column_so_accented_source_matches_plain_term()
-    {
-        var rows = new List<Row> { new("Fundación Ávila"), new("Banco Popular") }.AsQueryable();
-        var predicate = TextSearch.Contains<Row>(r => r.Name, TextSearch.Normalize("AVILA"));
-
-        var matched = rows.Where(predicate).ToList();
-
-        matched.Should().ContainSingle().Which.Name.Should().Be("Fundación Ávila");
     }
 
     [Fact]

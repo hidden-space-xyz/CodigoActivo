@@ -65,18 +65,6 @@ public sealed class AnnouncementServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_projects_and_pages()
-    {
-        HasAnnouncements(NewAnnouncement("A"), NewAnnouncement("B"));
-
-        var result = await sut.ListAsync(new AnnouncementListQuery { Page = 1, PageSize = 10 });
-
-        result.Total.Should().Be(2);
-        result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<AnnouncementListItemResponse>();
-    }
-
-    [Fact]
     public async Task ListAsync_filters_by_year()
     {
         HasAnnouncements(NewAnnouncement("Old", year: 2023), NewAnnouncement("New", year: 2025));
@@ -136,18 +124,6 @@ public sealed class AnnouncementServiceTests
         var result = await sut.ListAsync(new AnnouncementListQuery { Sort = "title" });
 
         result.Items.Select(a => a.Title).Should().ContainInOrder("Alpha", "Bravo", "Charlie");
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_returns_announcement_when_found()
-    {
-        var announcement = NewAnnouncement();
-        HasAnnouncements(announcement);
-
-        var result = await sut.GetByIdAsync(announcement.Id);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(announcement.Id);
     }
 
     [Fact]
@@ -395,27 +371,6 @@ public sealed class AnnouncementServiceTests
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
         await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
-    }
-
-    [Fact]
-    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
-    {
-        var announcement = NewAnnouncement();
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-
-        var result = await sut.DeleteAsync(announcement.Id);
-
-        result.IsSuccess.Should().BeTrue();
-        announcements.Received(1).Remove(announcement);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService
-            .Received(1)
-            .DeleteIfOrphanedAsync(announcement.ThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]

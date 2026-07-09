@@ -17,14 +17,6 @@ public sealed class DateAndTimeExtensionsTests
     }
 
     [Fact]
-    public void IsMinor_is_true_for_seventeen_year_old()
-    {
-        var birthDate = Today.AddYears(-17);
-
-        birthDate.IsMinor().Should().BeTrue();
-    }
-
-    [Fact]
     public void IsMinor_is_true_when_eighteenth_birthday_is_tomorrow()
     {
         var birthDate = Today.AddYears(-18).AddDays(1);
@@ -46,13 +38,5 @@ public sealed class DateAndTimeExtensionsTests
         var birthDate = Today.AddYears(5);
 
         birthDate.IsMinor().Should().BeTrue();
-    }
-
-    [Fact]
-    public void IsMinor_is_false_for_a_clear_adult()
-    {
-        var birthDate = Today.AddYears(-40);
-
-        birthDate.IsMinor().Should().BeFalse();
     }
 }

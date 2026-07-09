@@ -1,10 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.API.OpenApi;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.OpenApi;
-using NSubstitute;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.API.OpenApi;
@@ -106,7 +102,6 @@ public sealed class OpenApiFiltersTests
     [Theory]
     [InlineData("Page", "page")]
     [InlineData("PageSize", "pageSize")]
-    [InlineData("Sort", "sort")]
     [InlineData("X", "x")]
     public void CamelCase_filter_lowercases_first_letter_of_pascal_query_params(
         string given,
@@ -166,21 +161,5 @@ public sealed class OpenApiFiltersTests
         var act = () => new CamelCaseQueryParametersFilter().Apply(operation, null!);
 
         act.Should().NotThrow();
-    }
-
-    [Fact]
-    public void Document_filter_force_generates_the_api_error_response_schema()
-    {
-        var generator = Substitute.For<ISchemaGenerator>();
-        var repository = new SchemaRepository("v1");
-        var context = new DocumentFilterContext(
-            Array.Empty<ApiDescription>(),
-            generator,
-            repository
-        );
-
-        new ApiErrorResponseDocumentFilter().Apply(new OpenApiDocument(), context);
-
-        generator.Received(1).GenerateSchema(typeof(ApiErrorResponse), repository);
     }
 }

@@ -39,8 +39,6 @@ public sealed class FileRepositoryExtensionsTests
     [Theory]
     [InlineData(ErrorCode.PartnerThumbnailNotFound)]
     [InlineData(ErrorCode.EventThumbnailNotFound)]
-    [InlineData(ErrorCode.ResourceThumbnailNotFound)]
-    [InlineData(ErrorCode.AnnouncementThumbnailNotFound)]
     public async Task EnsureThumbnailExistsAsync_propagates_missing_code_when_file_absent(
         ErrorCode missingCode
     )

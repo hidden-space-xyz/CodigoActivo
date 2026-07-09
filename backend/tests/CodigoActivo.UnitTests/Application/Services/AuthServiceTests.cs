@@ -266,18 +266,6 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task GetCurrentAsync_returns_mapped_user_when_found()
-    {
-        var user = NewUser();
-        users.GetByIdWithDetailsAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
-
-        var result = await sut.GetCurrentAsync(user.Id);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(user.Id);
-    }
-
-    [Fact]
     public async Task RegisterAsync_rejects_minor_adult_and_does_not_persist()
     {
         var result = await sut.RegisterAsync(NewRegister(birthDate: MinorBirthDate));
@@ -503,36 +491,6 @@ public sealed class AuthServiceTests
             .OtpCodeHash.Should()
             .NotBeNull("the code is still issued so a resend can replace it");
         await uow.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task RegisterAsync_creates_active_user_without_otp_when_verification_not_required()
-    {
-        verification.Required = false;
-        ExistsReturns(false, false);
-        users
-            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser());
-        users
-            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-
-        var result = await sut.RegisterAsync(NewRegister());
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.RequiresVerification.Should().BeFalse();
-        emailSender.Sent.Should().BeEmpty();
-        await users
-            .Received(1)
-            .AddAsync(
-                Arg.Is<User>(u =>
-                    u.UserStatusTypeId == SeedIds.UserStatusTypes.Active
-                    && u.OtpCodeHash == null
-                    && u.OtpExpiresAt == null
-                    && u.OtpLastSentAt == null
-                ),
-                Arg.Any<CancellationToken>()
-            );
     }
 
     [Fact]

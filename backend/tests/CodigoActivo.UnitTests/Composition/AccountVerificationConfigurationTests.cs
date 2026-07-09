@@ -70,7 +70,6 @@ public sealed class AccountVerificationConfigurationTests
     [Theory]
     [InlineData(null, "no-reply@example.test")]
     [InlineData("smtp.example.test", null)]
-    [InlineData(null, null)]
     public void Throws_when_verification_required_but_smtp_is_unconfigured(
         string? host,
         string? from

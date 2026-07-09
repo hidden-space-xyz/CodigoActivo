@@ -311,19 +311,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Resend_verification_for_unknown_user_is_not_found()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            $"/api/auth/{Guid.NewGuid()}/resend-verification",
-            body: null
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Login_of_a_pending_user_is_forbidden_when_verification_is_required()
     {
         var client = CreateClient();

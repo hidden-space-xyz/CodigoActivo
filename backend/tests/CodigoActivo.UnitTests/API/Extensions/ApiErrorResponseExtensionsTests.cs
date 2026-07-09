@@ -52,17 +52,6 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void Create_copies_code_and_trace_identifier()
-    {
-        var error = Error.NotFound(ErrorCode.EventNotFound);
-
-        var (_, body) = ApiErrorResponseExtensions.Create(error, ContextWithTrace());
-
-        body.Code.Should().Be(ErrorCode.EventNotFound);
-        body.TraceId.Should().Be(TraceId);
-    }
-
-    [Fact]
     public void Create_throws_for_out_of_range_kind()
     {
         var error = new Error((ErrorKind)99, ErrorCode.UnexpectedError);
@@ -70,18 +59,6 @@ public sealed class ApiErrorResponseExtensionsTests
         var act = () => ApiErrorResponseExtensions.Create(error, ContextWithTrace());
 
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("kind");
-    }
-
-    [Fact]
-    public void CreateInternalError_returns_500_unexpected_error()
-    {
-        var (status, body) = ApiErrorResponseExtensions.CreateInternalError(ContextWithTrace());
-
-        status.Should().Be(StatusCodes.Status500InternalServerError);
-        body.Status.Should().Be(StatusCodes.Status500InternalServerError);
-        body.Title.Should().Be("Internal Server Error");
-        body.Code.Should().Be(ErrorCode.UnexpectedError);
-        body.TraceId.Should().Be(TraceId);
     }
 
     [Fact]

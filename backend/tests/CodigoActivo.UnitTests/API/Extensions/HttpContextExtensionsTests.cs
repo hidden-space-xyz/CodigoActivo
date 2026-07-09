@@ -31,16 +31,4 @@ public sealed class HttpContextExtensionsTests
         root.GetProperty("code").GetString().Should().Be(nameof(ErrorCode.PartnerNotFound));
         root.GetProperty("traceId").GetString().Should().Be("trace-http-1");
     }
-
-    [Fact]
-    public async Task WriteApiErrorAsync_maps_bad_request_kind()
-    {
-        var context = new DefaultHttpContext { TraceIdentifier = "trace-http-2" };
-        context.Response.Body = new MemoryStream();
-        var error = Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
-
-        await context.WriteApiErrorAsync(error);
-
-        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-    }
 }

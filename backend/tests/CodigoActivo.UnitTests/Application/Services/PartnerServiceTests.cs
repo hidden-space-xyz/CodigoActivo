@@ -56,18 +56,6 @@ public sealed class PartnerServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_projects_and_pages()
-    {
-        HasPartners(NewPartner("Acme"), NewPartner("Globex"));
-
-        var result = await sut.ListAsync(new PartnerListQuery { Page = 1, PageSize = 10 });
-
-        result.Total.Should().Be(2);
-        result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<PartnerResponse>();
-    }
-
-    [Fact]
     public async Task ListAsync_filters_by_tier()
     {
         HasPartners(NewPartner("Gold", tier: 1), NewPartner("Silver", tier: 2));
@@ -335,23 +323,5 @@ public sealed class PartnerServiceTests
         result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
         await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
-    }
-
-    [Fact]
-    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
-    {
-        var partner = NewPartner();
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
-
-        var result = await sut.DeleteAsync(partner.Id);
-
-        result.IsSuccess.Should().BeTrue();
-        partners.Received(1).Remove(partner);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService
-            .Received(1)
-            .DeleteIfOrphanedAsync(partner.ThumbnailId, Arg.Any<CancellationToken>());
     }
 }

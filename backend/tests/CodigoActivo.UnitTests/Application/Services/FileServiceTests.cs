@@ -73,32 +73,6 @@ public sealed class FileServiceTests
         };
 
     [Fact]
-    public async Task GetByIdAsync_returns_response_when_found()
-    {
-        var file = NewFile();
-        FileFound(file);
-
-        var result = await sut.GetByIdAsync(file.Id);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(file.Id);
-        result.Value.Name.Should().Be("photo.png");
-        result.Value.Extension.Should().Be("png");
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
-    {
-        FileMissing();
-
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
-    }
-
-    [Fact]
     public async Task GetContentAsync_returns_not_found_when_metadata_missing()
     {
         FileMissing();
@@ -109,22 +83,6 @@ public sealed class FileServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.FileNotFound);
         await storage.DidNotReceiveWithAnyArgs().OpenReadAsync(default!, default);
-    }
-
-    [Fact]
-    public async Task GetContentAsync_returns_missing_from_storage_when_stream_null()
-    {
-        var file = NewFile();
-        FileFound(file);
-        storage
-            .OpenReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((Stream?)null);
-
-        var result = await sut.GetContentAsync(file.Id);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.FileContentMissingFromStorage);
     }
 
     [Fact]

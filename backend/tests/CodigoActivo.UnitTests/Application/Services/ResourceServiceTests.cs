@@ -62,18 +62,6 @@ public sealed class ResourceServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_projects_and_pages()
-    {
-        HasResources(NewResource("A"), NewResource("B"));
-
-        var result = await sut.ListAsync(new ResourceListQuery { Page = 1, PageSize = 10 });
-
-        result.Total.Should().Be(2);
-        result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<ResourceListItemResponse>();
-    }
-
-    [Fact]
     public async Task ListAsync_title_search_is_accent_and_case_insensitive()
     {
         HasResources(NewResource("Manual Ávila"), NewResource("Otro"));

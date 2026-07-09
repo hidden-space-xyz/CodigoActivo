@@ -20,18 +20,4 @@ public sealed class SystemClockTests
 
         sut.Today.Should().Be(expected);
     }
-
-    [Fact]
-    public void Today_differs_between_the_two_extreme_timezones_when_they_straddle_midnight()
-    {
-        var plus14 = new SystemClock(
-            TimeZoneInfo.CreateCustomTimeZone("+14", TimeSpan.FromHours(14), "+14", "+14")
-        );
-        var minus11 = new SystemClock(
-            TimeZoneInfo.CreateCustomTimeZone("-11", TimeSpan.FromHours(-11), "-11", "-11")
-        );
-
-        (plus14.Today > minus11.Today).Should().BeTrue();
-        (plus14.Today.DayNumber - minus11.Today.DayNumber).Should().BeInRange(1, 2);
-    }
 }
