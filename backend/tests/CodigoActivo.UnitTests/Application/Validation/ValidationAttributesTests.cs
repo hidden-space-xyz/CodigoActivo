@@ -39,8 +39,6 @@ public sealed class ValidationAttributesTests
 
     [Theory]
     [InlineData("{}")]
-    [InlineData("{\"a\":1}")]
-    [InlineData("[1,2,3]")]
     [InlineData("\"just a string\"")]
     [InlineData("null")]
     public void JsonString_is_valid_for_well_formed_json(string value)

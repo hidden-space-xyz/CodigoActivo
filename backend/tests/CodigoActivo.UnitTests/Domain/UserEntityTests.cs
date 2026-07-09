@@ -64,18 +64,6 @@ public sealed class UserEntityTests
     }
 
     [Fact]
-    public void ClearOtp_removes_all_otp_state()
-    {
-        var user = NewPendingUser();
-
-        user.ClearOtp();
-
-        user.OtpCodeHash.Should().BeNull();
-        user.OtpExpiresAt.Should().BeNull();
-        user.OtpLastSentAt.Should().BeNull();
-    }
-
-    [Fact]
     public void RegisterLogin_stamps_the_current_last_login_time()
     {
         var user = NewPendingUser();

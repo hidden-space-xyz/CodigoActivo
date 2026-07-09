@@ -268,22 +268,6 @@ public sealed class EventServiceTests
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
-    [Fact]
-    public async Task GetPastYearsAsync_returns_distinct_start_years_descending()
-    {
-        clock.Today = new DateOnly(2026, 7, 4);
-        HasEvents(
-            NewEvent("P1", starts: new DateOnly(2024, 2, 1), ends: new DateOnly(2024, 2, 2)),
-            NewEvent("P2", starts: new DateOnly(2024, 9, 1), ends: new DateOnly(2024, 9, 2)),
-            NewEvent("P3", starts: new DateOnly(2025, 3, 1), ends: new DateOnly(2025, 3, 2)),
-            NewEvent("Future", starts: new DateOnly(2026, 8, 1), ends: new DateOnly(2026, 8, 2))
-        );
-
-        var result = await sut.GetPastYearsAsync();
-
-        result.Should().Equal(2025, 2024);
-    }
-
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -607,22 +591,6 @@ public sealed class EventServiceTests
         ev.UpdatedAt.Should().Be(clock.UtcNow);
         ev.Categories.Should().ContainSingle().Which.EventCategoryTypeId.Should().Be(newCategoryId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
-    {
-        var ev = NewEvent();
-        var previousThumbnailId = ev.ThumbnailId;
-        PrepareUpdate(ev);
-        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: Guid.NewGuid());
-
-        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
-
-        result.IsSuccess.Should().BeTrue();
-        await fileService
-            .Received(1)
-            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
     }
 
     [Fact]

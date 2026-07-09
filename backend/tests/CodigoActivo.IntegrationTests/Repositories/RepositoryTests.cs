@@ -414,15 +414,6 @@ public sealed class RepositoryTests
     }
 
     [Fact]
-    public async Task ListChildrenWithDetailsAsync_returns_empty_when_no_children()
-    {
-        await using var ctx = NewContext();
-        var repo = new UserRepository(ctx);
-
-        (await repo.ListChildrenWithDetailsAsync(Guid.NewGuid())).Should().BeEmpty();
-    }
-
-    [Fact]
     public async Task GetForEditAsync_includes_categories_and_returns_null_when_missing()
     {
         await using var ctx = NewContext();

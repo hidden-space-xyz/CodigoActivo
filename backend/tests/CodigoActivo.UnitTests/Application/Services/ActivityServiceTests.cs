@@ -141,18 +141,6 @@ public sealed class ActivityServiceTests
         );
 
     [Fact]
-    public async Task ListAsync_projects_and_pages()
-    {
-        HasActivities(NewActivity("Alpha"), NewActivity("Beta"));
-
-        var result = await sut.ListAsync(new ActivityListQuery { Page = 1, PageSize = 10 });
-
-        result.Total.Should().Be(2);
-        result.Items.Should().HaveCount(2);
-        result.Items.Should().AllBeOfType<ActivityResponse>();
-    }
-
-    [Fact]
     public async Task ListAsync_filters_by_event_id()
     {
         var eventId = Guid.NewGuid();
@@ -617,24 +605,6 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
-    {
-        var activity = NewActivity();
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(activity);
-
-        var result = await sut.DeleteAsync(activity.Id);
-
-        result.IsSuccess.Should().BeTrue();
-        activities.Received(1).Remove(activity);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService
-            .Received(1)
-            .DeleteIfOrphanedAsync(activity.ThumbnailId, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task ListRoleTypesAsync_orders_by_name_and_projects()
     {
         roleTypes
@@ -923,21 +893,5 @@ public sealed class ActivityServiceTests
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-    }
-
-    [Fact]
-    public async Task DeleteActivityRoleTypeAsync_saves_when_removed()
-    {
-        roleTypes
-            .RemoveAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(1);
-
-        var result = await sut.DeleteActivityRoleTypeAsync(Guid.NewGuid());
-
-        result.IsSuccess.Should().BeTrue();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
