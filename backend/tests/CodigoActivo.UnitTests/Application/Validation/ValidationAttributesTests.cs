@@ -61,8 +61,8 @@ public sealed class ValidationAttributesTests
     }
 
     [Theory]
-    [InlineData(2026, 7, 5)] // tomorrow
-    [InlineData(2027, 1, 1)] // next year
+    [InlineData(2026, 7, 5)]
+    [InlineData(2027, 1, 1)]
     public void GetValidationResult_NotDefaultOrFutureDateFutureDate_Fails(
         int year,
         int month,
@@ -75,9 +75,9 @@ public sealed class ValidationAttributesTests
     }
 
     [Theory]
-    [InlineData(2026, 7, 4)] // today, in the clock's timezone
-    [InlineData(2026, 7, 3)] // yesterday
-    [InlineData(2000, 1, 1)] // long past
+    [InlineData(2026, 7, 4)]
+    [InlineData(2026, 7, 3)]
+    [InlineData(2000, 1, 1)]
     public void GetValidationResult_NotDefaultOrFutureDateTodayOrPast_Succeeds(
         int year,
         int month,

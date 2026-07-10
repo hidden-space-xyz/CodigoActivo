@@ -6,11 +6,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;
 
-/// <summary>
-/// Asserts the shape of the generated OpenAPI document. Deliberately does NOT derive from
-/// <see cref="IntegrationTestBase"/>: nothing here reads the database, so there is no reason to
-/// truncate and reseed every table before each test.
-/// </summary>
 public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     : IClassFixture<CodigoActivoWebAppFactory>
 {
