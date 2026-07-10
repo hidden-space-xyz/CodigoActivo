@@ -81,6 +81,7 @@ export const ErrorCode = {
   OtpInvalidOrExpired: 'OtpInvalidOrExpired',
   OtpResendNotAllowed: 'OtpResendNotAllowed',
   OtpResendCooldownActive: 'OtpResendCooldownActive',
+  PasswordResetInvalidOrExpired: 'PasswordResetInvalidOrExpired',
   AuthenticationRequired: 'AuthenticationRequired',
   AccessDenied: 'AccessDenied',
   InvalidCsrfToken: 'InvalidCsrfToken',

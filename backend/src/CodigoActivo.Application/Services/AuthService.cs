@@ -21,11 +21,13 @@ public class AuthService(
     IPasswordHasher hasher,
     IEmailSender emailSender,
     AccountVerificationOptions verification,
+    PasswordResetOptions passwordReset,
     ApplicationOptions application,
     ILogger<AuthService> logger
 ) : IAuthService
 {
     private const string VerificationPath = "/verify-account";
+    private const string PasswordResetPath = "/reset-password";
 
     public async Task<Result<UserResponse>> LoginAsync(
         LoginRequest request,
@@ -244,6 +246,85 @@ public class AuthService(
         return Result.Success();
     }
 
+    public async Task<Result> ForgotPasswordAsync(
+        ForgotPasswordRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var email = request.Email.NormalizeEmailOrNull();
+        if (email is null)
+            return Result.Success();
+
+        var user = await users.FindAsync(u => u.Email == email, ct);
+        if (
+            user is null
+            || string.IsNullOrEmpty(user.PasswordHash)
+            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked
+            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+        )
+        {
+            return Result.Success();
+        }
+
+        var now = clock.UtcNow;
+        if (
+            user.PasswordResetLastSentAt is not null
+            && now < user.PasswordResetLastSentAt + passwordReset.ResendCooldown
+        )
+        {
+            return Result.Success();
+        }
+
+        var code = Guid.NewGuid().ToString();
+        try
+        {
+            await SendPasswordResetEmailAsync(user, code, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(
+                ex,
+                "Failed to send the password reset email for user {UserId}",
+                user.Id
+            );
+            return Result.Success();
+        }
+
+        user.IssuePasswordResetCode(hasher.Hash(code), now, passwordReset.CodeLifetime);
+        await uow.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ResetPasswordAsync(
+        Guid id,
+        ResetPasswordRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var user = await users.FindAsync(u => u.Id == id, ct);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
+
+        if (
+            user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked
+            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+            || string.IsNullOrWhiteSpace(request.Otp)
+            || user.PasswordResetCodeHash is null
+            || user.PasswordResetExpiresAt is null
+            || user.PasswordResetExpiresAt < clock.UtcNow
+            || !hasher.Verify(NormalizeOtp(request.Otp), user.PasswordResetCodeHash)
+        )
+        {
+            return Error.BadRequest(ErrorCode.PasswordResetInvalidOrExpired);
+        }
+
+        user.ResetPassword(hasher.Hash(request.NewPassword), clock.UtcNow);
+        await uow.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
     private async Task TrySendVerificationEmailAsync(
         User user,
         string otpCode,
@@ -275,9 +356,25 @@ public class AuthService(
         return emailSender.SendAsync(message, ct);
     }
 
+    private Task SendPasswordResetEmailAsync(User user, string code, CancellationToken ct)
+    {
+        var message = PasswordResetEmail.Create(
+            user.Email!,
+            user.FirstName,
+            BuildPasswordResetUrl(user.Id, code),
+            passwordReset.CodeLifetime
+        );
+        return emailSender.SendAsync(message, ct);
+    }
+
     private string BuildVerificationUrl(Guid userId, string otpCode)
     {
         return $"{application.BaseUrl.TrimEnd('/')}{VerificationPath}?userId={userId}&code={Uri.EscapeDataString(otpCode)}";
+    }
+
+    private string BuildPasswordResetUrl(Guid userId, string code)
+    {
+        return $"{application.BaseUrl.TrimEnd('/')}{PasswordResetPath}?userId={userId}&code={Uri.EscapeDataString(code)}";
     }
 
     private static string NormalizeOtp(string otp)

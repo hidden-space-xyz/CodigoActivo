@@ -17,6 +17,14 @@ public interface IAuthService
     Task<Result<UserResponse>> VerifyAsync(Guid id, string otp, CancellationToken ct = default);
 
     Task<Result> ResendVerificationAsync(Guid id, CancellationToken ct = default);
+
+    Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default);
+
+    Task<Result> ResetPasswordAsync(
+        Guid id,
+        ResetPasswordRequest request,
+        CancellationToken ct = default
+    );
 }
 
 public interface IUserService

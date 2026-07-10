@@ -85,6 +85,8 @@ export const errorMessages: Record<ErrorCode, string> = {
   OtpInvalidOrExpired: 'El código de verificación no es válido o ha expirado.',
   OtpResendNotAllowed: 'No se puede reenviar el código de verificación para esta cuenta.',
   OtpResendCooldownActive: 'Espera un momento antes de solicitar un nuevo código.',
+  PasswordResetInvalidOrExpired:
+    'El enlace para restablecer la contraseña no es válido o ha caducado. Solicita uno nuevo.',
 
   AuthenticationRequired: 'Debes iniciar sesión para continuar.',
   AccessDenied: 'No tienes permiso para realizar esta acción.',

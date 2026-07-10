@@ -56,6 +56,27 @@ public class AuthController(IAuthService auth) : ApiControllerBase
         return ToNoContent(await auth.ResendVerificationAsync(userId, ct));
     }
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await auth.ForgotPasswordAsync(request, ct));
+    }
+
+    [HttpPatch("{userId:guid}/reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ResetPassword(
+        Guid userId,
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await auth.ResetPasswordAsync(userId, request, ct));
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult<UserResponse>> Login(

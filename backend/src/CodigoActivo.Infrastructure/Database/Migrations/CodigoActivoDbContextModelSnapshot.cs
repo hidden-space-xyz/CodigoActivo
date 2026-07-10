@@ -679,6 +679,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("PasswordResetCodeHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_reset_code_hash");
+
+                    b.Property<DateTimeOffset?>("PasswordResetExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_expires_at");
+
+                    b.Property<DateTimeOffset?>("PasswordResetLastSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_last_sent_at");
+
                     b.Property<string>("Phone")
                         .HasColumnType("text")
                         .HasColumnName("phone");

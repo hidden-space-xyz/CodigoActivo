@@ -32,3 +32,10 @@ public record RegisterResponse(
 );
 
 public record VerifyRequest([Required] [MaxLength(64)] [NotBlank] string Otp);
+
+public record ForgotPasswordRequest([Required] [EmailAddress] [MaxLength(256)] string Email);
+
+public record ResetPasswordRequest(
+    [Required] [MaxLength(64)] [NotBlank] string Otp,
+    [Required] [MinLength(8)] [MaxLength(128)] string NewPassword
+);

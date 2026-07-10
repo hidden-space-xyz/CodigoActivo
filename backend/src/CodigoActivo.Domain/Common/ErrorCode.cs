@@ -77,6 +77,7 @@ public enum ErrorCode
     OtpInvalidOrExpired,
     OtpResendNotAllowed,
     OtpResendCooldownActive,
+    PasswordResetInvalidOrExpired,
     AuthenticationRequired,
     AccessDenied,
     InvalidCsrfToken,
