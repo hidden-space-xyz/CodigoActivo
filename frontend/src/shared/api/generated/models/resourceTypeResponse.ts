@@ -5,15 +5,13 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface UpdateResourceRequest {
+export interface ResourceTypeResponse {
+  id?: string;
   /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
+  name?: string | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
-  url?: string | null;
-  resourceTypeId?: string;
-  thumbnailId?: string;
+  color?: string | null;
+  isExternal?: boolean;
 }

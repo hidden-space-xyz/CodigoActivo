@@ -12,6 +12,7 @@ namespace CodigoActivo.Application.Services;
 
 public class ResourceService(
     IResourceRepository resources,
+    IResourceTypeRepository resourceTypes,
     IFileRepository files,
     IFileService fileService,
     IQueryExecutor executor,
@@ -58,6 +59,16 @@ public class ResourceService(
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
+    public async Task<IReadOnlyList<ResourceTypeResponse>> ListTypesAsync(
+        CancellationToken ct = default
+    )
+    {
+        return await executor.ToListAsync(
+            resourceTypes.Query().OrderBy(type => type.Name).Select(Projections.ResourceType),
+            ct
+        );
+    }
+
     public async Task<Result<ResourceResponse>> GetByIdAsync(
         Guid id,
         CancellationToken ct = default
@@ -78,6 +89,14 @@ public class ResourceService(
         CancellationToken ct = default
     )
     {
+        var type = await resourceTypes.FindAsync(t => t.Id == request.ResourceTypeId, ct);
+        if (type is null)
+            return Error.BadRequest(ErrorCode.ResourceTypeNotFound);
+
+        var content = ResolveContent(type, request.Description, request.Url);
+        if (content.IsFailure)
+            return content.Error!;
+
         var thumbnail = await files.EnsureThumbnailExistsAsync(
             request.ThumbnailId,
             ErrorCode.ResourceThumbnailNotFound,
@@ -90,7 +109,10 @@ public class ResourceService(
         {
             Title = request.Title.Trim(),
             Subtitle = request.Subtitle.Trim(),
-            Description = request.Description,
+            Description = content.Value.Description,
+            Url = content.Value.Url,
+            ResourceTypeId = type.Id,
+            ResourceType = type,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = clock.UtcNow,
             CreatedBy = userId,
@@ -111,6 +133,14 @@ public class ResourceService(
         if (resource is null)
             return Error.NotFound(ErrorCode.ResourceNotFound);
 
+        var type = await resourceTypes.FindAsync(t => t.Id == request.ResourceTypeId, ct);
+        if (type is null)
+            return Error.BadRequest(ErrorCode.ResourceTypeNotFound);
+
+        var content = ResolveContent(type, request.Description, request.Url);
+        if (content.IsFailure)
+            return content.Error!;
+
         var thumbnail = await files.EnsureThumbnailExistsAsync(
             request.ThumbnailId,
             ErrorCode.ResourceThumbnailNotFound,
@@ -124,7 +154,10 @@ public class ResourceService(
 
         resource.Title = request.Title.Trim();
         resource.Subtitle = request.Subtitle.Trim();
-        resource.Description = request.Description;
+        resource.Description = content.Value.Description;
+        resource.Url = content.Value.Url;
+        resource.ResourceTypeId = type.Id;
+        resource.ResourceType = type;
         resource.ThumbnailId = request.ThumbnailId;
         resource.UpdatedAt = clock.UtcNow;
         resource.UpdatedBy = userId;
@@ -159,5 +192,27 @@ public class ResourceService(
             await fileService.DeleteIfOrphanedAsync(fileId, ct);
 
         return Result.Success();
+    }
+
+    private static Result<(string Description, string? Url)> ResolveContent(
+        ResourceType type,
+        string? description,
+        string? url
+    )
+    {
+        if (type.IsExternal)
+        {
+            if (!RichTextDocument.IsEmpty(description))
+                return Error.BadRequest(ErrorCode.ResourceDescriptionNotAllowed);
+            if (string.IsNullOrWhiteSpace(url))
+                return Error.BadRequest(ErrorCode.ResourceUrlRequired);
+            return ("{}", url.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(url))
+            return Error.BadRequest(ErrorCode.ResourceUrlNotAllowed);
+        if (RichTextDocument.IsEmpty(description))
+            return Error.BadRequest(ErrorCode.ResourceDescriptionRequired);
+        return (description!, null);
     }
 }

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
@@ -13,7 +14,9 @@ namespace CodigoActivo.IntegrationTests.Controllers;
 public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private const string Description = "{}";
+    private const string Description =
+        "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Contenido\"}]}]}";
+    private const string ExternalUrl = "https://ejemplo.es/curso";
 
     private async Task<Guid> SeedThumbnailAsync()
     {
@@ -35,7 +38,11 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         return id;
     }
 
-    private async Task<Guid> SeedResourceAsync(string title = "Existing", string subtitle = "Sub")
+    private async Task<Guid> SeedResourceAsync(
+        string title = "Existing",
+        string subtitle = "Sub",
+        string? url = null
+    )
     {
         var thumbnailId = await SeedThumbnailAsync();
         var id = Guid.NewGuid();
@@ -47,7 +54,11 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     Id = id,
                     Title = title,
                     Subtitle = subtitle,
-                    Description = Description,
+                    Description = url is null ? Description : "{}",
+                    Url = url,
+                    ResourceTypeId = url is null
+                        ? SeedIds.ResourceTypes.Internal
+                        : SeedIds.ResourceTypes.External,
                     ThumbnailId = thumbnailId,
                     CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     CreatedBy = TestSeedData.Users.AdminId,
@@ -59,7 +70,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_Anonymous_ReturnsPagedEnvelope()
+    public async Task List_Anonymous_ReturnsPagedEnvelopeWithType()
     {
         await SeedResourceAsync("Alpha");
         var client = CreateClient();
@@ -75,7 +86,44 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         );
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
-        page.Items.Should().ContainSingle(r => r.Title == "Alpha");
+        var item = page.Items.Should().ContainSingle(r => r.Title == "Alpha").Subject;
+        item.Type.Id.Should().Be(SeedIds.ResourceTypes.Internal);
+        item.Type.Name.Should().Be("Interno");
+        item.Type.IsExternal.Should().BeFalse();
+        item.Url.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Types_Admin_ReturnsSeededTypesOrderedByName()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/resources/types",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var types = await response.ReadJsonAsync<List<ResourceTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        types!.Select(t => t.Name).Should().ContainInOrder("Externo", "Interno");
+        types.Single(t => t.Name == "Externo").IsExternal.Should().BeTrue();
+        types.Single(t => t.Name == "Interno").IsExternal.Should().BeFalse();
+        types.Should().OnlyContain(t => !string.IsNullOrWhiteSpace(t.Color));
+    }
+
+    [Fact]
+    public async Task Types_Member_ReturnsForbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            "/api/resources/types",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -96,11 +144,38 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task Get_ExternalResource_ReturnsTypeAndUrl()
+    {
+        var id = await SeedResourceAsync("Enlace", url: ExternalUrl);
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            $"/api/resources/{id}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var resource = await response.ReadJsonAsync<ResourceResponse>(
+            TestContext.Current.CancellationToken
+        );
+        resource!.Url.Should().Be(ExternalUrl);
+        resource.Type.Id.Should().Be(SeedIds.ResourceTypes.External);
+        resource.Type.IsExternal.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Create_Admin_PersistsAndReturns201WithLocation()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = new CreateResourceRequest("Gamma", "Tagline", Description, thumbnailId);
+        var request = new CreateResourceRequest(
+            "Gamma",
+            "Tagline",
+            Description,
+            null,
+            SeedIds.ResourceTypes.Internal,
+            thumbnailId
+        );
 
         var response = await client.PostJsonAsync(
             "/api/resources",
@@ -114,12 +189,159 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         created!.Title.Should().Be("Gamma");
+        created.Type.Id.Should().Be(SeedIds.ResourceTypes.Internal);
 
         var stored = await Factory.QueryAsync(db =>
             db.Resources.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
         );
         stored!.Subtitle.Should().Be("Tagline");
+        stored.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.Internal);
+        stored.Url.Should().BeNull();
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+    }
+
+    [Fact]
+    public async Task Create_ExternalResource_PersistsUrlWithoutDescription()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreateResourceRequest(
+            "Curso externo",
+            "Sub",
+            null,
+            ExternalUrl,
+            SeedIds.ResourceTypes.External,
+            thumbnailId
+        );
+
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await response.ReadJsonAsync<ResourceResponse>(
+            TestContext.Current.CancellationToken
+        );
+        created!.Url.Should().Be(ExternalUrl);
+        created.Type.IsExternal.Should().BeTrue();
+
+        var stored = await Factory.QueryAsync(db =>
+            db.Resources.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
+        stored!.Url.Should().Be(ExternalUrl);
+        stored.Description.Should().Be("{}");
+        stored.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.External);
+    }
+
+    [Theory]
+    [InlineData("internal-with-url")]
+    [InlineData("external-with-description")]
+    [InlineData("external-without-url")]
+    [InlineData("internal-without-description")]
+    [InlineData("unknown-type")]
+    public async Task Create_TypeContentMismatch_ReturnsExpectedErrorCode(string scenario)
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var (request, expectedCode) = scenario switch
+        {
+            "internal-with-url" => (
+                new CreateResourceRequest(
+                    "Title",
+                    "Sub",
+                    Description,
+                    ExternalUrl,
+                    SeedIds.ResourceTypes.Internal,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceUrlNotAllowed
+            ),
+            "external-with-description" => (
+                new CreateResourceRequest(
+                    "Title",
+                    "Sub",
+                    Description,
+                    ExternalUrl,
+                    SeedIds.ResourceTypes.External,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceDescriptionNotAllowed
+            ),
+            "external-without-url" => (
+                new CreateResourceRequest(
+                    "Title",
+                    "Sub",
+                    null,
+                    null,
+                    SeedIds.ResourceTypes.External,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceUrlRequired
+            ),
+            "internal-without-description" => (
+                new CreateResourceRequest(
+                    "Title",
+                    "Sub",
+                    "{}",
+                    null,
+                    SeedIds.ResourceTypes.Internal,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceDescriptionRequired
+            ),
+            _ => (
+                new CreateResourceRequest(
+                    "Title",
+                    "Sub",
+                    Description,
+                    null,
+                    Guid.NewGuid(),
+                    thumbnailId
+                ),
+                ErrorCode.ResourceTypeNotFound
+            ),
+        };
+
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(expectedCode);
+    }
+
+    [Fact]
+    public async Task Create_MalformedUrl_ReturnsValidationError()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreateResourceRequest(
+            "Title",
+            "Sub",
+            null,
+            "no-es-una-url",
+            SeedIds.ResourceTypes.External,
+            thumbnailId
+        );
+
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -127,7 +349,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsMemberAsync();
-        var request = new CreateResourceRequest("Nope", "Sub", Description, thumbnailId);
+        var request = new CreateResourceRequest(
+            "Nope",
+            "Sub",
+            Description,
+            null,
+            SeedIds.ResourceTypes.Internal,
+            thumbnailId
+        );
 
         var response = await client.PostJsonAsync(
             "/api/resources",
@@ -142,7 +371,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     public async Task Create_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
-        var request = new CreateResourceRequest("Nope", "Sub", Description, Guid.NewGuid());
+        var request = new CreateResourceRequest(
+            "Nope",
+            "Sub",
+            Description,
+            null,
+            SeedIds.ResourceTypes.Internal,
+            Guid.NewGuid()
+        );
 
         var response = await client.PostJsonAsync(
             "/api/resources",
@@ -160,7 +396,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = new CreateResourceRequest(title, subtitle, Description, thumbnailId);
+        var request = new CreateResourceRequest(
+            title,
+            subtitle,
+            Description,
+            null,
+            SeedIds.ResourceTypes.Internal,
+            thumbnailId
+        );
 
         var response = await client.PostJsonAsync(
             "/api/resources",
@@ -183,7 +426,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/resources")
         {
             Content = JsonContent.Create(
-                new CreateResourceRequest("Gamma", "Sub", Description, thumbnailId),
+                new CreateResourceRequest(
+                    "Gamma",
+                    "Sub",
+                    Description,
+                    null,
+                    SeedIds.ResourceTypes.Internal,
+                    thumbnailId
+                ),
                 options: TestJson.Options
             ),
         };
@@ -208,7 +458,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         )!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
-        var request = new UpdateResourceRequest("Reemplazo", "Sub", Description, newThumbnailId);
+        var request = new UpdateResourceRequest(
+            "Reemplazo",
+            "Sub",
+            Description,
+            null,
+            SeedIds.ResourceTypes.Internal,
+            newThumbnailId
+        );
 
         var response = await client.PutJsonAsync(
             $"/api/resources/{id}",
@@ -225,6 +482,133 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             db.Files.FindAsync([newThumbnailId], TestContext.Current.CancellationToken).AsTask()
         );
         newFile.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Update_SwitchToExternal_ClearsDescriptionAndStoresUrl()
+    {
+        var id = await SeedResourceAsync("Cambiante");
+        var thumbnailId = (
+            await Factory.QueryAsync(db =>
+                db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
+        )!.ThumbnailId;
+        var client = await LoginAsAdminAsync();
+        var request = new UpdateResourceRequest(
+            "Cambiante",
+            "Sub",
+            null,
+            ExternalUrl,
+            SeedIds.ResourceTypes.External,
+            thumbnailId
+        );
+
+        var response = await client.PutJsonAsync(
+            $"/api/resources/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await Factory.QueryAsync(db =>
+            db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
+        stored!.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.External);
+        stored.Url.Should().Be(ExternalUrl);
+        stored.Description.Should().Be("{}");
+    }
+
+    [Theory]
+    [InlineData("internal-with-url")]
+    [InlineData("external-with-description")]
+    [InlineData("external-without-url")]
+    [InlineData("internal-without-description")]
+    [InlineData("unknown-type")]
+    public async Task Update_TypeContentMismatch_ReturnsExpectedErrorCodeAndDoesNotPersist(
+        string scenario
+    )
+    {
+        var id = await SeedResourceAsync("Invariante");
+        var thumbnailId = (
+            await Factory.QueryAsync(db =>
+                db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
+        )!.ThumbnailId;
+        var client = await LoginAsAdminAsync();
+        var (request, expectedCode) = scenario switch
+        {
+            "internal-with-url" => (
+                new UpdateResourceRequest(
+                    "Title",
+                    "Sub",
+                    Description,
+                    ExternalUrl,
+                    SeedIds.ResourceTypes.Internal,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceUrlNotAllowed
+            ),
+            "external-with-description" => (
+                new UpdateResourceRequest(
+                    "Title",
+                    "Sub",
+                    Description,
+                    ExternalUrl,
+                    SeedIds.ResourceTypes.External,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceDescriptionNotAllowed
+            ),
+            "external-without-url" => (
+                new UpdateResourceRequest(
+                    "Title",
+                    "Sub",
+                    null,
+                    null,
+                    SeedIds.ResourceTypes.External,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceUrlRequired
+            ),
+            "internal-without-description" => (
+                new UpdateResourceRequest(
+                    "Title",
+                    "Sub",
+                    "{}",
+                    null,
+                    SeedIds.ResourceTypes.Internal,
+                    thumbnailId
+                ),
+                ErrorCode.ResourceDescriptionRequired
+            ),
+            _ => (
+                new UpdateResourceRequest(
+                    "Title",
+                    "Sub",
+                    Description,
+                    null,
+                    Guid.NewGuid(),
+                    thumbnailId
+                ),
+                ErrorCode.ResourceTypeNotFound
+            ),
+        };
+
+        var response = await client.PutJsonAsync(
+            $"/api/resources/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(expectedCode);
+        var stored = await Factory.QueryAsync(db =>
+            db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
+        stored!.Title.Should().Be("Invariante");
     }
 
     [Fact]

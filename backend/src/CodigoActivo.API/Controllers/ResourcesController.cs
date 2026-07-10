@@ -23,6 +23,13 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
         return Ok(await resources.ListAsync(query, ct));
     }
 
+    [HttpGet("types")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<IReadOnlyList<ResourceTypeResponse>>> Types(CancellationToken ct)
+    {
+        return Ok(await resources.ListTypesAsync(ct));
+    }
+
     [HttpGet("{resourceId:guid}")]
     [AllowAnonymous]
     public async Task<ActionResult<ResourceResponse>> Get(Guid resourceId, CancellationToken ct)

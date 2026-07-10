@@ -12,5 +12,8 @@ export interface CreateResourceRequest {
   subtitle?: string | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  url?: string | null;
+  resourceTypeId?: string;
   thumbnailId?: string;
 }

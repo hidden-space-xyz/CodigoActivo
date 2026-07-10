@@ -6,6 +6,7 @@ import {
   getApiActivitiesRoleType,
 } from '@/shared/api/generated/endpoints/activities/activities'
 import { getApiEventsCategoryType } from '@/shared/api/generated/endpoints/events/events'
+import { getApiResourcesTypes } from '@/shared/api/generated/endpoints/resources/resources'
 import { getApiUsersTypes } from '@/shared/api/generated/endpoints/users/users'
 
 import { catalogQueryKeys } from './query-keys'
@@ -42,5 +43,12 @@ export function useActivityModalityTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.activityModalityTypes,
     queryFn: () => getApiActivitiesModalityTypes().then((r) => r.data ?? []),
+  })
+}
+
+export function useResourceTypesList() {
+  return useQuery({
+    queryKey: catalogQueryKeys.resourceTypes,
+    queryFn: () => getApiResourcesTypes().then((r) => r.data ?? []),
   })
 }

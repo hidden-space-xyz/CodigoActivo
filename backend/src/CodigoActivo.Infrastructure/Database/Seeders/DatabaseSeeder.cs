@@ -15,6 +15,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
         await SeedActivityRoleTypesAsync(ct);
         await SeedAssignmentStatusTypesAsync(ct);
         await SeedActivityModalityTypesAsync(ct);
+        await SeedResourceTypesAsync(ct);
         await context.SaveChangesAsync(ct);
     }
 
@@ -182,6 +183,34 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             new ActivityModalityType { Id = SeedIds.ActivityModalityTypes.Online, Name = "Online" },
         };
         await AddMissingAsync(context.ActivityModalityTypes, seed, ct);
+    }
+
+    private async Task SeedResourceTypesAsync(CancellationToken ct)
+    {
+        var seed = new[]
+        {
+            new ResourceType
+            {
+                Id = SeedIds.ResourceTypes.Internal,
+                Name = "Interno",
+                Color = "#3B82F6",
+                IsExternal = false,
+                Description =
+                    "Material propio alojado en la plataforma. Incluye una descripción completa "
+                    + "que se consulta desde la propia web.",
+            },
+            new ResourceType
+            {
+                Id = SeedIds.ResourceTypes.External,
+                Name = "Externo",
+                Color = "#F97316",
+                IsExternal = true,
+                Description =
+                    "Material publicado en otro sitio web. Al abrirlo se redirige directamente "
+                    + "al enlace original.",
+            },
+        };
+        await AddMissingAsync(context.ResourceTypes, seed, ct);
     }
 
     private static async Task AddMissingAsync<TEntity>(

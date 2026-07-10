@@ -99,3 +99,13 @@ export function isRichTextEmpty(value?: string | null): boolean {
     (node) => node.type === 'paragraph' && (!node.content || node.content.length === 0),
   )
 }
+
+export function isRichTextBlank(value?: string | null): boolean {
+  return !hasRichTextContent(parseRichText(value))
+}
+
+function hasRichTextContent(node: JSONContent): boolean {
+  if (node.type === 'image') return true
+  if (typeof node.text === 'string' && node.text.trim().length > 0) return true
+  return (node.content ?? []).some(hasRichTextContent)
+}

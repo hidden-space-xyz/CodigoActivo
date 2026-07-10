@@ -77,6 +77,7 @@ export * from './registrationTypeResponse';
 export * from './resourceListItemResponse';
 export * from './resourceListItemResponsePagedResult';
 export * from './resourceResponse';
+export * from './resourceTypeResponse';
 export * from './setAdminRequest';
 export * from './timeOverlapResponse';
 export * from './updateActivityRequest';

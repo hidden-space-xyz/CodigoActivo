@@ -33,10 +33,10 @@ public sealed class DemoDataSeederTests
         graph.Activities.Should().HaveCount(100);
         graph.Assignments.Should().HaveCount(500);
         graph.Announcements.Should().HaveCount(10);
-        graph.Resources.Should().HaveCount(10);
+        graph.Resources.Should().HaveCount(20);
         graph.Partners.Should().HaveCount(10);
         graph.CategoryTypes.Should().HaveCount(8);
-        graph.Files.Should().HaveCount(170);
+        graph.Files.Should().HaveCount(180);
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class DemoDataSeederTests
         var richText = graph
             .Events.Select(e => e.Description)
             .Concat(graph.Announcements.Select(a => a.Description))
-            .Concat(graph.Resources.Select(r => r.Description));
+            .Concat(graph.Resources.Where(r => r.Url is null).Select(r => r.Description));
 
         richText
             .Should()
@@ -227,6 +227,34 @@ public sealed class DemoDataSeederTests
             {
                 using var doc = JsonDocument.Parse(value);
                 doc.RootElement.GetProperty("type").GetString().Should().Be("doc");
+            });
+    }
+
+    [Fact]
+    public void BuildGraph_Default_ResourcesMatchTheirTypeContract()
+    {
+        var external = graph.Resources.Where(r => r.Url is not null).ToList();
+        var internals = graph.Resources.Where(r => r.Url is null).ToList();
+
+        external.Should().HaveSameCount(internals);
+        external.Should().NotBeEmpty();
+        external
+            .Should()
+            .AllSatisfy(r =>
+            {
+                r.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.External);
+                r.Description.Should().Be("{}");
+                Uri.TryCreate(r.Url, UriKind.Absolute, out var uri).Should().BeTrue();
+                uri!.Scheme.Should().Be(Uri.UriSchemeHttps);
+            });
+
+        internals.Should().NotBeEmpty();
+        internals
+            .Should()
+            .AllSatisfy(r =>
+            {
+                r.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.Internal);
+                RichTextDocument.IsEmpty(r.Description).Should().BeFalse();
             });
     }
 }

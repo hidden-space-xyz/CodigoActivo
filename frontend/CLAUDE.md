@@ -31,7 +31,7 @@ Layers under `src/` (imports flow downward only; slices in the same layer must n
 
 - `app/` — composition root: `main.ts`, `App.vue` (picks layout from `route.meta.layout`), `providers/` (PrimeVue, TanStack Query), `router/` (routes centralized in `router/routes.ts`), `layouts/` (`DefaultLayout`, `AdminLayout`, `BlankLayout`).
 - `pages/` — one slice per route; admin pages under `pages/admin/`.
-- `widgets/` — `content-entity-page`: a reusable admin CRUD widget (table + create/update/delete/feature mutations). Used by the **announcements and resources** admin pages; the events admin page is bespoke.
+- `widgets/` — `content-entity-page`: a reusable admin CRUD widget (table + create/update/delete/feature mutations). Used by the **announcements** admin page; the events and resources admin pages are bespoke (`features/manage-events`, `features/manage-resources`).
 - `features/` — `auth`, `account`, `register`, and admin `manage-*` slices.
 - `entities/` — business entities. Segments: `api/` (`requests.ts`, `mapper.ts`, `queries.ts`, `query-keys.ts`, `mutations.ts`), `model/` (types + state), `ui/` (cards).
 - `shared/` — `api/`, `config/`, `lib/`, `ui/`.

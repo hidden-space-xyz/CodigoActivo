@@ -363,7 +363,7 @@ public sealed class DemoDataSeeder(
             );
         }
 
-        var resources = new List<Resource>(DemoResources.Length);
+        var resources = new List<Resource>(DemoResources.Length + DemoExternalResources.Length);
         for (var i = 0; i < DemoResources.Length; i++)
         {
             var seed = DemoResources[i];
@@ -375,8 +375,28 @@ public sealed class DemoDataSeeder(
                     Title = seed.Title,
                     Subtitle = seed.Subtitle,
                     Description = BuildRichText(seed.Description, null, null),
+                    ResourceTypeId = SeedIds.ResourceTypes.Internal,
                     ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
                     CreatedAt = now.AddDays(-(i * 8) - 5),
+                    CreatedBy = AdminId,
+                }
+            );
+        }
+
+        for (var i = 0; i < DemoExternalResources.Length; i++)
+        {
+            var seed = DemoExternalResources[i];
+            var label = (DemoResources.Length + i + 1).ToString("D2", CultureInfo.InvariantCulture);
+            resources.Add(
+                new Resource
+                {
+                    Id = Guid.NewGuid(),
+                    Title = seed.Title,
+                    Subtitle = seed.Subtitle,
+                    Url = seed.Url,
+                    ResourceTypeId = SeedIds.ResourceTypes.External,
+                    ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
+                    CreatedAt = now.AddDays(-((DemoResources.Length + i) * 8) - 5),
                     CreatedBy = AdminId,
                 }
             );
@@ -662,6 +682,8 @@ public sealed class DemoDataSeeder(
     );
 
     private sealed record ContentSeed(string Title, string Subtitle, string[] Description);
+
+    private sealed record ExternalResourceSeed(string Title, string Subtitle, string Url);
 
     private sealed record PartnerSeed(string Name, int Tier, string? Web);
 
@@ -1706,6 +1728,60 @@ public sealed class DemoDataSeeder(
                 "Después introducimos un motor de videojuegos accesible y gratuito, con los conceptos básicos de escenas, personajes, movimiento y colisiones. Todo se explica con un ejemplo concreto que puedes seguir para tener, en pocas sesiones, algo que de verdad se pueda jugar.",
                 "Cerramos hablando de cómo probar el juego con otras personas, recoger sus impresiones y mejorar a partir de ahí, además de ideas para compartirlo con la comunidad. Desarrollar videojuegos une programación, arte, sonido y narrativa, y es una vía estupenda para engancharse a la tecnología creando algo propio.",
             ]
+        ),
+    ];
+
+    private static readonly ExternalResourceSeed[] DemoExternalResources =
+    [
+        new(
+            "MDN Web Docs: la referencia abierta para aprender desarrollo web",
+            "Documentación y tutoriales oficiales de Mozilla sobre HTML, CSS y JavaScript, disponibles en español y mantenidos por la comunidad.",
+            "https://developer.mozilla.org/es/docs/Learn_web_development"
+        ),
+        new(
+            "Scratch: crea historias, juegos y animaciones con bloques",
+            "Plataforma gratuita del MIT para iniciarse en la programación visual, ideal para peques y talleres en familia.",
+            "https://scratch.mit.edu/"
+        ),
+        new(
+            "freeCodeCamp en español: itinerarios interactivos de programación",
+            "Cursos gratuitos con retos prácticos y certificado final para asentar las bases a tu ritmo, desde la web hasta Python.",
+            "https://www.freecodecamp.org/espanol/learn/"
+        ),
+        new(
+            "Hora del Código: actividades interactivas para empezar a programar",
+            "Tutoriales autoguiados de Code.org pensados para probar la programación en una hora, sin instalar nada y para todas las edades.",
+            "https://code.org/es"
+        ),
+        new(
+            "Khan Academy: ciencias de la computación explicadas en español",
+            "Cursos gratuitos con vídeos y ejercicios sobre programación, algoritmos y cómo funciona internet, para avanzar a tu ritmo.",
+            "https://es.khanacademy.org/computing"
+        ),
+        new(
+            "El tutorial oficial de Python, traducido al español",
+            "La guía de referencia del propio lenguaje, traducida por la comunidad hispana: el siguiente paso natural tras nuestros talleres.",
+            "https://docs.python.org/es/3/tutorial/"
+        ),
+        new(
+            "INCIBE: ciberseguridad para la ciudadanía",
+            "Avisos, guías y herramientas gratuitas del Instituto Nacional de Ciberseguridad para protegerse en el día a día digital.",
+            "https://www.incibe.es/ciudadania"
+        ),
+        new(
+            "datos.gob.es: el catálogo de datos abiertos de España",
+            "Punto de acceso a miles de conjuntos de datos públicos de las administraciones españolas, listos para reutilizar en proyectos.",
+            "https://datos.gob.es/"
+        ),
+        new(
+            "Tinkercad: diseño 3D, circuitos y bloques desde el navegador",
+            "Herramienta gratuita de Autodesk para modelar piezas imprimibles en 3D y simular circuitos sin instalar software.",
+            "https://www.tinkercad.com/"
+        ),
+        new(
+            "Exercism: practica programación con ejercicios y mentoría",
+            "Retos gratuitos en decenas de lenguajes con revisión de mentores voluntarios, perfectos para consolidar lo aprendido.",
+            "https://exercism.org/"
         ),
     ];
 

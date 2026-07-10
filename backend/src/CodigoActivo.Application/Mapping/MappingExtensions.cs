@@ -37,11 +37,21 @@ public static class MappingExtensions
 
     public static ResourceResponse ToResponse(this Resource resource)
     {
+        var type = new ResourceTypeResponse(
+            resource.ResourceTypeId,
+            resource.ResourceType?.Name ?? string.Empty,
+            resource.ResourceType?.Description ?? string.Empty,
+            resource.ResourceType?.Color ?? string.Empty,
+            resource.ResourceType?.IsExternal ?? false
+        );
+
         return new ResourceResponse(
             resource.Id,
             resource.Title,
             resource.Subtitle,
             resource.Description,
+            resource.Url,
+            type,
             resource.CreatedAt,
             resource.UpdatedAt,
             resource.CreatedBy,

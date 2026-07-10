@@ -8,7 +8,10 @@ export function toLearningResourceSummary(
   return {
     id: response.id ?? '',
     title: response.title ?? '',
-    type: response.subtitle ?? '',
+    subtitle: response.subtitle ?? '',
+    typeName: response.type?.name ?? '',
+    typeColor: response.type?.color ?? '',
+    url: response.url ?? null,
     thumbnailId: response.thumbnailId ?? '',
   }
 }
