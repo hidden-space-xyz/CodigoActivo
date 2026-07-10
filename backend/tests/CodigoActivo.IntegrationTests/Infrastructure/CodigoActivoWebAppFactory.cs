@@ -21,29 +21,43 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
     private readonly string fileStorageRoot = CreateFileStorageRoot();
 
+    private WebApplicationFactory<Program>? verificationDisabled;
+
     public TestClock Clock { get; } = new();
 
     public FakeEmailSender EmailSender { get; } = new();
+
+    /// <summary>
+    /// A sibling host with <c>ACCOUNT_VERIFICATION_REQUIRED=false</c>, sharing this factory's
+    /// database and fakes. Built once per test class (this factory is an <c>IClassFixture</c>) and
+    /// torn down with it, rather than once per test.
+    /// </summary>
+    public WebApplicationFactory<Program> WithVerificationDisabled()
+    {
+        return verificationDisabled ??= WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<AccountVerificationOptions>();
+                services.AddSingleton(new AccountVerificationOptions { Required = false });
+            })
+        );
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
 
-        Environment.SetEnvironmentVariable("SMTP_HOST", "smtp.test");
-        Environment.SetEnvironmentVariable("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
-
-        builder.ConfigureAppConfiguration(
-            (_, config) =>
-            {
-                config.AddInMemoryCollection(
-                    new Dictionary<string, string?>
-                    {
-                        ["AUTH_SAMESITE"] = "Lax",
-                        ["DEMO_MODE"] = "false",
-                    }
-                );
-            }
-        );
+        // UseSetting, not ConfigureAppConfiguration: Program reads AUTH_SAMESITE and (through
+        // AddCodigoActivo) SMTP_* from builder.Configuration while the WebApplicationBuilder is still
+        // being assembled, which is before ConfigureAppConfiguration sources are merged. UseSetting
+        // lands in host configuration early enough, and unlike Environment.SetEnvironmentVariable it
+        // does not mutate process-global state shared by every other test host.
+        builder.UseSetting("AUTH_SAMESITE", "Lax");
+        builder.UseSetting("DEMO_MODE", "false");
+        builder.UseSetting("SMTP_HOST", "smtp.test");
+        builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
+        // Otherwise every test host rolls its own numbered log file into src/CodigoActivo.API/logs.
+        builder.UseSetting("LOG_TO_FILE", "false");
 
         builder.ConfigureTestServices(services =>
         {

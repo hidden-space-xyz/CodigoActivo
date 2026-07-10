@@ -10,18 +10,24 @@ namespace CodigoActivo.IntegrationTests.Controllers;
 public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private async Task<List<RegistrationTypeResponse>> GetTypesAsync(string url)
+    private async Task<List<RegistrationTypeResponse>> GetTypesAsync(
+        string url,
+        CancellationToken ct
+    )
     {
         var client = CreateClient();
-        var response = await client.GetAsync(url);
+        var response = await client.GetAsync(url, ct);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        return await response.ReadJsonAsync<List<RegistrationTypeResponse>>() ?? [];
+        return await response.ReadJsonAsync<List<RegistrationTypeResponse>>(ct) ?? [];
     }
 
     [Fact]
     public async Task List_Anonymous_ExcludesHiddenTypesOrderedByName()
     {
-        var types = await GetTypesAsync("/api/registration-types");
+        var types = await GetTypesAsync(
+            "/api/registration-types",
+            TestContext.Current.CancellationToken
+        );
 
         types
             .Select(t => t.Id)
@@ -40,7 +46,10 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     [Fact]
     public async Task List_AdultAudience_ExcludesMinorOnlyAndHiddenTypes()
     {
-        var types = await GetTypesAsync("/api/registration-types?audience=Adult");
+        var types = await GetTypesAsync(
+            "/api/registration-types?audience=Adult",
+            TestContext.Current.CancellationToken
+        );
 
         types
             .Select(t => t.Id)

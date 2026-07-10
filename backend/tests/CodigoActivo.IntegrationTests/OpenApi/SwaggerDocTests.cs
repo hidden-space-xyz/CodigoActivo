@@ -6,27 +6,43 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;
 
+/// <summary>
+/// Asserts the shape of the generated OpenAPI document. Deliberately does NOT derive from
+/// <see cref="IntegrationTestBase"/>: nothing here reads the database, so there is no reason to
+/// truncate and reseed every table before each test.
+/// </summary>
 public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
-    : IntegrationTestBase(factory)
+    : IClassFixture<CodigoActivoWebAppFactory>
 {
     private const string SwaggerUrl = "/swagger/v1/swagger.json";
 
-    private async Task<JsonDocument> FetchSwaggerAsync()
+    private async Task<JsonDocument> FetchSwaggerAsync(CancellationToken ct)
     {
-        var client = CreateClient();
-        var response = await client.GetAsync(SwaggerUrl);
+        var client = factory.CreateClient();
+        using var response = await client.GetAsync(SwaggerUrl, ct);
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        return JsonDocument.Parse(body);
+    }
+
+    [Fact]
+    public async Task SwaggerDocument_DevelopmentEnvironment_IsServed()
+    {
+        var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(
+            SwaggerUrl,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadAsStringAsync();
-        body.Should().NotBeNullOrWhiteSpace();
-
-        return JsonDocument.Parse(body);
     }
 
     [Fact]
     public async Task SwaggerDocument_ListEndpoints_QueryParametersAreCamelCased()
     {
-        using var doc = await FetchSwaggerAsync();
+        using var doc = await FetchSwaggerAsync(TestContext.Current.CancellationToken);
 
         var queryParamNames = doc
             .RootElement.GetProperty("paths")
@@ -53,9 +69,9 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SwaggerDocument_OperationResponses_OnlyJsonMediaType()
     {
-        using var doc = await FetchSwaggerAsync();
+        using var doc = await FetchSwaggerAsync(TestContext.Current.CancellationToken);
 
-        var contentBlocks = doc
+        var mediaTypes = doc
             .RootElement.GetProperty("paths")
             .EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject())
@@ -68,21 +84,18 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
                 resp.Value.ValueKind == JsonValueKind.Object
                 && resp.Value.TryGetProperty("content", out _)
             )
-            .Select(resp => resp.Value.GetProperty("content"))
+            .SelectMany(resp => resp.Value.GetProperty("content").EnumerateObject())
+            .Select(media => media.Name)
             .ToList();
 
-        contentBlocks.Should().NotBeEmpty();
-        foreach (var content in contentBlocks)
-        {
-            var mediaTypes = content.EnumerateObject().Select(m => m.Name).ToList();
-            mediaTypes.Should().OnlyContain(m => m == "application/json");
-        }
+        mediaTypes.Should().NotBeEmpty();
+        mediaTypes.Should().OnlyContain(m => m == "application/json");
     }
 
     [Fact]
     public async Task SwaggerDocument_ErrorSchema_IsForcedIntoComponents()
     {
-        using var doc = await FetchSwaggerAsync();
+        using var doc = await FetchSwaggerAsync(TestContext.Current.CancellationToken);
 
         doc.RootElement.TryGetProperty("components", out var components).Should().BeTrue();
         components.TryGetProperty("schemas", out var schemas).Should().BeTrue();

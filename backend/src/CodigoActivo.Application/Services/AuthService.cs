@@ -56,11 +56,11 @@ public class AuthService(
             if (verification.Required)
                 return Error.Forbidden(ErrorCode.UserAccountPendingVerification);
 
-            user.Verify(SeedIds.UserStatusTypes.Active);
+            user.Verify(SeedIds.UserStatusTypes.Active, clock.UtcNow);
             selfHealed = true;
         }
 
-        user.RegisterLogin();
+        user.RegisterLogin(clock.UtcNow);
         await uow.SaveChangesAsync(ct);
 
         return selfHealed
@@ -84,7 +84,9 @@ public class AuthService(
         CancellationToken ct = default
     )
     {
-        if (request.BirthDate.IsMinor())
+        var today = clock.Today;
+
+        if (request.BirthDate.IsMinor(today))
             return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
 
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
@@ -108,7 +110,7 @@ public class AuthService(
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
 
         var minorRequests = request.Minors ?? [];
-        if (minorRequests.Any(minor => !minor.BirthDate.IsMinor()))
+        if (minorRequests.Any(minor => !minor.BirthDate.IsMinor(today)))
             return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
 
         if (minorRequests.Count > 0)
@@ -202,7 +204,7 @@ public class AuthService(
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
         }
 
-        user.Verify(SeedIds.UserStatusTypes.Active);
+        user.Verify(SeedIds.UserStatusTypes.Active, clock.UtcNow);
         await uow.SaveChangesAsync(ct);
 
         var updated = await users.GetByIdWithDetailsAsync(id, ct);

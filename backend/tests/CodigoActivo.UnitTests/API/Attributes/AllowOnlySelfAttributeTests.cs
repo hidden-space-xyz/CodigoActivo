@@ -16,9 +16,17 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.API.Attributes;
 
-public sealed class AllowOnlySelfAttributeTests
+public sealed class AllowOnlySelfAttributeTests : IDisposable
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly ServiceProvider services;
+
+    public AllowOnlySelfAttributeTests()
+    {
+        services = new ServiceCollection().AddSingleton(users).BuildServiceProvider();
+    }
+
+    public void Dispose() => services.Dispose();
 
     private AuthorizationFilterContext BuildContext(
         ClaimsPrincipal principal,
@@ -26,11 +34,7 @@ public sealed class AllowOnlySelfAttributeTests
         bool includeRouteKey = true
     )
     {
-        var httpContext = new DefaultHttpContext
-        {
-            User = principal,
-            RequestServices = new ServiceCollection().AddSingleton(users).BuildServiceProvider(),
-        };
+        var httpContext = new DefaultHttpContext { User = principal, RequestServices = services };
         var routeData = new RouteData();
         if (includeRouteKey)
         {
@@ -149,5 +153,27 @@ public sealed class AllowOnlySelfAttributeTests
         await users
             .Received(1)
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task OnAuthorizationAsync_TargetIsOwnChild_QueriesForChildOwnedByCaller()
+    {
+        var callerId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        Expression<Func<User, bool>>? captured = null;
+        users
+            .ExistsAsync(
+                Arg.Do<Expression<Func<User, bool>>>(predicate => captured = predicate),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(true);
+        var context = BuildContext(User(callerId), childId);
+
+        await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
+
+        captured.Should().NotBeNull();
+        var accepts = captured!.Compile();
+        accepts(new User { Id = childId, ParentId = callerId }).Should().BeTrue();
+        accepts(new User { Id = childId, ParentId = Guid.NewGuid() }).Should().BeFalse();
     }
 }

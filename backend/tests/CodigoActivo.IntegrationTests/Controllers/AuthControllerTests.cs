@@ -15,9 +15,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 {
     private const string NewAdultEmail = "new.adult@codigoactivo.test";
 
-    private static readonly DateOnly AdultBirthDate = DateOnly
-        .FromDateTime(DateTime.UtcNow)
-        .AddYears(-30);
+    // Fixed, not derived from the wall clock: the API resolves "today" from the factory's TestClock.
+    private static readonly DateOnly AdultBirthDate = new(1996, 1, 15);
 
     private static RegisterRequest NewAdultRequest(
         string email = NewAdultEmail,
@@ -135,6 +134,52 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
+    // The factory pins the clock to 2026-07-04, so 2026-07-05 is "tomorrow" here even though it is
+    // in the past by the wall clock: these rows fail unless the attribute reads IClock.
+    [Theory]
+    [InlineData(2026, 7, 5)]
+    [InlineData(2027, 1, 1)]
+    [InlineData(1, 1, 1)] // default(DateOnly)
+    public async Task Register_BirthDateInTheFutureOrUnset_ReturnsValidationError(
+        int year,
+        int month,
+        int day
+    )
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(birthDate: new DateOnly(year, month, day)),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
+    public async Task Register_BirthDateIsTheClocksToday_PassesValidation()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(birthDate: Factory.Clock.Today),
+            TestContext.Current.CancellationToken
+        );
+
+        // Today is a valid date; registration then fails the *business* rule, not validation.
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RegisterAdultCannotBeMinor);
     }
 
     [Fact]
@@ -460,6 +505,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
         body.Email.Should().Be(TestSeedData.AdminEmail);
+        body.IsAdmin.Should().BeTrue();
     }
 
     [Fact]

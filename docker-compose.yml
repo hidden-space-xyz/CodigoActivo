@@ -39,6 +39,7 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-https://localhost}
       APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
       DEMO_MODE: ${DEMO_MODE:-false}
+      LOG_TO_FILE: ${LOG_TO_FILE:-true}
       AUTH_SAMESITE: ${AUTH_SAMESITE:-Lax}
       FILE_STORAGE_ROOT: /app/files
       ACCOUNT_VERIFICATION_REQUIRED: ${ACCOUNT_VERIFICATION_REQUIRED:-false}

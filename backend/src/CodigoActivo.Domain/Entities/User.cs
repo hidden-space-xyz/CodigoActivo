@@ -48,15 +48,15 @@ public class User : IdentifiableEntity
         OtpLastSentAt = null;
     }
 
-    public void Verify(Guid activeStatusId)
+    public void Verify(Guid activeStatusId, DateTimeOffset now)
     {
         UserStatusTypeId = activeStatusId;
         ClearOtp();
-        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = now;
     }
 
-    public void RegisterLogin()
+    public void RegisterLogin(DateTimeOffset now)
     {
-        LastLoginAt = DateTimeOffset.UtcNow;
+        LastLoginAt = now;
     }
 }

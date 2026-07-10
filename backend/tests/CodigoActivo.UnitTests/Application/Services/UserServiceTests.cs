@@ -19,14 +19,14 @@ public sealed class UserServiceTests
     private readonly IUserTypeRepository userTypes = Substitute.For<IUserTypeRepository>();
     private readonly IUserStatusTypeRepository userStatusTypes =
         Substitute.For<IUserStatusTypeRepository>();
-    private readonly FakePasswordHasher hasher = new();
-    private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly UserService sut;
-
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static readonly DateOnly Today = new(2026, 7, 4);
     private static readonly DateOnly MinorDob = Today.AddYears(-10);
     private static readonly DateOnly AdultDob = Today.AddYears(-40);
+
+    private readonly FakePasswordHasher hasher = new();
+    private readonly TestClock clock = new(today: Today);
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly UserService sut;
 
     public UserServiceTests()
     {
@@ -520,7 +520,7 @@ public sealed class UserServiceTests
         var user = NewUser(id: id, email: "old@test.com", phone: "111");
         user.PasswordHash = "hash";
         user.OtpCodeHash = "ABCDEF";
-        user.OtpExpiresAt = DateTimeOffset.UtcNow;
+        user.OtpExpiresAt = clock.UtcNow.AddMinutes(10);
         FindReturns(user, NewUser(id: parentId));
         DetailsReturns(NewUser(id: id));
         var request = new UpdateUserRequest(
@@ -542,6 +542,23 @@ public sealed class UserServiceTests
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_MinorReassignedToDifferentParent_ReturnsForbidden()
+    {
+        var id = Guid.NewGuid();
+        var currentParentId = Guid.NewGuid();
+        var newParentId = Guid.NewGuid();
+        FindReturns(NewUser(id: id, parentId: currentParentId), NewUser());
+        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, newParentId);
+
+        var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
+
+        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
+        result.Error.Code.Should().Be(ErrorCode.UserParentReassignmentForbidden);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

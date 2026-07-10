@@ -7,12 +7,24 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Composition;
 
-public sealed class AccountVerificationConfigurationTests
+public sealed class AccountVerificationConfigurationTests : IDisposable
 {
-    private static ServiceProvider Build(Dictionary<string, string?> settings)
+    private readonly List<ServiceProvider> providers = [];
+
+    public void Dispose()
+    {
+        foreach (var provider in providers)
+            provider.Dispose();
+    }
+
+    private ServiceProvider Build(Dictionary<string, string?> settings)
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-        return new ServiceCollection().AddCodigoActivo(configuration).BuildServiceProvider();
+        var provider = new ServiceCollection()
+            .AddCodigoActivo(configuration)
+            .BuildServiceProvider();
+        providers.Add(provider);
+        return provider;
     }
 
     [Fact]
@@ -78,11 +90,9 @@ public sealed class AccountVerificationConfigurationTests
         var settings = new Dictionary<string, string?>
         {
             ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
+            ["SMTP_HOST"] = host,
+            ["SMTP_FROM_ADDRESS"] = from,
         };
-        if (host is not null)
-            settings["SMTP_HOST"] = host;
-        if (from is not null)
-            settings["SMTP_FROM_ADDRESS"] = from;
 
         var act = () => Build(settings);
 

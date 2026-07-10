@@ -285,6 +285,17 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
         var id = await SeedActivityAsync(eventId, thumb, "Antes");
+        await Factory.SeedAsync(db =>
+        {
+            db.ActivityAllowedRoleTypes.Add(
+                new ActivityAllowedRoleType
+                {
+                    ActivityId = id,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                }
+            );
+            return Task.CompletedTask;
+        });
         var client = await LoginAsAdminAsync();
         var request = new UpdateActivityRequest(
             "Despues",
@@ -314,7 +325,11 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == id)
                 .ToListAsync(TestContext.Current.CancellationToken)
         );
-        roles.Should().ContainSingle(r => r.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Helper);
+        roles
+            .Should()
+            .ContainSingle()
+            .Which.ActivityRoleTypeId.Should()
+            .Be(SeedIds.ActivityRoleTypes.Helper);
     }
 
     [Fact]

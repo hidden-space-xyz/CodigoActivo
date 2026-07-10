@@ -196,6 +196,26 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task Create_NullFromDate_ReturnsValidationError()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreatePartnerRequest("Sin fecha", null, 1, null, thumbnailId);
+
+        var response = await client.PostJsonAsync(
+            "/api/partners",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
     public async Task Create_MissingCsrfToken_IsRejected()
     {
         var client = await LoginAsAdminAsync();

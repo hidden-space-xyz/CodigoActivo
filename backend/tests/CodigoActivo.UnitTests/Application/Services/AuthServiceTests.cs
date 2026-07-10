@@ -537,6 +537,21 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
+    public async Task RegisterAsync_EmailSendCancelled_PropagatesOperationCanceledException()
+    {
+        var added = CaptureAddedUsers();
+        emailSender.ThrowOnSend = new OperationCanceledException("registration cancelled");
+        ExistsReturns(false, false);
+
+        var act = () => sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        added.Should().ContainSingle();
+        added[0].OtpLastSentAt.Should().Be(clock.UtcNow, "the swallow-and-clear catch is skipped");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task RegisterAsync_SubsequentUserWithMinor_CreatesAdultAndMinor()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);

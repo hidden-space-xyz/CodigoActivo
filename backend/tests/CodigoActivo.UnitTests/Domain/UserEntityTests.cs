@@ -6,6 +6,9 @@ namespace CodigoActivo.UnitTests.Domain;
 
 public sealed class UserEntityTests
 {
+    private static readonly DateTimeOffset Seeded = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+
     private static User NewPendingUser() =>
         new()
         {
@@ -16,9 +19,9 @@ public sealed class UserEntityTests
             BirthDate = new DateOnly(1990, 1, 1),
             UserStatusTypeId = Guid.NewGuid(),
             OtpCodeHash = "ABCDEF",
-            OtpExpiresAt = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            OtpLastSentAt = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            CreatedAt = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            OtpExpiresAt = Seeded,
+            OtpLastSentAt = Seeded,
+            CreatedAt = Seeded,
         };
 
     [Fact]
@@ -26,17 +29,14 @@ public sealed class UserEntityTests
     {
         var activeStatusId = Guid.NewGuid();
         var user = NewPendingUser();
-        var before = DateTimeOffset.UtcNow;
 
-        user.Verify(activeStatusId);
+        user.Verify(activeStatusId, Now);
 
-        var after = DateTimeOffset.UtcNow;
         user.UserStatusTypeId.Should().Be(activeStatusId);
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
         user.OtpLastSentAt.Should().BeNull();
-        user.UpdatedAt.Should().NotBeNull();
-        user.UpdatedAt!.Value.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+        user.UpdatedAt.Should().Be(Now);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class UserEntityTests
         var user = NewPendingUser();
         user.LastLoginAt = null;
 
-        user.Verify(Guid.NewGuid());
+        user.Verify(Guid.NewGuid(), Now);
 
         user.LastLoginAt.Should().BeNull();
     }
@@ -54,27 +54,35 @@ public sealed class UserEntityTests
     public void IssueOtp_HashAndLifetime_StoresHashAndTimestamps()
     {
         var user = NewPendingUser();
-        var now = new DateTimeOffset(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
 
-        user.IssueOtp("NEWHASH", now, TimeSpan.FromMinutes(15));
+        user.IssueOtp("NEWHASH", Now, TimeSpan.FromMinutes(15));
 
         user.OtpCodeHash.Should().Be("NEWHASH");
-        user.OtpExpiresAt.Should().Be(now.AddMinutes(15));
-        user.OtpLastSentAt.Should().Be(now);
+        user.OtpExpiresAt.Should().Be(Now.AddMinutes(15));
+        user.OtpLastSentAt.Should().Be(Now);
     }
 
     [Fact]
-    public void RegisterLogin_PendingUser_StampsCurrentLastLoginTime()
+    public void ClearOtp_UserWithIssuedOtp_ClearsHashAndTimestamps()
+    {
+        var user = NewPendingUser();
+
+        user.ClearOtp();
+
+        user.OtpCodeHash.Should().BeNull();
+        user.OtpExpiresAt.Should().BeNull();
+        user.OtpLastSentAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void RegisterLogin_PendingUser_StampsSuppliedLastLoginTime()
     {
         var user = NewPendingUser();
         user.LastLoginAt = null;
-        var before = DateTimeOffset.UtcNow;
 
-        user.RegisterLogin();
+        user.RegisterLogin(Now);
 
-        var after = DateTimeOffset.UtcNow;
-        user.LastLoginAt.Should().NotBeNull();
-        user.LastLoginAt!.Value.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+        user.LastLoginAt.Should().Be(Now);
     }
 
     [Fact]
@@ -84,7 +92,7 @@ public sealed class UserEntityTests
         var status = user.UserStatusTypeId;
         var otpHash = user.OtpCodeHash;
 
-        user.RegisterLogin();
+        user.RegisterLogin(Now);
 
         user.UserStatusTypeId.Should().Be(status);
         user.OtpCodeHash.Should().Be(otpHash);

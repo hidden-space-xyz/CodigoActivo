@@ -171,6 +171,27 @@ public sealed class FileServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_UploadAtExactSizeLimit_IsAccepted()
+    {
+        options.MaxSizeBytes = 32;
+        var content = PngStream();
+        var upload = new FileUploadRequest(content, "exact.png", 32);
+
+        var result = await sut.CreateAsync(
+            upload,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Extension.Should().Be("png");
+        await storage
+            .Received(1)
+            .SaveAsync($"{result.Value.Id}.png", content, Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task CreateAsync_StreamNotSeekable_ReturnsValidationError()
     {
         var upload = new FileUploadRequest(new NonSeekableStream(PngBytes()), "x.png", 32);
@@ -251,6 +272,23 @@ public sealed class FileServiceTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Name.Should().Be("file");
+    }
+
+    [Fact]
+    public async Task CreateAsync_FileNameLongerThanMaxLength_TruncatesNameTo260Chars()
+    {
+        var longName = new string('a', 300);
+        var upload = new FileUploadRequest(PngStream(), longName, 32);
+
+        var result = await sut.CreateAsync(
+            upload,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().HaveLength(260);
+        result.Value.Name.Should().Be(new string('a', 260));
     }
 
     [Fact]
@@ -365,6 +403,22 @@ public sealed class FileServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_PersistenceThrowsWithExtensionUnchanged_DoesNotDeleteStoredContent()
+    {
+        var file = NewFile(name: "old.png", extension: "png");
+        FileFound(file);
+        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+        uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => throw new InvalidOperationException("db down"));
+
+        var act = async () =>
+            await sut.UpdateAsync(file.Id, upload, TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        storage.DidNotReceiveWithAnyArgs().Delete(default!);
+    }
+
+    [Fact]
     public async Task DeleteAsync_FileMissing_ReturnsNotFound()
     {
         FileMissing();
@@ -467,6 +521,24 @@ public sealed class FileServiceTests
             await sut.DeleteIfOrphanedAsync(file.Id, TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DeleteIfOrphanedAsync_Cancelled_PropagatesCancellation()
+    {
+        files
+            .When(f =>
+                f.FindAsync(
+                    Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                    Arg.Any<CancellationToken>()
+                )
+            )
+            .Do(_ => throw new OperationCanceledException());
+
+        var act = async () =>
+            await sut.DeleteIfOrphanedAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
     private async Task AssertNothingPersisted()
