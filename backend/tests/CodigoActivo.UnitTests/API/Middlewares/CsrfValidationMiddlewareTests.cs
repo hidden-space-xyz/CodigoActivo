@@ -52,7 +52,8 @@ public sealed class CsrfValidationMiddlewareTests
         context.Response.Body.Position = 0;
         var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(
             context.Response.Body,
-            WebJson
+            WebJson,
+            TestContext.Current.CancellationToken
         );
         return body!;
     }

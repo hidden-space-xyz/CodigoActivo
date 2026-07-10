@@ -57,7 +57,7 @@ public sealed class DemoDataSeeder(
             return;
         }
 
-        var graph = BuildGraph();
+        var graph = BuildGraph(clock, passwordHasher);
         var fileIds = graph.Files.ConvertAll(f => f.Id);
 
         try
@@ -215,7 +215,7 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    internal DemoGraph BuildGraph()
+    internal static DemoGraph BuildGraph(IClock clock, IPasswordHasher passwordHasher)
     {
         var now = clock.UtcNow;
         var passwordHash = passwordHasher.Hash(DemoPassword);
@@ -288,8 +288,8 @@ public sealed class DemoDataSeeder(
                     Description = BuildRichText(seed.Description, descriptionImageId, seed.Title),
                     EventStartsAt = start,
                     EventEndsAt = end,
-                    SignupStartsAt = ToUtc(start.AddDays(-30), 9, 0),
-                    SignupEndsAt = ToUtc(start.AddDays(-1), 23, 59),
+                    SignupStartsAt = ToUtc(clock.TimeZone, start.AddDays(-30), 9, 0),
+                    SignupEndsAt = ToUtc(clock.TimeZone, start.AddDays(-1), 23, 59),
                     Featured = e is 2 or 7 or 12 or 17,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
                     CreatedAt = now.AddDays(-90),
@@ -306,7 +306,12 @@ public sealed class DemoDataSeeder(
             {
                 var activity = seed.Activities[a];
                 var activityId = Guid.NewGuid();
-                var activityStart = ToUtc(start.AddDays(a % duration), 10 + (a * 2), 0);
+                var activityStart = ToUtc(
+                    clock.TimeZone,
+                    start.AddDays(a % duration),
+                    10 + (a * 2),
+                    0
+                );
 
                 activities.Add(
                     new Activity
@@ -555,13 +560,10 @@ public sealed class DemoDataSeeder(
         return new JsonObject { ["type"] = "doc", ["content"] = content }.ToJsonString();
     }
 
-    private DateTimeOffset ToUtc(DateOnly date, int hour, int minute)
+    private static DateTimeOffset ToUtc(TimeZoneInfo timeZone, DateOnly date, int hour, int minute)
     {
         var local = date.ToDateTime(new TimeOnly(hour, minute));
-        return new DateTimeOffset(
-            TimeZoneInfo.ConvertTimeToUtc(local, clock.TimeZone),
-            TimeSpan.Zero
-        );
+        return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(local, timeZone), TimeSpan.Zero);
     }
 
     private static string StoredName(Guid fileId) =>

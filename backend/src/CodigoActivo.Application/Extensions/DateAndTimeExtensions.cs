@@ -4,9 +4,8 @@ public static class DateAndTimeExtensions
 {
     private const int AdultAge = 18;
 
-    private static int CalculateAge(DateOnly birthDate)
+    private static int CalculateAge(DateOnly birthDate, DateOnly today)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var age = today.Year - birthDate.Year;
         if (birthDate > today.AddYears(-age))
             age--;
@@ -14,8 +13,8 @@ public static class DateAndTimeExtensions
         return age;
     }
 
-    public static bool IsMinor(this DateOnly birthDate)
+    public static bool IsMinor(this DateOnly birthDate, DateOnly today)
     {
-        return CalculateAge(birthDate) < AdultAge;
+        return CalculateAge(birthDate, today) < AdultAge;
     }
 }

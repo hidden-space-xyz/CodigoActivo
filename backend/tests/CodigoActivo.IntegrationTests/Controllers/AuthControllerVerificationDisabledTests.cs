@@ -4,47 +4,27 @@ using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
-public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBase
+public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
-    private readonly WebApplicationFactory<Program> disabledFactory;
+    private const string NewAdultEmail = "new.adult@codigoactivo.test";
 
-    public AuthControllerVerificationDisabledTests(CodigoActivoWebAppFactory factory)
-        : base(factory)
-    {
-        disabledFactory = factory.WithWebHostBuilder(builder =>
-            builder.ConfigureTestServices(services =>
-            {
-                services.RemoveAll<AccountVerificationOptions>();
-                services.AddSingleton(new AccountVerificationOptions { Required = false });
-            })
-        );
-    }
-
-    public override async ValueTask DisposeAsync()
-    {
-        await disabledFactory.DisposeAsync();
-        await base.DisposeAsync();
-    }
+    private HttpClient CreateDisabledClient() => Factory.WithVerificationDisabled().CreateClient();
 
     private static RegisterRequest NewAdultRequest()
     {
         return new RegisterRequest(
             "Nadia",
             "Nueva",
-            "new.adult@codigoactivo.test",
+            NewAdultEmail,
             "+34600000099",
             "Str0ngPass!",
-            DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-30),
+            new DateOnly(1996, 1, 15),
             SeedIds.UserTypes.Member,
             Minors: null
         );
@@ -53,7 +33,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     [Fact]
     public async Task Register_VerificationDisabled_CreatesActiveAccountWithoutSendingEmail()
     {
-        var client = disabledFactory.CreateClient();
+        var client = CreateDisabledClient();
 
         var response = await client.PostJsonAsync(
             "/api/auth/register",
@@ -79,7 +59,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     [Fact]
     public async Task Register_VerificationDisabled_AllowsImmediateLogin()
     {
-        var client = disabledFactory.CreateClient();
+        var client = CreateDisabledClient();
         using var register = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(),
@@ -89,7 +69,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest("new.adult@codigoactivo.test", "Str0ngPass!"),
+            new LoginRequest(NewAdultEmail, "Str0ngPass!"),
             TestContext.Current.CancellationToken
         );
 
@@ -99,7 +79,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     [Fact]
     public async Task Login_ExistingPendingUserVerificationDisabled_ActivatesUser()
     {
-        var client = disabledFactory.CreateClient();
+        var client = CreateDisabledClient();
 
         var response = await client.PostJsonAsync(
             "/api/auth/login",
@@ -119,9 +99,32 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     }
 
     [Fact]
+    public async Task Login_ExistingPendingUserVerificationDisabled_StampsClockTimesOnTheSelfHeal()
+    {
+        var client = CreateDisabledClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(
+                    [TestSeedData.Users.PendingId],
+                    TestContext.Current.CancellationToken
+                )
+                .AsTask()
+        );
+        stored!.UpdatedAt.Should().Be(Factory.Clock.UtcNow);
+        stored.LastLoginAt.Should().Be(Factory.Clock.UtcNow);
+    }
+
+    [Fact]
     public async Task ResendVerification_VerificationDisabled_IsRejected()
     {
-        var client = disabledFactory.CreateClient();
+        var client = CreateDisabledClient();
 
         var response = await client.PostJsonAsync(
             $"/api/auth/{TestSeedData.Users.PendingId}/resend-verification",

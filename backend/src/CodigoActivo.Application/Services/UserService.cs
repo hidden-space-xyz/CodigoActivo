@@ -95,7 +95,7 @@ public class UserService(
         if (user is null)
             return Error.NotFound(ErrorCode.UserNotFound);
 
-        var rules = request.BirthDate.IsMinor()
+        var rules = request.BirthDate.IsMinor(clock.Today)
             ? await ApplyMinorContactRulesAsync(user, request.ParentId, id, ct)
             : await ApplyAdultContactRulesAsync(
                 user,
@@ -165,7 +165,7 @@ public class UserService(
         if (role is null)
             return Error.NotFound(ErrorCode.UserTypeNotFound);
 
-        var isMinor = user.BirthDate.IsMinor();
+        var isMinor = user.BirthDate.IsMinor(clock.Today);
         if (role.Hidden || (isMinor ? !role.IsAllowedForMinors : !role.IsAllowedForAdults))
         {
             return Error.BadRequest(
@@ -196,10 +196,12 @@ public class UserService(
         if (parent is null)
             return Error.NotFound(ErrorCode.ParentUserNotFound);
 
-        if (parent.BirthDate.IsMinor())
+        var today = clock.Today;
+
+        if (parent.BirthDate.IsMinor(today))
             return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
-        if (!request.BirthDate.IsMinor())
+        if (!request.BirthDate.IsMinor(today))
             return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
 
         var role = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
@@ -306,7 +308,7 @@ public class UserService(
         if (parentUser is null)
             return Error.NotFound(ErrorCode.ParentUserNotFound);
 
-        if (parentUser.BirthDate.IsMinor())
+        if (parentUser.BirthDate.IsMinor(clock.Today))
             return Error.BadRequest(ErrorCode.UserParentIsMinor);
 
         if (user.ParentId is { } currentParent && currentParent != parent)

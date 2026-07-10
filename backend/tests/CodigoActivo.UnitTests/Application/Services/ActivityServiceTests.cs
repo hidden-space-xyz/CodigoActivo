@@ -293,6 +293,28 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_StartsBeforeEventRange_ReturnsOutsideEventRange()
+    {
+        // The event runs Jul 1 – Jul 31; this activity begins Jun 25, before EventStartsAt.
+        EventFound(NewEvent());
+
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(
+                startsAt: new DateTimeOffset(2026, 6, 25, 10, 0, 0, TimeSpan.Zero),
+                endsAt: new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero)
+            ),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivityScheduleOutsideEventRange);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task CreateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         EventFound(NewEvent());
@@ -451,6 +473,43 @@ public sealed class ActivityServiceTests
             .ContainSingle()
             .Which.ActivityRoleTypeId.Should()
             .Be(duplicate);
+    }
+
+    [Fact]
+    public async Task CreateAsync_EmptyAllowedRoles_SucceedsWithoutValidatingRoleTypes()
+    {
+        var eventId = Guid.NewGuid();
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+
+        var stored = new List<Activity>();
+        activities.Query().Returns(_ => stored.AsQueryable());
+        Activity? captured = null;
+        activities
+            .When(a => a.AddAsync(Arg.Any<Activity>(), Arg.Any<CancellationToken>()))
+            .Do(ci =>
+            {
+                captured = ci.Arg<Activity>();
+                captured.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
+                stored.Add(captured);
+            });
+
+        // A non-null but empty AllowedRoleTypes list short-circuits before CountAsync, so the
+        // activity is created with zero allowed roles and no role-type lookup happens.
+        var result = await sut.CreateAsync(
+            eventId,
+            CreateRequest(roles: []),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        captured!.AllowedRoleTypes.Should().BeEmpty();
+        await roleTypes
+            .DidNotReceiveWithAnyArgs()
+            .CountAsync(default!, TestContext.Current.CancellationToken);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

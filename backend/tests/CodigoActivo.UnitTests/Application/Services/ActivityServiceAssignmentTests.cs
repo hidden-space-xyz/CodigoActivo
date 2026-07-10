@@ -34,6 +34,11 @@ public sealed class ActivityServiceAssignmentTests
     private static readonly DateTimeOffset PastStart = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset PastEnd = new(2026, 6, 30, 0, 0, 0, TimeSpan.Zero);
 
+    // A fixed "now" that sits inside the Open window (Jul 1 – Jul 30) and after the Past
+    // window (Jun 1 – Jun 30). Every signup-window test pins the clock to this so its
+    // expectation is self-describing instead of relying on TestClock's default instant.
+    private static readonly DateTimeOffset Now = new(2026, 7, 15, 0, 0, 0, TimeSpan.Zero);
+
     public ActivityServiceAssignmentTests()
     {
         sut = new ActivityService(
@@ -143,6 +148,7 @@ public sealed class ActivityServiceAssignmentTests
     public async Task AssignAsync_OutsideWindowForMember_ReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
+        clock.UtcNow = Now;
         HasActivityWindow(activityId, PastStart, PastEnd);
 
         var result = await sut.AssignAsync(
@@ -163,6 +169,7 @@ public sealed class ActivityServiceAssignmentTests
     public async Task AssignAsync_RoleNotInActivity_ReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
+        clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         AllowedRoleExists(false);
 
@@ -184,6 +191,7 @@ public sealed class ActivityServiceAssignmentTests
     public async Task AssignAsync_AssignmentAlreadyExists_ReturnsConflict()
     {
         var activityId = Guid.NewGuid();
+        clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         AllowedRoleExists(true);
         ExistingAssignment(Assignment(Guid.NewGuid(), activityId));
@@ -245,6 +253,74 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
+    public async Task AssignAsync_MemberAtExactSignupStart_IsOpenAndPersists()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        // Signup opens at OpenStart; the window check (now < StartsAt || now > EndsAt) is
+        // inclusive, so a member acting at the exact opening instant is still allowed.
+        clock.UtcNow = OpenStart;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        AllowedRoleExists(true);
+        ExistingAssignment(null);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(roleId),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == userId && a.ActivityId == activityId
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignAsync_MemberAtExactSignupEnd_IsOpenAndPersists()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        // Signup closes at OpenEnd; the window check is inclusive at both ends, so a member
+        // acting at the exact closing instant is still allowed.
+        clock.UtcNow = OpenEnd;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        AllowedRoleExists(true);
+        ExistingAssignment(null);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(roleId),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == userId && a.ActivityId == activityId
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task AssignHouseholdAsync_NoAssignments_ReturnsHouseholdAssignmentsRequired()
     {
         var result = await sut.AssignHouseholdAsync(
@@ -265,6 +341,7 @@ public sealed class ActivityServiceAssignmentTests
     public async Task AssignHouseholdAsync_WindowClosedForMember_ReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
+        clock.UtcNow = Now;
         HasActivityWindow(activityId, PastStart, PastEnd);
 
         var result = await sut.AssignHouseholdAsync(
@@ -431,6 +508,7 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var assignment = Assignment(Guid.NewGuid(), activityId);
+        clock.UtcNow = Now;
         ExistingAssignment(assignment);
         HasActivityWindow(activityId, PastStart, PastEnd);
 
@@ -453,6 +531,7 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var assignment = Assignment(Guid.NewGuid(), activityId);
+        clock.UtcNow = Now;
         ExistingAssignment(assignment);
         HasActivityWindow(activityId, OpenStart, OpenEnd);
 
@@ -659,6 +738,57 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
+    public async Task ChangeRoleAsync_SameRoleAsCurrent_ReturnsUnchangedWithoutRemovingOrSaving()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        var statusId = Guid.NewGuid();
+        var assignment = new ActivityUserRoleAssignment
+        {
+            UserId = userId,
+            ActivityId = activityId,
+            ActivityRoleTypeId = roleId,
+            AssignmentStatusId = statusId,
+            AssignmentStatus = new AssignmentStatusType { Name = "Solicitado", Color = "#000" },
+        };
+        ExistingAssignment(assignment);
+        AllowedRoleExists(true);
+        roleTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new ActivityRoleType
+                {
+                    Id = roleId,
+                    Name = "Líder",
+                    Description = "d",
+                }
+            );
+
+        var result = await sut.ChangeRoleAsync(
+            activityId,
+            userId,
+            new ChangeAssignmentRoleRequest(roleId),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.RoleTypeId.Should().Be(roleId);
+        result.Value.RoleTypeName.Should().Be("Líder");
+        result.Value.Status.Id.Should().Be(statusId);
+        result.Value.Status.Name.Should().Be("Solicitado");
+        activities.DidNotReceiveWithAnyArgs().RemoveAssignment(default!);
+        await activities
+            .DidNotReceiveWithAnyArgs()
+            .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task VerifyTimeOverlapsAsync_ActivityMissing_ReturnsNotFound()
     {
         activities
@@ -725,6 +855,38 @@ public sealed class ActivityServiceAssignmentTests
                 {
                     ActivityId = Guid.NewGuid(),
                     Activity = OverlapActivity(Guid.NewGuid(), 13, 14),
+                },
+            ]);
+
+        var result = await sut.VerifyTimeOverlapsAsync(
+            activityId,
+            userId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.HasOverlaps.Should().BeFalse();
+        result.Value.Overlaps.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task VerifyTimeOverlapsAsync_AdjacentAssignments_ReportsNoOverlaps()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        // Target runs 10:00–12:00; the other starts exactly when the target ends (12:00).
+        // The overlap predicate is strict (a.Start < b.End && b.Start < a.End), so touching
+        // at an endpoint does not count as an overlap.
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(OverlapActivity(activityId, 10, 12));
+        activities
+            .GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>())
+            .Returns([
+                new()
+                {
+                    ActivityId = Guid.NewGuid(),
+                    Activity = OverlapActivity(Guid.NewGuid(), 12, 14),
                 },
             ]);
 

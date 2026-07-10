@@ -311,6 +311,40 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task GetContent_IfNoneMatchMatchesEtag_ReturnsNotModified()
+    {
+        var created = await UploadAsAdminAsync(ValidPng(), "cached.png");
+        var client = CreateClient();
+
+        using var first = await client.GetAsync(
+            $"/api/files/{created.Id}/content",
+            TestContext.Current.CancellationToken
+        );
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        var etag = first.Headers.ETag;
+        etag.Should().NotBeNull();
+        etag!.IsWeak.Should().BeFalse();
+        etag.Tag.Should().Be($"\"{created.Id:N}-{created.UploadedAt.UtcTicks}\"");
+
+        using var conditional = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/files/{created.Id}/content"
+        );
+        conditional.Headers.IfNoneMatch.Add(etag);
+
+        using var response = await client.SendAsync(
+            conditional,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotModified);
+        var body = await response.Content.ReadAsByteArrayAsync(
+            TestContext.Current.CancellationToken
+        );
+        body.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Update_AsAdmin_ReplacesContentAndNameKeepingId()
     {
         var created = await UploadAsAdminAsync(fileName: "old.png");

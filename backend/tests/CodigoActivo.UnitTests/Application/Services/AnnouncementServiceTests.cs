@@ -145,6 +145,28 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
+    public async Task ListAsync_EqualCreatedAt_OrdersByIdTieBreakForStablePagination()
+    {
+        // All three share the same CreatedAt (default year 2024), so the default
+        // "-createdAt" sort produces a tie and ordering falls back to the Id
+        // tie-break (ascending), guaranteeing stable pagination.
+        var first = NewAnnouncement("First");
+        first.Id = new Guid("00000001-0000-0000-0000-000000000000");
+        var second = NewAnnouncement("Second");
+        second.Id = new Guid("00000002-0000-0000-0000-000000000000");
+        var third = NewAnnouncement("Third");
+        third.Id = new Guid("00000003-0000-0000-0000-000000000000");
+        HasAnnouncements(third, first, second);
+
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(a => a.Id).Should().ContainInOrder(first.Id, second.Id, third.Id);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_AnnouncementMissing_ReturnsNotFound()
     {
         HasAnnouncements();

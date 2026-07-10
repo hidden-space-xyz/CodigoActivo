@@ -111,6 +111,30 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
+    public async Task ListAsync_NoSortSpecified_OrdersByTierAscendingThenFromDateDescending()
+    {
+        var tier1Newer = NewPartner("Tier1Newer", tier: 1);
+        tier1Newer.FromDate = new DateOnly(2023, 6, 1);
+        var tier1Older = NewPartner("Tier1Older", tier: 1);
+        tier1Older.FromDate = new DateOnly(2020, 6, 1);
+        var tier2 = NewPartner("Tier2", tier: 2);
+        tier2.FromDate = new DateOnly(2025, 1, 1);
+        var tier3 = NewPartner("Tier3", tier: 3);
+        tier3.FromDate = new DateOnly(2019, 1, 1);
+        HasPartners(tier2, tier3, tier1Older, tier1Newer);
+
+        var result = await sut.ListAsync(
+            new PartnerListQuery(),
+            TestContext.Current.CancellationToken
+        );
+
+        result
+            .Items.Select(p => p.Name)
+            .Should()
+            .ContainInOrder("Tier1Newer", "Tier1Older", "Tier2", "Tier3");
+    }
+
+    [Fact]
     public async Task GetByIdAsync_PartnerExists_ReturnsPartner()
     {
         var partner = NewPartner();

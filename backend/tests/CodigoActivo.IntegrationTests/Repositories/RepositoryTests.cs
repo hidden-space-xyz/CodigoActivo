@@ -238,7 +238,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetAllAsync_ThreeRowsStored_CountAndExistsReflectStore()
+    public async Task GetAllAsync_ThreeRowsStored_ReturnsAllRows()
     {
         await using var ctx = NewContext();
         ctx.Partners.AddRange(
@@ -250,6 +250,20 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var repo = new PartnerRepository(ctx);
 
         (await repo.GetAllAsync(TestContext.Current.CancellationToken)).Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task CountAsync_PredicateProvided_CountsMatchingRows()
+    {
+        await using var ctx = NewContext();
+        ctx.Partners.AddRange(
+            NewPartner("A", tier: 2),
+            NewPartner("B", tier: 2),
+            NewPartner("C", tier: 9)
+        );
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new PartnerRepository(ctx);
+
         (await repo.CountAsync(p => p.Tier == 2, TestContext.Current.CancellationToken))
             .Should()
             .Be(2);
@@ -355,12 +369,10 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Theory]
-    [InlineData("user@x.test", true)]
-    [InlineData("+34600000000", true)]
-    [InlineData("nobody@x.test", false)]
-    public async Task GetByEmailOrPhoneAsync_EmailOrPhoneIdentifier_MatchesUser(
-        string identifier,
-        bool expectFound
+    [InlineData("user@x.test")]
+    [InlineData("+34600000000")]
+    public async Task GetByEmailOrPhoneAsync_EmailOrPhoneIdentifier_ReturnsTheUser(
+        string identifier
     )
     {
         await using var ctx = NewContext();
@@ -374,19 +386,29 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             TestContext.Current.CancellationToken
         );
 
-        if (expectFound)
-        {
-            result.Should().NotBeNull();
-            result!.Id.Should().Be(user.Id);
-        }
-        else
-        {
-            result.Should().BeNull();
-        }
+        result!.Id.Should().Be(user.Id);
     }
 
     [Fact]
-    public async Task EmailExistsAsync_ExcludeUserIdProvided_HonoursExclusion()
+    public async Task GetByEmailOrPhoneAsync_UnknownIdentifier_ReturnsNull()
+    {
+        await using var ctx = NewContext();
+        ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new UserRepository(ctx);
+
+        var result = await repo.GetByEmailOrPhoneAsync(
+            "nobody@x.test",
+            TestContext.Current.CancellationToken
+        );
+
+        result.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("dup@x.test", true)]
+    [InlineData("free@x.test", false)]
+    public async Task EmailExistsAsync_NoExcludeUserId_ReportsPresence(string email, bool expected)
     {
         await using var ctx = NewContext();
         var user = NewUser(email: "dup@x.test");
@@ -394,12 +416,20 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new UserRepository(ctx);
 
-        (await repo.EmailExistsAsync("dup@x.test", ct: TestContext.Current.CancellationToken))
+        (await repo.EmailExistsAsync(email, ct: TestContext.Current.CancellationToken))
             .Should()
-            .BeTrue();
-        (await repo.EmailExistsAsync("free@x.test", ct: TestContext.Current.CancellationToken))
-            .Should()
-            .BeFalse();
+            .Be(expected);
+    }
+
+    [Fact]
+    public async Task EmailExistsAsync_ExcludeUserIdMatchesOwner_ReturnsFalse()
+    {
+        await using var ctx = NewContext();
+        var user = NewUser(email: "dup@x.test");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new UserRepository(ctx);
+
         (
             await repo.EmailExistsAsync(
                 "dup@x.test",
@@ -409,6 +439,17 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         )
             .Should()
             .BeFalse("owner is excluded");
+    }
+
+    [Fact]
+    public async Task EmailExistsAsync_ExcludeUserIdIsOtherUser_ReturnsTrue()
+    {
+        await using var ctx = NewContext();
+        var user = NewUser(email: "dup@x.test");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new UserRepository(ctx);
+
         (
             await repo.EmailExistsAsync(
                 "dup@x.test",
@@ -420,8 +461,10 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             .BeTrue("another user still collides");
     }
 
-    [Fact]
-    public async Task PhoneExistsAsync_ExcludeUserIdProvided_HonoursExclusion()
+    [Theory]
+    [InlineData("+100", true)]
+    [InlineData("+999", false)]
+    public async Task PhoneExistsAsync_NoExcludeUserId_ReportsPresence(string phone, bool expected)
     {
         await using var ctx = NewContext();
         var user = NewUser(phone: "+100");
@@ -429,12 +472,20 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new UserRepository(ctx);
 
-        (await repo.PhoneExistsAsync("+100", ct: TestContext.Current.CancellationToken))
+        (await repo.PhoneExistsAsync(phone, ct: TestContext.Current.CancellationToken))
             .Should()
-            .BeTrue();
-        (await repo.PhoneExistsAsync("+999", ct: TestContext.Current.CancellationToken))
-            .Should()
-            .BeFalse();
+            .Be(expected);
+    }
+
+    [Fact]
+    public async Task PhoneExistsAsync_ExcludeUserIdMatchesOwner_ReturnsFalse()
+    {
+        await using var ctx = NewContext();
+        var user = NewUser(phone: "+100");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new UserRepository(ctx);
+
         (
             await repo.PhoneExistsAsync(
                 "+100",
@@ -443,7 +494,18 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             )
         )
             .Should()
-            .BeFalse();
+            .BeFalse("owner is excluded");
+    }
+
+    [Fact]
+    public async Task PhoneExistsAsync_ExcludeUserIdIsOtherUser_ReturnsTrue()
+    {
+        await using var ctx = NewContext();
+        var user = NewUser(phone: "+100");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new UserRepository(ctx);
+
         (
             await repo.PhoneExistsAsync(
                 "+100",
@@ -452,7 +514,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             )
         )
             .Should()
-            .BeTrue();
+            .BeTrue("another user still collides");
     }
 
     [Fact]

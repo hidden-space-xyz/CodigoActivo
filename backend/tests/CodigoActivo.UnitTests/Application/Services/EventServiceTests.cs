@@ -60,6 +60,29 @@ public sealed class EventServiceTests
             )
             .Returns(count);
 
+    private void CaptureCreatedEvents()
+    {
+        var store = new List<Event>();
+        events.Query().Returns(_ => store.AsQueryable());
+        events
+            .When(x => x.AddAsync(Arg.Any<Event>(), Arg.Any<CancellationToken>()))
+            .Do(ci =>
+            {
+                var ev = ci.Arg<Event>();
+                foreach (var category in ev.Categories)
+                {
+                    category.EventCategoryType = new EventCategoryType
+                    {
+                        Id = category.EventCategoryTypeId,
+                        Name = "Talleres",
+                        Color = "#112233",
+                    };
+                }
+
+                store.Add(ev);
+            });
+    }
+
     private static Event NewEvent(
         string title = "Hackathon",
         string subtitle = "Innovación",
@@ -145,8 +168,13 @@ public sealed class EventServiceTests
         result.Items.Should().AllBeOfType<EventListItemResponse>();
     }
 
-    [Fact]
-    public async Task ListAsync_ScopeUpcoming_KeepsEventsEndingTodayOrLater()
+    [Theory]
+    [InlineData(EventScope.Upcoming, "Upcoming")]
+    [InlineData(EventScope.Past, "Past")]
+    public async Task ListAsync_Scope_KeepsEventsMatchingScope(
+        EventScope scope,
+        string expectedTitle
+    )
     {
         clock.Today = new DateOnly(2026, 7, 4);
         HasEvents(
@@ -155,28 +183,11 @@ public sealed class EventServiceTests
         );
 
         var result = await sut.ListAsync(
-            new EventListQuery { Scope = EventScope.Upcoming },
+            new EventListQuery { Scope = scope },
             TestContext.Current.CancellationToken
         );
 
-        result.Items.Should().ContainSingle().Which.Title.Should().Be("Upcoming");
-    }
-
-    [Fact]
-    public async Task ListAsync_ScopePast_KeepsEventsEndingBeforeToday()
-    {
-        clock.Today = new DateOnly(2026, 7, 4);
-        HasEvents(
-            NewEvent("Past", starts: new DateOnly(2026, 1, 1), ends: new DateOnly(2026, 1, 2)),
-            NewEvent("Upcoming", starts: new DateOnly(2026, 8, 1), ends: new DateOnly(2026, 8, 2))
-        );
-
-        var result = await sut.ListAsync(
-            new EventListQuery { Scope = EventScope.Past },
-            TestContext.Current.CancellationToken
-        );
-
-        result.Items.Should().ContainSingle().Which.Title.Should().Be("Past");
+        result.Items.Should().ContainSingle().Which.Title.Should().Be(expectedTitle);
     }
 
     [Fact]
@@ -293,29 +304,68 @@ public sealed class EventServiceTests
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    public async Task CreateAsync_MissingScheduleDate_ReturnsScheduleRequired(int missing)
+    public static TheoryData<CreateEventRequest> MissingScheduleDateRequests()
     {
-        var request = new CreateEventRequest(
-            Title: "Hackathon",
-            Subtitle: "Innovación",
-            Description: "{}",
-            EventStartsAt: missing == 0 ? null : new DateOnly(2026, 8, 1),
-            EventEndsAt: missing == 1 ? null : new DateOnly(2026, 8, 3),
-            SignupStartsAt: missing == 2
-                ? null
-                : new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-            SignupEndsAt: missing == 3
-                ? null
-                : new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
-            ThumbnailId: Guid.NewGuid(),
-            CategoryTypeIds: [Guid.NewGuid()]
-        );
+        var eventStart = new DateOnly(2026, 8, 1);
+        var eventEnd = new DateOnly(2026, 8, 3);
+        var signupStart = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
+        var signupEnd = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero);
 
+        return new TheoryData<CreateEventRequest>
+        {
+            new CreateEventRequest(
+                Title: "Hackathon",
+                Subtitle: "Innovación",
+                Description: "{}",
+                EventStartsAt: null,
+                EventEndsAt: eventEnd,
+                SignupStartsAt: signupStart,
+                SignupEndsAt: signupEnd,
+                ThumbnailId: Guid.NewGuid(),
+                CategoryTypeIds: [Guid.NewGuid()]
+            ),
+            new CreateEventRequest(
+                Title: "Hackathon",
+                Subtitle: "Innovación",
+                Description: "{}",
+                EventStartsAt: eventStart,
+                EventEndsAt: null,
+                SignupStartsAt: signupStart,
+                SignupEndsAt: signupEnd,
+                ThumbnailId: Guid.NewGuid(),
+                CategoryTypeIds: [Guid.NewGuid()]
+            ),
+            new CreateEventRequest(
+                Title: "Hackathon",
+                Subtitle: "Innovación",
+                Description: "{}",
+                EventStartsAt: eventStart,
+                EventEndsAt: eventEnd,
+                SignupStartsAt: null,
+                SignupEndsAt: signupEnd,
+                ThumbnailId: Guid.NewGuid(),
+                CategoryTypeIds: [Guid.NewGuid()]
+            ),
+            new CreateEventRequest(
+                Title: "Hackathon",
+                Subtitle: "Innovación",
+                Description: "{}",
+                EventStartsAt: eventStart,
+                EventEndsAt: eventEnd,
+                SignupStartsAt: signupStart,
+                SignupEndsAt: null,
+                ThumbnailId: Guid.NewGuid(),
+                CategoryTypeIds: [Guid.NewGuid()]
+            ),
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(MissingScheduleDateRequests))]
+    public async Task CreateAsync_MissingScheduleDate_ReturnsScheduleRequired(
+        CreateEventRequest request
+    )
+    {
         var result = await sut.CreateAsync(
             request,
             Guid.NewGuid(),
@@ -414,13 +464,29 @@ public sealed class EventServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task CreateAsync_NoCategoriesSupplied_ReturnsCategoriesRequired(bool empty)
+    [Fact]
+    public async Task CreateAsync_NullCategories_ReturnsCategoriesRequired()
     {
         ThumbnailExists(true);
-        var request = CreateReq(categoryTypeIds: empty ? Array.Empty<Guid>() : null);
+        var request = CreateReq(categoryTypeIds: null);
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.EventCategoriesRequired);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task CreateAsync_EmptyCategories_ReturnsCategoriesRequired()
+    {
+        ThumbnailExists(true);
+        var request = CreateReq(categoryTypeIds: Array.Empty<Guid>());
 
         var result = await sut.CreateAsync(
             request,
@@ -462,26 +528,7 @@ public sealed class EventServiceTests
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         ThumbnailExists(true);
         HasCategoryCount(1);
-
-        var store = new List<Event>();
-        events.Query().Returns(_ => store.AsQueryable());
-        events
-            .When(x => x.AddAsync(Arg.Any<Event>(), Arg.Any<CancellationToken>()))
-            .Do(ci =>
-            {
-                var ev = ci.Arg<Event>();
-                foreach (var category in ev.Categories)
-                {
-                    category.EventCategoryType = new EventCategoryType
-                    {
-                        Id = category.EventCategoryTypeId,
-                        Name = "Talleres",
-                        Color = "#112233",
-                    };
-                }
-
-                store.Add(ev);
-            });
+        CaptureCreatedEvents();
 
         var request = CreateReq(categoryTypeIds: [categoryId], thumbnailId: thumbnailId);
 
@@ -506,6 +553,58 @@ public sealed class EventServiceTests
                 ),
                 Arg.Any<CancellationToken>()
             );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateAsync_DuplicateCategoryTypeIds_PersistsSingleCategory()
+    {
+        var categoryId = Guid.NewGuid();
+        ThumbnailExists(true);
+        HasCategoryCount(1);
+        CaptureCreatedEvents();
+
+        var request = CreateReq(categoryTypeIds: [categoryId, categoryId]);
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result
+            .Value.Categories.Should()
+            .ContainSingle()
+            .Which.CategoryTypeId.Should()
+            .Be(categoryId);
+        await events
+            .Received(1)
+            .AddAsync(Arg.Is<Event>(e => e.Categories.Count == 1), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateAsync_SignupStartsOnEventEndDate_Succeeds()
+    {
+        ThumbnailExists(true);
+        HasCategoryCount(1);
+        CaptureCreatedEvents();
+
+        var request = CreateReq(
+            eventStart: new DateOnly(2026, 8, 1),
+            eventEnd: new DateOnly(2026, 8, 3),
+            signupStart: new DateTimeOffset(2026, 8, 3, 0, 0, 0, TimeSpan.Zero),
+            signupEnd: new DateTimeOffset(2026, 8, 3, 12, 0, 0, TimeSpan.Zero),
+            categoryTypeIds: [Guid.NewGuid()]
+        );
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

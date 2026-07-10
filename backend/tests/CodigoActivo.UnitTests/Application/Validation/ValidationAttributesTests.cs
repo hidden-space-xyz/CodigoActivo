@@ -1,12 +1,16 @@
+using System.ComponentModel.DataAnnotations;
 using AwesomeAssertions;
 using CodigoActivo.Application.Validation;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Validation;
 
 public sealed class ValidationAttributesTests
 {
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static readonly DateOnly Today = new(2026, 7, 4);
 
     [Fact]
     public void IsValid_NotBlankNonStringValues_ReturnsTrue()
@@ -56,34 +60,74 @@ public sealed class ValidationAttributesTests
         new JsonStringAttribute().IsValid(value).Should().BeFalse();
     }
 
-    [Fact]
-    public void IsValid_NotDefaultOrFutureDateNonDateOnlyValues_ReturnsTrue()
+    [Theory]
+    [InlineData(2026, 7, 5)] // tomorrow
+    [InlineData(2027, 1, 1)] // next year
+    public void GetValidationResult_NotDefaultOrFutureDateFutureDate_Fails(
+        int year,
+        int month,
+        int day
+    )
     {
-        new NotDefaultOrFutureDateAttribute().IsValid("2024-01-01").Should().BeTrue();
-        new NotDefaultOrFutureDateAttribute().IsValid(null).Should().BeTrue();
+        var result = Validate(new DateOnly(year, month, day));
+
+        result.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData(2026, 7, 4)] // today, in the clock's timezone
+    [InlineData(2026, 7, 3)] // yesterday
+    [InlineData(2000, 1, 1)] // long past
+    public void GetValidationResult_NotDefaultOrFutureDateTodayOrPast_Succeeds(
+        int year,
+        int month,
+        int day
+    )
+    {
+        var result = Validate(new DateOnly(year, month, day));
+
+        result.Should().BeNull();
     }
 
     [Fact]
-    public void IsValid_DefaultDate_ReturnsFalse()
+    public void GetValidationResult_NotDefaultOrFutureDateDefaultDate_Fails()
     {
-        new NotDefaultOrFutureDateAttribute().IsValid(default(DateOnly)).Should().BeFalse();
+        var result = Validate(default(DateOnly));
+
+        result.Should().NotBeNull();
     }
 
     [Fact]
-    public void IsValid_FutureDate_ReturnsFalse()
+    public void GetValidationResult_NotDefaultOrFutureDateNonDateOnlyValue_Succeeds()
     {
-        new NotDefaultOrFutureDateAttribute().IsValid(Today.AddDays(1)).Should().BeFalse();
+        Validate("2024-01-01").Should().BeNull();
+        Validate(null).Should().BeNull();
     }
 
     [Fact]
-    public void IsValid_Today_ReturnsTrue()
+    public void GetValidationResult_NotDefaultOrFutureDateFutureDate_NamesTheOffendingMember()
     {
-        new NotDefaultOrFutureDateAttribute().IsValid(Today).Should().BeTrue();
+        var result = Validate(Today.AddDays(1));
+
+        result!.MemberNames.Should().Equal(nameof(Holder.BirthDate));
     }
 
-    [Fact]
-    public void IsValid_PastDate_ReturnsTrue()
+    private static ValidationResult? Validate(object? value)
     {
-        new NotDefaultOrFutureDateAttribute().IsValid(new DateOnly(2000, 1, 1)).Should().BeTrue();
+        using var services = new ServiceCollection()
+            .AddSingleton<IClock>(new TestClock(today: Today))
+            .BuildServiceProvider();
+
+        var context = new ValidationContext(new Holder(), services, items: null)
+        {
+            MemberName = nameof(Holder.BirthDate),
+        };
+
+        return new NotDefaultOrFutureDateAttribute().GetValidationResult(value, context);
+    }
+
+    private sealed class Holder
+    {
+        public DateOnly BirthDate { get; set; }
     }
 }

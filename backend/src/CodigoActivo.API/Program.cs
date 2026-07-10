@@ -31,8 +31,14 @@ try
             loggerConfiguration
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
-                .Enrich.FromLogContext()
-                .WriteTo.File(
+                .Enrich.FromLogContext();
+
+            // The rolling file lives under the content root, so every extra host in a process (the
+            // integration test factory builds one per test class) would contend for it. Hosts that
+            // only want stdout — containers, tests — set LOG_TO_FILE=false.
+            if (context.Configuration.GetValue("LOG_TO_FILE", true))
+            {
+                loggerConfiguration.WriteTo.File(
                     new RenderedCompactJsonFormatter(),
                     Path.Combine(
                         context.HostingEnvironment.ContentRootPath,
@@ -42,6 +48,7 @@ try
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 14
                 );
+            }
 
             loggerConfiguration.WriteTo.Console(new RenderedCompactJsonFormatter());
         }

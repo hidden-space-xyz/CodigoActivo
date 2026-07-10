@@ -4,6 +4,7 @@ using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -80,6 +81,46 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         page.Items.Select(u => u.Id)
             .Should()
             .BeEquivalentTo([TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]);
+    }
+
+    [Fact]
+    public async Task List_SearchByAccentInsensitiveFirstName_MatchesViaSqlFolding()
+    {
+        // The unit test proves accent folding only over LINQ-to-Objects (CLR string semantics);
+        // this exercises the real EF-to-PostgreSQL translation and column collation, where a
+        // seeded "Ávila" must be found by the un-accented, lower-case term "avila".
+        var accentedId = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Users.Add(
+                new User
+                {
+                    Id = accentedId,
+                    FirstName = "Ávila",
+                    LastName = "Fernandez",
+                    Email = "avila@codigoactivo.test",
+                    Phone = "+34600000099",
+                    PasswordHash = TestSeedData.PasswordHash,
+                    BirthDate = new DateOnly(1990, 2, 2),
+                    UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                    UserTypeId = SeedIds.UserTypes.Member,
+                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                }
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?firstName=avila",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Should().ContainSingle(u => u.Id == accentedId);
     }
 
     [Fact]
