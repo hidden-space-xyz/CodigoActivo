@@ -64,10 +64,15 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedResourceAsync("Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/resources");
+        var response = await client.GetAsync(
+            "/api/resources",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(r => r.Title == "Alpha");
@@ -78,10 +83,15 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/resources/{Guid.NewGuid()}");
+        var response = await client.GetAsync(
+            $"/api/resources/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.ResourceNotFound);
     }
 
@@ -92,14 +102,22 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = new CreateResourceRequest("Gamma", "Tagline", Description, thumbnailId);
 
-        var response = await client.PostJsonAsync("/api/resources", request);
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var created = await response.ReadJsonAsync<ResourceResponse>();
+        var created = await response.ReadJsonAsync<ResourceResponse>(
+            TestContext.Current.CancellationToken
+        );
         created!.Title.Should().Be("Gamma");
 
-        var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Resources.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Subtitle.Should().Be("Tagline");
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
     }
@@ -111,7 +129,11 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         var request = new CreateResourceRequest("Nope", "Sub", Description, thumbnailId);
 
-        var response = await client.PostJsonAsync("/api/resources", request);
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -122,7 +144,11 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
         var request = new CreateResourceRequest("Nope", "Sub", Description, Guid.NewGuid());
 
-        var response = await client.PostJsonAsync("/api/resources", request);
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -136,10 +162,16 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = new CreateResourceRequest(title, subtitle, Description, thumbnailId);
 
-        var response = await client.PostJsonAsync("/api/resources", request);
+        var response = await client.PostJsonAsync(
+            "/api/resources",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
@@ -156,10 +188,12 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             ),
         };
 
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
@@ -168,18 +202,28 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var id = await SeedResourceAsync("Reemplazo");
         var oldThumbnailId = (
-            await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
         var request = new UpdateResourceRequest("Reemplazo", "Sub", Description, newThumbnailId);
 
-        var response = await client.PutJsonAsync($"/api/resources/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/resources/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await Factory.QueryAsync(db => db.Files.FindAsync(oldThumbnailId).AsTask());
+        var oldFile = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([oldThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
-        var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
+        var newFile = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([newThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         newFile.Should().NotBeNull();
     }
 
@@ -188,16 +232,25 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var id = await SeedResourceAsync("Doomed");
         var thumbnailId = (
-            await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/resources/{id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/resources/{id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Resources.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Resources.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored.Should().BeNull();
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        var file = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([thumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         file.Should()
             .BeNull("the deleted resource's thumbnail is orphaned and must be cascade-deleted");
     }

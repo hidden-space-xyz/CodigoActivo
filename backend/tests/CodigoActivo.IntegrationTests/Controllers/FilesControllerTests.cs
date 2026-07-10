@@ -65,7 +65,10 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     {
         using var request = new HttpRequestMessage(method, url);
         if (withCsrf)
-            request.Headers.Add("X-CSRF-TOKEN", await client.FetchCsrfTokenAsync());
+            request.Headers.Add(
+                "X-CSRF-TOKEN",
+                await client.FetchCsrfTokenAsync(TestContext.Current.CancellationToken)
+            );
 
         var form = new MultipartFormDataContent();
         if (fileBytes is not null)
@@ -76,7 +79,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         }
 
         request.Content = form;
-        return await client.SendAsync(request);
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
     private async Task<FileResponse> UploadAsAdminAsync(
@@ -93,7 +96,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
             fileName
         );
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        return (await response.ReadJsonAsync<FileResponse>())!;
+        return (await response.ReadJsonAsync<FileResponse>(TestContext.Current.CancellationToken))!;
     }
 
     [Fact]
@@ -111,14 +114,18 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var created = await response.ReadJsonAsync<FileResponse>();
+        var created = await response.ReadJsonAsync<FileResponse>(
+            TestContext.Current.CancellationToken
+        );
         created!.Name.Should().Be("picture.png");
         created.Extension.Should().Be("png");
         created.UploadedBy.Should().Be(TestSeedData.Users.AdminId);
         created.UploadedAt.Should().Be(Factory.Clock.UtcNow);
         response.Headers.Location!.ToString().Should().EndWith($"/api/files/{created.Id}");
 
-        var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Extension.Should().Be("png");
         stored.UploadedBy.Should().Be(TestSeedData.Users.AdminId);
     }
@@ -167,7 +174,9 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
@@ -175,7 +184,9 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     public async Task Create_without_file_part_is_bad_request_with_upload_missing()
     {
         var client = await LoginAsAdminAsync();
-        var before = await Factory.QueryAsync(db => db.Files.CountAsync());
+        var before = await Factory.QueryAsync(db =>
+            db.Files.CountAsync(TestContext.Current.CancellationToken)
+        );
 
         using var response = await SendUploadAsync(
             client,
@@ -185,10 +196,14 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
 
-        var after = await Factory.QueryAsync(db => db.Files.CountAsync());
+        var after = await Factory.QueryAsync(db =>
+            db.Files.CountAsync(TestContext.Current.CancellationToken)
+        );
         after.Should().Be(before);
     }
 
@@ -200,7 +215,9 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await SendUploadAsync(client, HttpMethod.Post, "/api/files", []);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.FileUploadEmpty);
     }
 
@@ -210,10 +227,15 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync(fileName: "avatar.png");
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{created.Id}");
+        var response = await client.GetAsync(
+            $"/api/files/{created.Id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var meta = await response.ReadJsonAsync<FileResponse>();
+        var meta = await response.ReadJsonAsync<FileResponse>(
+            TestContext.Current.CancellationToken
+        );
         meta!.Id.Should().Be(created.Id);
         meta.Name.Should().Be("avatar.png");
         meta.Extension.Should().Be("png");
@@ -224,10 +246,15 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{Guid.NewGuid()}");
+        var response = await client.GetAsync(
+            $"/api/files/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.FileNotFound);
     }
 
@@ -238,11 +265,16 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync(bytes, "photo.png");
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{created.Id}/content");
+        var response = await client.GetAsync(
+            $"/api/files/{created.Id}/content",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
-        var downloaded = await response.Content.ReadAsByteArrayAsync();
+        var downloaded = await response.Content.ReadAsByteArrayAsync(
+            TestContext.Current.CancellationToken
+        );
         downloaded.Should().Equal(bytes);
     }
 
@@ -266,10 +298,15 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{id}/content");
+        var response = await client.GetAsync(
+            $"/api/files/{id}/content",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.FileContentMissingFromStorage);
     }
 
@@ -288,11 +325,15 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.ReadJsonAsync<FileResponse>();
+        var updated = await response.ReadJsonAsync<FileResponse>(
+            TestContext.Current.CancellationToken
+        );
         updated!.Id.Should().Be(created.Id);
         updated.Name.Should().Be("new.png");
 
-        var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Name.Should().Be("new.png");
         stored.Extension.Should().Be("png");
     }
@@ -303,13 +344,19 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/files/{created.Id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored.Should().BeNull();
 
-        using var followUp = await CreateClient().GetAsync($"/api/files/{created.Id}");
+        using var followUp = await CreateClient()
+            .GetAsync($"/api/files/{created.Id}", TestContext.Current.CancellationToken);
         followUp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -346,12 +393,19 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/files/{created.Id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.FileInUse);
-        var stored = await Factory.QueryAsync(db => db.Files.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored
             .Should()
             .NotBeNull("a file embedded in a rich-text description must survive deletion");

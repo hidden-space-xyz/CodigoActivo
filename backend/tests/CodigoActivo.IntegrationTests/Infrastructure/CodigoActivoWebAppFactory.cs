@@ -1,7 +1,7 @@
-using System.Globalization;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Security;
+using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Hosting;
@@ -11,12 +11,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Npgsql;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
+public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
+    : WebApplicationFactory<Program>
 {
+    private static readonly DateTimeOffset ClockOrigin = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+
+    private readonly string fileStorageRoot = CreateFileStorageRoot();
+
     public TestClock Clock { get; } = new();
 
     public FakeEmailSender EmailSender { get; } = new();
@@ -56,10 +60,19 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<AccountVerificationOptions>();
             services.AddSingleton(new AccountVerificationOptions { Required = true });
+
+            services.RemoveAll<FileStorageOptions>();
+            services.AddSingleton(
+                new FileStorageOptions
+                {
+                    RootPath = fileStorageRoot,
+                    MaxSizeBytes = FileStorageOptions.DefaultMaxSizeBytes,
+                }
+            );
         });
     }
 
-    private static void UseTestDatabase(IServiceCollection services)
+    private void UseTestDatabase(IServiceCollection services)
     {
         var toRemove = services
             .Where(d =>
@@ -73,60 +86,37 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         foreach (var descriptor in toRemove)
             services.Remove(descriptor);
 
-        services.AddDbContext<CodigoActivoDbContext>(
-            (sp, options) =>
-                options
-                    .UseNpgsql(
-                        BuildTestConnectionString(sp.GetRequiredService<IConfiguration>()),
-                        npgsql =>
-                            npgsql.MigrationsAssembly(
-                                typeof(CodigoActivoDbContext).Assembly.FullName
-                            )
-                    )
-                    .UseSnakeCaseNamingConvention()
+        services.AddDbContext<CodigoActivoDbContext>(options =>
+            options
+                .UseNpgsql(
+                    postgres.ConnectionString,
+                    npgsql =>
+                        npgsql.MigrationsAssembly(typeof(CodigoActivoDbContext).Assembly.FullName)
+                )
+                .UseSnakeCaseNamingConvention()
         );
-    }
-
-    private static string BuildTestConnectionString(IConfiguration configuration)
-    {
-        var password = configuration["POSTGRES_PASSWORD"];
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            throw new InvalidOperationException(
-                "POSTGRES_PASSWORD (and optionally POSTGRES_HOST/POSTGRES_PORT/POSTGRES_DB/"
-                    + "POSTGRES_USER) must be set as environment variables to run the integration tests."
-            );
-        }
-
-        var database = configuration["POSTGRES_DB"] ?? "codigoactivo";
-        return new NpgsqlConnectionStringBuilder
-        {
-            Host = configuration["POSTGRES_HOST"] ?? "localhost",
-            Port = int.TryParse(
-                configuration["POSTGRES_PORT"],
-                CultureInfo.InvariantCulture,
-                out var port
-            )
-                ? port
-                : 5432,
-            Database = $"{database}test",
-            Username = configuration["POSTGRES_USER"] ?? "codigoactivo",
-            Password = password,
-        }.ConnectionString;
     }
 
     public async Task ResetDatabaseAsync()
     {
         EmailSender.Clear();
+        ResetClock();
 
         await using var scope = Services.CreateAsyncScope();
         var provider = scope.ServiceProvider;
         var db = provider.GetRequiredService<CodigoActivoDbContext>();
 
-        await TruncateAllTablesAsync(db);
+        await TestDatabase.TruncateAllTablesAsync(db);
 
         await provider.GetRequiredService<DatabaseSeeder>().SeedAsync();
         await TestSeedData.SeedUsersAsync(db);
+    }
+
+    private void ResetClock()
+    {
+        Clock.UtcNow = ClockOrigin;
+        Clock.Today = new DateOnly(2026, 7, 4);
+        Clock.TimeZone = TimeZoneInfo.Utc;
     }
 
     public async Task SeedAsync(Func<CodigoActivoDbContext, Task> seed)
@@ -144,24 +134,31 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         return await query(db);
     }
 
-    private static async Task TruncateAllTablesAsync(CodigoActivoDbContext db)
+    public override async ValueTask DisposeAsync()
     {
-        var tables = db
-            .Model.GetEntityTypes()
-            .Select(entity => (Schema: entity.GetSchema(), Table: entity.GetTableName()))
-            .Where(entity => entity.Table is not null)
-            .Select(entity =>
-                entity.Schema is null
-                    ? $"\"{entity.Table}\""
-                    : $"\"{entity.Schema}\".\"{entity.Table}\""
-            )
-            .Distinct()
-            .ToList();
+        await base.DisposeAsync();
+        TryDeleteDirectory(fileStorageRoot);
+    }
 
-        if (tables.Count == 0)
-            return;
+    private static string CreateFileStorageRoot()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            "codigoactivo-tests",
+            Guid.NewGuid().ToString("N")
+        );
+        Directory.CreateDirectory(root);
+        return root;
+    }
 
-        var sql = $"TRUNCATE TABLE {string.Join(", ", tables)} RESTART IDENTITY CASCADE";
-        await db.Database.ExecuteSqlRawAsync(sql);
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 }

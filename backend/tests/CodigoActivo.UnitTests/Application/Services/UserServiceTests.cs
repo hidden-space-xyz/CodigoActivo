@@ -144,7 +144,12 @@ public sealed class UserServiceTests
             NewUser(id: Guid.NewGuid())
         );
 
-        var result = await sut.ListAsync(new UserListQuery(), Guid.NewGuid(), isAdmin: true);
+        var result = await sut.ListAsync(
+            new UserListQuery(),
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
 
         result.Total.Should().Be(3);
         result.Items.Should().HaveCount(3).And.AllBeOfType<UserResponse>();
@@ -160,7 +165,12 @@ public sealed class UserServiceTests
             NewUser(first: "Stranger")
         );
 
-        var result = await sut.ListAsync(new UserListQuery(), caller, isAdmin: false);
+        var result = await sut.ListAsync(
+            new UserListQuery(),
+            caller,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
 
         result.Total.Should().Be(2);
         result.Items.Select(u => u.FirstName).Should().BeEquivalentTo("Self", "Child");
@@ -178,7 +188,8 @@ public sealed class UserServiceTests
         var result = await sut.ListAsync(
             new UserListQuery { ParentId = parent },
             Guid.NewGuid(),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Kid");
@@ -192,7 +203,8 @@ public sealed class UserServiceTests
         var result = await sut.ListAsync(
             new UserListQuery { FirstName = "avila" },
             Guid.NewGuid(),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Ávila");
@@ -206,7 +218,8 @@ public sealed class UserServiceTests
         var result = await sut.ListAsync(
             new UserListQuery { LastName = "gonz" },
             Guid.NewGuid(),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Items.Should().ContainSingle().Which.LastName.Should().Be("Gonzalez");
@@ -220,7 +233,8 @@ public sealed class UserServiceTests
         var result = await sut.ListAsync(
             new UserListQuery { Email = "beta" },
             Guid.NewGuid(),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Items.Should().ContainSingle().Which.Email.Should().Be("beta@test.com");
@@ -234,7 +248,8 @@ public sealed class UserServiceTests
         var result = await sut.ListAsync(
             new UserListQuery { Sort = "-lastName" },
             Guid.NewGuid(),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Items.Select(u => u.LastName).Should().ContainInOrder("Zzz", "Mmm", "Aaa");
@@ -248,7 +263,8 @@ public sealed class UserServiceTests
         var result = await sut.ListAsync(
             new UserListQuery { Page = 2, PageSize = 2 },
             Guid.NewGuid(),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Total.Should().Be(3);
@@ -263,7 +279,7 @@ public sealed class UserServiceTests
         var user = NewUser();
         HasUsers(user);
 
-        var result = await sut.GetByIdAsync(user.Id);
+        var result = await sut.GetByIdAsync(user.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(user.Id);
@@ -274,7 +290,7 @@ public sealed class UserServiceTests
     {
         HasUsers();
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -287,11 +303,16 @@ public sealed class UserServiceTests
         FindReturns(null);
         var request = new UpdateUserRequest("First", "Last", "a@test.com", "555", AdultDob, null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -307,11 +328,16 @@ public sealed class UserServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserParentNotAllowedForAdult);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -325,11 +351,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser());
         var request = new UpdateUserRequest("F", "L", email, phone, AdultDob, null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserContactInfoRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -341,11 +372,16 @@ public sealed class UserServiceTests
             .Returns(true);
         var request = new UpdateUserRequest("F", "L", "dup@test.com", "555", AdultDob, null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.UserEmailAlreadyInUse);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -360,11 +396,16 @@ public sealed class UserServiceTests
             .Returns(true);
         var request = new UpdateUserRequest("F", "L", "a@test.com", "555", AdultDob, null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.UserPhoneAlreadyInUse);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -390,7 +431,7 @@ public sealed class UserServiceTests
             null
         );
 
-        var result = await sut.UpdateAsync(id, request);
+        var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("New");
@@ -408,11 +449,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser());
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserParentIdRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -422,11 +468,12 @@ public sealed class UserServiceTests
         FindReturns(NewUser(id: id));
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, id);
 
-        var result = await sut.UpdateAsync(id, request);
+        var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserCannotBeOwnParent);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -435,11 +482,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(), null);
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ParentUserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -448,11 +500,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(), NewUser(dob: MinorDob));
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request);
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserParentIsMinor);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -475,7 +532,7 @@ public sealed class UserServiceTests
             parentId
         );
 
-        var result = await sut.UpdateAsync(id, request);
+        var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         user.ParentId.Should().Be(parentId);
@@ -493,12 +550,13 @@ public sealed class UserServiceTests
         var id = Guid.NewGuid();
         FindReturns(NewUser(id: id, isAdmin: true));
 
-        var result = await sut.DeleteAsync(id);
+        var result = await sut.DeleteAsync(id, TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ErrorCode.UserDeleteAdminForbidden);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -506,11 +564,12 @@ public sealed class UserServiceTests
     {
         FindReturns(null);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -519,7 +578,7 @@ public sealed class UserServiceTests
         var user = NewUser(isAdmin: false);
         FindReturns(user);
 
-        var result = await sut.DeleteAsync(user.Id);
+        var result = await sut.DeleteAsync(user.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         users.Received(1).Remove(user);
@@ -531,11 +590,16 @@ public sealed class UserServiceTests
     {
         FindReturns(null);
 
-        var result = await sut.SetAdminAsync(Guid.NewGuid(), true);
+        var result = await sut.SetAdminAsync(
+            Guid.NewGuid(),
+            true,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -544,7 +608,7 @@ public sealed class UserServiceTests
         var user = NewUser(isAdmin: false);
         FindReturns(user);
 
-        var result = await sut.SetAdminAsync(user.Id, true);
+        var result = await sut.SetAdminAsync(user.Id, true, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeTrue();
@@ -557,10 +621,11 @@ public sealed class UserServiceTests
         var user = NewUser(isAdmin: true);
         FindReturns(user);
 
-        var result = await sut.SetAdminAsync(user.Id, true);
+        var result = await sut.SetAdminAsync(user.Id, true, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -572,7 +637,7 @@ public sealed class UserServiceTests
             .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(2);
 
-        var result = await sut.SetAdminAsync(user.Id, false);
+        var result = await sut.SetAdminAsync(user.Id, false, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeFalse();
@@ -588,12 +653,13 @@ public sealed class UserServiceTests
             .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(1);
 
-        var result = await sut.SetAdminAsync(user.Id, false);
+        var result = await sut.SetAdminAsync(user.Id, false, TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ErrorCode.UserCannotRemoveLastAdmin);
         user.IsAdmin.Should().BeTrue();
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -601,11 +667,16 @@ public sealed class UserServiceTests
     {
         FindReturns(null);
 
-        var result = await sut.ChangeTypeAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await sut.ChangeTypeAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -614,11 +685,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser());
         RoleReturns(null);
 
-        var result = await sut.ChangeTypeAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await sut.ChangeTypeAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -627,11 +703,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(dob: MinorDob));
         RoleReturns(NewUserType("Volunteer", minors: false, adults: true));
 
-        var result = await sut.ChangeTypeAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await sut.ChangeTypeAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -640,11 +721,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(dob: AdultDob));
         RoleReturns(NewUserType("Cadet", minors: true, adults: false));
 
-        var result = await sut.ChangeTypeAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await sut.ChangeTypeAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForAdults);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -653,11 +739,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(dob: AdultDob));
         RoleReturns(NewUserType("Secret", minors: true, adults: true, hidden: true));
 
-        var result = await sut.ChangeTypeAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await sut.ChangeTypeAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForAdults);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -671,7 +762,7 @@ public sealed class UserServiceTests
         DetailsReturns(NewUser(id: id));
         clock.UtcNow = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
-        var result = await sut.ChangeTypeAsync(id, roleId);
+        var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         user.UserTypeId.Should().Be(roleId);
@@ -690,10 +781,11 @@ public sealed class UserServiceTests
         RoleReturns(NewUserType("Member", adults: true));
         DetailsReturns(NewUser(id: id));
 
-        var result = await sut.ChangeTypeAsync(id, roleId);
+        var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -702,11 +794,16 @@ public sealed class UserServiceTests
         FindReturns(null);
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
 
-        var result = await sut.AddChildAsync(Guid.NewGuid(), request);
+        var result = await sut.AddChildAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ParentUserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -715,11 +812,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(dob: MinorDob));
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
 
-        var result = await sut.AddChildAsync(Guid.NewGuid(), request);
+        var result = await sut.AddChildAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserParentIsMinor);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -728,11 +830,16 @@ public sealed class UserServiceTests
         FindReturns(NewUser(dob: AdultDob));
         var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Guid.NewGuid());
 
-        var result = await sut.AddChildAsync(Guid.NewGuid(), request);
+        var result = await sut.AddChildAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserChildBirthDateNotMinor);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -742,11 +849,16 @@ public sealed class UserServiceTests
         RoleReturns(null);
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
 
-        var result = await sut.AddChildAsync(Guid.NewGuid(), request);
+        var result = await sut.AddChildAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -756,11 +868,16 @@ public sealed class UserServiceTests
         RoleReturns(NewUserType("AdultOnly", minors: false));
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
 
-        var result = await sut.AddChildAsync(Guid.NewGuid(), request);
+        var result = await sut.AddChildAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -774,7 +891,11 @@ public sealed class UserServiceTests
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
         var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob, roleId);
 
-        var result = await sut.AddChildAsync(parentId, request);
+        var result = await sut.AddChildAsync(
+            parentId,
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await users
@@ -799,11 +920,16 @@ public sealed class UserServiceTests
         FindReturns(null);
         var request = new ChangePasswordRequest("old", "newpassword");
 
-        var result = await sut.ChangePasswordAsync(Guid.NewGuid(), request);
+        var result = await sut.ChangePasswordAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -814,11 +940,16 @@ public sealed class UserServiceTests
         FindReturns(user);
         var request = new ChangePasswordRequest("old", "newpassword");
 
-        var result = await sut.ChangePasswordAsync(Guid.NewGuid(), request);
+        var result = await sut.ChangePasswordAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserPasswordNotSet);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -829,11 +960,16 @@ public sealed class UserServiceTests
         FindReturns(user);
         var request = new ChangePasswordRequest("wrong", "newpassword");
 
-        var result = await sut.ChangePasswordAsync(Guid.NewGuid(), request);
+        var result = await sut.ChangePasswordAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.UserCurrentPasswordIncorrect);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -845,7 +981,11 @@ public sealed class UserServiceTests
         clock.UtcNow = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
         var request = new ChangePasswordRequest("correct", "brandnew");
 
-        var result = await sut.ChangePasswordAsync(Guid.NewGuid(), request);
+        var result = await sut.ChangePasswordAsync(
+            Guid.NewGuid(),
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
@@ -862,7 +1002,10 @@ public sealed class UserServiceTests
             NewUserType("HiddenOne", hidden: true)
         );
 
-        var result = await sut.ListRegistrationTypesAsync(null);
+        var result = await sut.ListRegistrationTypesAsync(
+            null,
+            TestContext.Current.CancellationToken
+        );
 
         result.Select(r => r.Name).Should().ContainInOrder("Alpha", "Zeta");
         result.Should().HaveCount(2);
@@ -878,7 +1021,10 @@ public sealed class UserServiceTests
             NewUserType("HiddenMinor", minors: true, hidden: true)
         );
 
-        var result = await sut.ListRegistrationTypesAsync(RegistrationAudience.Minor);
+        var result = await sut.ListRegistrationTypesAsync(
+            RegistrationAudience.Minor,
+            TestContext.Current.CancellationToken
+        );
 
         result.Select(r => r.Name).Should().BeEquivalentTo("MinorOnly", "Both");
     }
@@ -892,7 +1038,10 @@ public sealed class UserServiceTests
             NewUserType("Both", minors: true, adults: true)
         );
 
-        var result = await sut.ListRegistrationTypesAsync(RegistrationAudience.Adult);
+        var result = await sut.ListRegistrationTypesAsync(
+            RegistrationAudience.Adult,
+            TestContext.Current.CancellationToken
+        );
 
         result.Select(r => r.Name).Should().BeEquivalentTo("AdultOnly", "Both");
     }
@@ -902,7 +1051,7 @@ public sealed class UserServiceTests
     {
         HasStatusTypes(NewStatusType("Pending"), NewStatusType("Active"), NewStatusType("Blocked"));
 
-        var result = await sut.ListStatusTypesAsync();
+        var result = await sut.ListStatusTypesAsync(TestContext.Current.CancellationToken);
 
         result.Select(s => s.Name).Should().ContainInOrder("Active", "Blocked", "Pending");
         result.Should().AllBeOfType<UserStatusTypeResponse>();
@@ -913,7 +1062,7 @@ public sealed class UserServiceTests
     {
         HasUserTypes(NewUserType("Volunteer"), NewUserType("Admin"), NewUserType("Member"));
 
-        var result = await sut.ListUserTypesAsync();
+        var result = await sut.ListUserTypesAsync(TestContext.Current.CancellationToken);
 
         result.Select(t => t.Name).Should().ContainInOrder("Admin", "Member", "Volunteer");
         result.Should().AllBeOfType<UserTypeResponse>();

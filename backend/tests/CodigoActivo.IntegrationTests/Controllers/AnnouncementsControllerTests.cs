@@ -70,10 +70,15 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         await SeedAnnouncementAsync("Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/announcements");
+        var response = await client.GetAsync(
+            "/api/announcements",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(a => a.Title == "Alpha");
@@ -87,10 +92,15 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         await SeedAnnouncementAsync("C", year: 2021);
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/announcements/years");
+        var response = await client.GetAsync(
+            "/api/announcements/years",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var years = await response.ReadJsonAsync<IReadOnlyList<int>>();
+        var years = await response.ReadJsonAsync<IReadOnlyList<int>>(
+            TestContext.Current.CancellationToken
+        );
         years.Should().Equal(2023, 2021);
     }
 
@@ -100,10 +110,15 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var id = await SeedAnnouncementAsync("Beta");
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/announcements/{id}");
+        var response = await client.GetAsync(
+            $"/api/announcements/{id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var announcement = await response.ReadJsonAsync<AnnouncementResponse>();
+        var announcement = await response.ReadJsonAsync<AnnouncementResponse>(
+            TestContext.Current.CancellationToken
+        );
         announcement!.Title.Should().Be("Beta");
     }
 
@@ -114,15 +129,21 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var client = await LoginAsAdminAsync();
         var request = new CreateAnnouncementRequest("Gamma", "Tagline", Description, thumbnailId);
 
-        var response = await client.PostJsonAsync("/api/announcements", request);
+        var response = await client.PostJsonAsync(
+            "/api/announcements",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var created = await response.ReadJsonAsync<AnnouncementResponse>();
+        var created = await response.ReadJsonAsync<AnnouncementResponse>(
+            TestContext.Current.CancellationToken
+        );
         created!.Title.Should().Be("Gamma");
 
         var stored = await Factory.QueryAsync(db =>
-            db.Announcements.FindAsync(created.Id).AsTask()
+            db.Announcements.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
         );
         stored!.Subtitle.Should().Be("Tagline");
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
@@ -136,7 +157,11 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var client = await LoginAsMemberAsync();
         var request = new CreateAnnouncementRequest("Nope", "Sub", Description, thumbnailId);
 
-        var response = await client.PostJsonAsync("/api/announcements", request);
+        var response = await client.PostJsonAsync(
+            "/api/announcements",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -147,7 +172,11 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var client = CreateClient();
         var request = new CreateAnnouncementRequest("Nope", "Sub", Description, Guid.NewGuid());
 
-        var response = await client.PostJsonAsync("/api/announcements", request);
+        var response = await client.PostJsonAsync(
+            "/api/announcements",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -161,10 +190,16 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var client = await LoginAsAdminAsync();
         var request = new CreateAnnouncementRequest(title, subtitle, Description, thumbnailId);
 
-        var response = await client.PostJsonAsync("/api/announcements", request);
+        var response = await client.PostJsonAsync(
+            "/api/announcements",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
@@ -181,10 +216,12 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
             ),
         };
 
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
@@ -196,10 +233,16 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var client = await LoginAsAdminAsync();
         var request = new UpdateAnnouncementRequest("After", "NewSub", Description, thumbnailId);
 
-        var response = await client.PutJsonAsync($"/api/announcements/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/announcements/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Announcements.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Title.Should().Be("After");
         stored.Subtitle.Should().Be("NewSub");
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
@@ -210,7 +253,9 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     {
         var id = await SeedAnnouncementAsync("Reemplazo");
         var oldThumbnailId = (
-            await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Announcements.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -221,12 +266,20 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
             newThumbnailId
         );
 
-        var response = await client.PutJsonAsync($"/api/announcements/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/announcements/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await Factory.QueryAsync(db => db.Files.FindAsync(oldThumbnailId).AsTask());
+        var oldFile = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([oldThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
-        var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
+        var newFile = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([newThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         newFile.Should().NotBeNull();
     }
 
@@ -235,7 +288,9 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     {
         var id = await SeedAnnouncementAsync("Con imagen");
         var thumbnailId = (
-            await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Announcements.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var embeddedFileId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -245,7 +300,13 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
             $"{{\"img\":\"/api/files/{embeddedFileId}/content\"}}",
             thumbnailId
         );
-        using (var seeded = await client.PutJsonAsync($"/api/announcements/{id}", withImage))
+        using (
+            var seeded = await client.PutJsonAsync(
+                $"/api/announcements/{id}",
+                withImage,
+                TestContext.Current.CancellationToken
+            )
+        )
         {
             seeded.StatusCode.Should().Be(HttpStatusCode.OK);
         }
@@ -256,10 +317,16 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
             thumbnailId
         );
 
-        var response = await client.PutJsonAsync($"/api/announcements/{id}", withoutImage);
+        var response = await client.PutJsonAsync(
+            $"/api/announcements/{id}",
+            withoutImage,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(embeddedFileId).AsTask());
+        var file = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([embeddedFileId], TestContext.Current.CancellationToken).AsTask()
+        );
         file.Should()
             .BeNull(
                 "an image dropped from the description is orphaned and must be cascade-deleted"
@@ -271,10 +338,15 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.PatchJsonAsync($"/api/announcements/{Guid.NewGuid()}/feature");
+        var response = await client.PatchJsonAsync(
+            $"/api/announcements/{Guid.NewGuid()}/feature",
+            ct: TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.AnnouncementNotFound);
     }
 
@@ -283,16 +355,25 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     {
         var id = await SeedAnnouncementAsync("Doomed");
         var thumbnailId = (
-            await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Announcements.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/announcements/{id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/announcements/{id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Announcements.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Announcements.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored.Should().BeNull();
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        var file = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([thumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         file.Should()
             .BeNull("the deleted announcement's thumbnail is orphaned and must be cascade-deleted");
     }
@@ -313,14 +394,19 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/announcements/{doomedId}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/announcements/{doomedId}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(sharedThumbnailId).AsTask());
+        var file = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([sharedThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         file.Should()
             .NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
         var survivor = await Factory.QueryAsync(db =>
-            db.Announcements.FindAsync(survivorId).AsTask()
+            db.Announcements.FindAsync([survivorId], TestContext.Current.CancellationToken).AsTask()
         );
         survivor.Should().NotBeNull();
     }

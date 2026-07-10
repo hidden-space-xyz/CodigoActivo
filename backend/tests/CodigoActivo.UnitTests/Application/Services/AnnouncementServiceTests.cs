@@ -69,7 +69,10 @@ public sealed class AnnouncementServiceTests
     {
         HasAnnouncements(NewAnnouncement("Old", year: 2023), NewAnnouncement("New", year: 2025));
 
-        var result = await sut.ListAsync(new AnnouncementListQuery { Year = 2025 });
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Year = 2025 },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("New");
     }
@@ -84,7 +87,10 @@ public sealed class AnnouncementServiceTests
             NewAnnouncement("Plain", featured: false)
         );
 
-        var result = await sut.ListAsync(new AnnouncementListQuery { Featured = featured });
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Featured = featured },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be(expected);
     }
@@ -94,7 +100,10 @@ public sealed class AnnouncementServiceTests
     {
         HasAnnouncements(NewAnnouncement("Reunión Ávila"), NewAnnouncement("Otra"));
 
-        var result = await sut.ListAsync(new AnnouncementListQuery { Title = "avila" });
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Title = "avila" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Reunión Ávila");
     }
@@ -107,7 +116,10 @@ public sealed class AnnouncementServiceTests
             NewAnnouncement("B", subtitle: "invierno")
         );
 
-        var result = await sut.ListAsync(new AnnouncementListQuery { Subtitle = "vera" });
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Subtitle = "vera" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("A");
     }
@@ -121,7 +133,10 @@ public sealed class AnnouncementServiceTests
             NewAnnouncement("Bravo")
         );
 
-        var result = await sut.ListAsync(new AnnouncementListQuery { Sort = "title" });
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Sort = "title" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Select(a => a.Title).Should().ContainInOrder("Alpha", "Bravo", "Charlie");
     }
@@ -131,7 +146,7 @@ public sealed class AnnouncementServiceTests
     {
         HasAnnouncements();
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -148,7 +163,7 @@ public sealed class AnnouncementServiceTests
             NewAnnouncement(year: 2024)
         );
 
-        var result = await sut.GetYearsAsync();
+        var result = await sut.GetYearsAsync(TestContext.Current.CancellationToken);
 
         result.Should().ContainInOrder(2025, 2024, 2023);
         result.Should().HaveCount(3);
@@ -160,13 +175,20 @@ public sealed class AnnouncementServiceTests
         ThumbnailExists(false);
         var request = new CreateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.AnnouncementThumbnailNotFound);
-        await announcements.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await announcements
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -183,7 +205,7 @@ public sealed class AnnouncementServiceTests
             thumbnailId
         );
 
-        var result = await sut.CreateAsync(request, caller);
+        var result = await sut.CreateAsync(request, caller, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Title.Should().Be("Title");
@@ -214,12 +236,20 @@ public sealed class AnnouncementServiceTests
             .Returns((Announcement?)null);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
-        await files.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await files
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -235,11 +265,17 @@ public sealed class AnnouncementServiceTests
         ThumbnailExists(false);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            announcement.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.AnnouncementThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -263,7 +299,12 @@ public sealed class AnnouncementServiceTests
             thumbnailId
         );
 
-        var result = await sut.UpdateAsync(announcement.Id, request, caller);
+        var result = await sut.UpdateAsync(
+            announcement.Id,
+            request,
+            caller,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         announcement.Title.Should().Be("New");
@@ -289,7 +330,12 @@ public sealed class AnnouncementServiceTests
         ThumbnailExists(true);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            announcement.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -315,10 +361,17 @@ public sealed class AnnouncementServiceTests
             announcement.ThumbnailId
         );
 
-        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            announcement.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -343,7 +396,12 @@ public sealed class AnnouncementServiceTests
             announcement.ThumbnailId
         );
 
-        var result = await sut.UpdateAsync(announcement.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            announcement.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -364,13 +422,16 @@ public sealed class AnnouncementServiceTests
             )
             .Returns((Announcement?)null);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -386,7 +447,7 @@ public sealed class AnnouncementServiceTests
             )
             .Returns(announcement);
 
-        var result = await sut.DeleteAsync(announcement.Id);
+        var result = await sut.DeleteAsync(announcement.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -401,7 +462,10 @@ public sealed class AnnouncementServiceTests
             .SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        var result = await sut.SetFeaturedAsync(Guid.NewGuid());
+        var result = await sut.SetFeaturedAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -415,7 +479,10 @@ public sealed class AnnouncementServiceTests
         announcements.SetFeaturedAsync(announcement.Id, Arg.Any<CancellationToken>()).Returns(true);
         HasAnnouncements(announcement);
 
-        var result = await sut.SetFeaturedAsync(announcement.Id);
+        var result = await sut.SetFeaturedAsync(
+            announcement.Id,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(announcement.Id);

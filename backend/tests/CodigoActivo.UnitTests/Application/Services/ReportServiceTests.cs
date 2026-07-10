@@ -148,12 +148,14 @@ public sealed class ReportServiceTests
         var id = Guid.NewGuid();
         EventGraph(id, null);
 
-        var result = await sut.GetEventSummaryAsync(id);
+        var result = await sut.GetEventSummaryAsync(id, TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await roleTypes.DidNotReceiveWithAnyArgs().GetAllAsync(default);
+        await roleTypes
+            .DidNotReceiveWithAnyArgs()
+            .GetAllAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -187,7 +189,7 @@ public sealed class ReportServiceTests
         EventGraph(eventId, ev);
         HasRoleTypes((AlphaRoleId, "Alpha"), (BetaRoleId, "Beta"));
 
-        var result = await sut.GetEventSummaryAsync(eventId);
+        var result = await sut.GetEventSummaryAsync(eventId, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var summary = result.Value;
@@ -228,7 +230,7 @@ public sealed class ReportServiceTests
         EventGraph(eventId, ev);
         HasRoleTypes();
 
-        var result = await sut.GetEventSummaryAsync(eventId);
+        var result = await sut.GetEventSummaryAsync(eventId, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ActivitiesCount.Should().Be(0);
@@ -243,7 +245,7 @@ public sealed class ReportServiceTests
         var id = Guid.NewGuid();
         EventGraph(id, null);
 
-        var result = await sut.GetEventAssignmentsAsync(id);
+        var result = await sut.GetEventAssignmentsAsync(id, TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -273,7 +275,10 @@ public sealed class ReportServiceTests
         HasRoleTypes((AlphaRoleId, "Alpha"));
         HasStatusTypes((Confirmed, "Confirmado"));
 
-        var result = await sut.GetEventAssignmentsAsync(eventId);
+        var result = await sut.GetEventAssignmentsAsync(
+            eventId,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.EventId.Should().Be(eventId);
@@ -298,7 +303,10 @@ public sealed class ReportServiceTests
         var id = Guid.NewGuid();
         ActivityGraph(id, null);
 
-        var result = await sut.GetActivityAssignmentsAsync(id);
+        var result = await sut.GetActivityAssignmentsAsync(
+            id,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -331,7 +339,10 @@ public sealed class ReportServiceTests
         var activityId = activity.Id;
         ActivityGraph(activityId, activity);
 
-        var result = await sut.GetActivityAssignmentsAsync(activityId);
+        var result = await sut.GetActivityAssignmentsAsync(
+            activityId,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         var report = result.Value;
@@ -376,7 +387,10 @@ public sealed class ReportServiceTests
         var activity = ActivityWith(allowed: [], assignments: [], title: "Sola");
         ActivityGraph(activity.Id, activity);
 
-        var result = await sut.GetActivityAssignmentsAsync(activity.Id);
+        var result = await sut.GetActivityAssignmentsAsync(
+            activity.Id,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.TotalSignups.Should().Be(0);
@@ -439,7 +453,10 @@ public sealed class ReportServiceTests
     {
         HasBadgeEvent(null);
 
-        var result = await sut.GetEventBadgesAsync(EventIdForBadges);
+        var result = await sut.GetEventBadgesAsync(
+            EventIdForBadges,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -468,7 +485,10 @@ public sealed class ReportServiceTests
             BadgeAsg(parent, "Charla", when, Denied)
         );
 
-        var result = await sut.GetEventBadgesAsync(EventIdForBadges);
+        var result = await sut.GetEventBadgesAsync(
+            EventIdForBadges,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         var report = result.Value;
@@ -502,7 +522,10 @@ public sealed class ReportServiceTests
         HasBadgeEvent(new Event { Id = EventIdForBadges, Title = "Feria" });
         HasAssignments();
 
-        var result = await sut.GetEventBadgesAsync(EventIdForBadges);
+        var result = await sut.GetEventBadgesAsync(
+            EventIdForBadges,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Badges.Should().BeEmpty();
@@ -533,7 +556,7 @@ public sealed class ReportServiceTests
             .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(6);
 
-        var result = await sut.GetDashboardSummaryAsync();
+        var result = await sut.GetDashboardSummaryAsync(TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo(new DashboardSummaryResponse(1, 2, 3, 4, 5, 6));
     }

@@ -219,3 +219,14 @@ dotnet_diagnostic.S101.severity = none
 # Top-level entry point: logging the fatal startup exception before rethrowing is the standard Serilog
 # bootstrap pattern - there is no outer caller that would end up double-logging it.
 dotnet_diagnostic.S2139.severity = none
+
+[tests/**/*.cs]
+# Test methods are named as snake_case sentences on purpose (Register_new_adult_returns_201_..., see
+# CLAUDE.md). That convention is the reason these names read well in test output, so the underscore
+# rule is the thing that has to give, not ~500 test names.
+dotnet_diagnostic.CA1707.severity = none
+# Test credentials are fixtures, not secrets: they only ever unlock a throwaway database.
+dotnet_diagnostic.S2068.severity = none
+# DisposeAsync here implements xUnit's IAsyncLifetime hook, not the finalizer-backed dispose pattern;
+# these classes own no unmanaged resources, so GC.SuppressFinalize would be cargo cult.
+dotnet_diagnostic.CA1816.severity = none

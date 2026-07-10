@@ -25,7 +25,8 @@ public sealed class GlobalExceptionHandlerTests
         context.Response.Body.Position = 0;
         var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(
             context.Response.Body,
-            WebJson
+            WebJson,
+            TestContext.Current.CancellationToken
         );
         return body!;
     }
@@ -38,7 +39,7 @@ public sealed class GlobalExceptionHandlerTests
         var handled = await Sut.TryHandleAsync(
             context,
             new InvalidOperationException("boom"),
-            default
+            TestContext.Current.CancellationToken
         );
 
         handled.Should().BeTrue();
@@ -49,7 +50,11 @@ public sealed class GlobalExceptionHandlerTests
     {
         var context = NewContext();
 
-        await Sut.TryHandleAsync(context, new InvalidOperationException(), default);
+        await Sut.TryHandleAsync(
+            context,
+            new InvalidOperationException(),
+            TestContext.Current.CancellationToken
+        );
 
         context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
@@ -59,7 +64,11 @@ public sealed class GlobalExceptionHandlerTests
     {
         var context = NewContext("abc-999");
 
-        await Sut.TryHandleAsync(context, new InvalidOperationException("secret detail"), default);
+        await Sut.TryHandleAsync(
+            context,
+            new InvalidOperationException("secret detail"),
+            TestContext.Current.CancellationToken
+        );
 
         var body = await ReadBodyAsync(context);
         body.Code.Should().Be(ErrorCode.UnexpectedError);

@@ -129,12 +129,14 @@ public sealed class ActivityServiceAssignmentTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             new AssignRequest(Guid.NewGuid()),
-            isAdmin: false
+            isAdmin: false,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -147,12 +149,14 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             Guid.NewGuid(),
             new AssignRequest(Guid.NewGuid()),
-            isAdmin: false
+            isAdmin: false,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -166,12 +170,14 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             Guid.NewGuid(),
             new AssignRequest(Guid.NewGuid()),
-            isAdmin: false
+            isAdmin: false,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -186,13 +192,17 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             Guid.NewGuid(),
             new AssignRequest(Guid.NewGuid()),
-            isAdmin: false
+            isAdmin: false,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentAlreadyExists);
-        await activities.DidNotReceiveWithAnyArgs().AddAssignmentAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await activities
+            .DidNotReceiveWithAnyArgs()
+            .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -210,7 +220,8 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             userId,
             new AssignRequest(roleId),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -240,12 +251,14 @@ public sealed class ActivityServiceAssignmentTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             new AssignHouseholdRequest([]),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityHouseholdAssignmentsRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -258,12 +271,14 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             Guid.NewGuid(),
             new AssignHouseholdRequest([new(Guid.NewGuid(), Guid.NewGuid())]),
-            isAdmin: false
+            isAdmin: false,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -279,12 +294,14 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             actingUserId,
             new AssignHouseholdRequest([new(strangerId, Guid.NewGuid())]),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ErrorCode.ActivityHouseholdMemberNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -298,12 +315,14 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             actingUserId,
             new AssignHouseholdRequest([new(actingUserId, Guid.NewGuid())]),
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -347,7 +366,8 @@ public sealed class ActivityServiceAssignmentTests
             activityId,
             actingUserId,
             request,
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -375,11 +395,17 @@ public sealed class ActivityServiceAssignmentTests
     {
         ExistingAssignment(null);
 
-        var result = await sut.UnassignAsync(Guid.NewGuid(), Guid.NewGuid(), isAdmin: false);
+        var result = await sut.UnassignAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -391,7 +417,8 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.UnassignAsync(
             assignment.ActivityId,
             assignment.UserId,
-            isAdmin: true
+            isAdmin: true,
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -407,12 +434,18 @@ public sealed class ActivityServiceAssignmentTests
         ExistingAssignment(assignment);
         HasActivityWindow(activityId, PastStart, PastEnd);
 
-        var result = await sut.UnassignAsync(activityId, assignment.UserId, isAdmin: false);
+        var result = await sut.UnassignAsync(
+            activityId,
+            assignment.UserId,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
         activities.DidNotReceiveWithAnyArgs().RemoveAssignment(default!);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -423,7 +456,12 @@ public sealed class ActivityServiceAssignmentTests
         ExistingAssignment(assignment);
         HasActivityWindow(activityId, OpenStart, OpenEnd);
 
-        var result = await sut.UnassignAsync(activityId, assignment.UserId, isAdmin: false);
+        var result = await sut.UnassignAsync(
+            activityId,
+            assignment.UserId,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         activities.Received(1).RemoveAssignment(assignment);
@@ -438,12 +476,14 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeStatusAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new ChangeAssignmentStatusRequest(Guid.NewGuid())
+            new ChangeAssignmentStatusRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -460,12 +500,14 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeStatusAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new ChangeAssignmentStatusRequest(Guid.NewGuid())
+            new ChangeAssignmentStatusRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.AssignmentStatusTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -493,7 +535,8 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeStatusAsync(
             activityId,
             userId,
-            new ChangeAssignmentStatusRequest(statusId)
+            new ChangeAssignmentStatusRequest(statusId),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -512,12 +555,14 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeRoleAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new ChangeAssignmentRoleRequest(Guid.NewGuid())
+            new ChangeAssignmentRoleRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -529,12 +574,14 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeRoleAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new ChangeAssignmentRoleRequest(Guid.NewGuid())
+            new ChangeAssignmentRoleRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -552,12 +599,14 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeRoleAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new ChangeAssignmentRoleRequest(Guid.NewGuid())
+            new ChangeAssignmentRoleRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -586,7 +635,8 @@ public sealed class ActivityServiceAssignmentTests
         var result = await sut.ChangeRoleAsync(
             activityId,
             userId,
-            new ChangeAssignmentRoleRequest(roleId)
+            new ChangeAssignmentRoleRequest(roleId),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -615,7 +665,11 @@ public sealed class ActivityServiceAssignmentTests
             .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Activity?)null);
 
-        var result = await sut.VerifyTimeOverlapsAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await sut.VerifyTimeOverlapsAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
@@ -643,7 +697,11 @@ public sealed class ActivityServiceAssignmentTests
                 },
             ]);
 
-        var result = await sut.VerifyTimeOverlapsAsync(activityId, userId);
+        var result = await sut.VerifyTimeOverlapsAsync(
+            activityId,
+            userId,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.HasOverlaps.Should().BeTrue();
@@ -670,7 +728,11 @@ public sealed class ActivityServiceAssignmentTests
                 },
             ]);
 
-        var result = await sut.VerifyTimeOverlapsAsync(activityId, userId);
+        var result = await sut.VerifyTimeOverlapsAsync(
+            activityId,
+            userId,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.HasOverlaps.Should().BeFalse();
@@ -738,7 +800,11 @@ public sealed class ActivityServiceAssignmentTests
             )
             .Returns([withNavs, withoutNavs]);
 
-        var result = await sut.GetHouseholdAssignmentsAsync(actingUserId, eventId);
+        var result = await sut.GetHouseholdAssignmentsAsync(
+            actingUserId,
+            eventId,
+            TestContext.Current.CancellationToken
+        );
 
         result.Should().HaveCount(2);
         result[0].FirstName.Should().Be("Ada");

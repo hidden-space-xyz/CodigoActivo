@@ -66,7 +66,10 @@ public sealed class ResourceServiceTests
     {
         HasResources(NewResource("Manual Ávila"), NewResource("Otro"));
 
-        var result = await sut.ListAsync(new ResourceListQuery { Title = "avila" });
+        var result = await sut.ListAsync(
+            new ResourceListQuery { Title = "avila" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Manual Ávila");
     }
@@ -79,7 +82,10 @@ public sealed class ResourceServiceTests
             NewResource("B", subtitle: "video")
         );
 
-        var result = await sut.ListAsync(new ResourceListQuery { Subtitle = "menta" });
+        var result = await sut.ListAsync(
+            new ResourceListQuery { Subtitle = "menta" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("A");
     }
@@ -89,7 +95,10 @@ public sealed class ResourceServiceTests
     {
         HasResources(NewResource("Charlie"), NewResource("Alpha"), NewResource("Bravo"));
 
-        var result = await sut.ListAsync(new ResourceListQuery { Sort = "title" });
+        var result = await sut.ListAsync(
+            new ResourceListQuery { Sort = "title" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Select(r => r.Title).Should().ContainInOrder("Alpha", "Bravo", "Charlie");
     }
@@ -103,7 +112,10 @@ public sealed class ResourceServiceTests
             NewResource("Mid", year: 2024)
         );
 
-        var result = await sut.ListAsync(new ResourceListQuery());
+        var result = await sut.ListAsync(
+            new ResourceListQuery(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Select(r => r.Title).Should().ContainInOrder("Newest", "Mid", "Old");
     }
@@ -114,7 +126,7 @@ public sealed class ResourceServiceTests
         var resource = NewResource();
         HasResources(resource);
 
-        var result = await sut.GetByIdAsync(resource.Id);
+        var result = await sut.GetByIdAsync(resource.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(resource.Id);
@@ -125,7 +137,7 @@ public sealed class ResourceServiceTests
     {
         HasResources();
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -138,13 +150,20 @@ public sealed class ResourceServiceTests
         ThumbnailExists(false);
         var request = new CreateResourceRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
-        await resources.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await resources
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -161,7 +180,7 @@ public sealed class ResourceServiceTests
             thumbnailId
         );
 
-        var result = await sut.CreateAsync(request, caller);
+        var result = await sut.CreateAsync(request, caller, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Title.Should().Be("Title");
@@ -189,12 +208,20 @@ public sealed class ResourceServiceTests
             .Returns((Resource?)null);
         var request = new UpdateResourceRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
-        await files.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await files
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -207,11 +234,17 @@ public sealed class ResourceServiceTests
         ThumbnailExists(false);
         var request = new UpdateResourceRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            resource.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -227,7 +260,12 @@ public sealed class ResourceServiceTests
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var request = new UpdateResourceRequest("  New  ", "  NewSub  ", "{\"y\":2}", thumbnailId);
 
-        var result = await sut.UpdateAsync(resource.Id, request, caller);
+        var result = await sut.UpdateAsync(
+            resource.Id,
+            request,
+            caller,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         resource.Title.Should().Be("New");
@@ -250,7 +288,12 @@ public sealed class ResourceServiceTests
         ThumbnailExists(true);
         var request = new UpdateResourceRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
-        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            resource.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -268,10 +311,17 @@ public sealed class ResourceServiceTests
         ThumbnailExists(true);
         var request = new UpdateResourceRequest("Title", "Subtitle", "{}", resource.ThumbnailId);
 
-        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            resource.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -293,7 +343,12 @@ public sealed class ResourceServiceTests
             resource.ThumbnailId
         );
 
-        var result = await sut.UpdateAsync(resource.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            resource.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -311,13 +366,16 @@ public sealed class ResourceServiceTests
             .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Resource?)null);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -328,7 +386,7 @@ public sealed class ResourceServiceTests
             .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(resource);
 
-        var result = await sut.DeleteAsync(resource.Id);
+        var result = await sut.DeleteAsync(resource.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         resources.Received(1).Remove(resource);
@@ -348,7 +406,7 @@ public sealed class ResourceServiceTests
             .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(resource);
 
-        var result = await sut.DeleteAsync(resource.Id);
+        var result = await sut.DeleteAsync(resource.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await fileService

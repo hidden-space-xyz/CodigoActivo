@@ -60,7 +60,10 @@ public sealed class PartnerServiceTests
     {
         HasPartners(NewPartner("Gold", tier: 1), NewPartner("Silver", tier: 2));
 
-        var result = await sut.ListAsync(new PartnerListQuery { Tier = 2 });
+        var result = await sut.ListAsync(
+            new PartnerListQuery { Tier = 2 },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Name.Should().Be("Silver");
     }
@@ -70,7 +73,10 @@ public sealed class PartnerServiceTests
     {
         HasPartners(NewPartner("Fundación Ávila"), NewPartner("Banco"));
 
-        var result = await sut.ListAsync(new PartnerListQuery { Name = "avila" });
+        var result = await sut.ListAsync(
+            new PartnerListQuery { Name = "avila" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Name.Should().Be("Fundación Ávila");
     }
@@ -83,7 +89,10 @@ public sealed class PartnerServiceTests
             NewPartner("B", web: "https://beta.org")
         );
 
-        var result = await sut.ListAsync(new PartnerListQuery { Website = "beta" });
+        var result = await sut.ListAsync(
+            new PartnerListQuery { Website = "beta" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Website.Should().Be("https://beta.org");
     }
@@ -93,7 +102,10 @@ public sealed class PartnerServiceTests
     {
         HasPartners(NewPartner("Acme"), NewPartner("Zeta"), NewPartner("Mint"));
 
-        var result = await sut.ListAsync(new PartnerListQuery { Sort = "-name" });
+        var result = await sut.ListAsync(
+            new PartnerListQuery { Sort = "-name" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Select(p => p.Name).Should().ContainInOrder("Zeta", "Mint", "Acme");
     }
@@ -104,7 +116,7 @@ public sealed class PartnerServiceTests
         var partner = NewPartner();
         HasPartners(partner);
 
-        var result = await sut.GetByIdAsync(partner.Id);
+        var result = await sut.GetByIdAsync(partner.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(partner.Id);
@@ -115,7 +127,7 @@ public sealed class PartnerServiceTests
     {
         HasPartners();
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -134,13 +146,20 @@ public sealed class PartnerServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
-        await partners.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await partners
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -158,7 +177,7 @@ public sealed class PartnerServiceTests
             thumbnailId
         );
 
-        var result = await sut.CreateAsync(request, caller);
+        var result = await sut.CreateAsync(request, caller, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Name.Should().Be("Acme");
@@ -189,7 +208,11 @@ public sealed class PartnerServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Value.Website.Should().BeNull();
     }
@@ -208,10 +231,16 @@ public sealed class PartnerServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -230,10 +259,16 @@ public sealed class PartnerServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            partner.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -254,7 +289,12 @@ public sealed class PartnerServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.UpdateAsync(partner.Id, request, caller);
+        var result = await sut.UpdateAsync(
+            partner.Id,
+            request,
+            caller,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         partner.Name.Should().Be("New");
@@ -281,7 +321,12 @@ public sealed class PartnerServiceTests
             Guid.NewGuid()
         );
 
-        var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            partner.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -305,10 +350,17 @@ public sealed class PartnerServiceTests
             partner.ThumbnailId
         );
 
-        var result = await sut.UpdateAsync(partner.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            partner.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -318,10 +370,13 @@ public sealed class PartnerServiceTests
             .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Partner?)null);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 }

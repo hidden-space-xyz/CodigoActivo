@@ -153,10 +153,12 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/events");
+        var response = await client.GetAsync("/api/events", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.PageSize.Should().Be(25);
@@ -170,10 +172,15 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/events/{Guid.NewGuid()}");
+        var response = await client.GetAsync(
+            $"/api/events/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
@@ -186,10 +193,15 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), title: "Futuro");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/events/past-years");
+        var response = await client.GetAsync(
+            "/api/events/past-years",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var years = await response.ReadJsonAsync<IReadOnlyList<int>>();
+        var years = await response.ReadJsonAsync<IReadOnlyList<int>>(
+            TestContext.Current.CancellationToken
+        );
         years.Should().Equal(2025, 2024);
     }
 
@@ -201,15 +213,22 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = BuildCreate(thumbnailId, [categoryId], title: "Creado");
 
-        var response = await client.PostJsonAsync("/api/events", request);
+        var response = await client.PostJsonAsync(
+            "/api/events",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var created = await response.ReadJsonAsync<EventResponse>();
+        var created = await response.ReadJsonAsync<EventResponse>(
+            TestContext.Current.CancellationToken
+        );
         created!.Title.Should().Be("Creado");
 
         var stored = await Factory.QueryAsync(db =>
-            db.Events.Include(e => e.Categories).FirstOrDefaultAsync(e => e.Id == created.Id)
+            db.Events.Include(e => e.Categories)
+                .FirstOrDefaultAsync(e => e.Id == created.Id, TestContext.Current.CancellationToken)
         );
         stored!.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
         stored.Categories.Should().ContainSingle(c => c.EventCategoryTypeId == categoryId);
@@ -223,7 +242,11 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         var request = BuildCreate(thumbnailId, [categoryId]);
 
-        var response = await client.PostJsonAsync("/api/events", request);
+        var response = await client.PostJsonAsync(
+            "/api/events",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -234,7 +257,11 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
         var request = BuildCreate(Guid.NewGuid(), [Guid.NewGuid()]);
 
-        var response = await client.PostJsonAsync("/api/events", request);
+        var response = await client.PostJsonAsync(
+            "/api/events",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -247,10 +274,16 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = BuildCreate(thumbnailId, [categoryId], title: "   ");
 
-        var response = await client.PostJsonAsync("/api/events", request);
+        var response = await client.PostJsonAsync(
+            "/api/events",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
@@ -268,10 +301,16 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = BuildUpdate(thumbnailId, [categoryId], title: "Después");
 
-        var response = await client.PutJsonAsync($"/api/events/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/events/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Events.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Title.Should().Be("Después");
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
     }
@@ -287,18 +326,28 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             categoryTypeId: categoryId
         );
         var oldThumbnailId = (
-            await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Events.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var newThumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
         var request = BuildUpdate(newThumbnailId, [categoryId]);
 
-        var response = await client.PutJsonAsync($"/api/events/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/events/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await Factory.QueryAsync(db => db.Files.FindAsync(oldThumbnailId).AsTask());
+        var oldFile = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([oldThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
-        var newFile = await Factory.QueryAsync(db => db.Files.FindAsync(newThumbnailId).AsTask());
+        var newFile = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([newThumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         newFile.Should().NotBeNull();
     }
 
@@ -311,16 +360,25 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             title: "Borrar"
         );
         var thumbnailId = (
-            await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Events.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/events/{id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/events/{id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Events.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Events.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored.Should().BeNull();
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        var file = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([thumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         file.Should()
             .BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
     }
@@ -330,10 +388,15 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.PatchJsonAsync($"/api/events/{Guid.NewGuid()}/feature");
+        var response = await client.PatchJsonAsync(
+            $"/api/events/{Guid.NewGuid()}/feature",
+            ct: TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
@@ -343,10 +406,15 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedCategoryTypeAsync("Alpha");
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/events/categoryType");
+        var response = await client.GetAsync(
+            "/api/events/categoryType",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var types = await response.ReadJsonAsync<IReadOnlyList<EventCategoryTypeResponse>>();
+        var types = await response.ReadJsonAsync<IReadOnlyList<EventCategoryTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
         types.Should().ContainSingle(t => t.Name == "Alpha");
     }
 
@@ -356,14 +424,21 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = new CreateEventCategoryTypeRequest("Innovación", "#3366cc");
 
-        var response = await client.PostJsonAsync("/api/events/categoryType", request);
+        var response = await client.PostJsonAsync(
+            "/api/events/categoryType",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var created = await response.ReadJsonAsync<EventCategoryTypeResponse>();
+        var created = await response.ReadJsonAsync<EventCategoryTypeResponse>(
+            TestContext.Current.CancellationToken
+        );
         created!.Name.Should().Be("Innovación");
 
         var stored = await Factory.QueryAsync(db =>
-            db.EventCategoryTypes.FindAsync(created.Id).AsTask()
+            db.EventCategoryTypes.FindAsync([created.Id], TestContext.Current.CancellationToken)
+                .AsTask()
         );
         stored!.Color.Should().Be("#3366cc");
     }
@@ -375,10 +450,16 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = new UpdateEventCategoryTypeRequest("Nueva", "#222222");
 
-        var response = await client.PutJsonAsync($"/api/events/categoryType/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/events/categoryType/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.EventCategoryTypes.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.EventCategoryTypes.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Name.Should().Be("Nueva");
         stored.Color.Should().Be("#222222");
     }
@@ -389,10 +470,15 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var id = await SeedCategoryTypeAsync("Efímera");
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/events/categoryType/{id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/events/categoryType/{id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.EventCategoryTypes.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.EventCategoryTypes.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored.Should().BeNull();
     }
 }

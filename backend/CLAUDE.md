@@ -18,7 +18,7 @@ Run from `backend/`:
 dotnet build                                   # analyzers run in-build; style violations fail the build
 dotnet run --project src/CodigoActivo.API      # http://localhost:5150 (add --launch-profile https for :7039)
 
-dotnet test                                    # unit + integration (integration needs Postgres, see below)
+dotnet test CodigoActivo.slnx                  # unit + integration (integration auto-starts a throwaway Postgres; needs Docker)
 dotnet test --filter "FullyQualifiedName~AuthControllerTests"    # one class
 dotnet test --filter "DisplayName~Register_new_adult"           # one test by name
 
@@ -30,7 +30,7 @@ Formatting is CSharpier (defaults, no config; `.csharpierignore` excludes `**/Mi
 
 **Local DB**: the connection string is built in code from `POSTGRES_HOST/PORT/DB/USER/PASSWORD` (defaults `localhost:5432`, db/user `codigoactivo`, empty password). Set them as environment variables, or start just the database with `docker compose up db` and set `POSTGRES_PASSWORD`. A bare `dotnet run` does **not** read the root `.env` file (that is Docker-Compose-only).
 
-**Integration tests need a real PostgreSQL**: `CodigoActivoWebAppFactory` builds its connection from the same `POSTGRES_*` env vars and appends `test` to the DB name (`<POSTGRES_DB>test`, default `codigoactivotest`); it throws if `POSTGRES_PASSWORD` is unset. No Docker/Testcontainers. (`RepositoryTests` is the exception — it uses EF Core InMemory, no server.)
+**Integration tests provision their own PostgreSQL**: `PostgresContainerFixture` (an xUnit v3 assembly fixture) starts one throwaway `postgres:17-alpine` container via Testcontainers, applies the real migrations once, and destroys it after the last test — no `POSTGRES_*` env vars and no pre-created database, just a running Docker daemon (a Docker-less machine fails fast with instructions). Every integration class shares that one database; each test `TRUNCATE`s all tables and reseeds. **Escape hatch**: set `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database (a CI service container, say) to reuse it instead of spawning one. There is no EF Core InMemory anywhere in the integration project — only the unit tests still fake the store.
 
 ## Configuration
 
@@ -53,7 +53,7 @@ Composition     the ONLY place DI is wired (AddCodigoActivo) — references all 
 API             controllers, middleware, auth — references Composition ONLY
 ```
 
-These rules are enforced by the `ProjectReference` graph and developer discipline only — **there is no architecture test**, so a bad reference still compiles; keep the graph clean by hand. `src/Directory.Build.props` enables `EnforceCodeStyleInBuild` + Meziantou.Analyzer + SonarAnalyzer for all src projects; `tests/Directory.Build.props` relaxes analysis and supplies the test packages (xUnit v3, AwesomeAssertions, NSubstitute, coverlet).
+These rules are enforced by the `ProjectReference` graph and developer discipline only — **there is no architecture test**, so a bad reference still compiles; keep the graph clean by hand. `src/Directory.Build.props` enables `EnforceCodeStyleInBuild` + Meziantou.Analyzer + SonarAnalyzer for all src projects; `tests/Directory.Build.props` turns on `EnforceCodeStyleInBuild` too and supplies the shared test packages (xUnit v3, AwesomeAssertions, NSubstitute, coverlet). The handful of rules that categorically don't fit test code — `CA1707` (the snake_case test names), `S2068` (fixture credentials), `CA1816` (xUnit's `DisposeAsync` lifecycle hook) — are scoped off in the `[tests/**/*.cs]` section of `.editorconfig`, each with its reason. Everything else is expected to be fixed, not silenced.
 
 ## The Result/Error pattern (core contract)
 
@@ -82,7 +82,7 @@ These rules are enforced by the `ProjectReference` graph and developer disciplin
 ## Testing conventions
 
 - xUnit **v3**, **AwesomeAssertions** (FluentAssertions fork, same `.Should()` API), NSubstitute. Unit tests mirror the src namespace tree; hand-rolled fakes in `UnitTests/TestSupport/` (`FakePasswordHasher`, `TestClock`, `RecordingEmailSender`).
-- Integration tests use `WebApplicationFactory<Program>`; the WebAppFactory-based classes extend `IntegrationTestBase`, which TRUNCATEs all tables and reseeds before each test (parallelization is disabled assembly-wide — tests share one DB). Fixed users Admin/Member/Child/Pending/Blocked (password `Str0ngPass!`) come from `TestSeedData`; log in with `LoginAsAdminAsync()`/`LoginAsMemberAsync()`. Mutating requests must go through `ApiClientExtensions.SendWithCsrfAsync` (the real CSRF middleware is active). Assert sent mail via the integration `FakeEmailSender` exposed as `Factory.EmailSender` (`.Sent`, `LastOtpSentTo(email)`) — distinct from the unit `RecordingEmailSender`.
+- Integration tests use `WebApplicationFactory<Program>` over one throwaway `postgres:17-alpine` container shared by the whole assembly; the WebAppFactory-based classes extend `IntegrationTestBase`, which resets the clock, TRUNCATEs all tables and reseeds before each test (parallelization is disabled assembly-wide — tests share one DB). `RepositoryTests` talks to that same container directly with a raw `CodigoActivoDbContext` (no web host), so real foreign keys, `NOT NULL` and unique indexes are enforced — arrange helpers must reference rows that exist. Fixed users Admin/Member/Child/Pending/Blocked (password `Str0ngPass!`) come from `TestSeedData`; log in with `LoginAsAdminAsync()`/`LoginAsMemberAsync()`. Mutating requests must go through `ApiClientExtensions.SendWithCsrfAsync` (the real CSRF middleware is active). Assert sent mail via the integration `FakeEmailSender` exposed as `Factory.EmailSender` (`.Sent`, `LastOtpSentTo(email)`) — distinct from the unit `RecordingEmailSender`.
 - Test method names are snake_case sentences: `Register_new_adult_returns_201_sends_the_otp_by_email_and_persists_pending`.
 
 ## House style (differs from typical .NET — don't "fix" it)

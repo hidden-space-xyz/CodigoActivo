@@ -62,10 +62,15 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         await SeedPartnerAsync("Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/partners");
+        var response = await client.GetAsync(
+            "/api/partners",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<PartnerResponse>>();
+        var page = await response.ReadJsonAsync<PagedResult<PartnerResponse>>(
+            TestContext.Current.CancellationToken
+        );
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(p => p.Name == "Alpha");
@@ -76,10 +81,15 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/partners/{Guid.NewGuid()}");
+        var response = await client.GetAsync(
+            $"/api/partners/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.PartnerNotFound);
     }
 
@@ -96,14 +106,22 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
             thumbnailId
         );
 
-        var response = await client.PostJsonAsync("/api/partners", request);
+        var response = await client.PostJsonAsync(
+            "/api/partners",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var created = await response.ReadJsonAsync<PartnerResponse>();
+        var created = await response.ReadJsonAsync<PartnerResponse>(
+            TestContext.Current.CancellationToken
+        );
         created!.Name.Should().Be("Gamma");
 
-        var stored = await Factory.QueryAsync(db => db.Partners.FindAsync(created.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Partners.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Tier.Should().Be(3);
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
     }
@@ -121,7 +139,11 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
             thumbnailId
         );
 
-        var response = await client.PostJsonAsync("/api/partners", request);
+        var response = await client.PostJsonAsync(
+            "/api/partners",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -138,7 +160,11 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
             Guid.NewGuid()
         );
 
-        var response = await client.PostJsonAsync("/api/partners", request);
+        var response = await client.PostJsonAsync(
+            "/api/partners",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -156,10 +182,16 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
             thumbnailId
         );
 
-        var response = await client.PostJsonAsync("/api/partners", request);
+        var response = await client.PostJsonAsync(
+            "/api/partners",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
@@ -176,10 +208,12 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
             ),
         };
 
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
@@ -197,10 +231,16 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
             thumbnailId
         );
 
-        var response = await client.PutJsonAsync($"/api/partners/{id}", request);
+        var response = await client.PutJsonAsync(
+            $"/api/partners/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Partners.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.Name.Should().Be("After");
         stored.Tier.Should().Be(4);
     }
@@ -210,16 +250,25 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var id = await SeedPartnerAsync("Doomed");
         var thumbnailId = (
-            await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask())
+            await Factory.QueryAsync(db =>
+                db.Partners.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+            )
         )!.ThumbnailId;
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync($"/api/partners/{id}");
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/partners/{id}",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db => db.Partners.FindAsync(id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Partners.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored.Should().BeNull();
-        var file = await Factory.QueryAsync(db => db.Files.FindAsync(thumbnailId).AsTask());
+        var file = await Factory.QueryAsync(db =>
+            db.Files.FindAsync([thumbnailId], TestContext.Current.CancellationToken).AsTask()
+        );
         file.Should()
             .BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
     }

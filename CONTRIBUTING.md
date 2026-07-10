@@ -10,6 +10,7 @@ commands, and the conventions the build enforces. For the design behind the code
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 20+](https://nodejs.org/) and npm
 - [PostgreSQL](https://www.postgresql.org/) — a local install, or the Dockerized `db` service (below)
+- [Docker](https://www.docker.com/) — required by the backend integration tests, which start their own PostgreSQL
 - EF Core tools (for migrations): `dotnet tool install -g dotnet-ef`
 
 ## Local setup
@@ -58,7 +59,7 @@ set `http://localhost:5150` to reach a local backend.
 ```bash
 dotnet build                                   # build + analyzers; style violations fail the build
 dotnet run --project src/CodigoActivo.API      # run the API
-dotnet test                                    # unit + integration tests (see Testing below)
+dotnet test                                    # unit + integration tests (integration needs Docker, see Testing below)
 
 # Add a migration (applied automatically on next startup):
 dotnet ef migrations add <Name> \
@@ -118,10 +119,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 
 ## Testing
 
-- **Backend**: xUnit v3, AwesomeAssertions, NSubstitute. Integration tests run against a **real** PostgreSQL —
-  they build the connection from `POSTGRES_*` (throwing if `POSTGRES_PASSWORD` is unset) and use a separate
-  `<POSTGRES_DB>test` database, truncating and reseeding before each test (parallelization is disabled). Test
-  method names are snake_case sentences.
+- **Backend**: xUnit v3, AwesomeAssertions, NSubstitute. Integration tests run against a **real** PostgreSQL that
+  the test run provisions itself: a throwaway `postgres:17-alpine` container (Testcontainers) is started once,
+  migrated, shared by the whole assembly, and destroyed at the end. No `POSTGRES_*` env vars and no pre-created
+  database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
+  `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse
+  that instead of spawning a container. Test method names are snake_case sentences.
 - **Frontend**: there is no automated test suite; rely on `npm run typecheck` and `npm run lint`.
 
 ## Commits & pull requests

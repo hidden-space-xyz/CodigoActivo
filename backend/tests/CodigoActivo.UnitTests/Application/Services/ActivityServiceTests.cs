@@ -146,7 +146,10 @@ public sealed class ActivityServiceTests
         var eventId = Guid.NewGuid();
         HasActivities(NewActivity("Mine", eventId: eventId), NewActivity("Other"));
 
-        var result = await sut.ListAsync(new ActivityListQuery { EventId = eventId });
+        var result = await sut.ListAsync(
+            new ActivityListQuery { EventId = eventId },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Mine");
     }
@@ -156,7 +159,10 @@ public sealed class ActivityServiceTests
     {
         HasActivities(NewActivity("Reunión Ávila"), NewActivity("Banco"));
 
-        var result = await sut.ListAsync(new ActivityListQuery { Title = "avila" });
+        var result = await sut.ListAsync(
+            new ActivityListQuery { Title = "avila" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Reunión Ávila");
     }
@@ -166,7 +172,10 @@ public sealed class ActivityServiceTests
     {
         HasActivities(NewActivity("Alpha"), NewActivity("Zeta"), NewActivity("Mint"));
 
-        var result = await sut.ListAsync(new ActivityListQuery { Sort = "-title" });
+        var result = await sut.ListAsync(
+            new ActivityListQuery { Sort = "-title" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Select(a => a.Title).Should().ContainInOrder("Zeta", "Mint", "Alpha");
     }
@@ -177,7 +186,7 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         HasActivities(activity);
 
-        var result = await sut.GetByIdAsync(activity.Id);
+        var result = await sut.GetByIdAsync(activity.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(activity.Id);
@@ -189,7 +198,7 @@ public sealed class ActivityServiceTests
     {
         HasActivities();
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -201,11 +210,17 @@ public sealed class ActivityServiceTests
     {
         EventFound(null);
 
-        var result = await sut.CreateAsync(Guid.NewGuid(), CreateRequest(), Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -224,11 +239,17 @@ public sealed class ActivityServiceTests
             null
         );
 
-        var result = await sut.CreateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityScheduleRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -240,12 +261,14 @@ public sealed class ActivityServiceTests
         var result = await sut.CreateAsync(
             Guid.NewGuid(),
             CreateRequest(startsAt: when, endsAt: when),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -259,12 +282,14 @@ public sealed class ActivityServiceTests
                 startsAt: new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 8, 1, 12, 0, 0, TimeSpan.Zero)
             ),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityScheduleOutsideEventRange);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -273,11 +298,17 @@ public sealed class ActivityServiceTests
         EventFound(NewEvent());
         ThumbnailExists(false);
 
-        var result = await sut.CreateAsync(Guid.NewGuid(), CreateRequest(), Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -287,11 +318,17 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(false);
 
-        var result = await sut.CreateAsync(Guid.NewGuid(), CreateRequest(), Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityModalityTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -315,12 +352,14 @@ public sealed class ActivityServiceTests
         var result = await sut.CreateAsync(
             Guid.NewGuid(),
             CreateRequest(roles: roles),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -344,7 +383,12 @@ public sealed class ActivityServiceTests
                 stored.Add(a);
             });
 
-        var result = await sut.CreateAsync(eventId, CreateRequest(), caller);
+        var result = await sut.CreateAsync(
+            eventId,
+            CreateRequest(),
+            caller,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Title.Should().Be("Taller");
@@ -397,7 +441,8 @@ public sealed class ActivityServiceTests
         var result = await sut.CreateAsync(
             Guid.NewGuid(),
             CreateRequest(roles: roles),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -415,11 +460,17 @@ public sealed class ActivityServiceTests
             .GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((Activity?)null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), UpdateRequest(), Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            UpdateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -429,11 +480,17 @@ public sealed class ActivityServiceTests
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
         EventFound(null);
 
-        var result = await sut.UpdateAsync(activity.Id, UpdateRequest(), Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -454,11 +511,17 @@ public sealed class ActivityServiceTests
             null
         );
 
-        var result = await sut.UpdateAsync(activity.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivityScheduleRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -469,10 +532,16 @@ public sealed class ActivityServiceTests
         EventFound(NewEvent());
         ThumbnailExists(false);
 
-        var result = await sut.UpdateAsync(activity.Id, UpdateRequest(), Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.ActivityThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -484,10 +553,16 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(false);
 
-        var result = await sut.UpdateAsync(activity.Id, UpdateRequest(), Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.ActivityModalityTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -509,11 +584,13 @@ public sealed class ActivityServiceTests
         var result = await sut.UpdateAsync(
             activity.Id,
             UpdateRequest(roles: roles),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -535,7 +612,12 @@ public sealed class ActivityServiceTests
         ThumbnailExists(true);
         ModalityExists(true);
 
-        var result = await sut.UpdateAsync(activityId, UpdateRequest(title: "  New  "), caller);
+        var result = await sut.UpdateAsync(
+            activityId,
+            UpdateRequest(title: "  New  "),
+            caller,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Title.Should().Be("New");
@@ -560,7 +642,8 @@ public sealed class ActivityServiceTests
         var result = await sut.UpdateAsync(
             activity.Id,
             UpdateRequest(thumbnailId: Guid.NewGuid()),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -582,11 +665,14 @@ public sealed class ActivityServiceTests
         var result = await sut.UpdateAsync(
             activity.Id,
             UpdateRequest(thumbnailId: activity.ThumbnailId),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -596,12 +682,15 @@ public sealed class ActivityServiceTests
             .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Activity?)null);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(default, default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -617,7 +706,7 @@ public sealed class ActivityServiceTests
                 }.AsQueryable()
             );
 
-        var result = await sut.ListRoleTypesAsync();
+        var result = await sut.ListRoleTypesAsync(TestContext.Current.CancellationToken);
 
         result.Select(r => r.Name).Should().ContainInOrder("Alpha", "Zeta");
         result.Should().AllBeOfType<ActivityRoleTypeResponse>();
@@ -646,7 +735,9 @@ public sealed class ActivityServiceTests
                 }.AsQueryable()
             );
 
-        var result = await sut.ListAssignmentStatusTypesAsync();
+        var result = await sut.ListAssignmentStatusTypesAsync(
+            TestContext.Current.CancellationToken
+        );
 
         result.Select(s => s.Name).Should().ContainInOrder("Aprobado", "Confirmado");
         result.Should().AllBeOfType<AssignmentStatusTypeResponse>();
@@ -665,7 +756,7 @@ public sealed class ActivityServiceTests
                 }.AsQueryable()
             );
 
-        var result = await sut.ListModalityTypesAsync();
+        var result = await sut.ListModalityTypesAsync(TestContext.Current.CancellationToken);
 
         result.Select(m => m.Name).Should().ContainInOrder("Online", "Presencial");
         result.Should().AllBeOfType<ActivityModalityTypeResponse>();
@@ -698,7 +789,7 @@ public sealed class ActivityServiceTests
                 }.AsQueryable()
             );
 
-        var result = await sut.ListAssignedAsync(userId);
+        var result = await sut.ListAssignedAsync(userId, TestContext.Current.CancellationToken);
 
         result.Select(a => a.Title).Should().ContainInOrder("Early", "Late");
         result.Should().HaveCount(2);
@@ -738,12 +829,14 @@ public sealed class ActivityServiceTests
             .Returns(true);
 
         var result = await sut.CreateActivityRoleTypeAsync(
-            new CreateActivityRoleTypeRequest("Líder", null)
+            new CreateActivityRoleTypeRequest("Líder", null),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -757,7 +850,8 @@ public sealed class ActivityServiceTests
             .Returns(false);
 
         var result = await sut.CreateActivityRoleTypeAsync(
-            new CreateActivityRoleTypeRequest("  Líder  ", "  Guía  ")
+            new CreateActivityRoleTypeRequest("  Líder  ", "  Guía  "),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -783,7 +877,8 @@ public sealed class ActivityServiceTests
             .Returns(false);
 
         var result = await sut.CreateActivityRoleTypeAsync(
-            new CreateActivityRoleTypeRequest("Ayudante", null)
+            new CreateActivityRoleTypeRequest("Ayudante", null),
+            TestContext.Current.CancellationToken
         );
 
         result.Value.Description.Should().BeEmpty();
@@ -801,12 +896,14 @@ public sealed class ActivityServiceTests
 
         var result = await sut.UpdateActivityRoleTypeAsync(
             Guid.NewGuid(),
-            new UpdateActivityRoleTypeRequest("Líder", null)
+            new UpdateActivityRoleTypeRequest("Líder", null),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -835,12 +932,14 @@ public sealed class ActivityServiceTests
 
         var result = await sut.UpdateActivityRoleTypeAsync(
             id,
-            new UpdateActivityRoleTypeRequest("Taken", null)
+            new UpdateActivityRoleTypeRequest("Taken", null),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -868,7 +967,8 @@ public sealed class ActivityServiceTests
 
         var result = await sut.UpdateActivityRoleTypeAsync(
             id,
-            new UpdateActivityRoleTypeRequest("  New  ", "  Desc  ")
+            new UpdateActivityRoleTypeRequest("  New  ", "  Desc  "),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -888,10 +988,14 @@ public sealed class ActivityServiceTests
             )
             .Returns(0);
 
-        var result = await sut.DeleteActivityRoleTypeAsync(Guid.NewGuid());
+        var result = await sut.DeleteActivityRoleTypeAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 }

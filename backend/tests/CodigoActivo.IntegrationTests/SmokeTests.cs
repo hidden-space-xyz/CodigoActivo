@@ -14,10 +14,10 @@ public class SmokeTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/auth/me");
+        var response = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var me = await response.ReadJsonAsync<UserResponse>();
+        var me = await response.ReadJsonAsync<UserResponse>(TestContext.Current.CancellationToken);
         me!.Email.Should().Be(TestSeedData.AdminEmail);
         me.IsAdmin.Should().BeTrue();
     }

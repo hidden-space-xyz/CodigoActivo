@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
     <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>
