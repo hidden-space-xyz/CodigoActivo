@@ -16,6 +16,34 @@ import StarterKit from '@tiptap/starter-kit'
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
 export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 
+function isSameOriginImageSrc(src: string): boolean {
+  if (src.startsWith('/') && !src.startsWith('//')) return true
+  try {
+    return new URL(src, window.location.origin).origin === window.location.origin
+  } catch {
+    return false
+  }
+}
+
+// The CSP served by nginx only allows same-origin images (img-src 'self'),
+// so images pasted from other sites would save fine but render broken for
+// every visitor. Rejecting them at parse time keeps pasted content honest;
+// the toolbar's upload flow inserts same-origin URLs via setImage and is
+// unaffected.
+const SameOriginImage = Image.extend({
+  parseHTML() {
+    return [
+      {
+        tag: 'img[src]',
+        getAttrs: (element) => {
+          if (!(element instanceof HTMLElement)) return false
+          return isSameOriginImageSrc(element.getAttribute('src') ?? '') ? null : false
+        },
+      },
+    ]
+  },
+})
+
 export function richTextExtensions(): AnyExtension[] {
   return [
     StarterKit.configure({ link: false, underline: false }),
@@ -33,7 +61,7 @@ export function richTextExtensions(): AnyExtension[] {
     TableRow,
     TableHeader,
     TableCell,
-    Image,
+    SameOriginImage,
   ]
 }
 
