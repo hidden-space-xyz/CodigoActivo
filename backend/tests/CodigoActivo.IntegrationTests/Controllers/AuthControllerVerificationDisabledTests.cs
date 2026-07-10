@@ -33,6 +33,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     public override async ValueTask DisposeAsync()
     {
         await disabledFactory.DisposeAsync();
+        await base.DisposeAsync();
     }
 
     private static RegisterRequest NewAdultRequest()
@@ -54,15 +55,23 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     {
         var client = disabledFactory.CreateClient();
 
-        var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(),
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>();
+        var body = await response.ReadJsonAsync<RegisterResponse>(
+            TestContext.Current.CancellationToken
+        );
         body!.RequiresVerification.Should().BeFalse();
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
         Factory.EmailSender.Sent.Should().BeEmpty();
 
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(body.Adult.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
         stored.OtpCodeHash.Should().BeNull();
     }
@@ -71,12 +80,17 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     public async Task Register_then_login_works_immediately()
     {
         var client = disabledFactory.CreateClient();
-        using var register = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
+        using var register = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(),
+            TestContext.Current.CancellationToken
+        );
         register.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest("new.adult@codigoactivo.test", "Str0ngPass!")
+            new LoginRequest("new.adult@codigoactivo.test", "Str0ngPass!"),
+            TestContext.Current.CancellationToken
         );
 
         login.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -89,12 +103,17 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
 
         var response = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password)
+            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(TestSeedData.Users.PendingId).AsTask()
+            db.Users.FindAsync(
+                    [TestSeedData.Users.PendingId],
+                    TestContext.Current.CancellationToken
+                )
+                .AsTask()
         );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
     }
@@ -106,11 +125,14 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
 
         var response = await client.PostJsonAsync(
             $"/api/auth/{TestSeedData.Users.PendingId}/resend-verification",
-            body: null
+            body: null,
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
     }
 }

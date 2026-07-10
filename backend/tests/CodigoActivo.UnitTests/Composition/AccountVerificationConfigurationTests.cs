@@ -9,7 +9,7 @@ namespace CodigoActivo.UnitTests.Composition;
 
 public sealed class AccountVerificationConfigurationTests
 {
-    private static IServiceProvider Build(Dictionary<string, string?> settings)
+    private static ServiceProvider Build(Dictionary<string, string?> settings)
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
         return new ServiceCollection().AddCodigoActivo(configuration).BuildServiceProvider();

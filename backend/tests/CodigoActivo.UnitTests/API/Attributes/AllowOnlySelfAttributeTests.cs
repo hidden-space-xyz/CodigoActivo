@@ -59,7 +59,9 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ChallengeResult>();
-        await users.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -70,7 +72,9 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeNull();
-        await users.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -82,7 +86,9 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeNull();
-        await users.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -93,7 +99,9 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
-        await users.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -104,7 +112,9 @@ public sealed class AllowOnlySelfAttributeTests
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
-        await users.DidNotReceiveWithAnyArgs().ExistsAsync(default!, default);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

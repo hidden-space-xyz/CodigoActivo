@@ -135,7 +135,10 @@ public sealed class EventServiceTests
     {
         HasEvents(NewEvent("A"), NewEvent("B"));
 
-        var result = await sut.ListAsync(new EventListQuery { Page = 1, PageSize = 10 });
+        var result = await sut.ListAsync(
+            new EventListQuery { Page = 1, PageSize = 10 },
+            TestContext.Current.CancellationToken
+        );
 
         result.Total.Should().Be(2);
         result.Items.Should().HaveCount(2);
@@ -151,7 +154,10 @@ public sealed class EventServiceTests
             NewEvent("Upcoming", starts: new DateOnly(2026, 8, 1), ends: new DateOnly(2026, 8, 2))
         );
 
-        var result = await sut.ListAsync(new EventListQuery { Scope = EventScope.Upcoming });
+        var result = await sut.ListAsync(
+            new EventListQuery { Scope = EventScope.Upcoming },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Upcoming");
     }
@@ -165,7 +171,10 @@ public sealed class EventServiceTests
             NewEvent("Upcoming", starts: new DateOnly(2026, 8, 1), ends: new DateOnly(2026, 8, 2))
         );
 
-        var result = await sut.ListAsync(new EventListQuery { Scope = EventScope.Past });
+        var result = await sut.ListAsync(
+            new EventListQuery { Scope = EventScope.Past },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Past");
     }
@@ -178,7 +187,10 @@ public sealed class EventServiceTests
             NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2))
         );
 
-        var result = await sut.ListAsync(new EventListQuery { Year = 2025 });
+        var result = await sut.ListAsync(
+            new EventListQuery { Year = 2025 },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Y2025");
     }
@@ -188,7 +200,10 @@ public sealed class EventServiceTests
     {
         HasEvents(NewEvent("Plain", featured: false), NewEvent("Star", featured: true));
 
-        var result = await sut.ListAsync(new EventListQuery { Featured = true });
+        var result = await sut.ListAsync(
+            new EventListQuery { Featured = true },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Star");
     }
@@ -198,7 +213,10 @@ public sealed class EventServiceTests
     {
         HasEvents(NewEvent("Festival Ávila"), NewEvent("Concierto"));
 
-        var result = await sut.ListAsync(new EventListQuery { Title = "avila" });
+        var result = await sut.ListAsync(
+            new EventListQuery { Title = "avila" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Festival Ávila");
     }
@@ -211,7 +229,10 @@ public sealed class EventServiceTests
             NewEvent("B", subtitle: "Charlas")
         );
 
-        var result = await sut.ListAsync(new EventListQuery { Subtitle = "robotica" });
+        var result = await sut.ListAsync(
+            new EventListQuery { Subtitle = "robotica" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("A");
     }
@@ -221,7 +242,10 @@ public sealed class EventServiceTests
     {
         HasEvents(NewEvent("Alpha"), NewEvent("Zeta"), NewEvent("Mint"));
 
-        var result = await sut.ListAsync(new EventListQuery { Sort = "-title" });
+        var result = await sut.ListAsync(
+            new EventListQuery { Sort = "-title" },
+            TestContext.Current.CancellationToken
+        );
 
         result.Items.Select(e => e.Title).Should().ContainInOrder("Zeta", "Mint", "Alpha");
     }
@@ -237,7 +261,8 @@ public sealed class EventServiceTests
                 Page = 2,
                 PageSize = 2,
                 Sort = "title",
-            }
+            },
+            TestContext.Current.CancellationToken
         );
 
         result.Total.Should().Be(3);
@@ -250,7 +275,7 @@ public sealed class EventServiceTests
         var ev = NewEvent();
         HasEvents(ev);
 
-        var result = await sut.GetByIdAsync(ev.Id);
+        var result = await sut.GetByIdAsync(ev.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(ev.Id);
@@ -261,7 +286,7 @@ public sealed class EventServiceTests
     {
         HasEvents();
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
@@ -291,12 +316,17 @@ public sealed class EventServiceTests
             CategoryTypeIds: [Guid.NewGuid()]
         );
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventScheduleRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -308,11 +338,16 @@ public sealed class EventServiceTests
             categoryTypeIds: [Guid.NewGuid()]
         );
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -325,10 +360,15 @@ public sealed class EventServiceTests
             categoryTypeIds: [Guid.NewGuid()]
         );
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -342,10 +382,15 @@ public sealed class EventServiceTests
             categoryTypeIds: [Guid.NewGuid()]
         );
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -354,12 +399,19 @@ public sealed class EventServiceTests
         ThumbnailExists(false);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventThumbnailNotFound);
-        await events.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -370,11 +422,16 @@ public sealed class EventServiceTests
         ThumbnailExists(true);
         var request = CreateReq(categoryTypeIds: empty ? Array.Empty<Guid>() : null);
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventCategoriesRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -384,11 +441,16 @@ public sealed class EventServiceTests
         HasCategoryCount(1);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid(), Guid.NewGuid()]);
 
-        var result = await sut.CreateAsync(request, Guid.NewGuid());
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -423,7 +485,7 @@ public sealed class EventServiceTests
 
         var request = CreateReq(categoryTypeIds: [categoryId], thumbnailId: thumbnailId);
 
-        var result = await sut.CreateAsync(request, caller);
+        var result = await sut.CreateAsync(request, caller, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Title.Should().Be("Hackathon");
@@ -456,11 +518,19 @@ public sealed class EventServiceTests
             categoryTypeIds: [Guid.NewGuid()]
         );
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await events.DidNotReceiveWithAnyArgs().GetForEditAsync(Guid.Empty, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .GetForEditAsync(Guid.Empty, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -468,10 +538,16 @@ public sealed class EventServiceTests
     {
         var request = UpdateReq(categoryTypeIds: null);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.EventCategoriesRequired);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -481,11 +557,17 @@ public sealed class EventServiceTests
         events.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Event?)null);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
-        var result = await sut.UpdateAsync(Guid.NewGuid(), request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            Guid.NewGuid(),
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -504,11 +586,17 @@ public sealed class EventServiceTests
             .Returns(true);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
-        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventActivitiesOutsideNewRange);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -528,10 +616,16 @@ public sealed class EventServiceTests
         ThumbnailExists(false);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
-        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Code.Should().Be(ErrorCode.EventThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -581,7 +675,12 @@ public sealed class EventServiceTests
             title: "  New title  "
         );
 
-        var result = await sut.UpdateAsync(ev.Id, request, caller);
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            caller,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         ev.Title.Should().Be("New title");
@@ -600,10 +699,17 @@ public sealed class EventServiceTests
         PrepareUpdate(ev);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: ev.ThumbnailId);
 
-        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(Guid.Empty, default);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -621,7 +727,12 @@ public sealed class EventServiceTests
             description: $"{{\"b\":\"/api/files/{keptId}/content\"}}"
         );
 
-        var result = await sut.UpdateAsync(ev.Id, request, Guid.NewGuid());
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -662,12 +773,15 @@ public sealed class EventServiceTests
             .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((Event?)null);
 
-        var result = await sut.DeleteAsync(Guid.NewGuid());
+        var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
-        await fileService.DidNotReceiveWithAnyArgs().DeleteIfOrphanedAsync(Guid.Empty, default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await fileService
+            .DidNotReceiveWithAnyArgs()
+            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -694,7 +808,7 @@ public sealed class EventServiceTests
                 }.AsQueryable()
             );
 
-        var result = await sut.DeleteAsync(ev.Id);
+        var result = await sut.DeleteAsync(ev.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         events.Received(1).Remove(ev);
@@ -721,7 +835,7 @@ public sealed class EventServiceTests
             .Returns(ev);
         activities.Query().Returns(Array.Empty<Activity>().AsQueryable());
 
-        var result = await sut.DeleteAsync(ev.Id);
+        var result = await sut.DeleteAsync(ev.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await fileService
@@ -734,7 +848,10 @@ public sealed class EventServiceTests
     {
         events.SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await sut.SetFeaturedAsync(Guid.NewGuid());
+        var result = await sut.SetFeaturedAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
@@ -747,7 +864,7 @@ public sealed class EventServiceTests
         HasEvents(ev);
         events.SetFeaturedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(true);
 
-        var result = await sut.SetFeaturedAsync(ev.Id);
+        var result = await sut.SetFeaturedAsync(ev.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(ev.Id);
@@ -772,7 +889,7 @@ public sealed class EventServiceTests
             }
         );
 
-        var result = await sut.ListCategoryTypesAsync();
+        var result = await sut.ListCategoryTypesAsync(TestContext.Current.CancellationToken);
 
         result.Select(c => c.Name).Should().ContainInOrder("Alpha", "Zeta");
     }
@@ -788,13 +905,17 @@ public sealed class EventServiceTests
             .Returns(true);
 
         var result = await sut.CreateCategoryTypeAsync(
-            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ")
+            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  "),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
-        await categoryTypes.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await categoryTypes
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -808,7 +929,8 @@ public sealed class EventServiceTests
             .Returns(false);
 
         var result = await sut.CreateCategoryTypeAsync(
-            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ")
+            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  "),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -835,12 +957,14 @@ public sealed class EventServiceTests
 
         var result = await sut.UpdateCategoryTypeAsync(
             Guid.NewGuid(),
-            new UpdateEventCategoryTypeRequest("Talleres", "#112233")
+            new UpdateEventCategoryTypeRequest("Talleres", "#112233"),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -868,12 +992,14 @@ public sealed class EventServiceTests
 
         var result = await sut.UpdateCategoryTypeAsync(
             id,
-            new UpdateEventCategoryTypeRequest("Talleres", "#112233")
+            new UpdateEventCategoryTypeRequest("Talleres", "#112233"),
+            TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -901,7 +1027,8 @@ public sealed class EventServiceTests
 
         var result = await sut.UpdateCategoryTypeAsync(
             id,
-            new UpdateEventCategoryTypeRequest("  New  ", "  #abcdef  ")
+            new UpdateEventCategoryTypeRequest("  New  ", "  #abcdef  "),
+            TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -922,11 +1049,15 @@ public sealed class EventServiceTests
             )
             .Returns(0);
 
-        var result = await sut.DeleteCategoryTypeAsync(Guid.NewGuid());
+        var result = await sut.DeleteCategoryTypeAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -939,7 +1070,10 @@ public sealed class EventServiceTests
             )
             .Returns(1);
 
-        var result = await sut.DeleteCategoryTypeAsync(Guid.NewGuid());
+        var result = await sut.DeleteCategoryTypeAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

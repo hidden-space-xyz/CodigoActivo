@@ -1,26 +1,67 @@
 using AwesomeAssertions;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
 
-public sealed class RepositoryTests
+public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncLifetime
 {
     private static readonly DateTimeOffset Fixed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    private static CodigoActivoDbContext NewContext(string database) =>
-        new(
+    private static readonly Guid AuthorId = new("aaaaaaaa-1111-1111-1111-111111111111");
+    private static readonly Guid ThumbId = new("bbbbbbbb-2222-2222-2222-222222222222");
+
+    public async ValueTask InitializeAsync()
+    {
+        await using var db = NewContext();
+        await TestDatabase.TruncateAllTablesAsync(db);
+        await new DatabaseSeeder(db).SeedAsync();
+
+        db.Users.Add(
+            new User
+            {
+                Id = AuthorId,
+                FirstName = "Author",
+                LastName = "Fixture",
+                BirthDate = new DateOnly(1980, 1, 1),
+                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                UserTypeId = SeedIds.UserTypes.Member,
+                CreatedAt = Fixed,
+            }
+        );
+        db.Files.Add(
+            new FileEntity
+            {
+                Id = ThumbId,
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = Fixed,
+                UploadedBy = AuthorId,
+            }
+        );
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return ValueTask.CompletedTask;
+    }
+
+    private CodigoActivoDbContext NewContext()
+    {
+        return new CodigoActivoDbContext(
             new DbContextOptionsBuilder<CodigoActivoDbContext>()
-                .UseInMemoryDatabase(database)
-                .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+                .UseNpgsql(postgres.ConnectionString)
+                .UseSnakeCaseNamingConvention()
                 .Options
         );
-
-    private static CodigoActivoDbContext NewContext() => NewContext(Guid.NewGuid().ToString());
+    }
 
     private static Partner NewPartner(string name = "Partner", int tier = 1) =>
         new()
@@ -29,9 +70,9 @@ public sealed class RepositoryTests
             Name = name,
             Tier = tier,
             FromDate = new DateOnly(2024, 1, 1),
-            ThumbnailId = Guid.NewGuid(),
+            ThumbnailId = ThumbId,
             CreatedAt = Fixed,
-            CreatedBy = Guid.NewGuid(),
+            CreatedBy = AuthorId,
         };
 
     private static User NewUser(
@@ -51,28 +92,10 @@ public sealed class RepositoryTests
             Email = email,
             Phone = phone,
             BirthDate = new DateOnly(1990, 1, 1),
-            UserStatusTypeId = statusId ?? Guid.NewGuid(),
-            UserTypeId = userTypeId ?? Guid.NewGuid(),
+            UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
+            UserTypeId = userTypeId ?? SeedIds.UserTypes.Member,
             ParentId = parentId,
             CreatedAt = Fixed,
-        };
-
-    private static UserStatusType NewStatus(string name = "Active") =>
-        new()
-        {
-            Id = Guid.NewGuid(),
-            Name = name,
-            Description = "d",
-            Color = "#fff",
-        };
-
-    private static UserType NewUserType(string name = "Member") =>
-        new()
-        {
-            Id = Guid.NewGuid(),
-            Name = name,
-            Description = "d",
-            Color = "#000",
         };
 
     private static Event NewEvent(string title = "Event", bool featured = false) =>
@@ -85,9 +108,9 @@ public sealed class RepositoryTests
             EventStartsAt = new DateOnly(2026, 6, 1),
             EventEndsAt = new DateOnly(2026, 6, 2),
             Featured = featured,
-            ThumbnailId = Guid.NewGuid(),
+            ThumbnailId = ThumbId,
             CreatedAt = Fixed,
-            CreatedBy = Guid.NewGuid(),
+            CreatedBy = AuthorId,
         };
 
     private static Announcement NewAnnouncement(string title = "Ann", bool featured = false) =>
@@ -98,9 +121,9 @@ public sealed class RepositoryTests
             Subtitle = "sub",
             Description = "{}",
             Featured = featured,
-            ThumbnailId = Guid.NewGuid(),
+            ThumbnailId = ThumbId,
             CreatedAt = Fixed,
-            CreatedBy = Guid.NewGuid(),
+            CreatedBy = AuthorId,
         };
 
     private static Activity NewActivity(
@@ -118,10 +141,10 @@ public sealed class RepositoryTests
             ActivityStartsAt = startsAt ?? Fixed,
             ActivityEndsAt = endsAt ?? Fixed.AddHours(1),
             EventId = eventId,
-            ActivityModalityTypeId = Guid.NewGuid(),
-            ThumbnailId = Guid.NewGuid(),
+            ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+            ThumbnailId = ThumbId,
             CreatedAt = Fixed,
-            CreatedBy = Guid.NewGuid(),
+            CreatedBy = AuthorId,
         };
 
     private static ActivityRoleType NewRoleType(string name = "Role") =>
@@ -146,11 +169,11 @@ public sealed class RepositoryTests
     {
         await using var ctx = NewContext();
         ctx.Partners.AddRange(NewPartner("A"), NewPartner("B"));
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new PartnerRepository(ctx);
 
-        var items = await repo.Query().ToListAsync();
+        var items = await repo.Query().ToListAsync(TestContext.Current.CancellationToken);
 
         items.Should().HaveCount(2);
         ctx.ChangeTracker.Entries<Partner>().Should().BeEmpty("Query() uses AsNoTracking");
@@ -159,23 +182,26 @@ public sealed class RepositoryTests
     [Fact]
     public async Task AddAsync_stages_entity_but_does_not_persist_until_save()
     {
-        var database = Guid.NewGuid().ToString();
         var partner = NewPartner();
-        await using (var ctx = NewContext(database))
+        await using (var ctx = NewContext())
         {
             var repo = new PartnerRepository(ctx);
-            await repo.AddAsync(partner);
+            await repo.AddAsync(partner, TestContext.Current.CancellationToken);
 
-            await using var probe = NewContext(database);
-            (await probe.Partners.CountAsync())
-                .Should()
-                .Be(0, "the repository must not call SaveChanges");
+            await using (var probe = NewContext())
+            {
+                (await probe.Partners.CountAsync(TestContext.Current.CancellationToken))
+                    .Should()
+                    .Be(0, "the repository must not call SaveChanges");
+            }
 
-            await ctx.SaveChangesAsync();
+            await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        await using var verify = NewContext(database);
-        (await verify.Partners.FindAsync(partner.Id)).Should().NotBeNull();
+        await using var verify = NewContext();
+        (await verify.Partners.FindAsync([partner.Id], TestContext.Current.CancellationToken))
+            .Should()
+            .NotBeNull();
     }
 
     [Fact]
@@ -184,13 +210,18 @@ public sealed class RepositoryTests
         await using var ctx = NewContext();
         var target = NewPartner("Target");
         ctx.Partners.AddRange(target, NewPartner("Other"));
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
-        var found = await repo.FindAsync(p => p.Name == "Target");
+        var found = await repo.FindAsync(
+            p => p.Name == "Target",
+            TestContext.Current.CancellationToken
+        );
         found.Should().NotBeNull();
         found!.Id.Should().Be(target.Id);
-        (await repo.FindAsync(p => p.Name == "Missing")).Should().BeNull();
+        (await repo.FindAsync(p => p.Name == "Missing", TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -198,10 +229,10 @@ public sealed class RepositoryTests
     {
         await using var ctx = NewContext();
         ctx.Partners.AddRange(NewPartner("Keep", tier: 5), NewPartner("Drop", tier: 1));
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
-        var matches = await repo.GetAsync(p => p.Tier == 5);
+        var matches = await repo.GetAsync(p => p.Tier == 5, TestContext.Current.CancellationToken);
 
         matches.Should().ContainSingle(p => p.Name == "Keep");
     }
@@ -215,11 +246,13 @@ public sealed class RepositoryTests
             NewPartner("B", tier: 2),
             NewPartner("C", tier: 9)
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
-        (await repo.GetAllAsync()).Should().HaveCount(3);
-        (await repo.CountAsync(p => p.Tier == 2)).Should().Be(2);
+        (await repo.GetAllAsync(TestContext.Current.CancellationToken)).Should().HaveCount(3);
+        (await repo.CountAsync(p => p.Tier == 2, TestContext.Current.CancellationToken))
+            .Should()
+            .Be(2);
     }
 
     [Theory]
@@ -229,10 +262,12 @@ public sealed class RepositoryTests
     {
         await using var ctx = NewContext();
         ctx.Partners.Add(NewPartner("A", tier: 9));
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
-        (await repo.ExistsAsync(p => p.Tier == tier)).Should().Be(expected);
+        (await repo.ExistsAsync(p => p.Tier == tier, TestContext.Current.CancellationToken))
+            .Should()
+            .Be(expected);
     }
 
     [Fact]
@@ -241,13 +276,15 @@ public sealed class RepositoryTests
         await using var ctx = NewContext();
         var partner = NewPartner();
         ctx.Partners.Add(partner);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
         repo.Remove(partner);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        (await ctx.Partners.FindAsync(partner.Id)).Should().BeNull();
+        (await ctx.Partners.FindAsync([partner.Id], TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -259,14 +296,17 @@ public sealed class RepositoryTests
             NewPartner("Y", tier: 1),
             NewPartner("Z", tier: 8)
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
-        var removed = await repo.RemoveAsync(p => p.Tier == 1);
-        await ctx.SaveChangesAsync();
+        var removed = await repo.RemoveAsync(
+            p => p.Tier == 1,
+            TestContext.Current.CancellationToken
+        );
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         removed.Should().Be(2);
-        (await ctx.Partners.CountAsync()).Should().Be(1);
+        (await ctx.Partners.CountAsync(TestContext.Current.CancellationToken)).Should().Be(1);
     }
 
     [Fact]
@@ -274,29 +314,32 @@ public sealed class RepositoryTests
     {
         await using var ctx = NewContext();
         ctx.Partners.Add(NewPartner("Only", tier: 3));
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
 
-        (await repo.RemoveAsync(p => p.Tier == 100)).Should().Be(0);
-        (await ctx.Partners.CountAsync()).Should().Be(1);
+        (await repo.RemoveAsync(p => p.Tier == 100, TestContext.Current.CancellationToken))
+            .Should()
+            .Be(0);
+        (await ctx.Partners.CountAsync(TestContext.Current.CancellationToken)).Should().Be(1);
     }
 
     [Fact]
     public async Task GetByIdWithDetailsAsync_includes_status_and_type()
     {
         await using var ctx = NewContext();
-        var status = NewStatus("Active");
-        var type = NewUserType("Socio");
-        var user = NewUser("Ada", "Admin", statusId: status.Id, userTypeId: type.Id);
-        ctx.AddRange(status, type, user);
-        await ctx.SaveChangesAsync();
+        var user = NewUser("Ada", "Admin");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByIdWithDetailsAsync(user.Id);
+        var result = await repo.GetByIdWithDetailsAsync(
+            user.Id,
+            TestContext.Current.CancellationToken
+        );
 
         result.Should().NotBeNull();
-        result!.UserStatusType.Name.Should().Be("Active");
+        result!.UserStatusType.Name.Should().Be("Activo");
         result.UserType.Name.Should().Be("Socio");
     }
 
@@ -306,7 +349,9 @@ public sealed class RepositoryTests
         await using var ctx = NewContext();
         var repo = new UserRepository(ctx);
 
-        (await repo.GetByIdWithDetailsAsync(Guid.NewGuid())).Should().BeNull();
+        (await repo.GetByIdWithDetailsAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Theory]
@@ -319,21 +364,15 @@ public sealed class RepositoryTests
     )
     {
         await using var ctx = NewContext();
-        var status = NewStatus();
-        var type = NewUserType();
-        var user = NewUser(
-            "Match",
-            "Me",
-            email: "user@x.test",
-            phone: "+34600000000",
-            statusId: status.Id,
-            userTypeId: type.Id
-        );
-        ctx.AddRange(status, type, user);
-        await ctx.SaveChangesAsync();
+        var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByEmailOrPhoneAsync(identifier);
+        var result = await repo.GetByEmailOrPhoneAsync(
+            identifier,
+            TestContext.Current.CancellationToken
+        );
 
         if (expectFound)
         {
@@ -352,15 +391,31 @@ public sealed class RepositoryTests
         await using var ctx = NewContext();
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new UserRepository(ctx);
 
-        (await repo.EmailExistsAsync("dup@x.test")).Should().BeTrue();
-        (await repo.EmailExistsAsync("free@x.test")).Should().BeFalse();
-        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: user.Id))
+        (await repo.EmailExistsAsync("dup@x.test", ct: TestContext.Current.CancellationToken))
+            .Should()
+            .BeTrue();
+        (await repo.EmailExistsAsync("free@x.test", ct: TestContext.Current.CancellationToken))
+            .Should()
+            .BeFalse();
+        (
+            await repo.EmailExistsAsync(
+                "dup@x.test",
+                excludeUserId: user.Id,
+                ct: TestContext.Current.CancellationToken
+            )
+        )
             .Should()
             .BeFalse("owner is excluded");
-        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: Guid.NewGuid()))
+        (
+            await repo.EmailExistsAsync(
+                "dup@x.test",
+                excludeUserId: Guid.NewGuid(),
+                ct: TestContext.Current.CancellationToken
+            )
+        )
             .Should()
             .BeTrue("another user still collides");
     }
@@ -371,46 +426,67 @@ public sealed class RepositoryTests
         await using var ctx = NewContext();
         var user = NewUser(phone: "+100");
         ctx.Users.Add(user);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new UserRepository(ctx);
 
-        (await repo.PhoneExistsAsync("+100")).Should().BeTrue();
-        (await repo.PhoneExistsAsync("+999")).Should().BeFalse();
-        (await repo.PhoneExistsAsync("+100", excludeUserId: user.Id)).Should().BeFalse();
-        (await repo.PhoneExistsAsync("+100", excludeUserId: Guid.NewGuid())).Should().BeTrue();
+        (await repo.PhoneExistsAsync("+100", ct: TestContext.Current.CancellationToken))
+            .Should()
+            .BeTrue();
+        (await repo.PhoneExistsAsync("+999", ct: TestContext.Current.CancellationToken))
+            .Should()
+            .BeFalse();
+        (
+            await repo.PhoneExistsAsync(
+                "+100",
+                excludeUserId: user.Id,
+                ct: TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeFalse();
+        (
+            await repo.PhoneExistsAsync(
+                "+100",
+                excludeUserId: Guid.NewGuid(),
+                ct: TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeTrue();
     }
 
     [Fact]
     public async Task ListChildrenWithDetailsAsync_returns_children_ordered_with_details()
     {
         await using var ctx = NewContext();
-        var status = NewStatus("Dependent");
-        var type = NewUserType();
-        var parent = NewUser("Parent", "P", statusId: status.Id, userTypeId: type.Id);
+        var parent = NewUser("Parent", "P");
         var zoe = NewUser(
             "Zoe",
             "Child",
-            statusId: status.Id,
+            statusId: SeedIds.UserStatusTypes.Dependent,
             parentId: parent.Id,
-            userTypeId: type.Id
+            userTypeId: SeedIds.UserTypes.Participant
         );
         var amy = NewUser(
             "Amy",
             "Child",
-            statusId: status.Id,
+            statusId: SeedIds.UserStatusTypes.Dependent,
             parentId: parent.Id,
-            userTypeId: type.Id
+            userTypeId: SeedIds.UserTypes.Participant
         );
-        var stranger = NewUser("Stranger", "S", statusId: status.Id, userTypeId: type.Id);
-        ctx.AddRange(status, type, parent, zoe, amy, stranger);
-        await ctx.SaveChangesAsync();
+        var stranger = NewUser("Stranger", "S");
+        ctx.AddRange(parent, zoe, amy, stranger);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new UserRepository(ctx);
 
-        var children = await repo.ListChildrenWithDetailsAsync(parent.Id);
+        var children = await repo.ListChildrenWithDetailsAsync(
+            parent.Id,
+            TestContext.Current.CancellationToken
+        );
 
         children.Select(c => c.FirstName).Should().Equal("Amy", "Zoe");
-        children[0].UserStatusType.Name.Should().Be("Dependent");
+        children[0].UserStatusType.Name.Should().Be("Dependiente");
     }
 
     [Fact]
@@ -428,15 +504,17 @@ public sealed class RepositoryTests
         ctx.EventCategories.Add(
             new EventCategory { EventId = ev.Id, EventCategoryTypeId = category.Id }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new EventRepository(ctx);
 
-        var loaded = await repo.GetForEditAsync(ev.Id);
+        var loaded = await repo.GetForEditAsync(ev.Id, TestContext.Current.CancellationToken);
 
         loaded.Should().NotBeNull();
         loaded!.Categories.Should().ContainSingle();
-        (await repo.GetForEditAsync(Guid.NewGuid())).Should().BeNull();
+        (await repo.GetForEditAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -461,18 +539,28 @@ public sealed class RepositoryTests
                 AssignmentStatusId = status.Id,
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new EventRepository(ctx);
 
-        var loaded = await repo.GetWithActivitiesAndAssignmentsAsync(ev.Id);
+        var loaded = await repo.GetWithActivitiesAndAssignmentsAsync(
+            ev.Id,
+            TestContext.Current.CancellationToken
+        );
 
         loaded.Should().NotBeNull();
         loaded!.Activities.Should().ContainSingle();
         var loadedActivity = loaded.Activities.Single();
         loadedActivity.Assignments.Should().ContainSingle();
         loadedActivity.AllowedRoleTypes.Should().ContainSingle();
-        (await repo.GetWithActivitiesAndAssignmentsAsync(Guid.NewGuid())).Should().BeNull();
+        (
+            await repo.GetWithActivitiesAndAssignmentsAsync(
+                Guid.NewGuid(),
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -498,11 +586,14 @@ public sealed class RepositoryTests
                 AssignmentStatusId = status.Id,
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
 
-        var loaded = await repo.GetWithAssignmentsAndUsersAsync(activity.Id);
+        var loaded = await repo.GetWithAssignmentsAndUsersAsync(
+            activity.Id,
+            TestContext.Current.CancellationToken
+        );
 
         loaded.Should().NotBeNull();
         loaded!.AllowedRoleTypes.Single().ActivityRoleType.Name.Should().Be("Ponente");
@@ -510,7 +601,14 @@ public sealed class RepositoryTests
         assignment.User.Parent.Should().NotBeNull();
         assignment.ActivityRoleType.Name.Should().Be("Ponente");
         assignment.AssignmentStatus.Should().NotBeNull();
-        (await repo.GetWithAssignmentsAndUsersAsync(Guid.NewGuid())).Should().BeNull();
+        (
+            await repo.GetWithAssignmentsAndUsersAsync(
+                Guid.NewGuid(),
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -524,15 +622,17 @@ public sealed class RepositoryTests
         ctx.ActivityAllowedRoleTypes.Add(
             new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
 
-        var loaded = await repo.GetForEditAsync(activity.Id);
+        var loaded = await repo.GetForEditAsync(activity.Id, TestContext.Current.CancellationToken);
 
         loaded.Should().NotBeNull();
         loaded!.AllowedRoleTypes.Should().ContainSingle();
-        (await repo.GetForEditAsync(Guid.NewGuid())).Should().BeNull();
+        (await repo.GetForEditAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Theory]
@@ -558,10 +658,19 @@ public sealed class RepositoryTests
                 endsAt: Fixed.AddMinutes(endOffsetMinutes)
             )
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new ActivityRepository(ctx);
 
-        (await repo.AnyOutsideRangeAsync(ev.Id, lower, upper)).Should().Be(expected);
+        (
+            await repo.AnyOutsideRangeAsync(
+                ev.Id,
+                lower,
+                upper,
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .Be(expected);
     }
 
     [Fact]
@@ -575,10 +684,17 @@ public sealed class RepositoryTests
         ctx.Activities.Add(
             NewActivity(target.Id, startsAt: Fixed.AddMinutes(10), endsAt: Fixed.AddMinutes(50))
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new ActivityRepository(ctx);
 
-        (await repo.AnyOutsideRangeAsync(target.Id, Fixed, Fixed.AddMinutes(60)))
+        (
+            await repo.AnyOutsideRangeAsync(
+                target.Id,
+                Fixed,
+                Fixed.AddMinutes(60),
+                TestContext.Current.CancellationToken
+            )
+        )
             .Should()
             .BeFalse();
     }
@@ -594,11 +710,27 @@ public sealed class RepositoryTests
         ctx.ActivityAllowedRoleTypes.Add(
             new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new ActivityRepository(ctx);
 
-        (await repo.AllowedRoleExistsAsync(activity.Id, role.Id)).Should().BeTrue();
-        (await repo.AllowedRoleExistsAsync(activity.Id, Guid.NewGuid())).Should().BeFalse();
+        (
+            await repo.AllowedRoleExistsAsync(
+                activity.Id,
+                role.Id,
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeTrue();
+        (
+            await repo.AllowedRoleExistsAsync(
+                activity.Id,
+                Guid.NewGuid(),
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeFalse();
     }
 
     [Fact]
@@ -620,22 +752,33 @@ public sealed class RepositoryTests
                 AssignmentStatusId = status.Id,
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
 
-        var found = await repo.GetAssignmentAsync(user.Id, activity.Id);
+        var found = await repo.GetAssignmentAsync(
+            user.Id,
+            activity.Id,
+            TestContext.Current.CancellationToken
+        );
 
         found.Should().NotBeNull();
         found!.ActivityRoleType.Name.Should().Be("Voluntario");
         found.AssignmentStatus.Name.Should().Be("Pending");
-        (await repo.GetAssignmentAsync(user.Id, Guid.NewGuid())).Should().BeNull();
+        (
+            await repo.GetAssignmentAsync(
+                user.Id,
+                Guid.NewGuid(),
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeNull();
     }
 
     [Fact]
     public async Task AddAssignmentAsync_stages_without_saving_then_persists_on_save()
     {
-        var database = Guid.NewGuid().ToString();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -649,23 +792,31 @@ public sealed class RepositoryTests
             AssignmentStatusId = status.Id,
         };
 
-        await using (var ctx = NewContext(database))
+        await using (var ctx = NewContext())
         {
             ctx.AddRange(user, role, status, ev, activity);
-            await ctx.SaveChangesAsync();
+            await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
             var repo = new ActivityRepository(ctx);
 
-            await repo.AddAssignmentAsync(assignment);
-            await using (var probe = NewContext(database))
+            await repo.AddAssignmentAsync(assignment, TestContext.Current.CancellationToken);
+            await using (var probe = NewContext())
             {
-                (await probe.ActivityUserRoleAssignments.CountAsync()).Should().Be(0);
+                (
+                    await probe.ActivityUserRoleAssignments.CountAsync(
+                        TestContext.Current.CancellationToken
+                    )
+                )
+                    .Should()
+                    .Be(0);
             }
 
-            await ctx.SaveChangesAsync();
+            await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        await using var verify = NewContext(database);
-        (await verify.ActivityUserRoleAssignments.CountAsync()).Should().Be(1);
+        await using var verify = NewContext();
+        (await verify.ActivityUserRoleAssignments.CountAsync(TestContext.Current.CancellationToken))
+            .Should()
+            .Be(1);
     }
 
     [Fact]
@@ -686,13 +837,15 @@ public sealed class RepositoryTests
         };
         ctx.AddRange(user, role, status, ev, activity);
         ctx.ActivityUserRoleAssignments.Add(assignment);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new ActivityRepository(ctx);
 
         repo.RemoveAssignment(assignment);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        (await ctx.ActivityUserRoleAssignments.CountAsync()).Should().Be(0);
+        (await ctx.ActivityUserRoleAssignments.CountAsync(TestContext.Current.CancellationToken))
+            .Should()
+            .Be(0);
     }
 
     [Fact]
@@ -731,11 +884,14 @@ public sealed class RepositoryTests
                 AssignmentStatusId = status.Id,
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
 
-        var assignments = await repo.GetUserAssignmentsAsync(user.Id);
+        var assignments = await repo.GetUserAssignmentsAsync(
+            user.Id,
+            TestContext.Current.CancellationToken
+        );
 
         assignments.Should().HaveCount(2);
         assignments.Select(a => a.Activity.Title).Should().Equal("Early", "Late");
@@ -788,13 +944,14 @@ public sealed class RepositoryTests
                 AssignmentStatusId = status.Id,
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
 
         var result = await repo.GetAssignmentsForUsersByEventAsync(
             [wanted.Id, alsoWanted.Id],
-            targetEvent.Id
+            targetEvent.Id,
+            TestContext.Current.CancellationToken
         );
 
         result.Should().ContainSingle();
@@ -821,11 +978,11 @@ public sealed class RepositoryTests
                 AssignmentStatusId = status.Id,
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
         var repo = new ActivityRepository(ctx);
 
-        var count = await repo.QueryAssignments().CountAsync();
+        var count = await repo.QueryAssignments().CountAsync(TestContext.Current.CancellationToken);
 
         count.Should().Be(1);
         ctx.ChangeTracker.Entries<ActivityUserRoleAssignment>().Should().BeEmpty();
@@ -836,23 +993,27 @@ public sealed class RepositoryTests
     {
         await using var ctx = NewContext();
 
-        var thumbnailFileId = Guid.NewGuid();
         var eventEmbeddedFileId = Guid.NewGuid();
         var announcementEmbeddedFileId = Guid.NewGuid();
 
         var ev = NewEvent();
-        ev.ThumbnailId = thumbnailFileId;
         ev.Description = $"{{\"img\":\"/api/files/{eventEmbeddedFileId}/content\"}}";
         var announcement = NewAnnouncement();
         announcement.Description =
             $"{{\"img\":\"https://api.example.org/api/files/{announcementEmbeddedFileId}/content\"}}";
         ctx.AddRange(ev, announcement);
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new FileRepository(ctx);
 
-        (await repo.IsInUseAsync(thumbnailFileId)).Should().BeTrue();
-        (await repo.IsInUseAsync(eventEmbeddedFileId)).Should().BeTrue();
-        (await repo.IsInUseAsync(announcementEmbeddedFileId)).Should().BeTrue();
-        (await repo.IsInUseAsync(Guid.NewGuid())).Should().BeFalse();
+        (await repo.IsInUseAsync(ThumbId, TestContext.Current.CancellationToken)).Should().BeTrue();
+        (await repo.IsInUseAsync(eventEmbeddedFileId, TestContext.Current.CancellationToken))
+            .Should()
+            .BeTrue();
+        (await repo.IsInUseAsync(announcementEmbeddedFileId, TestContext.Current.CancellationToken))
+            .Should()
+            .BeTrue();
+        (await repo.IsInUseAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
+            .Should()
+            .BeFalse();
     }
 }

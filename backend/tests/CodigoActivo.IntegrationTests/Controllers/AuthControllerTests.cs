@@ -41,9 +41,15 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
     private async Task<(Guid UserId, string Otp)> RegisterPendingAdultAsync(HttpClient client)
     {
-        using var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
+        using var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(),
+            TestContext.Current.CancellationToken
+        );
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>();
+        var body = await response.ReadJsonAsync<RegisterResponse>(
+            TestContext.Current.CancellationToken
+        );
         return (body!.Adult.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
     }
 
@@ -52,10 +58,15 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/auth/csrf");
+        var response = await client.GetAsync(
+            "/api/auth/csrf",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<CsrfTokenResponse>();
+        var body = await response.ReadJsonAsync<CsrfTokenResponse>(
+            TestContext.Current.CancellationToken
+        );
         body!.Token.Should().NotBeNullOrEmpty();
         body.HeaderName.Should().Be("X-CSRF-TOKEN");
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
@@ -67,12 +78,18 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest());
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(),
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var raw = await response.Content.ReadAsStringAsync();
-        var body = await response.ReadJsonAsync<RegisterResponse>();
+        var raw = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var body = await response.ReadJsonAsync<RegisterResponse>(
+            TestContext.Current.CancellationToken
+        );
         body!.RequiresVerification.Should().BeTrue();
         body.Minors.Should().BeEmpty();
         body.Adult.Email.Should().Be(NewAdultEmail);
@@ -84,7 +101,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         raw.Should()
             .NotContain($"\"{otp}\"", "the OTP must never be returned in the HTTP response");
 
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(body.Adult.Id).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
         stored.OtpCodeHash.Should().NotBeNullOrEmpty();
         stored.OtpCodeHash.Should().NotBe(otp, "the OTP must be stored hashed, not in plaintext");
@@ -107,11 +126,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             "/api/auth/register",
-            NewAdultRequest(email: email, phone: phone, password: password, firstName: firstName)
+            NewAdultRequest(email: email, phone: phone, password: password, firstName: firstName),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
@@ -123,14 +145,19 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(otp)
+            new VerifyRequest(otp),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<UserResponse>();
+        var body = await response.ReadJsonAsync<UserResponse>(
+            TestContext.Current.CancellationToken
+        );
         body!.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
 
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(userId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([userId], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
         stored.OtpCodeHash.Should().BeNull();
     }
@@ -143,17 +170,19 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         using var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(otp)
+            new VerifyRequest(otp),
+            TestContext.Current.CancellationToken
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(NewAdultEmail, "Str0ngPass!")
+            new LoginRequest(NewAdultEmail, "Str0ngPass!"),
+            TestContext.Current.CancellationToken
         );
 
         login.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await login.ReadJsonAsync<UserResponse>();
+        var body = await login.ReadJsonAsync<UserResponse>(TestContext.Current.CancellationToken);
         body!.Id.Should().Be(userId);
     }
 
@@ -165,14 +194,19 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(Guid.NewGuid().ToString())
+            new VerifyRequest(Guid.NewGuid().ToString()),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
 
-        var stored = await Factory.QueryAsync(db => db.Users.FindAsync(userId).AsTask());
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([userId], TestContext.Current.CancellationToken).AsTask()
+        );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
         stored.OtpCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
     }
@@ -186,11 +220,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         Factory.Clock.UtcNow += TimeSpan.FromMinutes(16);
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(otp)
+            new VerifyRequest(otp),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
     }
 
@@ -202,11 +239,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest("   ")
+            new VerifyRequest("   "),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
     }
 
@@ -217,11 +257,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/auth/{Guid.NewGuid()}/verify",
-            new VerifyRequest("123456")
+            new VerifyRequest("123456"),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.UserNotFound);
     }
 
@@ -233,11 +276,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             $"/api/auth/{userId}/resend-verification",
-            body: null
+            body: null,
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.OtpResendCooldownActive);
     }
 
@@ -250,7 +296,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
         var resend = await client.PostJsonAsync(
             $"/api/auth/{userId}/resend-verification",
-            body: null
+            body: null,
+            TestContext.Current.CancellationToken
         );
 
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -259,7 +306,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var newOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
         var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(newOtp)
+            new VerifyRequest(newOtp),
+            TestContext.Current.CancellationToken
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -273,7 +321,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
         using var resend = await client.PostJsonAsync(
             $"/api/auth/{userId}/resend-verification",
-            body: null
+            body: null,
+            TestContext.Current.CancellationToken
         );
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var secondOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
@@ -281,16 +330,18 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         using var stale = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(firstOtp)
+            new VerifyRequest(firstOtp),
+            TestContext.Current.CancellationToken
         );
         stale.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await stale.ReadJsonAsync<ApiErrorResponse>())!
+        (await stale.ReadJsonAsync<ApiErrorResponse>(TestContext.Current.CancellationToken))!
             .Code.Should()
             .Be(ErrorCode.OtpInvalidOrExpired);
 
         var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
-            new VerifyRequest(secondOtp)
+            new VerifyRequest(secondOtp),
+            TestContext.Current.CancellationToken
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -302,11 +353,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/resend-verification",
-            body: null
+            body: null,
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
     }
 
@@ -317,11 +371,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password)
+            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.UserAccountPendingVerification);
     }
 
@@ -332,17 +389,21 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(TestSeedData.AdminEmail, TestSeedData.Password)
+            new LoginRequest(TestSeedData.AdminEmail, TestSeedData.Password),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
         cookies.Should().Contain(c => c.Contains("CodigoActivo.Session", StringComparison.Ordinal));
-        var body = await response.ReadJsonAsync<UserResponse>();
+        var body = await response.ReadJsonAsync<UserResponse>(
+            TestContext.Current.CancellationToken
+        );
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
 
         var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(TestSeedData.Users.AdminId).AsTask()
+            db.Users.FindAsync([TestSeedData.Users.AdminId], TestContext.Current.CancellationToken)
+                .AsTask()
         );
         stored!.LastLoginAt.Should().NotBeNull();
     }
@@ -354,11 +415,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(TestSeedData.AdminEmail, "WrongPassword!")
+            new LoginRequest(TestSeedData.AdminEmail, "WrongPassword!"),
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.InvalidCredentials);
     }
 
@@ -374,10 +438,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             ),
         };
 
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
     }
 
@@ -386,10 +452,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/auth/me");
+        var response = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<UserResponse>();
+        var body = await response.ReadJsonAsync<UserResponse>(
+            TestContext.Current.CancellationToken
+        );
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
         body.Email.Should().Be(TestSeedData.AdminEmail);
     }
@@ -399,7 +467,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/auth/me");
+        var response = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -409,11 +477,15 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var logout = await client.PostJsonAsync("/api/auth/logout", body: null);
+        var logout = await client.PostJsonAsync(
+            "/api/auth/logout",
+            body: null,
+            TestContext.Current.CancellationToken
+        );
 
         logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var me = await client.GetAsync("/api/auth/me");
+        var me = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

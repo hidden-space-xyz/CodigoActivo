@@ -42,29 +42,44 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     public async Task SaveAsync_then_OpenReadAsync_round_trips_the_bytes()
     {
         var payload = Encoding.UTF8.GetBytes("hello storage");
-        await sut.SaveAsync("greeting.txt", new MemoryStream(payload));
+        await sut.SaveAsync(
+            "greeting.txt",
+            new MemoryStream(payload),
+            TestContext.Current.CancellationToken
+        );
 
-        await using var stream = await sut.OpenReadAsync("greeting.txt");
+        await using var stream = await sut.OpenReadAsync(
+            "greeting.txt",
+            TestContext.Current.CancellationToken
+        );
         stream.Should().NotBeNull();
         await using var buffer = new MemoryStream();
-        await stream!.CopyToAsync(buffer);
+        await stream!.CopyToAsync(buffer, TestContext.Current.CancellationToken);
         buffer.ToArray().Should().Equal(payload);
     }
 
     [Fact]
     public async Task OpenReadAsync_returns_null_for_a_missing_file()
     {
-        (await sut.OpenReadAsync("does-not-exist.bin")).Should().BeNull();
+        (await sut.OpenReadAsync("does-not-exist.bin", TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Fact]
     public async Task Delete_removes_an_existing_file()
     {
-        await sut.SaveAsync("temp.dat", new MemoryStream([1, 2, 3]));
+        await sut.SaveAsync(
+            "temp.dat",
+            new MemoryStream([1, 2, 3]),
+            TestContext.Current.CancellationToken
+        );
 
         sut.Delete("temp.dat");
 
-        (await sut.OpenReadAsync("temp.dat")).Should().BeNull();
+        (await sut.OpenReadAsync("temp.dat", TestContext.Current.CancellationToken))
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -89,7 +104,13 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [Fact]
     public async Task SaveAsync_rejects_a_path_traversal_name()
     {
-        await sut.Invoking(s => s.SaveAsync("../escape.txt", new MemoryStream([0])))
+        await sut.Invoking(s =>
+                s.SaveAsync(
+                    "../escape.txt",
+                    new MemoryStream([0]),
+                    TestContext.Current.CancellationToken
+                )
+            )
             .Should()
             .ThrowAsync<ArgumentException>()
             .WithParameterName("storedName");

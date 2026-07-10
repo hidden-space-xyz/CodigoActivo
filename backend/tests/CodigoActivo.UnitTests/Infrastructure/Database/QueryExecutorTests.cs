@@ -40,7 +40,7 @@ public sealed class QueryExecutorTests : IDisposable
             );
         }
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -49,7 +49,12 @@ public sealed class QueryExecutorTests : IDisposable
         await SeedPartnersAsync("A", "B", "C", "D", "E");
         var query = context.Partners.OrderBy(p => p.Name);
 
-        var result = await sut.ToPagedAsync(query, page: 2, pageSize: 2);
+        var result = await sut.ToPagedAsync(
+            query,
+            page: 2,
+            pageSize: 2,
+            TestContext.Current.CancellationToken
+        );
 
         result.Total.Should().Be(5);
         result.Page.Should().Be(2);
@@ -63,7 +68,12 @@ public sealed class QueryExecutorTests : IDisposable
     {
         await SeedPartnersAsync("A", "B");
 
-        var result = await sut.ToPagedAsync(context.Partners, page: 5, pageSize: 10);
+        var result = await sut.ToPagedAsync(
+            context.Partners,
+            page: 5,
+            pageSize: 10,
+            TestContext.Current.CancellationToken
+        );
 
         result.Total.Should().Be(2);
         result.Items.Should().BeEmpty();

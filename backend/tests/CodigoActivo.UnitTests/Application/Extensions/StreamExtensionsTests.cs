@@ -30,7 +30,7 @@ public sealed class StreamExtensionsTests
     {
         await using var stream = new MemoryStream(header);
 
-        var result = await stream.DetectImageFormatAsync();
+        var result = await stream.DetectImageFormatAsync(TestContext.Current.CancellationToken);
 
         result.Should().Be(expected);
     }
@@ -59,7 +59,7 @@ public sealed class StreamExtensionsTests
     {
         await using var stream = new MemoryStream(header);
 
-        var result = await stream.DetectImageFormatAsync();
+        var result = await stream.DetectImageFormatAsync(TestContext.Current.CancellationToken);
 
         result.Should().BeNull();
     }
@@ -69,7 +69,7 @@ public sealed class StreamExtensionsTests
     {
         await using var stream = new MemoryStream([]);
 
-        var result = await stream.DetectImageFormatAsync();
+        var result = await stream.DetectImageFormatAsync(TestContext.Current.CancellationToken);
 
         result.Should().BeNull();
     }
@@ -79,7 +79,7 @@ public sealed class StreamExtensionsTests
     {
         await using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 12, length: 20));
 
-        var result = await stream.DetectImageFormatAsync();
+        var result = await stream.DetectImageFormatAsync(TestContext.Current.CancellationToken);
 
         result.Should().Be(new ImageFormat("webp", "image/webp"));
     }
@@ -89,7 +89,7 @@ public sealed class StreamExtensionsTests
     {
         await using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 40, length: 20));
 
-        var result = await stream.DetectImageFormatAsync();
+        var result = await stream.DetectImageFormatAsync(TestContext.Current.CancellationToken);
 
         result.Should().BeNull();
     }

@@ -86,8 +86,9 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         HttpResponseMessage response
     )
     {
-        return await response.ReadJsonAsync<List<Application.DTOs.AssignedActivityResponse>>()
-            ?? [];
+        return await response.ReadJsonAsync<List<Application.DTOs.AssignedActivityResponse>>(
+                TestContext.Current.CancellationToken
+            ) ?? [];
     }
 
     [Fact]
@@ -95,7 +96,10 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/me/assigned-activities");
+        var response = await client.GetAsync(
+            "/api/me/assigned-activities",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -112,7 +116,10 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/me/assigned-activities");
+        var response = await client.GetAsync(
+            "/api/me/assigned-activities",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = await ReadAssignedAsync(response);

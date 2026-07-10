@@ -139,10 +139,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary");
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/summary",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var summary = await response.ReadJsonAsync<EventSummaryResponse>();
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(
+            TestContext.Current.CancellationToken
+        );
         summary!.EventId.Should().Be(EventId);
         summary.Title.Should().Be("Feria de Voluntariado");
         summary.ActivitiesCount.Should().Be(2);
@@ -158,10 +163,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/summary");
+        var response = await client.GetAsync(
+            $"/api/reports/events/{Guid.NewGuid()}/summary",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
@@ -171,10 +181,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/assignments");
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/assignments",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<EventAssignmentsReportResponse>();
+        var report = await response.ReadJsonAsync<EventAssignmentsReportResponse>(
+            TestContext.Current.CancellationToken
+        );
         report!.EventId.Should().Be(EventId);
         report.Title.Should().Be("Feria de Voluntariado");
         report.Items.Should().HaveCount(4);
@@ -194,10 +209,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/activities/{ActivityAId}/assignments");
+        var response = await client.GetAsync(
+            $"/api/reports/activities/{ActivityAId}/assignments",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<ActivityAssignmentsReportResponse>();
+        var report = await response.ReadJsonAsync<ActivityAssignmentsReportResponse>(
+            TestContext.Current.CancellationToken
+        );
         report!.ActivityId.Should().Be(ActivityAId);
         report.Title.Should().Be("Taller");
         report.TotalSignups.Should().Be(1);
@@ -229,11 +249,14 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/activities/{Guid.NewGuid()}/assignments"
+            $"/api/reports/activities/{Guid.NewGuid()}/assignments",
+            TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.ActivityNotFound);
     }
 
@@ -255,10 +278,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges");
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/badges",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<EventBadgesResponse>();
+        var report = await response.ReadJsonAsync<EventBadgesResponse>(
+            TestContext.Current.CancellationToken
+        );
         report!.EventId.Should().Be(EventId);
         report.Title.Should().Be("Feria de Voluntariado");
 
@@ -290,10 +318,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/badges");
+        var response = await client.GetAsync(
+            $"/api/reports/events/{Guid.NewGuid()}/badges",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>();
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
         error!.Code.Should().Be(ErrorCode.EventNotFound);
     }
 
@@ -302,7 +335,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges");
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/badges",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -312,10 +348,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/reports/dashboard");
+        var response = await client.GetAsync(
+            "/api/reports/dashboard",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var dashboard = await response.ReadJsonAsync<DashboardSummaryResponse>();
+        var dashboard = await response.ReadJsonAsync<DashboardSummaryResponse>(
+            TestContext.Current.CancellationToken
+        );
         dashboard!.Events.Should().Be(0);
         dashboard.Activities.Should().Be(0);
         dashboard.Resources.Should().Be(0);
@@ -329,7 +370,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/reports/dashboard");
+        var response = await client.GetAsync(
+            "/api/reports/dashboard",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -339,7 +383,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/reports/dashboard");
+        var response = await client.GetAsync(
+            "/api/reports/dashboard",
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
