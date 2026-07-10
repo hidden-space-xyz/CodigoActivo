@@ -13,24 +13,19 @@ defineProps<{ resource: LearningResourceSummary }>()
     <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 
     <h3 class="resource-card__title">{{ resource.title }}</h3>
-
-    <div class="resource-card__footer">
-      <span class="resource-card__type">{{ resource.type }}</span>
-      <span class="resource-card__open">Abrir →</span>
-    </div>
+    <p v-if="resource.type" class="resource-card__subtitle">{{ resource.type }}</p>
   </RouterLink>
 </template>
 
 <style scoped>
 .resource-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
   border-radius: 16px;
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  cursor: pointer;
   text-decoration: none;
   color: inherit;
   transition:
@@ -51,24 +46,9 @@ defineProps<{ resource: LearningResourceSummary }>()
   color: var(--ca-text-bright);
 }
 
-.resource-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--ca-border);
-}
-
-.resource-card__type {
-  font-family: var(--ca-font-mono);
-  font-size: 12px;
-  color: var(--ca-text-faint-2);
-}
-
-.resource-card__open {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ca-orange-ink);
+.resource-card__subtitle {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
 }
 </style>
