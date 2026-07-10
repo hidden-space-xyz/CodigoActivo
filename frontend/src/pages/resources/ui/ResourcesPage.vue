@@ -53,8 +53,8 @@ const { resources, isLoading } = useResources()
 
 .resources-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
 }
 
 .resources-loading {
