@@ -1,20 +1,32 @@
 <script setup lang="ts">
-import type { LearningResourceSummary } from '../model/types'
-import { ListThumbnail } from '@/shared/ui'
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 
-defineProps<{ resource: LearningResourceSummary }>()
+import type { LearningResourceSummary } from '../model/types'
+import { ColorTag, ListThumbnail } from '@/shared/ui'
+
+const props = defineProps<{ resource: LearningResourceSummary }>()
+
+const linkAttrs = computed(() =>
+  props.resource.url
+    ? { href: props.resource.url }
+    : { to: { name: 'resource-detail', params: { resourceId: props.resource.id } } },
+)
 </script>
 
 <template>
-  <RouterLink
-    :to="{ name: 'resource-detail', params: { resourceId: resource.id } }"
-    class="resource-card"
-  >
+  <component :is="resource.url ? 'a' : RouterLink" v-bind="linkAttrs" class="resource-card">
     <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 
+    <ColorTag
+      v-if="resource.typeName"
+      class="resource-card__type"
+      :value="resource.typeName"
+      :color="resource.typeColor"
+    />
     <h3 class="resource-card__title">{{ resource.title }}</h3>
-    <p v-if="resource.type" class="resource-card__subtitle">{{ resource.type }}</p>
-  </RouterLink>
+    <p v-if="resource.subtitle" class="resource-card__subtitle">{{ resource.subtitle }}</p>
+  </component>
 </template>
 
 <style scoped>
@@ -36,6 +48,11 @@ defineProps<{ resource: LearningResourceSummary }>()
 .resource-card:hover {
   transform: translateY(-4px);
   border-color: var(--ca-border-strong);
+}
+
+.resource-card__type {
+  align-self: flex-start;
+  margin-top: 4px;
 }
 
 .resource-card__title {

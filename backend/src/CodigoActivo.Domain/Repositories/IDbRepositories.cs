@@ -79,6 +79,8 @@ public interface IActivityRepository : IDbRepository<Activity>
 
 public interface IResourceRepository : IDbRepository<Resource>;
 
+public interface IResourceTypeRepository : IDbRepository<ResourceType>;
+
 public interface IAnnouncementRepository : IDbRepository<Announcement>
 {
     Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);

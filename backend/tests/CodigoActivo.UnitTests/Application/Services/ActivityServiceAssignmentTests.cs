@@ -18,9 +18,12 @@ public sealed class ActivityServiceAssignmentTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly IAssignmentStatusTypeRepository statuses = Substitute.For<IAssignmentStatusTypeRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes = Substitute.For<IActivityRoleTypeRepository>();
-    private readonly IActivityModalityTypeRepository modalityTypes = Substitute.For<IActivityModalityTypeRepository>();
+    private readonly IAssignmentStatusTypeRepository statuses =
+        Substitute.For<IAssignmentStatusTypeRepository>();
+    private readonly IActivityRoleTypeRepository roleTypes =
+        Substitute.For<IActivityRoleTypeRepository>();
+    private readonly IActivityModalityTypeRepository modalityTypes =
+        Substitute.For<IActivityModalityTypeRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();

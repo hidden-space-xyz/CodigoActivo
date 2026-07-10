@@ -220,6 +220,7 @@ public static class DependencyInjection
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
+        services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
         services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
         services.AddScoped<IPartnerRepository, PartnerRepository>();
         services.AddScoped<IFileRepository, FileRepository>();

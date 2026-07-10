@@ -2013,6 +2013,28 @@
         }
       }
     },
+    "/api/resources/types": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResourceTypeResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/resources/{resourceId}": {
       "get": {
         "tags": [
@@ -3245,6 +3267,14 @@
             "type": "string",
             "nullable": true
           },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
@@ -3325,6 +3355,11 @@
           "EventScheduleInvalidRange",
           "ResourceNotFound",
           "ResourceThumbnailNotFound",
+          "ResourceTypeNotFound",
+          "ResourceDescriptionRequired",
+          "ResourceDescriptionNotAllowed",
+          "ResourceUrlRequired",
+          "ResourceUrlNotAllowed",
           "PartnerNotFound",
           "PartnerThumbnailNotFound",
           "FileNotFound",
@@ -4059,6 +4094,13 @@
             "type": "string",
             "nullable": true
           },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ResourceTypeResponse"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -4128,6 +4170,13 @@
             "type": "string",
             "nullable": true
           },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ResourceTypeResponse"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -4149,6 +4198,31 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResourceTypeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "isExternal": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -4362,6 +4436,14 @@
           "description": {
             "type": "string",
             "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "resourceTypeId": {
+            "type": "string",
+            "format": "uuid"
           },
           "thumbnailId": {
             "type": "string",

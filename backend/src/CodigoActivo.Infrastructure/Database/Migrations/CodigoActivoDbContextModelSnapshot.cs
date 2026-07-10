@@ -537,6 +537,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("description");
 
+                    b.Property<Guid>("ResourceTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_type_id");
+
                     b.Property<string>("Subtitle")
                         .IsRequired()
                         .HasColumnType("text")
@@ -559,11 +563,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("Url")
+                        .HasColumnType("text")
+                        .HasColumnName("url");
+
                     b.HasKey("Id")
                         .HasName("pk_resources");
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_resources_created_by");
+
+                    b.HasIndex("ResourceTypeId")
+                        .HasDatabaseName("ix_resources_resource_type_id");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_resources_thumbnail_id");
@@ -572,6 +583,43 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_resources_updated_by");
 
                     b.ToTable("resources", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.ResourceType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsExternal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_external");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resource_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_resource_types_name");
+
+                    b.ToTable("resource_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
@@ -966,6 +1014,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_resources_users_created_by");
 
+                    b.HasOne("CodigoActivo.Domain.Entities.ResourceType", "ResourceType")
+                        .WithMany("Resources")
+                        .HasForeignKey("ResourceTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_resources_resource_types_resource_type_id");
+
                     b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
                         .WithMany()
                         .HasForeignKey("ThumbnailId")
@@ -978,6 +1033,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_resources_users_updated_by");
+
+                    b.Navigation("ResourceType");
 
                     b.Navigation("Thumbnail");
                 });
@@ -1045,6 +1102,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>
                 {
                     b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.ResourceType", b =>
+                {
+                    b.Navigation("Resources");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>

@@ -224,6 +224,8 @@ public interface IResourceService
         CancellationToken ct = default
     );
 
+    Task<IReadOnlyList<ResourceTypeResponse>> ListTypesAsync(CancellationToken ct = default);
+
     Task<Result<ResourceResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     Task<Result<ResourceResponse>> CreateAsync(

@@ -5,5 +5,6 @@ export {
   useActivityRoleTypesList,
   useAssignmentStatusTypesList,
   useEventCategoryTypesList,
+  useResourceTypesList,
   useUserTypesList,
 } from './api/queries'

@@ -33,6 +33,11 @@ export const errorMessages: Record<ErrorCode, string> = {
 
   ResourceNotFound: 'No se encontró el recurso.',
   ResourceThumbnailNotFound: 'No se encontró la imagen del recurso.',
+  ResourceTypeNotFound: 'El tipo de recurso no es válido.',
+  ResourceDescriptionRequired: 'Los recursos internos deben tener una descripción.',
+  ResourceDescriptionNotAllowed: 'Los recursos externos no pueden tener descripción.',
+  ResourceUrlRequired: 'Los recursos externos deben tener un enlace.',
+  ResourceUrlNotAllowed: 'Los recursos internos no pueden tener un enlace.',
 
   PartnerNotFound: 'No se encontró el aliado.',
   PartnerThumbnailNotFound: 'No se encontró la imagen del aliado.',

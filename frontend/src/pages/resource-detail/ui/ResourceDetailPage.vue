@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 
 import { useResourceDetail } from '@/entities/resource'
 import { BaseButton, RichTextContent } from '@/shared/ui'
@@ -11,6 +11,11 @@ const { resource, isLoading, notFound } = useResourceDetail(() => props.resource
 
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
+
+watchEffect(() => {
+  const url = resource.value?.url
+  if (url) window.location.replace(url)
+})
 </script>
 
 <template>
@@ -27,10 +32,14 @@ const hasDescription = computed(() => !isRichTextEmpty(resource.value?.descripti
       No hemos encontrado ese recurso.
     </p>
 
+    <p v-else-if="resource.url" class="detail-state ca-container--narrow">
+      Redirigiendo al recurso…
+    </p>
+
     <template v-else>
       <article class="detail ca-container--narrow">
-        <span v-if="resource.type" class="detail__type">{{ resource.type }}</span>
         <h1 class="detail__title">{{ resource.title }}</h1>
+        <p v-if="resource.subtitle" class="detail__subtitle">{{ resource.subtitle }}</p>
 
         <img v-if="posterUrl" :src="posterUrl" :alt="resource.title" class="detail__poster" />
 
@@ -62,14 +71,6 @@ const hasDescription = computed(() => !isRichTextEmpty(resource.value?.descripti
   padding: 24px 24px 80px;
 }
 
-.detail__type {
-  font-family: var(--ca-font-mono);
-  font-size: 12px;
-  color: var(--ca-text-faint-2);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 .detail__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
@@ -78,6 +79,13 @@ const hasDescription = computed(() => !isRichTextEmpty(resource.value?.descripti
   letter-spacing: -0.03em;
   color: var(--ca-text-bright);
   margin-top: 10px;
+}
+
+.detail__subtitle {
+  font-family: var(--ca-font-display);
+  font-size: 21px;
+  margin-top: 10px;
+  color: var(--ca-text-muted);
 }
 
 .detail__poster {

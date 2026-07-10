@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { ResourceTypeResponse } from './resourceTypeResponse';
 
 export interface ResourceListItemResponse {
   id?: string;
@@ -11,6 +12,9 @@ export interface ResourceListItemResponse {
   title?: string | null;
   /** @nullable */
   subtitle?: string | null;
+  /** @nullable */
+  url?: string | null;
+  type?: ResourceTypeResponse;
   createdAt?: string;
   /** @nullable */
   updatedAt?: string | null;

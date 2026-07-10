@@ -33,6 +33,7 @@ import type {
   GetApiResourcesParams,
   ResourceListItemResponsePagedResult,
   ResourceResponse,
+  ResourceTypeResponse,
   UpdateResourceRequest
 } from '../../models';
 
@@ -210,7 +211,83 @@ export function usePostApiResources<TData = Awaited<ReturnType<typeof postApiRes
 
 
 
-export type getApiResourcesResourceIdResponse200 = {
+export type getApiResourcesTypesResponse200 = {
+  data: ResourceTypeResponse[]
+  status: 200
+}
+
+export type getApiResourcesTypesResponseSuccess = (getApiResourcesTypesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiResourcesTypesResponse = (getApiResourcesTypesResponseSuccess)
+
+export const getGetApiResourcesTypesUrl = () => {
+
+
+
+
+  return `/api/resources/types`
+}
+
+export const getApiResourcesTypes = async ( options?: RequestInit): Promise<getApiResourcesTypesResponse> => {
+
+  return httpClient<getApiResourcesTypesResponse>(getGetApiResourcesTypesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiResourcesTypesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesTypes>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiResourcesTypes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiResourcesTypes>>, void> = () => {
+
+
+          return  getApiResourcesTypes(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiResourcesTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiResourcesTypes>>>
+
+    export type GetApiResourcesTypesMutationError = unknown
+
+    export const useGetApiResourcesTypes = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiResourcesTypes>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiResourcesTypesMutationOptions(options), queryClient);
+    }
+    export type getApiResourcesResourceIdResponse200 = {
   data: ResourceResponse
   status: 200
 }

@@ -16,6 +16,12 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
         builder.Property(r => r.CreatedAt).IsRequired();
 
         builder
+            .HasOne(r => r.ResourceType)
+            .WithMany(t => t.Resources)
+            .HasForeignKey(r => r.ResourceTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
             .HasOne(r => r.Thumbnail)
             .WithMany()
             .HasForeignKey(r => r.ThumbnailId)

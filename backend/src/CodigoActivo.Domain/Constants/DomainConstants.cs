@@ -37,4 +37,10 @@ public static class SeedIds
         public static readonly Guid Presencial = new("3a7956c5-2346-4fc3-b3e8-10ecc07f1e1f");
         public static readonly Guid Online = new("44b62b00-17f5-46c3-ac65-245fbd8e7db2");
     }
+
+    public static class ResourceTypes
+    {
+        public static readonly Guid Internal = new("47833436-b131-4536-87a6-737a9680a423");
+        public static readonly Guid External = new("d4b28595-eed5-4728-ad87-8eaf9d8ce754");
+    }
 }
