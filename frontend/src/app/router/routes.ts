@@ -74,6 +74,17 @@ export const routes: readonly RouteRecordRaw[] = [
     component: () => import('@/pages/verify-account').then((m) => m.VerifyAccountPage),
   },
   {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: () => import('@/pages/forgot-password').then((m) => m.ForgotPasswordPage),
+    beforeEnter: () => redirectIfAuthenticated(),
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: () => import('@/pages/reset-password').then((m) => m.ResetPasswordPage),
+  },
+  {
     path: '/account',
     name: 'account',
     component: () => import('@/pages/account').then((m) => m.AccountPage),

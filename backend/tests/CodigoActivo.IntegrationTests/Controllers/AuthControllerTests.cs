@@ -530,4 +530,389 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var me = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    private async Task<string> RequestPasswordResetAsync(HttpClient client, string email)
+    {
+        using var response = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(email),
+            TestContext.Current.CancellationToken
+        );
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        return Factory.EmailSender.LastOtpSentTo(email);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_KnownEmail_SendsResetLinkAndStoresCodeHashed()
+    {
+        var client = CreateClient();
+
+        var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        Factory.EmailSender.Sent.Should().HaveCount(1);
+        Factory
+            .EmailSender.Sent[0]
+            .TextBody.Should()
+            .Contain($"/reset-password?userId={TestSeedData.Users.MemberId}");
+
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
+                .AsTask()
+        );
+        stored!.PasswordResetCodeHash.Should().NotBeNullOrEmpty();
+        stored
+            .PasswordResetCodeHash.Should()
+            .NotBe(code, "the reset code must be stored hashed, not in plaintext");
+        stored.PasswordResetExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored.PasswordResetLastSentAt.Should().Be(Factory.Clock.UtcNow);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_UnknownEmail_ReturnsNoContentWithoutSending()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest("nobody@codigoactivo.test"),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ForgotPassword_BlockedUser_ReturnsNoContentWithoutSending()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(TestSeedData.BlockedEmail),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ForgotPassword_InvalidEmail_ReturnsValidationError()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest("not-an-email"),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_WithinCooldown_DoesNotSendSecondEmail()
+    {
+        var client = CreateClient();
+        await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(TestSeedData.MemberEmail),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_AfterCooldown_NewCodeInvalidatesPreviousOne()
+    {
+        var client = CreateClient();
+        var firstCode = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        var secondCode = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        Factory.EmailSender.Sent.Should().HaveCount(2);
+        secondCode.Should().NotBe(firstCode);
+
+        using var stale = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(firstCode, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        stale.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await stale.ReadJsonAsync<ApiErrorResponse>(TestContext.Current.CancellationToken))!
+            .Code.Should()
+            .Be(ErrorCode.PasswordResetInvalidOrExpired);
+
+        var reset = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(secondCode, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task ResetPasswordThenLogin_ValidCode_AllowsOnlyTheNewPassword()
+    {
+        var client = CreateClient();
+        var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        using var reset = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(code, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var oldLogin = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.MemberEmail, TestSeedData.Password),
+            TestContext.Current.CancellationToken
+        );
+        oldLogin.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        var newLogin = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.MemberEmail, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        newLogin.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await newLogin.ReadJsonAsync<UserResponse>(
+            TestContext.Current.CancellationToken
+        );
+        body!.Id.Should().Be(TestSeedData.Users.MemberId);
+
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
+                .AsTask()
+        );
+        stored!.PasswordResetCodeHash.Should().BeNull();
+        stored.PasswordResetExpiresAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ResetPassword_ExpiredCode_Rejected()
+    {
+        var client = CreateClient();
+        var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        Factory.Clock.UtcNow += TimeSpan.FromMinutes(16);
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(code, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WrongCode_RejectedWithoutConsumingTheCode()
+    {
+        var client = CreateClient();
+        var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        using var wrong = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(Guid.NewGuid().ToString(), "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        wrong.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await wrong.ReadJsonAsync<ApiErrorResponse>(TestContext.Current.CancellationToken))!
+            .Code.Should()
+            .Be(ErrorCode.PasswordResetInvalidOrExpired);
+
+        var retry = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(code, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        retry.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task ResetPassword_CodeAlreadyUsed_Rejected()
+    {
+        var client = CreateClient();
+        var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        using var first = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(code, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        first.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var replay = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(code, "OtraPass123!"),
+            TestContext.Current.CancellationToken
+        );
+
+        replay.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await replay.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithoutPriorRequest_Rejected()
+    {
+        var client = CreateClient();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(Guid.NewGuid().ToString(), "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+    }
+
+    [Fact]
+    public async Task ResetPassword_UnknownUser_ReturnsNotFound()
+    {
+        var client = CreateClient();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{Guid.NewGuid()}/reset-password",
+            new ResetPasswordRequest(Guid.NewGuid().ToString(), "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.UserNotFound);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_UppercaseEmail_SendsResetCodeToTheNormalizedAddress()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(TestSeedData.MemberEmail.ToUpperInvariant()),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().HaveCount(1);
+        Factory.EmailSender.LastOtpSentTo(TestSeedData.MemberEmail).Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task ResetPassword_PendingUser_ChangesPasswordWithoutActivatingTheAccount()
+    {
+        var client = CreateClient();
+        var code = await RequestPasswordResetAsync(client, TestSeedData.PendingEmail);
+
+        using var reset = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.PendingId}/reset-password",
+            new ResetPasswordRequest(code, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var stored = await Factory.QueryAsync(db =>
+            db.Users.FindAsync(
+                    [TestSeedData.Users.PendingId],
+                    TestContext.Current.CancellationToken
+                )
+                .AsTask()
+        );
+        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NuevaPass123!");
+    }
+
+    [Fact]
+    public async Task ResetPassword_VerificationOtpAndResetCode_AreNotInterchangeable()
+    {
+        var client = CreateClient();
+        var (userId, verificationOtp) = await RegisterPendingAdultAsync(client);
+        var resetCode = await RequestPasswordResetAsync(client, NewAdultEmail);
+        resetCode.Should().NotBe(verificationOtp);
+
+        using var verifyWithResetCode = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(resetCode),
+            TestContext.Current.CancellationToken
+        );
+        verifyWithResetCode.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (
+            await verifyWithResetCode.ReadJsonAsync<ApiErrorResponse>(
+                TestContext.Current.CancellationToken
+            )
+        )!
+            .Code.Should()
+            .Be(ErrorCode.OtpInvalidOrExpired);
+
+        using var resetWithVerificationOtp = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/reset-password",
+            new ResetPasswordRequest(verificationOtp, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        resetWithVerificationOtp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (
+            await resetWithVerificationOtp.ReadJsonAsync<ApiErrorResponse>(
+                TestContext.Current.CancellationToken
+            )
+        )!
+            .Code.Should()
+            .Be(ErrorCode.PasswordResetInvalidOrExpired);
+
+        using var verify = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/verify",
+            new VerifyRequest(verificationOtp),
+            TestContext.Current.CancellationToken
+        );
+        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var reset = await client.PatchJsonAsync(
+            $"/api/auth/{userId}/reset-password",
+            new ResetPasswordRequest(resetCode, "NuevaPass123!"),
+            TestContext.Current.CancellationToken
+        );
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task ResetPassword_ShortPassword_ReturnsValidationError()
+    {
+        var client = CreateClient();
+        var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(code, "corta"),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
 }

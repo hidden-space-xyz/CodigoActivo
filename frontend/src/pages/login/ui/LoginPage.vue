@@ -40,6 +40,10 @@ const { form, submit, isSubmitting, isError } = useLogin()
             />
           </div>
 
+          <RouterLink :to="{ name: 'forgot-password' }" class="login-forgot">
+            ¿Has olvidado tu contraseña?
+          </RouterLink>
+
           <p v-if="isError" class="login-error" role="alert">
             No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo.
           </p>
@@ -120,6 +124,19 @@ const { form, submit, isSubmitting, isError } = useLogin()
   font-weight: 600;
   color: var(--ca-text-muted);
   margin-bottom: 6px;
+}
+
+.login-forgot {
+  margin-top: -6px;
+  align-self: flex-end;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ca-orange-ink);
+  text-decoration: none;
+}
+
+.login-forgot:hover {
+  text-decoration: underline;
 }
 
 .login-error {

@@ -32,6 +32,10 @@ public class User : IdentifiableEntity
     public DateTimeOffset? OtpExpiresAt { get; set; }
     public DateTimeOffset? OtpLastSentAt { get; set; }
 
+    public string? PasswordResetCodeHash { get; set; }
+    public DateTimeOffset? PasswordResetExpiresAt { get; set; }
+    public DateTimeOffset? PasswordResetLastSentAt { get; set; }
+
     public ICollection<User> Children { get; set; } = [];
 
     public void IssueOtp(string codeHash, DateTimeOffset now, TimeSpan lifetime)
@@ -46,6 +50,27 @@ public class User : IdentifiableEntity
         OtpCodeHash = null;
         OtpExpiresAt = null;
         OtpLastSentAt = null;
+    }
+
+    public void IssuePasswordResetCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
+    {
+        PasswordResetCodeHash = codeHash;
+        PasswordResetExpiresAt = now + lifetime;
+        PasswordResetLastSentAt = now;
+    }
+
+    public void ClearPasswordResetCode()
+    {
+        PasswordResetCodeHash = null;
+        PasswordResetExpiresAt = null;
+        PasswordResetLastSentAt = null;
+    }
+
+    public void ResetPassword(string passwordHash, DateTimeOffset now)
+    {
+        PasswordHash = passwordHash;
+        ClearPasswordResetCode();
+        UpdatedAt = now;
     }
 
     public void Verify(Guid activeStatusId, DateTimeOffset now)

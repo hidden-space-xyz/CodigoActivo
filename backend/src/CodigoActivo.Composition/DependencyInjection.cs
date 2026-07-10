@@ -34,6 +34,7 @@ public static class DependencyInjection
         AddClock(services, configuration);
         AddApplicationOptions(services, configuration);
         AddAccountVerification(services, configuration);
+        AddPasswordReset(services, configuration);
         AddEmail(services, configuration);
         AddApplicationServices(services);
         return services;
@@ -78,6 +79,24 @@ public static class DependencyInjection
                 configuration["AccountVerification:ResendCooldownSeconds"],
                 TimeSpan.FromSeconds,
                 AccountVerificationOptions.DefaultResendCooldown
+            ),
+        };
+        services.AddSingleton(options);
+    }
+
+    private static void AddPasswordReset(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = new PasswordResetOptions
+        {
+            CodeLifetime = ReadTimeSpan(
+                configuration["PasswordReset:CodeLifetimeMinutes"],
+                TimeSpan.FromMinutes,
+                PasswordResetOptions.DefaultCodeLifetime
+            ),
+            ResendCooldown = ReadTimeSpan(
+                configuration["PasswordReset:ResendCooldownSeconds"],
+                TimeSpan.FromSeconds,
+                PasswordResetOptions.DefaultResendCooldown
             ),
         };
         services.AddSingleton(options);

@@ -22,6 +22,7 @@ public sealed class AuthServiceTests
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
+    private readonly PasswordResetOptions passwordReset = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly AuthService sut;
 
@@ -35,6 +36,7 @@ public sealed class AuthServiceTests
             new FakePasswordHasher(),
             emailSender,
             verification,
+            passwordReset,
             application,
             NullLogger<AuthService>.Instance
         );
@@ -865,5 +867,257 @@ public sealed class AuthServiceTests
         user.OtpCodeHash.Should().Be(previousHash);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static User NewUserWithResetCode(
+        TestClock clock,
+        string code = "the-reset-code",
+        DateTimeOffset? expiresAt = null,
+        DateTimeOffset? lastSentAt = null
+    )
+    {
+        var user = NewUser();
+        user.PasswordResetCodeHash = FakePasswordHasher.Prefix + code;
+        user.PasswordResetExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(5);
+        user.PasswordResetLastSentAt = lastSentAt ?? clock.UtcNow.AddMinutes(-10);
+        return user;
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_UserMissing_ReturnsSuccessWithoutSending()
+    {
+        FindReturns(null);
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("nobody@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_UserWithoutPassword_ReturnsSuccessWithoutSending()
+    {
+        FindReturns(NewUser(passwordHash: null));
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    public static TheoryData<Guid> IneligibleResetStatuses() =>
+        new() { SeedIds.UserStatusTypes.Blocked, SeedIds.UserStatusTypes.Dependent };
+
+    [Theory]
+    [MemberData(nameof(IneligibleResetStatuses))]
+    public async Task ForgotPasswordAsync_IneligibleStatus_ReturnsSuccessWithoutSending(
+        Guid statusId
+    )
+    {
+        FindReturns(NewUser(statusId: statusId));
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_WithinCooldown_ReturnsSuccessWithoutSending()
+    {
+        var user = FindReturns(NewUser());
+        user.PasswordResetLastSentAt = clock.UtcNow.AddSeconds(-10);
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_EligibleUser_SendsGuidCodeAndPersistsHash()
+    {
+        var user = FindReturns(NewUser());
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var code = emailSender.LastCode();
+        Guid.TryParse(code, out _).Should().BeTrue("the reset code is a GUID");
+        user.PasswordResetCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.PasswordResetExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
+        user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);
+        emailSender.Sent.Should().HaveCount(1);
+        emailSender.Sent[0].ToAddress.Should().Be(user.Email);
+        emailSender.Sent[0].TextBody.Should().Contain("/reset-password?userId=");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_CooldownElapsed_ReplacesPreviousCode()
+    {
+        var user = FindReturns(
+            NewUserWithResetCode(clock, code: "old-code", lastSentAt: clock.UtcNow.AddMinutes(-5))
+        );
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var newCode = emailSender.LastCode();
+        newCode.Should().NotBe("old-code");
+        user.PasswordResetCodeHash.Should().Be(FakePasswordHasher.Prefix + newCode);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_EmailSendFails_ReturnsSuccessWithoutPersisting()
+    {
+        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
+        var user = FindReturns(NewUser());
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        user.PasswordResetCodeHash.Should().BeNull();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_UserMissing_ReturnsNotFound()
+    {
+        FindReturns(null);
+
+        var result = await sut.ResetPasswordAsync(
+            Guid.NewGuid(),
+            new ResetPasswordRequest("some-code", "newPassword123"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.UserNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_NoCodeRequested_ReturnsBadRequest()
+    {
+        var user = FindReturns(NewUser());
+
+        var result = await sut.ResetPasswordAsync(
+            user.Id,
+            new ResetPasswordRequest("some-code", "newPassword123"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_ExpiredCode_ReturnsBadRequest()
+    {
+        var user = FindReturns(NewUserWithResetCode(clock, expiresAt: clock.UtcNow.AddMinutes(-5)));
+
+        var result = await sut.ResetPasswordAsync(
+            user.Id,
+            new ResetPasswordRequest("the-reset-code", "newPassword123"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WrongCode_ReturnsBadRequestWithoutPersisting()
+    {
+        var user = FindReturns(NewUserWithResetCode(clock, code: "the-real-code"));
+        var previousPasswordHash = user.PasswordHash;
+
+        var result = await sut.ResetPasswordAsync(
+            user.Id,
+            new ResetPasswordRequest("a-wrong-code", "newPassword123"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        user.PasswordHash.Should().Be(previousPasswordHash);
+        user.PasswordResetCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_UserBlockedAfterRequest_ReturnsBadRequest()
+    {
+        var user = FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
+        user.UserStatusTypeId = SeedIds.UserStatusTypes.Blocked;
+
+        var result = await sut.ResetPasswordAsync(
+            user.Id,
+            new ResetPasswordRequest("the-reset-code", "newPassword123"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_CorrectCode_ChangesPasswordAndClearsCode()
+    {
+        var user = FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
+
+        var result = await sut.ResetPasswordAsync(
+            user.Id,
+            new ResetPasswordRequest("  THE-RESET-CODE  ", "newPassword123"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        user.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "newPassword123");
+        user.PasswordResetCodeHash.Should().BeNull();
+        user.PasswordResetExpiresAt.Should().BeNull();
+        user.PasswordResetLastSentAt.Should().BeNull();
+        user.UpdatedAt.Should().Be(clock.UtcNow);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

@@ -30,9 +30,11 @@ import type {
 
 import type {
   CsrfTokenResponse,
+  ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
   RegisterResponse,
+  ResetPasswordRequest,
   UserResponse,
   VerifyRequest
 } from '../../models';
@@ -363,6 +365,178 @@ export function usePostApiAuthUserIdResendVerification<TData = Awaited<ReturnTyp
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPostApiAuthUserIdResendVerificationQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiAuthForgotPasswordResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiAuthForgotPasswordResponseSuccess = (postApiAuthForgotPasswordResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthForgotPasswordResponse = (postApiAuthForgotPasswordResponseSuccess)
+
+export const getPostApiAuthForgotPasswordUrl = () => {
+
+
+
+
+  return `/api/auth/forgot-password`
+}
+
+export const postApiAuthForgotPassword = async (forgotPasswordRequest?: ForgotPasswordRequest, options?: RequestInit): Promise<postApiAuthForgotPasswordResponse> => {
+
+  return httpClient<postApiAuthForgotPasswordResponse>(getPostApiAuthForgotPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(forgotPasswordRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthForgotPasswordQueryKey = (forgotPasswordRequest?: MaybeRef<ForgotPasswordRequest>,) => {
+    return [
+    'POST', 'api','auth','forgot-password', forgotPasswordRequest
+    ] as const;
+    }
+
+
+export const getPostApiAuthForgotPasswordQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError = unknown>(forgotPasswordRequest?: MaybeRef<ForgotPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthForgotPasswordQueryKey(forgotPasswordRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthForgotPassword>>> = ({ signal }) => postApiAuthForgotPassword(unref(forgotPasswordRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError, TData>
+}
+
+export type PostApiAuthForgotPasswordQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthForgotPassword>>>
+export type PostApiAuthForgotPasswordQueryError = unknown
+
+
+
+export function usePostApiAuthForgotPassword<TData = Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError = unknown>(
+ forgotPasswordRequest?: MaybeRef<ForgotPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthForgotPasswordQueryOptions(forgotPasswordRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type patchApiAuthUserIdResetPasswordResponse200 = {
+  data: void
+  status: 200
+}
+
+export type patchApiAuthUserIdResetPasswordResponseSuccess = (patchApiAuthUserIdResetPasswordResponse200) & {
+  headers: Headers;
+};
+;
+
+export type patchApiAuthUserIdResetPasswordResponse = (patchApiAuthUserIdResetPasswordResponseSuccess)
+
+export const getPatchApiAuthUserIdResetPasswordUrl = (userId: string,) => {
+
+
+
+
+  return `/api/auth/${userId}/reset-password`
+}
+
+export const patchApiAuthUserIdResetPassword = async (userId: string,
+    resetPasswordRequest?: ResetPasswordRequest, options?: RequestInit): Promise<patchApiAuthUserIdResetPasswordResponse> => {
+
+  return httpClient<patchApiAuthUserIdResetPasswordResponse>(getPatchApiAuthUserIdResetPasswordUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resetPasswordRequest)
+  }
+);}
+
+
+
+
+
+export const getPatchApiAuthUserIdResetPasswordQueryKey = (userId: MaybeRef<string>,
+    resetPasswordRequest?: MaybeRef<ResetPasswordRequest>,) => {
+    return [
+    'PATCH', 'api','auth',userId,'reset-password', resetPasswordRequest
+    ] as const;
+    }
+
+
+export const getPatchApiAuthUserIdResetPasswordQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError = unknown>(userId: MaybeRef<string>,
+    resetPasswordRequest?: MaybeRef<ResetPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiAuthUserIdResetPasswordQueryKey(userId,resetPasswordRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>> = ({ signal }) => patchApiAuthUserIdResetPassword(unref(userId),unref(resetPasswordRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => unref(userId) !== null && unref(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError, TData>
+}
+
+export type PatchApiAuthUserIdResetPasswordQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>>
+export type PatchApiAuthUserIdResetPasswordQueryError = unknown
+
+
+
+export function usePatchApiAuthUserIdResetPassword<TData = Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError = unknown>(
+ userId: MaybeRef<string>,
+    resetPasswordRequest?: MaybeRef<ResetPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiAuthUserIdResetPasswordQueryOptions(userId,resetPasswordRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
