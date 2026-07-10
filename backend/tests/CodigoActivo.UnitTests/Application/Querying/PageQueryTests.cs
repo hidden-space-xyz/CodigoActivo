@@ -9,7 +9,7 @@ public sealed class PageQueryTests
     private sealed class TestPageQuery : PageQuery;
 
     [Fact]
-    public void Defaults_are_page_one_default_page_size_and_null_sort()
+    public void PageQuery_NewInstance_DefaultsToPageOneDefaultSizeNullSort()
     {
         var query = new TestPageQuery();
 
@@ -26,7 +26,7 @@ public sealed class PageQueryTests
     [InlineData(1, 1)]
     [InlineData(3, 3)]
     [InlineData(9999, 9999)]
-    public void Page_clamps_values_below_one_to_one_and_passes_valid_values(int input, int expected)
+    public void Page_BelowOneOrValid_ClampsToOneOrPassesThrough(int input, int expected)
     {
         var query = new TestPageQuery { Page = input };
 
@@ -41,7 +41,7 @@ public sealed class PageQueryTests
     [InlineData(100, PageQuery.MaxPageSize)]
     [InlineData(101, PageQuery.MaxPageSize)]
     [InlineData(5000, PageQuery.MaxPageSize)]
-    public void PageSize_clamps_out_of_range_values_and_passes_valid_ones(int input, int expected)
+    public void PageSize_OutOfRangeOrValid_ClampsToBoundsOrPassesThrough(int input, int expected)
     {
         var query = new TestPageQuery { PageSize = input };
 

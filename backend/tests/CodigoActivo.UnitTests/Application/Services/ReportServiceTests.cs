@@ -143,7 +143,7 @@ public sealed class ReportServiceTests
         };
 
     [Fact]
-    public async Task GetEventSummaryAsync_returns_not_found_when_event_missing()
+    public async Task GetEventSummaryAsync_EventMissing_ReturnsNotFound()
     {
         var id = Guid.NewGuid();
         EventGraph(id, null);
@@ -159,7 +159,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetEventSummaryAsync_aggregates_counts_status_breakdown_and_distinct_volunteers()
+    public async Task GetEventSummaryAsync_MultipleActivitiesAndAssignments_AggregatesCountsAndBreakdown()
     {
         var eventId = Guid.NewGuid();
         var user1 = Guid.NewGuid();
@@ -218,7 +218,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetEventSummaryAsync_returns_empty_breakdown_when_no_activities()
+    public async Task GetEventSummaryAsync_NoActivities_ReturnsEmptyBreakdown()
     {
         var eventId = Guid.NewGuid();
         var ev = new Event
@@ -240,7 +240,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetEventAssignmentsAsync_returns_not_found_when_event_missing()
+    public async Task GetEventAssignmentsAsync_EventMissing_ReturnsNotFound()
     {
         var id = Guid.NewGuid();
         EventGraph(id, null);
@@ -253,7 +253,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetEventAssignmentsAsync_flattens_items_and_resolves_names_with_null_fallback()
+    public async Task GetEventAssignmentsAsync_UnresolvedRoleOrStatus_FlattensItemsWithNullFallback()
     {
         var eventId = Guid.NewGuid();
         var user1 = Guid.NewGuid();
@@ -298,7 +298,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetActivityAssignmentsAsync_returns_not_found_when_activity_missing()
+    public async Task GetActivityAssignmentsAsync_ActivityMissing_ReturnsNotFound()
     {
         var id = Guid.NewGuid();
         ActivityGraph(id, null);
@@ -314,7 +314,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetActivityAssignmentsAsync_builds_rows_parents_and_confirmed_breakdown()
+    public async Task GetActivityAssignmentsAsync_ChildrenAndParents_BuildsRowsAndConfirmedBreakdown()
     {
         var parentP = NewUser("Padre");
         var parentQ = NewUser("Madre");
@@ -382,7 +382,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetActivityAssignmentsAsync_handles_activity_with_no_assignments()
+    public async Task GetActivityAssignmentsAsync_NoAssignments_ReturnsEmptyReport()
     {
         var activity = ActivityWith(allowed: [], assignments: [], title: "Sola");
         ActivityGraph(activity.Id, activity);
@@ -449,7 +449,7 @@ public sealed class ReportServiceTests
         };
 
     [Fact]
-    public async Task GetEventBadgesAsync_returns_not_found_when_event_missing()
+    public async Task GetEventBadgesAsync_EventMissing_ReturnsNotFound()
     {
         HasBadgeEvent(null);
 
@@ -465,7 +465,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetEventBadgesAsync_groups_confirmed_assignments_per_user_with_guardian()
+    public async Task GetEventBadgesAsync_ConfirmedAssignmentsWithGuardian_GroupsPerUser()
     {
         var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var createdAt = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
@@ -517,7 +517,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetEventBadgesAsync_returns_empty_badges_when_no_confirmed_assignments()
+    public async Task GetEventBadgesAsync_NoConfirmedAssignments_ReturnsEmptyBadges()
     {
         HasBadgeEvent(new Event { Id = EventIdForBadges, Title = "Feria" });
         HasAssignments();
@@ -532,7 +532,7 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
-    public async Task GetDashboardSummaryAsync_maps_each_repository_count_in_order()
+    public async Task GetDashboardSummaryAsync_RepositoryCounts_MapsInOrder()
     {
         events
             .CountAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())

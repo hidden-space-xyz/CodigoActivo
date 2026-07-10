@@ -130,7 +130,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
     [Fact]
-    public async Task List_is_anonymous_and_returns_paged_envelope()
+    public async Task List_Anonymous_ReturnsPagedEnvelope()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -152,7 +152,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_returns_404_ActivityNotFound_when_absent()
+    public async Task Get_ActivityAbsent_Returns404ActivityNotFound()
     {
         var client = CreateClient();
 
@@ -169,7 +169,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_admin_persists_and_returns_201_with_location()
+    public async Task Create_AsAdmin_PersistsAndReturns201WithLocation()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -209,7 +209,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_member_is_forbidden()
+    public async Task Create_AsMember_ReturnsForbidden()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -225,7 +225,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_anonymous_is_unauthorized()
+    public async Task Create_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -239,7 +239,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_with_blank_title_is_validation_error()
+    public async Task Create_BlankTitle_ReturnsValidationError()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -260,7 +260,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_without_csrf_token_is_rejected()
+    public async Task Create_MissingCsrfToken_IsRejected()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -280,7 +280,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_as_admin_changes_activity_and_replaces_roles()
+    public async Task Update_AsAdmin_ChangesActivityAndReplacesRoles()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -318,7 +318,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_as_admin_removes_activity_and_its_orphaned_thumbnail()
+    public async Task Delete_AsAdmin_RemovesActivityAndOrphanedThumbnail()
     {
         var eventThumb = await SeedThumbnailAsync();
         var activityThumb = await SeedThumbnailAsync();
@@ -344,7 +344,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_keeps_a_thumbnail_still_shared_with_the_event()
+    public async Task Delete_ThumbnailSharedWithEvent_KeepsThumbnail()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -365,7 +365,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RoleTypes_lists_seeded_roles_for_admin()
+    public async Task RoleTypes_AsAdmin_ListsSeededRoles()
     {
         var client = await LoginAsAdminAsync();
 
@@ -383,7 +383,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignmentStatusTypes_lists_seeded_statuses_for_admin()
+    public async Task AssignmentStatusTypes_AsAdmin_ListsSeededStatuses()
     {
         var client = await LoginAsAdminAsync();
 
@@ -400,7 +400,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ModalityTypes_lists_seeded_modalities_for_admin()
+    public async Task ModalityTypes_AsAdmin_ListsSeededModalities()
     {
         var client = await LoginAsAdminAsync();
 
@@ -417,7 +417,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateRoleType_as_admin_persists()
+    public async Task CreateRoleType_AsAdmin_Persists()
     {
         var client = await LoginAsAdminAsync();
         var request = new CreateActivityRoleTypeRequest("Coordinador", "Coordina la actividad");
@@ -443,7 +443,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateRoleType_as_admin_changes_name()
+    public async Task UpdateRoleType_AsAdmin_ChangesName()
     {
         var client = await LoginAsAdminAsync();
         var request = new UpdateActivityRoleTypeRequest("Ayudante Senior", "Actualizado");
@@ -466,7 +466,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeleteRoleType_as_admin_removes()
+    public async Task DeleteRoleType_AsAdmin_Removes()
     {
         var client = await LoginAsAdminAsync();
 

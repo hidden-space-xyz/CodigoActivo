@@ -18,7 +18,7 @@ public sealed class ProjectionsTests
     ) => projection.Compile().Invoke(source);
 
     [Fact]
-    public void Event_projection_maps_scalars_and_categories()
+    public void Event_EventWithCategories_MapsScalarsAndCategories()
     {
         var categoryTypeId = Guid.NewGuid();
         var @event = new Event
@@ -76,7 +76,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Event_projection_yields_empty_categories_when_none()
+    public void Event_EventWithoutCategories_YieldsEmptyCategories()
     {
         var @event = new Event { Title = "T", Subtitle = "S" };
 
@@ -84,7 +84,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void EventListItem_projection_maps_scalars_and_categories_without_description()
+    public void EventListItem_EventWithCategories_MapsScalarsAndCategoriesWithoutDescription()
     {
         var categoryTypeId = Guid.NewGuid();
         var @event = new Event
@@ -144,7 +144,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Partner_projection_maps_web_to_website_and_all_fields()
+    public void Partner_PartnerWithWeb_MapsAllFieldsIncludingWebsite()
     {
         var partner = new Partner
         {
@@ -181,7 +181,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Activity_projection_maps_scalars_modality_and_allowed_roles()
+    public void Activity_ActivityWithModalityAndRoles_MapsScalarsModalityAndAllowedRoles()
     {
         var modalityId = Guid.NewGuid();
         var roleTypeId = Guid.NewGuid();
@@ -235,7 +235,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void User_projection_maps_scalars_status_isadmin_and_type()
+    public void User_UserWithStatusAndType_MapsScalarsStatusIsAdminAndType()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -287,7 +287,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void RegistrationType_projection_maps_all_fields_including_allowance_flags()
+    public void RegistrationType_UserTypeWithAllowanceFlags_MapsAllFieldsIncludingAllowanceFlags()
     {
         var userType = new UserType
         {
@@ -307,7 +307,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void AssignedActivity_projection_maps_activity_chain_role_and_status()
+    public void AssignedActivity_AssignmentWithActivityRoleAndStatus_MapsActivityChainRoleAndStatus()
     {
         var activityId = Guid.NewGuid();
         var eventId = Guid.NewGuid();

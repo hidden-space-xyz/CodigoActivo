@@ -124,7 +124,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
   migrated, shared by the whole assembly, and destroyed at the end. No `POSTGRES_*` env vars and no pre-created
   database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
   `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse
-  that instead of spawning a container. Test method names are snake_case sentences.
+  that instead of spawning a container. Test method names follow `MethodUnderTest_Scenario_ExpectedBehavior`
+  (PascalCase segments), e.g. `RegisterAsync_NewAdult_ReturnsCreatedAndSendsOtp`.
 - **Frontend**: there is no automated test suite; rely on `npm run typecheck` and `npm run lint`.
 
 ## Commits & pull requests

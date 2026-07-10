@@ -52,7 +52,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_challenges_when_no_user_id()
+    public async Task OnAuthorizationAsync_AnonymousUser_Challenges()
     {
         var context = BuildContext(Anonymous(), Guid.NewGuid());
 
@@ -65,7 +65,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_allows_admin_regardless_of_route()
+    public async Task OnAuthorizationAsync_AdminUser_AllowsRegardlessOfRoute()
     {
         var context = BuildContext(User(Guid.NewGuid(), isAdmin: true), Guid.NewGuid());
 
@@ -78,7 +78,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_allows_when_route_user_is_self()
+    public async Task OnAuthorizationAsync_RouteUserIsSelf_Allows()
     {
         var self = Guid.NewGuid();
         var context = BuildContext(User(self), self);
@@ -92,7 +92,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_forbids_when_route_key_missing()
+    public async Task OnAuthorizationAsync_RouteKeyMissing_Forbids()
     {
         var context = BuildContext(User(Guid.NewGuid()), includeRouteKey: false);
 
@@ -105,7 +105,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_forbids_when_route_value_unparseable()
+    public async Task OnAuthorizationAsync_RouteValueUnparseable_Forbids()
     {
         var context = BuildContext(User(Guid.NewGuid()), "not-a-guid");
 
@@ -118,7 +118,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_allows_when_target_is_own_child()
+    public async Task OnAuthorizationAsync_TargetIsOwnChild_Allows()
     {
         var currentUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
@@ -136,7 +136,7 @@ public sealed class AllowOnlySelfAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_forbids_when_target_is_unrelated_user()
+    public async Task OnAuthorizationAsync_TargetIsUnrelatedUser_Forbids()
     {
         users
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())

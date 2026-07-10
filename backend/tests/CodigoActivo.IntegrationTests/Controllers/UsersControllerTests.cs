@@ -40,7 +40,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_anonymous_is_unauthorized()
+    public async Task List_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -50,7 +50,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_as_admin_returns_every_user_in_paged_envelope()
+    public async Task List_AsAdmin_ReturnsAllUsersPaged()
     {
         var client = await LoginAsAdminAsync();
 
@@ -66,7 +66,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_as_member_is_scoped_to_self_and_children()
+    public async Task List_AsMember_ScopedToSelfAndChildren()
     {
         var client = await LoginAsMemberAsync();
 
@@ -83,7 +83,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Types_as_admin_returns_all_user_types()
+    public async Task Types_AsAdmin_ReturnsAllUserTypes()
     {
         var client = await LoginAsAdminAsync();
 
@@ -101,7 +101,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Types_as_member_is_forbidden()
+    public async Task Types_AsMember_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -114,7 +114,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Types_anonymous_is_unauthorized()
+    public async Task Types_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -127,7 +127,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task StatusTypes_as_admin_returns_all_status_types()
+    public async Task StatusTypes_AsAdmin_ReturnsAllStatusTypes()
     {
         var client = await LoginAsAdminAsync();
 
@@ -145,7 +145,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_missing_user_is_404_with_error_code()
+    public async Task Get_MissingUser_ReturnsNotFoundWithErrorCode()
     {
         var client = await LoginAsAdminAsync();
 
@@ -162,7 +162,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_anonymous_is_unauthorized()
+    public async Task Update_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -176,7 +176,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_as_member_updates_own_profile()
+    public async Task Update_AsMember_UpdatesOwnProfile()
     {
         var client = await LoginAsMemberAsync();
 
@@ -195,7 +195,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_as_member_of_another_user_is_forbidden()
+    public async Task Update_AsMemberForAnotherUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -209,7 +209,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_as_member_of_own_child_succeeds()
+    public async Task Update_AsMemberForOwnChild_Succeeds()
     {
         var client = await LoginAsMemberAsync();
 
@@ -231,7 +231,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_with_blank_name_is_validation_error()
+    public async Task Update_BlankName_ReturnsValidationError()
     {
         var client = await LoginAsMemberAsync();
 
@@ -249,7 +249,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_as_admin_removes_member()
+    public async Task Delete_AsAdmin_RemovesMember()
     {
         var client = await LoginAsAdminAsync();
 
@@ -270,7 +270,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeType_as_admin_replaces_the_users_type()
+    public async Task ChangeType_AsAdmin_UpdatesUserType()
     {
         var client = await LoginAsAdminAsync();
 
@@ -288,7 +288,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AddChild_as_member_creates_dependent()
+    public async Task AddChild_AsMember_CreatesDependent()
     {
         var client = await LoginAsMemberAsync();
         var request = new RegisterMinorRequest(
@@ -318,7 +318,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangePassword_with_correct_current_updates_hash()
+    public async Task ChangePassword_CorrectCurrentPassword_UpdatesHash()
     {
         var client = await LoginAsMemberAsync();
         var request = new ChangePasswordRequest(TestSeedData.Password, "NewStr0ngPass!");
@@ -338,7 +338,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SetAdmin_as_admin_grants_admin_to_another_user()
+    public async Task SetAdmin_AsAdmin_GrantsAdminToUser()
     {
         var client = await LoginAsAdminAsync();
 

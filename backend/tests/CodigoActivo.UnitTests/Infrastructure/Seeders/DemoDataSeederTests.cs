@@ -38,7 +38,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Builds_the_requested_amount_of_data()
+    public void BuildGraph_Default_ProducesExpectedCounts()
     {
         var graph = BuildGraph();
 
@@ -54,7 +54,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Every_event_has_exactly_five_activities()
+    public void BuildGraph_Default_EachEventHasFiveActivities()
     {
         var graph = BuildGraph();
 
@@ -68,7 +68,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Event_schedules_are_coherent()
+    public void BuildGraph_Default_EventSchedulesAreCoherent()
     {
         var graph = BuildGraph();
 
@@ -84,7 +84,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Every_event_references_at_least_one_existing_category()
+    public void BuildGraph_Default_EachEventReferencesExistingCategory()
     {
         var graph = BuildGraph();
         var categoryIds = graph.CategoryTypes.Select(c => c.Id).ToHashSet();
@@ -98,7 +98,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Activities_fall_within_their_event_range()
+    public void BuildGraph_Default_ActivitiesFallWithinEventRange()
     {
         var graph = BuildGraph();
         var eventsById = graph.Events.ToDictionary(e => e.Id);
@@ -114,7 +114,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Each_activity_has_five_distinct_users_with_allowed_roles()
+    public void BuildGraph_Default_EachActivityHasFiveDistinctUsersWithAllowedRoles()
     {
         var graph = BuildGraph();
         var allowedByActivity = graph
@@ -137,7 +137,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Assignments_have_unique_composite_keys_and_known_users()
+    public void BuildGraph_Default_AssignmentsHaveUniqueKeysAndKnownUsers()
     {
         var graph = BuildGraph();
         var userIds = graph.Users.Select(u => u.Id).ToHashSet();
@@ -150,7 +150,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Users_are_coherent()
+    public void BuildGraph_Default_UsersAreCoherent()
     {
         var graph = BuildGraph();
 
@@ -176,7 +176,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void All_thumbnails_and_embedded_images_reference_seeded_files()
+    public void BuildGraph_Default_ThumbnailsAndEmbeddedImagesReferenceSeededFiles()
     {
         var graph = BuildGraph();
         var fileIds = graph.Files.Select(f => f.Id).ToHashSet();
@@ -206,7 +206,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void Rich_text_descriptions_are_valid_documents()
+    public void BuildGraph_Default_RichTextDescriptionsAreValidJsonDocuments()
     {
         var graph = BuildGraph();
 

@@ -9,7 +9,7 @@ public sealed class Argon2idPasswordHasherTests
     private readonly Argon2idPasswordHasher sut = new();
 
     [Fact]
-    public void Hash_then_Verify_returns_true_for_the_same_password()
+    public void Verify_SamePasswordAsHash_ReturnsTrue()
     {
         var hash = sut.Hash("correct horse battery staple");
 
@@ -17,7 +17,7 @@ public sealed class Argon2idPasswordHasherTests
     }
 
     [Fact]
-    public void Verify_returns_false_for_a_wrong_password()
+    public void Verify_WrongPassword_ReturnsFalse()
     {
         var hash = sut.Hash("s3cret");
 
@@ -25,7 +25,7 @@ public sealed class Argon2idPasswordHasherTests
     }
 
     [Fact]
-    public void Hash_produces_the_expected_six_part_argon2id_shape()
+    public void Hash_AnyPassword_ProducesSixPartArgon2idShape()
     {
         var hash = sut.Hash("whatever");
 
@@ -42,7 +42,7 @@ public sealed class Argon2idPasswordHasherTests
     }
 
     [Fact]
-    public void Hash_produces_distinct_hashes_for_the_same_password_via_random_salt()
+    public void Hash_SamePasswordTwice_ProducesDistinctHashes()
     {
         sut.Hash("dup").Should().NotBe(sut.Hash("dup"));
     }
@@ -56,7 +56,7 @@ public sealed class Argon2idPasswordHasherTests
     [InlineData("argon2id$3$65536$x$c2FsdA==$aGFzaA==")]
     [InlineData("argon2id$3$65536$4$!!!$aGFzaA==")]
     [InlineData("argon2id$3$65536$4$c2FsdA==$!!!")]
-    public void Verify_returns_false_for_malformed_hash_strings(string malformed)
+    public void Verify_MalformedHashString_ReturnsFalse(string malformed)
     {
         sut.Verify("anything", malformed).Should().BeFalse();
     }

@@ -51,7 +51,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     }
 
     [Fact]
-    public async Task Register_creates_an_active_account_without_sending_email()
+    public async Task Register_VerificationDisabled_CreatesActiveAccountWithoutSendingEmail()
     {
         var client = disabledFactory.CreateClient();
 
@@ -77,7 +77,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     }
 
     [Fact]
-    public async Task Register_then_login_works_immediately()
+    public async Task Register_VerificationDisabled_AllowsImmediateLogin()
     {
         var client = disabledFactory.CreateClient();
         using var register = await client.PostJsonAsync(
@@ -97,7 +97,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     }
 
     [Fact]
-    public async Task Login_activates_an_existing_pending_user()
+    public async Task Login_ExistingPendingUserVerificationDisabled_ActivatesUser()
     {
         var client = disabledFactory.CreateClient();
 
@@ -119,7 +119,7 @@ public sealed class AuthControllerVerificationDisabledTests : IntegrationTestBas
     }
 
     [Fact]
-    public async Task Resend_verification_is_rejected_when_verification_is_disabled()
+    public async Task ResendVerification_VerificationDisabled_IsRejected()
     {
         var client = disabledFactory.CreateClient();
 

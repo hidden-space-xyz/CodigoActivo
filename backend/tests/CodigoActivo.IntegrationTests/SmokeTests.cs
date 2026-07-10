@@ -10,7 +10,7 @@ namespace CodigoActivo.IntegrationTests;
 public class SmokeTests(CodigoActivoWebAppFactory factory) : IntegrationTestBase(factory)
 {
     [Fact]
-    public async Task Admin_can_log_in_and_read_its_own_profile()
+    public async Task Me_AdminLoggedIn_ReturnsOwnProfile()
     {
         var client = await LoginAsAdminAsync();
 

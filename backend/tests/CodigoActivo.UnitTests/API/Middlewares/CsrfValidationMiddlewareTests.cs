@@ -65,7 +65,7 @@ public sealed class CsrfValidationMiddlewareTests
     [InlineData("OPTIONS")]
     [InlineData("TRACE")]
     [InlineData("get")]
-    public async Task InvokeAsync_skips_validation_for_safe_methods_and_calls_next(string method)
+    public async Task InvokeAsync_SafeMethod_SkipsValidationAndCallsNext(string method)
     {
         var context = NewContext(method);
 
@@ -76,7 +76,7 @@ public sealed class CsrfValidationMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_validates_unsafe_method_and_calls_next_when_token_valid()
+    public async Task InvokeAsync_UnsafeMethodValidToken_ValidatesAndCallsNext()
     {
         antiforgery.ValidateRequestAsync(Arg.Any<HttpContext>()).Returns(Task.CompletedTask);
         var context = NewContext("POST");
@@ -89,7 +89,7 @@ public sealed class CsrfValidationMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_writes_400_invalid_csrf_and_short_circuits_when_validation_throws()
+    public async Task InvokeAsync_ValidationThrows_Writes400InvalidCsrfAndShortCircuits()
     {
         antiforgery
             .ValidateRequestAsync(Arg.Any<HttpContext>())
@@ -106,7 +106,7 @@ public sealed class CsrfValidationMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_skips_validation_when_endpoint_opts_out()
+    public async Task InvokeAsync_EndpointOptsOut_SkipsValidation()
     {
         var context = NewContext("POST", new FakeAntiforgeryMetadata(RequiresValidation: false));
 
@@ -117,7 +117,7 @@ public sealed class CsrfValidationMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_validates_when_endpoint_metadata_requires_validation()
+    public async Task InvokeAsync_EndpointRequiresValidation_ValidatesAndCallsNext()
     {
         antiforgery.ValidateRequestAsync(Arg.Any<HttpContext>()).Returns(Task.CompletedTask);
         var context = NewContext("POST", new FakeAntiforgeryMetadata(RequiresValidation: true));

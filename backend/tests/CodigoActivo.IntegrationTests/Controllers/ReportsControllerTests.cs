@@ -134,7 +134,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         };
 
     [Fact]
-    public async Task EventSummary_as_admin_returns_computed_aggregates()
+    public async Task EventSummary_ExistingEvent_ReturnsComputedAggregates()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -159,7 +159,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummary_missing_event_is_404_with_event_not_found()
+    public async Task EventSummary_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -176,7 +176,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAssignments_as_admin_lists_every_assignment_with_names()
+    public async Task EventAssignments_ExistingEvent_ListsAssignmentsWithNames()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -204,7 +204,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ActivityAssignments_includes_signed_up_row_and_non_signed_up_parent()
+    public async Task ActivityAssignments_MixedSignups_IncludesSignedUpAndNonSignedUpRows()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -244,7 +244,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ActivityAssignments_missing_activity_is_404_with_activity_not_found()
+    public async Task ActivityAssignments_MissingActivity_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -261,7 +261,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventBadges_as_admin_returns_confirmed_badges_with_guardian_and_activities()
+    public async Task EventBadges_ExistingEvent_ReturnsConfirmedBadgesWithGuardianAndActivities()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -314,7 +314,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventBadges_missing_event_is_404_with_event_not_found()
+    public async Task EventBadges_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -331,7 +331,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventBadges_forbids_members()
+    public async Task EventBadges_MemberUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -344,7 +344,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Dashboard_counts_reference_users_only_when_empty()
+    public async Task Dashboard_EmptyDatabase_CountsUsersOnly()
     {
         var client = await LoginAsAdminAsync();
 
@@ -366,7 +366,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Admin_only_endpoints_challenge_anonymous()
+    public async Task Dashboard_AnonymousUser_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -379,7 +379,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Admin_only_endpoints_forbid_members()
+    public async Task Dashboard_MemberUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 

@@ -57,7 +57,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_is_anonymous_and_returns_paged_envelope()
+    public async Task List_Anonymous_ReturnsPagedEnvelope()
     {
         await SeedPartnerAsync("Alpha");
         var client = CreateClient();
@@ -77,7 +77,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_returns_404_with_error_code_when_absent()
+    public async Task Get_PartnerAbsent_Returns404WithErrorCode()
     {
         var client = CreateClient();
 
@@ -94,7 +94,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_admin_persists_and_returns_201_with_location()
+    public async Task Create_Admin_PersistsAndReturns201WithLocation()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -127,7 +127,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_member_is_forbidden()
+    public async Task Create_Member_ReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsMemberAsync();
@@ -149,7 +149,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_anonymous_is_unauthorized()
+    public async Task Create_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
         var request = new CreatePartnerRequest(
@@ -170,7 +170,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_with_blank_name_is_validation_error()
+    public async Task Create_BlankName_ReturnsValidationError()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -196,7 +196,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Post_without_csrf_token_is_rejected()
+    public async Task Create_MissingCsrfToken_IsRejected()
     {
         var client = await LoginAsAdminAsync();
         var thumbnailId = await SeedThumbnailAsync();
@@ -218,7 +218,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_as_admin_changes_partner()
+    public async Task Update_Admin_ChangesPartner()
     {
         var id = await SeedPartnerAsync("Before");
         var thumbnailId = await SeedThumbnailAsync();
@@ -246,7 +246,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_as_admin_removes_partner_and_its_orphaned_thumbnail()
+    public async Task Delete_Admin_RemovesPartnerAndOrphanedThumbnail()
     {
         var id = await SeedPartnerAsync("Doomed");
         var thumbnailId = (

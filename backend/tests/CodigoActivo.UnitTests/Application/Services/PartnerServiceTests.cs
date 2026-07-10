@@ -56,7 +56,7 @@ public sealed class PartnerServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_filters_by_tier()
+    public async Task ListAsync_TierFilter_ReturnsMatchingTier()
     {
         HasPartners(NewPartner("Gold", tier: 1), NewPartner("Silver", tier: 2));
 
@@ -69,7 +69,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_name_search_is_accent_and_case_insensitive()
+    public async Task ListAsync_NameSearch_IsAccentAndCaseInsensitive()
     {
         HasPartners(NewPartner("Fundación Ávila"), NewPartner("Banco"));
 
@@ -82,7 +82,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_website_search_matches_substring()
+    public async Task ListAsync_WebsiteSearch_MatchesSubstring()
     {
         HasPartners(
             NewPartner("A", web: "https://alpha.org"),
@@ -98,7 +98,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_honours_explicit_descending_sort()
+    public async Task ListAsync_ExplicitDescendingSort_OrdersDescending()
     {
         HasPartners(NewPartner("Acme"), NewPartner("Zeta"), NewPartner("Mint"));
 
@@ -111,7 +111,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_partner_when_found()
+    public async Task GetByIdAsync_PartnerExists_ReturnsPartner()
     {
         var partner = NewPartner();
         HasPartners(partner);
@@ -123,7 +123,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
+    public async Task GetByIdAsync_PartnerMissing_ReturnsNotFound()
     {
         HasPartners();
 
@@ -135,7 +135,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
+    public async Task CreateAsync_ThumbnailMissing_ReturnsBadRequestAndDoesNotPersist()
     {
         ThumbnailExists(false);
         var request = new CreatePartnerRequest(
@@ -163,7 +163,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_persists_trimmed_normalized_partner()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedNormalizedPartner()
     {
         ThumbnailExists(true);
         var caller = Guid.NewGuid();
@@ -197,7 +197,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_stores_null_website_when_blank()
+    public async Task CreateAsync_BlankWebsite_StoresNullWebsite()
     {
         ThumbnailExists(true);
         var request = new CreatePartnerRequest(
@@ -218,7 +218,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_partner_missing()
+    public async Task UpdateAsync_PartnerMissing_ReturnsNotFound()
     {
         partners
             .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
@@ -244,7 +244,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_bad_request_when_thumbnail_missing()
+    public async Task UpdateAsync_ThumbnailMissing_ReturnsBadRequest()
     {
         var partner = NewPartner();
         partners
@@ -272,7 +272,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_mutates_and_persists()
+    public async Task UpdateAsync_ValidRequest_MutatesAndPersists()
     {
         var partner = NewPartner("Old", tier: 1);
         partners
@@ -305,7 +305,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    public async Task UpdateAsync_ThumbnailReplaced_CleansUpPreviousFileAfterSave()
     {
         var partner = NewPartner();
         var previousThumbnailId = partner.ThumbnailId;
@@ -335,7 +335,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    public async Task UpdateAsync_ThumbnailUnchanged_DoesNotCleanUp()
     {
         var partner = NewPartner();
         partners
@@ -364,7 +364,7 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_partner_missing()
+    public async Task DeleteAsync_PartnerMissing_ReturnsNotFound()
     {
         partners
             .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())

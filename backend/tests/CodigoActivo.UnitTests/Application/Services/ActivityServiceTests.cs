@@ -141,7 +141,7 @@ public sealed class ActivityServiceTests
         );
 
     [Fact]
-    public async Task ListAsync_filters_by_event_id()
+    public async Task ListAsync_EventIdFilter_ReturnsMatchingActivity()
     {
         var eventId = Guid.NewGuid();
         HasActivities(NewActivity("Mine", eventId: eventId), NewActivity("Other"));
@@ -155,7 +155,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_title_search_is_accent_and_case_insensitive()
+    public async Task ListAsync_TitleSearch_IsAccentAndCaseInsensitive()
     {
         HasActivities(NewActivity("Reunión Ávila"), NewActivity("Banco"));
 
@@ -168,7 +168,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_honours_explicit_descending_sort()
+    public async Task ListAsync_ExplicitDescendingSort_OrdersDescending()
     {
         HasActivities(NewActivity("Alpha"), NewActivity("Zeta"), NewActivity("Mint"));
 
@@ -181,7 +181,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_activity_when_found()
+    public async Task GetByIdAsync_ActivityExists_ReturnsActivity()
     {
         var activity = NewActivity();
         HasActivities(activity);
@@ -194,7 +194,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
+    public async Task GetByIdAsync_ActivityMissing_ReturnsNotFound()
     {
         HasActivities();
 
@@ -206,7 +206,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_not_found_when_event_missing()
+    public async Task CreateAsync_EventMissing_ReturnsNotFound()
     {
         EventFound(null);
 
@@ -224,7 +224,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_schedule_required_when_start_missing()
+    public async Task CreateAsync_StartMissing_ReturnsScheduleRequired()
     {
         EventFound(NewEvent());
 
@@ -253,7 +253,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_invalid_range_when_end_not_after_start()
+    public async Task CreateAsync_EndNotAfterStart_ReturnsInvalidRange()
     {
         EventFound(NewEvent());
         var when = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
@@ -272,7 +272,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_outside_event_range_when_dates_exceed_event()
+    public async Task CreateAsync_DatesExceedEventRange_ReturnsOutsideEventRange()
     {
         EventFound(NewEvent());
 
@@ -293,7 +293,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_thumbnail_not_found_when_missing()
+    public async Task CreateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         EventFound(NewEvent());
         ThumbnailExists(false);
@@ -312,7 +312,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_modality_not_found_when_missing()
+    public async Task CreateAsync_ModalityMissing_ReturnsModalityTypeNotFound()
     {
         EventFound(NewEvent());
         ThumbnailExists(true);
@@ -332,7 +332,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_role_type_not_found_when_allowed_role_unknown()
+    public async Task CreateAsync_AllowedRoleUnknown_ReturnsRoleTypeNotFound()
     {
         EventFound(NewEvent());
         ThumbnailExists(true);
@@ -363,7 +363,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_persists_trimmed_activity_and_returns_projection()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedActivityAndReturnsProjection()
     {
         var eventId = Guid.NewGuid();
         var caller = Guid.NewGuid();
@@ -410,7 +410,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_adds_distinct_allowed_roles()
+    public async Task CreateAsync_DuplicateRoleIds_AddsDistinctAllowedRoles()
     {
         var duplicate = Guid.NewGuid();
         EventFound(NewEvent());
@@ -454,7 +454,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_activity_missing()
+    public async Task UpdateAsync_ActivityMissing_ReturnsNotFound()
     {
         activities
             .GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
@@ -474,7 +474,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_event_not_found_when_parent_event_missing()
+    public async Task UpdateAsync_ParentEventMissing_ReturnsEventNotFound()
     {
         var activity = NewActivity();
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
@@ -494,7 +494,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_schedule_required_when_start_missing()
+    public async Task UpdateAsync_StartMissing_ReturnsScheduleRequired()
     {
         var activity = NewActivity();
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
@@ -525,7 +525,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_thumbnail_not_found_when_missing()
+    public async Task UpdateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         var activity = NewActivity();
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
@@ -545,7 +545,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_modality_not_found_when_missing()
+    public async Task UpdateAsync_ModalityMissing_ReturnsModalityTypeNotFound()
     {
         var activity = NewActivity();
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
@@ -566,7 +566,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_role_type_not_found_when_allowed_role_unknown()
+    public async Task UpdateAsync_AllowedRoleUnknown_ReturnsRoleTypeNotFound()
     {
         var activity = NewActivity();
         activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
@@ -594,7 +594,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_mutates_clears_roles_and_persists()
+    public async Task UpdateAsync_ValidRequest_MutatesClearsRolesAndPersists()
     {
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
@@ -629,7 +629,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    public async Task UpdateAsync_ReplacingThumbnail_CleansUpPreviousFileAfterSave()
     {
         var activity = NewActivity();
         var previousThumbnailId = activity.ThumbnailId;
@@ -653,7 +653,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    public async Task UpdateAsync_KeepingSameThumbnail_DoesNotCleanUp()
     {
         var activity = NewActivity();
         HasActivities(activity);
@@ -676,7 +676,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_activity_missing()
+    public async Task DeleteAsync_ActivityMissing_ReturnsNotFound()
     {
         activities
             .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
@@ -694,7 +694,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task ListRoleTypesAsync_orders_by_name_and_projects()
+    public async Task ListRoleTypesAsync_MultipleRoleTypes_OrdersByNameAndProjects()
     {
         roleTypes
             .Query()
@@ -713,7 +713,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task ListAssignmentStatusTypesAsync_orders_by_name_and_projects()
+    public async Task ListAssignmentStatusTypesAsync_MultipleStatusTypes_OrdersByNameAndProjects()
     {
         statuses
             .Query()
@@ -744,7 +744,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task ListModalityTypesAsync_orders_by_name_and_projects()
+    public async Task ListModalityTypesAsync_MultipleModalityTypes_OrdersByNameAndProjects()
     {
         modalityTypes
             .Query()
@@ -763,7 +763,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task ListAssignedAsync_filters_by_user_and_orders_by_start()
+    public async Task ListAssignedAsync_MultipleUsersAssigned_FiltersByUserAndOrdersByStart()
     {
         var userId = Guid.NewGuid();
         activities
@@ -819,7 +819,7 @@ public sealed class ActivityServiceTests
         };
 
     [Fact]
-    public async Task CreateActivityRoleTypeAsync_returns_conflict_when_name_exists()
+    public async Task CreateActivityRoleTypeAsync_NameExists_ReturnsConflict()
     {
         roleTypes
             .ExistsAsync(
@@ -840,7 +840,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateActivityRoleTypeAsync_trims_and_persists()
+    public async Task CreateActivityRoleTypeAsync_ValidRequest_TrimsAndPersists()
     {
         roleTypes
             .ExistsAsync(
@@ -867,7 +867,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateActivityRoleTypeAsync_defaults_null_description_to_empty()
+    public async Task CreateActivityRoleTypeAsync_NullDescription_DefaultsToEmpty()
     {
         roleTypes
             .ExistsAsync(
@@ -885,7 +885,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateActivityRoleTypeAsync_returns_not_found_when_missing()
+    public async Task UpdateActivityRoleTypeAsync_RoleTypeMissing_ReturnsNotFound()
     {
         roleTypes
             .FindAsync(
@@ -907,7 +907,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateActivityRoleTypeAsync_returns_conflict_when_name_taken_by_other()
+    public async Task UpdateActivityRoleTypeAsync_NameTakenByOther_ReturnsConflict()
     {
         var id = Guid.NewGuid();
         roleTypes
@@ -943,7 +943,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateActivityRoleTypeAsync_mutates_and_persists()
+    public async Task UpdateActivityRoleTypeAsync_ValidRequest_MutatesAndPersists()
     {
         var id = Guid.NewGuid();
         var roleType = new ActivityRoleType
@@ -979,7 +979,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task DeleteActivityRoleTypeAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteActivityRoleTypeAsync_NothingRemoved_ReturnsNotFound()
     {
         roleTypes
             .RemoveAsync(
