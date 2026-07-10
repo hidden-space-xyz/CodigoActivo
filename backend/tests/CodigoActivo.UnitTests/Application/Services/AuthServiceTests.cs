@@ -145,7 +145,7 @@ public sealed class AuthServiceTests
         );
 
     [Fact]
-    public async Task LoginAsync_returns_unauthorized_when_user_not_found()
+    public async Task LoginAsync_UserNotFound_ReturnsUnauthorized()
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -166,7 +166,7 @@ public sealed class AuthServiceTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public async Task LoginAsync_returns_unauthorized_when_password_hash_not_set(string? hash)
+    public async Task LoginAsync_PasswordHashNotSet_ReturnsUnauthorized(string? hash)
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -184,7 +184,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_returns_unauthorized_when_password_does_not_verify()
+    public async Task LoginAsync_PasswordDoesNotVerify_ReturnsUnauthorized()
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -203,10 +203,7 @@ public sealed class AuthServiceTests
 
     [Theory]
     [MemberData(nameof(BlockedStatuses))]
-    public async Task LoginAsync_returns_forbidden_for_non_active_status(
-        Guid statusId,
-        ErrorCode expected
-    )
+    public async Task LoginAsync_NonActiveStatus_ReturnsForbidden(Guid statusId, ErrorCode expected)
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -232,7 +229,7 @@ public sealed class AuthServiceTests
         };
 
     [Fact]
-    public async Task LoginAsync_activates_pending_user_when_verification_not_required()
+    public async Task LoginAsync_PendingUserVerificationNotRequired_ActivatesUser()
     {
         verification.Required = false;
         var user = NewUser(statusId: SeedIds.UserStatusTypes.Pending, otpCodeHash: "ABCDEF");
@@ -254,7 +251,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_succeeds_trims_identifier_records_login_and_maps_response()
+    public async Task LoginAsync_ValidCredentials_TrimsIdentifierAndRecordsLogin()
     {
         var user = NewUser();
         users.GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
@@ -275,7 +272,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task GetCurrentAsync_returns_unauthorized_when_missing()
+    public async Task GetCurrentAsync_UserMissing_ReturnsUnauthorized()
     {
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
@@ -291,7 +288,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_rejects_minor_adult_and_does_not_persist()
+    public async Task RegisterAsync_AdultBirthDateIsMinor_ReturnsBadRequest()
     {
         var result = await sut.RegisterAsync(
             NewRegister(birthDate: MinorBirthDate),
@@ -305,7 +302,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_returns_not_found_when_adult_role_missing()
+    public async Task RegisterAsync_AdultRoleMissing_ReturnsNotFound()
     {
         ExistsReturns(true);
         userTypes
@@ -323,7 +320,7 @@ public sealed class AuthServiceTests
     [Theory]
     [InlineData(true, true)]
     [InlineData(false, false)]
-    public async Task RegisterAsync_rejects_disallowed_adult_role(
+    public async Task RegisterAsync_AdultRoleNotAllowed_ReturnsBadRequest(
         bool hidden,
         bool allowedForAdults
     )
@@ -345,7 +342,7 @@ public sealed class AuthServiceTests
     [InlineData("   ", "+34123456789", "password123")]
     [InlineData("ana@test.com", "   ", "password123")]
     [InlineData("ana@test.com", "+34123456789", "   ")]
-    public async Task RegisterAsync_requires_contact_info(
+    public async Task RegisterAsync_MissingContactInfo_ReturnsBadRequest(
         string email,
         string phone,
         string password
@@ -365,7 +362,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_returns_conflict_when_email_or_phone_in_use()
+    public async Task RegisterAsync_EmailOrPhoneInUse_ReturnsConflict()
     {
         ExistsReturns(false, true);
 
@@ -378,7 +375,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_rejects_minor_with_adult_birthdate()
+    public async Task RegisterAsync_MinorWithAdultBirthDate_ReturnsBadRequest()
     {
         ExistsReturns(false, false);
 
@@ -394,7 +391,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_returns_not_found_when_a_minor_role_is_missing()
+    public async Task RegisterAsync_MinorRoleMissing_ReturnsNotFound()
     {
         ExistsReturns(false, false);
         userTypes
@@ -415,7 +412,7 @@ public sealed class AuthServiceTests
     [Theory]
     [InlineData(true, true)]
     [InlineData(false, false)]
-    public async Task RegisterAsync_rejects_disallowed_minor_role(
+    public async Task RegisterAsync_MinorRoleNotAllowed_ReturnsBadRequest(
         bool hidden,
         bool allowedForMinors
     )
@@ -440,7 +437,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_first_user_becomes_admin_with_member_type_and_persists()
+    public async Task RegisterAsync_FirstUser_BecomesAdminWithMemberType()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
         ExistsReturns(false, false);
@@ -484,7 +481,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_sends_a_guid_otp_by_email_hashed_at_rest_and_not_in_the_response()
+    public async Task RegisterAsync_NewAdult_SendsGuidOtpHashedAtRest()
     {
         var added = CaptureAddedUsers();
         ExistsReturns(false, false);
@@ -515,7 +512,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_still_succeeds_and_clears_last_sent_when_the_email_fails()
+    public async Task RegisterAsync_EmailSendFails_SucceedsAndClearsLastSent()
     {
         var added = CaptureAddedUsers();
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
@@ -540,7 +537,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_subsequent_user_creates_adult_with_requested_role_and_minor()
+    public async Task RegisterAsync_SubsequentUserWithMinor_CreatesAdultAndMinor()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
         var adultRoleId = SeedIds.UserTypes.Volunteer;
@@ -593,7 +590,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task VerifyAsync_returns_not_found_when_user_missing()
+    public async Task VerifyAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
 
@@ -610,7 +607,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task VerifyAsync_rejects_users_that_are_not_pending()
+    public async Task VerifyAsync_UserNotPending_ReturnsBadRequest()
     {
         var user = FindReturns(
             NewUser(
@@ -643,7 +640,7 @@ public sealed class AuthServiceTests
 
     [Theory]
     [MemberData(nameof(InvalidOtpCases))]
-    public async Task VerifyAsync_returns_bad_request_for_invalid_or_expired_otp(
+    public async Task VerifyAsync_InvalidOrExpiredOtp_ReturnsBadRequest(
         string otpArgument,
         bool hasStoredHash,
         int? expiresInMinutes
@@ -672,7 +669,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task VerifyAsync_rejects_a_wrong_code_without_persisting()
+    public async Task VerifyAsync_WrongCode_ReturnsBadRequestWithoutPersisting()
     {
         var user = FindReturns(NewPendingWithOtp(clock, code: "the-real-code"));
 
@@ -690,7 +687,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task VerifyAsync_activates_user_clears_otp_and_persists()
+    public async Task VerifyAsync_CorrectCode_ActivatesUserAndClearsOtp()
     {
         var user = FindReturns(NewPendingWithOtp(clock, code: "the-real-code"));
         users
@@ -712,7 +709,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_returns_not_found_when_user_missing()
+    public async Task ResendVerificationAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
 
@@ -727,7 +724,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_rejects_users_that_are_not_pending()
+    public async Task ResendVerificationAsync_UserNotPending_ReturnsConflict()
     {
         var user = FindReturns(NewUser(statusId: SeedIds.UserStatusTypes.Active));
 
@@ -742,7 +739,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_rejects_a_pending_user_without_an_email()
+    public async Task ResendVerificationAsync_PendingUserWithoutEmail_ReturnsConflict()
     {
         var user = FindReturns(NewPendingWithOtp(clock));
         user.Email = null;
@@ -758,7 +755,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_allows_an_immediate_resend_when_never_sent_before()
+    public async Task ResendVerificationAsync_NeverSentBefore_AllowsImmediateResend()
     {
         var user = FindReturns(
             NewUser(
@@ -782,7 +779,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_rejects_when_verification_not_required()
+    public async Task ResendVerificationAsync_VerificationNotRequired_ReturnsConflict()
     {
         verification.Required = false;
         var user = FindReturns(NewPendingWithOtp(clock));
@@ -797,7 +794,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_enforces_the_cooldown()
+    public async Task ResendVerificationAsync_WithinCooldown_ReturnsConflict()
     {
         var user = FindReturns(
             NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddSeconds(-10))
@@ -816,7 +813,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_issues_a_new_code_sends_it_and_persists()
+    public async Task ResendVerificationAsync_CooldownElapsed_IssuesNewCodeAndPersists()
     {
         var user = FindReturns(
             NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
@@ -839,7 +836,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task ResendVerificationAsync_does_not_persist_a_new_code_when_the_email_fails()
+    public async Task ResendVerificationAsync_EmailSendFails_DoesNotPersistNewCode()
     {
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         var user = FindReturns(

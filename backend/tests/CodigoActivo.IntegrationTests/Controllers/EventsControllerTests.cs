@@ -142,7 +142,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_is_anonymous_and_returns_paged_envelope_with_categories()
+    public async Task List_Anonymous_ReturnsPagedEnvelopeWithCategories()
     {
         var categoryId = await SeedCategoryTypeAsync("Cultura");
         await SeedEventAsync(
@@ -168,7 +168,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_returns_404_EventNotFound_when_absent()
+    public async Task Get_EventMissing_Returns404EventNotFound()
     {
         var client = CreateClient();
 
@@ -185,7 +185,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task PastYears_is_anonymous_and_returns_distinct_years_descending()
+    public async Task PastYears_Anonymous_ReturnsDistinctYearsDescending()
     {
         await SeedEventAsync(new DateOnly(2024, 5, 1), new DateOnly(2024, 6, 1), title: "P24");
         await SeedEventAsync(new DateOnly(2025, 5, 1), new DateOnly(2025, 6, 1), title: "P25a");
@@ -206,7 +206,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_admin_persists_event_with_categories_and_returns_201()
+    public async Task Create_AsAdmin_PersistsEventAndReturns201()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync("Taller");
@@ -235,7 +235,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_member_is_forbidden()
+    public async Task Create_AsMember_ReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
@@ -252,7 +252,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_anonymous_is_unauthorized()
+    public async Task Create_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
         var request = BuildCreate(Guid.NewGuid(), [Guid.NewGuid()]);
@@ -267,7 +267,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_with_blank_title_is_validation_error()
+    public async Task Create_BlankTitle_ReturnsValidationError()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
@@ -288,7 +288,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_as_admin_changes_event_and_persists()
+    public async Task Update_AsAdmin_PersistsChanges()
     {
         var categoryId = await SeedCategoryTypeAsync("Original");
         var id = await SeedEventAsync(
@@ -316,7 +316,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
+    public async Task Update_ReplacementThumbnail_DeletesOrphanedOldFile()
     {
         var categoryId = await SeedCategoryTypeAsync("Cascada");
         var id = await SeedEventAsync(
@@ -352,7 +352,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_as_admin_removes_event_and_its_orphaned_thumbnail()
+    public async Task Delete_AsAdmin_RemovesEventAndOrphanedThumbnail()
     {
         var id = await SeedEventAsync(
             new DateOnly(2026, 8, 1),
@@ -384,7 +384,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Feature_missing_event_is_404_EventNotFound()
+    public async Task Feature_EventMissing_Returns404EventNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -401,7 +401,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListCategoryTypes_returns_seeded_types_for_admin()
+    public async Task CategoryTypes_AsAdmin_ReturnsSeededTypes()
     {
         await SeedCategoryTypeAsync("Alpha");
         var client = await LoginAsAdminAsync();
@@ -419,7 +419,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateCategoryType_as_admin_persists_and_returns_ok()
+    public async Task CreateCategoryType_AsAdmin_PersistsAndReturnsOk()
     {
         var client = await LoginAsAdminAsync();
         var request = new CreateEventCategoryTypeRequest("Innovación", "#3366cc");
@@ -444,7 +444,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateCategoryType_as_admin_persists_changes()
+    public async Task UpdateCategoryType_AsAdmin_PersistsChanges()
     {
         var id = await SeedCategoryTypeAsync("Vieja", "#111111");
         var client = await LoginAsAdminAsync();
@@ -465,7 +465,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeleteCategoryType_as_admin_removes_it()
+    public async Task DeleteCategoryType_AsAdmin_RemovesIt()
     {
         var id = await SeedCategoryTypeAsync("Efímera");
         var client = await LoginAsAdminAsync();

@@ -59,7 +59,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_is_anonymous_and_returns_paged_envelope()
+    public async Task List_Anonymous_ReturnsPagedEnvelope()
     {
         await SeedResourceAsync("Alpha");
         var client = CreateClient();
@@ -79,7 +79,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_returns_404_with_error_code_when_absent()
+    public async Task Get_ResourceAbsent_Returns404WithErrorCode()
     {
         var client = CreateClient();
 
@@ -96,7 +96,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_admin_persists_and_returns_201_with_location()
+    public async Task Create_Admin_PersistsAndReturns201WithLocation()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -123,7 +123,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_as_member_is_forbidden()
+    public async Task Create_Member_ReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsMemberAsync();
@@ -139,7 +139,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_anonymous_is_unauthorized()
+    public async Task Create_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
         var request = new CreateResourceRequest("Nope", "Sub", Description, Guid.NewGuid());
@@ -156,7 +156,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     [Theory]
     [InlineData("   ", "Sub")]
     [InlineData("Title", "   ")]
-    public async Task Create_with_blank_field_is_validation_error(string title, string subtitle)
+    public async Task Create_BlankField_ReturnsValidationError(string title, string subtitle)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -176,7 +176,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Post_without_csrf_token_is_rejected()
+    public async Task Create_MissingCsrfToken_IsRejected()
     {
         var client = await LoginAsAdminAsync();
         var thumbnailId = await SeedThumbnailAsync();
@@ -198,7 +198,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_with_replacement_thumbnail_deletes_the_orphaned_old_file()
+    public async Task Update_ReplacementThumbnail_DeletesOrphanedOldFile()
     {
         var id = await SeedResourceAsync("Reemplazo");
         var oldThumbnailId = (
@@ -228,7 +228,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_as_admin_removes_resource_and_its_orphaned_thumbnail()
+    public async Task Delete_Admin_RemovesResourceAndOrphanedThumbnail()
     {
         var id = await SeedResourceAsync("Doomed");
         var thumbnailId = (

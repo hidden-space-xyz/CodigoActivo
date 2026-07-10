@@ -73,7 +73,7 @@ public sealed class FileServiceTests
         };
 
     [Fact]
-    public async Task GetContentAsync_returns_not_found_when_metadata_missing()
+    public async Task GetContentAsync_MetadataMissing_ReturnsNotFound()
     {
         FileMissing();
 
@@ -91,7 +91,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task GetContentAsync_returns_detected_content_type_and_rewinds_stream()
+    public async Task GetContentAsync_KnownSignature_ReturnsDetectedContentTypeAndRewindsStream()
     {
         var file = NewFile(name: "avatar.png");
         FileFound(file);
@@ -108,7 +108,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task GetContentAsync_falls_back_to_octet_stream_for_unknown_bytes()
+    public async Task GetContentAsync_UnknownBytes_FallsBackToOctetStream()
     {
         var file = NewFile();
         FileFound(file);
@@ -123,7 +123,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_upload_missing()
+    public async Task CreateAsync_UploadMissing_ReturnsValidationError()
     {
         var result = await sut.CreateAsync(
             null,
@@ -138,7 +138,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_upload_empty()
+    public async Task CreateAsync_UploadEmpty_ReturnsValidationError()
     {
         var upload = new FileUploadRequest(new MemoryStream(), "empty.png", 0);
 
@@ -154,7 +154,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_upload_too_large()
+    public async Task CreateAsync_UploadTooLarge_ReturnsValidationError()
     {
         options.MaxSizeBytes = 10;
         var upload = new FileUploadRequest(PngStream(), "big.png", 11);
@@ -171,7 +171,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_stream_not_seekable()
+    public async Task CreateAsync_StreamNotSeekable_ReturnsValidationError()
     {
         var upload = new FileUploadRequest(new NonSeekableStream(PngBytes()), "x.png", 32);
 
@@ -187,7 +187,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_format_unsupported()
+    public async Task CreateAsync_FormatUnsupported_ReturnsValidationError()
     {
         var upload = new FileUploadRequest(JunkStream(), "junk.bin", 32);
 
@@ -206,7 +206,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_saves_content_persists_entity_and_returns_response()
+    public async Task CreateAsync_ValidUpload_SavesContentPersistsEntityAndReturnsResponse()
     {
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
@@ -239,7 +239,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_defaults_blank_filename_to_file()
+    public async Task CreateAsync_BlankFilename_DefaultsNameToFile()
     {
         var upload = new FileUploadRequest(PngStream(), "   ", 32);
 
@@ -254,7 +254,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_rolls_back_storage_when_persistence_throws()
+    public async Task CreateAsync_PersistenceThrows_RollsBackStorage()
     {
         var upload = new FileUploadRequest(PngStream(), "avatar.png", 32);
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
@@ -268,7 +268,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_missing()
+    public async Task UpdateAsync_FileMissing_ReturnsNotFound()
     {
         FileMissing();
         var upload = new FileUploadRequest(PngStream(), "new.png", 32);
@@ -289,7 +289,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_revalidates_upload_and_rejects_missing_content()
+    public async Task UpdateAsync_UploadMissing_ReturnsValidationError()
     {
         FileFound(NewFile());
 
@@ -309,7 +309,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_replaces_content_without_deleting_when_extension_unchanged()
+    public async Task UpdateAsync_ExtensionUnchanged_ReplacesContentWithoutDeleting()
     {
         var file = NewFile(name: "old.png", extension: "png");
         FileFound(file);
@@ -330,7 +330,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_deletes_old_stored_file_when_extension_changes()
+    public async Task UpdateAsync_ExtensionChanges_DeletesOldStoredFile()
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
         FileFound(file);
@@ -348,7 +348,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_rolls_back_new_content_when_persistence_throws_and_extension_changed()
+    public async Task UpdateAsync_PersistenceThrowsWithExtensionChanged_RollsBackNewContent()
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
         FileFound(file);
@@ -365,7 +365,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_missing()
+    public async Task DeleteAsync_FileMissing_ReturnsNotFound()
     {
         FileMissing();
 
@@ -379,7 +379,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_conflict_when_file_is_still_in_use()
+    public async Task DeleteAsync_FileStillInUse_ReturnsConflict()
     {
         var file = NewFile();
         FileFound(file);
@@ -396,7 +396,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_row_saves_and_deletes_stored_content()
+    public async Task DeleteAsync_NotInUse_RemovesRowSavesAndDeletesStoredContent()
     {
         var file = NewFile(name: "gone.png", extension: "png");
         FileFound(file);
@@ -411,7 +411,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_deletes_the_file_when_no_longer_referenced()
+    public async Task DeleteIfOrphanedAsync_NoLongerReferenced_DeletesFile()
     {
         var file = NewFile();
         FileFound(file);
@@ -425,7 +425,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_silently_keeps_a_file_still_in_use()
+    public async Task DeleteIfOrphanedAsync_StillInUse_KeepsFileSilently()
     {
         var file = NewFile();
         FileFound(file);
@@ -442,7 +442,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_silently_ignores_a_missing_file()
+    public async Task DeleteIfOrphanedAsync_FileMissing_IgnoresSilently()
     {
         FileMissing();
 
@@ -456,7 +456,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_swallows_storage_exceptions()
+    public async Task DeleteIfOrphanedAsync_StorageThrows_SwallowsException()
     {
         var file = NewFile();
         FileFound(file);

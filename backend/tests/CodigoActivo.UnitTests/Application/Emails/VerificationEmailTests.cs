@@ -9,7 +9,7 @@ public sealed class VerificationEmailTests
     private const string VerifyUrl = "https://app.test/verify-account?userId=abc&code=123456";
 
     [Fact]
-    public void Create_addresses_the_recipient_and_contains_the_code_link_and_lifetime()
+    public void Create_ValidRequest_AddressesRecipientWithCodeLinkAndLifetime()
     {
         var message = VerificationEmail.Create(
             "ana@test.com",
@@ -40,7 +40,7 @@ public sealed class VerificationEmailTests
     }
 
     [Fact]
-    public void Create_html_encodes_the_recipient_name()
+    public void Create_ScriptInName_HtmlEncodesRecipientName()
     {
         var message = VerificationEmail.Create(
             "ana@test.com",

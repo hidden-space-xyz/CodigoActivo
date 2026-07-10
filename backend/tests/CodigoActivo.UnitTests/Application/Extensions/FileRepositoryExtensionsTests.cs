@@ -22,7 +22,7 @@ public sealed class FileRepositoryExtensionsTests
             .Returns(exists);
 
     [Fact]
-    public async Task EnsureThumbnailExistsAsync_succeeds_when_file_exists()
+    public async Task EnsureThumbnailExistsAsync_FileExists_ReturnsSuccess()
     {
         ThumbnailExists(true);
 
@@ -39,7 +39,7 @@ public sealed class FileRepositoryExtensionsTests
     [Theory]
     [InlineData(ErrorCode.PartnerThumbnailNotFound)]
     [InlineData(ErrorCode.EventThumbnailNotFound)]
-    public async Task EnsureThumbnailExistsAsync_propagates_missing_code_when_file_absent(
+    public async Task EnsureThumbnailExistsAsync_FileAbsent_ReturnsFailureWithMissingCode(
         ErrorCode missingCode
     )
     {
@@ -57,7 +57,7 @@ public sealed class FileRepositoryExtensionsTests
     }
 
     [Fact]
-    public async Task EnsureThumbnailExistsAsync_queries_the_supplied_thumbnail_id()
+    public async Task EnsureThumbnailExistsAsync_ValidId_QueriesBySuppliedThumbnailId()
     {
         var thumbnailId = Guid.NewGuid();
         ThumbnailExists(true);

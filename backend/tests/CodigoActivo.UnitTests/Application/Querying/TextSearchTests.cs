@@ -14,7 +14,10 @@ public sealed class TextSearchTests
     [InlineData("ÁÉÍÓÚ", "aeiou")]
     [InlineData("Fundación Ávila", "fundacion avila")]
     [InlineData("\tMíguez\n", "miguez")]
-    public void Normalize_trims_lowercases_and_folds_acute_vowels(string input, string expected)
+    public void Normalize_MixedCaseWithAccentsAndWhitespace_TrimsLowercasesAndFoldsVowels(
+        string input,
+        string expected
+    )
     {
         TextSearch.Normalize(input).Should().Be(expected);
     }
@@ -26,7 +29,7 @@ public sealed class TextSearchTests
     [InlineData("Hello World", "world", true)]
     [InlineData("Banco", "avila", false)]
     [InlineData("Alpha", "beta", false)]
-    public void Contains_matches_folded_case_insensitive_substrings(
+    public void Contains_FoldedCaseInsensitiveSubstring_ReturnsExpectedMatch(
         string value,
         string rawTerm,
         bool expected
@@ -40,7 +43,7 @@ public sealed class TextSearchTests
     }
 
     [Fact]
-    public void Contains_treats_a_null_selected_value_as_no_match()
+    public void Contains_NullSelectedValue_ReturnsFalse()
     {
         var predicate = TextSearch.Contains<Row>(r => r.Name, TextSearch.Normalize("x")).Compile();
 

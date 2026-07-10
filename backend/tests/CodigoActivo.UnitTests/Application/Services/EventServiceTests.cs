@@ -131,7 +131,7 @@ public sealed class EventServiceTests
         );
 
     [Fact]
-    public async Task ListAsync_without_scope_projects_and_pages_all()
+    public async Task ListAsync_NoScope_ProjectsAndPagesAll()
     {
         HasEvents(NewEvent("A"), NewEvent("B"));
 
@@ -146,7 +146,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_scope_upcoming_keeps_events_ending_today_or_later()
+    public async Task ListAsync_ScopeUpcoming_KeepsEventsEndingTodayOrLater()
     {
         clock.Today = new DateOnly(2026, 7, 4);
         HasEvents(
@@ -163,7 +163,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_scope_past_keeps_events_ending_before_today()
+    public async Task ListAsync_ScopePast_KeepsEventsEndingBeforeToday()
     {
         clock.Today = new DateOnly(2026, 7, 4);
         HasEvents(
@@ -180,7 +180,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_filters_by_year_of_start_date()
+    public async Task ListAsync_YearFilter_KeepsMatchingYear()
     {
         HasEvents(
             NewEvent("Y2025", starts: new DateOnly(2025, 5, 1), ends: new DateOnly(2025, 5, 2)),
@@ -196,7 +196,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_filters_by_featured_flag()
+    public async Task ListAsync_FeaturedFilter_KeepsFeaturedOnly()
     {
         HasEvents(NewEvent("Plain", featured: false), NewEvent("Star", featured: true));
 
@@ -209,7 +209,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_title_search_is_accent_and_case_insensitive()
+    public async Task ListAsync_TitleSearch_IsAccentAndCaseInsensitive()
     {
         HasEvents(NewEvent("Festival Ávila"), NewEvent("Concierto"));
 
@@ -222,7 +222,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_subtitle_search_matches_substring()
+    public async Task ListAsync_SubtitleSearch_MatchesSubstring()
     {
         HasEvents(
             NewEvent("A", subtitle: "Talleres de robótica"),
@@ -238,7 +238,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_honours_explicit_descending_sort_by_title()
+    public async Task ListAsync_DescendingTitleSort_OrdersResults()
     {
         HasEvents(NewEvent("Alpha"), NewEvent("Zeta"), NewEvent("Mint"));
 
@@ -251,7 +251,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_second_page_skips_first_page_items()
+    public async Task ListAsync_SecondPage_SkipsFirstPageItems()
     {
         HasEvents(NewEvent("Alpha"), NewEvent("Mint"), NewEvent("Zeta"));
 
@@ -270,7 +270,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_event_when_found()
+    public async Task GetByIdAsync_EventExists_ReturnsEvent()
     {
         var ev = NewEvent();
         HasEvents(ev);
@@ -282,7 +282,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
+    public async Task GetByIdAsync_EventMissing_ReturnsNotFound()
     {
         HasEvents();
 
@@ -298,7 +298,7 @@ public sealed class EventServiceTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    public async Task CreateAsync_returns_schedule_required_when_any_datetime_missing(int missing)
+    public async Task CreateAsync_MissingScheduleDate_ReturnsScheduleRequired(int missing)
     {
         var request = new CreateEventRequest(
             Title: "Hackathon",
@@ -330,7 +330,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_invalid_range_when_event_end_before_start()
+    public async Task CreateAsync_EventEndBeforeStart_ReturnsInvalidRange()
     {
         var request = CreateReq(
             eventStart: new DateOnly(2026, 8, 5),
@@ -351,7 +351,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_invalid_range_when_signup_end_not_after_start()
+    public async Task CreateAsync_SignupEndNotAfterStart_ReturnsInvalidRange()
     {
         var signup = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         var request = CreateReq(
@@ -372,7 +372,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_invalid_range_when_signup_starts_after_event_end()
+    public async Task CreateAsync_SignupStartsAfterEventEnd_ReturnsInvalidRange()
     {
         var request = CreateReq(
             eventStart: new DateOnly(2026, 8, 1),
@@ -394,7 +394,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_thumbnail_not_found_when_file_missing()
+    public async Task CreateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         ThumbnailExists(false);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
@@ -417,7 +417,7 @@ public sealed class EventServiceTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task CreateAsync_returns_categories_required_when_none_supplied(bool empty)
+    public async Task CreateAsync_NoCategoriesSupplied_ReturnsCategoriesRequired(bool empty)
     {
         ThumbnailExists(true);
         var request = CreateReq(categoryTypeIds: empty ? Array.Empty<Guid>() : null);
@@ -435,7 +435,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_returns_category_type_not_found_when_some_ids_do_not_exist()
+    public async Task CreateAsync_UnknownCategoryTypeId_ReturnsCategoryTypeNotFound()
     {
         ThumbnailExists(true);
         HasCategoryCount(1);
@@ -454,7 +454,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_persists_trimmed_event_with_audit_and_categories()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedEventWithAuditAndCategories()
     {
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
@@ -510,7 +510,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_schedule_invalid_range_before_touching_repository()
+    public async Task UpdateAsync_InvalidScheduleRange_ReturnsErrorBeforeTouchingRepository()
     {
         var request = UpdateReq(
             eventStart: new DateOnly(2026, 8, 5),
@@ -534,7 +534,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_categories_required_when_none_supplied()
+    public async Task UpdateAsync_NoCategoriesSupplied_ReturnsCategoriesRequired()
     {
         var request = UpdateReq(categoryTypeIds: null);
 
@@ -551,7 +551,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_event_missing()
+    public async Task UpdateAsync_EventMissing_ReturnsNotFound()
     {
         HasCategoryCount(1);
         events.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Event?)null);
@@ -571,7 +571,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_activities_outside_range_when_activity_falls_out()
+    public async Task UpdateAsync_ActivityOutsideNewRange_ReturnsActivitiesOutsideRange()
     {
         var ev = NewEvent();
         HasCategoryCount(1);
@@ -600,7 +600,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_thumbnail_not_found_when_file_missing()
+    public async Task UpdateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         var ev = NewEvent();
         HasCategoryCount(1);
@@ -629,7 +629,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_mutates_replaces_categories_and_persists()
+    public async Task UpdateAsync_ValidRequest_ReplacesCategoriesAndPersists()
     {
         var caller = Guid.NewGuid();
         var newCategoryId = Guid.NewGuid();
@@ -693,7 +693,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    public async Task UpdateAsync_SameThumbnail_DoesNotCleanUp()
     {
         var ev = NewEvent();
         PrepareUpdate(ev);
@@ -713,7 +713,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_cleans_up_images_dropped_from_the_description_but_keeps_the_rest()
+    public async Task UpdateAsync_ImagesDroppedFromDescription_CleansUpRemovedKeepsRest()
     {
         var ev = NewEvent();
         var removedId = Guid.NewGuid();
@@ -767,7 +767,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_event_missing()
+    public async Task DeleteAsync_EventMissing_ReturnsNotFound()
     {
         events
             .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
@@ -785,7 +785,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_event_and_cleans_event_and_activity_thumbnails_once_each()
+    public async Task DeleteAsync_ValidEvent_RemovesAndCleansThumbnailsOnceEach()
     {
         var ev = NewEvent();
         events
@@ -825,7 +825,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_cleans_up_images_embedded_in_the_description()
+    public async Task DeleteAsync_ImagesEmbeddedInDescription_CleansThemUp()
     {
         var ev = NewEvent();
         var embeddedId = Guid.NewGuid();
@@ -844,7 +844,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_returns_not_found_when_event_missing()
+    public async Task SetFeaturedAsync_EventMissing_ReturnsNotFound()
     {
         events.SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 
@@ -858,7 +858,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_returns_event_when_flag_set()
+    public async Task SetFeaturedAsync_EventExists_ReturnsFeaturedEvent()
     {
         var ev = NewEvent(featured: true);
         HasEvents(ev);
@@ -872,7 +872,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task ListCategoryTypesAsync_returns_types_ordered_by_name()
+    public async Task ListCategoryTypesAsync_MultipleTypes_ReturnsOrderedByName()
     {
         HasCategoryTypes(
             new EventCategoryType
@@ -895,7 +895,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateCategoryTypeAsync_returns_conflict_when_name_exists()
+    public async Task CreateCategoryTypeAsync_NameExists_ReturnsConflict()
     {
         categoryTypes
             .ExistsAsync(
@@ -919,7 +919,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateCategoryTypeAsync_persists_trimmed_type()
+    public async Task CreateCategoryTypeAsync_ValidRequest_PersistsTrimmedType()
     {
         categoryTypes
             .ExistsAsync(
@@ -946,7 +946,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateCategoryTypeAsync_returns_not_found_when_type_missing()
+    public async Task UpdateCategoryTypeAsync_TypeMissing_ReturnsNotFound()
     {
         categoryTypes
             .FindAsync(
@@ -968,7 +968,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateCategoryTypeAsync_returns_conflict_when_name_taken_by_another()
+    public async Task UpdateCategoryTypeAsync_NameTakenByAnother_ReturnsConflict()
     {
         var id = Guid.NewGuid();
         var existing = new EventCategoryType
@@ -1003,7 +1003,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateCategoryTypeAsync_mutates_and_persists()
+    public async Task UpdateCategoryTypeAsync_ValidRequest_MutatesAndPersists()
     {
         var id = Guid.NewGuid();
         var existing = new EventCategoryType
@@ -1040,7 +1040,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteCategoryTypeAsync_returns_not_found_when_nothing_removed()
+    public async Task DeleteCategoryTypeAsync_NothingRemoved_ReturnsNotFound()
     {
         categoryTypes
             .RemoveAsync(
@@ -1061,7 +1061,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteCategoryTypeAsync_saves_when_removed()
+    public async Task DeleteCategoryTypeAsync_Removed_SavesChanges()
     {
         categoryTypes
             .RemoveAsync(

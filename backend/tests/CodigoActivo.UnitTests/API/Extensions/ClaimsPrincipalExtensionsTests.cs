@@ -11,7 +11,7 @@ public sealed class ClaimsPrincipalExtensionsTests
         new(new ClaimsIdentity(claims, authenticationType: "Test"));
 
     [Fact]
-    public void GetUserId_returns_guid_when_name_identifier_is_valid()
+    public void GetUserId_ValidNameIdentifierClaim_ReturnsGuid()
     {
         var id = Guid.NewGuid();
         var principal = PrincipalWith(new Claim(ClaimTypes.NameIdentifier, id.ToString()));
@@ -20,7 +20,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void GetUserId_returns_null_when_name_identifier_missing()
+    public void GetUserId_NameIdentifierClaimMissing_ReturnsNull()
     {
         var principal = PrincipalWith(new Claim(ClaimTypes.Role, "whatever"));
 
@@ -28,7 +28,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void GetUserId_returns_null_when_name_identifier_unparseable()
+    public void GetUserId_NameIdentifierUnparseable_ReturnsNull()
     {
         var principal = PrincipalWith(new Claim(ClaimTypes.NameIdentifier, "not-a-guid"));
 
@@ -36,7 +36,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void IsAdmin_is_true_when_isadmin_claim_is_true()
+    public void IsAdmin_IsAdminClaimTrue_ReturnsTrue()
     {
         var principal = PrincipalWith(
             new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString)
@@ -46,7 +46,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void IsAdmin_is_false_when_isadmin_claim_is_false()
+    public void IsAdmin_IsAdminClaimFalse_ReturnsFalse()
     {
         var principal = PrincipalWith(
             new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.FalseString)
@@ -56,7 +56,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void IsAdmin_is_false_when_no_isadmin_claim_present()
+    public void IsAdmin_IsAdminClaimAbsent_ReturnsFalse()
     {
         var principal = PrincipalWith(
             new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())

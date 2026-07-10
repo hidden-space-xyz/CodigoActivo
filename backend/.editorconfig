@@ -221,9 +221,9 @@ dotnet_diagnostic.S101.severity = none
 dotnet_diagnostic.S2139.severity = none
 
 [tests/**/*.cs]
-# Test methods are named as snake_case sentences on purpose (Register_new_adult_returns_201_..., see
-# CLAUDE.md). That convention is the reason these names read well in test output, so the underscore
-# rule is the thing that has to give, not ~500 test names.
+# Test methods are named MethodUnderTest_Scenario_ExpectedBehavior on purpose (see CLAUDE.md). That
+# convention needs the underscores, so the underscore rule is the thing that has to give, not ~700
+# test names.
 dotnet_diagnostic.CA1707.severity = none
 # Test credentials are fixtures, not secrets: they only ever unlock a throwaway database.
 dotnet_diagnostic.S2068.severity = none

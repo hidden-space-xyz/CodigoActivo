@@ -24,7 +24,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_endpoint_query_parameters_are_camelCased()
+    public async Task SwaggerDocument_ListEndpoints_QueryParametersAreCamelCased()
     {
         using var doc = await FetchSwaggerAsync();
 
@@ -51,7 +51,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Operation_responses_keep_only_json_media_type()
+    public async Task SwaggerDocument_OperationResponses_OnlyJsonMediaType()
     {
         using var doc = await FetchSwaggerAsync();
 
@@ -80,7 +80,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Shared_error_schema_is_forced_into_components()
+    public async Task SwaggerDocument_ErrorSchema_IsForcedIntoComponents()
     {
         using var doc = await FetchSwaggerAsync();
 

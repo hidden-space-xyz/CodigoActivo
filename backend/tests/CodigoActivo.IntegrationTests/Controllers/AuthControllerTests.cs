@@ -54,7 +54,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Csrf_is_anonymous_and_returns_token_and_sets_cookie()
+    public async Task Csrf_Anonymous_ReturnsTokenAndSetsCookie()
     {
         var client = CreateClient();
 
@@ -74,7 +74,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Register_new_adult_returns_201_sends_the_otp_by_email_and_persists_pending()
+    public async Task Register_NewAdult_ReturnsCreatedSendsOtpAndPersistsPending()
     {
         var client = CreateClient();
 
@@ -115,7 +115,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!")]
     [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!")]
     [InlineData("Nadia", "valid@codigoactivo.test", "+34600000098", "short")]
-    public async Task Register_with_invalid_body_is_validation_error(
+    public async Task Register_InvalidBody_ReturnsValidationError(
         string firstName,
         string email,
         string phone,
@@ -138,7 +138,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_with_correct_otp_activates_the_user()
+    public async Task Verify_CorrectOtp_ActivatesUser()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
@@ -163,7 +163,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_then_login_succeeds_end_to_end()
+    public async Task VerifyThenLogin_ValidOtpAndCredentials_Succeeds()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
@@ -187,7 +187,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_with_wrong_otp_is_rejected_and_leaves_the_account_pending()
+    public async Task Verify_WrongOtp_RejectedAndAccountStaysPending()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -212,7 +212,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_with_expired_otp_is_rejected()
+    public async Task Verify_ExpiredOtp_Rejected()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
@@ -232,7 +232,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_with_blank_otp_is_validation_error()
+    public async Task Verify_BlankOtp_ReturnsValidationError()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -251,7 +251,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_unknown_user_is_not_found()
+    public async Task Verify_UnknownUser_ReturnsNotFound()
     {
         var client = CreateClient();
 
@@ -269,7 +269,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Resend_verification_within_the_cooldown_is_rejected()
+    public async Task ResendVerification_WithinCooldown_Rejected()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -288,7 +288,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Resend_verification_after_the_cooldown_sends_a_new_working_code()
+    public async Task ResendVerification_AfterCooldown_SendsNewWorkingCode()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -313,7 +313,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Resend_verification_invalidates_the_previously_issued_code()
+    public async Task ResendVerification_NewCodeIssued_InvalidatesPreviousCode()
     {
         var client = CreateClient();
         var (userId, firstOtp) = await RegisterPendingAdultAsync(client);
@@ -347,7 +347,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Resend_verification_for_an_active_user_is_rejected()
+    public async Task ResendVerification_ActiveUser_Rejected()
     {
         var client = CreateClient();
 
@@ -365,7 +365,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_of_a_pending_user_is_forbidden_when_verification_is_required()
+    public async Task Login_PendingUserVerificationRequired_ReturnsForbidden()
     {
         var client = CreateClient();
 
@@ -383,7 +383,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_with_valid_credentials_returns_200_sets_cookie_and_records_login()
+    public async Task Login_ValidCredentials_ReturnsOkSetsCookieAndRecordsLogin()
     {
         var client = CreateClient();
 
@@ -409,7 +409,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_with_wrong_password_is_unauthorized()
+    public async Task Login_WrongPassword_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -427,7 +427,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_without_csrf_token_is_rejected()
+    public async Task Login_WithoutCsrfToken_ReturnsBadRequest()
     {
         var client = CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
@@ -448,7 +448,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Me_when_authenticated_returns_the_current_user()
+    public async Task Me_Authenticated_ReturnsCurrentUser()
     {
         var client = await LoginAsAdminAsync();
 
@@ -463,7 +463,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Me_when_anonymous_is_unauthorized()
+    public async Task Me_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -473,7 +473,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Logout_when_authenticated_returns_204_and_clears_the_session()
+    public async Task Logout_Authenticated_ReturnsNoContentAndClearsSession()
     {
         var client = await LoginAsAdminAsync();
 

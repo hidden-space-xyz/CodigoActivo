@@ -19,7 +19,7 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     }
 
     [Fact]
-    public async Task List_is_anonymous_and_excludes_hidden_types_ordered_by_name()
+    public async Task List_Anonymous_ExcludesHiddenTypesOrderedByName()
     {
         var types = await GetTypesAsync("/api/registration-types");
 
@@ -38,7 +38,7 @@ public sealed class RegistrationTypesControllerTests(CodigoActivoWebAppFactory f
     }
 
     [Fact]
-    public async Task List_for_adult_audience_excludes_minor_only_and_hidden_types()
+    public async Task List_AdultAudience_ExcludesMinorOnlyAndHiddenTypes()
     {
         var types = await GetTypesAsync("/api/registration-types?audience=Adult");
 

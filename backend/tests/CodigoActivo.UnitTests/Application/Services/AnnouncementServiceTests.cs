@@ -65,7 +65,7 @@ public sealed class AnnouncementServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_filters_by_year()
+    public async Task ListAsync_YearFilter_ReturnsMatchingYear()
     {
         HasAnnouncements(NewAnnouncement("Old", year: 2023), NewAnnouncement("New", year: 2025));
 
@@ -80,7 +80,10 @@ public sealed class AnnouncementServiceTests
     [Theory]
     [InlineData(true, "Star")]
     [InlineData(false, "Plain")]
-    public async Task ListAsync_filters_by_featured(bool featured, string expected)
+    public async Task ListAsync_FeaturedFilter_ReturnsMatchingFeaturedState(
+        bool featured,
+        string expected
+    )
     {
         HasAnnouncements(
             NewAnnouncement("Star", featured: true),
@@ -96,7 +99,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_title_search_is_accent_and_case_insensitive()
+    public async Task ListAsync_TitleSearch_IsAccentAndCaseInsensitive()
     {
         HasAnnouncements(NewAnnouncement("Reunión Ávila"), NewAnnouncement("Otra"));
 
@@ -109,7 +112,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_subtitle_search_matches_substring()
+    public async Task ListAsync_SubtitleSearch_MatchesSubstring()
     {
         HasAnnouncements(
             NewAnnouncement("A", subtitle: "primavera"),
@@ -125,7 +128,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_honours_explicit_ascending_title_sort()
+    public async Task ListAsync_ExplicitTitleSort_OrdersAscending()
     {
         HasAnnouncements(
             NewAnnouncement("Charlie"),
@@ -142,7 +145,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
+    public async Task GetByIdAsync_AnnouncementMissing_ReturnsNotFound()
     {
         HasAnnouncements();
 
@@ -154,7 +157,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task GetYearsAsync_returns_distinct_years_descending()
+    public async Task GetYearsAsync_DuplicateYears_ReturnsDistinctDescending()
     {
         HasAnnouncements(
             NewAnnouncement(year: 2023),
@@ -170,7 +173,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
+    public async Task CreateAsync_ThumbnailMissing_FailsAndDoesNotPersist()
     {
         ThumbnailExists(false);
         var request = new CreateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
@@ -192,7 +195,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_persists_trimmed_announcement()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedAnnouncement()
     {
         ThumbnailExists(true);
         var caller = Guid.NewGuid();
@@ -226,7 +229,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_missing()
+    public async Task UpdateAsync_AnnouncementMissing_ReturnsNotFound()
     {
         announcements
             .FindAsync(
@@ -253,7 +256,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_bad_request_when_thumbnail_missing()
+    public async Task UpdateAsync_ThumbnailMissing_ReturnsBadRequest()
     {
         var announcement = NewAnnouncement();
         announcements
@@ -279,7 +282,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_mutates_and_persists()
+    public async Task UpdateAsync_ValidRequest_MutatesAndPersists()
     {
         var announcement = NewAnnouncement("Old", "OldSub");
         announcements
@@ -317,7 +320,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    public async Task UpdateAsync_ThumbnailReplaced_CleansUpPreviousFileAfterSave()
     {
         var announcement = NewAnnouncement();
         var previousThumbnailId = announcement.ThumbnailId;
@@ -344,7 +347,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    public async Task UpdateAsync_ThumbnailUnchanged_DoesNotCleanUp()
     {
         var announcement = NewAnnouncement();
         announcements
@@ -375,7 +378,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_cleans_up_images_dropped_from_the_description_but_keeps_the_rest()
+    public async Task UpdateAsync_ImagesDroppedFromDescription_CleansUpDroppedKeepsRest()
     {
         var announcement = NewAnnouncement();
         var removedId = Guid.NewGuid();
@@ -413,7 +416,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_announcement_missing()
+    public async Task DeleteAsync_AnnouncementMissing_ReturnsNotFound()
     {
         announcements
             .FindAsync(
@@ -435,7 +438,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_cleans_up_images_embedded_in_the_description()
+    public async Task DeleteAsync_ImagesEmbeddedInDescription_CleansUp()
     {
         var announcement = NewAnnouncement();
         var embeddedId = Guid.NewGuid();
@@ -456,7 +459,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_returns_not_found_when_id_missing()
+    public async Task SetFeaturedAsync_IdMissing_ReturnsNotFound()
     {
         announcements
             .SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
@@ -473,7 +476,7 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_returns_announcement_when_marked()
+    public async Task SetFeaturedAsync_Marked_ReturnsFeaturedAnnouncement()
     {
         var announcement = NewAnnouncement("Featured", featured: true);
         announcements.SetFeaturedAsync(announcement.Id, Arg.Any<CancellationToken>()).Returns(true);

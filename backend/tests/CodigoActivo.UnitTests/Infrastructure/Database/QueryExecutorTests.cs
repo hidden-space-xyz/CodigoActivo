@@ -44,7 +44,7 @@ public sealed class QueryExecutorTests : IDisposable
     }
 
     [Fact]
-    public async Task ToPagedAsync_returns_total_and_the_requested_page_slice()
+    public async Task ToPagedAsync_MiddlePage_ReturnsTotalAndPageSlice()
     {
         await SeedPartnersAsync("A", "B", "C", "D", "E");
         var query = context.Partners.OrderBy(p => p.Name);
@@ -64,7 +64,7 @@ public sealed class QueryExecutorTests : IDisposable
     }
 
     [Fact]
-    public async Task ToPagedAsync_returns_empty_slice_past_the_last_page()
+    public async Task ToPagedAsync_PageBeyondLast_ReturnsEmptySlice()
     {
         await SeedPartnersAsync("A", "B");
 

@@ -136,7 +136,7 @@ public sealed class UserServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_admin_sees_all_users()
+    public async Task ListAsync_CallerIsAdmin_ReturnsAllUsers()
     {
         HasUsers(
             NewUser(id: Guid.NewGuid()),
@@ -156,7 +156,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_non_admin_only_sees_self_and_dependents()
+    public async Task ListAsync_CallerIsNotAdmin_ReturnsOnlySelfAndDependents()
     {
         var caller = Guid.NewGuid();
         HasUsers(
@@ -177,7 +177,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_filters_by_parent_id()
+    public async Task ListAsync_ParentIdFilter_ReturnsOnlyMatchingChildren()
     {
         var parent = Guid.NewGuid();
         HasUsers(
@@ -196,7 +196,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_first_name_search_is_accent_and_case_insensitive()
+    public async Task ListAsync_FirstNameSearch_IsAccentAndCaseInsensitive()
     {
         HasUsers(NewUser(first: "Ávila"), NewUser(first: "Benito"));
 
@@ -211,7 +211,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_last_name_search_matches_substring()
+    public async Task ListAsync_LastNameSearch_MatchesSubstring()
     {
         HasUsers(NewUser(last: "Gonzalez"), NewUser(last: "Martinez"));
 
@@ -226,7 +226,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_email_search_matches_substring()
+    public async Task ListAsync_EmailSearch_MatchesSubstring()
     {
         HasUsers(NewUser(email: "alpha@test.com"), NewUser(email: "beta@test.com"));
 
@@ -241,7 +241,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_honours_explicit_descending_sort()
+    public async Task ListAsync_ExplicitDescendingSort_OrdersResultsDescending()
     {
         HasUsers(NewUser(last: "Aaa"), NewUser(last: "Zzz"), NewUser(last: "Mmm"));
 
@@ -256,7 +256,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_pages_results()
+    public async Task ListAsync_PageAndPageSizeGiven_ReturnsPagedResults()
     {
         HasUsers(NewUser(first: "A"), NewUser(first: "B"), NewUser(first: "C"));
 
@@ -274,7 +274,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_user_when_found()
+    public async Task GetByIdAsync_UserExists_ReturnsUser()
     {
         var user = NewUser();
         HasUsers(user);
@@ -286,7 +286,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
+    public async Task GetByIdAsync_UserMissing_ReturnsNotFound()
     {
         HasUsers();
 
@@ -298,7 +298,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_user_missing()
+    public async Task UpdateAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
         var request = new UpdateUserRequest("First", "Last", "a@test.com", "555", AdultDob, null);
@@ -316,7 +316,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_adult_with_parent_is_rejected()
+    public async Task UpdateAsync_AdultWithParentId_ReturnsBadRequest()
     {
         FindReturns(NewUser());
         var request = new UpdateUserRequest(
@@ -343,7 +343,7 @@ public sealed class UserServiceTests
     [Theory]
     [InlineData(null, "555")]
     [InlineData("a@test.com", "   ")]
-    public async Task UpdateAsync_adult_missing_contact_info_is_rejected(
+    public async Task UpdateAsync_AdultMissingContactInfo_ReturnsBadRequest(
         string? email,
         string? phone
     )
@@ -364,7 +364,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_adult_email_already_in_use_is_conflict()
+    public async Task UpdateAsync_AdultEmailAlreadyInUse_ReturnsConflict()
     {
         FindReturns(NewUser());
         users
@@ -385,7 +385,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_adult_phone_already_in_use_is_conflict()
+    public async Task UpdateAsync_AdultPhoneAlreadyInUse_ReturnsConflict()
     {
         FindReturns(NewUser());
         users
@@ -409,7 +409,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_adult_success_normalizes_contact_and_persists()
+    public async Task UpdateAsync_ValidAdultUpdate_NormalizesContactAndPersists()
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id, parentId: Guid.NewGuid());
@@ -444,7 +444,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_minor_requires_parent_id()
+    public async Task UpdateAsync_MinorWithoutParentId_ReturnsBadRequest()
     {
         FindReturns(NewUser());
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, null);
@@ -462,7 +462,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_minor_cannot_be_own_parent()
+    public async Task UpdateAsync_MinorSetAsOwnParent_ReturnsBadRequest()
     {
         var id = Guid.NewGuid();
         FindReturns(NewUser(id: id));
@@ -477,7 +477,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_minor_parent_not_found()
+    public async Task UpdateAsync_MinorParentMissing_ReturnsNotFound()
     {
         FindReturns(NewUser(), null);
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Guid.NewGuid());
@@ -495,7 +495,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_minor_parent_is_minor_is_rejected()
+    public async Task UpdateAsync_MinorParentIsMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(), NewUser(dob: MinorDob));
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Guid.NewGuid());
@@ -513,7 +513,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_minor_success_clears_contact_and_sets_parent()
+    public async Task UpdateAsync_ValidMinorUpdate_ClearsContactAndCredentialsAndSetsParent()
     {
         var id = Guid.NewGuid();
         var parentId = Guid.NewGuid();
@@ -545,7 +545,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_forbidden_for_admin()
+    public async Task DeleteAsync_TargetIsAdmin_ReturnsForbidden()
     {
         var id = Guid.NewGuid();
         FindReturns(NewUser(id: id, isAdmin: true));
@@ -560,7 +560,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_user_missing()
+    public async Task DeleteAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
 
@@ -573,7 +573,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_and_saves_for_non_admin()
+    public async Task DeleteAsync_TargetIsNonAdmin_RemovesAndSaves()
     {
         var user = NewUser(isAdmin: false);
         FindReturns(user);
@@ -586,7 +586,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task SetAdminAsync_returns_not_found_when_user_missing()
+    public async Task SetAdminAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
 
@@ -603,7 +603,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task SetAdminAsync_grants_admin_and_saves()
+    public async Task SetAdminAsync_GrantAdminToNonAdmin_GrantsAndSaves()
     {
         var user = NewUser(isAdmin: false);
         FindReturns(user);
@@ -616,7 +616,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task SetAdminAsync_is_noop_when_flag_unchanged()
+    public async Task SetAdminAsync_FlagUnchanged_IsNoopAndDoesNotSave()
     {
         var user = NewUser(isAdmin: true);
         FindReturns(user);
@@ -629,7 +629,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task SetAdminAsync_revokes_when_other_admins_remain()
+    public async Task SetAdminAsync_RevokeWithOtherAdminsRemaining_RevokesAndSaves()
     {
         var user = NewUser(isAdmin: true);
         FindReturns(user);
@@ -645,7 +645,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task SetAdminAsync_forbids_removing_the_last_admin()
+    public async Task SetAdminAsync_RevokeLastAdmin_ReturnsForbidden()
     {
         var user = NewUser(isAdmin: true);
         FindReturns(user);
@@ -663,7 +663,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_returns_not_found_when_user_missing()
+    public async Task ChangeTypeAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
 
@@ -680,7 +680,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_returns_not_found_when_role_missing()
+    public async Task ChangeTypeAsync_RoleMissing_ReturnsNotFound()
     {
         FindReturns(NewUser());
         RoleReturns(null);
@@ -698,7 +698,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_rejects_role_not_allowed_for_minor()
+    public async Task ChangeTypeAsync_RoleNotAllowedForMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: MinorDob));
         RoleReturns(NewUserType("Volunteer", minors: false, adults: true));
@@ -716,7 +716,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_rejects_role_not_allowed_for_adult()
+    public async Task ChangeTypeAsync_RoleNotAllowedForAdult_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: AdultDob));
         RoleReturns(NewUserType("Cadet", minors: true, adults: false));
@@ -734,7 +734,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_rejects_hidden_role()
+    public async Task ChangeTypeAsync_RoleIsHidden_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: AdultDob));
         RoleReturns(NewUserType("Secret", minors: true, adults: true, hidden: true));
@@ -752,7 +752,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_replaces_type_and_saves_when_different()
+    public async Task ChangeTypeAsync_NewTypeDiffersFromCurrent_ReplacesTypeAndSaves()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
@@ -771,7 +771,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_is_noop_when_type_unchanged()
+    public async Task ChangeTypeAsync_TypeUnchanged_IsNoopAndDoesNotSave()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
@@ -789,7 +789,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_returns_not_found_when_parent_missing()
+    public async Task AddChildAsync_ParentMissing_ReturnsNotFound()
     {
         FindReturns(null);
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
@@ -807,7 +807,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_rejects_minor_parent()
+    public async Task AddChildAsync_ParentIsMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: MinorDob));
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
@@ -825,7 +825,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_rejects_child_that_is_not_a_minor()
+    public async Task AddChildAsync_ChildBirthDateNotMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: AdultDob));
         var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Guid.NewGuid());
@@ -843,7 +843,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_returns_not_found_when_role_missing()
+    public async Task AddChildAsync_RoleMissing_ReturnsNotFound()
     {
         FindReturns(NewUser(dob: AdultDob));
         RoleReturns(null);
@@ -862,7 +862,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_rejects_role_not_allowed_for_minors()
+    public async Task AddChildAsync_RoleNotAllowedForMinors_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: AdultDob));
         RoleReturns(NewUserType("AdultOnly", minors: false));
@@ -881,7 +881,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_creates_dependent_child_and_persists()
+    public async Task AddChildAsync_ValidRequest_CreatesDependentChildAndPersists()
     {
         var parentId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
@@ -915,7 +915,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_returns_not_found_when_user_missing()
+    public async Task ChangePasswordAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
         var request = new ChangePasswordRequest("old", "newpassword");
@@ -933,7 +933,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_rejects_when_password_not_set()
+    public async Task ChangePasswordAsync_PasswordNotSet_ReturnsBadRequest()
     {
         var user = NewUser();
         user.PasswordHash = null;
@@ -953,7 +953,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_rejects_incorrect_current_password()
+    public async Task ChangePasswordAsync_IncorrectCurrentPassword_ReturnsBadRequest()
     {
         var user = NewUser();
         user.PasswordHash = hasher.Hash("correct");
@@ -973,7 +973,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_rehashes_and_persists_on_success()
+    public async Task ChangePasswordAsync_ValidCurrentPassword_RehashesAndPersists()
     {
         var user = NewUser();
         user.PasswordHash = hasher.Hash("correct");
@@ -994,7 +994,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListRegistrationTypesAsync_without_audience_excludes_hidden_ordered_by_name()
+    public async Task ListRegistrationTypesAsync_NoAudience_ExcludesHiddenOrderedByName()
     {
         HasUserTypes(
             NewUserType("Zeta"),
@@ -1012,7 +1012,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListRegistrationTypesAsync_minor_audience_filters_to_minor_allowed()
+    public async Task ListRegistrationTypesAsync_MinorAudience_FiltersToMinorAllowed()
     {
         HasUserTypes(
             NewUserType("MinorOnly", minors: true, adults: false),
@@ -1030,7 +1030,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListRegistrationTypesAsync_adult_audience_filters_to_adult_allowed()
+    public async Task ListRegistrationTypesAsync_AdultAudience_FiltersToAdultAllowed()
     {
         HasUserTypes(
             NewUserType("MinorOnly", minors: true, adults: false),
@@ -1047,7 +1047,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListStatusTypesAsync_projects_ordered_by_name()
+    public async Task ListStatusTypesAsync_MultipleStatusTypes_ProjectsOrderedByName()
     {
         HasStatusTypes(NewStatusType("Pending"), NewStatusType("Active"), NewStatusType("Blocked"));
 
@@ -1058,7 +1058,7 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListUserTypesAsync_projects_ordered_by_name()
+    public async Task ListUserTypesAsync_MultipleUserTypes_ProjectsOrderedByName()
     {
         HasUserTypes(NewUserType("Volunteer"), NewUserType("Admin"), NewUserType("Member"));
 

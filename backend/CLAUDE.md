@@ -20,7 +20,7 @@ dotnet run --project src/CodigoActivo.API      # http://localhost:5150 (add --la
 
 dotnet test CodigoActivo.slnx                  # unit + integration (integration auto-starts a throwaway Postgres; needs Docker)
 dotnet test --filter "FullyQualifiedName~AuthControllerTests"    # one class
-dotnet test --filter "DisplayName~Register_new_adult"           # one test by name
+dotnet test --filter "DisplayName~RegisterAsync_NewAdult"       # one test by name
 
 # EF tool once: dotnet tool install -g dotnet-ef. Migrations apply automatically on next startup:
 dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.API
@@ -83,7 +83,7 @@ These rules are enforced by the `ProjectReference` graph and developer disciplin
 
 - xUnit **v3**, **AwesomeAssertions** (FluentAssertions fork, same `.Should()` API), NSubstitute. Unit tests mirror the src namespace tree; hand-rolled fakes in `UnitTests/TestSupport/` (`FakePasswordHasher`, `TestClock`, `RecordingEmailSender`).
 - Integration tests use `WebApplicationFactory<Program>` over one throwaway `postgres:17-alpine` container shared by the whole assembly; the WebAppFactory-based classes extend `IntegrationTestBase`, which resets the clock, TRUNCATEs all tables and reseeds before each test (parallelization is disabled assembly-wide — tests share one DB). `RepositoryTests` talks to that same container directly with a raw `CodigoActivoDbContext` (no web host), so real foreign keys, `NOT NULL` and unique indexes are enforced — arrange helpers must reference rows that exist. Fixed users Admin/Member/Child/Pending/Blocked (password `Str0ngPass!`) come from `TestSeedData`; log in with `LoginAsAdminAsync()`/`LoginAsMemberAsync()`. Mutating requests must go through `ApiClientExtensions.SendWithCsrfAsync` (the real CSRF middleware is active). Assert sent mail via the integration `FakeEmailSender` exposed as `Factory.EmailSender` (`.Sent`, `LastOtpSentTo(email)`) — distinct from the unit `RecordingEmailSender`.
-- Test method names are snake_case sentences: `Register_new_adult_returns_201_sends_the_otp_by_email_and_persists_pending`.
+- Test method names follow `MethodUnderTest_Scenario_ExpectedBehavior`, each segment PascalCase: `RegisterAsync_NewAdult_ReturnsCreatedAndSendsOtp`, `GetByIdWithDetailsAsync_UserMissing_ReturnsNull`. `MethodUnderTest` is the exact identifier of the method being exercised — the service/repository method including its `Async` suffix, or the controller action's real name (controller actions in this codebase aren't `Async`-suffixed, e.g. `Register`, `Verify`, `Login`).
 
 ## House style (differs from typical .NET — don't "fix" it)
 

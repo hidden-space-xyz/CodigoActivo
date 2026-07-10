@@ -32,7 +32,7 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
-    public async Task TryHandleAsync_returns_true_to_mark_exception_handled()
+    public async Task TryHandleAsync_AnyException_ReturnsTrue()
     {
         var context = NewContext();
 
@@ -46,7 +46,7 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
-    public async Task TryHandleAsync_sets_status_500()
+    public async Task TryHandleAsync_AnyException_SetsStatus500()
     {
         var context = NewContext();
 
@@ -60,7 +60,7 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
-    public async Task TryHandleAsync_writes_unexpected_error_body_with_trace_identifier()
+    public async Task TryHandleAsync_AnyException_WritesUnexpectedErrorBodyWithTraceId()
     {
         var context = NewContext("abc-999");
 

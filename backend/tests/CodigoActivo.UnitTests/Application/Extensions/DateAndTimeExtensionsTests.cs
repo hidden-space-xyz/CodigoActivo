@@ -9,7 +9,7 @@ public sealed class DateAndTimeExtensionsTests
     private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
 
     [Fact]
-    public void IsMinor_is_false_for_someone_exactly_eighteen_today()
+    public void IsMinor_ExactlyEighteenToday_IsFalse()
     {
         var birthDate = Today.AddYears(-18);
 
@@ -17,7 +17,7 @@ public sealed class DateAndTimeExtensionsTests
     }
 
     [Fact]
-    public void IsMinor_is_true_when_eighteenth_birthday_is_tomorrow()
+    public void IsMinor_EighteenthBirthdayTomorrow_IsTrue()
     {
         var birthDate = Today.AddYears(-18).AddDays(1);
 
@@ -25,7 +25,7 @@ public sealed class DateAndTimeExtensionsTests
     }
 
     [Fact]
-    public void IsMinor_is_false_when_eighteenth_birthday_was_yesterday()
+    public void IsMinor_EighteenthBirthdayYesterday_IsFalse()
     {
         var birthDate = Today.AddYears(-18).AddDays(-1);
 
@@ -33,7 +33,7 @@ public sealed class DateAndTimeExtensionsTests
     }
 
     [Fact]
-    public void IsMinor_is_true_for_a_future_birthdate()
+    public void IsMinor_FutureBirthdate_IsTrue()
     {
         var birthDate = Today.AddYears(5);
 

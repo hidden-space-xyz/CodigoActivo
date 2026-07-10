@@ -22,7 +22,7 @@ public sealed class UserEntityTests
         };
 
     [Fact]
-    public void Verify_activates_the_account_and_clears_the_otp()
+    public void Verify_PendingUser_ActivatesAccountAndClearsOtp()
     {
         var activeStatusId = Guid.NewGuid();
         var user = NewPendingUser();
@@ -40,7 +40,7 @@ public sealed class UserEntityTests
     }
 
     [Fact]
-    public void Verify_leaves_the_last_login_untouched()
+    public void Verify_PendingUser_LeavesLastLoginUntouched()
     {
         var user = NewPendingUser();
         user.LastLoginAt = null;
@@ -51,7 +51,7 @@ public sealed class UserEntityTests
     }
 
     [Fact]
-    public void IssueOtp_stores_the_hash_and_the_timestamps()
+    public void IssueOtp_HashAndLifetime_StoresHashAndTimestamps()
     {
         var user = NewPendingUser();
         var now = new DateTimeOffset(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
@@ -64,7 +64,7 @@ public sealed class UserEntityTests
     }
 
     [Fact]
-    public void RegisterLogin_stamps_the_current_last_login_time()
+    public void RegisterLogin_PendingUser_StampsCurrentLastLoginTime()
     {
         var user = NewPendingUser();
         user.LastLoginAt = null;
@@ -78,7 +78,7 @@ public sealed class UserEntityTests
     }
 
     [Fact]
-    public void RegisterLogin_does_not_change_status_or_otp()
+    public void RegisterLogin_PendingUser_DoesNotChangeStatusOrOtp()
     {
         var user = NewPendingUser();
         var status = user.UserStatusTypeId;

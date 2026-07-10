@@ -62,7 +62,7 @@ public sealed class ResourceServiceTests
         };
 
     [Fact]
-    public async Task ListAsync_title_search_is_accent_and_case_insensitive()
+    public async Task ListAsync_TitleFilterWithAccent_MatchesCaseAndAccentInsensitively()
     {
         HasResources(NewResource("Manual Ávila"), NewResource("Otro"));
 
@@ -75,7 +75,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_subtitle_search_matches_substring()
+    public async Task ListAsync_SubtitleFilter_MatchesSubstring()
     {
         HasResources(
             NewResource("A", subtitle: "documentación"),
@@ -91,7 +91,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_honours_explicit_ascending_title_sort()
+    public async Task ListAsync_ExplicitTitleSort_OrdersAscendingByTitle()
     {
         HasResources(NewResource("Charlie"), NewResource("Alpha"), NewResource("Bravo"));
 
@@ -104,7 +104,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_defaults_to_created_at_descending()
+    public async Task ListAsync_NoSortSpecified_DefaultsToCreatedAtDescending()
     {
         HasResources(
             NewResource("Old", year: 2022),
@@ -121,7 +121,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_resource_when_found()
+    public async Task GetByIdAsync_ResourceExists_ReturnsResource()
     {
         var resource = NewResource();
         HasResources(resource);
@@ -133,7 +133,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_returns_not_found_when_missing()
+    public async Task GetByIdAsync_ResourceMissing_ReturnsNotFound()
     {
         HasResources();
 
@@ -145,7 +145,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_fails_when_thumbnail_missing_and_does_not_persist()
+    public async Task CreateAsync_ThumbnailMissing_ReturnsBadRequestAndDoesNotPersist()
     {
         ThumbnailExists(false);
         var request = new CreateResourceRequest("Title", "Subtitle", "{}", Guid.NewGuid());
@@ -167,7 +167,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_persists_trimmed_resource()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedResource()
     {
         ThumbnailExists(true);
         var caller = Guid.NewGuid();
@@ -201,7 +201,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_not_found_when_missing()
+    public async Task UpdateAsync_ResourceMissing_ReturnsNotFound()
     {
         resources
             .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
@@ -225,7 +225,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_returns_bad_request_when_thumbnail_missing()
+    public async Task UpdateAsync_ThumbnailMissing_ReturnsBadRequest()
     {
         var resource = NewResource();
         resources
@@ -248,7 +248,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_mutates_and_persists()
+    public async Task UpdateAsync_ValidRequest_MutatesAndPersistsResource()
     {
         var resource = NewResource("Old", "OldSub");
         resources
@@ -278,7 +278,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_replacing_thumbnail_cleans_up_the_previous_file_after_save()
+    public async Task UpdateAsync_ThumbnailReplaced_CleansUpPreviousThumbnailAfterSave()
     {
         var resource = NewResource();
         var previousThumbnailId = resource.ThumbnailId;
@@ -302,7 +302,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_keeping_the_same_thumbnail_does_not_clean_up()
+    public async Task UpdateAsync_ThumbnailUnchanged_DoesNotCleanUpThumbnail()
     {
         var resource = NewResource();
         resources
@@ -325,7 +325,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_cleans_up_images_dropped_from_the_description_but_keeps_the_rest()
+    public async Task UpdateAsync_ImageRemovedFromDescription_CleansUpRemovedImageOnly()
     {
         var resource = NewResource();
         var removedId = Guid.NewGuid();
@@ -360,7 +360,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_returns_not_found_when_resource_missing()
+    public async Task DeleteAsync_ResourceMissing_ReturnsNotFound()
     {
         resources
             .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
@@ -379,7 +379,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_saves_and_cleans_up_the_thumbnail()
+    public async Task DeleteAsync_ResourceExists_RemovesSavesAndCleansUpThumbnail()
     {
         var resource = NewResource();
         resources
@@ -397,7 +397,7 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_cleans_up_images_embedded_in_the_description()
+    public async Task DeleteAsync_DescriptionHasEmbeddedImages_CleansUpEmbeddedImages()
     {
         var resource = NewResource();
         var embeddedId = Guid.NewGuid();

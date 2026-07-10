@@ -92,7 +92,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignedActivities_anonymous_is_unauthorized()
+    public async Task AssignedActivities_Anonymous_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -105,7 +105,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignedActivities_returns_the_callers_assignment_projected()
+    public async Task AssignedActivities_MemberWithAssignment_ReturnsProjectedAssignment()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,

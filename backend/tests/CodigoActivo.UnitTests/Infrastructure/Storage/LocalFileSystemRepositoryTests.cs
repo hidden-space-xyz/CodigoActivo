@@ -24,13 +24,13 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void Constructor_creates_the_configured_root_directory()
+    public void Constructor_ValidRootPath_CreatesRootDirectory()
     {
         Directory.Exists(rootPath).Should().BeTrue();
     }
 
     [Fact]
-    public void Constructor_falls_back_to_the_files_directory_when_root_is_blank()
+    public void Constructor_BlankRootPath_FallsBackToFilesDirectory()
     {
         var repo = new LocalFileSystemRepository(new FileStorageOptions { RootPath = "   " });
 
@@ -39,7 +39,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_then_OpenReadAsync_round_trips_the_bytes()
+    public async Task SaveAsync_SavedFile_OpenReadAsyncRoundTripsBytes()
     {
         var payload = Encoding.UTF8.GetBytes("hello storage");
         await sut.SaveAsync(
@@ -59,7 +59,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task OpenReadAsync_returns_null_for_a_missing_file()
+    public async Task OpenReadAsync_MissingFile_ReturnsNull()
     {
         (await sut.OpenReadAsync("does-not-exist.bin", TestContext.Current.CancellationToken))
             .Should()
@@ -67,7 +67,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task Delete_removes_an_existing_file()
+    public async Task Delete_ExistingFile_RemovesFile()
     {
         await sut.SaveAsync(
             "temp.dat",
@@ -83,7 +83,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void Delete_is_a_no_op_for_a_missing_file()
+    public void Delete_MissingFile_IsNoOp()
     {
         sut.Invoking(s => s.Delete("nothing-here.dat")).Should().NotThrow();
     }
@@ -93,7 +93,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("   ")]
     [InlineData("a/b")]
     [InlineData("../x")]
-    public void Delete_rejects_blank_and_path_traversal_names(string name)
+    public void Delete_BlankOrPathTraversalName_ThrowsArgumentException(string name)
     {
         sut.Invoking(s => s.Delete(name))
             .Should()
@@ -102,7 +102,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_rejects_a_path_traversal_name()
+    public async Task SaveAsync_PathTraversalName_ThrowsArgumentException()
     {
         await sut.Invoking(s =>
                 s.SaveAsync(

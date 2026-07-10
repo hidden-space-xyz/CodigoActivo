@@ -16,7 +16,7 @@ public sealed class AccountVerificationConfigurationTests
     }
 
     [Fact]
-    public void Binds_account_verification_options_from_configuration()
+    public void AddCodigoActivo_ValidAccountVerificationSettings_BindsOptionsFromConfiguration()
     {
         var provider = Build(
             new Dictionary<string, string?>
@@ -36,7 +36,7 @@ public sealed class AccountVerificationConfigurationTests
     }
 
     [Fact]
-    public void Defaults_account_verification_options_when_values_missing_or_invalid()
+    public void AddCodigoActivo_MissingOrInvalidValues_DefaultsAccountVerificationOptions()
     {
         var provider = Build(
             new Dictionary<string, string?>
@@ -54,7 +54,7 @@ public sealed class AccountVerificationConfigurationTests
     }
 
     [Fact]
-    public void Required_defaults_to_true_when_the_flag_is_absent()
+    public void AddCodigoActivo_RequiredFlagAbsent_DefaultsRequiredToTrue()
     {
         var provider = Build(
             new Dictionary<string, string?>
@@ -70,7 +70,7 @@ public sealed class AccountVerificationConfigurationTests
     [Theory]
     [InlineData(null, "no-reply@example.test")]
     [InlineData("smtp.example.test", null)]
-    public void Throws_when_verification_required_but_smtp_is_unconfigured(
+    public void AddCodigoActivo_VerificationRequiredButSmtpUnconfigured_Throws(
         string? host,
         string? from
     )
@@ -90,7 +90,7 @@ public sealed class AccountVerificationConfigurationTests
     }
 
     [Fact]
-    public void Does_not_require_smtp_when_verification_is_disabled()
+    public void AddCodigoActivo_VerificationDisabled_DoesNotRequireSmtp()
     {
         var act = () =>
             Build(new Dictionary<string, string?> { ["ACCOUNT_VERIFICATION_REQUIRED"] = "false" });

@@ -121,7 +121,7 @@ public sealed class ActivityServiceAssignmentTests
         };
 
     [Fact]
-    public async Task AssignAsync_returns_not_found_when_activity_window_missing()
+    public async Task AssignAsync_ActivityWindowMissing_ReturnsNotFound()
     {
         activities.Query().Returns(new List<Activity>().AsQueryable());
 
@@ -140,7 +140,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignAsync_returns_signup_closed_when_outside_window_for_member()
+    public async Task AssignAsync_OutsideWindowForMember_ReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         HasActivityWindow(activityId, PastStart, PastEnd);
@@ -160,7 +160,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignAsync_returns_role_not_allowed_when_role_not_in_activity()
+    public async Task AssignAsync_RoleNotInActivity_ReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         HasActivityWindow(activityId, OpenStart, OpenEnd);
@@ -181,7 +181,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignAsync_returns_conflict_when_assignment_already_exists()
+    public async Task AssignAsync_AssignmentAlreadyExists_ReturnsConflict()
     {
         var activityId = Guid.NewGuid();
         HasActivityWindow(activityId, OpenStart, OpenEnd);
@@ -206,7 +206,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignAsync_persists_assignment_and_returns_requested_status()
+    public async Task AssignAsync_ValidRequestAsAdmin_PersistsAndReturnsRequestedStatus()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -245,7 +245,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_returns_required_when_no_assignments()
+    public async Task AssignHouseholdAsync_NoAssignments_ReturnsHouseholdAssignmentsRequired()
     {
         var result = await sut.AssignHouseholdAsync(
             Guid.NewGuid(),
@@ -262,7 +262,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_propagates_signup_closed_for_member()
+    public async Task AssignHouseholdAsync_WindowClosedForMember_ReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         HasActivityWindow(activityId, PastStart, PastEnd);
@@ -282,7 +282,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_returns_member_not_allowed_when_not_in_household()
+    public async Task AssignHouseholdAsync_MemberNotInHousehold_ReturnsMemberNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -305,7 +305,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_returns_role_not_allowed_when_role_unknown()
+    public async Task AssignHouseholdAsync_RoleUnknown_ReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -326,7 +326,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_creates_missing_assignments_and_skips_existing()
+    public async Task AssignHouseholdAsync_MixOfNewAndExisting_CreatesMissingAndSkipsExisting()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -391,7 +391,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task UnassignAsync_returns_not_found_when_assignment_missing()
+    public async Task UnassignAsync_AssignmentMissing_ReturnsNotFound()
     {
         ExistingAssignment(null);
 
@@ -409,7 +409,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task UnassignAsync_removes_without_window_check_for_admin()
+    public async Task UnassignAsync_AsAdmin_RemovesWithoutWindowCheck()
     {
         var assignment = Assignment(Guid.NewGuid(), Guid.NewGuid());
         ExistingAssignment(assignment);
@@ -427,7 +427,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task UnassignAsync_returns_signup_closed_for_member_when_window_closed()
+    public async Task UnassignAsync_WindowClosedForMember_ReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         var assignment = Assignment(Guid.NewGuid(), activityId);
@@ -449,7 +449,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task UnassignAsync_removes_for_member_when_window_open()
+    public async Task UnassignAsync_WindowOpenForMember_RemovesAssignment()
     {
         var activityId = Guid.NewGuid();
         var assignment = Assignment(Guid.NewGuid(), activityId);
@@ -469,7 +469,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_returns_not_found_when_assignment_missing()
+    public async Task ChangeStatusAsync_AssignmentMissing_ReturnsNotFound()
     {
         ExistingAssignment(null);
 
@@ -487,7 +487,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_returns_not_found_when_status_missing()
+    public async Task ChangeStatusAsync_StatusMissing_ReturnsAssignmentStatusTypeNotFound()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
         statuses
@@ -511,7 +511,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_updates_status_and_persists()
+    public async Task ChangeStatusAsync_ValidRequest_UpdatesStatusAndPersists()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -548,7 +548,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeRoleAsync_returns_not_found_when_assignment_missing()
+    public async Task ChangeRoleAsync_AssignmentMissing_ReturnsNotFound()
     {
         ExistingAssignment(null);
 
@@ -566,7 +566,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeRoleAsync_returns_role_not_allowed_when_role_not_in_activity()
+    public async Task ChangeRoleAsync_RoleNotInActivity_ReturnsRoleNotAllowed()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
         AllowedRoleExists(false);
@@ -585,7 +585,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeRoleAsync_returns_role_type_not_found_when_role_missing()
+    public async Task ChangeRoleAsync_RoleTypeMissing_ReturnsRoleTypeNotFound()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
         AllowedRoleExists(true);
@@ -610,7 +610,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeRoleAsync_updates_role_and_persists()
+    public async Task ChangeRoleAsync_ValidRequest_UpdatesRoleAndPersists()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -659,7 +659,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task VerifyTimeOverlapsAsync_returns_not_found_when_activity_missing()
+    public async Task VerifyTimeOverlapsAsync_ActivityMissing_ReturnsNotFound()
     {
         activities
             .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
@@ -676,7 +676,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task VerifyTimeOverlapsAsync_reports_overlaps_excluding_the_target_activity()
+    public async Task VerifyTimeOverlapsAsync_OverlappingAssignments_ReportsOverlapsExcludingTarget()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -711,7 +711,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task VerifyTimeOverlapsAsync_reports_none_when_disjoint()
+    public async Task VerifyTimeOverlapsAsync_DisjointAssignments_ReportsNoOverlaps()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -756,7 +756,7 @@ public sealed class ActivityServiceAssignmentTests
         };
 
     [Fact]
-    public async Task GetHouseholdAssignmentsAsync_maps_children_and_falls_back_on_null_navigations()
+    public async Task GetHouseholdAssignmentsAsync_NullNavigationsPresent_MapsChildrenAndFallsBack()
     {
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();

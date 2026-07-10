@@ -12,7 +12,7 @@ public sealed class MappingExtensionsTests
     private static readonly DateTimeOffset Updated = new(2025, 6, 7, 8, 9, 10, TimeSpan.Zero);
 
     [Fact]
-    public void User_ToResponse_maps_scalars_status_isadmin_and_type()
+    public void ToResponse_FullUserWithNavigations_MapsScalarsStatusAndType()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -64,7 +64,7 @@ public sealed class MappingExtensionsTests
     }
 
     [Fact]
-    public void User_ToResponse_uses_empty_status_name_and_color_when_status_navigation_null()
+    public void ToResponse_NullStatusNavigation_MapsEmptyStatusNameAndColor()
     {
         var statusId = Guid.NewGuid();
         var user = new User
@@ -83,7 +83,7 @@ public sealed class MappingExtensionsTests
     }
 
     [Fact]
-    public void User_ToResponse_uses_empty_type_name_and_color_when_user_type_navigation_null()
+    public void ToResponse_NullUserTypeNavigation_MapsEmptyTypeNameAndColor()
     {
         var typeId = Guid.NewGuid();
         var user = new User
