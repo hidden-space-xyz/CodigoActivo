@@ -10,10 +10,6 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-/// <summary>
-/// Runs against the real PostgreSQL container: paging is server-side SQL (OFFSET/LIMIT), which an
-/// in-memory provider cannot faithfully reproduce.
-/// </summary>
 public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsyncLifetime
 {
     private static readonly DateTimeOffset Fixed = new(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -133,8 +129,6 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         result.Items.Should().BeEmpty();
     }
 
-    // (page - 1) * pageSize overflows Int32 for a page number this large; QueryExecutor widens the
-    // multiplication to Int64 and short-circuits before it ever reaches Skip(int).
     [Fact]
     public async Task ToPagedAsync_PageNumberThatWouldOverflowInt32_ReturnsEmptySliceWithoutThrowing()
     {

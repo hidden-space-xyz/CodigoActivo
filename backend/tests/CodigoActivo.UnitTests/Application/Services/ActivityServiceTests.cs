@@ -295,7 +295,6 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_StartsBeforeEventRange_ReturnsOutsideEventRange()
     {
-        // The event runs Jul 1 – Jul 31; this activity begins Jun 25, before EventStartsAt.
         EventFound(NewEvent());
 
         var result = await sut.CreateAsync(
@@ -495,8 +494,6 @@ public sealed class ActivityServiceTests
                 stored.Add(captured);
             });
 
-        // A non-null but empty AllowedRoleTypes list short-circuits before CountAsync, so the
-        // activity is created with zero allowed roles and no role-type lookup happens.
         var result = await sut.CreateAsync(
             eventId,
             CreateRequest(roles: []),

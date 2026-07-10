@@ -37,9 +37,6 @@ public sealed class JsonStringAttribute : ValidationAttribute
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 {
-    // "Today" must be the app timezone's today (IClock), not the machine's UTC date, so that this
-    // agrees with DateAndTimeExtensions.IsMinor. Attributes cannot take constructor DI, so the clock
-    // is resolved from the ValidationContext, which MVC builds over the request's service provider.
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is not DateOnly date)

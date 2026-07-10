@@ -18,12 +18,9 @@ public sealed class ActivityServiceAssignmentTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly IAssignmentStatusTypeRepository statuses =
-        Substitute.For<IAssignmentStatusTypeRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes =
-        Substitute.For<IActivityRoleTypeRepository>();
-    private readonly IActivityModalityTypeRepository modalityTypes =
-        Substitute.For<IActivityModalityTypeRepository>();
+    private readonly IAssignmentStatusTypeRepository statuses = Substitute.For<IAssignmentStatusTypeRepository>();
+    private readonly IActivityRoleTypeRepository roleTypes = Substitute.For<IActivityRoleTypeRepository>();
+    private readonly IActivityModalityTypeRepository modalityTypes = Substitute.For<IActivityModalityTypeRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
@@ -34,9 +31,6 @@ public sealed class ActivityServiceAssignmentTests
     private static readonly DateTimeOffset PastStart = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset PastEnd = new(2026, 6, 30, 0, 0, 0, TimeSpan.Zero);
 
-    // A fixed "now" that sits inside the Open window (Jul 1 – Jul 30) and after the Past
-    // window (Jun 1 – Jun 30). Every signup-window test pins the clock to this so its
-    // expectation is self-describing instead of relying on TestClock's default instant.
     private static readonly DateTimeOffset Now = new(2026, 7, 15, 0, 0, 0, TimeSpan.Zero);
 
     public ActivityServiceAssignmentTests()
@@ -258,9 +252,9 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
-        // Signup opens at OpenStart; the window check (now < StartsAt || now > EndsAt) is
-        // inclusive, so a member acting at the exact opening instant is still allowed.
+
         clock.UtcNow = OpenStart;
+
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         AllowedRoleExists(true);
         ExistingAssignment(null);
@@ -292,9 +286,9 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
-        // Signup closes at OpenEnd; the window check is inclusive at both ends, so a member
-        // acting at the exact closing instant is still allowed.
+
         clock.UtcNow = OpenEnd;
+
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         AllowedRoleExists(true);
         ExistingAssignment(null);
@@ -874,9 +868,7 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        // Target runs 10:00–12:00; the other starts exactly when the target ends (12:00).
-        // The overlap predicate is strict (a.Start < b.End && b.Start < a.End), so touching
-        // at an endpoint does not count as an overlap.
+
         activities
             .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(OverlapActivity(activityId, 10, 12));

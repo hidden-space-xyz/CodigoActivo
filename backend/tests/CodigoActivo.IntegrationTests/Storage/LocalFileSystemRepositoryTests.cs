@@ -6,12 +6,8 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Storage;
 
-/// <summary>
-/// Exercises the real file system: every test writes under its own throwaway root and deletes it.
-/// </summary>
 public sealed class LocalFileSystemRepositoryTests : IDisposable
 {
-    // LocalFileSystemRepository resolves a blank RootPath against the process working directory.
     private static readonly string FallbackRoot = Path.GetFullPath("files");
 
     private readonly bool fallbackExistedBeforeTest = Directory.Exists(FallbackRoot);
@@ -133,8 +129,6 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
         sut.Invoking(s => s.Delete("nothing-here.dat")).Should().NotThrow();
     }
 
-    // Only forward slashes are exercised: a backslash is a legal file-name character on Linux, so
-    // "..\\x" is a valid single segment there and would not be rejected.
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

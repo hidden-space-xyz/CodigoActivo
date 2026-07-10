@@ -24,8 +24,6 @@ public sealed class SystemClockTests
         sut.UtcNow.Should().Be(Instant);
     }
 
-    // 23:30 UTC has already rolled over to the next day in any zone ahead of UTC by an hour or
-    // more, while zones at or behind UTC are still on the previous date.
     [Theory]
     [InlineData(1, 2026, 7, 5)]
     [InlineData(14, 2026, 7, 5)]

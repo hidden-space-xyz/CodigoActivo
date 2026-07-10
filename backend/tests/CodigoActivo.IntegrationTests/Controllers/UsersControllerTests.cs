@@ -86,9 +86,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task List_SearchByAccentInsensitiveFirstName_MatchesViaSqlFolding()
     {
-        // The unit test proves accent folding only over LINQ-to-Objects (CLR string semantics);
-        // this exercises the real EF-to-PostgreSQL translation and column collation, where a
-        // seeded "Ávila" must be found by the un-accented, lower-case term "avila".
         var accentedId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
