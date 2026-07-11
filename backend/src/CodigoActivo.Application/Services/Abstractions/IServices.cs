@@ -70,11 +70,6 @@ public interface IUserService
         CancellationToken ct = default
     );
     Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(CancellationToken ct = default);
-
-    Task<IReadOnlyList<RegistrationTypeResponse>> ListRegistrationTypesAsync(
-        RegistrationAudience? audience,
-        CancellationToken ct = default
-    );
 }
 
 public interface IEventService

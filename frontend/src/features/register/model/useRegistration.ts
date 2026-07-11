@@ -1,8 +1,7 @@
 import { computed, onScopeDispose, reactive, ref } from 'vue'
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation } from '@tanstack/vue-query'
 
 import { getErrorMessage, scrollToTop, useCrudFeedback } from '@/shared/lib'
-import { accountQueryKeys, getRegistrationTypesRequest } from '@/entities/account'
 
 import {
   registerRequest,
@@ -23,7 +22,6 @@ export function useRegistration() {
   const createdUserId = ref<string | null>(null)
   const requiresVerification = ref(false)
   const submittedEmail = ref('')
-  const submittedRoleName = ref('')
   const submittedMinorCount = ref(0)
   const isVerified = ref(false)
   const resendCooldown = ref(0)
@@ -53,23 +51,12 @@ export function useRegistration() {
 
   onScopeDispose(stopCooldown)
 
-  const adultRoles = useQuery({
-    queryKey: accountQueryKeys.registrationTypes(false),
-    queryFn: () => getRegistrationTypesRequest(false),
-  })
-  const minorRoles = useQuery({
-    queryKey: accountQueryKeys.registrationTypes(true),
-    queryFn: () => getRegistrationTypesRequest(true),
-  })
-
   const mutation = useMutation({
     mutationFn: (payload: RegistrationForm) => registerRequest(payload),
     onSuccess: (result) => {
       createdUserId.value = result.adultId
       requiresVerification.value = result.requiresVerification
       submittedEmail.value = form.email.trim()
-      submittedRoleName.value =
-        (adultRoles.data.value ?? []).find((role) => role.id === form.roleId)?.name ?? ''
       submittedMinorCount.value = result.minorCount || form.minors.length
       step.value = 'success'
       if (result.requiresVerification) startCooldown()
@@ -142,7 +129,6 @@ export function useRegistration() {
     createdUserId.value = null
     requiresVerification.value = false
     submittedEmail.value = ''
-    submittedRoleName.value = ''
     submittedMinorCount.value = 0
     isVerified.value = false
     resendCooldown.value = 0
@@ -154,11 +140,8 @@ export function useRegistration() {
   return {
     step,
     form,
-    adultRoles,
-    minorRoles,
     requiresVerification,
     submittedEmail,
-    submittedRoleName,
     submittedMinorCount,
     isVerified,
     verifyError,

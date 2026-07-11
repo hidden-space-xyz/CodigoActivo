@@ -781,18 +781,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<bool>("Hidden")
-                        .HasColumnType("boolean")
-                        .HasColumnName("hidden");
-
-                    b.Property<bool>("IsAllowedForAdults")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_allowed_for_adults");
-
-                    b.Property<bool>("IsAllowedForMinors")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_allowed_for_minors");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")

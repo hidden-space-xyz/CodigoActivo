@@ -11,5 +11,4 @@ export interface RegisterMinorRequest {
   /** @nullable */
   lastName?: string | null;
   birthDate?: string;
-  roleId?: string;
 }

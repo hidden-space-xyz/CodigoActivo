@@ -109,21 +109,13 @@ public sealed class UserServiceTests
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
 
-    private static UserType NewUserType(
-        string name,
-        bool minors = true,
-        bool adults = true,
-        bool hidden = false
-    ) =>
+    private static UserType NewUserType(string name) =>
         new()
         {
             Id = Guid.NewGuid(),
             Name = name,
             Description = string.Empty,
             Color = "#000",
-            IsAllowedForMinors = minors,
-            IsAllowedForAdults = adults,
-            Hidden = hidden,
         };
 
     private static UserStatusType NewStatusType(string name) =>
@@ -153,6 +145,7 @@ public sealed class UserServiceTests
 
         result.Total.Should().Be(3);
         result.Items.Should().HaveCount(3).And.AllBeOfType<UserResponse>();
+        result.Items.Should().OnlyContain(u => u.Type != null);
     }
 
     [Fact]
@@ -174,6 +167,7 @@ public sealed class UserServiceTests
 
         result.Total.Should().Be(2);
         result.Items.Select(u => u.FirstName).Should().BeEquivalentTo("Self", "Child");
+        result.Items.Should().OnlyContain(u => u.Type == null);
     }
 
     [Fact]
@@ -283,6 +277,8 @@ public sealed class UserServiceTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(user.Id);
+        result.Value.Type.Should().NotBeNull();
+        result.Value.Type!.Name.Should().Be("Socio");
     }
 
     [Fact]
@@ -715,75 +711,40 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_RoleNotAllowedForMinor_ReturnsBadRequest()
-    {
-        FindReturns(NewUser(dob: MinorDob));
-        RoleReturns(NewUserType("Volunteer", minors: false, adults: true));
-
-        var result = await sut.ChangeTypeAsync(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task ChangeTypeAsync_RoleNotAllowedForAdult_ReturnsBadRequest()
-    {
-        FindReturns(NewUser(dob: AdultDob));
-        RoleReturns(NewUserType("Cadet", minors: true, adults: false));
-
-        var result = await sut.ChangeTypeAsync(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForAdults);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task ChangeTypeAsync_RoleIsHidden_ReturnsBadRequest()
-    {
-        FindReturns(NewUser(dob: AdultDob));
-        RoleReturns(NewUserType("Secret", minors: true, adults: true, hidden: true));
-
-        var result = await sut.ChangeTypeAsync(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForAdults);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public async Task ChangeTypeAsync_NewTypeDiffersFromCurrent_ReplacesTypeAndSaves()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
         var user = NewUser(id: id, dob: AdultDob);
         FindReturns(user);
-        RoleReturns(NewUserType("Member", adults: true));
-        DetailsReturns(NewUser(id: id));
+        RoleReturns(NewUserType("Member"));
+        HasUsers(NewUser(id: id));
         clock.UtcNow = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
         var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
+        result.Value.Type.Should().NotBeNull();
         user.UserTypeId.Should().Be(roleId);
         user.UpdatedAt.Should().Be(clock.UtcNow);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeTypeAsync_UserIsMinor_AssignsTypeAndSaves()
+    {
+        var id = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        var user = NewUser(id: id, dob: MinorDob);
+        FindReturns(user);
+        RoleReturns(NewUserType("Patrocinador"));
+        HasUsers(NewUser(id: id, dob: MinorDob));
+
+        var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Type.Should().NotBeNull();
+        user.UserTypeId.Should().Be(roleId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -795,8 +756,8 @@ public sealed class UserServiceTests
         var user = NewUser(id: id, dob: AdultDob);
         user.UserTypeId = roleId;
         FindReturns(user);
-        RoleReturns(NewUserType("Member", adults: true));
-        DetailsReturns(NewUser(id: id));
+        RoleReturns(NewUserType("Member"));
+        HasUsers(NewUser(id: id));
 
         var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
 
@@ -809,7 +770,7 @@ public sealed class UserServiceTests
     public async Task AddChildAsync_ParentMissing_ReturnsNotFound()
     {
         FindReturns(null);
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
+        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob);
 
         var result = await sut.AddChildAsync(
             Guid.NewGuid(),
@@ -827,7 +788,7 @@ public sealed class UserServiceTests
     public async Task AddChildAsync_ParentIsMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: MinorDob));
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
+        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob);
 
         var result = await sut.AddChildAsync(
             Guid.NewGuid(),
@@ -845,7 +806,7 @@ public sealed class UserServiceTests
     public async Task AddChildAsync_ChildBirthDateNotMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: AdultDob));
-        var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Guid.NewGuid());
+        var request = new RegisterMinorRequest("Grown", "Up", AdultDob);
 
         var result = await sut.AddChildAsync(
             Guid.NewGuid(),
@@ -860,53 +821,13 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task AddChildAsync_RoleMissing_ReturnsNotFound()
-    {
-        FindReturns(NewUser(dob: AdultDob));
-        RoleReturns(null);
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
-
-        var result = await sut.AddChildAsync(
-            Guid.NewGuid(),
-            request,
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task AddChildAsync_RoleNotAllowedForMinors_ReturnsBadRequest()
-    {
-        FindReturns(NewUser(dob: AdultDob));
-        RoleReturns(NewUserType("AdultOnly", minors: false));
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Guid.NewGuid());
-
-        var result = await sut.AddChildAsync(
-            Guid.NewGuid(),
-            request,
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task AddChildAsync_ValidRequest_CreatesDependentChildAndPersists()
+    public async Task AddChildAsync_ValidRequest_CreatesDependentParticipantChildAndPersists()
     {
         var parentId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
         FindReturns(NewUser(id: parentId, dob: AdultDob));
-        RoleReturns(NewUserType("Cadet", minors: true));
         DetailsReturns(NewUser());
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
-        var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob, roleId);
+        var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob);
 
         var result = await sut.AddChildAsync(
             parentId,
@@ -915,6 +836,7 @@ public sealed class UserServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
+        result.Value.Type.Should().BeNull();
         await users
             .Received(1)
             .AddAsync(
@@ -923,7 +845,7 @@ public sealed class UserServiceTests
                     && u.LastName == "Doe"
                     && u.ParentId == parentId
                     && u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-                    && u.UserTypeId == roleId
+                    && u.UserTypeId == SeedIds.UserTypes.Participant
                     && u.CreatedAt == clock.UtcNow
                 ),
                 Arg.Any<CancellationToken>()
@@ -1008,59 +930,6 @@ public sealed class UserServiceTests
         user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ListRegistrationTypesAsync_NoAudience_ExcludesHiddenOrderedByName()
-    {
-        HasUserTypes(
-            NewUserType("Zeta"),
-            NewUserType("Alpha"),
-            NewUserType("HiddenOne", hidden: true)
-        );
-
-        var result = await sut.ListRegistrationTypesAsync(
-            null,
-            TestContext.Current.CancellationToken
-        );
-
-        result.Select(r => r.Name).Should().ContainInOrder("Alpha", "Zeta");
-        result.Should().HaveCount(2);
-    }
-
-    [Fact]
-    public async Task ListRegistrationTypesAsync_MinorAudience_FiltersToMinorAllowed()
-    {
-        HasUserTypes(
-            NewUserType("MinorOnly", minors: true, adults: false),
-            NewUserType("AdultOnly", minors: false, adults: true),
-            NewUserType("Both", minors: true, adults: true),
-            NewUserType("HiddenMinor", minors: true, hidden: true)
-        );
-
-        var result = await sut.ListRegistrationTypesAsync(
-            RegistrationAudience.Minor,
-            TestContext.Current.CancellationToken
-        );
-
-        result.Select(r => r.Name).Should().BeEquivalentTo("MinorOnly", "Both");
-    }
-
-    [Fact]
-    public async Task ListRegistrationTypesAsync_AdultAudience_FiltersToAdultAllowed()
-    {
-        HasUserTypes(
-            NewUserType("MinorOnly", minors: true, adults: false),
-            NewUserType("AdultOnly", minors: false, adults: true),
-            NewUserType("Both", minors: true, adults: true)
-        );
-
-        var result = await sut.ListRegistrationTypesAsync(
-            RegistrationAudience.Adult,
-            TestContext.Current.CancellationToken
-        );
-
-        result.Select(r => r.Name).Should().BeEquivalentTo("AdultOnly", "Both");
     }
 
     [Fact]

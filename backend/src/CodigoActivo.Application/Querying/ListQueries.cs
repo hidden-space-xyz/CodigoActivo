@@ -6,12 +6,6 @@ public enum EventScope
     Past,
 }
 
-public enum RegistrationAudience
-{
-    Minor,
-    Adult,
-}
-
 public sealed class EventListQuery : PageQuery
 {
     public string? Title { get; set; }

@@ -18,7 +18,6 @@ export interface RegisterRequest {
   /** @nullable */
   password?: string | null;
   birthDate?: string;
-  roleId?: string;
   /** @nullable */
   minors?: RegisterMinorRequest[] | null;
 }

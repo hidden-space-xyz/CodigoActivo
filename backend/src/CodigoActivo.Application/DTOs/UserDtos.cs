@@ -16,7 +16,7 @@ public record UserResponse(
     Guid? ParentId,
     UserStatusResponse Status,
     bool IsAdmin,
-    UserTypeSummaryResponse Type
+    UserTypeSummaryResponse? Type
 )
 {
     public UserResponse()
@@ -33,7 +33,7 @@ public record UserResponse(
             null,
             null!,
             false,
-            null!
+            null
         ) { }
 }
 
@@ -67,17 +67,4 @@ public record UserTypeResponse(Guid Id, string Name, string Description, string 
 {
     public UserTypeResponse()
         : this(Guid.Empty, string.Empty, string.Empty, string.Empty) { }
-}
-
-public record RegistrationTypeResponse(
-    Guid Id,
-    string Name,
-    string Description,
-    string Color,
-    bool IsAllowedForMinors,
-    bool IsAllowedForAdults
-)
-{
-    public RegistrationTypeResponse()
-        : this(Guid.Empty, string.Empty, string.Empty, string.Empty, false, false) { }
 }

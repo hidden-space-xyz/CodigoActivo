@@ -14,15 +14,13 @@ public record RegisterRequest(
     [Required] [Phone] [MaxLength(40)] string Phone,
     [Required] [MinLength(8)] [MaxLength(128)] string Password,
     [NotDefaultOrFutureDate] DateOnly BirthDate,
-    Guid RoleId,
     IReadOnlyList<RegisterMinorRequest>? Minors
 );
 
 public record RegisterMinorRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
-    [NotDefaultOrFutureDate] DateOnly BirthDate,
-    Guid RoleId
+    [NotDefaultOrFutureDate] DateOnly BirthDate
 );
 
 public record RegisterResponse(

@@ -58,7 +58,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   ParentUserNotFound: 'No se encontró el usuario responsable.',
   UserParentIsMinor: 'El responsable no puede ser menor de edad.',
   UserChildBirthDateNotMinor: 'La fecha de nacimiento indicada no corresponde a un menor de edad.',
-  UserTypeNotAllowedForMinors: 'Este tipo de usuario no está permitido para menores de edad.',
   UserPasswordNotSet: 'El usuario no tiene una contraseña configurada.',
   UserCurrentPasswordIncorrect: 'La contraseña actual no es correcta.',
   UserParentIdRequired: 'Debes indicar el usuario responsable.',
@@ -77,7 +76,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   CurrentUserNotFound: 'No se encontró el usuario de la sesión actual.',
   RegisterAdultCannotBeMinor:
     'Un usuario adulto no puede tener una fecha de nacimiento de menor de edad.',
-  UserTypeNotAllowedForAdults: 'Este tipo de usuario no está permitido para personas adultas.',
   RegisterContactInfoRequired: 'Debes indicar al menos un dato de contacto para registrarte.',
   RegisterEmailOrPhoneAlreadyInUse: 'El correo electrónico o el teléfono ya están en uso.',
   RegisterMinorBirthDateNotMinor:

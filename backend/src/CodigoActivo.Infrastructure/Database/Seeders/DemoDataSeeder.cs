@@ -604,7 +604,7 @@ public sealed class DemoDataSeeder(
     private static Guid ResolveUserTypeId(UserKind kind) =>
         kind switch
         {
-            UserKind.Volunteer => SeedIds.UserTypes.Volunteer,
+            UserKind.Sponsor => SeedIds.UserTypes.Sponsor,
             UserKind.Child => SeedIds.UserTypes.Participant,
             _ => SeedIds.UserTypes.Member,
         };
@@ -654,7 +654,7 @@ public sealed class DemoDataSeeder(
     {
         Admin,
         Member,
-        Volunteer,
+        Sponsor,
         Child,
     }
 
@@ -1814,12 +1814,12 @@ public sealed class DemoDataSeeder(
         new("David", "Campos Rubio", UserKind.Member, 1983, null),
         new("Raquel", "Mendoza Flores", UserKind.Member, 1994, null),
         new("Alberto", "Cortés Lozano", UserKind.Member, 1980, null),
-        new("Nuria", "Gallego Bravo", UserKind.Volunteer, 1992, null),
-        new("Iván", "Santos Crespo", UserKind.Volunteer, 1998, null),
-        new("Cristina", "Vega Aguilar", UserKind.Volunteer, 1989, null),
-        new("Rubén", "Márquez Fuentes", UserKind.Volunteer, 1997, null),
-        new("Laura", "Domínguez Pardo", UserKind.Volunteer, 1985, null),
-        new("Adrián", "Bautista Nogueira", UserKind.Volunteer, 1999, null),
+        new("Nuria", "Gallego Bravo", UserKind.Sponsor, 1992, null),
+        new("Iván", "Santos Crespo", UserKind.Sponsor, 1998, null),
+        new("Cristina", "Vega Aguilar", UserKind.Sponsor, 1989, null),
+        new("Rubén", "Márquez Fuentes", UserKind.Sponsor, 1997, null),
+        new("Laura", "Domínguez Pardo", UserKind.Sponsor, 1985, null),
+        new("Adrián", "Bautista Nogueira", UserKind.Sponsor, 1999, null),
         new("Mateo", "Serrano Ferrer", UserKind.Child, 2013, 1),
         new("Valeria", "Navarro Gil", UserKind.Child, 2014, 2),
         new("Hugo", "Molina Ríos", UserKind.Child, 2012, 3),

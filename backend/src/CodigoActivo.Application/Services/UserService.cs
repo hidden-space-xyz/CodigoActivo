@@ -36,7 +36,7 @@ public class UserService(
         CancellationToken ct = default
     )
     {
-        var source = users.Query().Select(Projections.User);
+        var source = users.Query().Select(isAdmin ? Projections.UserWithType : Projections.User);
 
         if (!isAdmin)
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
@@ -77,7 +77,7 @@ public class UserService(
     public async Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var response = await executor.FirstOrDefaultAsync(
-            users.Query().Where(u => u.Id == id).Select(Projections.User),
+            users.Query().Where(u => u.Id == id).Select(Projections.UserWithType),
             ct
         );
         return response is null
@@ -161,19 +161,8 @@ public class UserService(
         if (user is null)
             return Error.NotFound(ErrorCode.UserNotFound);
 
-        var role = await userTypes.FindAsync(ut => ut.Id == userTypeId, ct);
-        if (role is null)
+        if (await userTypes.FindAsync(ut => ut.Id == userTypeId, ct) is null)
             return Error.NotFound(ErrorCode.UserTypeNotFound);
-
-        var isMinor = user.BirthDate.IsMinor(clock.Today);
-        if (role.Hidden || (isMinor ? !role.IsAllowedForMinors : !role.IsAllowedForAdults))
-        {
-            return Error.BadRequest(
-                isMinor
-                    ? ErrorCode.UserTypeNotAllowedForMinors
-                    : ErrorCode.UserTypeNotAllowedForAdults
-            );
-        }
 
         if (user.UserTypeId != userTypeId)
         {
@@ -182,8 +171,7 @@ public class UserService(
             await uow.SaveChangesAsync(ct);
         }
 
-        var updated = await users.GetByIdWithDetailsAsync(id, ct);
-        return updated!.ToResponse();
+        return await GetByIdAsync(id, ct);
     }
 
     public async Task<Result<UserResponse>> AddChildAsync(
@@ -204,13 +192,6 @@ public class UserService(
         if (!request.BirthDate.IsMinor(today))
             return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
 
-        var role = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
-        if (role is null)
-            return Error.NotFound(ErrorCode.UserTypeNotFound);
-
-        if (role.Hidden || !role.IsAllowedForMinors)
-            return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
-
         var now = clock.UtcNow;
         var child = new User
         {
@@ -219,7 +200,7 @@ public class UserService(
             BirthDate = request.BirthDate,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            UserTypeId = request.RoleId,
+            UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = now,
         };
         await users.AddAsync(child, ct);
@@ -249,26 +230,6 @@ public class UserService(
         user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
         return Result.Success();
-    }
-
-    public async Task<IReadOnlyList<RegistrationTypeResponse>> ListRegistrationTypesAsync(
-        RegistrationAudience? audience,
-        CancellationToken ct = default
-    )
-    {
-        var source = userTypes.Query().Where(type => !type.Hidden);
-
-        source = audience switch
-        {
-            RegistrationAudience.Minor => source.Where(type => type.IsAllowedForMinors),
-            RegistrationAudience.Adult => source.Where(type => type.IsAllowedForAdults),
-            _ => source,
-        };
-
-        return await executor.ToListAsync(
-            source.OrderBy(type => type.Name).Select(Projections.RegistrationType),
-            ct
-        );
     }
 
     public async Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(

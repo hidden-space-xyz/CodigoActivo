@@ -15,7 +15,6 @@ export interface AddMinorInput {
   firstName: string
   lastName: string
   birthDate: string
-  roleId: string
 }
 
 export interface UpdateMinorInput {

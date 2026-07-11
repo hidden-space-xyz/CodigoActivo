@@ -75,33 +75,24 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Description =
                     "Integrante registrado de la organización. Apoya a la asociación de forma "
                     + "continua, participa en sus actividades y accede a las secciones reservadas a socios.",
-                Hidden = false,
-                IsAllowedForAdults = true,
-                IsAllowedForMinors = true,
             },
             new UserType
             {
-                Id = SeedIds.UserTypes.Volunteer,
-                Name = "Voluntario puntual",
-                Color = "#3B82F6",
+                Id = SeedIds.UserTypes.Sponsor,
+                Name = "Patrocinador",
+                Color = "#EAB308",
                 Description =
-                    "Persona que echa una mano de forma desinteresada en eventos y talleres "
-                    + "concretos, colaborando en su organización y ejecución cuando puede.",
-                Hidden = false,
-                IsAllowedForAdults = true,
-                IsAllowedForMinors = true,
+                    "Persona o entidad que respalda a la asociación aportando recursos o "
+                    + "financiación para que sus actividades sean posibles.",
             },
             new UserType
             {
                 Id = SeedIds.UserTypes.Participant,
                 Name = "Participante",
-                Color = "#FFFFFF",
+                Color = "#3B82F6",
                 Description =
                     "Persona que se inscribe y asiste a los eventos y actividades para aprender y "
                     + "disfrutar, sin asumir un rol organizativo.",
-                Hidden = false,
-                IsAllowedForAdults = false,
-                IsAllowedForMinors = true,
             },
         };
         await AddMissingAsync(context.UserTypes, seed, ct);

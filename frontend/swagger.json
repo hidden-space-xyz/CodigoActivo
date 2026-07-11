@@ -1812,37 +1812,6 @@
         }
       }
     },
-    "/api/registration-types": {
-      "get": {
-        "tags": [
-          "RegistrationTypes"
-        ],
-        "parameters": [
-          {
-            "name": "audience",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/RegistrationAudience"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RegistrationTypeResponse"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/reports/events/{eventId}/summary": {
       "get": {
         "tags": [
@@ -3430,7 +3399,6 @@
           "ParentUserNotFound",
           "UserParentIsMinor",
           "UserChildBirthDateNotMinor",
-          "UserTypeNotAllowedForMinors",
           "UserPasswordNotSet",
           "UserCurrentPasswordIncorrect",
           "UserParentIdRequired",
@@ -3446,7 +3414,6 @@
           "UserAccountPendingVerification",
           "CurrentUserNotFound",
           "RegisterAdultCannotBeMinor",
-          "UserTypeNotAllowedForAdults",
           "RegisterContactInfoRequired",
           "RegisterEmailOrPhoneAlreadyInUse",
           "RegisterMinorBirthDateNotMinor",
@@ -4040,10 +4007,6 @@
           "birthDate": {
             "type": "string",
             "format": "date"
-          },
-          "roleId": {
-            "type": "string",
-            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -4075,10 +4038,6 @@
             "type": "string",
             "format": "date"
           },
-          "roleId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "minors": {
             "type": "array",
             "items": {
@@ -4103,41 +4062,6 @@
             "nullable": true
           },
           "requiresVerification": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "RegistrationAudience": {
-        "enum": [
-          "Minor",
-          "Adult"
-        ],
-        "type": "string"
-      },
-      "RegistrationTypeResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "color": {
-            "type": "string",
-            "nullable": true
-          },
-          "isAllowedForMinors": {
-            "type": "boolean"
-          },
-          "isAllowedForAdults": {
             "type": "boolean"
           }
         },
@@ -4757,9 +4681,6 @@
     },
     {
       "name": "Partners"
-    },
-    {
-      "name": "RegistrationTypes"
     },
     {
       "name": "Reports"

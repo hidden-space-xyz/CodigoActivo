@@ -200,12 +200,33 @@ public static class Projections
             user.UserStatusType.Color
         ),
         IsAdmin = user.IsAdmin,
-        Type = new UserTypeSummaryResponse(
-            user.UserTypeId,
-            user.UserType.Name,
-            user.UserType.Color
-        ),
     };
+
+    public static readonly Expression<Func<User, UserResponse>> UserWithType =
+        user => new UserResponse
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Phone = user.Phone,
+            BirthDate = user.BirthDate,
+            LastLoginAt = user.LastLoginAt,
+            CreatedAt = user.CreatedAt,
+            UpdatedAt = user.UpdatedAt,
+            ParentId = user.ParentId,
+            Status = new UserStatusResponse(
+                user.UserStatusTypeId,
+                user.UserStatusType.Name,
+                user.UserStatusType.Color
+            ),
+            IsAdmin = user.IsAdmin,
+            Type = new UserTypeSummaryResponse(
+                user.UserTypeId,
+                user.UserType.Name,
+                user.UserType.Color
+            ),
+        };
 
     public static readonly Expression<
         Func<ActivityRoleType, ActivityRoleTypeResponse>
@@ -259,17 +280,6 @@ public static class Projections
             Name = userType.Name,
             Description = userType.Description,
             Color = userType.Color,
-        };
-
-    public static readonly Expression<Func<UserType, RegistrationTypeResponse>> RegistrationType =
-        userType => new RegistrationTypeResponse
-        {
-            Id = userType.Id,
-            Name = userType.Name,
-            Description = userType.Description,
-            Color = userType.Color,
-            IsAllowedForMinors = userType.IsAllowedForMinors,
-            IsAllowedForAdults = userType.IsAllowedForAdults,
         };
 
     public static readonly Expression<
