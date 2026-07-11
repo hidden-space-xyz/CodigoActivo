@@ -41,6 +41,16 @@ public class ReportsController(IReportService reports) : ApiControllerBase
         return ToOk(await reports.GetEventBadgesAsync(eventId, ct));
     }
 
+    [HttpGet("events/{eventId:guid}/roster")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<EventRosterResponse>> EventRoster(
+        Guid eventId,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await reports.GetEventRosterAsync(eventId, ct));
+    }
+
     [HttpGet("dashboard")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<DashboardSummaryResponse>> Dashboard(CancellationToken ct)
