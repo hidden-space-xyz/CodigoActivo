@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20260702195803_InitialCreate")]
+    [Migration("20260711083935_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -189,6 +189,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<Guid>("AssignmentStatusId")
                         .HasColumnType("uuid")
                         .HasColumnName("assignment_status_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.HasKey("UserId", "ActivityId", "ActivityRoleTypeId")
                         .HasName("pk_activity_user_role_assignments");
@@ -540,6 +544,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("description");
 
+                    b.Property<Guid>("ResourceTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_type_id");
+
                     b.Property<string>("Subtitle")
                         .IsRequired()
                         .HasColumnType("text")
@@ -562,11 +570,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("Url")
+                        .HasColumnType("text")
+                        .HasColumnName("url");
+
                     b.HasKey("Id")
                         .HasName("pk_resources");
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_resources_created_by");
+
+                    b.HasIndex("ResourceTypeId")
+                        .HasDatabaseName("ix_resources_resource_type_id");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_resources_thumbnail_id");
@@ -575,6 +590,43 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_resources_updated_by");
 
                     b.ToTable("resources", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.ResourceType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsExternal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_external");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resource_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_resource_types_name");
+
+                    b.ToTable("resource_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
@@ -601,6 +653,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_admin");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
@@ -610,13 +666,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
-                    b.Property<Guid?>("OtpCode")
-                        .HasColumnType("uuid")
-                        .HasColumnName("otp_code");
+                    b.Property<string>("OtpCodeHash")
+                        .HasColumnType("text")
+                        .HasColumnName("otp_code_hash");
 
                     b.Property<DateTimeOffset?>("OtpExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("otp_expires_at");
+
+                    b.Property<DateTimeOffset?>("OtpLastSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("otp_last_sent_at");
 
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid")
@@ -625,6 +685,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("PasswordResetCodeHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_reset_code_hash");
+
+                    b.Property<DateTimeOffset?>("PasswordResetExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_expires_at");
+
+                    b.Property<DateTimeOffset?>("PasswordResetLastSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_last_sent_at");
 
                     b.Property<string>("Phone")
                         .HasColumnType("text")
@@ -637,6 +709,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<Guid>("UserStatusTypeId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_status_type_id");
+
+                    b.Property<Guid>("UserTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_type_id");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
@@ -654,6 +730,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("UserStatusTypeId")
                         .HasDatabaseName("ix_users_user_status_type_id");
+
+                    b.HasIndex("UserTypeId")
+                        .HasDatabaseName("ix_users_user_type_id");
 
                     b.ToTable("users", (string)null);
                 });
@@ -709,18 +788,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<bool>("Hidden")
-                        .HasColumnType("boolean")
-                        .HasColumnName("hidden");
-
-                    b.Property<bool>("IsAllowedForAdults")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_allowed_for_adults");
-
-                    b.Property<bool>("IsAllowedForMinors")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_allowed_for_minors");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -734,29 +801,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_user_types_name");
 
                     b.ToTable("user_types", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserTypeAssignment", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid>("UserTypeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_type_id");
-
-                    b.Property<DateTimeOffset>("AssignedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("assigned_at");
-
-                    b.HasKey("UserId", "UserTypeId")
-                        .HasName("pk_user_type_assignments");
-
-                    b.HasIndex("UserTypeId")
-                        .HasDatabaseName("ix_user_type_assignments_user_type_id");
-
-                    b.ToTable("user_type_assignments", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
@@ -977,6 +1021,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_resources_users_created_by");
 
+                    b.HasOne("CodigoActivo.Domain.Entities.ResourceType", "ResourceType")
+                        .WithMany("Resources")
+                        .HasForeignKey("ResourceTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_resources_resource_types_resource_type_id");
+
                     b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
                         .WithMany()
                         .HasForeignKey("ThumbnailId")
@@ -989,6 +1040,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_resources_users_updated_by");
+
+                    b.Navigation("ResourceType");
 
                     b.Navigation("Thumbnail");
                 });
@@ -1008,28 +1061,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_users_user_status_types_user_status_type_id");
 
-                    b.Navigation("Parent");
-
-                    b.Navigation("UserStatusType");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserTypeAssignment", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany("TypeAssignments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_user_type_assignments_users_user_id");
-
                     b.HasOne("CodigoActivo.Domain.Entities.UserType", "UserType")
-                        .WithMany("Assignments")
+                        .WithMany("Users")
                         .HasForeignKey("UserTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_user_type_assignments_user_types_user_type_id");
+                        .HasConstraintName("fk_users_user_types_user_type_id");
 
-                    b.Navigation("User");
+                    b.Navigation("Parent");
+
+                    b.Navigation("UserStatusType");
 
                     b.Navigation("UserType");
                 });
@@ -1070,11 +1111,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Events");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.ResourceType", b =>
+                {
+                    b.Navigation("Resources");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
                 {
                     b.Navigation("Children");
-
-                    b.Navigation("TypeAssignments");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.UserStatusType", b =>
@@ -1084,7 +1128,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.UserType", b =>
                 {
-                    b.Navigation("Assignments");
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

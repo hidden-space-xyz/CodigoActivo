@@ -626,54 +626,6 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetWithAssignmentsAndUsersAsync_ActivityHasAssignments_LoadsNestedUserAndRoleGraph()
-    {
-        await using var ctx = NewContext();
-        var parent = NewUser("Parent", "P");
-        var child = NewUser("Child", "C", parentId: parent.Id);
-        var role = NewRoleType("Ponente");
-        var status = NewAssignmentStatus();
-        var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
-        ctx.AddRange(parent, child, role, status, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(
-            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
-        );
-        ctx.ActivityUserRoleAssignments.Add(
-            new ActivityUserRoleAssignment
-            {
-                UserId = child.Id,
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = role.Id,
-                AssignmentStatusId = status.Id,
-            }
-        );
-        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        ctx.ChangeTracker.Clear();
-        var repo = new ActivityRepository(ctx);
-
-        var loaded = await repo.GetWithAssignmentsAndUsersAsync(
-            activity.Id,
-            TestContext.Current.CancellationToken
-        );
-
-        loaded.Should().NotBeNull();
-        loaded!.AllowedRoleTypes.Single().ActivityRoleType.Name.Should().Be("Ponente");
-        var assignment = loaded.Assignments.Single();
-        assignment.User.Parent.Should().NotBeNull();
-        assignment.ActivityRoleType.Name.Should().Be("Ponente");
-        assignment.AssignmentStatus.Should().NotBeNull();
-        (
-            await repo.GetWithAssignmentsAndUsersAsync(
-                Guid.NewGuid(),
-                TestContext.Current.CancellationToken
-            )
-        )
-            .Should()
-            .BeNull();
-    }
-
-    [Fact]
     public async Task GetForEditAsync_ActivityWithAllowedRoles_IncludesRolesOrReturnsNull()
     {
         await using var ctx = NewContext();

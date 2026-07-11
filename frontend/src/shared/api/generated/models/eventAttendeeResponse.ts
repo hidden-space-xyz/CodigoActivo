@@ -4,8 +4,10 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { EventAttendeeAssignmentResponse } from './eventAttendeeAssignmentResponse';
+import type { EventAttendeeGuardianResponse } from './eventAttendeeGuardianResponse';
 
-export interface ActivityAssignmentRowResponse {
+export interface EventAttendeeResponse {
   userId?: string;
   /** @nullable */
   firstName?: string | null;
@@ -17,14 +19,10 @@ export interface ActivityAssignmentRowResponse {
   phone?: string | null;
   birthDate?: string;
   /** @nullable */
-  parentId?: string | null;
-  signedUp?: boolean;
+  userTypeName?: string | null;
   /** @nullable */
-  roleTypeId?: string | null;
+  userTypeColor?: string | null;
+  guardian?: EventAttendeeGuardianResponse;
   /** @nullable */
-  roleTypeName?: string | null;
-  /** @nullable */
-  statusId?: string | null;
-  /** @nullable */
-  statusName?: string | null;
+  assignments?: EventAttendeeAssignmentResponse[] | null;
 }

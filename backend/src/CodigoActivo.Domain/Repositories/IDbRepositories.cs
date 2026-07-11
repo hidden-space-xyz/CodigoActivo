@@ -37,8 +37,6 @@ public interface IEventRepository : IDbRepository<Event>
 
 public interface IActivityRepository : IDbRepository<Activity>
 {
-    Task<Activity?> GetWithAssignmentsAndUsersAsync(Guid id, CancellationToken ct = default);
-
     Task<Activity?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
     Task<bool> AnyOutsideRangeAsync(

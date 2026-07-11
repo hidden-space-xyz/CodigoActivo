@@ -276,6 +276,7 @@ public sealed class DemoDataSeeder(
             var duration = 1 + (e % 3);
             var start = clock.Today.AddDays(-180 + (e * 22));
             var end = start.AddDays(duration - 1);
+            var signupOpensAt = ToUtc(clock.TimeZone, start.AddDays(-30), 9, 0);
             var label = (e + 1).ToString("D2", CultureInfo.InvariantCulture);
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
 
@@ -288,7 +289,7 @@ public sealed class DemoDataSeeder(
                     Description = BuildRichText(seed.Description, descriptionImageId, seed.Title),
                     EventStartsAt = start,
                     EventEndsAt = end,
-                    SignupStartsAt = ToUtc(clock.TimeZone, start.AddDays(-30), 9, 0),
+                    SignupStartsAt = signupOpensAt,
                     SignupEndsAt = ToUtc(clock.TimeZone, start.AddDays(-1), 23, 59),
                     Featured = e is 2 or 7 or 12 or 17,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
@@ -339,7 +340,7 @@ public sealed class DemoDataSeeder(
                         }
                     );
 
-                assignments.AddRange(BuildAssignments((e * 5) + a, activityId));
+                assignments.AddRange(BuildAssignments((e * 5) + a, activityId, signupOpensAt, now));
             }
         }
 
@@ -455,7 +456,9 @@ public sealed class DemoDataSeeder(
 
     private static IEnumerable<ActivityUserRoleAssignment> BuildAssignments(
         int globalIndex,
-        Guid activityId
+        Guid activityId,
+        DateTimeOffset signupOpensAt,
+        DateTimeOffset now
     )
     {
         var baseAdult = (globalIndex * 3) % AdultCount;
@@ -470,12 +473,14 @@ public sealed class DemoDataSeeder(
 
         for (var slot = 0; slot < picks.Length; slot++)
         {
+            var signedUpAt = signupOpensAt.AddDays((globalIndex + slot) % 26).AddHours(slot);
             yield return new ActivityUserRoleAssignment
             {
                 UserId = UserId(picks[slot].UserIndex),
                 ActivityId = activityId,
                 ActivityRoleTypeId = picks[slot].RoleTypeId,
                 AssignmentStatusId = ResolveAssignmentStatus(globalIndex, slot),
+                CreatedAt = signedUpAt < now ? signedUpAt : now,
             };
         }
     }

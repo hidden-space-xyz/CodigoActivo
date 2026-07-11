@@ -329,13 +329,8 @@ public interface IReportService
         CancellationToken ct = default
     );
 
-    Task<Result<EventAssignmentsReportResponse>> GetEventAssignmentsAsync(
+    Task<Result<EventAttendeesResponse>> GetEventAttendeesAsync(
         Guid eventId,
-        CancellationToken ct = default
-    );
-
-    Task<Result<ActivityAssignmentsReportResponse>> GetActivityAssignmentsAsync(
-        Guid activityId,
         CancellationToken ct = default
     );
 

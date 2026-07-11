@@ -9,7 +9,6 @@ namespace CodigoActivo.Application.Services;
 public class ReportService(
     IEventRepository events,
     IActivityRoleTypeRepository roleTypes,
-    IAssignmentStatusTypeRepository statusTypes,
     IActivityRepository activities,
     IResourceRepository resources,
     IAnnouncementRepository announcements,
@@ -61,113 +60,96 @@ public class ReportService(
         );
     }
 
-    public async Task<Result<EventAssignmentsReportResponse>> GetEventAssignmentsAsync(
+    public async Task<Result<EventAttendeesResponse>> GetEventAttendeesAsync(
         Guid eventId,
         CancellationToken ct = default
     )
     {
-        var ev = await events.GetWithActivitiesAndAssignmentsAsync(eventId, ct);
+        var ev = await events.FindAsync(e => e.Id == eventId, ct);
         if (ev is null)
             return Error.NotFound(ErrorCode.EventNotFound);
 
-        var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
-        var statusNames = (await statusTypes.GetAllAsync(ct)).ToDictionary(s => s.Id, s => s.Name);
-
-        var items = ev
-            .Activities.SelectMany(a =>
-                a.Assignments.Select(asg => new AssignmentReportItemResponse(
-                    a.Id,
-                    a.Title,
-                    asg.UserId,
-                    asg.ActivityRoleTypeId,
-                    roleNames.GetValueOrDefault(asg.ActivityRoleTypeId),
-                    asg.AssignmentStatusId,
-                    statusNames.GetValueOrDefault(asg.AssignmentStatusId)
-                ))
-            )
-            .ToList();
-
-        return new EventAssignmentsReportResponse(ev.Id, ev.Title, items);
-    }
-
-    public async Task<Result<ActivityAssignmentsReportResponse>> GetActivityAssignmentsAsync(
-        Guid activityId,
-        CancellationToken ct = default
-    )
-    {
-        var activity = await activities.GetWithAssignmentsAndUsersAsync(activityId, ct);
-        if (activity is null)
-            return Error.NotFound(ErrorCode.ActivityNotFound);
-
-        var signedUpUserIds = activity.Assignments.Select(a => a.UserId).ToHashSet();
-
-        var rows = activity
-            .Assignments.Select(a => new ActivityAssignmentRowResponse(
-                a.User.Id,
-                a.User.FirstName,
-                a.User.LastName,
-                a.User.Email,
-                a.User.Phone,
-                a.User.BirthDate,
-                a.User.ParentId,
-                true,
-                a.ActivityRoleTypeId,
-                a.ActivityRoleType.Name,
-                a.AssignmentStatusId,
-                a.AssignmentStatus.Name
-            ))
-            .ToList();
-
-        var addedParents = new HashSet<Guid>();
-        foreach (var assignment in activity.Assignments)
-        {
-            var parent = assignment.User.Parent;
-            if (
-                parent is null
-                || signedUpUserIds.Contains(parent.Id)
-                || !addedParents.Add(parent.Id)
-            )
-            {
-                continue;
-            }
-
-            rows.Add(
-                new ActivityAssignmentRowResponse(
-                    parent.Id,
-                    parent.FirstName,
-                    parent.LastName,
-                    parent.Email,
-                    parent.Phone,
-                    parent.BirthDate,
-                    parent.ParentId,
-                    false,
-                    null,
-                    null,
-                    null,
-                    null
-                )
-            );
-        }
-
-        var roleTypeBreakdown = activity
-            .AllowedRoleTypes.Select(ar => new ActivityRoleTypeSummaryResponse(
-                ar.ActivityRoleTypeId,
-                ar.ActivityRoleType.Name,
-                activity.Assignments.Count(a =>
-                    a.ActivityRoleTypeId == ar.ActivityRoleTypeId
-                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
-                )
-            ))
-            .OrderBy(r => r.RoleTypeName, StringComparer.Ordinal)
-            .ToList();
-
-        return new ActivityAssignmentsReportResponse(
-            activity.Id,
-            activity.Title,
-            activity.Assignments.Count,
-            roleTypeBreakdown,
-            rows
+        var rows = await executor.ToListAsync(
+            activities
+                .QueryAssignments()
+                .Where(a => a.Activity.EventId == eventId)
+                .Select(a => new
+                {
+                    a.UserId,
+                    a.User.FirstName,
+                    a.User.LastName,
+                    a.User.Email,
+                    a.User.Phone,
+                    a.User.BirthDate,
+                    UserTypeName = a.User.UserType.Name,
+                    UserTypeColor = a.User.UserType.Color,
+                    Guardian = a.User.Parent == null
+                        ? null
+                        : new EventAttendeeGuardianResponse(
+                            a.User.Parent.FirstName,
+                            a.User.Parent.LastName,
+                            a.User.Parent.Email,
+                            a.User.Parent.Phone
+                        ),
+                    a.ActivityId,
+                    ActivityTitle = a.Activity.Title,
+                    a.Activity.ActivityStartsAt,
+                    a.Activity.ActivityEndsAt,
+                    a.ActivityRoleTypeId,
+                    RoleTypeName = a.ActivityRoleType.Name,
+                    a.AssignmentStatusId,
+                    StatusName = a.AssignmentStatus.Name,
+                    SignedUpAt = a.CreatedAt,
+                }),
+            ct
         );
+
+        var attendees = rows.GroupBy(r => r.UserId)
+            .Select(g =>
+            {
+                var user = g.First();
+                var items = g.OrderBy(r => r.ActivityStartsAt)
+                    .ThenBy(r => r.ActivityTitle, StringComparer.Ordinal)
+                    .ToList();
+                return new EventAttendeeResponse(
+                    g.Key,
+                    user.FirstName,
+                    user.LastName,
+                    user.Email,
+                    user.Phone,
+                    user.BirthDate,
+                    user.UserTypeName,
+                    user.UserTypeColor,
+                    user.Guardian,
+                    items
+                        .Select(r => new EventAttendeeAssignmentResponse(
+                            r.ActivityId,
+                            r.ActivityTitle,
+                            r.ActivityStartsAt,
+                            r.ActivityEndsAt,
+                            r.ActivityRoleTypeId,
+                            r.RoleTypeName,
+                            r.AssignmentStatusId,
+                            r.StatusName,
+                            r.SignedUpAt,
+                            r.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                                && items.Exists(other =>
+                                    other.ActivityId != r.ActivityId
+                                    && other.AssignmentStatusId
+                                        != SeedIds.AssignmentStatusTypes.Denied
+                                    && r.ActivityStartsAt < other.ActivityEndsAt
+                                    && other.ActivityStartsAt < r.ActivityEndsAt
+                                )
+                        ))
+                        .ToList()
+                );
+            })
+            .OrderBy(a => a.LastName, StringComparer.Ordinal)
+            .ThenBy(a => a.FirstName, StringComparer.Ordinal)
+            .ThenBy(a => a.UserId)
+            .ToList();
+
+        return new EventAttendeesResponse(ev.Id, ev.Title, attendees);
     }
 
     public async Task<Result<EventBadgesResponse>> GetEventBadgesAsync(

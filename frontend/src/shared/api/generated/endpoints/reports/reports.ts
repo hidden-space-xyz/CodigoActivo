@@ -15,9 +15,8 @@ import type {
 } from '@tanstack/vue-query';
 
 import type {
-  ActivityAssignmentsReportResponse,
   DashboardSummaryResponse,
-  EventAssignmentsReportResponse,
+  EventAttendeesResponse,
   EventBadgesResponse,
   EventSummaryResponse
 } from '../../models';
@@ -105,29 +104,29 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiReportsEventsEventIdSummaryMutationOptions(options), queryClient);
     }
-    export type getApiReportsEventsEventIdAssignmentsResponse200 = {
-  data: EventAssignmentsReportResponse
+    export type getApiReportsEventsEventIdAttendeesResponse200 = {
+  data: EventAttendeesResponse
   status: 200
 }
 
-export type getApiReportsEventsEventIdAssignmentsResponseSuccess = (getApiReportsEventsEventIdAssignmentsResponse200) & {
+export type getApiReportsEventsEventIdAttendeesResponseSuccess = (getApiReportsEventsEventIdAttendeesResponse200) & {
   headers: Headers;
 };
 ;
 
-export type getApiReportsEventsEventIdAssignmentsResponse = (getApiReportsEventsEventIdAssignmentsResponseSuccess)
+export type getApiReportsEventsEventIdAttendeesResponse = (getApiReportsEventsEventIdAttendeesResponseSuccess)
 
-export const getGetApiReportsEventsEventIdAssignmentsUrl = (eventId: string,) => {
-
-
+export const getGetApiReportsEventsEventIdAttendeesUrl = (eventId: string,) => {
 
 
-  return `/api/reports/events/${eventId}/assignments`
+
+
+  return `/api/reports/events/${eventId}/attendees`
 }
 
-export const getApiReportsEventsEventIdAssignments = async (eventId: string, options?: RequestInit): Promise<getApiReportsEventsEventIdAssignmentsResponse> => {
+export const getApiReportsEventsEventIdAttendees = async (eventId: string, options?: RequestInit): Promise<getApiReportsEventsEventIdAttendeesResponse> => {
 
-  return httpClient<getApiReportsEventsEventIdAssignmentsResponse>(getGetApiReportsEventsEventIdAssignmentsUrl(eventId),
+  return httpClient<getApiReportsEventsEventIdAttendeesResponse>(getGetApiReportsEventsEventIdAttendeesUrl(eventId),
   {
     ...options,
     method: 'GET'
@@ -140,11 +139,11 @@ export const getApiReportsEventsEventIdAssignments = async (eventId: string, opt
 
 
 
-export const getGetApiReportsEventsEventIdAssignmentsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAssignments>>, TError,{eventId: string}, TContext> => {
+export const getGetApiReportsEventsEventIdAttendeesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, TError,{eventId: string}, TContext> => {
 
-const mutationKey = ['getApiReportsEventsEventIdAssignments'];
+const mutationKey = ['getApiReportsEventsEventIdAttendees'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -154,10 +153,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsEventsEventIdAssignments>>, {eventId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, {eventId: string}> = (props) => {
           const {eventId} = props ?? {};
 
-          return  getApiReportsEventsEventIdAssignments(eventId,requestOptions)
+          return  getApiReportsEventsEventIdAttendees(eventId,requestOptions)
         }
 
 
@@ -167,95 +166,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type GetApiReportsEventsEventIdAssignmentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsEventsEventIdAssignments>>>
+    export type GetApiReportsEventsEventIdAttendeesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>>
 
-    export type GetApiReportsEventsEventIdAssignmentsMutationError = unknown
+    export type GetApiReportsEventsEventIdAttendeesMutationError = unknown
 
-    export const useGetApiReportsEventsEventIdAssignments = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAssignments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
+    export const useGetApiReportsEventsEventIdAttendees = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsEventsEventIdAssignments>>,
+        Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>,
         TError,
         {eventId: string},
         TContext
       > => {
-      return useMutation(getGetApiReportsEventsEventIdAssignmentsMutationOptions(options), queryClient);
-    }
-    export type getApiReportsActivitiesActivityIdAssignmentsResponse200 = {
-  data: ActivityAssignmentsReportResponse
-  status: 200
-}
-
-export type getApiReportsActivitiesActivityIdAssignmentsResponseSuccess = (getApiReportsActivitiesActivityIdAssignmentsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiReportsActivitiesActivityIdAssignmentsResponse = (getApiReportsActivitiesActivityIdAssignmentsResponseSuccess)
-
-export const getGetApiReportsActivitiesActivityIdAssignmentsUrl = (activityId: string,) => {
-
-
-
-
-  return `/api/reports/activities/${activityId}/assignments`
-}
-
-export const getApiReportsActivitiesActivityIdAssignments = async (activityId: string, options?: RequestInit): Promise<getApiReportsActivitiesActivityIdAssignmentsResponse> => {
-
-  return httpClient<getApiReportsActivitiesActivityIdAssignmentsResponse>(getGetApiReportsActivitiesActivityIdAssignmentsUrl(activityId),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiReportsActivitiesActivityIdAssignmentsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsActivitiesActivityIdAssignments>>, TError,{activityId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsActivitiesActivityIdAssignments>>, TError,{activityId: string}, TContext> => {
-
-const mutationKey = ['getApiReportsActivitiesActivityIdAssignments'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsActivitiesActivityIdAssignments>>, {activityId: string}> = (props) => {
-          const {activityId} = props ?? {};
-
-          return  getApiReportsActivitiesActivityIdAssignments(activityId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsActivitiesActivityIdAssignmentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsActivitiesActivityIdAssignments>>>
-
-    export type GetApiReportsActivitiesActivityIdAssignmentsMutationError = unknown
-
-    export const useGetApiReportsActivitiesActivityIdAssignments = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsActivitiesActivityIdAssignments>>, TError,{activityId: string}, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsActivitiesActivityIdAssignments>>,
-        TError,
-        {activityId: string},
-        TContext
-      > => {
-      return useMutation(getGetApiReportsActivitiesActivityIdAssignmentsMutationOptions(options), queryClient);
+      return useMutation(getGetApiReportsEventsEventIdAttendeesMutationOptions(options), queryClient);
     }
     export type getApiReportsEventsEventIdBadgesResponse200 = {
   data: EventBadgesResponse

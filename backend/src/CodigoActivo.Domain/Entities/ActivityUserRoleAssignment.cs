@@ -13,4 +13,6 @@ public class ActivityUserRoleAssignment
 
     public Guid AssignmentStatusId { get; set; }
     public AssignmentStatusType AssignmentStatus { get; set; } = null!;
+
+    public DateTimeOffset CreatedAt { get; set; }
 }

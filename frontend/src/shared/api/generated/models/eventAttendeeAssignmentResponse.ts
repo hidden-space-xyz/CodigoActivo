@@ -5,15 +5,18 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface AssignmentReportItemResponse {
+export interface EventAttendeeAssignmentResponse {
   activityId?: string;
   /** @nullable */
   activityTitle?: string | null;
-  userId?: string;
+  activityStartsAt?: string;
+  activityEndsAt?: string;
   roleTypeId?: string;
   /** @nullable */
   roleTypeName?: string | null;
   statusId?: string;
   /** @nullable */
   statusName?: string | null;
+  signedUpAt?: string;
+  hasTimeConflict?: boolean;
 }

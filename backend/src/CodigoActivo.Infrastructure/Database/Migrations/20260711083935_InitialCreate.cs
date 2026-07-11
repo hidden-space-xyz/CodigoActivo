@@ -64,6 +64,21 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "resource_types",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    color = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false),
+                    is_external = table.Column<bool>(type: "boolean", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    description = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_resource_types", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "user_status_types",
                 columns: table => new
                 {
@@ -83,9 +98,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     color = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false),
-                    hidden = table.Column<bool>(type: "boolean", nullable: false),
-                    is_allowed_for_minors = table.Column<bool>(type: "boolean", nullable: false),
-                    is_allowed_for_adults = table.Column<bool>(type: "boolean", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
                     description = table.Column<string>(type: "text", nullable: false)
                 },
@@ -110,8 +122,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     parent_id = table.Column<Guid>(type: "uuid", nullable: true),
                     user_status_type_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    otp_code = table.Column<Guid>(type: "uuid", nullable: true),
-                    otp_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    user_type_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_admin = table.Column<bool>(type: "boolean", nullable: false),
+                    otp_code_hash = table.Column<string>(type: "text", nullable: true),
+                    otp_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    otp_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    password_reset_code_hash = table.Column<string>(type: "text", nullable: true),
+                    password_reset_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    password_reset_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -120,6 +138,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         name: "fk_users_user_status_types_user_status_type_id",
                         column: x => x.user_status_type_id,
                         principalTable: "user_status_types",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_users_user_types_user_type_id",
+                        column: x => x.user_type_id,
+                        principalTable: "user_types",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -149,31 +173,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "user_type_assignments",
-                columns: table => new
-                {
-                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    user_type_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    assigned_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_user_type_assignments", x => new { x.user_id, x.user_type_id });
-                    table.ForeignKey(
-                        name: "fk_user_type_assignments_user_types_user_type_id",
-                        column: x => x.user_type_id,
-                        principalTable: "user_types",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_user_type_assignments_users_user_id",
-                        column: x => x.user_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -302,6 +301,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     title = table.Column<string>(type: "text", nullable: false),
                     subtitle = table.Column<string>(type: "text", nullable: false),
                     description = table.Column<string>(type: "jsonb", nullable: false),
+                    url = table.Column<string>(type: "text", nullable: true),
+                    resource_type_id = table.Column<Guid>(type: "uuid", nullable: false),
                     thumbnail_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -315,6 +316,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         name: "fk_resources_files_thumbnail_id",
                         column: x => x.thumbnail_id,
                         principalTable: "files",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_resources_resource_types_resource_type_id",
+                        column: x => x.resource_type_id,
+                        principalTable: "resource_types",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -439,7 +446,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     activity_id = table.Column<Guid>(type: "uuid", nullable: false),
                     activity_role_type_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    assignment_status_id = table.Column<Guid>(type: "uuid", nullable: false)
+                    assignment_status_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -595,9 +603,20 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "updated_by");
 
             migrationBuilder.CreateIndex(
+                name: "ix_resource_types_name",
+                table: "resource_types",
+                column: "name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_resources_created_by",
                 table: "resources",
                 column: "created_by");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_resources_resource_type_id",
+                table: "resources",
+                column: "resource_type_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_resources_thumbnail_id",
@@ -614,11 +633,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 table: "user_status_types",
                 column: "name",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_user_type_assignments_user_type_id",
-                table: "user_type_assignments",
-                column: "user_type_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_user_types_name",
@@ -647,6 +661,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_users_user_status_type_id",
                 table: "users",
                 column: "user_status_type_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_users_user_type_id",
+                table: "users",
+                column: "user_type_id");
         }
 
         /// <inheritdoc />
@@ -671,9 +690,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "resources");
 
             migrationBuilder.DropTable(
-                name: "user_type_assignments");
-
-            migrationBuilder.DropTable(
                 name: "activities");
 
             migrationBuilder.DropTable(
@@ -686,7 +702,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "event_category_types");
 
             migrationBuilder.DropTable(
-                name: "user_types");
+                name: "resource_types");
 
             migrationBuilder.DropTable(
                 name: "activity_modality_types");
@@ -702,6 +718,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "user_status_types");
+
+            migrationBuilder.DropTable(
+                name: "user_types");
         }
     }
 }

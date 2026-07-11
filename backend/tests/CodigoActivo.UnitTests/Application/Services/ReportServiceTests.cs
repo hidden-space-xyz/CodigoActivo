@@ -17,8 +17,6 @@ public sealed class ReportServiceTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRoleTypeRepository roleTypes =
         Substitute.For<IActivityRoleTypeRepository>();
-    private readonly IAssignmentStatusTypeRepository statusTypes =
-        Substitute.For<IAssignmentStatusTypeRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
     private readonly IAnnouncementRepository announcements =
@@ -27,7 +25,7 @@ public sealed class ReportServiceTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly ReportService sut;
 
-    private static readonly Guid EventIdForBadges = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static readonly Guid QueriedEventId = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     private static readonly Guid AlphaRoleId = new("11111111-1111-1111-1111-111111111111");
     private static readonly Guid BetaRoleId = new("22222222-2222-2222-2222-222222222222");
@@ -42,7 +40,6 @@ public sealed class ReportServiceTests
         sut = new ReportService(
             events,
             roleTypes,
-            statusTypes,
             activities,
             resources,
             announcements,
@@ -57,27 +54,8 @@ public sealed class ReportServiceTests
             .GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(roles.Select(r => new ActivityRoleType { Id = r.Id, Name = r.Name }).ToList());
 
-    private void HasStatusTypes(params (Guid Id, string Name)[] statuses) =>
-        statusTypes
-            .GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(
-                statuses
-                    .Select(s => new AssignmentStatusType
-                    {
-                        Id = s.Id,
-                        Name = s.Name,
-                        Color = "#fff",
-                    })
-                    .ToList()
-            );
-
     private void EventGraph(Guid id, Event? ev) =>
         events.GetWithActivitiesAndAssignmentsAsync(id, Arg.Any<CancellationToken>()).Returns(ev);
-
-    private void ActivityGraph(Guid id, Activity? activity) =>
-        activities
-            .GetWithAssignmentsAndUsersAsync(id, Arg.Any<CancellationToken>())
-            .Returns(activity);
 
     private static ActivityUserRoleAssignment Asg(Guid userId, Guid roleId, Guid statusId) =>
         new()
@@ -118,28 +96,7 @@ public sealed class ReportServiceTests
             BirthDate = new DateOnly(1990, 6, 15),
             Parent = parent,
             ParentId = parent?.Id,
-        };
-
-    private static ActivityUserRoleAssignment FullAsg(
-        User user,
-        Guid roleId,
-        string roleName,
-        Guid statusId,
-        string statusName
-    ) =>
-        new()
-        {
-            UserId = user.Id,
-            User = user,
-            ActivityRoleTypeId = roleId,
-            ActivityRoleType = new ActivityRoleType { Id = roleId, Name = roleName },
-            AssignmentStatusId = statusId,
-            AssignmentStatus = new AssignmentStatusType
-            {
-                Id = statusId,
-                Name = statusName,
-                Color = "#000",
-            },
+            UserType = new UserType { Name = "Socio", Color = "#EF4444" },
         };
 
     [Fact]
@@ -239,172 +196,231 @@ public sealed class ReportServiceTests
         result.Value.RoleTypeBreakdown.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task GetEventAssignmentsAsync_EventMissing_ReturnsNotFound()
-    {
-        var id = Guid.NewGuid();
-        EventGraph(id, null);
-
-        var result = await sut.GetEventAssignmentsAsync(id, TestContext.Current.CancellationToken);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task GetEventAssignmentsAsync_UnresolvedRoleOrStatus_FlattensItemsWithNullFallback()
-    {
-        var eventId = Guid.NewGuid();
-        var user1 = Guid.NewGuid();
-        var user2 = Guid.NewGuid();
-
-        var activity = ActivityWith(
-            allowed: [Allowed(AlphaRoleId, "Alpha")],
-            assignments: [Asg(user1, AlphaRoleId, Confirmed), Asg(user2, GhostRoleId, Requested)],
-            title: "Taller"
-        );
-
-        var ev = new Event
-        {
-            Id = eventId,
-            Title = "Congreso",
-            Activities = [activity],
-        };
-        EventGraph(eventId, ev);
-        HasRoleTypes((AlphaRoleId, "Alpha"));
-        HasStatusTypes((Confirmed, "Confirmado"));
-
-        var result = await sut.GetEventAssignmentsAsync(
-            eventId,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.EventId.Should().Be(eventId);
-        result.Value.Title.Should().Be("Congreso");
-        result.Value.Items.Should().HaveCount(2);
-
-        var confirmed = result.Value.Items.Single(i => i.UserId == user1);
-        confirmed.ActivityTitle.Should().Be("Taller");
-        confirmed.RoleTypeId.Should().Be(AlphaRoleId);
-        confirmed.RoleTypeName.Should().Be("Alpha");
-        confirmed.StatusId.Should().Be(Confirmed);
-        confirmed.StatusName.Should().Be("Confirmado");
-
-        var unresolved = result.Value.Items.Single(i => i.UserId == user2);
-        unresolved.RoleTypeName.Should().BeNull();
-        unresolved.StatusName.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetActivityAssignmentsAsync_ActivityMissing_ReturnsNotFound()
-    {
-        var id = Guid.NewGuid();
-        ActivityGraph(id, null);
-
-        var result = await sut.GetActivityAssignmentsAsync(
-            id,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
-    }
-
-    [Fact]
-    public async Task GetActivityAssignmentsAsync_ChildrenAndParents_BuildsRowsAndConfirmedBreakdown()
-    {
-        var parentP = NewUser("Padre");
-        var parentQ = NewUser("Madre");
-
-        var child1 = NewUser("Hijo1", parentP);
-        var child2 = NewUser("Hijo2", parentP);
-        var child3 = NewUser("Hijo3", parentQ);
-        var solo = NewUser("Solo");
-
-        var activity = ActivityWith(
-            allowed: [Allowed(AlphaRoleId, "Alpha"), Allowed(BetaRoleId, "Beta")],
-            assignments:
-            [
-                FullAsg(child1, AlphaRoleId, "Alpha", Confirmed, "Confirmado"),
-                FullAsg(child2, BetaRoleId, "Beta", Requested, "Solicitado"),
-                FullAsg(child3, AlphaRoleId, "Alpha", Confirmed, "Confirmado"),
-                FullAsg(parentQ, BetaRoleId, "Beta", Denied, "Denegado"),
-                FullAsg(solo, AlphaRoleId, "Alpha", Confirmed, "Confirmado"),
-            ],
-            title: "Limpieza"
-        );
-        var activityId = activity.Id;
-        ActivityGraph(activityId, activity);
-
-        var result = await sut.GetActivityAssignmentsAsync(
-            activityId,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        var report = result.Value;
-        report.ActivityId.Should().Be(activityId);
-        report.Title.Should().Be("Limpieza");
-        report.TotalSignups.Should().Be(5);
-
-        report.Rows.Should().HaveCount(6);
-        report.Rows.Count(r => r.SignedUp).Should().Be(5);
-
-        var parentRow = report.Rows.Single(r => !r.SignedUp);
-        parentRow.UserId.Should().Be(parentP.Id);
-        parentRow.FirstName.Should().Be("Padre");
-        parentRow.Email.Should().Be(parentP.Email);
-        parentRow.BirthDate.Should().Be(new DateOnly(1990, 6, 15));
-        parentRow.RoleTypeId.Should().BeNull();
-        parentRow.RoleTypeName.Should().BeNull();
-        parentRow.StatusId.Should().BeNull();
-        parentRow.StatusName.Should().BeNull();
-
-        var childRow = report.Rows.Single(r => r.UserId == child1.Id);
-        childRow.SignedUp.Should().BeTrue();
-        childRow.RoleTypeId.Should().Be(AlphaRoleId);
-        childRow.RoleTypeName.Should().Be("Alpha");
-        childRow.StatusName.Should().Be("Confirmado");
-        childRow.ParentId.Should().Be(parentP.Id);
-
-        report.RoleTypeBreakdown.Should().HaveCount(2);
-        report
-            .RoleTypeBreakdown[0]
-            .Should()
-            .BeEquivalentTo(new ActivityRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 3));
-        report
-            .RoleTypeBreakdown[1]
-            .Should()
-            .BeEquivalentTo(new ActivityRoleTypeSummaryResponse(BetaRoleId, "Beta", 0));
-    }
-
-    [Fact]
-    public async Task GetActivityAssignmentsAsync_NoAssignments_ReturnsEmptyReport()
-    {
-        var activity = ActivityWith(allowed: [], assignments: [], title: "Sola");
-        ActivityGraph(activity.Id, activity);
-
-        var result = await sut.GetActivityAssignmentsAsync(
-            activity.Id,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.TotalSignups.Should().Be(0);
-        result.Value.Rows.Should().BeEmpty();
-        result.Value.RoleTypeBreakdown.Should().BeEmpty();
-    }
-
-    private void HasBadgeEvent(Event? ev) =>
+    private void HasEvent(Event? ev) =>
         events
             .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(ev);
 
     private void HasAssignments(params ActivityUserRoleAssignment[] assignments) =>
         activities.QueryAssignments().Returns(assignments.AsQueryable());
+
+    private static ActivityUserRoleAssignment AttendeeAsg(
+        User user,
+        string activityTitle,
+        DateTimeOffset startsAt,
+        Guid roleId,
+        string roleName,
+        Guid statusId,
+        string statusName,
+        Guid? eventId = null,
+        DateTimeOffset? signedUpAt = null,
+        TimeSpan? duration = null
+    ) =>
+        new()
+        {
+            UserId = user.Id,
+            User = user,
+            ActivityId = Guid.NewGuid(),
+            Activity = new Activity
+            {
+                EventId = eventId ?? QueriedEventId,
+                Title = activityTitle,
+                ActivityStartsAt = startsAt,
+                ActivityEndsAt = startsAt + (duration ?? TimeSpan.FromHours(2)),
+            },
+            ActivityRoleTypeId = roleId,
+            ActivityRoleType = new ActivityRoleType { Id = roleId, Name = roleName },
+            AssignmentStatusId = statusId,
+            AssignmentStatus = new AssignmentStatusType
+            {
+                Id = statusId,
+                Name = statusName,
+                Color = "#fff",
+            },
+            CreatedAt = signedUpAt ?? startsAt.AddDays(-7),
+        };
+
+    [Fact]
+    public async Task GetEventAttendeesAsync_EventMissing_ReturnsNotFound()
+    {
+        HasEvent(null);
+
+        var result = await sut.GetEventAttendeesAsync(
+            QueriedEventId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
+        activities.DidNotReceive().QueryAssignments();
+    }
+
+    [Fact]
+    public async Task GetEventAttendeesAsync_AssignmentsAcrossActivities_GroupsPerUserWithOrderedAssignments()
+    {
+        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+
+        var ana = NewUser("Ana", NewUser("Tutora"));
+        var berto = NewUser("Berto");
+
+        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasAssignments(
+            AttendeeAsg(
+                berto,
+                "Charla",
+                when.AddHours(2),
+                AlphaRoleId,
+                "Alpha",
+                Requested,
+                "Solicitada"
+            ),
+            AttendeeAsg(ana, "Charla", when.AddHours(2), BetaRoleId, "Beta", Denied, "Rechazada"),
+            AttendeeAsg(
+                ana,
+                "Taller",
+                when,
+                AlphaRoleId,
+                "Alpha",
+                Confirmed,
+                "Confirmada",
+                signedUpAt: when.AddDays(-3)
+            ),
+            AttendeeAsg(
+                ana,
+                "Otro evento",
+                when,
+                AlphaRoleId,
+                "Alpha",
+                Confirmed,
+                "Confirmada",
+                eventId: Guid.NewGuid()
+            )
+        );
+
+        var result = await sut.GetEventAttendeesAsync(
+            QueriedEventId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var report = result.Value;
+        report.EventId.Should().Be(QueriedEventId);
+        report.Title.Should().Be("Feria");
+        report.Attendees.Should().HaveCount(2);
+
+        var first = report.Attendees[0];
+        first.UserId.Should().Be(ana.Id);
+        first.FirstName.Should().Be("Ana");
+        first.LastName.Should().Be("Ana-last");
+        first.Email.Should().Be(ana.Email);
+        first.Phone.Should().Be(ana.Phone);
+        first.BirthDate.Should().Be(new DateOnly(1990, 6, 15));
+        first.UserTypeName.Should().Be("Socio");
+        first.UserTypeColor.Should().Be("#EF4444");
+        first.Guardian.Should().NotBeNull();
+        first.Guardian!.FirstName.Should().Be("Tutora");
+        first.Guardian.LastName.Should().Be("Tutora-last");
+        first.Guardian.Email.Should().Be("Tutora@test.local");
+        first.Guardian.Phone.Should().Be("555-Tutora");
+        first.Assignments.Should().HaveCount(2);
+        first.Assignments[0].ActivityTitle.Should().Be("Taller");
+        first.Assignments[0].ActivityStartsAt.Should().Be(when);
+        first.Assignments[0].ActivityEndsAt.Should().Be(when.AddHours(2));
+        first.Assignments[0].RoleTypeId.Should().Be(AlphaRoleId);
+        first.Assignments[0].RoleTypeName.Should().Be("Alpha");
+        first.Assignments[0].StatusId.Should().Be(Confirmed);
+        first.Assignments[0].StatusName.Should().Be("Confirmada");
+        first.Assignments[0].SignedUpAt.Should().Be(when.AddDays(-3));
+        first.Assignments[0].HasTimeConflict.Should().BeFalse();
+        first.Assignments[1].ActivityTitle.Should().Be("Charla");
+        first.Assignments[1].StatusName.Should().Be("Rechazada");
+        first.Assignments[1].SignedUpAt.Should().Be(when.AddHours(2).AddDays(-7));
+        first.Assignments[1].HasTimeConflict.Should().BeFalse();
+
+        var second = report.Attendees[1];
+        second.UserId.Should().Be(berto.Id);
+        second.Guardian.Should().BeNull();
+        second.Assignments.Should().HaveCount(1);
+        second.Assignments[0].ActivityTitle.Should().Be("Charla");
+        second.Assignments[0].StatusName.Should().Be("Solicitada");
+        second.Assignments[0].HasTimeConflict.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetEventAttendeesAsync_OverlappingAssignments_FlagsConflictsExcludingDenied()
+    {
+        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+
+        var carla = NewUser("Carla");
+        var dani = NewUser("Dani");
+
+        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasAssignments(
+            AttendeeAsg(carla, "Taller A", when, AlphaRoleId, "Alpha", Confirmed, "Confirmada"),
+            AttendeeAsg(
+                carla,
+                "Taller B",
+                when.AddHours(1),
+                AlphaRoleId,
+                "Alpha",
+                Requested,
+                "Solicitada"
+            ),
+            AttendeeAsg(
+                carla,
+                "Taller C",
+                when.AddMinutes(90),
+                AlphaRoleId,
+                "Alpha",
+                Denied,
+                "Rechazada",
+                duration: TimeSpan.FromHours(1)
+            ),
+            AttendeeAsg(dani, "Taller A", when, AlphaRoleId, "Alpha", Confirmed, "Confirmada"),
+            AttendeeAsg(
+                dani,
+                "Taller B",
+                when.AddHours(1),
+                AlphaRoleId,
+                "Alpha",
+                Denied,
+                "Rechazada"
+            )
+        );
+
+        var result = await sut.GetEventAttendeesAsync(
+            QueriedEventId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+
+        var withConflict = result.Value.Attendees.Single(a => a.UserId == carla.Id);
+        withConflict.Assignments.Should().HaveCount(3);
+        withConflict.Assignments[0].HasTimeConflict.Should().BeTrue();
+        withConflict.Assignments[1].HasTimeConflict.Should().BeTrue();
+        withConflict.Assignments[2].HasTimeConflict.Should().BeFalse();
+
+        var withoutConflict = result.Value.Attendees.Single(a => a.UserId == dani.Id);
+        withoutConflict.Assignments.Should().HaveCount(2);
+        withoutConflict.Assignments.Should().OnlyContain(a => !a.HasTimeConflict);
+    }
+
+    [Fact]
+    public async Task GetEventAttendeesAsync_NoAssignments_ReturnsEmptyAttendees()
+    {
+        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasAssignments();
+
+        var result = await sut.GetEventAttendeesAsync(
+            QueriedEventId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Attendees.Should().BeEmpty();
+    }
 
     private static User BadgeUser(
         string first,
@@ -440,7 +456,7 @@ public sealed class ReportServiceTests
             ActivityId = Guid.NewGuid(),
             Activity = new Activity
             {
-                EventId = eventId ?? EventIdForBadges,
+                EventId = eventId ?? QueriedEventId,
                 Title = activityTitle,
                 ActivityStartsAt = startsAt,
             },
@@ -451,10 +467,10 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventBadgesAsync_EventMissing_ReturnsNotFound()
     {
-        HasBadgeEvent(null);
+        HasEvent(null);
 
         var result = await sut.GetEventBadgesAsync(
-            EventIdForBadges,
+            QueriedEventId,
             TestContext.Current.CancellationToken
         );
 
@@ -474,7 +490,7 @@ public sealed class ReportServiceTests
         var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", createdAt, parent);
         var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444", createdAt);
 
-        HasBadgeEvent(new Event { Id = EventIdForBadges, Title = "Feria" });
+        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             BadgeAsg(adult, "Charla", when.AddHours(2), Confirmed),
             BadgeAsg(adult, "Taller", when, Confirmed),
@@ -486,13 +502,13 @@ public sealed class ReportServiceTests
         );
 
         var result = await sut.GetEventBadgesAsync(
-            EventIdForBadges,
+            QueriedEventId,
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         var report = result.Value;
-        report.EventId.Should().Be(EventIdForBadges);
+        report.EventId.Should().Be(QueriedEventId);
         report.Title.Should().Be("Feria");
         report.Badges.Should().HaveCount(2);
 
@@ -519,11 +535,11 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventBadgesAsync_NoConfirmedAssignments_ReturnsEmptyBadges()
     {
-        HasBadgeEvent(new Event { Id = EventIdForBadges, Title = "Feria" });
+        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments();
 
         var result = await sut.GetEventBadgesAsync(
-            EventIdForBadges,
+            QueriedEventId,
             TestContext.Current.CancellationToken
         );
 

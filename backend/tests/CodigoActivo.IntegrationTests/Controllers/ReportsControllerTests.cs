@@ -16,9 +16,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     private static readonly Guid EventId = new("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid ActivityAId = new("bbbbbbbb-0000-0000-0000-000000000001");
     private static readonly Guid ActivityBId = new("bbbbbbbb-0000-0000-0000-000000000002");
+    private static readonly Guid ActivityCId = new("bbbbbbbb-0000-0000-0000-000000000003");
     private static readonly Guid EventThumbnailId = new("cccccccc-0000-0000-0000-000000000001");
     private static readonly Guid ActivityAThumbnailId = new("cccccccc-0000-0000-0000-000000000002");
     private static readonly Guid ActivityBThumbnailId = new("cccccccc-0000-0000-0000-000000000003");
+    private static readonly Guid ActivityCThumbnailId = new("cccccccc-0000-0000-0000-000000000004");
 
     private static readonly DateTimeOffset At = new(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -90,15 +92,20 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private static Activity BuildActivity(Guid id, string title, Guid thumbnailId) =>
+    private static Activity BuildActivity(
+        Guid id,
+        string title,
+        Guid thumbnailId,
+        DateTimeOffset? startsAt = null
+    ) =>
         new()
         {
             Id = id,
             Title = title,
             Description = "desc",
             Location = "Sala",
-            ActivityStartsAt = At,
-            ActivityEndsAt = At.AddHours(2),
+            ActivityStartsAt = startsAt ?? At,
+            ActivityEndsAt = (startsAt ?? At).AddHours(2),
             EventId = EventId,
             ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
             ThumbnailId = thumbnailId,
@@ -131,6 +138,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             UserId = userId,
             ActivityRoleTypeId = roleTypeId,
             AssignmentStatusId = statusId,
+            CreatedAt = At,
         };
 
     [Fact]
@@ -176,80 +184,83 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAssignments_ExistingEvent_ListsAssignmentsWithNames()
+    public async Task EventAttendees_ExistingEvent_GroupsAssignmentsPerAttendee()
     {
         await SeedEventGraphAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(Thumbnail(ActivityCThumbnailId));
+            db.Activities.Add(
+                BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, At.AddHours(1))
+            );
+            db.ActivityUserRoleAssignments.Add(
+                Assignment(
+                    ActivityCId,
+                    TestSeedData.Users.MemberChildId,
+                    SeedIds.ActivityRoleTypes.Participant,
+                    SeedIds.AssignmentStatusTypes.Requested
+                )
+            );
+            return Task.CompletedTask;
+        });
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/assignments",
+            $"/api/reports/events/{EventId}/attendees",
             TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<EventAssignmentsReportResponse>(
+        var report = await response.ReadJsonAsync<EventAttendeesResponse>(
             TestContext.Current.CancellationToken
         );
         report!.EventId.Should().Be(EventId);
         report.Title.Should().Be("Feria de Voluntariado");
-        report.Items.Should().HaveCount(4);
+        report.Attendees.Should().HaveCount(4);
 
-        var confirmedLeader = report.Items.Single(i => i.UserId == TestSeedData.Users.AdminId);
-        confirmedLeader.ActivityId.Should().Be(ActivityBId);
-        confirmedLeader.ActivityTitle.Should().Be("Charla");
-        confirmedLeader.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
-        confirmedLeader.RoleTypeName.Should().Be("Líder");
-        confirmedLeader.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
-        confirmedLeader.StatusName.Should().Be("Confirmada");
-    }
+        var admin = report.Attendees.Single(a => a.UserId == TestSeedData.Users.AdminId);
+        admin.FirstName.Should().NotBeNullOrWhiteSpace();
+        admin.Email.Should().NotBeNullOrWhiteSpace();
+        admin.UserTypeName.Should().Be("Socio");
+        admin.UserTypeColor.Should().Be("#EF4444");
+        admin.Guardian.Should().BeNull();
+        admin.Assignments.Should().HaveCount(1);
+        var assignment = admin.Assignments[0];
+        assignment.ActivityId.Should().Be(ActivityBId);
+        assignment.ActivityTitle.Should().Be("Charla");
+        assignment.ActivityStartsAt.Should().Be(At);
+        assignment.ActivityEndsAt.Should().Be(At.AddHours(2));
+        assignment.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        assignment.RoleTypeName.Should().Be("Líder");
+        assignment.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        assignment.StatusName.Should().Be("Confirmada");
+        assignment.SignedUpAt.Should().Be(At);
+        assignment.HasTimeConflict.Should().BeFalse();
 
-    [Fact]
-    public async Task ActivityAssignments_MixedSignups_IncludesSignedUpAndNonSignedUpRows()
-    {
-        await SeedEventGraphAsync();
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(
-            $"/api/reports/activities/{ActivityAId}/assignments",
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<ActivityAssignmentsReportResponse>(
-            TestContext.Current.CancellationToken
-        );
-        report!.ActivityId.Should().Be(ActivityAId);
-        report.Title.Should().Be("Taller");
-        report.TotalSignups.Should().Be(1);
-        report.Rows.Should().HaveCount(2);
-
-        var child = report.Rows.Single(r => r.UserId == TestSeedData.Users.MemberChildId);
-        child.SignedUp.Should().BeTrue();
-        child.FirstName.Should().Be("Mateo");
+        var child = report.Attendees.Single(a => a.UserId == TestSeedData.Users.MemberChildId);
         child.BirthDate.Should().Be(new DateOnly(2015, 5, 5));
-        child.ParentId.Should().Be(TestSeedData.Users.MemberId);
-        child.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
-        child.RoleTypeName.Should().Be("Colaborador");
-        child.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
-        child.StatusName.Should().Be("Confirmada");
-
-        var parent = report.Rows.Single(r => r.UserId == TestSeedData.Users.MemberId);
-        parent.SignedUp.Should().BeFalse();
-        parent.FirstName.Should().Be("Marta");
-        parent.BirthDate.Should().Be(new DateOnly(1992, 7, 30));
-        parent.RoleTypeId.Should().BeNull();
-        parent.RoleTypeName.Should().BeNull();
-        parent.StatusId.Should().BeNull();
-        parent.StatusName.Should().BeNull();
+        child.Email.Should().BeNull();
+        child.UserTypeName.Should().Be("Participante");
+        child.UserTypeColor.Should().Be("#3B82F6");
+        child.Guardian.Should().NotBeNull();
+        child.Guardian!.FirstName.Should().Be("Marta");
+        child.Guardian.Email.Should().NotBeNullOrWhiteSpace();
+        child.Guardian.Phone.Should().NotBeNullOrWhiteSpace();
+        child.Assignments.Should().HaveCount(2);
+        child.Assignments[0].ActivityId.Should().Be(ActivityAId);
+        child.Assignments[0].HasTimeConflict.Should().BeTrue();
+        child.Assignments[1].ActivityId.Should().Be(ActivityCId);
+        child.Assignments[1].StatusName.Should().Be("Solicitada");
+        child.Assignments[1].HasTimeConflict.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ActivityAssignments_MissingActivity_ReturnsNotFound()
+    public async Task EventAttendees_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/activities/{Guid.NewGuid()}/assignments",
+            $"/api/reports/events/{Guid.NewGuid()}/attendees",
             TestContext.Current.CancellationToken
         );
 
@@ -257,7 +268,20 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         var error = await response.ReadJsonAsync<ApiErrorResponse>(
             TestContext.Current.CancellationToken
         );
-        error!.Code.Should().Be(ErrorCode.ActivityNotFound);
+        error!.Code.Should().Be(ErrorCode.EventNotFound);
+    }
+
+    [Fact]
+    public async Task EventAttendees_MemberUser_ReturnsForbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
