@@ -21,7 +21,6 @@ export const ErrorCode = {
   ActivityAssignmentNotFound: 'ActivityAssignmentNotFound',
   AssignmentStatusTypeNotFound: 'AssignmentStatusTypeNotFound',
   ActivityRoleTypeNotFound: 'ActivityRoleTypeNotFound',
-  ActivityRoleTypeNameAlreadyExists: 'ActivityRoleTypeNameAlreadyExists',
   ActivityScheduleRequired: 'ActivityScheduleRequired',
   ActivityScheduleInvalidRange: 'ActivityScheduleInvalidRange',
   ActivityScheduleOutsideEventRange: 'ActivityScheduleOutsideEventRange',

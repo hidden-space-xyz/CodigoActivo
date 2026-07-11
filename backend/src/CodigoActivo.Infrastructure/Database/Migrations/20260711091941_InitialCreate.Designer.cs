@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20260711083935_InitialCreate")]
+    [Migration("20260711091941_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -102,25 +102,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_activities_updated_by");
 
                     b.ToTable("activities", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityAllowedRoleType", b =>
-                {
-                    b.Property<Guid>("ActivityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("activity_id");
-
-                    b.Property<Guid>("ActivityRoleTypeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("activity_role_type_id");
-
-                    b.HasKey("ActivityId", "ActivityRoleTypeId")
-                        .HasName("pk_activity_allowed_role_types");
-
-                    b.HasIndex("ActivityRoleTypeId")
-                        .HasDatabaseName("ix_activity_allowed_role_types_activity_role_type_id");
-
-                    b.ToTable("activity_allowed_role_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityModalityType", b =>
@@ -846,27 +827,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Thumbnail");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityAllowedRoleType", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.Activity", "Activity")
-                        .WithMany("AllowedRoleTypes")
-                        .HasForeignKey("ActivityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_activity_allowed_role_types_activities_activity_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.ActivityRoleType", "ActivityRoleType")
-                        .WithMany("AllowedInActivities")
-                        .HasForeignKey("ActivityRoleTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_activity_allowed_role_types_activity_role_types_activity_ro");
-
-                    b.Navigation("Activity");
-
-                    b.Navigation("ActivityRoleType");
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityUserRoleAssignment", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Entities.Activity", "Activity")
@@ -1077,8 +1037,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
                 {
-                    b.Navigation("AllowedRoleTypes");
-
                     b.Navigation("Assignments");
                 });
 
@@ -1089,8 +1047,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleType", b =>
                 {
-                    b.Navigation("AllowedInActivities");
-
                     b.Navigation("Assignments");
                 });
 

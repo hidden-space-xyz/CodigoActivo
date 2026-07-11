@@ -21,7 +21,7 @@ public static class SeedIds
     public static class ActivityRoleTypes
     {
         public static readonly Guid Leader = new("5bd627de-831a-4169-874e-26a90550db9f");
-        public static readonly Guid Helper = new("3b31564d-9879-434c-9152-5907db0c46fb");
+        public static readonly Guid Volunteer = new("3b31564d-9879-434c-9152-5907db0c46fb");
         public static readonly Guid Participant = new("03a5613e-a2d2-42da-94d2-b6d63c0f01b5");
     }
 

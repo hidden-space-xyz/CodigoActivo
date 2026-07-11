@@ -4,14 +4,12 @@ import { AppButton as Button } from '@/shared/ui'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type {
   ActivityResponse,
-  ActivityRoleTypeResponse,
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
@@ -21,7 +19,6 @@ import { parseDateOnly, toDateOnly } from '@/shared/lib'
 const props = defineProps<{
   visible: boolean
   activity: ActivityResponse | null
-  roleTypes: ActivityRoleTypeResponse[]
   modalityTypes: ActivityModalityTypeResponse[]
   saving: boolean
   eventStart?: string | null
@@ -40,7 +37,6 @@ interface ActivityForm {
   modalityId: string
   activityStartsAt: Date | null
   activityEndsAt: Date | null
-  roleIds: string[]
 }
 
 const form = reactive<ActivityForm>({
@@ -50,7 +46,6 @@ const form = reactive<ActivityForm>({
   modalityId: '',
   activityStartsAt: null,
   activityEndsAt: null,
-  roleIds: [],
 })
 const submitted = ref(false)
 const {
@@ -111,11 +106,6 @@ function populate(): void {
   form.activityEndsAt = props.activity?.activityEndsAt
     ? new Date(props.activity.activityEndsAt)
     : null
-  form.roleIds = []
-  for (const role of props.activity?.allowedRoleTypes ?? []) {
-    if (!role.roleTypeId) continue
-    form.roleIds.push(role.roleTypeId)
-  }
 }
 
 watch([() => props.visible, () => props.activity], ([open]) => {
@@ -150,7 +140,6 @@ async function save(): Promise<void> {
     activityModalityTypeId: form.modalityId,
     activityStartsAt: activityStartsAt.toISOString(),
     activityEndsAt: activityEndsAt.toISOString(),
-    allowedRoleTypes: form.roleIds.map((id) => ({ activityRoleTypeId: id })),
     thumbnailId,
   } satisfies CreateActivityRequest)
 }
@@ -254,17 +243,6 @@ async function save(): Promise<void> {
       <small v-if="submitted && outsideEvent" class="form__error"
         >La actividad debe estar dentro de las fechas del evento.</small
       >
-      <div class="form__field">
-        <label>Roles permitidos</label>
-        <MultiSelect
-          v-model="form.roleIds"
-          :options="roleTypes"
-          option-label="name"
-          option-value="id"
-          placeholder="Selecciona roles"
-          fluid
-        />
-      </div>
       <div class="form__field">
         <label>Imagen</label>
         <ThumbnailField

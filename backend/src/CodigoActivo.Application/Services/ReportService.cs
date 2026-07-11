@@ -28,21 +28,16 @@ public class ReportService(
 
         var assignments = ev.Activities.SelectMany(a => a.Assignments).ToList();
 
-        var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
-
         var approvedByRole = assignments
             .Where(a => a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed)
             .GroupBy(a => a.ActivityRoleTypeId)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        var roleTypeBreakdown = ev
-            .Activities.SelectMany(a => a.AllowedRoleTypes)
-            .Select(r => r.ActivityRoleTypeId)
-            .Distinct()
-            .Select(id => new EventRoleTypeSummaryResponse(
-                id,
-                roleNames.GetValueOrDefault(id),
-                approvedByRole.GetValueOrDefault(id, 0)
+        var roleTypeBreakdown = (await roleTypes.GetAllAsync(ct))
+            .Select(role => new EventRoleTypeSummaryResponse(
+                role.Id,
+                role.Name,
+                approvedByRole.GetValueOrDefault(role.Id, 0)
             ))
             .OrderBy(r => r.RoleTypeName, StringComparer.Ordinal)
             .ToList();

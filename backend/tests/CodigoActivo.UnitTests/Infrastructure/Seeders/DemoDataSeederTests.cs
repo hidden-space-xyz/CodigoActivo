@@ -111,16 +111,32 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EveryAssignedRoleIsAllowedOnItsActivity()
+    public void BuildGraph_Default_EveryAssignedRoleComesFromTheFixedCatalog()
     {
-        var allowed = graph
-            .AllowedRoles.Select(x => (x.ActivityId, x.ActivityRoleTypeId))
+        var catalog = new HashSet<Guid>
+        {
+            SeedIds.ActivityRoleTypes.Leader,
+            SeedIds.ActivityRoleTypes.Volunteer,
+            SeedIds.ActivityRoleTypes.Participant,
+        };
+
+        graph.Assignments.Should().OnlyContain(x => catalog.Contains(x.ActivityRoleTypeId));
+    }
+
+    [Fact]
+    public void BuildGraph_Default_LeaderAssignmentsBelongToMemberTypeUsers()
+    {
+        var memberIds = graph
+            .Users.Where(u => u.UserTypeId == SeedIds.UserTypes.Member)
+            .Select(u => u.Id)
             .ToHashSet();
 
-        graph
-            .Assignments.Select(x => (x.ActivityId, x.ActivityRoleTypeId))
-            .Should()
-            .OnlyContain(key => allowed.Contains(key));
+        var leaders = graph
+            .Assignments.Where(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader)
+            .ToList();
+
+        leaders.Should().NotBeEmpty();
+        leaders.Should().OnlyContain(x => memberIds.Contains(x.UserId));
     }
 
     [Fact]

@@ -4,7 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { ActivityAllowedRoleResponse } from './activityAllowedRoleResponse';
 
 export interface ActivityResponse {
   id?: string;
@@ -27,6 +26,4 @@ export interface ActivityResponse {
   createdBy?: string;
   /** @nullable */
   updatedBy?: string | null;
-  /** @nullable */
-  allowedRoleTypes?: ActivityAllowedRoleResponse[] | null;
 }

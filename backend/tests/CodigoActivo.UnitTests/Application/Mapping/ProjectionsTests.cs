@@ -181,10 +181,9 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Activity_ActivityWithModalityAndRoles_MapsScalarsModalityAndAllowedRoles()
+    public void Activity_ActivityWithModality_MapsScalarsAndModality()
     {
         var modalityId = Guid.NewGuid();
-        var roleTypeId = Guid.NewGuid();
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
@@ -201,14 +200,6 @@ public sealed class ProjectionsTests
             UpdatedAt = Updated,
             CreatedBy = Guid.NewGuid(),
             UpdatedBy = Guid.NewGuid(),
-            AllowedRoleTypes =
-            [
-                new ActivityAllowedRoleType
-                {
-                    ActivityRoleTypeId = roleTypeId,
-                    ActivityRoleType = new ActivityRoleType { Id = roleTypeId, Name = "Speaker" },
-                },
-            ],
         };
 
         var response = Project(Projections.Activity, activity);
@@ -227,11 +218,6 @@ public sealed class ProjectionsTests
         response.UpdatedAt.Should().Be(Updated);
         response.CreatedBy.Should().Be(activity.CreatedBy);
         response.UpdatedBy.Should().Be(activity.UpdatedBy);
-        response
-            .AllowedRoleTypes.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be(new ActivityAllowedRoleResponse(roleTypeId, "Speaker"));
     }
 
     [Fact]

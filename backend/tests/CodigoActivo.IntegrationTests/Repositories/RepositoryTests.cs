@@ -589,9 +589,6 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
         ctx.AddRange(user, role, status, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(
-            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
-        );
         ctx.ActivityUserRoleAssignments.Add(
             new ActivityUserRoleAssignment
             {
@@ -612,39 +609,13 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         loaded.Should().NotBeNull();
         loaded!.Activities.Should().ContainSingle();
-        var loadedActivity = loaded.Activities.Single();
-        loadedActivity.Assignments.Should().ContainSingle();
-        loadedActivity.AllowedRoleTypes.Should().ContainSingle();
+        loaded.Activities.Single().Assignments.Should().ContainSingle();
         (
             await repo.GetWithActivitiesAndAssignmentsAsync(
                 Guid.NewGuid(),
                 TestContext.Current.CancellationToken
             )
         )
-            .Should()
-            .BeNull();
-    }
-
-    [Fact]
-    public async Task GetForEditAsync_ActivityWithAllowedRoles_IncludesRolesOrReturnsNull()
-    {
-        await using var ctx = NewContext();
-        var role = NewRoleType();
-        var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
-        ctx.AddRange(role, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(
-            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
-        );
-        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        ctx.ChangeTracker.Clear();
-        var repo = new ActivityRepository(ctx);
-
-        var loaded = await repo.GetForEditAsync(activity.Id, TestContext.Current.CancellationToken);
-
-        loaded.Should().NotBeNull();
-        loaded!.AllowedRoleTypes.Should().ContainSingle();
-        (await repo.GetForEditAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
             .Should()
             .BeNull();
     }
@@ -714,45 +685,11 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task AllowedRoleExistsAsync_RoleAllowedOrNot_ReportsPresence()
-    {
-        await using var ctx = NewContext();
-        var role = NewRoleType();
-        var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
-        ctx.AddRange(role, ev, activity);
-        ctx.ActivityAllowedRoleTypes.Add(
-            new ActivityAllowedRoleType { ActivityId = activity.Id, ActivityRoleTypeId = role.Id }
-        );
-        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var repo = new ActivityRepository(ctx);
-
-        (
-            await repo.AllowedRoleExistsAsync(
-                activity.Id,
-                role.Id,
-                TestContext.Current.CancellationToken
-            )
-        )
-            .Should()
-            .BeTrue();
-        (
-            await repo.AllowedRoleExistsAsync(
-                activity.Id,
-                Guid.NewGuid(),
-                TestContext.Current.CancellationToken
-            )
-        )
-            .Should()
-            .BeFalse();
-    }
-
-    [Fact]
     public async Task GetAssignmentAsync_AssignmentExistsOrNot_ReturnsWithIncludesOrNull()
     {
         await using var ctx = NewContext();
         var user = NewUser();
-        var role = NewRoleType("Voluntario");
+        var role = NewRoleType("Ayudante");
         var status = NewAssignmentStatus("Pending");
         var ev = NewEvent();
         var activity = NewActivity(ev.Id);
@@ -777,7 +714,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
 
         found.Should().NotBeNull();
-        found!.ActivityRoleType.Name.Should().Be("Voluntario");
+        found!.ActivityRoleType.Name.Should().Be("Ayudante");
         found.AssignmentStatus.Name.Should().Be("Pending");
         (
             await repo.GetAssignmentAsync(

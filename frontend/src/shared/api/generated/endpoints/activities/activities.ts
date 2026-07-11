@@ -40,12 +40,11 @@ import type {
   ChangeAssignmentRoleRequest,
   ChangeAssignmentStatusRequest,
   CreateActivityRequest,
-  CreateActivityRoleTypeRequest,
   GetApiActivitiesParams,
   HouseholdMemberAssignmentResponse,
+  HouseholdSignupRolesResponse,
   TimeOverlapResponse,
-  UpdateActivityRequest,
-  UpdateActivityRoleTypeRequest
+  UpdateActivityRequest
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -616,34 +615,34 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiActivitiesRoleTypeMutationOptions(options), queryClient);
     }
-    export type postApiActivitiesRoleTypeResponse200 = {
-  data: ActivityRoleTypeResponse
+    export type getApiActivitiesSignupRolesResponse200 = {
+  data: HouseholdSignupRolesResponse[]
   status: 200
 }
 
-export type postApiActivitiesRoleTypeResponseSuccess = (postApiActivitiesRoleTypeResponse200) & {
+export type getApiActivitiesSignupRolesResponseSuccess = (getApiActivitiesSignupRolesResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postApiActivitiesRoleTypeResponse = (postApiActivitiesRoleTypeResponseSuccess)
+export type getApiActivitiesSignupRolesResponse = (getApiActivitiesSignupRolesResponseSuccess)
 
-export const getPostApiActivitiesRoleTypeUrl = () => {
-
-
+export const getGetApiActivitiesSignupRolesUrl = () => {
 
 
-  return `/api/activities/roleType`
+
+
+  return `/api/activities/signup-roles`
 }
 
-export const postApiActivitiesRoleType = async (createActivityRoleTypeRequest?: CreateActivityRoleTypeRequest, options?: RequestInit): Promise<postApiActivitiesRoleTypeResponse> => {
+export const getApiActivitiesSignupRoles = async ( options?: RequestInit): Promise<getApiActivitiesSignupRolesResponse> => {
 
-  return httpClient<postApiActivitiesRoleTypeResponse>(getPostApiActivitiesRoleTypeUrl(),
+  return httpClient<getApiActivitiesSignupRolesResponse>(getGetApiActivitiesSignupRolesUrl(),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createActivityRoleTypeRequest)
+    method: 'GET'
+
+
   }
 );}
 
@@ -651,56 +650,48 @@ export const postApiActivitiesRoleType = async (createActivityRoleTypeRequest?: 
 
 
 
-export const getPostApiActivitiesRoleTypeQueryKey = (createActivityRoleTypeRequest?: MaybeRef<CreateActivityRoleTypeRequest>,) => {
-    return [
-    'POST', 'api','activities','roleType', createActivityRoleTypeRequest
-    ] as const;
+export const getGetApiActivitiesSignupRolesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiActivitiesSignupRoles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, void> = () => {
+
+
+          return  getApiActivitiesSignupRoles(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiActivitiesSignupRolesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>>
+
+    export type GetApiActivitiesSignupRolesMutationError = unknown
+
+    export const useGetApiActivitiesSignupRoles = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiActivitiesSignupRolesMutationOptions(options), queryClient);
     }
-
-
-export const getPostApiActivitiesRoleTypeQueryOptions = <TData = Awaited<ReturnType<typeof postApiActivitiesRoleType>>, TError = unknown>(createActivityRoleTypeRequest?: MaybeRef<CreateActivityRoleTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesRoleType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiActivitiesRoleTypeQueryKey(createActivityRoleTypeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiActivitiesRoleType>>> = ({ signal }) => postApiActivitiesRoleType(unref(createActivityRoleTypeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesRoleType>>, TError, TData>
-}
-
-export type PostApiActivitiesRoleTypeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiActivitiesRoleType>>>
-export type PostApiActivitiesRoleTypeQueryError = unknown
-
-
-
-export function usePostApiActivitiesRoleType<TData = Awaited<ReturnType<typeof postApiActivitiesRoleType>>, TError = unknown>(
- createActivityRoleTypeRequest?: MaybeRef<CreateActivityRoleTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesRoleType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiActivitiesRoleTypeQueryOptions(createActivityRoleTypeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type getApiActivitiesAssignmentStatusTypesResponse200 = {
+    export type getApiActivitiesAssignmentStatusTypesResponse200 = {
   data: AssignmentStatusTypeResponse[]
   status: 200
 }
@@ -1383,178 +1374,6 @@ export function usePatchApiActivitiesActivityIdUserIdChangeRole<TData = Awaited<
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPatchApiActivitiesActivityIdUserIdChangeRoleQueryOptions(activityId,userId,changeAssignmentRoleRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponse200 = {
-  data: ActivityRoleTypeResponse
-  status: 200
-}
-
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponseSuccess = (putApiActivitiesRoleTypeActivityRoleTypeIdResponse200) & {
-  headers: Headers;
-};
-;
-
-export type putApiActivitiesRoleTypeActivityRoleTypeIdResponse = (putApiActivitiesRoleTypeActivityRoleTypeIdResponseSuccess)
-
-export const getPutApiActivitiesRoleTypeActivityRoleTypeIdUrl = (activityRoleTypeId: string,) => {
-
-
-
-
-  return `/api/activities/roleType/${activityRoleTypeId}`
-}
-
-export const putApiActivitiesRoleTypeActivityRoleTypeId = async (activityRoleTypeId: string,
-    updateActivityRoleTypeRequest?: UpdateActivityRoleTypeRequest, options?: RequestInit): Promise<putApiActivitiesRoleTypeActivityRoleTypeIdResponse> => {
-
-  return httpClient<putApiActivitiesRoleTypeActivityRoleTypeIdResponse>(getPutApiActivitiesRoleTypeActivityRoleTypeIdUrl(activityRoleTypeId),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateActivityRoleTypeRequest)
-  }
-);}
-
-
-
-
-
-export const getPutApiActivitiesRoleTypeActivityRoleTypeIdQueryKey = (activityRoleTypeId: MaybeRef<string>,
-    updateActivityRoleTypeRequest?: MaybeRef<UpdateActivityRoleTypeRequest>,) => {
-    return [
-    'PUT', 'api','activities','roleType',activityRoleTypeId, updateActivityRoleTypeRequest
-    ] as const;
-    }
-
-
-export const getPutApiActivitiesRoleTypeActivityRoleTypeIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>, TError = unknown>(activityRoleTypeId: MaybeRef<string>,
-    updateActivityRoleTypeRequest?: MaybeRef<UpdateActivityRoleTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiActivitiesRoleTypeActivityRoleTypeIdQueryKey(activityRoleTypeId,updateActivityRoleTypeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>> = ({ signal }) => putApiActivitiesRoleTypeActivityRoleTypeId(unref(activityRoleTypeId),unref(updateActivityRoleTypeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => unref(activityRoleTypeId) !== null && unref(activityRoleTypeId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>, TError, TData>
-}
-
-export type PutApiActivitiesRoleTypeActivityRoleTypeIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>>
-export type PutApiActivitiesRoleTypeActivityRoleTypeIdQueryError = unknown
-
-
-
-export function usePutApiActivitiesRoleTypeActivityRoleTypeId<TData = Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>, TError = unknown>(
- activityRoleTypeId: MaybeRef<string>,
-    updateActivityRoleTypeRequest?: MaybeRef<UpdateActivityRoleTypeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiActivitiesRoleTypeActivityRoleTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiActivitiesRoleTypeActivityRoleTypeIdQueryOptions(activityRoleTypeId,updateActivityRoleTypeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type deleteApiActivitiesRoleTypeActivityRoleTypeIdResponse200 = {
-  data: void
-  status: 200
-}
-
-export type deleteApiActivitiesRoleTypeActivityRoleTypeIdResponseSuccess = (deleteApiActivitiesRoleTypeActivityRoleTypeIdResponse200) & {
-  headers: Headers;
-};
-;
-
-export type deleteApiActivitiesRoleTypeActivityRoleTypeIdResponse = (deleteApiActivitiesRoleTypeActivityRoleTypeIdResponseSuccess)
-
-export const getDeleteApiActivitiesRoleTypeActivityRoleTypeIdUrl = (activityRoleTypeId: string,) => {
-
-
-
-
-  return `/api/activities/roleType/${activityRoleTypeId}`
-}
-
-export const deleteApiActivitiesRoleTypeActivityRoleTypeId = async (activityRoleTypeId: string, options?: RequestInit): Promise<deleteApiActivitiesRoleTypeActivityRoleTypeIdResponse> => {
-
-  return httpClient<deleteApiActivitiesRoleTypeActivityRoleTypeIdResponse>(getDeleteApiActivitiesRoleTypeActivityRoleTypeIdUrl(activityRoleTypeId),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-
-export const getDeleteApiActivitiesRoleTypeActivityRoleTypeIdQueryKey = (activityRoleTypeId: MaybeRef<string>,) => {
-    return [
-    'DELETE', 'api','activities','roleType',activityRoleTypeId
-    ] as const;
-    }
-
-
-export const getDeleteApiActivitiesRoleTypeActivityRoleTypeIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>, TError = unknown>(activityRoleTypeId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiActivitiesRoleTypeActivityRoleTypeIdQueryKey(activityRoleTypeId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>> = ({ signal }) => deleteApiActivitiesRoleTypeActivityRoleTypeId(unref(activityRoleTypeId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => unref(activityRoleTypeId) !== null && unref(activityRoleTypeId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>, TError, TData>
-}
-
-export type DeleteApiActivitiesRoleTypeActivityRoleTypeIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>>
-export type DeleteApiActivitiesRoleTypeActivityRoleTypeIdQueryError = unknown
-
-
-
-export function useDeleteApiActivitiesRoleTypeActivityRoleTypeId<TData = Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>, TError = unknown>(
- activityRoleTypeId: MaybeRef<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiActivitiesRoleTypeActivityRoleTypeId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiActivitiesRoleTypeActivityRoleTypeIdQueryOptions(activityRoleTypeId,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

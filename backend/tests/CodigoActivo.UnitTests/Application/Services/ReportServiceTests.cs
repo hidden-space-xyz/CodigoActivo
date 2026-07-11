@@ -30,6 +30,7 @@ public sealed class ReportServiceTests
     private static readonly Guid AlphaRoleId = new("11111111-1111-1111-1111-111111111111");
     private static readonly Guid BetaRoleId = new("22222222-2222-2222-2222-222222222222");
     private static readonly Guid GhostRoleId = new("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid IdleRoleId = new("44444444-4444-4444-4444-444444444444");
 
     private static readonly Guid Confirmed = SeedIds.AssignmentStatusTypes.Confirmed;
     private static readonly Guid Requested = SeedIds.AssignmentStatusTypes.Requested;
@@ -65,15 +66,7 @@ public sealed class ReportServiceTests
             AssignmentStatusId = statusId,
         };
 
-    private static ActivityAllowedRoleType Allowed(Guid roleId, string? name) =>
-        new()
-        {
-            ActivityRoleTypeId = roleId,
-            ActivityRoleType = new ActivityRoleType { Id = roleId, Name = name! },
-        };
-
     private static Activity ActivityWith(
-        IEnumerable<ActivityAllowedRoleType> allowed,
         IEnumerable<ActivityUserRoleAssignment> assignments,
         string title = "Act"
     ) =>
@@ -81,7 +74,6 @@ public sealed class ReportServiceTests
         {
             Id = Guid.NewGuid(),
             Title = title,
-            AllowedRoleTypes = allowed.ToList(),
             Assignments = assignments.ToList(),
         };
 
@@ -123,19 +115,15 @@ public sealed class ReportServiceTests
         var user2 = Guid.NewGuid();
         var user3 = Guid.NewGuid();
 
-        var activity1 = ActivityWith(
-            allowed: [Allowed(AlphaRoleId, "Alpha"), Allowed(BetaRoleId, "Beta")],
-            assignments:
-            [
-                Asg(user1, AlphaRoleId, Confirmed),
-                Asg(user2, AlphaRoleId, Confirmed),
-                Asg(user1, BetaRoleId, Confirmed),
-            ]
-        );
-        var activity2 = ActivityWith(
-            allowed: [Allowed(BetaRoleId, "Beta"), Allowed(GhostRoleId, "unused")],
-            assignments: [Asg(user3, BetaRoleId, Requested), Asg(user2, GhostRoleId, Denied)]
-        );
+        var activity1 = ActivityWith([
+            Asg(user1, AlphaRoleId, Confirmed),
+            Asg(user2, AlphaRoleId, Confirmed),
+            Asg(user1, BetaRoleId, Confirmed),
+        ]);
+        var activity2 = ActivityWith([
+            Asg(user3, BetaRoleId, Requested),
+            Asg(user2, GhostRoleId, Denied),
+        ]);
 
         var ev = new Event
         {
@@ -144,7 +132,7 @@ public sealed class ReportServiceTests
             Activities = [activity1, activity2],
         };
         EventGraph(eventId, ev);
-        HasRoleTypes((AlphaRoleId, "Alpha"), (BetaRoleId, "Beta"));
+        HasRoleTypes((AlphaRoleId, "Alpha"), (IdleRoleId, "Idle"), (BetaRoleId, "Beta"));
 
         var result = await sut.GetEventSummaryAsync(eventId, TestContext.Current.CancellationToken);
 
@@ -163,15 +151,16 @@ public sealed class ReportServiceTests
         summary
             .RoleTypeBreakdown[0]
             .Should()
-            .BeEquivalentTo(new EventRoleTypeSummaryResponse(GhostRoleId, null, 0));
+            .BeEquivalentTo(new EventRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 2));
         summary
             .RoleTypeBreakdown[1]
             .Should()
-            .BeEquivalentTo(new EventRoleTypeSummaryResponse(AlphaRoleId, "Alpha", 2));
+            .BeEquivalentTo(new EventRoleTypeSummaryResponse(BetaRoleId, "Beta", 1));
         summary
             .RoleTypeBreakdown[2]
             .Should()
-            .BeEquivalentTo(new EventRoleTypeSummaryResponse(BetaRoleId, "Beta", 1));
+            .BeEquivalentTo(new EventRoleTypeSummaryResponse(IdleRoleId, "Idle", 0));
+        summary.RoleTypeBreakdown.Should().NotContain(r => r.RoleTypeId == GhostRoleId);
     }
 
     [Fact]

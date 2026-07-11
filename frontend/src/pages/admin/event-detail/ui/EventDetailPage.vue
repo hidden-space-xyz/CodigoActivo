@@ -18,7 +18,7 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 
 import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
-import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
+import { useActivityModalityTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
 import EventAttendeesTab from './EventAttendeesTab.vue'
 import type {
@@ -40,7 +40,6 @@ const activeTab = ref<string | number>('activities')
 const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
 const activities = useActivities(eventId)
-const roleTypes = useActivityRoleTypesList()
 const modalityTypes = useActivityModalityTypesList()
 
 const summaryCards = computed(() => {
@@ -51,10 +50,6 @@ const summaryCards = computed(() => {
   }
   return cards
 })
-
-function roleNames(activity: ActivityResponse): string {
-  return (activity.allowedRoleTypes ?? []).map((role) => role.roleTypeName).join(', ') || '—'
-}
 
 const titleQuery = ref<string | number | null>(null)
 const modalityFilter = ref<string | boolean | null>(null)
@@ -223,11 +218,6 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
                   </div>
                 </template>
               </Column>
-              <Column header="Roles">
-                <template #body="{ data }">
-                  {{ roleNames(data) }}
-                </template>
-              </Column>
               <Column header="Acciones" style="width: 120px">
                 <template #body="{ data }">
                   <div class="row-actions">
@@ -267,7 +257,6 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
     <ActivityFormDialog
       v-model:visible="activityDialogVisible"
       :activity="selectedActivity"
-      :role-types="roleTypes.data.value ?? []"
       :modality-types="modalityTypes.data.value ?? []"
       :saving="activitySaving"
       :event-start="event.data.value?.eventStartsAt ?? null"

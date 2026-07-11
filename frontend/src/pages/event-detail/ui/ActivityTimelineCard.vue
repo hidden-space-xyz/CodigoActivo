@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { AppButton as Button, BaseButton } from '@/shared/ui'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 
 import { formatTimeRange } from '@/shared/lib'
 
-import type { TimelineActivity } from '../model/activity-timeline.types'
+import type { TimelineActivity, TimelineRole } from '../model/activity-timeline.types'
 
 const props = defineProps<{
   activity: TimelineActivity
+  roles: readonly TimelineRole[]
+  rolesLoading: boolean
   busy: boolean
   authenticated: boolean
   signupOpen: boolean
@@ -24,8 +26,14 @@ const emit = defineEmits<{
   login: []
 }>()
 
-const selectedRoleId = ref(
-  props.activity.roles.length === 1 ? (props.activity.roles[0]?.id ?? '') : '',
+const selectedRoleId = ref('')
+
+watch(
+  () => props.roles,
+  (roles) => {
+    if (roles.length === 1) selectedRoleId.value = roles[0]?.id ?? ''
+  },
+  { immediate: true },
 )
 
 function scheduleLabel(): string {
@@ -105,13 +113,9 @@ function onSignup(): void {
           v-else
           :label="activity.household.length ? 'Apuntar a otro miembro' : 'Apuntar a mi familia'"
           size="small"
-          :loading="busy"
-          :disabled="activity.roles.length === 0"
+          :loading="busy || rolesLoading"
           @click="emit('household')"
         />
-        <span v-if="signupOpen && activity.roles.length === 0" class="act__note">
-          Sin roles disponibles
-        </span>
       </template>
 
       <template v-else-if="activity.assignment">
@@ -130,23 +134,28 @@ function onSignup(): void {
         <span class="act__note">La inscripción no está abierta.</span>
       </template>
       <template v-else>
-        <Select
-          v-if="activity.roles.length > 1"
-          v-model="selectedRoleId"
-          :options="activity.roles"
-          option-label="name"
-          option-value="id"
-          placeholder="Elige un rol"
-          class="act__role-select"
-        />
-        <Button
-          label="Apuntarme"
-          size="small"
-          :loading="busy"
-          :disabled="activity.roles.length === 0 || !selectedRoleId"
-          @click="onSignup"
-        />
-        <span v-if="activity.roles.length === 0" class="act__note">Sin roles disponibles</span>
+        <span v-if="rolesLoading" class="act__note">Cargando roles…</span>
+        <span v-else-if="roles.length === 0" class="act__note">
+          No se pudieron cargar los roles de inscripción.
+        </span>
+        <template v-else>
+          <Select
+            v-if="roles.length > 1"
+            v-model="selectedRoleId"
+            :options="[...roles]"
+            option-label="name"
+            option-value="id"
+            placeholder="Elige un rol"
+            class="act__role-select"
+          />
+          <Button
+            label="Apuntarme"
+            size="small"
+            :loading="busy"
+            :disabled="!selectedRoleId"
+            @click="onSignup"
+          />
+        </template>
       </template>
     </div>
   </article>

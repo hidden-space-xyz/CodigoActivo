@@ -23,16 +23,10 @@ public sealed class DemoDataSeeder(
     public const string DemoPassword = "Demo1234!";
 
     private const int AdultCount = 20;
+    private const int MemberAdultCount = 14;
     private const int ChildCount = 5;
 
     private static Guid AdminId => UserId(0);
-
-    private static readonly Guid[] AllRoleTypeIds =
-    [
-        SeedIds.ActivityRoleTypes.Leader,
-        SeedIds.ActivityRoleTypes.Helper,
-        SeedIds.ActivityRoleTypes.Participant,
-    ];
 
     private static readonly string[] CategoryColors =
     [
@@ -84,7 +78,6 @@ public sealed class DemoDataSeeder(
             context.Activities.AddRange(graph.Activities);
             await context.SaveChangesAsync(ct);
 
-            context.ActivityAllowedRoleTypes.AddRange(graph.AllowedRoles);
             context.ActivityUserRoleAssignments.AddRange(graph.Assignments);
             await context.SaveChangesAsync(ct);
 
@@ -139,9 +132,6 @@ public sealed class DemoDataSeeder(
             .ActivityUserRoleAssignments.Where(x =>
                 ownedActivityIds.Contains(x.ActivityId) || demoUserIds.Contains(x.UserId)
             )
-            .ExecuteDeleteAsync(ct);
-        await context
-            .ActivityAllowedRoleTypes.Where(x => ownedActivityIds.Contains(x.ActivityId))
             .ExecuteDeleteAsync(ct);
         await context
             .EventCategories.Where(x => ownedEventIds.Contains(x.EventId))
@@ -266,7 +256,6 @@ public sealed class DemoDataSeeder(
         var events = new List<Event>(DemoEvents.Length);
         var eventCategories = new List<EventCategory>();
         var activities = new List<Activity>();
-        var allowedRoles = new List<ActivityAllowedRoleType>();
         var assignments = new List<ActivityUserRoleAssignment>();
 
         for (var e = 0; e < DemoEvents.Length; e++)
@@ -330,15 +319,6 @@ public sealed class DemoDataSeeder(
                         CreatedBy = AdminId,
                     }
                 );
-
-                foreach (var roleTypeId in AllRoleTypeIds)
-                    allowedRoles.Add(
-                        new ActivityAllowedRoleType
-                        {
-                            ActivityId = activityId,
-                            ActivityRoleTypeId = roleTypeId,
-                        }
-                    );
 
                 assignments.AddRange(BuildAssignments((e * 5) + a, activityId, signupOpensAt, now));
             }
@@ -430,7 +410,6 @@ public sealed class DemoDataSeeder(
             events,
             eventCategories,
             activities,
-            allowedRoles,
             assignments,
             news,
             resources,
@@ -461,14 +440,22 @@ public sealed class DemoDataSeeder(
         DateTimeOffset now
     )
     {
+        var leaderAdult = (globalIndex * 3) % MemberAdultCount;
         var baseAdult = (globalIndex * 3) % AdultCount;
+
+        int OtherAdult(int offset)
+        {
+            var index = (baseAdult + offset) % AdultCount;
+            return index == leaderAdult ? (baseAdult + 4) % AdultCount : index;
+        }
+
         (int UserIndex, Guid RoleTypeId)[] picks =
         [
-            (baseAdult, SeedIds.ActivityRoleTypes.Leader),
-            ((baseAdult + 1) % AdultCount, SeedIds.ActivityRoleTypes.Helper),
-            ((baseAdult + 2) % AdultCount, SeedIds.ActivityRoleTypes.Participant),
+            (leaderAdult, SeedIds.ActivityRoleTypes.Leader),
+            (OtherAdult(1), SeedIds.ActivityRoleTypes.Volunteer),
+            (OtherAdult(2), SeedIds.ActivityRoleTypes.Participant),
             (AdultCount + (globalIndex % ChildCount), SeedIds.ActivityRoleTypes.Participant),
-            ((baseAdult + 3) % AdultCount, SeedIds.ActivityRoleTypes.Participant),
+            (OtherAdult(3), SeedIds.ActivityRoleTypes.Participant),
         ];
 
         for (var slot = 0; slot < picks.Length; slot++)
@@ -1840,7 +1827,6 @@ internal sealed record DemoGraph(
     List<Event> Events,
     List<EventCategory> EventCategories,
     List<Activity> Activities,
-    List<ActivityAllowedRoleType> AllowedRoles,
     List<ActivityUserRoleAssignment> Assignments,
     List<Announcement> Announcements,
     List<Resource> Resources,

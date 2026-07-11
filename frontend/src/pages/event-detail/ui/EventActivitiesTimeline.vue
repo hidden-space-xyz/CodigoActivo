@@ -25,6 +25,9 @@ const {
   hasHousehold,
   members,
   userId,
+  signupRoles,
+  selfRoles,
+  rolesFor,
   assign,
   assignHousehold,
   unassign,
@@ -72,7 +75,6 @@ const items = computed<TimelineActivity[]>(() =>
     modality: a.modality,
     start: a.startsAt ? new Date(a.startsAt) : null,
     end: a.endsAt ? new Date(a.endsAt) : null,
-    roles: a.roles.map((r) => ({ id: r.id, name: r.name })),
     assignment: assignmentByActivity.value.get(a.id) ?? null,
     household: householdByActivity.value.get(a.id) ?? [],
   })),
@@ -174,17 +176,17 @@ function doAssign(activityId: string, roleId: string): void {
 }
 
 function openHousehold(activity: TimelineActivity): void {
-  const defaultRole = activity.roles.length === 1 ? (activity.roles[0]?.id ?? '') : ''
   householdDialog.activity = activity
   householdDialog.rows = members.value.map((member) => {
     const existing = activity.household.find((h) => h.userId === member.id)
+    const memberRoles = rolesFor(member.id)
     return {
       userId: member.id,
       name: member.name,
       alreadyAssigned: existing !== undefined,
       assignedRole: existing?.roleName ?? '',
       include: existing === undefined,
-      roleId: defaultRole,
+      roleId: memberRoles.length === 1 ? (memberRoles[0]?.id ?? '') : '',
     }
   })
   householdDialog.visible = true
@@ -268,6 +270,16 @@ function onUnassign(activity: TimelineActivity): void {
       <p v-if="!signupOpen" class="signup-closed">
         <i class="pi pi-info-circle" /> La inscripción no está abierta para este evento.
       </p>
+      <p v-else-if="isAuthenticated && signupRoles.isError.value" class="signup-closed">
+        <i class="pi pi-info-circle" /> No se pudieron cargar los roles de inscripción.
+        <Button
+          label="Reintentar"
+          size="small"
+          text
+          :loading="signupRoles.isFetching.value"
+          @click="signupRoles.refetch()"
+        />
+      </p>
 
       <ol class="timeline">
         <li v-for="(cluster, index) in clusters" :key="index" class="tl-node">
@@ -286,6 +298,8 @@ function onUnassign(activity: TimelineActivity): void {
                 v-for="act in cluster.items"
                 :key="act.id"
                 :activity="act"
+                :roles="selfRoles"
+                :roles-loading="signupRoles.isLoading.value"
                 :reference-date="cluster.start"
                 :authenticated="isAuthenticated"
                 :signup-open="signupOpen"
@@ -309,6 +323,8 @@ function onUnassign(activity: TimelineActivity): void {
             v-for="act in unscheduled"
             :key="act.id"
             :activity="act"
+            :roles="selfRoles"
+            :roles-loading="signupRoles.isLoading.value"
             :authenticated="isAuthenticated"
             :signup-open="signupOpen"
             :has-household="hasHousehold"
@@ -350,7 +366,7 @@ function onUnassign(activity: TimelineActivity): void {
           <Select
             v-else
             v-model="row.roleId"
-            :options="householdDialog.activity?.roles ?? []"
+            :options="[...rolesFor(row.userId)]"
             option-label="name"
             option-value="id"
             placeholder="Elige un rol"

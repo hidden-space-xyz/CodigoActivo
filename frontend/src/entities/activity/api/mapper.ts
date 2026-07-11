@@ -2,24 +2,21 @@ import type { ActivityResponse, UserResponse } from '@/shared/api/generated/mode
 import type {
   AssignedActivityResponse,
   HouseholdMemberAssignmentResponse,
+  HouseholdSignupRolesResponse,
   TimeOverlapResponse,
 } from '@/shared/api/generated/models'
 
 import type {
   ActivityAssignment,
   ActivityOverlap,
-  ActivityRole,
   EventActivity,
   HouseholdActivityAssignment,
   HouseholdMember,
+  HouseholdSignupRoles,
   OverlapCheck,
 } from '../model/types'
 
 export function toEventActivity(activity: ActivityResponse): EventActivity {
-  const roles: ActivityRole[] = (activity.allowedRoleTypes ?? [])
-    .filter((role) => role.roleTypeId)
-    .map((role) => ({ id: role.roleTypeId as string, name: role.roleTypeName ?? 'Rol' }))
-
   return {
     id: activity.id ?? '',
     title: activity.title ?? 'Actividad',
@@ -28,7 +25,15 @@ export function toEventActivity(activity: ActivityResponse): EventActivity {
     modality: activity.modalityName ?? '',
     startsAt: activity.activityStartsAt ?? null,
     endsAt: activity.activityEndsAt ?? null,
-    roles,
+  }
+}
+
+export function toHouseholdSignupRoles(item: HouseholdSignupRolesResponse): HouseholdSignupRoles {
+  return {
+    userId: item.userId ?? '',
+    roles: (item.roles ?? [])
+      .filter((role) => role.id)
+      .map((role) => ({ id: role.id as string, name: role.name ?? 'Rol' })),
   }
 }
 

@@ -6,7 +6,7 @@ import Select from 'primevue/select'
 
 import { useAssignments } from '@/features/manage-activities'
 import { useEventAttendees } from '@/features/manage-events'
-import { useAssignmentStatusTypesList } from '@/entities/catalog'
+import { useActivityRoleTypesList, useAssignmentStatusTypesList } from '@/entities/catalog'
 import type {
   ActivityResponse,
   EventAttendeeAssignmentResponse,
@@ -30,8 +30,10 @@ const attendees = useEventAttendees(
 )
 const assignments = useAssignments(() => props.eventId)
 const statusTypes = useAssignmentStatusTypesList()
+const roleTypes = useActivityRoleTypesList()
 
 const query = ref('')
+const typeFilter = ref<string | null>(null)
 const activityFilter = ref<string | null>(null)
 const roleFilter = ref<string | null>(null)
 const statusFilter = ref<string | null>(null)
@@ -51,6 +53,16 @@ const activityOptions = computed(() =>
     value: activity.id ?? '',
   })),
 )
+
+const typeOptions = computed(() => {
+  const seen = new Set<string>()
+  for (const attendee of attendees.data.value?.attendees ?? []) {
+    if (attendee.userTypeName) seen.add(attendee.userTypeName)
+  }
+  return [...seen]
+    .sort((a, b) => a.localeCompare(b, 'es'))
+    .map((name) => ({ label: name, value: name }))
+})
 
 const roleOptions = computed(() => {
   const seen = new Map<string, string>()
@@ -119,10 +131,13 @@ function visibleAssignments(attendee: EventAttendeeResponse): EventAttendeeAssig
 function matches(attendee: EventAttendeeResponse): boolean {
   const text = query.value.trim().toLowerCase()
   if (text) {
+    const guardian = attendee.guardian
     const haystack =
-      `${attendee.firstName ?? ''} ${attendee.lastName ?? ''} ${attendee.email ?? ''} ${attendee.phone ?? ''}`.toLowerCase()
-    if (!haystack.includes(text)) return false
+      `${attendee.firstName ?? ''} ${attendee.lastName ?? ''} ${attendee.email ?? ''} ${attendee.phone ?? ''} ` +
+      `${guardian?.firstName ?? ''} ${guardian?.lastName ?? ''} ${guardian?.email ?? ''} ${guardian?.phone ?? ''}`
+    if (!haystack.toLowerCase().includes(text)) return false
   }
+  if (typeFilter.value && attendee.userTypeName !== typeFilter.value) return false
   if (hasAssignmentFilter.value && !(attendee.assignments ?? []).some(assignmentMatches)) {
     return false
   }
@@ -186,14 +201,12 @@ const roleDialogVisible = ref(false)
 const roleTarget = ref<DialogTarget | null>(null)
 const selectedRoleId = ref<string | null>(null)
 
-const roleDialogOptions = computed(() => {
-  const activityId = roleTarget.value?.assignment.activityId
-  const activity = props.activities.find((a) => a.id === activityId)
-  return (activity?.allowedRoleTypes ?? []).map((role) => ({
-    label: role.roleTypeName ?? '—',
-    value: role.roleTypeId ?? '',
-  }))
-})
+const roleDialogOptions = computed(() =>
+  (roleTypes.data.value ?? []).map((role) => ({
+    label: role.name ?? '—',
+    value: role.id ?? '',
+  })),
+)
 
 function openChangeRole(
   attendee: EventAttendeeResponse,
@@ -231,6 +244,15 @@ function submitChangeRole(): void {
         v-model="query"
         placeholder="Buscar por nombre, correo o teléfono"
         class="toolbar__search"
+      />
+      <Select
+        v-model="typeFilter"
+        :options="typeOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Tipo"
+        show-clear
+        class="toolbar__filter"
       />
       <Select
         v-model="activityFilter"
@@ -299,9 +321,7 @@ function submitChangeRole(): void {
         >
           <div class="attendee__head">
             <div class="attendee__identity">
-              <span class="attendee__name" :title="attendee.userTypeName ?? undefined">
-                {{ fullName(attendee) }}
-              </span>
+              <span class="attendee__name">{{ fullName(attendee) }}</span>
               <span v-if="ageFrom(attendee.birthDate) !== null" class="attendee__age">
                 {{ ageFrom(attendee.birthDate) }} años
               </span>
@@ -314,18 +334,30 @@ function submitChangeRole(): void {
               </span>
             </div>
             <div class="attendee__contact">
-              <span
-                ><i class="pi pi-envelope" aria-hidden="true" /> {{ attendee.email || '—' }}</span
-              >
-              <span><i class="pi pi-phone" aria-hidden="true" /> {{ attendee.phone || '—' }}</span>
+              <template v-if="attendee.guardian">
+                <span>
+                  <i class="pi pi-user" aria-hidden="true" /> Tutor/a:
+                  {{ attendee.guardian.firstName }} {{ attendee.guardian.lastName }}
+                </span>
+                <span>
+                  <i class="pi pi-envelope" aria-hidden="true" />
+                  {{ attendee.guardian.email || '—' }}
+                </span>
+                <span>
+                  <i class="pi pi-phone" aria-hidden="true" />
+                  {{ attendee.guardian.phone || '—' }}
+                </span>
+              </template>
+              <template v-else>
+                <span
+                  ><i class="pi pi-envelope" aria-hidden="true" /> {{ attendee.email || '—' }}</span
+                >
+                <span
+                  ><i class="pi pi-phone" aria-hidden="true" /> {{ attendee.phone || '—' }}</span
+                >
+              </template>
             </div>
           </div>
-
-          <p v-if="attendee.guardian" class="attendee__guardian">
-            <i class="pi pi-user" aria-hidden="true" />
-            Tutor/a: {{ attendee.guardian.firstName }} {{ attendee.guardian.lastName }} ·
-            {{ attendee.guardian.email || '—' }} · {{ attendee.guardian.phone || '—' }}
-          </p>
 
           <ul class="attendee__assignments">
             <li
@@ -394,7 +426,7 @@ function submitChangeRole(): void {
           fluid
         />
         <small v-if="roleDialogOptions.length === 0" class="form__warning">
-          No se han podido cargar los roles de la actividad.
+          No se han podido cargar los roles.
         </small>
       </div>
       <template #footer>
@@ -554,17 +586,6 @@ function submitChangeRole(): void {
 }
 
 .attendee__contact i {
-  font-size: 12px;
-  margin-right: 4px;
-}
-
-.attendee__guardian {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--ca-text-muted);
-}
-
-.attendee__guardian i {
   font-size: 12px;
   margin-right: 4px;
 }

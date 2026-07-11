@@ -206,18 +206,10 @@ public interface IActivityService
         CancellationToken ct = default
     );
 
-    Task<Result<ActivityRoleTypeResponse>> CreateActivityRoleTypeAsync(
-        CreateActivityRoleTypeRequest request,
+    Task<IReadOnlyList<HouseholdSignupRolesResponse>> GetHouseholdSignupRolesAsync(
+        Guid actingUserId,
         CancellationToken ct = default
     );
-
-    Task<Result<ActivityRoleTypeResponse>> UpdateActivityRoleTypeAsync(
-        Guid id,
-        UpdateActivityRoleTypeRequest request,
-        CancellationToken ct = default
-    );
-
-    Task<Result> DeleteActivityRoleTypeAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IResourceService

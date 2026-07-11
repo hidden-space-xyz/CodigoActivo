@@ -54,18 +54,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             db.Activities.Add(BuildActivity(ActivityAId, "Taller", ActivityAThumbnailId));
             db.Activities.Add(BuildActivity(ActivityBId, "Charla", ActivityBThumbnailId));
 
-            db.ActivityAllowedRoleTypes.AddRange(
-                Allowed(ActivityAId, SeedIds.ActivityRoleTypes.Leader),
-                Allowed(ActivityAId, SeedIds.ActivityRoleTypes.Helper),
-                Allowed(ActivityBId, SeedIds.ActivityRoleTypes.Leader),
-                Allowed(ActivityBId, SeedIds.ActivityRoleTypes.Participant)
-            );
-
             db.ActivityUserRoleAssignments.AddRange(
                 Assignment(
                     ActivityAId,
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.ActivityRoleTypes.Helper,
+                    SeedIds.ActivityRoleTypes.Volunteer,
                     SeedIds.AssignmentStatusTypes.Confirmed
                 ),
                 Assignment(
@@ -123,9 +116,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             UploadedBy = TestSeedData.Users.AdminId,
         };
 
-    private static ActivityAllowedRoleType Allowed(Guid activityId, Guid roleTypeId) =>
-        new() { ActivityId = activityId, ActivityRoleTypeId = roleTypeId };
-
     private static ActivityUserRoleAssignment Assignment(
         Guid activityId,
         Guid userId,
@@ -164,6 +154,14 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         summary.ConfirmedAssignments.Should().Be(2);
         summary.DeniedAssignments.Should().Be(1);
         summary.DistinctVolunteers.Should().Be(4);
+        summary
+            .RoleTypeBreakdown.Select(r => (r.RoleTypeId, r.RoleTypeName, r.ApprovedAssignments))
+            .Should()
+            .Equal(
+                (SeedIds.ActivityRoleTypes.Leader, "Líder", 1),
+                (SeedIds.ActivityRoleTypes.Participant, "Participante", 0),
+                (SeedIds.ActivityRoleTypes.Volunteer, "Voluntario", 1)
+            );
     }
 
     [Fact]

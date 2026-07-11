@@ -16,9 +16,6 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<Activity> Activities => Set<Activity>();
     public DbSet<ActivityRoleType> ActivityRoleTypes => Set<ActivityRoleType>();
 
-    public DbSet<ActivityAllowedRoleType> ActivityAllowedRoleTypes =>
-        Set<ActivityAllowedRoleType>();
-
     public DbSet<ActivityUserRoleAssignment> ActivityUserRoleAssignments =>
         Set<ActivityUserRoleAssignment>();
 

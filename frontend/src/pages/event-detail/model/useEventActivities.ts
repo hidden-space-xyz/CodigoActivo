@@ -9,10 +9,16 @@ import {
   getHouseholdAssignmentsRequest,
   getHouseholdMembersRequest,
   getMyAssignmentsRequest,
+  getSignupRolesRequest,
   unassignActivityRequest,
   verifyOverlapsRequest,
 } from '@/entities/activity'
-import type { HouseholdAssignmentInput, HouseholdMember, OverlapCheck } from '@/entities/activity'
+import type {
+  ActivityRole,
+  HouseholdAssignmentInput,
+  HouseholdMember,
+  OverlapCheck,
+} from '@/entities/activity'
 import { useSession } from '@/entities/session'
 
 export function useEventActivities(eventId: () => string) {
@@ -52,6 +58,28 @@ export function useEventActivities(eventId: () => string) {
     queryFn: () => getHouseholdAssignmentsRequest(eventId()),
     enabled: isAuthenticated,
   })
+
+  const signupRoles = useQuery({
+    queryKey: computed(() => activityQueryKeys.signupRoles(userId.value ?? '')),
+    queryFn: () => getSignupRolesRequest(),
+    enabled: isAuthenticated,
+  })
+
+  const rolesByUserId = computed(() => {
+    const map = new Map<string, readonly ActivityRole[]>()
+    for (const member of signupRoles.data.value ?? []) {
+      map.set(member.userId, member.roles)
+    }
+    return map
+  })
+
+  function rolesFor(memberId: string): readonly ActivityRole[] {
+    return rolesByUserId.value.get(memberId) ?? []
+  }
+
+  const selfRoles = computed<readonly ActivityRole[]>(() =>
+    userId.value ? rolesFor(userId.value) : [],
+  )
 
   const hasHousehold = computed(() => (householdMembers.data.value ?? []).length > 0)
 
@@ -98,6 +126,9 @@ export function useEventActivities(eventId: () => string) {
     hasHousehold,
     members,
     userId,
+    signupRoles,
+    selfRoles,
+    rolesFor,
     assign,
     assignHousehold,
     unassign,

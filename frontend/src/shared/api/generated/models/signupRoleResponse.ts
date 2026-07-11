@@ -5,8 +5,8 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface ActivityAllowedRoleResponse {
-  roleTypeId?: string;
+export interface SignupRoleResponse {
+  id?: string;
   /** @nullable */
-  roleTypeName?: string | null;
+  name?: string | null;
 }

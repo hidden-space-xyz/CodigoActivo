@@ -5,6 +5,7 @@ using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
@@ -71,6 +72,11 @@ public sealed class ActivityServiceTests
             .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(ev);
 
+    private void ActivityFound(Activity? activity) =>
+        activities
+            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(activity);
+
     private static Event NewEvent() =>
         new()
         {
@@ -102,14 +108,12 @@ public sealed class ActivityServiceTests
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
-            AllowedRoleTypes = [],
         };
 
     private static CreateActivityRequest CreateRequest(
         string title = "  Taller  ",
         DateTimeOffset? startsAt = null,
-        DateTimeOffset? endsAt = null,
-        IReadOnlyList<ActivityAllowedRoleRequest>? roles = null
+        DateTimeOffset? endsAt = null
     ) =>
         new(
             title,
@@ -118,15 +122,13 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid(),
-            roles
+            Guid.NewGuid()
         );
 
     private static UpdateActivityRequest UpdateRequest(
         string title = "  New  ",
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null,
-        IReadOnlyList<ActivityAllowedRoleRequest>? roles = null,
         Guid? thumbnailId = null
     ) =>
         new(
@@ -136,8 +138,7 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            thumbnailId ?? Guid.NewGuid(),
-            roles
+            thumbnailId ?? Guid.NewGuid()
         );
 
     [Fact]
@@ -235,8 +236,7 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             null,
             new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid(),
-            null
+            Guid.NewGuid()
         );
 
         var result = await sut.CreateAsync(
@@ -353,37 +353,6 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_AllowedRoleUnknown_ReturnsRoleTypeNotFound()
-    {
-        EventFound(NewEvent());
-        ThumbnailExists(true);
-        ModalityExists(true);
-        roleTypes
-            .CountAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(1);
-        var roles = new List<ActivityAllowedRoleRequest>
-        {
-            new(Guid.NewGuid()),
-            new(Guid.NewGuid()),
-        };
-
-        var result = await sut.CreateAsync(
-            Guid.NewGuid(),
-            CreateRequest(roles: roles),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public async Task CreateAsync_ValidRequest_PersistsTrimmedActivityAndReturnsProjection()
     {
         var eventId = Guid.NewGuid();
@@ -431,90 +400,9 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_DuplicateRoleIds_AddsDistinctAllowedRoles()
-    {
-        var duplicate = Guid.NewGuid();
-        EventFound(NewEvent());
-        ThumbnailExists(true);
-        ModalityExists(true);
-        roleTypes
-            .CountAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(1);
-
-        var stored = new List<Activity>();
-        activities.Query().Returns(_ => stored.AsQueryable());
-        Activity? captured = null;
-        activities
-            .When(a => a.AddAsync(Arg.Any<Activity>(), Arg.Any<CancellationToken>()))
-            .Do(ci =>
-            {
-                captured = ci.Arg<Activity>();
-                captured.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
-                foreach (var allowed in captured.AllowedRoleTypes)
-                    allowed.ActivityRoleType = new ActivityRoleType { Name = "Líder" };
-                stored.Add(captured);
-            });
-
-        var roles = new List<ActivityAllowedRoleRequest> { new(duplicate), new(duplicate) };
-        var result = await sut.CreateAsync(
-            Guid.NewGuid(),
-            CreateRequest(roles: roles),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        captured!
-            .AllowedRoleTypes.Should()
-            .ContainSingle()
-            .Which.ActivityRoleTypeId.Should()
-            .Be(duplicate);
-    }
-
-    [Fact]
-    public async Task CreateAsync_EmptyAllowedRoles_SucceedsWithoutValidatingRoleTypes()
-    {
-        var eventId = Guid.NewGuid();
-        EventFound(NewEvent());
-        ThumbnailExists(true);
-        ModalityExists(true);
-
-        var stored = new List<Activity>();
-        activities.Query().Returns(_ => stored.AsQueryable());
-        Activity? captured = null;
-        activities
-            .When(a => a.AddAsync(Arg.Any<Activity>(), Arg.Any<CancellationToken>()))
-            .Do(ci =>
-            {
-                captured = ci.Arg<Activity>();
-                captured.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
-                stored.Add(captured);
-            });
-
-        var result = await sut.CreateAsync(
-            eventId,
-            CreateRequest(roles: []),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        captured!.AllowedRoleTypes.Should().BeEmpty();
-        await roleTypes
-            .DidNotReceiveWithAnyArgs()
-            .CountAsync(default!, TestContext.Current.CancellationToken);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task UpdateAsync_ActivityMissing_ReturnsNotFound()
     {
-        activities
-            .GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns((Activity?)null);
+        ActivityFound(null);
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -533,7 +421,7 @@ public sealed class ActivityServiceTests
     public async Task UpdateAsync_ParentEventMissing_ReturnsEventNotFound()
     {
         var activity = NewActivity();
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(null);
 
         var result = await sut.UpdateAsync(
@@ -553,7 +441,7 @@ public sealed class ActivityServiceTests
     public async Task UpdateAsync_StartMissing_ReturnsScheduleRequired()
     {
         var activity = NewActivity();
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(NewEvent());
 
         var request = new UpdateActivityRequest(
@@ -563,8 +451,7 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             null,
             new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid(),
-            null
+            Guid.NewGuid()
         );
 
         var result = await sut.UpdateAsync(
@@ -584,7 +471,7 @@ public sealed class ActivityServiceTests
     public async Task UpdateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         var activity = NewActivity();
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(NewEvent());
         ThumbnailExists(false);
 
@@ -604,7 +491,7 @@ public sealed class ActivityServiceTests
     public async Task UpdateAsync_ModalityMissing_ReturnsModalityTypeNotFound()
     {
         var activity = NewActivity();
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(NewEvent());
         ThumbnailExists(true);
         ModalityExists(false);
@@ -622,48 +509,17 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_AllowedRoleUnknown_ReturnsRoleTypeNotFound()
-    {
-        var activity = NewActivity();
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
-        EventFound(NewEvent());
-        ThumbnailExists(true);
-        ModalityExists(true);
-        roleTypes
-            .CountAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(0);
-        var roles = new List<ActivityAllowedRoleRequest> { new(Guid.NewGuid()) };
-
-        var result = await sut.UpdateAsync(
-            activity.Id,
-            UpdateRequest(roles: roles),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_ValidRequest_MutatesClearsRolesAndPersists()
+    public async Task UpdateAsync_ValidRequest_MutatesAndPersists()
     {
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var activity = NewActivity(title: "Old", id: activityId, eventId: eventId);
-        activity.AllowedRoleTypes.Add(
-            new ActivityAllowedRoleType { ActivityRoleTypeId = Guid.NewGuid() }
-        );
 
         var stored = new List<Activity> { activity };
         activities.Query().Returns(_ => stored.AsQueryable());
-        activities.GetForEditAsync(activityId, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(NewEvent());
         ThumbnailExists(true);
         ModalityExists(true);
@@ -680,7 +536,6 @@ public sealed class ActivityServiceTests
         activity.Title.Should().Be("New");
         activity.UpdatedBy.Should().Be(caller);
         activity.UpdatedAt.Should().Be(clock.UtcNow);
-        activity.AllowedRoleTypes.Should().BeEmpty();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -690,7 +545,7 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         var previousThumbnailId = activity.ThumbnailId;
         HasActivities(activity);
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(NewEvent());
         ThumbnailExists(true);
         ModalityExists(true);
@@ -713,7 +568,7 @@ public sealed class ActivityServiceTests
     {
         var activity = NewActivity();
         HasActivities(activity);
-        activities.GetForEditAsync(activity.Id, Arg.Any<CancellationToken>()).Returns(activity);
+        ActivityFound(activity);
         EventFound(NewEvent());
         ThumbnailExists(true);
         ModalityExists(true);
@@ -734,9 +589,7 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task DeleteAsync_ActivityMissing_ReturnsNotFound()
     {
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((Activity?)null);
+        ActivityFound(null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
@@ -873,185 +726,4 @@ public sealed class ActivityServiceTests
             AssignmentStatusId = Guid.NewGuid(),
             AssignmentStatus = new AssignmentStatusType { Name = "Solicitado", Color = "#000" },
         };
-
-    [Fact]
-    public async Task CreateActivityRoleTypeAsync_NameExists_ReturnsConflict()
-    {
-        roleTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(true);
-
-        var result = await sut.CreateActivityRoleTypeAsync(
-            new CreateActivityRoleTypeRequest("Líder", null),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task CreateActivityRoleTypeAsync_ValidRequest_TrimsAndPersists()
-    {
-        roleTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-
-        var result = await sut.CreateActivityRoleTypeAsync(
-            new CreateActivityRoleTypeRequest("  Líder  ", "  Guía  "),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be("Líder");
-        result.Value.Description.Should().Be("Guía");
-        await roleTypes
-            .Received(1)
-            .AddAsync(
-                Arg.Is<ActivityRoleType>(r => r.Name == "Líder" && r.Description == "Guía"),
-                Arg.Any<CancellationToken>()
-            );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateActivityRoleTypeAsync_NullDescription_DefaultsToEmpty()
-    {
-        roleTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-
-        var result = await sut.CreateActivityRoleTypeAsync(
-            new CreateActivityRoleTypeRequest("Ayudante", null),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Value.Description.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task UpdateActivityRoleTypeAsync_RoleTypeMissing_ReturnsNotFound()
-    {
-        roleTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns((ActivityRoleType?)null);
-
-        var result = await sut.UpdateActivityRoleTypeAsync(
-            Guid.NewGuid(),
-            new UpdateActivityRoleTypeRequest("Líder", null),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task UpdateActivityRoleTypeAsync_NameTakenByOther_ReturnsConflict()
-    {
-        var id = Guid.NewGuid();
-        roleTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                new ActivityRoleType
-                {
-                    Id = id,
-                    Name = "Old",
-                    Description = "d",
-                }
-            );
-        roleTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(true);
-
-        var result = await sut.UpdateActivityRoleTypeAsync(
-            id,
-            new UpdateActivityRoleTypeRequest("Taken", null),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task UpdateActivityRoleTypeAsync_ValidRequest_MutatesAndPersists()
-    {
-        var id = Guid.NewGuid();
-        var roleType = new ActivityRoleType
-        {
-            Id = id,
-            Name = "Old",
-            Description = "old",
-        };
-        roleTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(roleType);
-        roleTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-
-        var result = await sut.UpdateActivityRoleTypeAsync(
-            id,
-            new UpdateActivityRoleTypeRequest("  New  ", "  Desc  "),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        roleType.Name.Should().Be("New");
-        roleType.Description.Should().Be("Desc");
-        result.Value.Name.Should().Be("New");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task DeleteActivityRoleTypeAsync_NothingRemoved_ReturnsNotFound()
-    {
-        roleTypes
-            .RemoveAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(0);
-
-        var result = await sut.DeleteActivityRoleTypeAsync(
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
 }

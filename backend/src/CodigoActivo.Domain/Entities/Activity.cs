@@ -22,6 +22,5 @@ public class Activity : AuditableEntity
     public Guid ThumbnailId { get; set; }
     public FileEntity Thumbnail { get; set; } = null!;
 
-    public ICollection<ActivityAllowedRoleType> AllowedRoleTypes { get; set; } = [];
     public ICollection<ActivityUserRoleAssignment> Assignments { get; set; } = [];
 }

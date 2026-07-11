@@ -4,7 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { ActivityAllowedRoleRequest } from './activityAllowedRoleRequest';
 
 export interface CreateActivityRequest {
   /** @nullable */
@@ -19,6 +18,4 @@ export interface CreateActivityRequest {
   /** @nullable */
   activityEndsAt?: string | null;
   thumbnailId?: string;
-  /** @nullable */
-  allowedRoleTypes?: ActivityAllowedRoleRequest[] | null;
 }
