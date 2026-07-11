@@ -21,6 +21,7 @@ public enum ErrorCode
     ActivityScheduleInvalidRange,
     ActivityScheduleOutsideEventRange,
     ActivityThumbnailNotFound,
+    ActivityRoleCapacityDuplicated,
     EventNotFound,
     EventActivitiesOutsideNewRange,
     EventCategoryTypeNotFound,

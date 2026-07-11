@@ -23,6 +23,7 @@ const {
   assigned,
   household,
   hasHousehold,
+  membershipReady,
   members,
   userId,
   signupRoles,
@@ -75,6 +76,7 @@ const items = computed<TimelineActivity[]>(() =>
     modality: a.modality,
     start: a.startsAt ? new Date(a.startsAt) : null,
     end: a.endsAt ? new Date(a.endsAt) : null,
+    highDemandRoleIds: membershipReady.value ? [...a.highDemandRoleIds] : [],
     assignment: assignmentByActivity.value.get(a.id) ?? null,
     household: householdByActivity.value.get(a.id) ?? [],
   })),
@@ -195,6 +197,13 @@ function openHousehold(activity: TimelineActivity): void {
 const householdSelectable = computed(() =>
   householdDialog.rows.filter((row) => !row.alreadyAssigned),
 )
+
+const householdHighDemand = computed(() => {
+  const saturated = householdDialog.activity?.highDemandRoleIds ?? []
+  return householdDialog.rows.some(
+    (row) => row.include && !row.alreadyAssigned && !!row.roleId && saturated.includes(row.roleId),
+  )
+})
 
 function confirmHousehold(): void {
   const activity = householdDialog.activity
@@ -377,6 +386,13 @@ function onUnassign(activity: TimelineActivity): void {
       </ul>
       <p v-if="householdSelectable.length === 0" class="household__note">
         Toda tu familia ya está inscrita en esta actividad.
+      </p>
+      <p v-if="householdHighDemand" class="household__demand">
+        <i class="pi pi-exclamation-triangle" />
+        <span>
+          Esta actividad está muy solicitada y es posible que se agoten las plazas. Te recomendamos
+          elegir otras opciones adicionales.
+        </span>
       </p>
       <template #footer>
         <Button
@@ -571,6 +587,24 @@ function onUnassign(activity: TimelineActivity): void {
   margin-top: 14px;
   font-size: 13.5px;
   color: var(--ca-text-muted);
+}
+
+.household__demand {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--ca-warning-soft);
+  color: var(--ca-warning-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.household__demand .pi {
+  margin-top: 2px;
+  font-size: 13px;
 }
 
 .overlap__lead {

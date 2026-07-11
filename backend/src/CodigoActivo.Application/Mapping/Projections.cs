@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Mapping;
@@ -170,6 +171,17 @@ public static class Projections
             ModalityId = activity.ActivityModalityTypeId,
             ModalityName = activity.ActivityModalityType.Name,
             ThumbnailId = activity.ThumbnailId,
+            RoleCapacities = activity
+                .RoleCapacities.OrderBy(capacity => capacity.ActivityRoleTypeId)
+                .Select(capacity => new ActivityRoleCapacityResponse(
+                    capacity.ActivityRoleTypeId,
+                    capacity.DesiredCount,
+                    activity.Assignments.Count(assignment =>
+                        assignment.ActivityRoleTypeId == capacity.ActivityRoleTypeId
+                        && assignment.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                    ) > capacity.DesiredCount
+                ))
+                .ToList(),
             CreatedAt = activity.CreatedAt,
             UpdatedAt = activity.UpdatedAt,
             CreatedBy = activity.CreatedBy,

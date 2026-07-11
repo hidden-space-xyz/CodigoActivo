@@ -72,10 +72,39 @@ public sealed class ActivityServiceTests
             .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(ev);
 
-    private void ActivityFound(Activity? activity) =>
+    private void HasRoleCatalog() =>
+        roleTypes
+            .GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns([
+                new ActivityRoleType
+                {
+                    Id = SeedIds.ActivityRoleTypes.Leader,
+                    Name = "Líder",
+                    Description = "d",
+                },
+                new ActivityRoleType
+                {
+                    Id = SeedIds.ActivityRoleTypes.Volunteer,
+                    Name = "Voluntario",
+                    Description = "d",
+                },
+                new ActivityRoleType
+                {
+                    Id = SeedIds.ActivityRoleTypes.Participant,
+                    Name = "Participante",
+                    Description = "d",
+                },
+            ]);
+
+    private void ActivityFound(Activity? activity)
+    {
         activities
             .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(activity);
+        activities
+            .FindWithRoleCapacitiesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(activity);
+    }
 
     private static Event NewEvent() =>
         new()
@@ -113,7 +142,8 @@ public sealed class ActivityServiceTests
     private static CreateActivityRequest CreateRequest(
         string title = "  Taller  ",
         DateTimeOffset? startsAt = null,
-        DateTimeOffset? endsAt = null
+        DateTimeOffset? endsAt = null,
+        IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities = null
     ) =>
         new(
             title,
@@ -122,14 +152,16 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            roleCapacities
         );
 
     private static UpdateActivityRequest UpdateRequest(
         string title = "  New  ",
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null,
-        Guid? thumbnailId = null
+        Guid? thumbnailId = null,
+        IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities = null
     ) =>
         new(
             title,
@@ -138,7 +170,8 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            thumbnailId ?? Guid.NewGuid()
+            thumbnailId ?? Guid.NewGuid(),
+            roleCapacities
         );
 
     [Fact]
@@ -236,7 +269,8 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             null,
             new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            null
         );
 
         var result = await sut.CreateAsync(
@@ -400,6 +434,107 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_WithRoleCapacities_PersistsDesiredCounts()
+    {
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+        HasRoleCatalog();
+
+        var stored = new List<Activity>();
+        activities.Query().Returns(_ => stored.AsQueryable());
+        activities
+            .When(a => a.AddAsync(Arg.Any<Activity>(), Arg.Any<CancellationToken>()))
+            .Do(ci =>
+            {
+                var a = ci.Arg<Activity>();
+                a.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
+                stored.Add(a);
+            });
+
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(
+                roleCapacities:
+                [
+                    new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 12),
+                    new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Volunteer, 3),
+                ]
+            ),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var saved = stored.Single();
+        saved.RoleCapacities.Should().HaveCount(2);
+        saved
+            .RoleCapacities.Single(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+            )
+            .DesiredCount.Should()
+            .Be(12);
+        saved
+            .RoleCapacities.Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
+            .DesiredCount.Should()
+            .Be(3);
+        result
+            .Value.RoleCapacities.Should()
+            .BeEquivalentTo([
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 12, false),
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Volunteer, 3, false),
+            ]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_DuplicatedRoleCapacityRole_ReturnsBadRequest()
+    {
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+        HasRoleCatalog();
+
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(
+                roleCapacities:
+                [
+                    new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 5),
+                    new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 8),
+                ]
+            ),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivityRoleCapacityDuplicated);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task CreateAsync_UnknownRoleCapacityRole_ReturnsRoleTypeNotFound()
+    {
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+        HasRoleCatalog();
+
+        var result = await sut.CreateAsync(
+            Guid.NewGuid(),
+            CreateRequest(roleCapacities: [new ActivityRoleCapacityRequest(Guid.NewGuid(), 5)]),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task UpdateAsync_ActivityMissing_ReturnsNotFound()
     {
         ActivityFound(null);
@@ -451,7 +586,8 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             null,
             new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            null
         );
 
         var result = await sut.UpdateAsync(
@@ -537,6 +673,192 @@ public sealed class ActivityServiceTests
         activity.UpdatedBy.Should().Be(caller);
         activity.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithRoleCapacities_SyncsCollection()
+    {
+        var activity = NewActivity();
+        activity.RoleCapacities =
+        [
+            new ActivityRoleCapacity
+            {
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                DesiredCount = 5,
+            },
+            new ActivityRoleCapacity
+            {
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                DesiredCount = 1,
+            },
+        ];
+        HasActivities(activity);
+        ActivityFound(activity);
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+        HasRoleCatalog();
+
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(
+                roleCapacities:
+                [
+                    new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 2),
+                    new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Volunteer, 4),
+                ]
+            ),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        activity.RoleCapacities.Should().HaveCount(2);
+        activity
+            .RoleCapacities.Single(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+            )
+            .DesiredCount.Should()
+            .Be(2);
+        activity
+            .RoleCapacities.Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
+            .DesiredCount.Should()
+            .Be(4);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullRoleCapacities_ClearsExisting()
+    {
+        var activity = NewActivity();
+        activity.RoleCapacities =
+        [
+            new ActivityRoleCapacity
+            {
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                DesiredCount = 5,
+            },
+        ];
+        HasActivities(activity);
+        ActivityFound(activity);
+        EventFound(NewEvent());
+        ThumbnailExists(true);
+        ModalityExists(true);
+
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        activity.RoleCapacities.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_AssignmentsExceedDesiredCount_FlagsOnlySaturatedRole()
+    {
+        var activity = NewActivity();
+        activity.RoleCapacities =
+        [
+            new ActivityRoleCapacity
+            {
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                DesiredCount = 1,
+            },
+            new ActivityRoleCapacity
+            {
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                DesiredCount = 2,
+            },
+        ];
+        activity.Assignments =
+        [
+            new ActivityUserRoleAssignment
+            {
+                UserId = Guid.NewGuid(),
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = Guid.NewGuid(),
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+            },
+        ];
+        HasActivities(activity);
+
+        var result = await sut.GetByIdAsync(activity.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        result
+            .Value.RoleCapacities.Single(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+            )
+            .Should()
+            .BeEquivalentTo(
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 1, true)
+            );
+        result
+            .Value.RoleCapacities.Single(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
+            )
+            .IsHighDemand.Should()
+            .BeFalse();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_NonDeniedAssignmentsAtDesiredCount_RoleNotHighDemand()
+    {
+        var activity = NewActivity();
+        activity.RoleCapacities =
+        [
+            new ActivityRoleCapacity
+            {
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                DesiredCount = 1,
+            },
+        ];
+        activity.Assignments =
+        [
+            new ActivityUserRoleAssignment
+            {
+                UserId = Guid.NewGuid(),
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = Guid.NewGuid(),
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Denied,
+            },
+            new ActivityUserRoleAssignment
+            {
+                UserId = Guid.NewGuid(),
+                ActivityId = activity.Id,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+            },
+        ];
+        HasActivities(activity);
+
+        var result = await sut.GetByIdAsync(activity.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.RoleCapacities.Should().OnlyContain(c => !c.IsHighDemand);
     }
 
     [Fact]

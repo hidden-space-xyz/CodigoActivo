@@ -296,6 +296,7 @@ public sealed class DemoDataSeeder(
             {
                 var activity = seed.Activities[a];
                 var activityId = Guid.NewGuid();
+                var globalIndex = (e * 5) + a;
                 var activityStart = ToUtc(
                     clock.TimeZone,
                     start.AddDays(a % duration),
@@ -317,10 +318,11 @@ public sealed class DemoDataSeeder(
                         ThumbnailId = NewFile(files, $"evento-{label}-actividad-{a + 1}.jpg", now),
                         CreatedAt = now.AddDays(-85),
                         CreatedBy = AdminId,
+                        RoleCapacities = BuildRoleCapacities(globalIndex).ToList(),
                     }
                 );
 
-                assignments.AddRange(BuildAssignments((e * 5) + a, activityId, signupOpensAt, now));
+                assignments.AddRange(BuildAssignments(globalIndex, activityId, signupOpensAt, now));
             }
         }
 
@@ -431,6 +433,39 @@ public sealed class DemoDataSeeder(
             }
         );
         return id;
+    }
+
+    private static IEnumerable<ActivityRoleCapacity> BuildRoleCapacities(int globalIndex)
+    {
+        switch (globalIndex % 3)
+        {
+            case 0:
+                yield return new ActivityRoleCapacity
+                {
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    DesiredCount = 1,
+                };
+                yield return new ActivityRoleCapacity
+                {
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                    DesiredCount = 2,
+                };
+                break;
+            case 1:
+                yield return new ActivityRoleCapacity
+                {
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    DesiredCount = 6,
+                };
+                yield return new ActivityRoleCapacity
+                {
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                    DesiredCount = 1,
+                };
+                break;
+            default:
+                break;
+        }
     }
 
     private static IEnumerable<ActivityUserRoleAssignment> BuildAssignments(

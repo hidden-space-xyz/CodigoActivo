@@ -2457,6 +2457,13 @@
             "type": "string",
             "format": "uuid"
           },
+          "roleCapacities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityRoleCapacityResponse"
+            },
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -2499,6 +2506,38 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivityRoleCapacityRequest": {
+        "type": "object",
+        "properties": {
+          "activityRoleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "desiredCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivityRoleCapacityResponse": {
+        "type": "object",
+        "properties": {
+          "activityRoleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "desiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isHighDemand": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -2871,6 +2910,13 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          },
+          "roleCapacities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityRoleCapacityRequest"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3080,6 +3126,7 @@
           "ActivityScheduleInvalidRange",
           "ActivityScheduleOutsideEventRange",
           "ActivityThumbnailNotFound",
+          "ActivityRoleCapacityDuplicated",
           "EventNotFound",
           "EventActivitiesOutsideNewRange",
           "EventCategoryTypeNotFound",
@@ -4145,6 +4192,13 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          },
+          "roleCapacities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityRoleCapacityRequest"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

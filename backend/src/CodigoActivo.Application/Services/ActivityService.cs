@@ -150,6 +150,10 @@ public class ActivityService(
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
 
+        var capacities = await ValidateRoleCapacitiesAsync(request.RoleCapacities, ct);
+        if (capacities.IsFailure)
+            return capacities.Error!;
+
         var activity = new Activity
         {
             Title = request.Title.Trim(),
@@ -162,6 +166,13 @@ public class ActivityService(
             ThumbnailId = request.ThumbnailId,
             CreatedAt = clock.UtcNow,
             CreatedBy = userId,
+            RoleCapacities = capacities
+                .Value.Select(item => new ActivityRoleCapacity
+                {
+                    ActivityRoleTypeId = item.RoleTypeId,
+                    DesiredCount = item.DesiredCount,
+                })
+                .ToList(),
         };
 
         await activities.AddAsync(activity, ct);
@@ -177,7 +188,7 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
+        var activity = await activities.FindWithRoleCapacitiesAsync(activityId, ct);
         if (activity is null)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
@@ -204,6 +215,10 @@ public class ActivityService(
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
 
+        var capacities = await ValidateRoleCapacitiesAsync(request.RoleCapacities, ct);
+        if (capacities.IsFailure)
+            return capacities.Error!;
+
         var previousThumbnailId = activity.ThumbnailId;
 
         activity.Title = request.Title.Trim();
@@ -215,6 +230,8 @@ public class ActivityService(
         activity.ThumbnailId = request.ThumbnailId;
         activity.UpdatedAt = clock.UtcNow;
         activity.UpdatedBy = userId;
+
+        SyncRoleCapacities(activity, capacities.Value);
 
         await uow.SaveChangesAsync(ct);
 
@@ -554,6 +571,62 @@ public class ActivityService(
             .ToList();
     }
 
+    private async Task<Result<List<RoleCapacityItem>>> ValidateRoleCapacitiesAsync(
+        IReadOnlyList<ActivityRoleCapacityRequest>? requests,
+        CancellationToken ct
+    )
+    {
+        if (requests is null || requests.Count == 0)
+            return new List<RoleCapacityItem>();
+
+        if (requests.DistinctBy(item => item.ActivityRoleTypeId).Count() != requests.Count)
+            return Error.BadRequest(ErrorCode.ActivityRoleCapacityDuplicated);
+
+        var knownRoleIds = (await roleTypes.GetAllAsync(ct)).Select(role => role.Id).ToHashSet();
+        if (requests.Any(item => !knownRoleIds.Contains(item.ActivityRoleTypeId)))
+            return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
+
+        return requests
+            .Select(item => new RoleCapacityItem(item.ActivityRoleTypeId, item.DesiredCount!.Value))
+            .ToList();
+    }
+
+    private static void SyncRoleCapacities(Activity activity, List<RoleCapacityItem> desired)
+    {
+        var desiredByRole = desired.ToDictionary(
+            item => item.RoleTypeId,
+            item => item.DesiredCount
+        );
+
+        foreach (var existing in activity.RoleCapacities.ToList())
+        {
+            if (!desiredByRole.ContainsKey(existing.ActivityRoleTypeId))
+                activity.RoleCapacities.Remove(existing);
+        }
+
+        foreach (var (roleTypeId, desiredCount) in desiredByRole)
+        {
+            var existing = activity.RoleCapacities.FirstOrDefault(capacity =>
+                capacity.ActivityRoleTypeId == roleTypeId
+            );
+            if (existing is null)
+            {
+                activity.RoleCapacities.Add(
+                    new ActivityRoleCapacity
+                    {
+                        ActivityId = activity.Id,
+                        ActivityRoleTypeId = roleTypeId,
+                        DesiredCount = desiredCount,
+                    }
+                );
+            }
+            else
+            {
+                existing.DesiredCount = desiredCount;
+            }
+        }
+    }
+
     private static IEnumerable<Guid> SignupRoleIdsFor(Guid userTypeId)
     {
         yield return SeedIds.ActivityRoleTypes.Participant;
@@ -630,6 +703,8 @@ public class ActivityService(
     }
 
     private readonly record struct ActivitySchedule(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
+    private readonly record struct RoleCapacityItem(Guid RoleTypeId, int DesiredCount);
 
     private sealed record SignupWindow(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
 }

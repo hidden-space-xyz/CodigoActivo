@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
+import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
@@ -10,16 +11,21 @@ import Textarea from 'primevue/textarea'
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type {
   ActivityResponse,
+  ActivityRoleCapacityRequest,
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import type { ActivityModalityTypeResponse } from '@/shared/api/generated/models'
+import type {
+  ActivityModalityTypeResponse,
+  ActivityRoleTypeResponse,
+} from '@/shared/api/generated/models'
 import { parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{
   visible: boolean
   activity: ActivityResponse | null
   modalityTypes: ActivityModalityTypeResponse[]
+  roleTypes: ActivityRoleTypeResponse[]
   saving: boolean
   eventStart?: string | null
   eventEnd?: string | null
@@ -47,6 +53,7 @@ const form = reactive<ActivityForm>({
   activityStartsAt: null,
   activityEndsAt: null,
 })
+const desiredCounts = ref<Record<string, number | null>>({})
 const submitted = ref(false)
 const {
   pickedFile,
@@ -106,12 +113,34 @@ function populate(): void {
   form.activityEndsAt = props.activity?.activityEndsAt
     ? new Date(props.activity.activityEndsAt)
     : null
+  populateDesiredCounts()
+}
+
+function populateDesiredCounts(): void {
+  const saved = new Map(
+    (props.activity?.roleCapacities ?? []).map((item) => [
+      item.activityRoleTypeId ?? '',
+      item.desiredCount ?? null,
+    ]),
+  )
+  const next: Record<string, number | null> = {}
+  for (const role of props.roleTypes) {
+    if (role.id) next[role.id] = saved.get(role.id) ?? null
+  }
+  desiredCounts.value = next
 }
 
 watch([() => props.visible, () => props.activity], ([open]) => {
   if (!open) return
   populate()
 })
+
+watch(
+  () => props.roleTypes,
+  () => {
+    if (props.visible) populateDesiredCounts()
+  },
+)
 
 function close(): void {
   emit('update:visible', false)
@@ -133,6 +162,12 @@ async function save(): Promise<void> {
   if (!activityStartsAt || !activityEndsAt) return
   const thumbnailId = await resolveThumbnailId()
   if (!thumbnailId) return
+  const roleCapacities: ActivityRoleCapacityRequest[] = []
+  for (const [activityRoleTypeId, desiredCount] of Object.entries(desiredCounts.value)) {
+    if (desiredCount != null && desiredCount >= 1) {
+      roleCapacities.push({ activityRoleTypeId, desiredCount })
+    }
+  }
   emit('submit', {
     title: form.title.trim(),
     description: form.description.trim(),
@@ -141,6 +176,7 @@ async function save(): Promise<void> {
     activityStartsAt: activityStartsAt.toISOString(),
     activityEndsAt: activityEndsAt.toISOString(),
     thumbnailId,
+    roleCapacities: roleCapacities.length > 0 ? roleCapacities : null,
   } satisfies CreateActivityRequest)
 }
 </script>
@@ -243,6 +279,25 @@ async function save(): Promise<void> {
       <small v-if="submitted && outsideEvent" class="form__error"
         >La actividad debe estar dentro de las fechas del evento.</small
       >
+      <div v-if="roleTypes.length" class="form__field">
+        <label>Número deseado de inscritos por rol</label>
+        <div class="form__capacities">
+          <div v-for="role in roleTypes" :key="role.id ?? ''" class="form__capacity">
+            <span class="form__capacity-name">{{ role.name }}</span>
+            <InputNumber
+              v-model="desiredCounts[role.id ?? '']"
+              :min="1"
+              :max="10000"
+              placeholder="Sin objetivo"
+              fluid
+            />
+          </div>
+        </div>
+        <small class="form__hint">
+          Opcional. Al superarse, el listado avisará de que la actividad está muy solicitada; nunca
+          se impide la inscripción.
+        </small>
+      </div>
       <div class="form__field">
         <label>Imagen</label>
         <ThumbnailField
@@ -299,5 +354,27 @@ async function save(): Promise<void> {
 .form__error {
   color: var(--ca-danger-ink);
   font-size: 12.5px;
+}
+
+.form__capacities {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.form__capacity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form__capacity-name {
+  font-size: 12.5px;
+  color: var(--ca-text);
+}
+
+.form__hint {
+  color: var(--ca-text-muted);
+  font-size: 12px;
 }
 </style>

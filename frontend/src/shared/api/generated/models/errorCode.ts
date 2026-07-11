@@ -25,6 +25,7 @@ export const ErrorCode = {
   ActivityScheduleInvalidRange: 'ActivityScheduleInvalidRange',
   ActivityScheduleOutsideEventRange: 'ActivityScheduleOutsideEventRange',
   ActivityThumbnailNotFound: 'ActivityThumbnailNotFound',
+  ActivityRoleCapacityDuplicated: 'ActivityRoleCapacityDuplicated',
   EventNotFound: 'EventNotFound',
   EventActivitiesOutsideNewRange: 'EventActivitiesOutsideNewRange',
   EventCategoryTypeNotFound: 'EventCategoryTypeNotFound',

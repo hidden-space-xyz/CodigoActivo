@@ -23,4 +23,6 @@ public class Activity : AuditableEntity
     public FileEntity Thumbnail { get; set; } = null!;
 
     public ICollection<ActivityUserRoleAssignment> Assignments { get; set; } = [];
+
+    public ICollection<ActivityRoleCapacity> RoleCapacities { get; set; } = [];
 }

@@ -44,6 +44,8 @@ public interface IActivityRepository : IDbRepository<Activity>
         CancellationToken ct = default
     );
 
+    Task<Activity?> FindWithRoleCapacitiesAsync(Guid activityId, CancellationToken ct = default);
+
     Task<ActivityUserRoleAssignment?> GetAssignmentAsync(
         Guid userId,
         Guid activityId,
