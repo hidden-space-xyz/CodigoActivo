@@ -90,6 +90,10 @@ function openBadges(): void {
   void router.push({ name: 'admin-event-badges', params: { eventId: eventId.value } })
 }
 
+function openRoster(): void {
+  void router.push({ name: 'admin-event-roster', params: { eventId: eventId.value } })
+}
+
 async function openEditActivity(activity: ActivityResponse): Promise<void> {
   selectedActivity.value = activity
   activityDialogVisible.value = true
@@ -158,6 +162,12 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
           icon="pi pi-print"
           severity="secondary"
           @click="openBadges"
+        />
+        <Button
+          label="Imprimir listados"
+          icon="pi pi-list"
+          severity="secondary"
+          @click="openRoster"
         />
       </template>
     </AdminPageHeader>

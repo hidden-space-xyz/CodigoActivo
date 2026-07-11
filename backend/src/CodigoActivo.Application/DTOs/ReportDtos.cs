@@ -76,6 +76,39 @@ public record EventBadgesResponse(
     IReadOnlyList<EventBadgeResponse> Badges
 );
 
+public record EventRosterGuardianResponse(
+    string FirstName,
+    string LastName,
+    string? Email,
+    string? Phone
+);
+
+public record EventRosterParticipantResponse(
+    Guid UserId,
+    string FirstName,
+    string LastName,
+    DateOnly BirthDate,
+    string? Email,
+    string? Phone,
+    string RoleName,
+    EventRosterGuardianResponse? Guardian
+);
+
+public record EventRosterActivityResponse(
+    Guid ActivityId,
+    string Title,
+    string Location,
+    DateTimeOffset ActivityStartsAt,
+    DateTimeOffset ActivityEndsAt,
+    IReadOnlyList<EventRosterParticipantResponse> Participants
+);
+
+public record EventRosterResponse(
+    Guid EventId,
+    string Title,
+    IReadOnlyList<EventRosterActivityResponse> Activities
+);
+
 public record DashboardSummaryResponse(
     int Events,
     int Activities,

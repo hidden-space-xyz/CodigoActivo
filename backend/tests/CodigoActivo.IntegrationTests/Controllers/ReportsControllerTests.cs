@@ -366,6 +366,86 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EventRoster_ExistingEvent_GroupsConfirmedParticipantsByActivity()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/roster",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var report = await response.ReadJsonAsync<EventRosterResponse>(
+            TestContext.Current.CancellationToken
+        );
+        report!.EventId.Should().Be(EventId);
+        report.Title.Should().Be("Feria de Voluntariado");
+        report.Activities.Should().HaveCount(2);
+        report.Activities[0].ActivityId.Should().Be(ActivityBId);
+
+        var charla = report.Activities.Single(a => a.ActivityId == ActivityBId);
+        charla.Title.Should().Be("Charla");
+        charla.Location.Should().Be("Sala");
+        charla.Participants.Should().HaveCount(1);
+        var admin = charla.Participants[0];
+        admin.UserId.Should().Be(TestSeedData.Users.AdminId);
+        admin.FirstName.Should().Be("Ada");
+        admin.LastName.Should().Be("Admin");
+        admin.BirthDate.Should().Be(new DateOnly(1985, 3, 12));
+        admin.Email.Should().Be(TestSeedData.AdminEmail);
+        admin.Phone.Should().Be("+34600000001");
+        admin.RoleName.Should().Be("Líder");
+        admin.Guardian.Should().BeNull();
+
+        var taller = report.Activities.Single(a => a.ActivityId == ActivityAId);
+        taller.Participants.Should().HaveCount(1);
+        var child = taller.Participants[0];
+        child.UserId.Should().Be(TestSeedData.Users.MemberChildId);
+        child.FirstName.Should().Be("Mateo");
+        child.BirthDate.Should().Be(new DateOnly(2015, 5, 5));
+        child.Email.Should().BeNull();
+        child.Phone.Should().BeNull();
+        child.RoleName.Should().Be("Voluntario");
+        child.Guardian.Should().NotBeNull();
+        child.Guardian!.FirstName.Should().Be("Marta");
+        child.Guardian.LastName.Should().Be("Miembro");
+        child.Guardian.Email.Should().Be(TestSeedData.MemberEmail);
+        child.Guardian.Phone.Should().Be("+34600000002");
+    }
+
+    [Fact]
+    public async Task EventRoster_MissingEvent_ReturnsNotFound()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{Guid.NewGuid()}/roster",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.EventNotFound);
+    }
+
+    [Fact]
+    public async Task EventRoster_MemberUser_ReturnsForbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/roster",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Dashboard_EmptyDatabase_CountsUsersOnly()
     {
         var client = await LoginAsAdminAsync();

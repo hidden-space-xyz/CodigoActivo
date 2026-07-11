@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/vue-query'
 import {
   getApiReportsEventsEventIdAttendees,
   getApiReportsEventsEventIdBadges,
+  getApiReportsEventsEventIdRoster,
   getApiReportsEventsEventIdSummary,
 } from '@/shared/api/generated/endpoints/reports/reports'
 
@@ -32,6 +33,15 @@ export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
     queryFn: () => getApiReportsEventsEventIdBadges(toValue(eventId)).then((r) => r.data),
     // The sheet is a print deliverable: assignment mutations don't invalidate this key,
     // so always refetch on open to never print a list cached before the latest changes.
+    staleTime: 0,
+    refetchOnMount: 'always',
+  })
+}
+
+export function useEventRoster(eventId: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: computed(() => ['reports', 'event-roster', toValue(eventId)] as const),
+    queryFn: () => getApiReportsEventsEventIdRoster(toValue(eventId)).then((r) => r.data),
     staleTime: 0,
     refetchOnMount: 'always',
   })

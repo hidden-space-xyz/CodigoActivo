@@ -109,6 +109,13 @@ export const routes: readonly RouteRecordRaw[] = [
     meta: { layout: 'blank' },
     beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
   },
+  {
+    path: '/admin/events/:eventId/roster',
+    name: 'admin-event-roster',
+    component: () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
+    meta: { layout: 'blank' },
+    beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
+  },
   adminRoute('/admin/announcements', 'admin-announcements', () =>
     import('@/pages/admin/announcements').then((m) => m.AnnouncementsPage),
   ),
