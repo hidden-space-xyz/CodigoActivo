@@ -174,12 +174,6 @@ public static class Projections
             UpdatedAt = activity.UpdatedAt,
             CreatedBy = activity.CreatedBy,
             UpdatedBy = activity.UpdatedBy,
-            AllowedRoleTypes = activity
-                .AllowedRoleTypes.Select(role => new ActivityAllowedRoleResponse(
-                    role.ActivityRoleTypeId,
-                    role.ActivityRoleType.Name
-                ))
-                .ToList(),
         };
 
     public static readonly Expression<Func<User, UserResponse>> User = user => new UserResponse

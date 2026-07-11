@@ -416,30 +416,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "activity_allowed_role_types",
-                columns: table => new
-                {
-                    activity_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    activity_role_type_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_activity_allowed_role_types", x => new { x.activity_id, x.activity_role_type_id });
-                    table.ForeignKey(
-                        name: "fk_activity_allowed_role_types_activities_activity_id",
-                        column: x => x.activity_id,
-                        principalTable: "activities",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_activity_allowed_role_types_activity_role_types_activity_ro",
-                        column: x => x.activity_role_type_id,
-                        principalTable: "activity_role_types",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "activity_user_role_assignments",
                 columns: table => new
                 {
@@ -502,11 +478,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_activities_updated_by",
                 table: "activities",
                 column: "updated_by");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_activity_allowed_role_types_activity_role_type_id",
-                table: "activity_allowed_role_types",
-                column: "activity_role_type_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_activity_modality_types_name",
@@ -671,9 +642,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "activity_allowed_role_types");
-
             migrationBuilder.DropTable(
                 name: "activity_user_role_assignments");
 

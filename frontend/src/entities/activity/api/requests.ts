@@ -3,6 +3,7 @@ import {
   getApiActivitiesActivityId,
   getApiActivitiesActivityIdOverlapsUserId,
   getApiActivitiesHouseholdAssignmentsEventId,
+  getApiActivitiesSignupRoles,
   patchApiActivitiesActivityIdUserIdAssign,
   patchApiActivitiesActivityIdUserIdUnassign,
   postApiActivitiesActivityIdAssignHousehold,
@@ -18,6 +19,7 @@ import type {
   EventActivity,
   HouseholdActivityAssignment,
   HouseholdMember,
+  HouseholdSignupRoles,
   OverlapCheck,
 } from '../model/types'
 import {
@@ -25,6 +27,7 @@ import {
   toEventActivity,
   toHouseholdActivityAssignment,
   toHouseholdMember,
+  toHouseholdSignupRoles,
   toOverlapCheck,
 } from './mapper'
 
@@ -64,6 +67,11 @@ export async function getHouseholdMembersRequest(
     getApiUsers({ parentId: userId, sort: 'firstName', page, pageSize }).then(toPage),
   )
   return users.map(toHouseholdMember)
+}
+
+export async function getSignupRolesRequest(): Promise<readonly HouseholdSignupRoles[]> {
+  const { data } = await getApiActivitiesSignupRoles()
+  return (data ?? []).map(toHouseholdSignupRoles)
 }
 
 export async function verifyOverlapsRequest(

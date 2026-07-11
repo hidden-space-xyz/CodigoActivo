@@ -17,7 +17,6 @@ public enum ErrorCode
     ActivityAssignmentNotFound,
     AssignmentStatusTypeNotFound,
     ActivityRoleTypeNotFound,
-    ActivityRoleTypeNameAlreadyExists,
     ActivityScheduleRequired,
     ActivityScheduleInvalidRange,
     ActivityScheduleOutsideEventRange,

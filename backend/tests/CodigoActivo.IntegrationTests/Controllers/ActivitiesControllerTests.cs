@@ -7,7 +7,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -115,8 +114,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         Guid? modalityId = null,
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null,
-        string title = "Nueva",
-        IReadOnlyList<ActivityAllowedRoleRequest>? allowedRoles = null
+        string title = "Nueva"
     ) =>
         new(
             title,
@@ -125,8 +123,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             modalityId ?? SeedIds.ActivityModalityTypes.Presencial,
             startsAt ?? ActivityStart,
             endsAt ?? ActivityEnd,
-            thumbnailId,
-            allowedRoles
+            thumbnailId
         );
 
     [Fact]
@@ -174,11 +171,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
         var client = await LoginAsAdminAsync();
-        var request = CreateRequest(
-            thumb,
-            title: "Taller",
-            allowedRoles: [new(SeedIds.ActivityRoleTypes.Leader)]
-        );
+        var request = CreateRequest(thumb, title: "Taller");
 
         var response = await client.PostJsonAsync(
             $"/api/activities/{eventId}",
@@ -192,20 +185,12 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         created!.Title.Should().Be("Taller");
-        created
-            .AllowedRoleTypes.Should()
-            .ContainSingle(r => r.RoleTypeId == SeedIds.ActivityRoleTypes.Leader);
 
         var stored = await Factory.QueryAsync(db =>
             db.Activities.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
         );
         stored!.EventId.Should().Be(eventId);
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
-        var roles = await Factory.QueryAsync(db =>
-            db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == created.Id)
-                .ToListAsync(TestContext.Current.CancellationToken)
-        );
-        roles.Should().ContainSingle(r => r.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader);
     }
 
     [Fact]
@@ -280,22 +265,11 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_AsAdmin_ChangesActivityAndReplacesRoles()
+    public async Task Update_AsAdmin_ChangesActivity()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
         var id = await SeedActivityAsync(eventId, thumb, "Antes");
-        await Factory.SeedAsync(db =>
-        {
-            db.ActivityAllowedRoleTypes.Add(
-                new ActivityAllowedRoleType
-                {
-                    ActivityId = id,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
-                }
-            );
-            return Task.CompletedTask;
-        });
         var client = await LoginAsAdminAsync();
         var request = new UpdateActivityRequest(
             "Despues",
@@ -304,8 +278,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             SeedIds.ActivityModalityTypes.Online,
             ActivityStart,
             ActivityEnd,
-            thumb,
-            [new(SeedIds.ActivityRoleTypes.Helper)]
+            thumb
         );
 
         var response = await client.PutJsonAsync(
@@ -321,15 +294,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         stored!.Title.Should().Be("Despues");
         stored.ActivityModalityTypeId.Should().Be(SeedIds.ActivityModalityTypes.Online);
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
-        var roles = await Factory.QueryAsync(db =>
-            db.ActivityAllowedRoleTypes.Where(r => r.ActivityId == id)
-                .ToListAsync(TestContext.Current.CancellationToken)
-        );
-        roles
-            .Should()
-            .ContainSingle()
-            .Which.ActivityRoleTypeId.Should()
-            .Be(SeedIds.ActivityRoleTypes.Helper);
     }
 
     [Fact]
@@ -393,8 +357,16 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var roles = await response.ReadJsonAsync<IReadOnlyList<ActivityRoleTypeResponse>>(
             TestContext.Current.CancellationToken
         );
-        roles!.Should().Contain(r => r.Id == SeedIds.ActivityRoleTypes.Leader);
-        roles.Should().HaveCountGreaterThan(2);
+        roles!.Should().HaveCount(3);
+        roles.Should().Contain(r => r.Id == SeedIds.ActivityRoleTypes.Leader && r.Name == "Líder");
+        roles
+            .Should()
+            .Contain(r => r.Id == SeedIds.ActivityRoleTypes.Volunteer && r.Name == "Voluntario");
+        roles
+            .Should()
+            .Contain(r =>
+                r.Id == SeedIds.ActivityRoleTypes.Participant && r.Name == "Participante"
+            );
     }
 
     [Fact]
@@ -429,75 +401,5 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         modalities!.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
-    }
-
-    [Fact]
-    public async Task CreateRoleType_AsAdmin_Persists()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new CreateActivityRoleTypeRequest("Coordinador", "Coordina la actividad");
-
-        var response = await client.PostJsonAsync(
-            "/api/activities/roleType",
-            request,
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var created = await response.ReadJsonAsync<ActivityRoleTypeResponse>(
-            TestContext.Current.CancellationToken
-        );
-        created!.Name.Should().Be("Coordinador");
-        var stored = await Factory.QueryAsync(db =>
-            db.ActivityRoleTypes.FirstOrDefaultAsync(
-                r => r.Name == "Coordinador",
-                TestContext.Current.CancellationToken
-            )
-        );
-        stored.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task UpdateRoleType_AsAdmin_ChangesName()
-    {
-        var client = await LoginAsAdminAsync();
-        var request = new UpdateActivityRoleTypeRequest("Ayudante Senior", "Actualizado");
-
-        var response = await client.PutJsonAsync(
-            $"/api/activities/roleType/{SeedIds.ActivityRoleTypes.Helper}",
-            request,
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db =>
-            db.ActivityRoleTypes.FindAsync(
-                    [SeedIds.ActivityRoleTypes.Helper],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
-        stored!.Name.Should().Be("Ayudante Senior");
-    }
-
-    [Fact]
-    public async Task DeleteRoleType_AsAdmin_Removes()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync(
-            $"/api/activities/roleType/{SeedIds.ActivityRoleTypes.Participant}",
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db =>
-            db.ActivityRoleTypes.FindAsync(
-                    [SeedIds.ActivityRoleTypes.Participant],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
-        stored.Should().BeNull();
     }
 }

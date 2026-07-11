@@ -3,8 +3,6 @@ using CodigoActivo.Application.Validation;
 
 namespace CodigoActivo.Application.DTOs;
 
-public record ActivityAllowedRoleResponse(Guid RoleTypeId, string? RoleTypeName);
-
 public record ActivityResponse(
     Guid Id,
     string Title,
@@ -19,8 +17,7 @@ public record ActivityResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     Guid CreatedBy,
-    Guid? UpdatedBy,
-    IReadOnlyList<ActivityAllowedRoleResponse> AllowedRoleTypes
+    Guid? UpdatedBy
 )
 {
     public ActivityResponse()
@@ -38,12 +35,9 @@ public record ActivityResponse(
             default,
             null,
             Guid.Empty,
-            null,
-            []
+            null
         ) { }
 }
-
-public record ActivityAllowedRoleRequest(Guid ActivityRoleTypeId);
 
 public record CreateActivityRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
@@ -52,8 +46,7 @@ public record CreateActivityRequest(
     [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
-    Guid ThumbnailId,
-    IReadOnlyList<ActivityAllowedRoleRequest>? AllowedRoleTypes
+    Guid ThumbnailId
 );
 
 public record UpdateActivityRequest(
@@ -63,8 +56,7 @@ public record UpdateActivityRequest(
     [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
-    Guid ThumbnailId,
-    IReadOnlyList<ActivityAllowedRoleRequest>? AllowedRoleTypes
+    Guid ThumbnailId
 );
 
 public record AssignmentResponse(
@@ -98,6 +90,10 @@ public record HouseholdMemberAssignmentResponse(
     Guid StatusId,
     string StatusName
 );
+
+public record SignupRoleResponse(Guid Id, string Name);
+
+public record HouseholdSignupRolesResponse(Guid UserId, IReadOnlyList<SignupRoleResponse> Roles);
 
 public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId);
 
@@ -140,16 +136,6 @@ public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
     public ActivityRoleTypeResponse()
         : this(Guid.Empty, string.Empty, string.Empty) { }
 }
-
-public record CreateActivityRoleTypeRequest(
-    [Required] [MaxLength(120)] [NotBlank] string Name,
-    [MaxLength(500)] string? Description
-);
-
-public record UpdateActivityRoleTypeRequest(
-    [Required] [MaxLength(120)] [NotBlank] string Name,
-    [MaxLength(500)] string? Description
-);
 
 public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {

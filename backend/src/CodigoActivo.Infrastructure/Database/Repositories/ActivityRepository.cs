@@ -10,11 +10,6 @@ public class ActivityRepository(CodigoActivoDbContext context)
     : Repository<Activity>(context),
         IActivityRepository
 {
-    public async Task<Activity?> GetForEditAsync(Guid id, CancellationToken ct = default)
-    {
-        return await Set.Include(a => a.AllowedRoleTypes).FirstOrDefaultAsync(a => a.Id == id, ct);
-    }
-
     public Task<bool> AnyOutsideRangeAsync(
         Guid eventId,
         DateTimeOffset lowerInclusive,
@@ -26,18 +21,6 @@ public class ActivityRepository(CodigoActivoDbContext context)
             a =>
                 a.EventId == eventId
                 && (a.ActivityStartsAt < lowerInclusive || a.ActivityEndsAt >= upperExclusive),
-            ct
-        );
-    }
-
-    public Task<bool> AllowedRoleExistsAsync(
-        Guid activityId,
-        Guid activityRoleTypeId,
-        CancellationToken ct = default
-    )
-    {
-        return Context.ActivityAllowedRoleTypes.AnyAsync(
-            x => x.ActivityId == activityId && x.ActivityRoleTypeId == activityRoleTypeId,
             ct
         );
     }

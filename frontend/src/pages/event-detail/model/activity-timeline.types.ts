@@ -1,4 +1,4 @@
-interface TimelineRole {
+export interface TimelineRole {
   id: string
   name: string
 }
@@ -18,7 +18,6 @@ export interface TimelineActivity {
   modality: string
   start: Date | null
   end: Date | null
-  roles: TimelineRole[]
   assignment: { status: string; roleName: string } | null
   household: TimelineMemberAssignment[]
 }

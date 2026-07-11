@@ -76,14 +76,12 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     private async Task<(Guid EventId, Guid ActivityId)> SeedActivityAsync(
         bool openSignup = true,
         DateTimeOffset? activityStart = null,
-        DateTimeOffset? activityEnd = null,
-        params Guid[] allowedRoles
+        DateTimeOffset? activityEnd = null
     )
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
-        var roles = allowedRoles.Length == 0 ? [SeedIds.ActivityRoleTypes.Leader] : allowedRoles;
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
@@ -115,13 +113,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
                     ThumbnailId = thumb,
                     CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     CreatedBy = TestSeedData.Users.AdminId,
-                    AllowedRoleTypes = roles
-                        .Select(r => new ActivityAllowedRoleType
-                        {
-                            ActivityId = activityId,
-                            ActivityRoleTypeId = r,
-                        })
-                        .ToList(),
                 }
             );
             return Task.CompletedTask;
@@ -200,6 +191,27 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task Assign_ChildAsLeader_ReturnsBadRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/assign",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId)).Should().BeNull();
+    }
+
+    [Fact]
     public async Task Assign_NonHouseholdUser_ReturnsForbidden()
     {
         var (_, activityId) = await SeedActivityAsync();
@@ -222,7 +234,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         var request = new AssignHouseholdRequest([
             new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
-            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant),
         ]);
 
         var response = await client.PostJsonAsync(
@@ -236,10 +248,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         created!.Should().HaveCount(2);
-        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().NotBeNull();
-        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId))
-            .Should()
-            .NotBeNull();
+        var member = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
+        member!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        var child = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
+        child!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Participant);
     }
 
     [Fact]
@@ -284,16 +296,14 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task ChangeRole_Admin_UpdatesAndPersistsRole()
     {
-        var (_, activityId) = await SeedActivityAsync(
-            allowedRoles: [SeedIds.ActivityRoleTypes.Leader, SeedIds.ActivityRoleTypes.Helper]
-        );
+        var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(
             activityId,
             TestSeedData.Users.MemberId,
             SeedIds.ActivityRoleTypes.Leader
         );
         var client = await LoginAsAdminAsync();
-        var request = new ChangeAssignmentRoleRequest(SeedIds.ActivityRoleTypes.Helper);
+        var request = new ChangeAssignmentRoleRequest(SeedIds.ActivityRoleTypes.Volunteer);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/change-role",
@@ -305,9 +315,32 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var body = await response.ReadJsonAsync<AssignmentResponse>(
             TestContext.Current.CancellationToken
         );
-        body!.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
+        body!.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
-        stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Helper);
+        stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
+    }
+
+    [Fact]
+    public async Task ChangeRole_AdminSetsLeaderForParticipantTypeUser_UpdatesRole()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        await SeedAssignmentAsync(
+            activityId,
+            TestSeedData.Users.MemberChildId,
+            SeedIds.ActivityRoleTypes.Participant
+        );
+        var client = await LoginAsAdminAsync();
+        var request = new ChangeAssignmentRoleRequest(SeedIds.ActivityRoleTypes.Leader);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/change-role",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
+        stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
     }
 
     [Fact]
@@ -366,6 +399,97 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/activities/household-assignments/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Assign_UnknownRoleType_ReturnsBadRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new AssignRequest(Guid.NewGuid());
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AssignHousehold_ChildAsLeader_ReturnsBadRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new AssignHouseholdRequest([
+            new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Leader),
+        ]);
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{activityId}/assign-household",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SignupRoles_MemberWithChild_ReturnsRolesPerHouseholdMember()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            "/api/activities/signup-roles",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.ReadJsonAsync<IReadOnlyList<HouseholdSignupRolesResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        body!.Should().HaveCount(2);
+        var self = body.Single(m => m.UserId == TestSeedData.Users.MemberId);
+        self.Roles.Select(r => r.Id)
+            .Should()
+            .Equal(
+                SeedIds.ActivityRoleTypes.Participant,
+                SeedIds.ActivityRoleTypes.Volunteer,
+                SeedIds.ActivityRoleTypes.Leader
+            );
+        self.Roles.Select(r => r.Name).Should().Equal("Participante", "Voluntario", "Líder");
+        var child = body.Single(m => m.UserId == TestSeedData.Users.MemberChildId);
+        child
+            .Roles.Select(r => r.Id)
+            .Should()
+            .Equal(SeedIds.ActivityRoleTypes.Participant, SeedIds.ActivityRoleTypes.Volunteer);
+        child.Roles.Select(r => r.Name).Should().Equal("Participante", "Voluntario");
+    }
+
+    [Fact]
+    public async Task SignupRoles_Anonymous_ReturnsUnauthorized()
+    {
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/activities/signup-roles",
             TestContext.Current.CancellationToken
         );
 

@@ -111,10 +111,10 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             },
             new ActivityRoleType
             {
-                Id = SeedIds.ActivityRoleTypes.Helper,
-                Name = "Colaborador",
+                Id = SeedIds.ActivityRoleTypes.Volunteer,
+                Name = "Voluntario",
                 Description =
-                    "Apoya al líder durante la actividad asumiendo tareas de soporte para su correcto desarrollo.",
+                    "Echa una mano de forma desinteresada durante la actividad, asumiendo tareas de soporte para su correcto desarrollo.",
             },
             new ActivityRoleType
             {

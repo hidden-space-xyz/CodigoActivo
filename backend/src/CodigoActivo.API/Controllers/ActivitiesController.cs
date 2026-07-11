@@ -59,6 +59,15 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
         return Ok(await activities.ListRoleTypesAsync(ct));
     }
 
+    [HttpGet("signup-roles")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<HouseholdSignupRolesResponse>>> SignupRoles(
+        CancellationToken ct
+    )
+    {
+        return Ok(await activities.GetHouseholdSignupRolesAsync(UserId, ct));
+    }
+
     [HttpGet("assignment-status-types")]
     [AllowOnlyAdmin]
     public async Task<
@@ -163,33 +172,5 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     )
     {
         return ToOk(await activities.ChangeRoleAsync(activityId, userId, request, ct));
-    }
-
-    [HttpPost("roleType")]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<ActivityRoleTypeResponse>> CreateRoleType(
-        [FromBody] CreateActivityRoleTypeRequest request,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await activities.CreateActivityRoleTypeAsync(request, ct));
-    }
-
-    [HttpPut("roleType/{activityRoleTypeId:guid}")]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<ActivityRoleTypeResponse>> UpdateRoleType(
-        Guid activityRoleTypeId,
-        [FromBody] UpdateActivityRoleTypeRequest request,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await activities.UpdateActivityRoleTypeAsync(activityRoleTypeId, request, ct));
-    }
-
-    [HttpDelete("roleType/{activityRoleTypeId:guid}")]
-    [AllowOnlyAdmin]
-    public async Task<IActionResult> DeleteRoleType(Guid activityRoleTypeId, CancellationToken ct)
-    {
-        return ToNoContent(await activities.DeleteActivityRoleTypeAsync(activityRoleTypeId, ct));
     }
 }

@@ -56,8 +56,7 @@ public sealed class ActivityServiceAssignmentTests
     private void HasActivityWindow(
         Guid activityId,
         DateTimeOffset signupStart,
-        DateTimeOffset signupEnd,
-        params Guid[] allowedRoleIds
+        DateTimeOffset signupEnd
     ) =>
         activities
             .Query()
@@ -74,17 +73,49 @@ public sealed class ActivityServiceAssignmentTests
                             SignupStartsAt = signupStart,
                             SignupEndsAt = signupEnd,
                         },
-                        AllowedRoleTypes = allowedRoleIds
-                            .Select(r => new ActivityAllowedRoleType { ActivityRoleTypeId = r })
-                            .ToList(),
                     },
                 }.AsQueryable()
             );
 
-    private void AllowedRoleExists(bool exists) =>
-        activities
-            .AllowedRoleExistsAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(exists);
+    private void TargetUser(Guid userId, Guid userTypeId) =>
+        users
+            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(
+                new User
+                {
+                    Id = userId,
+                    FirstName = "Test",
+                    LastName = "User",
+                    UserTypeId = userTypeId,
+                }
+            );
+
+    private void HouseholdUsers(params User[] members) =>
+        users.Query().Returns(members.AsQueryable());
+
+    private void CatalogRoles() =>
+        roleTypes
+            .GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns([
+                new ActivityRoleType
+                {
+                    Id = SeedIds.ActivityRoleTypes.Leader,
+                    Name = "Líder",
+                    Description = "d",
+                },
+                new ActivityRoleType
+                {
+                    Id = SeedIds.ActivityRoleTypes.Volunteer,
+                    Name = "Voluntario",
+                    Description = "d",
+                },
+                new ActivityRoleType
+                {
+                    Id = SeedIds.ActivityRoleTypes.Participant,
+                    Name = "Participante",
+                    Description = "d",
+                },
+            ]);
 
     private void ExistingAssignment(ActivityUserRoleAssignment? assignment) =>
         activities
@@ -163,16 +194,152 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignAsync_RoleNotInActivity_ReturnsRoleNotAllowed()
+    public async Task AssignAsync_UserMissing_ReturnsUserNotFound()
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        AllowedRoleExists(false);
+        users
+            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns((User?)null);
 
         var result = await sut.AssignAsync(
             activityId,
             Guid.NewGuid(),
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.UserNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignAsync_VolunteerRoleForNonSocioUser_PersistsAssignment()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+        ExistingAssignment(null);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Volunteer),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == userId
+                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignAsync_LeaderRoleForSocioUser_PersistsAssignment()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Member);
+        ExistingAssignment(null);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Leader),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == userId && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignAsync_LeaderRoleForNonSocioUser_ReturnsRoleNotAllowed()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Leader),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignAsync_LeaderRoleForNonSocioUserAsAdmin_ReturnsRoleNotAllowed()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, PastStart, PastEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Leader),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignAsync_UnknownRoleForSocioUser_ReturnsRoleNotAllowed()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Member);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
             new AssignRequest(Guid.NewGuid()),
             isAdmin: false,
             TestContext.Current.CancellationToken
@@ -188,15 +355,16 @@ public sealed class ActivityServiceAssignmentTests
     public async Task AssignAsync_AssignmentAlreadyExists_ReturnsConflict()
     {
         var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        AllowedRoleExists(true);
-        ExistingAssignment(Assignment(Guid.NewGuid(), activityId));
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+        ExistingAssignment(Assignment(userId, activityId));
 
         var result = await sut.AssignAsync(
             activityId,
-            Guid.NewGuid(),
-            new AssignRequest(Guid.NewGuid()),
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
             isAdmin: false,
             TestContext.Current.CancellationToken
         );
@@ -215,9 +383,9 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var roleId = SeedIds.ActivityRoleTypes.Participant;
         HasActivityWindow(activityId, PastStart, PastEnd);
-        AllowedRoleExists(true);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
         ExistingAssignment(null);
         RequestedStatusNamed("Solicitado");
 
@@ -254,12 +422,12 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var roleId = SeedIds.ActivityRoleTypes.Participant;
 
         clock.UtcNow = OpenStart;
 
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        AllowedRoleExists(true);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
         ExistingAssignment(null);
         RequestedStatusNamed("Solicitado");
 
@@ -288,12 +456,12 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var roleId = SeedIds.ActivityRoleTypes.Participant;
 
         clock.UtcNow = OpenEnd;
 
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        AllowedRoleExists(true);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
         ExistingAssignment(null);
         RequestedStatusNamed("Solicitado");
 
@@ -361,8 +529,8 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
         var strangerId = Guid.NewGuid();
-        HasActivityWindow(activityId, OpenStart, OpenEnd, Guid.NewGuid());
-        users.Query().Returns(new List<User>().AsQueryable());
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers();
 
         var result = await sut.AssignHouseholdAsync(
             activityId,
@@ -383,7 +551,16 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
-        HasActivityWindow(activityId, OpenStart, OpenEnd, Guid.NewGuid());
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Ada",
+                LastName = "Parent",
+                UserTypeId = SeedIds.UserTypes.Member,
+            }
+        );
 
         var result = await sut.AssignHouseholdAsync(
             activityId,
@@ -400,27 +577,141 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
+    public async Task AssignHouseholdAsync_LeaderRoleForNonSocioMember_ReturnsRoleNotAllowed()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Ada",
+                LastName = "Parent",
+                UserTypeId = SeedIds.UserTypes.Member,
+            },
+            new User
+            {
+                Id = childId,
+                FirstName = "Kid",
+                LastName = "One",
+                ParentId = actingUserId,
+                UserTypeId = SeedIds.UserTypes.Participant,
+            }
+        );
+
+        var request = new AssignHouseholdRequest([
+            new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
+            new(childId, SeedIds.ActivityRoleTypes.Leader),
+        ]);
+
+        var result = await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            request,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        await activities
+            .DidNotReceiveWithAnyArgs()
+            .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignHouseholdAsync_MixedValidRoles_CreatesAssignmentsForAll()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Ada",
+                LastName = "Parent",
+                UserTypeId = SeedIds.UserTypes.Member,
+            },
+            new User
+            {
+                Id = childId,
+                FirstName = "Kid",
+                LastName = "One",
+                ParentId = actingUserId,
+                UserTypeId = SeedIds.UserTypes.Participant,
+            }
+        );
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        RequestedStatusNamed("Solicitado");
+
+        var request = new AssignHouseholdRequest([
+            new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
+            new(childId, SeedIds.ActivityRoleTypes.Participant),
+        ]);
+
+        var result = await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            request,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(2);
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == actingUserId
+                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await activities
+            .Received(1)
+            .AddAssignmentAsync(
+                Arg.Is<ActivityUserRoleAssignment>(a =>
+                    a.UserId == childId
+                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task AssignHouseholdAsync_MixOfNewAndExisting_CreatesMissingAndSkipsExisting()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
-        HasActivityWindow(activityId, OpenStart, OpenEnd, roleId);
-        users
-            .Query()
-            .Returns(
-                new List<User>
-                {
-                    new()
-                    {
-                        Id = childId,
-                        FirstName = "Kid",
-                        LastName = "One",
-                        ParentId = actingUserId,
-                    },
-                }.AsQueryable()
-            );
+        var roleId = SeedIds.ActivityRoleTypes.Participant;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Ada",
+                LastName = "Parent",
+                UserTypeId = SeedIds.UserTypes.Member,
+            },
+            new User
+            {
+                Id = childId,
+                FirstName = "Kid",
+                LastName = "One",
+                ParentId = actingUserId,
+                UserTypeId = SeedIds.UserTypes.Participant,
+            }
+        );
         activities
             .QueryAssignments()
             .Returns(
@@ -642,29 +933,9 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeRoleAsync_RoleNotInActivity_ReturnsRoleNotAllowed()
-    {
-        ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
-        AllowedRoleExists(false);
-
-        var result = await sut.ChangeRoleAsync(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            new ChangeAssignmentRoleRequest(Guid.NewGuid()),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public async Task ChangeRoleAsync_RoleTypeMissing_ReturnsRoleTypeNotFound()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
-        AllowedRoleExists(true);
         roleTypes
             .FindAsync(
                 Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
@@ -690,10 +961,9 @@ public sealed class ActivityServiceAssignmentTests
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var roleId = SeedIds.ActivityRoleTypes.Leader;
         var assignment = Assignment(userId, activityId);
         ExistingAssignment(assignment);
-        AllowedRoleExists(true);
         roleTypes
             .FindAsync(
                 Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
@@ -750,7 +1020,6 @@ public sealed class ActivityServiceAssignmentTests
             AssignmentStatus = new AssignmentStatusType { Name = "Solicitado", Color = "#000" },
         };
         ExistingAssignment(assignment);
-        AllowedRoleExists(true);
         roleTypes
             .FindAsync(
                 Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
@@ -972,5 +1241,89 @@ public sealed class ActivityServiceAssignmentTests
         await users
             .Received(1)
             .ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetHouseholdSignupRolesAsync_SocioParentWithParticipantChild_ReturnsRolesPerMember()
+    {
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Ada",
+                LastName = "Parent",
+                UserTypeId = SeedIds.UserTypes.Member,
+            },
+            new User
+            {
+                Id = childId,
+                FirstName = "Kid",
+                LastName = "One",
+                ParentId = actingUserId,
+                UserTypeId = SeedIds.UserTypes.Participant,
+            },
+            new User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Stranger",
+                LastName = "Socio",
+                UserTypeId = SeedIds.UserTypes.Member,
+            }
+        );
+        CatalogRoles();
+
+        var result = await sut.GetHouseholdSignupRolesAsync(
+            actingUserId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Should().HaveCount(2);
+        var parent = result.Single(m => m.UserId == actingUserId);
+        parent
+            .Roles.Should()
+            .Equal(
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario"),
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Leader, "Líder")
+            );
+        var child = result.Single(m => m.UserId == childId);
+        child
+            .Roles.Should()
+            .Equal(
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario")
+            );
+    }
+
+    [Fact]
+    public async Task GetHouseholdSignupRolesAsync_ParticipantTypeUserWithoutChildren_ReturnsParticipantAndVolunteerOnly()
+    {
+        var actingUserId = Guid.NewGuid();
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Solo",
+                LastName = "User",
+                UserTypeId = SeedIds.UserTypes.Participant,
+            }
+        );
+        CatalogRoles();
+
+        var result = await sut.GetHouseholdSignupRolesAsync(
+            actingUserId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Should().ContainSingle();
+        result[0].UserId.Should().Be(actingUserId);
+        result[0]
+            .Roles.Should()
+            .Equal(
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
+                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario")
+            );
     }
 }

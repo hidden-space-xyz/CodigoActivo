@@ -150,10 +150,6 @@ public class ActivityService(
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
 
-        var allowedRoles = await EnsureAllowedRolesAsync(request.AllowedRoleTypes, ct);
-        if (allowedRoles.IsFailure)
-            return allowedRoles.Error!;
-
         var activity = new Activity
         {
             Title = request.Title.Trim(),
@@ -167,7 +163,6 @@ public class ActivityService(
             CreatedAt = clock.UtcNow,
             CreatedBy = userId,
         };
-        ApplyAllowedRoles(activity, request.AllowedRoleTypes);
 
         await activities.AddAsync(activity, ct);
         await uow.SaveChangesAsync(ct);
@@ -182,7 +177,7 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var activity = await activities.GetForEditAsync(activityId, ct);
+        var activity = await activities.FindAsync(a => a.Id == activityId, ct);
         if (activity is null)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
@@ -209,10 +204,6 @@ public class ActivityService(
         if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
 
-        var allowedRoles = await EnsureAllowedRolesAsync(request.AllowedRoleTypes, ct);
-        if (allowedRoles.IsFailure)
-            return allowedRoles.Error!;
-
         var previousThumbnailId = activity.ThumbnailId;
 
         activity.Title = request.Title.Trim();
@@ -224,9 +215,6 @@ public class ActivityService(
         activity.ThumbnailId = request.ThumbnailId;
         activity.UpdatedAt = clock.UtcNow;
         activity.UpdatedBy = userId;
-
-        activity.AllowedRoleTypes.Clear();
-        ApplyAllowedRoles(activity, request.AllowedRoleTypes);
 
         await uow.SaveChangesAsync(ct);
 
@@ -261,7 +249,11 @@ public class ActivityService(
         if (signup.IsFailure)
             return signup.Error!;
 
-        if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))
+        var user = await users.FindAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return Error.NotFound(ErrorCode.UserNotFound);
+
+        if (!IsSignupRoleAllowed(user.UserTypeId, request.ActivityRoleTypeId))
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
 
         if (await activities.GetAssignmentAsync(userId, activityId, ct) is not null)
@@ -319,17 +311,27 @@ public class ActivityService(
                 return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
         }
 
-        var allowedRoleIds = await executor.ToListAsync(
-            activities
-                .Query()
-                .Where(a => a.Id == activityId)
-                .SelectMany(a => a.AllowedRoleTypes.Select(r => r.ActivityRoleTypeId)),
-            ct
-        );
-        if (items.Exists(item => !allowedRoleIds.Contains(item.ActivityRoleTypeId)))
-            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
-
         var userIds = items.ConvertAll(item => item.UserId);
+
+        var userTypeById = (
+            await executor.ToListAsync(
+                users
+                    .Query()
+                    .Where(u => userIds.Contains(u.Id))
+                    .Select(u => new { u.Id, u.UserTypeId }),
+                ct
+            )
+        ).ToDictionary(u => u.Id, u => u.UserTypeId);
+        if (
+            items.Exists(item =>
+                !userTypeById.TryGetValue(item.UserId, out var userTypeId)
+                || !IsSignupRoleAllowed(userTypeId, item.ActivityRoleTypeId)
+            )
+        )
+        {
+            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
+        }
+
         var alreadyAssigned = (
             await executor.ToListAsync(
                 activities
@@ -434,9 +436,6 @@ public class ActivityService(
         if (assignment is null)
             return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
 
-        if (!await activities.AllowedRoleExistsAsync(activityId, request.ActivityRoleTypeId, ct))
-            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
-
         var role = await roleTypes.FindAsync(r => r.Id == request.ActivityRoleTypeId, ct);
         if (role is null)
             return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
@@ -527,90 +526,45 @@ public class ActivityService(
             .ToList();
     }
 
-    public async Task<Result<ActivityRoleTypeResponse>> CreateActivityRoleTypeAsync(
-        CreateActivityRoleTypeRequest request,
+    public async Task<IReadOnlyList<HouseholdSignupRolesResponse>> GetHouseholdSignupRolesAsync(
+        Guid actingUserId,
         CancellationToken ct = default
     )
     {
-        var name = request.Name.Trim();
-        if (await roleTypes.ExistsAsync(x => x.Name == name, ct))
-            return Error.Conflict(ErrorCode.ActivityRoleTypeNameAlreadyExists);
+        var members = await executor.ToListAsync(
+            users
+                .Query()
+                .Where(u => u.Id == actingUserId || u.ParentId == actingUserId)
+                .Select(u => new { u.Id, u.UserTypeId }),
+            ct
+        );
 
-        var roleType = new ActivityRoleType
-        {
-            Name = name,
-            Description = request.Description?.Trim() ?? string.Empty,
-        };
-        await roleTypes.AddAsync(roleType, ct);
-        await uow.SaveChangesAsync(ct);
-        return roleType.ToResponse();
+        var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
+
+        return members
+            .Select(member => new HouseholdSignupRolesResponse(
+                member.Id,
+                SignupRoleIdsFor(member.UserTypeId)
+                    .Select(roleId => new SignupRoleResponse(
+                        roleId,
+                        roleNames.GetValueOrDefault(roleId, string.Empty)
+                    ))
+                    .ToList()
+            ))
+            .ToList();
     }
 
-    public async Task<Result<ActivityRoleTypeResponse>> UpdateActivityRoleTypeAsync(
-        Guid id,
-        UpdateActivityRoleTypeRequest request,
-        CancellationToken ct = default
-    )
+    private static IEnumerable<Guid> SignupRoleIdsFor(Guid userTypeId)
     {
-        var roleType = await roleTypes.FindAsync(x => x.Id == id, ct);
-        if (roleType is null)
-            return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
-
-        var name = request.Name.Trim();
-        if (await roleTypes.ExistsAsync(x => x.Name == name && x.Id != id, ct))
-            return Error.Conflict(ErrorCode.ActivityRoleTypeNameAlreadyExists);
-
-        roleType.Name = name;
-        roleType.Description = request.Description?.Trim() ?? string.Empty;
-        await uow.SaveChangesAsync(ct);
-        return roleType.ToResponse();
+        yield return SeedIds.ActivityRoleTypes.Participant;
+        yield return SeedIds.ActivityRoleTypes.Volunteer;
+        if (userTypeId == SeedIds.UserTypes.Member)
+            yield return SeedIds.ActivityRoleTypes.Leader;
     }
 
-    public async Task<Result> DeleteActivityRoleTypeAsync(Guid id, CancellationToken ct = default)
+    private static bool IsSignupRoleAllowed(Guid userTypeId, Guid roleTypeId)
     {
-        if (await roleTypes.RemoveAsync(x => x.Id == id, ct) == 0)
-            return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
-
-        await uow.SaveChangesAsync(ct);
-        return Result.Success();
-    }
-
-    private async Task<Result> EnsureAllowedRolesAsync(
-        IReadOnlyList<ActivityAllowedRoleRequest>? roles,
-        CancellationToken ct
-    )
-    {
-        if (roles is null)
-            return Result.Success();
-
-        var distinct = roles.Select(r => r.ActivityRoleTypeId).Distinct().ToList();
-        if (distinct.Count == 0)
-            return Result.Success();
-
-        var existing = await roleTypes.CountAsync(r => distinct.Contains(r.Id), ct);
-        return existing != distinct.Count
-            ? (Result)Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound)
-            : Result.Success();
-    }
-
-    private static void ApplyAllowedRoles(
-        Activity activity,
-        IReadOnlyList<ActivityAllowedRoleRequest>? roles
-    )
-    {
-        if (roles is null)
-            return;
-
-        foreach (var role in roles.DistinctBy(r => r.ActivityRoleTypeId))
-        {
-            activity.AllowedRoleTypes.Add(
-                new ActivityAllowedRoleType
-                {
-                    ActivityId = activity.Id,
-                    ActivityRoleTypeId = role.ActivityRoleTypeId,
-                }
-            );
-        }
+        return SignupRoleIdsFor(userTypeId).Contains(roleTypeId);
     }
 
     private static bool Overlaps(Activity a, Activity b)

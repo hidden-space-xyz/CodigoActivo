@@ -3,6 +3,11 @@ export interface ActivityRole {
   readonly name: string
 }
 
+export interface HouseholdSignupRoles {
+  readonly userId: string
+  readonly roles: readonly ActivityRole[]
+}
+
 export interface EventActivity {
   readonly id: string
   readonly title: string
@@ -11,7 +16,6 @@ export interface EventActivity {
   readonly modality: string
   readonly startsAt: string | null
   readonly endsAt: string | null
-  readonly roles: readonly ActivityRole[]
 }
 
 export interface ActivityAssignment {

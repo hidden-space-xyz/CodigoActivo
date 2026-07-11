@@ -7,7 +7,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   ActivityNotFound: 'No se encontró la actividad.',
   ActivityModalityTypeNotFound: 'La modalidad de la actividad no es válida.',
   ActivitySignupClosed: 'La inscripción a esta actividad está cerrada.',
-  ActivityRoleNotAllowed: 'Este rol no está permitido para la actividad.',
+  ActivityRoleNotAllowed: 'Este rol no está permitido para este usuario.',
   ActivityAssignmentAlreadyExists: 'Esta persona ya está asignada a la actividad.',
   ActivityHouseholdAssignmentsRequired: 'Debes asignar al menos un integrante del grupo familiar.',
   ActivityHouseholdMemberNotAllowed:
@@ -15,7 +15,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   ActivityAssignmentNotFound: 'No se encontró la asignación de la actividad.',
   AssignmentStatusTypeNotFound: 'El estado de la asignación no es válido.',
   ActivityRoleTypeNotFound: 'El rol de la actividad no es válido.',
-  ActivityRoleTypeNameAlreadyExists: 'Ya existe un rol con ese nombre.',
   ActivityScheduleRequired: 'Debes indicar un horario para la actividad.',
   ActivityScheduleInvalidRange: 'El horario de la actividad no es válido.',
   ActivityScheduleOutsideEventRange:

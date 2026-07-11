@@ -5,8 +5,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export * from './activityAllowedRoleRequest';
-export * from './activityAllowedRoleResponse';
 export * from './activityModalityTypeResponse';
 export * from './activityResponse';
 export * from './activityResponsePagedResult';
@@ -27,7 +25,6 @@ export * from './changeAssignmentRoleRequest';
 export * from './changeAssignmentStatusRequest';
 export * from './changePasswordRequest';
 export * from './createActivityRequest';
-export * from './createActivityRoleTypeRequest';
 export * from './createAnnouncementRequest';
 export * from './createEventCategoryTypeRequest';
 export * from './createEventRequest';
@@ -61,6 +58,7 @@ export * from './getApiResourcesParams';
 export * from './getApiUsersParams';
 export * from './householdAssignmentRequest';
 export * from './householdMemberAssignmentResponse';
+export * from './householdSignupRolesResponse';
 export * from './loginRequest';
 export * from './overlappingActivityResponse';
 export * from './partnerResponse';
@@ -77,9 +75,9 @@ export * from './resourceListItemResponsePagedResult';
 export * from './resourceResponse';
 export * from './resourceTypeResponse';
 export * from './setAdminRequest';
+export * from './signupRoleResponse';
 export * from './timeOverlapResponse';
 export * from './updateActivityRequest';
-export * from './updateActivityRoleTypeRequest';
 export * from './updateAnnouncementRequest';
 export * from './updateEventCategoryTypeRequest';
 export * from './updateEventRequest';

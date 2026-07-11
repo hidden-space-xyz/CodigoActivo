@@ -244,27 +244,23 @@
             }
           }
         }
-      },
-      "post": {
+      }
+    },
+    "/api/activities/signup-roles": {
+      "get": {
         "tags": [
           "Activities"
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateActivityRoleTypeRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActivityRoleTypeResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HouseholdSignupRolesResponse"
+                  }
                 }
               }
             }
@@ -569,66 +565,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/activities/roleType/{activityRoleTypeId}": {
-      "put": {
-        "tags": [
-          "Activities"
-        ],
-        "parameters": [
-          {
-            "name": "activityRoleTypeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateActivityRoleTypeRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ActivityRoleTypeResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Activities"
-        ],
-        "parameters": [
-          {
-            "name": "activityRoleTypeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
           }
         }
       }
@@ -2464,30 +2400,6 @@
   },
   "components": {
     "schemas": {
-      "ActivityAllowedRoleRequest": {
-        "type": "object",
-        "properties": {
-          "activityRoleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "additionalProperties": false
-      },
-      "ActivityAllowedRoleResponse": {
-        "type": "object",
-        "properties": {
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "ActivityModalityTypeResponse": {
         "type": "object",
         "properties": {
@@ -2561,13 +2473,6 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid",
-            "nullable": true
-          },
-          "allowedRoleTypes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityAllowedRoleResponse"
-            },
             "nullable": true
           }
         },
@@ -2966,27 +2871,6 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
-          },
-          "allowedRoleTypes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityAllowedRoleRequest"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "CreateActivityRoleTypeRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3192,7 +3076,6 @@
           "ActivityAssignmentNotFound",
           "AssignmentStatusTypeNotFound",
           "ActivityRoleTypeNotFound",
-          "ActivityRoleTypeNameAlreadyExists",
           "ActivityScheduleRequired",
           "ActivityScheduleInvalidRange",
           "ActivityScheduleOutsideEventRange",
@@ -3829,6 +3712,23 @@
         },
         "additionalProperties": false
       },
+      "HouseholdSignupRolesResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignupRoleResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LoginRequest": {
         "type": "object",
         "properties": {
@@ -4183,6 +4083,20 @@
         },
         "additionalProperties": false
       },
+      "SignupRoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "TimeOverlapResponse": {
         "type": "object",
         "properties": {
@@ -4231,27 +4145,6 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
-          },
-          "allowedRoleTypes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityAllowedRoleRequest"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateActivityRoleTypeRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false
