@@ -12,15 +12,9 @@ import {
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
-import {
-  ActivityFormDialog,
-  AssignVolunteerDialog,
-  useActivities,
-  useAssignments,
-} from '@/features/manage-activities'
+import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
 import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
-import { useUsers } from '@/features/manage-users'
 import type {
   ActivityResponse,
   CreateActivityRequest,
@@ -35,16 +29,11 @@ const eventId = computed(() => String(route.params.eventId))
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
-const assignDialogVisible = ref(false)
-
 const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
 const activities = useActivities(eventId)
-const assignments = useAssignments(eventId)
 const roleTypes = useActivityRoleTypesList()
 const modalityTypes = useActivityModalityTypesList()
-// The users list only feeds the assign dialog — don't fetch it until the dialog opens.
-const users = useUsers({ enabled: assignDialogVisible })
 
 const summaryCards = computed(() => {
   const data = summary.data.value
@@ -152,26 +141,6 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
   })
 }
 
-function onAssignSubmit(payload: {
-  activityId: string
-  userId: string
-  activityRoleTypeId: string
-}): void {
-  assignments.assign.mutate(
-    {
-      activityId: payload.activityId,
-      userId: payload.userId,
-      body: { activityRoleTypeId: payload.activityRoleTypeId },
-    },
-    {
-      onSuccess: () => {
-        feedback.success('Voluntario asignado.')
-        assignDialogVisible.value = false
-      },
-      onError: (error) => feedback.error(error),
-    },
-  )
-}
 </script>
 
 <template>
@@ -183,11 +152,6 @@ function onAssignSubmit(payload: {
       :subtitle="event.data.value?.subtitle ?? ''"
     >
       <template #actions>
-        <Button
-          label="Asignar voluntario"
-          icon="pi pi-user-plus"
-          @click="assignDialogVisible = true"
-        />
         <Button
           label="Nueva actividad"
           icon="pi pi-plus"
@@ -301,15 +265,6 @@ function onAssignSubmit(payload: {
       :event-start="event.data.value?.eventStartsAt ?? null"
       :event-end="event.data.value?.eventEndsAt ?? null"
       @submit="onActivitySubmit"
-    />
-
-    <AssignVolunteerDialog
-      v-model:visible="assignDialogVisible"
-      :activities="activities.list.data.value ?? []"
-      :users="users.list.data.value ?? []"
-      :saving="assignments.assign.isPending.value"
-      :verify-overlaps="assignments.verifyOverlaps"
-      @submit="onAssignSubmit"
     />
   </div>
 </template>
