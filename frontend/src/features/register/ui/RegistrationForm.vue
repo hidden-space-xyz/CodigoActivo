@@ -2,17 +2,13 @@
 import { computed, ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import Select from 'primevue/select'
 
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
-import type { RegistrationType } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
 import { todayIso, yearsAgoIso } from '@/shared/lib'
 
 const props = defineProps<{
   form: RegistrationForm
-  adultRoles: readonly RegistrationType[]
-  minorRoles: readonly RegistrationType[]
   isSubmitting: boolean
 }>()
 
@@ -28,9 +24,9 @@ const isValid = computed(() => {
   if (!model.firstName.trim() || !model.lastName.trim()) return false
   if (!emailValid.value || !model.phone.trim()) return false
   if (passwordTooShort.value) return false
-  if (!model.dateOfBirth || !model.roleId) return false
+  if (!model.dateOfBirth) return false
   return model.minors.every(
-    (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.roleId,
+    (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth,
   )
 })
 
@@ -42,14 +38,6 @@ function onSubmit(): void {
 
 const maxBirthDateIso = todayIso()
 const adultThresholdIso = yearsAgoIso(18)
-
-const adultRoleDescription = computed(
-  () => props.adultRoles.find((role) => role.id === model.roleId)?.description ?? '',
-)
-
-function minorRoleDescription(roleId: string): string {
-  return props.minorRoles.find((role) => role.id === roleId)?.description ?? ''
-}
 
 function addMinor(): void {
   model.minors.push(createEmptyMinor())
@@ -145,24 +133,6 @@ function removeMinor(index: number): void {
             required
           />
         </div>
-        <div class="reg__field reg__field--full">
-          <label class="reg__label" for="reg-role">¿Cómo quieres participar?</label>
-          <Select
-            input-id="reg-role"
-            v-model="model.roleId"
-            :options="[...adultRoles]"
-            option-label="name"
-            option-value="id"
-            placeholder="Selecciona un rol"
-            :invalid="submitted && !model.roleId"
-            required
-            fluid
-          />
-          <small v-if="submitted && !model.roleId" class="reg__error"
-            >Selecciona cómo quieres participar.</small
-          >
-          <p v-if="adultRoleDescription" class="reg__role-desc">{{ adultRoleDescription }}</p>
-        </div>
       </div>
 
       <div class="reg__minors">
@@ -171,8 +141,8 @@ function removeMinor(index: number): void {
           <BaseButton variant="ghost" type="button" @click="addMinor">+ Añadir menor</BaseButton>
         </div>
         <p class="reg__minors-note">
-          Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre, fecha de
-          nacimiento y cómo quieren participar.
+          Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre y su fecha
+          de nacimiento.
         </p>
 
         <transition-group name="reg-fade" tag="div">
@@ -221,23 +191,6 @@ function removeMinor(index: number): void {
                   :max="maxBirthDateIso"
                   required
                 />
-              </div>
-              <div class="reg__field">
-                <label class="reg__label" :for="`minor-role-${index}`">¿Cómo participa?</label>
-                <Select
-                  :input-id="`minor-role-${index}`"
-                  v-model="minor.roleId"
-                  :options="[...minorRoles]"
-                  option-label="name"
-                  option-value="id"
-                  placeholder="Selecciona un rol"
-                  :invalid="submitted && !minor.roleId"
-                  required
-                  fluid
-                />
-                <p v-if="minorRoleDescription(minor.roleId)" class="reg__role-desc">
-                  {{ minorRoleDescription(minor.roleId) }}
-                </p>
               </div>
             </div>
           </fieldset>
@@ -308,13 +261,6 @@ function removeMinor(index: number): void {
 
 .reg__date:focus {
   border-color: var(--ca-orange);
-}
-
-.reg__role-desc {
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ca-text-muted);
 }
 
 .reg__error {

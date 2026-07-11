@@ -11,12 +11,10 @@ export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
     phone: form.phone.trim(),
     password: form.password,
     birthDate: form.dateOfBirth,
-    roleId: form.roleId,
     minors: form.minors.map((minor) => ({
       firstName: minor.firstName.trim(),
       lastName: minor.lastName.trim(),
       birthDate: minor.dateOfBirth,
-      roleId: minor.roleId,
     })),
   }
 }

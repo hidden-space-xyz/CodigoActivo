@@ -22,7 +22,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         string phone = "+34600000099",
         string password = "Str0ngPass!",
         string firstName = "Nadia",
-        DateOnly? birthDate = null
+        DateOnly? birthDate = null,
+        IReadOnlyList<RegisterMinorRequest>? minors = null
     )
     {
         return new RegisterRequest(
@@ -32,8 +33,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             phone,
             password,
             birthDate ?? AdultBirthDate,
-            SeedIds.UserTypes.Member,
-            Minors: null
+            minors
         );
     }
 
@@ -93,7 +93,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         body.Adult.Email.Should().Be(NewAdultEmail);
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Pending);
         body.Adult.IsAdmin.Should().BeFalse();
-        body.Adult.Type.Id.Should().Be(SeedIds.UserTypes.Member);
+        body.Adult.Type.Should().BeNull();
 
         var otp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
         raw.Should()
@@ -103,10 +103,43 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
         );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.OtpCodeHash.Should().NotBeNullOrEmpty();
         stored.OtpCodeHash.Should().NotBe(otp, "the OTP must be stored hashed, not in plaintext");
         stored.OtpExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
         stored.OtpLastSentAt.Should().Be(Factory.Clock.UtcNow);
+    }
+
+    [Fact]
+    public async Task Register_WithMinors_AssignsParticipantTypeToAdultAndMinors()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(
+                minors: [new RegisterMinorRequest("Leo", "Nueva", new DateOnly(2016, 3, 10))]
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.ReadJsonAsync<RegisterResponse>(
+            TestContext.Current.CancellationToken
+        );
+        body!.Minors.Should().HaveCount(1);
+        body.Minors[0].Type.Should().BeNull();
+
+        var storedAdult = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
+        );
+        storedAdult!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+
+        var storedMinor = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([body.Minors[0].Id], TestContext.Current.CancellationToken).AsTask()
+        );
+        storedMinor!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+        storedMinor.ParentId.Should().Be(body.Adult.Id);
     }
 
     [Theory]

@@ -10,7 +10,6 @@ import {
   deleteAccountRequest,
   getAccountChildrenRequest,
   getAccountProfileRequest,
-  getRegistrationTypesRequest,
   updateAccountChildRequest,
   updateAccountProfileRequest,
 } from '@/entities/account'
@@ -45,11 +44,6 @@ export function useAccount() {
       return getAccountChildrenRequest(userId.value)
     },
     enabled: computed(() => userId.value !== null),
-  })
-
-  const minorRoles = useQuery({
-    queryKey: accountQueryKeys.registrationTypes(true),
-    queryFn: () => getRegistrationTypesRequest(true),
   })
 
   function invalidateChildren(): void {
@@ -117,7 +111,6 @@ export function useAccount() {
   return {
     profile,
     children,
-    minorRoles,
     updateProfile,
     changePassword,
     addChild,

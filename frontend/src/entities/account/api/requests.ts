@@ -1,5 +1,4 @@
 import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
-import { getApiRegistrationTypes } from '@/shared/api/generated/endpoints/registration-types/registration-types'
 import {
   deleteApiUsersUserId,
   getApiUsers,
@@ -15,12 +14,11 @@ import type {
   UpdateMinorInput,
   UpdateProfileInput,
 } from '../model/account-inputs'
-import type { AccountChild, AccountProfile, RegistrationType } from '../model/types'
+import type { AccountChild, AccountProfile } from '../model/types'
 import {
   toAccountChild,
   toAccountProfile,
   toAddMinorRequest,
-  toRegistrationType,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
 } from './mapper'
@@ -44,13 +42,6 @@ export async function getAccountChildrenRequest(
     getApiUsers({ parentId, sort: 'firstName', page, pageSize }).then(toPage),
   )
   return children.map(toAccountChild)
-}
-
-export async function getRegistrationTypesRequest(
-  minor: boolean,
-): Promise<readonly RegistrationType[]> {
-  const { data } = await getApiRegistrationTypes({ audience: minor ? 'Minor' : 'Adult' })
-  return (data ?? []).map(toRegistrationType)
 }
 
 export async function updateAccountProfileRequest(

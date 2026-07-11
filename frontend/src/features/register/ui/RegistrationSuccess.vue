@@ -5,7 +5,6 @@ import InputText from 'primevue/inputtext'
 import { BaseButton } from '@/shared/ui'
 
 const props = defineProps<{
-  roleName: string
   minorCount: number
   email: string
   requiresVerification: boolean
@@ -38,10 +37,6 @@ function submitVerify(): void {
   <div class="reg-success">
     <div class="reg-success__check" aria-hidden="true">✓</div>
     <h2 class="reg-success__title">¡Registro completado!</h2>
-    <p class="reg-success__role">
-      Te has registrado como <b>{{ roleName }}</b
-      >.
-    </p>
     <p v-if="minorCount > 0" class="reg-success__role">
       También has inscrito a
       <b>{{ minorCount }} {{ minorCount === 1 ? 'menor' : 'menores' }}</b> a tu cargo.

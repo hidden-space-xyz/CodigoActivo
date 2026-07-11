@@ -14,7 +14,7 @@ public static class SeedIds
     public static class UserTypes
     {
         public static readonly Guid Member = new("b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c");
-        public static readonly Guid Volunteer = new("c26c7755-b5db-42fe-b349-e83a84481fea");
+        public static readonly Guid Sponsor = new("8e0b7dc4-59d3-4c3b-9a71-4f25c6b0de88");
         public static readonly Guid Participant = new("1c038ae8-306f-4785-a5f5-b9c25e5cc4aa");
     }
 

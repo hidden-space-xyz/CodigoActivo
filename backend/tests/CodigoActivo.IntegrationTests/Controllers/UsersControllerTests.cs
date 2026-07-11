@@ -64,6 +64,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         page!.Total.Should().Be(5);
         page.Page.Should().Be(1);
         page.Items.Should().Contain(u => u.Email == TestSeedData.AdminEmail);
+        page.Items.Should().OnlyContain(u => u.Type != null);
     }
 
     [Fact]
@@ -81,6 +82,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         page.Items.Select(u => u.Id)
             .Should()
             .BeEquivalentTo([TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]);
+        page.Items.Should().OnlyContain(u => u.Type == null);
     }
 
     [Fact]
@@ -313,28 +315,66 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/change-type?roleId={SeedIds.UserTypes.Volunteer}",
+            $"/api/users/{TestSeedData.Users.MemberId}/change-type?roleId={SeedIds.UserTypes.Sponsor}",
+            ct: TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.ReadJsonAsync<UserResponse>(
+            TestContext.Current.CancellationToken
+        );
+        updated!.Type.Should().NotBeNull();
+        updated.Type!.Id.Should().Be(SeedIds.UserTypes.Sponsor);
+        var user = await Factory.QueryAsync(db =>
+            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
+                .AsTask()
+        );
+        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Sponsor);
+    }
+
+    [Fact]
+    public async Task ChangeType_AsAdminForMinor_AssignsRequestedType()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?roleId={SeedIds.UserTypes.Member}",
             ct: TestContext.Current.CancellationToken
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
+            db.Users.FindAsync(
+                    [TestSeedData.Users.MemberChildId],
+                    TestContext.Current.CancellationToken
+                )
                 .AsTask()
         );
-        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Volunteer);
+        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
+    }
+
+    [Fact]
+    public async Task ChangeType_MissingUserType_ReturnsNotFoundWithErrorCode()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/change-type?roleId={Guid.NewGuid()}",
+            ct: TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.UserTypeNotFound);
     }
 
     [Fact]
     public async Task AddChild_AsMember_CreatesDependent()
     {
         var client = await LoginAsMemberAsync();
-        var request = new RegisterMinorRequest(
-            "Nino",
-            "Miembro",
-            MinorBirthDate,
-            SeedIds.UserTypes.Participant
-        );
+        var request = new RegisterMinorRequest("Nino", "Miembro", MinorBirthDate);
 
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/children",
@@ -347,11 +387,13 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         created!.ParentId.Should().Be(TestSeedData.Users.MemberId);
+        created.Type.Should().BeNull();
 
         var stored = await Factory.QueryAsync(db =>
             db.Users.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
         );
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
+        stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
     }
 

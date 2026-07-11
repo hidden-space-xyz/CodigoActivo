@@ -15,7 +15,6 @@ namespace CodigoActivo.Application.Services;
 
 public class AuthService(
     IUserRepository users,
-    IUserTypeRepository userTypes,
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
@@ -93,16 +92,6 @@ public class AuthService(
 
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
 
-        if (!isFirstUser)
-        {
-            var adultRole = await userTypes.FindAsync(ut => ut.Id == request.RoleId, ct);
-            if (adultRole is null)
-                return Error.NotFound(ErrorCode.UserTypeNotFound);
-
-            if (adultRole.Hidden || !adultRole.IsAllowedForAdults)
-                return Error.BadRequest(ErrorCode.UserTypeNotAllowedForAdults);
-        }
-
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
@@ -114,17 +103,6 @@ public class AuthService(
         var minorRequests = request.Minors ?? [];
         if (minorRequests.Any(minor => !minor.BirthDate.IsMinor(today)))
             return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
-
-        if (minorRequests.Count > 0)
-        {
-            var roleIds = minorRequests.Select(minor => minor.RoleId).Distinct().ToList();
-            var minorRoles = await userTypes.GetAsync(ut => roleIds.Contains(ut.Id), ct);
-            if (minorRoles.Count != roleIds.Count)
-                return Error.NotFound(ErrorCode.UserTypeNotFound);
-
-            if (minorRoles.Any(role => role.Hidden || !role.IsAllowedForMinors))
-                return Error.BadRequest(ErrorCode.UserTypeNotAllowedForMinors);
-        }
 
         var now = clock.UtcNow;
 
@@ -140,7 +118,7 @@ public class AuthService(
                 ? SeedIds.UserStatusTypes.Pending
                 : SeedIds.UserStatusTypes.Active,
             IsAdmin = isFirstUser,
-            UserTypeId = isFirstUser ? SeedIds.UserTypes.Member : request.RoleId,
+            UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = now,
         };
 
@@ -162,7 +140,7 @@ public class AuthService(
                 BirthDate = minor.BirthDate,
                 ParentId = adult.Id,
                 UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                UserTypeId = minor.RoleId,
+                UserTypeId = SeedIds.UserTypes.Participant,
                 CreatedAt = now,
             };
             await users.AddAsync(child, ct);

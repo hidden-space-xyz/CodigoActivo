@@ -3,7 +3,6 @@ interface MinorForm {
   firstName: string
   lastName: string
   dateOfBirth: string
-  roleId: string
 }
 
 let minorKeySeq = 0
@@ -15,13 +14,12 @@ export interface RegistrationForm {
   phone: string
   password: string
   dateOfBirth: string
-  roleId: string
   minors: MinorForm[]
 }
 
 export function createEmptyMinor(): MinorForm {
   minorKeySeq += 1
-  return { key: minorKeySeq, firstName: '', lastName: '', dateOfBirth: '', roleId: '' }
+  return { key: minorKeySeq, firstName: '', lastName: '', dateOfBirth: '' }
 }
 
 export function createEmptyRegistrationForm(): RegistrationForm {
@@ -32,7 +30,6 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     phone: '',
     password: '',
     dateOfBirth: '',
-    roleId: '',
     minors: [],
   }
 }

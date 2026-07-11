@@ -12,7 +12,7 @@ public sealed class MappingExtensionsTests
     private static readonly DateTimeOffset Updated = new(2025, 6, 7, 8, 9, 10, TimeSpan.Zero);
 
     [Fact]
-    public void ToResponse_FullUserWithNavigations_MapsScalarsStatusAndType()
+    public void ToResponse_FullUserWithNavigations_MapsScalarsStatusAndNullType()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -60,7 +60,7 @@ public sealed class MappingExtensionsTests
         response.ParentId.Should().Be(parentId);
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#00ff00"));
         response.IsAdmin.Should().BeTrue();
-        response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#123456"));
+        response.Type.Should().BeNull();
     }
 
     [Fact]
@@ -80,25 +80,5 @@ public sealed class MappingExtensionsTests
         response.Status.Id.Should().Be(statusId);
         response.Status.Name.Should().BeEmpty();
         response.Status.Color.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void ToResponse_NullUserTypeNavigation_MapsEmptyTypeNameAndColor()
-    {
-        var typeId = Guid.NewGuid();
-        var user = new User
-        {
-            FirstName = "N",
-            LastName = "N",
-            UserStatusType = new UserStatusType { Name = "S", Color = "#fff" },
-            UserTypeId = typeId,
-            UserType = null!,
-        };
-
-        var response = user.ToResponse();
-
-        response.Type.Id.Should().Be(typeId);
-        response.Type.Name.Should().BeEmpty();
-        response.Type.Color.Should().BeEmpty();
     }
 }

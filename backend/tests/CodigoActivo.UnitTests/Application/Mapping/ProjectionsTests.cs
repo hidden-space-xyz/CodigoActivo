@@ -235,7 +235,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void User_UserWithStatusAndType_MapsScalarsStatusIsAdminAndType()
+    public void User_UserWithStatusAndType_MapsScalarsStatusIsAdminWithNullType()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -283,27 +283,59 @@ public sealed class ProjectionsTests
         response.ParentId.Should().Be(parentId);
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
         response.IsAdmin.Should().BeTrue();
-        response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#00f"));
+        response.Type.Should().BeNull();
     }
 
     [Fact]
-    public void RegistrationType_UserTypeWithAllowanceFlags_MapsAllFieldsIncludingAllowanceFlags()
+    public void UserWithType_UserWithStatusAndType_MapsScalarsStatusIsAdminAndType()
     {
-        var userType = new UserType
+        var statusId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = new User
         {
             Id = Guid.NewGuid(),
-            Name = "Member",
-            Description = "Standard",
-            Color = "#00f",
-            IsAllowedForMinors = true,
-            IsAllowedForAdults = false,
+            FirstName = "Ada",
+            LastName = "Lovelace",
+            Email = "ada@test.dev",
+            Phone = "+34",
+            BirthDate = new DateOnly(1990, 3, 4),
+            LastLoginAt = Updated,
+            CreatedAt = Created,
+            UpdatedAt = Updated,
+            ParentId = parentId,
+            UserStatusTypeId = statusId,
+            UserStatusType = new UserStatusType
+            {
+                Id = statusId,
+                Name = "Active",
+                Color = "#0f0",
+            },
+            IsAdmin = true,
+            UserTypeId = typeId,
+            UserType = new UserType
+            {
+                Id = typeId,
+                Name = "Member",
+                Color = "#00f",
+            },
         };
 
-        Project(Projections.RegistrationType, userType)
-            .Should()
-            .Be(
-                new RegistrationTypeResponse(userType.Id, "Member", "Standard", "#00f", true, false)
-            );
+        var response = Project(Projections.UserWithType, user);
+
+        response.Id.Should().Be(user.Id);
+        response.FirstName.Should().Be("Ada");
+        response.LastName.Should().Be("Lovelace");
+        response.Email.Should().Be("ada@test.dev");
+        response.Phone.Should().Be("+34");
+        response.BirthDate.Should().Be(new DateOnly(1990, 3, 4));
+        response.LastLoginAt.Should().Be(Updated);
+        response.CreatedAt.Should().Be(Created);
+        response.UpdatedAt.Should().Be(Updated);
+        response.ParentId.Should().Be(parentId);
+        response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
+        response.IsAdmin.Should().BeTrue();
+        response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#00f"));
     }
 
     [Fact]

@@ -2,7 +2,6 @@
 import { computed, reactive, ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 import { useAccount } from '../model/useAccount'
 import type { AccountChild } from '@/entities/account'
@@ -10,18 +9,14 @@ import { BaseButton } from '@/shared/ui'
 import { formatDate, toDateInput, todayIso, useCrudFeedback, yearsAgoIso } from '@/shared/lib'
 
 const feedback = useCrudFeedback()
-const { children, minorRoles, addChild, updateChild, deleteChild } = useAccount()
+const { children, addChild, updateChild, deleteChild } = useAccount()
 
 const items = computed(() => children.data.value ?? [])
-
-function typeName(child: AccountChild): string {
-  return child.type?.name ?? ''
-}
 
 const dialogVisible = ref(false)
 const mode = ref<'add' | 'edit'>('add')
 const editingId = ref<string | null>(null)
-const form = reactive({ firstName: '', lastName: '', birthDate: '', roleId: '' })
+const form = reactive({ firstName: '', lastName: '', birthDate: '' })
 
 const maxBirthDateIso = todayIso()
 const adultThresholdIso = yearsAgoIso(18)
@@ -34,7 +29,6 @@ function openAdd(): void {
   form.firstName = ''
   form.lastName = ''
   form.birthDate = ''
-  form.roleId = ''
   dialogVisible.value = true
 }
 
@@ -44,7 +38,6 @@ function openEdit(child: AccountChild): void {
   form.firstName = child.firstName ?? ''
   form.lastName = child.lastName ?? ''
   form.birthDate = toDateInput(child.birthDate)
-  form.roleId = ''
   dialogVisible.value = true
 }
 
@@ -59,7 +52,6 @@ function save(): void {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         birthDate: form.birthDate,
-        roleId: form.roleId,
       },
       {
         onSuccess: () => {
@@ -126,9 +118,7 @@ function confirmDelete(): void {
       <li v-for="child in items" :key="child.id" class="acc-minor">
         <div class="acc-minor__info">
           <span class="acc-minor__name">{{ child.firstName }} {{ child.lastName }}</span>
-          <span class="acc-minor__meta">
-            {{ formatDate(child.birthDate) }} · {{ typeName(child) || 'Sin tipo' }}
-          </span>
+          <span class="acc-minor__meta">{{ formatDate(child.birthDate) }}</span>
         </div>
         <div class="acc-minor__actions">
           <BaseButton variant="ghost" @click="openEdit(child)">Editar</BaseButton>
@@ -163,19 +153,6 @@ function confirmDelete(): void {
               :min="adultThresholdIso"
               :max="maxBirthDateIso"
               required
-            />
-          </div>
-          <div v-if="mode === 'add'" class="acc-form__field">
-            <label for="m-role">¿Cómo participa?</label>
-            <Select
-              input-id="m-role"
-              v-model="form.roleId"
-              :options="[...(minorRoles.data.value ?? [])]"
-              option-label="name"
-              option-value="id"
-              placeholder="Selecciona un rol"
-              required
-              fluid
             />
           </div>
         </div>

@@ -12,11 +12,6 @@ public static class MappingExtensions
             user.UserStatusType?.Name ?? string.Empty,
             user.UserStatusType?.Color ?? string.Empty
         );
-        var type = new UserTypeSummaryResponse(
-            user.UserTypeId,
-            user.UserType?.Name ?? string.Empty,
-            user.UserType?.Color ?? string.Empty
-        );
 
         return new UserResponse(
             user.Id,
@@ -31,7 +26,7 @@ public static class MappingExtensions
             user.ParentId,
             status,
             user.IsAdmin,
-            type
+            null
         );
     }
 

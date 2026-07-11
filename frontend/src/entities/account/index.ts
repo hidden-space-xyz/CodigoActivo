@@ -4,7 +4,7 @@ export type {
   UpdateMinorInput,
   UpdateProfileInput,
 } from './model/account-inputs'
-export type { AccountChild, AccountProfile, RegistrationType } from './model/types'
+export type { AccountChild, AccountProfile } from './model/types'
 export { accountQueryKeys } from './api/query-keys'
 export {
   addAccountChildRequest,
@@ -13,7 +13,6 @@ export {
   deleteAccountRequest,
   getAccountChildrenRequest,
   getAccountProfileRequest,
-  getRegistrationTypesRequest,
   updateAccountChildRequest,
   updateAccountProfileRequest,
 } from './api/requests'

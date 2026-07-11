@@ -17,7 +17,6 @@ namespace CodigoActivo.UnitTests.Application.Services;
 public sealed class AuthServiceTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUserTypeRepository userTypes = Substitute.For<IUserTypeRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
@@ -30,7 +29,6 @@ public sealed class AuthServiceTests
     {
         sut = new AuthService(
             users,
-            userTypes,
             uow,
             clock,
             new FakePasswordHasher(),
@@ -77,49 +75,16 @@ public sealed class AuthServiceTests
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
 
-    private static UserType NewUserType(
-        Guid? id = null,
-        bool hidden = false,
-        bool allowedForAdults = true,
-        bool allowedForMinors = true
-    ) =>
-        new()
-        {
-            Id = id ?? Guid.NewGuid(),
-            Name = "Role",
-            Description = string.Empty,
-            Color = "#ffffff",
-            Hidden = hidden,
-            IsAllowedForAdults = allowedForAdults,
-            IsAllowedForMinors = allowedForMinors,
-        };
-
     private static RegisterRequest NewRegister(
         string email = "ana@test.com",
         string phone = "+34123456789",
         string password = "password123",
         DateOnly? birthDate = null,
-        Guid? roleId = null,
         IReadOnlyList<RegisterMinorRequest>? minors = null
-    ) =>
-        new(
-            "  Ana  ",
-            "  Ruiz  ",
-            email,
-            phone,
-            password,
-            birthDate ?? AdultBirthDate,
-            roleId ?? SeedIds.UserTypes.Member,
-            minors
-        );
+    ) => new("  Ana  ", "  Ruiz  ", email, phone, password, birthDate ?? AdultBirthDate, minors);
 
-    private static RegisterMinorRequest NewMinor(Guid? roleId = null, DateOnly? birthDate = null) =>
-        new(
-            "  Leo  ",
-            "  Ruiz  ",
-            birthDate ?? MinorBirthDate,
-            roleId ?? SeedIds.UserTypes.Participant
-        );
+    private static RegisterMinorRequest NewMinor(DateOnly? birthDate = null) =>
+        new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate);
 
     private void ExistsReturns(params bool[] seq) =>
         users
@@ -266,6 +231,7 @@ public sealed class AuthServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(user.Id);
         result.Value.Email.Should().Be("ana@test.com");
+        result.Value.Type.Should().BeNull();
         user.LastLoginAt.Should().NotBeNull();
         await users
             .Received(1)
@@ -299,43 +265,6 @@ public sealed class AuthServiceTests
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.RegisterAdultCannotBeMinor);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task RegisterAsync_AdultRoleMissing_ReturnsNotFound()
-    {
-        ExistsReturns(true);
-        userTypes
-            .FindAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((UserType?)null);
-
-        var result = await sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Theory]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    public async Task RegisterAsync_AdultRoleNotAllowed_ReturnsBadRequest(
-        bool hidden,
-        bool allowedForAdults
-    )
-    {
-        ExistsReturns(true);
-        userTypes
-            .FindAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(NewUserType(hidden: hidden, allowedForAdults: allowedForAdults));
-
-        var result = await sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForAdults);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -393,53 +322,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_MinorRoleMissing_ReturnsNotFound()
-    {
-        ExistsReturns(false, false);
-        userTypes
-            .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-
-        var result = await sut.RegisterAsync(
-            NewRegister(minors: [NewMinor()]),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Theory]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    public async Task RegisterAsync_MinorRoleNotAllowed_ReturnsBadRequest(
-        bool hidden,
-        bool allowedForMinors
-    )
-    {
-        var minorRoleId = SeedIds.UserTypes.Participant;
-        ExistsReturns(false, false);
-        userTypes
-            .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([
-                NewUserType(id: minorRoleId, hidden: hidden, allowedForMinors: allowedForMinors),
-            ]);
-
-        var result = await sut.RegisterAsync(
-            NewRegister(minors: [NewMinor(roleId: minorRoleId)]),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.UserTypeNotAllowedForMinors);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task RegisterAsync_FirstUser_BecomesAdminWithMemberType()
+    public async Task RegisterAsync_FirstUser_BecomesAdminWithParticipantType()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
         ExistsReturns(false, false);
@@ -467,7 +350,7 @@ public sealed class AuthServiceTests
                     && u.PasswordHash == "fake:password123"
                     && u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
                     && u.IsAdmin
-                    && u.UserTypeId == SeedIds.UserTypes.Member
+                    && u.UserTypeId == SeedIds.UserTypes.Participant
                     && u.OtpCodeHash != null
                     && u.OtpCodeHash.StartsWith(FakePasswordHasher.Prefix, StringComparison.Ordinal)
                     && u.OtpExpiresAt == clock.UtcNow + verification.OtpLifetime
@@ -476,9 +359,6 @@ public sealed class AuthServiceTests
                 ),
                 Arg.Any<CancellationToken>()
             );
-        await userTypes
-            .DidNotReceiveWithAnyArgs()
-            .FindAsync(default!, TestContext.Current.CancellationToken);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -554,18 +434,10 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_SubsequentUserWithMinor_CreatesAdultAndMinor()
+    public async Task RegisterAsync_SubsequentUserWithMinor_CreatesAdultAndMinorAsParticipants()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
-        var adultRoleId = SeedIds.UserTypes.Volunteer;
-        var minorRoleId = SeedIds.UserTypes.Participant;
         ExistsReturns(true, false);
-        userTypes
-            .FindAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(NewUserType(id: adultRoleId));
-        userTypes
-            .GetAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns([NewUserType(id: minorRoleId)]);
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(NewUser());
@@ -574,7 +446,7 @@ public sealed class AuthServiceTests
             .Returns([NewUser(email: null)]);
 
         var result = await sut.RegisterAsync(
-            NewRegister(roleId: adultRoleId, minors: [NewMinor(roleId: minorRoleId)]),
+            NewRegister(minors: [NewMinor()]),
             TestContext.Current.CancellationToken
         );
 
@@ -588,7 +460,7 @@ public sealed class AuthServiceTests
                 Arg.Is<User>(u =>
                     u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
                     && !u.IsAdmin
-                    && u.UserTypeId == adultRoleId
+                    && u.UserTypeId == SeedIds.UserTypes.Participant
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -599,7 +471,7 @@ public sealed class AuthServiceTests
                     u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
                     && u.FirstName == "Leo"
                     && u.ParentId != null
-                    && u.UserTypeId == minorRoleId
+                    && u.UserTypeId == SeedIds.UserTypes.Participant
                 ),
                 Arg.Any<CancellationToken>()
             );

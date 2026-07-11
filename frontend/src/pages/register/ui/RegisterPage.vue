@@ -10,10 +10,7 @@ import { SectionEyebrow } from '@/shared/ui'
 const {
   step,
   form,
-  adultRoles,
-  minorRoles,
   submittedEmail,
-  submittedRoleName,
   submittedMinorCount,
   requiresVerification,
   isVerified,
@@ -52,8 +49,6 @@ const {
         <RegistrationForm
           v-else-if="step === 'form'"
           :form="form"
-          :adult-roles="adultRoles.data.value ?? []"
-          :minor-roles="minorRoles.data.value ?? []"
           :is-submitting="isSubmitting"
           @submit="submit"
           @back="backToGate"
@@ -61,7 +56,6 @@ const {
 
         <RegistrationSuccess
           v-else-if="step === 'success'"
-          :role-name="submittedRoleName"
           :minor-count="submittedMinorCount"
           :email="submittedEmail"
           :requires-verification="requiresVerification"
