@@ -23,6 +23,9 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
       queryKey: ['reports', 'event-summary', toValue(eventId)],
     })
     void queryClient.invalidateQueries({
+      queryKey: ['reports', 'event-attendees', toValue(eventId)],
+    })
+    void queryClient.invalidateQueries({
       queryKey: activityQueryKeys.publicByEvent(toValue(eventId)),
     })
   }

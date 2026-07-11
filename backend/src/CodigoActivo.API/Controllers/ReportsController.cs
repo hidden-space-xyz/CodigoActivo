@@ -21,24 +21,14 @@ public class ReportsController(IReportService reports) : ApiControllerBase
         return ToOk(await reports.GetEventSummaryAsync(eventId, ct));
     }
 
-    [HttpGet("events/{eventId:guid}/assignments")]
+    [HttpGet("events/{eventId:guid}/attendees")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventAssignmentsReportResponse>> EventAssignments(
+    public async Task<ActionResult<EventAttendeesResponse>> EventAttendees(
         Guid eventId,
         CancellationToken ct
     )
     {
-        return ToOk(await reports.GetEventAssignmentsAsync(eventId, ct));
-    }
-
-    [HttpGet("activities/{activityId:guid}/assignments")]
-    [AllowOnlyAdmin]
-    public async Task<ActionResult<ActivityAssignmentsReportResponse>> ActivityAssignments(
-        Guid activityId,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await reports.GetActivityAssignmentsAsync(activityId, ct));
+        return ToOk(await reports.GetEventAttendeesAsync(eventId, ct));
     }
 
     [HttpGet("events/{eventId:guid}/badges")]

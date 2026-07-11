@@ -11,10 +11,16 @@ import {
 } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
+import Tab from 'primevue/tab'
+import TabList from 'primevue/tablist'
+import TabPanel from 'primevue/tabpanel'
+import TabPanels from 'primevue/tabpanels'
+import Tabs from 'primevue/tabs'
 
 import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
 import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
+import EventAttendeesTab from './EventAttendeesTab.vue'
 import type {
   ActivityResponse,
   CreateActivityRequest,
@@ -28,6 +34,8 @@ const eventId = computed(() => String(route.params.eventId))
 
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
+
+const activeTab = ref<string | number>('activities')
 
 const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
@@ -86,14 +94,6 @@ function openBadges(): void {
   void router.push({ name: 'admin-event-badges', params: { eventId: eventId.value } })
 }
 
-function openActivityAssignments(activity: ActivityResponse): void {
-  if (!activity.id) return
-  void router.push({
-    name: 'admin-activity-detail',
-    params: { eventId: eventId.value, activityId: activity.id },
-  })
-}
-
 async function openEditActivity(activity: ActivityResponse): Promise<void> {
   selectedActivity.value = activity
   activityDialogVisible.value = true
@@ -140,7 +140,6 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
     },
   })
 }
-
 </script>
 
 <template>
@@ -174,87 +173,96 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
       </div>
     </div>
 
-    <section class="block">
-      <h2 class="block__title">Actividades</h2>
-      <DataState
-        :loading="activities.list.isLoading.value"
-        :error="activities.list.isError.value"
-        :empty="(activities.list.data.value?.length ?? 0) === 0"
-        empty-text="Este evento aún no tiene actividades."
-      >
-        <DataTable :value="filteredActivities" data-key="id" striped-rows removable-sort>
-          <template #empty>Sin coincidencias.</template>
+    <Tabs v-model:value="activeTab" class="tabs">
+      <TabList>
+        <Tab value="activities">Actividades</Tab>
+        <Tab value="attendees">Asistentes</Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="activities">
+          <DataState
+            :loading="activities.list.isLoading.value"
+            :error="activities.list.isError.value"
+            :empty="(activities.list.data.value?.length ?? 0) === 0"
+            empty-text="Este evento aún no tiene actividades."
+          >
+            <DataTable :value="filteredActivities" data-key="id" striped-rows removable-sort>
+              <template #empty>Sin coincidencias.</template>
 
-          <Column header="Imagen" style="width: 110px">
-            <template #body="{ data }">
-              <ListThumbnail
-                :thumbnail-id="data.thumbnailId"
-                :alt="data.title"
-                style="width: 88px"
-              />
-            </template>
-          </Column>
-          <Column field="title" sortable>
-            <template #header>
-              <ColumnSearch v-model="titleQuery" label="Título" placeholder="Buscar título" />
-            </template>
-          </Column>
-          <Column field="activityStartsAt" header="Horario" sortable>
-            <template #body="{ data }">
-              {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
-            </template>
-          </Column>
-          <Column field="modalityName" sortable>
-            <template #header>
-              <ColumnFilterSelect
-                v-model="modalityFilter"
-                label="Modalidad"
-                :options="modalityOptions"
-              />
-            </template>
-            <template #body="{ data }">
-              <div class="modality-cell">
-                <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>
-                <span v-if="data.location" class="modality-cell__loc">{{ data.location }}</span>
-              </div>
-            </template>
-          </Column>
-          <Column header="Roles">
-            <template #body="{ data }">
-              {{ roleNames(data) }}
-            </template>
-          </Column>
-          <Column header="Acciones" style="width: 160px">
-            <template #body="{ data }">
-              <div class="row-actions">
-                <Button
-                  icon="pi pi-users"
-                  text
-                  rounded
-                  aria-label="Ver asignaciones"
-                  @click="openActivityAssignments(data)"
-                />
-                <Button
-                  icon="pi pi-pencil"
-                  text
-                  rounded
-                  aria-label="Editar"
-                  @click="openEditActivity(data)"
-                />
-                <Button
-                  icon="pi pi-trash"
-                  text
-                  rounded
-                  severity="danger"
-                  aria-label="Eliminar"
-                  @click="confirmDeleteActivity(data)"
-                />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
-      </DataState>
-    </section>
+              <Column header="Imagen" style="width: 110px">
+                <template #body="{ data }">
+                  <ListThumbnail
+                    :thumbnail-id="data.thumbnailId"
+                    :alt="data.title"
+                    style="width: 88px"
+                  />
+                </template>
+              </Column>
+              <Column field="title" sortable>
+                <template #header>
+                  <ColumnSearch v-model="titleQuery" label="Título" placeholder="Buscar título" />
+                </template>
+              </Column>
+              <Column field="activityStartsAt" header="Horario" sortable>
+                <template #body="{ data }">
+                  {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
+                </template>
+              </Column>
+              <Column field="modalityName" sortable>
+                <template #header>
+                  <ColumnFilterSelect
+                    v-model="modalityFilter"
+                    label="Modalidad"
+                    :options="modalityOptions"
+                  />
+                </template>
+                <template #body="{ data }">
+                  <div class="modality-cell">
+                    <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>
+                    <span v-if="data.location" class="modality-cell__loc">{{ data.location }}</span>
+                  </div>
+                </template>
+              </Column>
+              <Column header="Roles">
+                <template #body="{ data }">
+                  {{ roleNames(data) }}
+                </template>
+              </Column>
+              <Column header="Acciones" style="width: 120px">
+                <template #body="{ data }">
+                  <div class="row-actions">
+                    <Button
+                      icon="pi pi-pencil"
+                      text
+                      rounded
+                      aria-label="Editar"
+                      @click="openEditActivity(data)"
+                    />
+                    <Button
+                      icon="pi pi-trash"
+                      text
+                      rounded
+                      severity="danger"
+                      aria-label="Eliminar"
+                      @click="confirmDeleteActivity(data)"
+                    />
+                  </div>
+                </template>
+              </Column>
+            </DataTable>
+          </DataState>
+        </TabPanel>
+        <TabPanel value="attendees">
+          <EventAttendeesTab
+            :event-id="eventId"
+            :active="activeTab === 'attendees'"
+            :activities="activities.list.data.value ?? []"
+            :activities-loading="activities.list.isLoading.value"
+            :activities-error="activities.list.isError.value"
+          />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
 
     <ActivityFormDialog
       v-model:visible="activityDialogVisible"
@@ -308,16 +316,8 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
   color: var(--ca-text-muted);
 }
 
-.block {
+.tabs {
   margin-bottom: 30px;
-}
-
-.block__title {
-  font-family: var(--ca-font-display);
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--ca-text-bright);
-  margin-bottom: 14px;
 }
 
 .row-actions {

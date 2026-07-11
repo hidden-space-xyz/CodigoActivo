@@ -18,49 +18,43 @@ public record EventRoleTypeSummaryResponse(
     int ApprovedAssignments
 );
 
-public record AssignmentReportItemResponse(
+public record EventAttendeeAssignmentResponse(
     Guid ActivityId,
     string ActivityTitle,
-    Guid UserId,
+    DateTimeOffset ActivityStartsAt,
+    DateTimeOffset ActivityEndsAt,
     Guid RoleTypeId,
     string? RoleTypeName,
     Guid StatusId,
-    string? StatusName
+    string? StatusName,
+    DateTimeOffset SignedUpAt,
+    bool HasTimeConflict
 );
 
-public record ActivityRoleTypeSummaryResponse(
-    Guid RoleTypeId,
-    string? RoleTypeName,
-    int ApprovedAssignments
+public record EventAttendeeGuardianResponse(
+    string FirstName,
+    string LastName,
+    string? Email,
+    string? Phone
 );
 
-public record ActivityAssignmentRowResponse(
+public record EventAttendeeResponse(
     Guid UserId,
     string? FirstName,
     string? LastName,
     string? Email,
     string? Phone,
     DateOnly BirthDate,
-    Guid? ParentId,
-    bool SignedUp,
-    Guid? RoleTypeId,
-    string? RoleTypeName,
-    Guid? StatusId,
-    string? StatusName
+    string UserTypeName,
+    string UserTypeColor,
+    EventAttendeeGuardianResponse? Guardian,
+    IReadOnlyList<EventAttendeeAssignmentResponse> Assignments
 );
 
-public record ActivityAssignmentsReportResponse(
-    Guid ActivityId,
-    string Title,
-    int TotalSignups,
-    IReadOnlyList<ActivityRoleTypeSummaryResponse> RoleTypeBreakdown,
-    IReadOnlyList<ActivityAssignmentRowResponse> Rows
-);
-
-public record EventAssignmentsReportResponse(
+public record EventAttendeesResponse(
     Guid EventId,
     string Title,
-    IReadOnlyList<AssignmentReportItemResponse> Items
+    IReadOnlyList<EventAttendeeResponse> Attendees
 );
 
 public record EventBadgeGuardianResponse(string FirstName, string LastName, string? Phone);

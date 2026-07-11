@@ -273,6 +273,7 @@ public class ActivityService(
             ActivityId = activityId,
             ActivityRoleTypeId = request.ActivityRoleTypeId,
             AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+            CreatedAt = clock.UtcNow,
         };
         await activities.AddAssignmentAsync(assignment, ct);
         await uow.SaveChangesAsync(ct);
@@ -353,6 +354,7 @@ public class ActivityService(
                     ActivityId = activityId,
                     ActivityRoleTypeId = item.ActivityRoleTypeId,
                     AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                    CreatedAt = clock.UtcNow,
                 },
                 ct
             );
@@ -463,6 +465,7 @@ public class ActivityService(
                 ActivityId = activityId,
                 ActivityRoleTypeId = role.Id,
                 AssignmentStatusId = statusId,
+                CreatedAt = assignment.CreatedAt,
             },
             ct
         );

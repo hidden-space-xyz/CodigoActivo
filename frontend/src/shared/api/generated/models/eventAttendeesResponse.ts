@@ -4,12 +4,12 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { AssignmentReportItemResponse } from './assignmentReportItemResponse';
+import type { EventAttendeeResponse } from './eventAttendeeResponse';
 
-export interface EventAssignmentsReportResponse {
+export interface EventAttendeesResponse {
   eventId?: string;
   /** @nullable */
   title?: string | null;
   /** @nullable */
-  items?: AssignmentReportItemResponse[] | null;
+  attendees?: EventAttendeeResponse[] | null;
 }

@@ -13,10 +13,10 @@ import type {
 
 export function useAssignments(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
-  const invalidate = (_data: unknown, vars: { activityId: string }) => {
+  const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['reports', 'event-summary', toValue(eventId)] })
     void queryClient.invalidateQueries({
-      queryKey: ['reports', 'activity-assignments', vars.activityId],
+      queryKey: ['reports', 'event-attendees', toValue(eventId)],
     })
   }
 

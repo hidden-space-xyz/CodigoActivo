@@ -100,9 +100,6 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/events/:eventId', 'admin-event-detail', () =>
     import('@/pages/admin/event-detail').then((m) => m.EventDetailPage),
   ),
-  adminRoute('/admin/events/:eventId/activities/:activityId', 'admin-activity-detail', () =>
-    import('@/pages/admin/activity-assignments').then((m) => m.ActivityAssignmentsPage),
-  ),
   {
     // Printable badge sheet: admin-only but rendered without the admin chrome so the
     // printed pages contain nothing but the labels.

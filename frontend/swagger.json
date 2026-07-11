@@ -1842,7 +1842,7 @@
         }
       }
     },
-    "/api/reports/events/{eventId}/assignments": {
+    "/api/reports/events/{eventId}/attendees": {
       "get": {
         "tags": [
           "Reports"
@@ -1864,37 +1864,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EventAssignmentsReportResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/reports/activities/{activityId}/assignments": {
-      "get": {
-        "tags": [
-          "Reports"
-        ],
-        "parameters": [
-          {
-            "name": "activityId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ActivityAssignmentsReportResponse"
+                  "$ref": "#/components/schemas/EventAttendeesResponse"
                 }
               }
             }
@@ -2518,94 +2488,6 @@
         },
         "additionalProperties": false
       },
-      "ActivityAssignmentRowResponse": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "firstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "parentId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "signedUp": {
-            "type": "boolean"
-          },
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "statusId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "statusName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "ActivityAssignmentsReportResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "totalSignups": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "roleTypeBreakdown": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityRoleTypeSummaryResponse"
-            },
-            "nullable": true
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityAssignmentRowResponse"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "ActivityModalityTypeResponse": {
         "type": "object",
         "properties": {
@@ -2730,24 +2612,6 @@
           "description": {
             "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "ActivityRoleTypeSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "approvedAssignments": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -2969,40 +2833,6 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "AssignmentReportItemResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "activityTitle": {
-            "type": "string",
-            "nullable": true
-          },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roleTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "statusId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "statusName": {
             "type": "string",
             "nullable": true
           }
@@ -3429,7 +3259,122 @@
         ],
         "type": "string"
       },
-      "EventAssignmentsReportResponse": {
+      "EventAttendeeAssignmentResponse": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activityTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "activityStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activityEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "roleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          },
+          "signedUpAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasTimeConflict": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventAttendeeGuardianResponse": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventAttendeeResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "userTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTypeColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "guardian": {
+            "$ref": "#/components/schemas/EventAttendeeGuardianResponse"
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventAttendeeAssignmentResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventAttendeesResponse": {
         "type": "object",
         "properties": {
           "eventId": {
@@ -3440,10 +3385,10 @@
             "type": "string",
             "nullable": true
           },
-          "items": {
+          "attendees": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssignmentReportItemResponse"
+              "$ref": "#/components/schemas/EventAttendeeResponse"
             },
             "nullable": true
           }

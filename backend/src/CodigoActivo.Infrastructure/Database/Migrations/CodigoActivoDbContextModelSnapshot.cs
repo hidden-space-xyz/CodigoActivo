@@ -187,6 +187,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("assignment_status_id");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.HasKey("UserId", "ActivityId", "ActivityRoleTypeId")
                         .HasName("pk_activity_user_role_assignments");
 

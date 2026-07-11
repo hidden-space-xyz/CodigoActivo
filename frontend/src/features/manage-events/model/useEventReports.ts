@@ -3,6 +3,7 @@ import { computed, toValue } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
 import {
+  getApiReportsEventsEventIdAttendees,
   getApiReportsEventsEventIdBadges,
   getApiReportsEventsEventIdSummary,
 } from '@/shared/api/generated/endpoints/reports/reports'
@@ -11,6 +12,17 @@ export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => ['reports', 'event-summary', toValue(eventId)] as const),
     queryFn: () => getApiReportsEventsEventIdSummary(toValue(eventId)).then((r) => r.data),
+  })
+}
+
+export function useEventAttendees(
+  eventId: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  return useQuery({
+    queryKey: computed(() => ['reports', 'event-attendees', toValue(eventId)] as const),
+    queryFn: () => getApiReportsEventsEventIdAttendees(toValue(eventId)).then((r) => r.data),
+    enabled: computed(() => toValue(enabled)),
   })
 }
 
