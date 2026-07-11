@@ -10,22 +10,15 @@ import {
 } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import type { DataTablePageEvent, DataTableSortEvent } from 'primevue/datatable'
+import type { DataTablePageEvent } from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
-import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 
 import { useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
-import {
-  ageFrom,
-  formatDate,
-  useCrudFeedback,
-  useDeleteConfirm,
-  useHierarchyFilter,
-} from '@/shared/lib'
+import { ageFrom, formatDate, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { list, update, remove, changeType, setAdmin, fetchOne } = useUsers()
 const userTypes = useUserTypesList()
@@ -50,6 +43,37 @@ function birthDateWithAge(user: UserResponse): string {
   return age === null ? formatted : `${formatted} (${age})`
 }
 
+const users = computed(() => list.data.value ?? [])
+
+const nameById = computed(() => {
+  const map = new Map<string, string>()
+  for (const user of users.value) {
+    if (user.id) map.set(user.id, fullName(user))
+  }
+  return map
+})
+
+const dependentCountById = computed(() => {
+  const map = new Map<string, number>()
+  for (const user of users.value) {
+    if (user.parentId) map.set(user.parentId, (map.get(user.parentId) ?? 0) + 1)
+  }
+  return map
+})
+
+function tutorName(parentId: string | null | undefined): string {
+  if (!parentId) return '—'
+  return nameById.value.get(parentId) ?? '—'
+}
+
+function dependentCount(user: UserResponse): number {
+  return user.id ? (dependentCountById.value.get(user.id) ?? 0) : 0
+}
+
+function dependentsLabel(count: number): string {
+  return count === 1 ? '1 dependiente' : `${count} dependientes`
+}
+
 const nameQuery = ref<string | number | null>(null)
 const emailQuery = ref<string | number | null>(null)
 const phoneQuery = ref<string | number | null>(null)
@@ -57,9 +81,31 @@ const statusId = ref<string | boolean | null>(null)
 const typeId = ref<string | boolean | null>(null)
 const adminFilter = ref<string | boolean | null>(null)
 
+interface RelationFilter {
+  kind: 'tutor' | 'dependents'
+  userId: string
+}
+
+const relationFilter = ref<RelationFilter | null>(null)
+
+const relationUser = computed(() => {
+  const relation = relationFilter.value
+  if (!relation) return null
+  return users.value.find((user) => user.id === relation.userId) ?? null
+})
+
+const relationFilterLabel = computed(() => {
+  const relation = relationFilter.value
+  const origin = relationUser.value
+  if (!relation || !origin) return ''
+  return relation.kind === 'tutor'
+    ? `Tutor de ${fullName(origin)}`
+    : `Dependientes de ${fullName(origin)}`
+})
+
 const statusOptions = computed(() => {
   const seen = new Map<string, string>()
-  for (const user of list.data.value ?? []) {
+  for (const user of users.value) {
     const status = user.status
     if (status?.id && !seen.has(status.id)) seen.set(status.id, status.name ?? '—')
   }
@@ -80,8 +126,19 @@ function textMatch(haystack: string, query: string | number | null): boolean {
   return haystack.toLowerCase().includes(String(query).toLowerCase())
 }
 
+function matchesRelation(user: UserResponse): boolean {
+  const relation = relationFilter.value
+  if (!relation) return true
+  if (relation.kind === 'tutor') {
+    const parentId = relationUser.value?.parentId
+    return parentId != null && user.id === parentId
+  }
+  return user.parentId != null && user.parentId === relation.userId
+}
+
 function matches(user: UserResponse): boolean {
   return (
+    matchesRelation(user) &&
     textMatch(fullName(user), nameQuery.value) &&
     textMatch(user.email ?? '', emailQuery.value) &&
     textMatch(user.phone ?? '', phoneQuery.value) &&
@@ -91,23 +148,7 @@ function matches(user: UserResponse): boolean {
   )
 }
 
-const filterActive = computed(
-  () =>
-    (nameQuery.value != null && nameQuery.value !== '') ||
-    (emailQuery.value != null && emailQuery.value !== '') ||
-    (phoneQuery.value != null && phoneQuery.value !== '') ||
-    statusId.value != null ||
-    typeId.value != null ||
-    adminFilter.value != null,
-)
-
-const sortField = ref<string | undefined>(undefined)
-const sortOrder = ref<1 | -1>(1)
-
-function onSort(event: DataTableSortEvent): void {
-  sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
-  sortOrder.value = event.sortOrder === -1 ? -1 : 1
-}
+const rows = computed(() => users.value.filter(matches))
 
 const first = ref(0)
 
@@ -115,22 +156,37 @@ function onPage(event: DataTablePageEvent): void {
   first.value = event.first
 }
 
-watch([nameQuery, emailQuery, phoneQuery, statusId, typeId, adminFilter], () => {
+watch([nameQuery, emailQuery, phoneQuery, statusId, typeId, adminFilter, relationFilter], () => {
   first.value = 0
 })
 
-const table = useHierarchyFilter<UserResponse>({
-  items: () => list.data.value ?? [],
-  getId: (user) => user.id,
-  getParentId: (user) => user.parentId,
-  getName: (user) => fullName(user),
-  matches,
-  filterActive,
-  sortActive: () => !!sortField.value,
+watch(relationUser, (current) => {
+  if (relationFilter.value && !current) relationFilter.value = null
 })
 
-function rowClass(user: UserResponse): string {
-  return table.treeMode.value && table.isChild(user) ? 'user-row--child' : ''
+function clearColumnFilters(): void {
+  nameQuery.value = null
+  emailQuery.value = null
+  phoneQuery.value = null
+  statusId.value = null
+  typeId.value = null
+  adminFilter.value = null
+}
+
+function showTutorOf(user: UserResponse): void {
+  if (!user.id) return
+  clearColumnFilters()
+  relationFilter.value = { kind: 'tutor', userId: user.id }
+}
+
+function showDependentsOf(user: UserResponse): void {
+  if (!user.id) return
+  clearColumnFilters()
+  relationFilter.value = { kind: 'dependents', userId: user.id }
+}
+
+function clearRelationFilter(): void {
+  relationFilter.value = null
 }
 
 async function openEdit(user: UserResponse): Promise<void> {
@@ -207,6 +263,19 @@ function confirmDelete(user: UserResponse): void {
   <div>
     <AdminPageHeader title="Usuarios" subtitle="Personas registradas en la plataforma" />
 
+    <div v-if="relationFilter" class="relation-filter">
+      <i class="pi pi-filter relation-filter__icon" />
+      <span class="relation-filter__label">{{ relationFilterLabel }}</span>
+      <Button
+        icon="pi pi-times"
+        text
+        rounded
+        size="small"
+        aria-label="Quitar filtro"
+        @click="clearRelationFilter"
+      />
+    </div>
+
     <DataState
       :loading="list.isLoading.value"
       :error="list.isError.value"
@@ -214,18 +283,14 @@ function confirmDelete(user: UserResponse): void {
       empty-text="No hay usuarios."
     >
       <DataTable
-        :value="table.rows.value"
-        :row-class="rowClass"
+        :value="rows"
         data-key="id"
         striped-rows
         paginator
         :rows="10"
         :first="first"
-        :sort-field="sortField"
-        :sort-order="sortOrder"
         removable-sort
         @page="onPage"
-        @sort="onSort"
       >
         <template #empty>Sin coincidencias.</template>
 
@@ -233,28 +298,7 @@ function confirmDelete(user: UserResponse): void {
           <template #header>
             <ColumnSearch v-model="nameQuery" label="Nombre" placeholder="Buscar nombre" />
           </template>
-          <template #body="{ data }">
-            <div
-              class="user-name"
-              :class="{ 'user-name--child': table.treeMode.value && table.isChild(data) }"
-              :style="
-                table.treeMode.value ? { paddingLeft: table.depthOf(data) * 22 + 'px' } : undefined
-              "
-            >
-              <i
-                v-if="table.treeMode.value && table.isChild(data)"
-                class="pi pi-angle-right user-name__child-icon"
-              />
-              <span>{{ fullName(data) }}</span>
-              <Tag
-                v-if="table.treeMode.value && table.childCountOf(data) > 0"
-                :value="String(table.childCountOf(data))"
-                icon="pi pi-users"
-                severity="secondary"
-                class="user-name__count"
-              />
-            </div>
-          </template>
+          <template #body="{ data }">{{ fullName(data) }}</template>
         </Column>
         <Column field="email" sortable>
           <template #header>
@@ -293,6 +337,31 @@ function confirmDelete(user: UserResponse): void {
             <span v-else>—</span>
           </template>
         </Column>
+        <Column header="Familia">
+          <template #body="{ data }">
+            <div class="family-cell">
+              <Button
+                v-if="data.parentId"
+                :label="tutorName(data.parentId)"
+                icon="pi pi-user"
+                text
+                size="small"
+                tooltip="Mostrar solo a su tutor"
+                @click="showTutorOf(data)"
+              />
+              <Button
+                v-if="dependentCount(data) > 0"
+                :label="dependentsLabel(dependentCount(data))"
+                icon="pi pi-users"
+                text
+                size="small"
+                tooltip="Mostrar sus dependientes"
+                @click="showDependentsOf(data)"
+              />
+              <span v-if="!data.parentId && dependentCount(data) === 0">—</span>
+            </div>
+          </template>
+        </Column>
         <Column field="isAdmin" sortable style="width: 130px">
           <template #header>
             <ColumnFilterSelect v-model="adminFilter" label="Admin" :options="adminOptions" />
@@ -305,9 +374,6 @@ function confirmDelete(user: UserResponse): void {
               @update:model-value="(value: boolean) => toggleAdmin(data, value)"
             />
           </template>
-        </Column>
-        <Column v-if="!table.treeMode.value" header="Tutor">
-          <template #body="{ data }">{{ table.parentName(data.parentId) }}</template>
         </Column>
         <Column header="Acciones" style="width: 180px">
           <template #body="{ data }">
@@ -389,27 +455,32 @@ function confirmDelete(user: UserResponse): void {
   gap: 2px;
 }
 
-.user-name {
-  display: flex;
+.relation-filter {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 4px 6px 4px 14px;
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 999px;
+  background: var(--ca-surface);
 }
 
-.user-name--child {
-  color: var(--ca-text-muted);
-}
-
-.user-name__child-icon {
+.relation-filter__icon {
   font-size: 12px;
   color: var(--ca-text-muted);
 }
 
-.user-name__count {
-  font-size: 11px;
+.relation-filter__label {
+  font-size: 13px;
+  font-weight: 600;
 }
 
-:deep(.user-row--child) > td:first-child {
-  border-left: 2px solid var(--ca-border-soft);
+.family-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
 }
 
 .form__field {
