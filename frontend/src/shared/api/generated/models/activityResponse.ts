@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { ActivityRoleCapacityResponse } from './activityRoleCapacityResponse';
 
 export interface ActivityResponse {
   id?: string;
@@ -20,6 +21,8 @@ export interface ActivityResponse {
   /** @nullable */
   modalityName?: string | null;
   thumbnailId?: string;
+  /** @nullable */
+  roleCapacities?: ActivityRoleCapacityResponse[] | null;
   createdAt?: string;
   /** @nullable */
   updatedAt?: string | null;

@@ -14,6 +14,7 @@ public record ActivityResponse(
     Guid ModalityId,
     string ModalityName,
     Guid ThumbnailId,
+    IReadOnlyList<ActivityRoleCapacityResponse> RoleCapacities,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     Guid CreatedBy,
@@ -32,12 +33,24 @@ public record ActivityResponse(
             Guid.Empty,
             string.Empty,
             Guid.Empty,
+            [],
             default,
             null,
             Guid.Empty,
             null
         ) { }
 }
+
+public record ActivityRoleCapacityResponse(
+    Guid ActivityRoleTypeId,
+    int DesiredCount,
+    bool IsHighDemand
+);
+
+public record ActivityRoleCapacityRequest(
+    [Required] Guid ActivityRoleTypeId,
+    [Required] [Range(1, 10000)] int? DesiredCount
+);
 
 public record CreateActivityRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
@@ -46,7 +59,8 @@ public record CreateActivityRequest(
     [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
-    Guid ThumbnailId
+    Guid ThumbnailId,
+    IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
 );
 
 public record UpdateActivityRequest(
@@ -56,7 +70,8 @@ public record UpdateActivityRequest(
     [Required] Guid ActivityModalityTypeId,
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
-    Guid ThumbnailId
+    Guid ThumbnailId,
+    IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
 );
 
 public record AssignmentResponse(

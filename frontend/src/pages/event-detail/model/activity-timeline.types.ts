@@ -18,6 +18,7 @@ export interface TimelineActivity {
   modality: string
   start: Date | null
   end: Date | null
+  highDemandRoleIds: string[]
   assignment: { status: string; roleName: string } | null
   household: TimelineMemberAssignment[]
 }

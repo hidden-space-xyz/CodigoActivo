@@ -18,7 +18,7 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 
 import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
-import { useActivityModalityTypesList } from '@/entities/catalog'
+import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
 import EventAttendeesTab from './EventAttendeesTab.vue'
 import type {
@@ -41,6 +41,7 @@ const event = useEvent(eventId)
 const summary = useEventSummary(eventId)
 const activities = useActivities(eventId)
 const modalityTypes = useActivityModalityTypesList()
+const roleTypes = useActivityRoleTypesList()
 
 const summaryCards = computed(() => {
   const data = summary.data.value
@@ -258,6 +259,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
       v-model:visible="activityDialogVisible"
       :activity="selectedActivity"
       :modality-types="modalityTypes.data.value ?? []"
+      :role-types="roleTypes.data.value ?? []"
       :saving="activitySaving"
       :event-start="event.data.value?.eventStartsAt ?? null"
       :event-end="event.data.value?.eventEndsAt ?? null"

@@ -25,6 +25,15 @@ public class ActivityRepository(CodigoActivoDbContext context)
         );
     }
 
+    public async Task<Activity?> FindWithRoleCapacitiesAsync(
+        Guid activityId,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Include(a => a.RoleCapacities)
+            .FirstOrDefaultAsync(a => a.Id == activityId, ct);
+    }
+
     public async Task<ActivityUserRoleAssignment?> GetAssignmentAsync(
         Guid userId,
         Guid activityId,

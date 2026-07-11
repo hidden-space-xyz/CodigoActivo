@@ -25,6 +25,9 @@ export function toEventActivity(activity: ActivityResponse): EventActivity {
     modality: activity.modalityName ?? '',
     startsAt: activity.activityStartsAt ?? null,
     endsAt: activity.activityEndsAt ?? null,
+    highDemandRoleIds: (activity.roleCapacities ?? [])
+      .filter((capacity) => capacity.isHighDemand && capacity.activityRoleTypeId)
+      .map((capacity) => capacity.activityRoleTypeId as string),
   }
 }
 

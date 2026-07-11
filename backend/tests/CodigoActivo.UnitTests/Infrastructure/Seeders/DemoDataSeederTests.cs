@@ -152,6 +152,46 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
+    public void BuildGraph_Default_RoleCapacitiesAreDeterministicAndFromTheCatalog()
+    {
+        var catalog = new HashSet<Guid>
+        {
+            SeedIds.ActivityRoleTypes.Leader,
+            SeedIds.ActivityRoleTypes.Volunteer,
+            SeedIds.ActivityRoleTypes.Participant,
+        };
+        var withCapacities = graph.Activities.Where(a => a.RoleCapacities.Count > 0).ToList();
+
+        withCapacities.Should().NotBeEmpty();
+        graph.Activities.Should().Contain(a => a.RoleCapacities.Count == 0);
+        withCapacities
+            .SelectMany(a => a.RoleCapacities)
+            .Should()
+            .OnlyContain(c => c.DesiredCount >= 1 && catalog.Contains(c.ActivityRoleTypeId));
+        withCapacities
+            .Should()
+            .AllSatisfy(a =>
+                a.RoleCapacities.Select(c => c.ActivityRoleTypeId).Should().OnlyHaveUniqueItems()
+            );
+    }
+
+    [Fact]
+    public void BuildGraph_Default_SomeActivitiesExceedTheirDesiredCounts()
+    {
+        var overSubscribed = graph.Activities.Where(activity =>
+            activity.RoleCapacities.Any(capacity =>
+                graph.Assignments.Count(x =>
+                    x.ActivityId == activity.Id
+                    && x.ActivityRoleTypeId == capacity.ActivityRoleTypeId
+                    && x.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                ) > capacity.DesiredCount
+            )
+        );
+
+        overSubscribed.Should().NotBeEmpty();
+    }
+
+    [Fact]
     public void BuildGraph_Default_ContainsExactlyOneAdmin()
     {
         graph.Users.Should().ContainSingle(u => u.IsAdmin);

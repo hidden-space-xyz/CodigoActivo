@@ -20,6 +20,7 @@ export const errorMessages: Record<ErrorCode, string> = {
   ActivityScheduleOutsideEventRange:
     'El horario de la actividad debe estar dentro de las fechas del evento.',
   ActivityThumbnailNotFound: 'No se encontró la imagen de la actividad.',
+  ActivityRoleCapacityDuplicated: 'No puedes repetir un rol en el número deseado de inscritos.',
 
   EventNotFound: 'No se encontró el evento.',
   EventActivitiesOutsideNewRange: 'Hay actividades fuera del nuevo rango de fechas del evento.',

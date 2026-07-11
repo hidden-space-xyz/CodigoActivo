@@ -114,7 +114,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         Guid? modalityId = null,
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null,
-        string title = "Nueva"
+        string title = "Nueva",
+        IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities = null
     ) =>
         new(
             title,
@@ -123,7 +124,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             modalityId ?? SeedIds.ActivityModalityTypes.Presencial,
             startsAt ?? ActivityStart,
             endsAt ?? ActivityEnd,
-            thumbnailId
+            thumbnailId,
+            roleCapacities
         );
 
     [Fact]
@@ -191,6 +193,273 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         );
         stored!.EventId.Should().Be(eventId);
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+    }
+
+    [Fact]
+    public async Task Create_WithRoleCapacities_PersistsAndReturnsThem()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var client = await LoginAsAdminAsync();
+        var request = CreateRequest(
+            thumb,
+            roleCapacities:
+            [
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 10),
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Leader, 1),
+            ]
+        );
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{eventId}",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await response.ReadJsonAsync<ActivityResponse>(
+            TestContext.Current.CancellationToken
+        );
+        created!
+            .RoleCapacities.Should()
+            .BeEquivalentTo([
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 10, false),
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Leader, 1, false),
+            ]);
+
+        var storedCount = await Factory.QueryAsync(db =>
+            Task.FromResult(db.ActivityRoleCapacities.Count(c => c.ActivityId == created.Id))
+        );
+        storedCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Create_DuplicatedRoleCapacityRole_ReturnsBadRequest()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var client = await LoginAsAdminAsync();
+        var request = CreateRequest(
+            thumb,
+            roleCapacities:
+            [
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 5),
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 9),
+            ]
+        );
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{eventId}",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.ActivityRoleCapacityDuplicated);
+    }
+
+    [Fact]
+    public async Task Create_RoleCapacityWithoutPositiveCount_ReturnsValidationError()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var client = await LoginAsAdminAsync();
+        var request = CreateRequest(
+            thumb,
+            roleCapacities:
+            [
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 0),
+            ]
+        );
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{eventId}",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
+    public async Task Update_WithRoleCapacities_ReplacesExistingSet()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var id = await SeedActivityAsync(eventId, thumb);
+        await Factory.SeedAsync(db =>
+        {
+            db.ActivityRoleCapacities.Add(
+                new ActivityRoleCapacity
+                {
+                    ActivityId = id,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                    DesiredCount = 1,
+                }
+            );
+            db.ActivityRoleCapacities.Add(
+                new ActivityRoleCapacity
+                {
+                    ActivityId = id,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    DesiredCount = 5,
+                }
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+        var request = new UpdateActivityRequest(
+            "Despues",
+            "Descripcion",
+            "Sala",
+            SeedIds.ActivityModalityTypes.Presencial,
+            ActivityStart,
+            ActivityEnd,
+            thumb,
+            [
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 3),
+                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Volunteer, 2),
+            ]
+        );
+
+        var response = await client.PutJsonAsync(
+            $"/api/activities/{id}",
+            request,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.ReadJsonAsync<ActivityResponse>(
+            TestContext.Current.CancellationToken
+        );
+        updated!
+            .RoleCapacities.Should()
+            .BeEquivalentTo([
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 3, false),
+                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Volunteer, 2, false),
+            ]);
+
+        var stored = await Factory.QueryAsync(db =>
+            Task.FromResult(
+                db.ActivityRoleCapacities.Where(c => c.ActivityId == id)
+                    .Select(c => new { c.ActivityRoleTypeId, c.DesiredCount })
+                    .ToList()
+            )
+        );
+        stored.Should().HaveCount(2);
+        stored
+            .Should()
+            .ContainSingle(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant && c.DesiredCount == 3
+            );
+        stored
+            .Should()
+            .ContainSingle(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer && c.DesiredCount == 2
+            );
+    }
+
+    [Fact]
+    public async Task List_NonDeniedAssignmentsExceedDesiredCount_FlagsHighDemand()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var crowded = await SeedActivityAsync(eventId, thumb, "Llena");
+        var covered = await SeedActivityAsync(eventId, thumb, "Con hueco");
+        await Factory.SeedAsync(db =>
+        {
+            db.ActivityRoleCapacities.Add(
+                new ActivityRoleCapacity
+                {
+                    ActivityId = crowded,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    DesiredCount = 1,
+                }
+            );
+            db.ActivityRoleCapacities.Add(
+                new ActivityRoleCapacity
+                {
+                    ActivityId = crowded,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                    DesiredCount = 1,
+                }
+            );
+            db.ActivityRoleCapacities.Add(
+                new ActivityRoleCapacity
+                {
+                    ActivityId = covered,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    DesiredCount = 2,
+                }
+            );
+            foreach (var activityId in new[] { crowded, covered })
+            {
+                db.ActivityUserRoleAssignments.Add(
+                    new ActivityUserRoleAssignment
+                    {
+                        UserId = TestSeedData.Users.MemberId,
+                        ActivityId = activityId,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                        CreatedAt = SignupStart,
+                    }
+                );
+                db.ActivityUserRoleAssignments.Add(
+                    new ActivityUserRoleAssignment
+                    {
+                        UserId = TestSeedData.Users.MemberChildId,
+                        ActivityId = activityId,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                        CreatedAt = SignupStart,
+                    }
+                );
+                db.ActivityUserRoleAssignments.Add(
+                    new ActivityUserRoleAssignment
+                    {
+                        UserId = TestSeedData.Users.PendingId,
+                        ActivityId = activityId,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Denied,
+                        CreatedAt = SignupStart,
+                    }
+                );
+            }
+            return Task.CompletedTask;
+        });
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            $"/api/activities?eventId={eventId}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        var crowdedCapacities = page!.Items.Single(a => a.Title == "Llena").RoleCapacities;
+        crowdedCapacities
+            .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant)
+            .IsHighDemand.Should()
+            .BeTrue();
+        crowdedCapacities
+            .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
+            .IsHighDemand.Should()
+            .BeFalse();
+        page.Items.Single(a => a.Title == "Con hueco")
+            .RoleCapacities.Single(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+            )
+            .IsHighDemand.Should()
+            .BeFalse();
     }
 
     [Fact]
@@ -278,7 +547,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             SeedIds.ActivityModalityTypes.Online,
             ActivityStart,
             ActivityEnd,
-            thumb
+            thumb,
+            null
         );
 
         var response = await client.PutJsonAsync(

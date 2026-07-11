@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { AppButton as Button, BaseButton } from '@/shared/ui'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
@@ -34,6 +34,16 @@ watch(
     if (roles.length === 1) selectedRoleId.value = roles[0]?.id ?? ''
   },
   { immediate: true },
+)
+
+const selectedRoleHighDemand = computed(
+  () =>
+    props.authenticated &&
+    props.signupOpen &&
+    !props.hasHousehold &&
+    !props.activity.assignment &&
+    !!selectedRoleId.value &&
+    props.activity.highDemandRoleIds.includes(selectedRoleId.value),
 )
 
 function scheduleLabel(): string {
@@ -97,6 +107,14 @@ function onSignup(): void {
         </button>
       </li>
     </ul>
+
+    <p v-if="selectedRoleHighDemand" class="act__demand">
+      <i class="pi pi-exclamation-triangle" />
+      <span>
+        Esta actividad está muy solicitada y es posible que se agoten las plazas. Te recomendamos
+        elegir otras opciones adicionales.
+      </span>
+    </p>
 
     <div class="act__actions">
       <template v-if="!authenticated">
@@ -215,6 +233,24 @@ function onSignup(): void {
   line-height: 1.5;
   color: var(--ca-text);
   white-space: pre-line;
+}
+
+.act__demand {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--ca-warning-soft);
+  color: var(--ca-warning-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.act__demand .pi {
+  margin-top: 2px;
+  font-size: 13px;
 }
 
 .act__members {

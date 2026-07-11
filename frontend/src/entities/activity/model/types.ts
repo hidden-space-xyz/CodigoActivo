@@ -16,6 +16,7 @@ export interface EventActivity {
   readonly modality: string
   readonly startsAt: string | null
   readonly endsAt: string | null
+  readonly highDemandRoleIds: readonly string[]
 }
 
 export interface ActivityAssignment {

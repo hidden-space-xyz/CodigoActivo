@@ -83,6 +83,11 @@ export function useEventActivities(eventId: () => string) {
 
   const hasHousehold = computed(() => (householdMembers.data.value ?? []).length > 0)
 
+  const membershipReady = computed(
+    () =>
+      !isAuthenticated.value || (!assigned.isLoading.value && !householdMembers.isLoading.value),
+  )
+
   const members = computed<HouseholdMember[]>(() => {
     const self: HouseholdMember = { id: userId.value ?? '', name: session.user?.firstName ?? 'Yo' }
     return [self, ...(householdMembers.data.value ?? [])]
@@ -124,6 +129,7 @@ export function useEventActivities(eventId: () => string) {
     assigned,
     household,
     hasHousehold,
+    membershipReady,
     members,
     userId,
     signupRoles,
