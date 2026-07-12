@@ -86,7 +86,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SearchByAccentInsensitiveFirstName_MatchesViaSqlFolding()
+    public async Task List_SearchByAccentInsensitiveName_MatchesViaSqlFolding()
     {
         var accentedId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
@@ -111,7 +111,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            "/api/users?firstName=avila",
+            "/api/users?name=avila",
             TestContext.Current.CancellationToken
         );
 
@@ -120,6 +120,99 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         page!.Items.Should().ContainSingle(u => u.Id == accentedId);
+    }
+
+    [Fact]
+    public async Task List_SearchByAccentInsensitiveLastName_MatchesViaSqlFolding()
+    {
+        var accentedId = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Users.Add(
+                new User
+                {
+                    Id = accentedId,
+                    FirstName = "Lucia",
+                    LastName = "Gutiérrez",
+                    Email = "lucia@codigoactivo.test",
+                    Phone = "+34600000098",
+                    PasswordHash = TestSeedData.PasswordHash,
+                    BirthDate = new DateOnly(1991, 4, 4),
+                    UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                    UserTypeId = SeedIds.UserTypes.Member,
+                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                }
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?name=gutierrez",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Should().ContainSingle(u => u.Id == accentedId);
+    }
+
+    [Fact]
+    public async Task List_FilterByUserStatusTypeId_ReturnsOnlyMatchingStatus()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/users?userStatusTypeId={SeedIds.UserStatusTypes.Pending}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(u => u.Id == TestSeedData.Users.PendingId);
+    }
+
+    [Fact]
+    public async Task List_FilterByIsAdmin_ReturnsOnlyAdmins()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?isAdmin=true",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(u => u.Id == TestSeedData.Users.AdminId);
+    }
+
+    [Fact]
+    public async Task List_PageAndPageSizeGiven_ReturnsRequestedSliceWithTotal()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?page=2&pageSize=2",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(5);
+        page.Page.Should().Be(2);
+        page.PageSize.Should().Be(2);
+        page.Items.Select(u => u.FirstName).Should().Equal("Marta", "Mateo");
     }
 
     [Fact]

@@ -19,6 +19,21 @@ public sealed class ActivityListQuery : PageQuery
 {
     public Guid? EventId { get; set; }
     public string? Title { get; set; }
+    public Guid? ModalityTypeId { get; set; }
+}
+
+public sealed class EventCategoryTypeListQuery : PageQuery
+{
+    public string? Name { get; set; }
+}
+
+public sealed class EventAttendeeListQuery : PageQuery
+{
+    public string? Search { get; set; }
+    public Guid? UserTypeId { get; set; }
+    public Guid? ActivityId { get; set; }
+    public Guid? RoleTypeId { get; set; }
+    public Guid? StatusId { get; set; }
 }
 
 public sealed class AnnouncementListQuery : PageQuery
@@ -44,8 +59,12 @@ public sealed class PartnerListQuery : PageQuery
 
 public sealed class UserListQuery : PageQuery
 {
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
+    public Guid? Id { get; set; }
+    public string? Name { get; set; }
     public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public Guid? UserTypeId { get; set; }
+    public Guid? UserStatusTypeId { get; set; }
+    public bool? IsAdmin { get; set; }
     public Guid? ParentId { get; set; }
 }

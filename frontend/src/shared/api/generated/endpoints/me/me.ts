@@ -15,7 +15,8 @@ import type {
 } from '@tanstack/vue-query';
 
 import type {
-  AssignedActivityResponse
+  AssignedActivityResponse,
+  GetApiMeAssignedActivitiesParams
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -37,17 +38,24 @@ export type getApiMeAssignedActivitiesResponseSuccess = (getApiMeAssignedActivit
 
 export type getApiMeAssignedActivitiesResponse = (getApiMeAssignedActivitiesResponseSuccess)
 
-export const getGetApiMeAssignedActivitiesUrl = () => {
+export const getGetApiMeAssignedActivitiesUrl = (params?: GetApiMeAssignedActivitiesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/me/assigned-activities`
+  return stringifiedParams.length > 0 ? `/api/me/assigned-activities?${stringifiedParams}` : `/api/me/assigned-activities`
 }
 
-export const getApiMeAssignedActivities = async ( options?: RequestInit): Promise<getApiMeAssignedActivitiesResponse> => {
+export const getApiMeAssignedActivities = async (params?: GetApiMeAssignedActivitiesParams, options?: RequestInit): Promise<getApiMeAssignedActivitiesResponse> => {
 
-  return httpClient<getApiMeAssignedActivitiesResponse>(getGetApiMeAssignedActivitiesUrl(),
+  return httpClient<getApiMeAssignedActivitiesResponse>(getGetApiMeAssignedActivitiesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -61,8 +69,8 @@ export const getApiMeAssignedActivities = async ( options?: RequestInit): Promis
 
 
 export const getGetApiMeAssignedActivitiesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,{params?: GetApiMeAssignedActivitiesParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,{params?: GetApiMeAssignedActivitiesParams}, TContext> => {
 
 const mutationKey = ['getApiMeAssignedActivities'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -74,10 +82,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, {params?: GetApiMeAssignedActivitiesParams}> = (props) => {
+          const {params} = props ?? {};
 
-
-          return  getApiMeAssignedActivities(requestOptions)
+          return  getApiMeAssignedActivities(params,requestOptions)
         }
 
 
@@ -92,11 +100,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type GetApiMeAssignedActivitiesMutationError = unknown
 
     export const useGetApiMeAssignedActivities = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,{params?: GetApiMeAssignedActivitiesParams}, TContext>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient): UseMutationReturnType<
         Awaited<ReturnType<typeof getApiMeAssignedActivities>>,
         TError,
-        void,
+        {params?: GetApiMeAssignedActivitiesParams},
         TContext
       > => {
       return useMutation(getGetApiMeAssignedActivitiesMutationOptions(options), queryClient);

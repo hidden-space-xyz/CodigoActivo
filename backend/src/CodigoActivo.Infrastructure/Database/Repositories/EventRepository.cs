@@ -10,17 +10,6 @@ public class EventRepository(CodigoActivoDbContext context)
     : Repository<Event>(context),
         IEventRepository
 {
-    public async Task<Event?> GetWithActivitiesAndAssignmentsAsync(
-        Guid id,
-        CancellationToken ct = default
-    )
-    {
-        return await Set.AsNoTracking()
-            .Include(e => e.Activities)
-                .ThenInclude(a => a.Assignments)
-            .FirstOrDefaultAsync(e => e.Id == id, ct);
-    }
-
     public async Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default)
     {
         return await Set.Include(e => e.Categories).FirstOrDefaultAsync(e => e.Id == id, ct);

@@ -22,7 +22,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             UploadedBy = TestSeedData.Users.AdminId,
         };
 
-    private async Task SeedAssignmentAsync(
+    private async Task<Guid> SeedAssignmentAsync(
         Guid userId,
         string activityTitle,
         DateTimeOffset activityStartsAt,
@@ -80,6 +80,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             );
             return Task.CompletedTask;
         });
+        return eventId;
     }
 
     private static async Task<List<Application.DTOs.AssignedActivityResponse>> ReadAssignedAsync(
@@ -130,5 +131,36 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         assigned.RoleType.Name.Should().Be("Líder");
         assigned.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
         assigned.Status.Name.Should().Be("Confirmada");
+    }
+
+    [Fact]
+    public async Task AssignedActivities_EventIdFilter_ExcludesOtherEventAssignments()
+    {
+        var targetEventId = await SeedAssignmentAsync(
+            TestSeedData.Users.MemberId,
+            "Dentro del evento",
+            new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero),
+            SeedIds.ActivityRoleTypes.Participant,
+            SeedIds.AssignmentStatusTypes.Requested
+        );
+        await SeedAssignmentAsync(
+            TestSeedData.Users.MemberId,
+            "Fuera del evento",
+            new DateTimeOffset(2026, 3, 2, 10, 0, 0, TimeSpan.Zero),
+            SeedIds.ActivityRoleTypes.Participant,
+            SeedIds.AssignmentStatusTypes.Requested
+        );
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            $"/api/me/assigned-activities?eventId={targetEventId}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = await ReadAssignedAsync(response);
+        var assigned = items.Should().ContainSingle().Subject;
+        assigned.Title.Should().Be("Dentro del evento");
+        assigned.EventId.Should().Be(targetEventId);
     }
 }

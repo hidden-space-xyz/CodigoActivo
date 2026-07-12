@@ -51,12 +51,6 @@ public record EventAttendeeResponse(
     IReadOnlyList<EventAttendeeAssignmentResponse> Assignments
 );
 
-public record EventAttendeesResponse(
-    Guid EventId,
-    string Title,
-    IReadOnlyList<EventAttendeeResponse> Attendees
-);
-
 public record EventBadgeGuardianResponse(string FirstName, string LastName, string? Phone);
 
 public record EventBadgeResponse(

@@ -6,9 +6,13 @@
  */
 
 export type GetApiUsersParams = {
-firstName?: string;
-lastName?: string;
+id?: string;
+name?: string;
 email?: string;
+phone?: string;
+userTypeId?: string;
+userStatusTypeId?: string;
+isAdmin?: boolean;
 parentId?: string;
 page?: number;
 pageSize?: number;

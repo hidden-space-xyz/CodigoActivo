@@ -6,10 +6,10 @@
  */
 import type { EventAttendeeResponse } from './eventAttendeeResponse';
 
-export interface EventAttendeesResponse {
-  eventId?: string;
+export interface EventAttendeeResponsePagedResult {
   /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  attendees?: EventAttendeeResponse[] | null;
+  items?: EventAttendeeResponse[] | null;
+  total?: number;
+  page?: number;
+  pageSize?: number;
 }

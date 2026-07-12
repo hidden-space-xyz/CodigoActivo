@@ -29,7 +29,7 @@ export function useEventActivities(eventId: () => string) {
   const isAuthenticated = computed(() => userId.value !== null)
 
   const activitiesKey = computed(() => activityQueryKeys.publicByEvent(eventId()))
-  const assignedKey = activityQueryKeys.myAssignments()
+  const assignedKey = computed(() => activityQueryKeys.myAssignments(eventId()))
   const membersKey = activityQueryKeys.householdMembers()
   const householdKey = computed(() => activityQueryKeys.householdAssignments(eventId()))
 
@@ -40,7 +40,7 @@ export function useEventActivities(eventId: () => string) {
 
   const assigned = useQuery({
     queryKey: assignedKey,
-    queryFn: () => getMyAssignmentsRequest(),
+    queryFn: () => getMyAssignmentsRequest(eventId()),
     enabled: isAuthenticated,
   })
 
@@ -95,7 +95,7 @@ export function useEventActivities(eventId: () => string) {
 
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: activitiesKey.value })
-    void queryClient.invalidateQueries({ queryKey: assignedKey })
+    void queryClient.invalidateQueries({ queryKey: assignedKey.value })
     void queryClient.invalidateQueries({ queryKey: householdKey.value })
   }
 

@@ -16,7 +16,6 @@ export {
   getHouseholdMembersRequest,
   getMyAssignmentsRequest,
   getSignupRolesRequest,
-  listEventActivitiesRequest,
   unassignActivityRequest,
   verifyOverlapsRequest,
 } from './api/requests'

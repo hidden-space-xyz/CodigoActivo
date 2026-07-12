@@ -21,11 +21,16 @@ public class UserService(
     IUnitOfWork uow
 ) : IUserService
 {
-    private static readonly SortMap<UserResponse> Sort = new SortMap<UserResponse>()
+    private static readonly SortMap<User> Sort = new SortMap<User>()
         .Add("firstName", u => u.FirstName)
         .Add("lastName", u => u.LastName)
+        .Add("email", u => u.Email)
+        .Add("phone", u => u.Phone)
         .Add("createdAt", u => u.CreatedAt)
         .Add("birthDate", u => u.BirthDate)
+        .Add("status", u => u.UserStatusType.Name)
+        .Add("type", u => u.UserType.Name)
+        .Add("isAdmin", u => u.IsAdmin)
         .Default("firstName")
         .Tie(u => u.Id);
 
@@ -36,29 +41,27 @@ public class UserService(
         CancellationToken ct = default
     )
     {
-        var source = users.Query().Select(isAdmin ? Projections.UserWithType : Projections.User);
+        var source = users.Query();
 
         if (!isAdmin)
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
 
+        if (query.Id is { } id)
+            source = source.Where(u => u.Id == id);
         if (query.ParentId is { } parentId)
             source = source.Where(u => u.ParentId == parentId);
-        if (!string.IsNullOrWhiteSpace(query.FirstName))
+        if (query.UserTypeId is { } userTypeId)
+            source = source.Where(u => u.UserTypeId == userTypeId);
+        if (query.UserStatusTypeId is { } userStatusTypeId)
+            source = source.Where(u => u.UserStatusTypeId == userStatusTypeId);
+        if (query.IsAdmin is { } admin)
+            source = source.Where(u => u.IsAdmin == admin);
+        if (!string.IsNullOrWhiteSpace(query.Name))
         {
             source = source.Where(
-                TextSearch.Contains<UserResponse>(
-                    u => u.FirstName,
-                    TextSearch.Normalize(query.FirstName)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.LastName))
-        {
-            source = source.Where(
-                TextSearch.Contains<UserResponse>(
-                    u => u.LastName,
-                    TextSearch.Normalize(query.LastName)
+                TextSearch.Contains<User>(
+                    u => u.FirstName + " " + u.LastName,
+                    TextSearch.Normalize(query.Name)
                 )
             );
         }
@@ -66,12 +69,24 @@ public class UserService(
         if (!string.IsNullOrWhiteSpace(query.Email))
         {
             source = source.Where(
-                TextSearch.Contains<UserResponse>(u => u.Email, TextSearch.Normalize(query.Email))
+                TextSearch.Contains<User>(u => u.Email, TextSearch.Normalize(query.Email))
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Phone))
+        {
+            source = source.Where(
+                TextSearch.Contains<User>(u => u.Phone, TextSearch.Normalize(query.Phone))
             );
         }
 
         source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        return executor.ToPagedAsync(
+            source.Select(isAdmin ? Projections.UserWithType : Projections.User),
+            query.Page,
+            query.PageSize,
+            ct
+        );
     }
 
     public async Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)

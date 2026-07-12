@@ -6,13 +6,17 @@ import {
   patchApiUsersUserIdChangeType,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
-import { fetchAllPages, toPage } from '@/shared/api'
+import type {
+  GetApiUsersParams,
+  UpdateUserRequest,
+  UserResponse,
+} from '@/shared/api/generated/models'
+import { toPage } from '@/shared/api'
 
-export function getUsersRequest(): Promise<UserResponse[]> {
-  return fetchAllPages<UserResponse>((page, pageSize) =>
-    getApiUsers({ sort: 'firstName', page, pageSize }).then(toPage),
-  )
+export function getUsersPageRequest(
+  params: GetApiUsersParams,
+): Promise<{ items: UserResponse[]; total: number }> {
+  return getApiUsers(params).then(toPage)
 }
 
 export async function getUserRequest(id: string) {

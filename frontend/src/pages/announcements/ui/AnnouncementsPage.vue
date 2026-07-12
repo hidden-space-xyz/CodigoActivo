@@ -2,11 +2,20 @@
 import { computed } from 'vue'
 
 import { AnnouncementCard, useAnnouncements } from '@/entities/announcement'
-import { SectionEyebrow, YearFilter } from '@/shared/ui'
+import { AppButton, SectionEyebrow, YearFilter } from '@/shared/ui'
 
-const { years, selectedYear, setYear, announcements, isLoading } = useAnnouncements()
+const {
+  years,
+  selectedYear,
+  setYear,
+  announcements,
+  hasMore,
+  loadMore,
+  isFetchingMore,
+  isLoading,
+} = useAnnouncements()
 
-const isEmpty = computed(() => !isLoading.value && (announcements.value?.length ?? 0) === 0)
+const isEmpty = computed(() => !isLoading.value && announcements.value.length === 0)
 </script>
 
 <template>
@@ -39,6 +48,9 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
             :key="announcement.id"
             :announcement="announcement"
           />
+        </div>
+        <div v-if="hasMore" class="announcements-more">
+          <AppButton label="Cargar más" outlined :loading="isFetchingMore" @click="loadMore" />
         </div>
       </div>
     </section>
@@ -83,5 +95,11 @@ const isEmpty = computed(() => !isLoading.value && (announcements.value?.length 
 .announcements-loading {
   color: var(--ca-text-dim);
   font-family: var(--ca-font-mono);
+}
+
+.announcements-more {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
 }
 </style>

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import type {
   DataTableFilterMetaData,
@@ -24,6 +24,8 @@ interface UseServerTableOptions<T, TParams> {
   readonly columns?: Record<string, ServerTableColumn> | undefined
   readonly defaultSort?: { readonly field: string; readonly order?: 1 | -1 } | undefined
   readonly rows?: number | undefined
+  readonly extraParams?: (() => Record<string, unknown>) | undefined
+  readonly enabled?: (() => boolean) | undefined
 }
 
 function initialFilters(
@@ -43,11 +45,17 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
   const sortField = ref<string | undefined>(options.defaultSort?.field)
   const sortOrder = ref<number>(options.defaultSort?.order ?? 1)
   const filters = ref<Record<string, DataTableFilterMetaData>>(initialFilters(columns))
+  const extra = computed<Record<string, unknown>>(() => options.extraParams?.() ?? {})
+
+  watch(extra, () => {
+    first.value = 0
+  })
 
   const params = computed<Record<string, unknown>>(() => {
     const result: Record<string, unknown> = {
       page: Math.floor(first.value / rows.value) + 1,
       pageSize: rows.value,
+      ...extra.value,
     }
 
     if (sortField.value) result.sort = `${sortOrder.value === -1 ? '-' : ''}${sortField.value}`
@@ -71,9 +79,16 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     queryKey: computed(() => [...options.queryKey, params.value]),
     queryFn: () => options.fetchPage(params.value as unknown as TParams),
     placeholderData: keepPreviousData,
+    enabled: computed(() => options.enabled?.() ?? true),
   })
 
   const page = computed<ServerTablePage<T>>(() => tableQuery.data.value ?? { items: [], total: 0 })
+
+  watch(page, (current) => {
+    if (current.items.length === 0 && current.total > 0 && first.value > 0) {
+      first.value = Math.floor((current.total - 1) / rows.value) * rows.value
+    }
+  })
 
   function onPage(event: DataTablePageEvent): void {
     first.value = event.first

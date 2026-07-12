@@ -59,34 +59,6 @@ public class ActivityRepository(CodigoActivoDbContext context)
         Context.ActivityUserRoleAssignments.Remove(assignment);
     }
 
-    public async Task<IReadOnlyList<ActivityUserRoleAssignment>> GetUserAssignmentsAsync(
-        Guid userId,
-        CancellationToken ct = default
-    )
-    {
-        return await Context
-            .ActivityUserRoleAssignments.AsNoTracking()
-            .Include(x => x.Activity)
-            .Where(x => x.UserId == userId)
-            .OrderBy(x => x.Activity.ActivityStartsAt)
-            .ToListAsync(ct);
-    }
-
-    public async Task<IReadOnlyList<ActivityUserRoleAssignment>> GetAssignmentsForUsersByEventAsync(
-        IReadOnlyList<Guid> userIds,
-        Guid eventId,
-        CancellationToken ct = default
-    )
-    {
-        return await Context
-            .ActivityUserRoleAssignments.AsNoTracking()
-            .Include(x => x.User)
-            .Include(x => x.ActivityRoleType)
-            .Include(x => x.AssignmentStatus)
-            .Where(x => x.Activity.EventId == eventId && userIds.Contains(x.UserId))
-            .ToListAsync(ct);
-    }
-
     public IQueryable<ActivityUserRoleAssignment> QueryAssignments()
     {
         return Context.ActivityUserRoleAssignments.AsNoTracking();

@@ -165,6 +165,40 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EventSummary_RepeatedUserAcrossActivities_CountsDistinctVolunteersOnce()
+    {
+        await SeedEventGraphAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.ActivityUserRoleAssignments.Add(
+                Assignment(
+                    ActivityAId,
+                    TestSeedData.Users.AdminId,
+                    SeedIds.ActivityRoleTypes.Volunteer,
+                    SeedIds.AssignmentStatusTypes.Requested
+                )
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/summary",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(
+            TestContext.Current.CancellationToken
+        );
+        summary!.TotalAssignments.Should().Be(5);
+        summary.RequestedAssignments.Should().Be(2);
+        summary.ConfirmedAssignments.Should().Be(2);
+        summary.DeniedAssignments.Should().Be(1);
+        summary.DistinctVolunteers.Should().Be(4);
+    }
+
+    [Fact]
     public async Task EventSummary_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
@@ -209,16 +243,14 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<EventAttendeesResponse>(
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
             TestContext.Current.CancellationToken
         );
-        report!.EventId.Should().Be(EventId);
-        report.Title.Should().Be("Feria de Voluntariado");
-        report.Attendees.Should().HaveCount(4);
+        page!.Total.Should().Be(4);
+        page.Items.Select(a => a.FirstName).Should().Equal("Ada", "Bruno", "Mateo", "Pedro");
 
-        var admin = report.Attendees.Single(a => a.UserId == TestSeedData.Users.AdminId);
-        admin.FirstName.Should().NotBeNullOrWhiteSpace();
-        admin.Email.Should().NotBeNullOrWhiteSpace();
+        var admin = page.Items.Single(a => a.UserId == TestSeedData.Users.AdminId);
+        admin.Email.Should().Be(TestSeedData.AdminEmail);
         admin.UserTypeName.Should().Be("Socio");
         admin.UserTypeColor.Should().Be("#EF4444");
         admin.Guardian.Should().BeNull();
@@ -235,15 +267,15 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         assignment.SignedUpAt.Should().Be(At);
         assignment.HasTimeConflict.Should().BeFalse();
 
-        var child = report.Attendees.Single(a => a.UserId == TestSeedData.Users.MemberChildId);
+        var child = page.Items.Single(a => a.UserId == TestSeedData.Users.MemberChildId);
         child.BirthDate.Should().Be(new DateOnly(2015, 5, 5));
         child.Email.Should().BeNull();
         child.UserTypeName.Should().Be("Participante");
         child.UserTypeColor.Should().Be("#3B82F6");
         child.Guardian.Should().NotBeNull();
         child.Guardian!.FirstName.Should().Be("Marta");
-        child.Guardian.Email.Should().NotBeNullOrWhiteSpace();
-        child.Guardian.Phone.Should().NotBeNullOrWhiteSpace();
+        child.Guardian.Email.Should().Be(TestSeedData.MemberEmail);
+        child.Guardian.Phone.Should().Be("+34600000002");
         child.Assignments.Should().HaveCount(2);
         child.Assignments[0].ActivityId.Should().Be(ActivityAId);
         child.Assignments[0].HasTimeConflict.Should().BeTrue();
@@ -253,8 +285,102 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_MissingEvent_ReturnsNotFound()
+    public async Task EventAttendees_StatusFilter_ReturnsUsersAndAssignmentsMatchingStatus()
     {
+        await SeedEventGraphAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(Thumbnail(ActivityCThumbnailId));
+            db.Activities.Add(
+                BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, At.AddHours(1))
+            );
+            db.ActivityUserRoleAssignments.Add(
+                Assignment(
+                    ActivityCId,
+                    TestSeedData.Users.MemberChildId,
+                    SeedIds.ActivityRoleTypes.Participant,
+                    SeedIds.AssignmentStatusTypes.Requested
+                )
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?statusId={SeedIds.AssignmentStatusTypes.Confirmed}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(2);
+        page.Items.Select(a => a.FirstName).Should().Equal("Ada", "Mateo");
+
+        var child = page.Items.Single(a => a.UserId == TestSeedData.Users.MemberChildId);
+        child.Assignments.Should().HaveCount(1);
+        child.Assignments[0].ActivityId.Should().Be(ActivityAId);
+        child.Assignments[0].StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        child.Assignments[0].HasTimeConflict.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task EventAttendees_SearchFilter_MatchesGuardianData()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?search=marta",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Single().UserId.Should().Be(TestSeedData.Users.MemberChildId);
+    }
+
+    [Fact]
+    public async Task EventAttendees_PageSizeOne_PagesAttendeesKeepingTotal()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var firstResponse = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?page=1&pageSize=1",
+            TestContext.Current.CancellationToken
+        );
+        var secondResponse = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?page=2&pageSize=1",
+            TestContext.Current.CancellationToken
+        );
+
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var first = await firstResponse.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        first!.Total.Should().Be(4);
+        first.Page.Should().Be(1);
+        first.PageSize.Should().Be(1);
+        first.Items.Should().ContainSingle(a => a.FirstName == "Ada");
+
+        secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var second = await secondResponse.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        second!.Total.Should().Be(4);
+        second.Page.Should().Be(2);
+        second.Items.Should().ContainSingle(a => a.FirstName == "Bruno");
+    }
+
+    [Fact]
+    public async Task EventAttendees_MissingEvent_ReturnsEmptyPage()
+    {
+        await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
@@ -262,11 +388,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
             TestContext.Current.CancellationToken
         );
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
+        page!.Total.Should().Be(0);
+        page.Items.Should().BeEmpty();
     }
 
     [Fact]

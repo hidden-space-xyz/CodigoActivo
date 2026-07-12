@@ -1,7 +1,9 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,12 +25,13 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 
     [HttpGet("events/{eventId:guid}/attendees")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventAttendeesResponse>> EventAttendees(
+    public async Task<ActionResult<PagedResult<EventAttendeeResponse>>> EventAttendees(
         Guid eventId,
+        [FromQuery] EventAttendeeListQuery query,
         CancellationToken ct
     )
     {
-        return ToOk(await reports.GetEventAttendeesAsync(eventId, ct));
+        return Ok(await reports.ListEventAttendeesAsync(eventId, query, ct));
     }
 
     [HttpGet("events/{eventId:guid}/badges")]

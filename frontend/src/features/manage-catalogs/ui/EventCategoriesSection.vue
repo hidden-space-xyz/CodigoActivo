@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { AppButton as Button, ColorTag, ColumnSearch, DataState } from '@/shared/ui'
+import { AppButton as Button, ColorTag, ColumnSearch } from '@/shared/ui'
 import ColorPicker from 'primevue/colorpicker'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -11,7 +11,7 @@ import { useEventCategories } from '../model/categories'
 import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
-const { list, create, update, remove } = useEventCategories()
+const { table, create, update, remove } = useEventCategories()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
@@ -22,15 +22,6 @@ const form = reactive<{ name: string; color: string }>({ name: '', color: '6366F
 
 const saving = computed(() => create.isPending.value || update.isPending.value)
 const colorHex = computed(() => `#${form.color.replace(/^#/, '')}`)
-
-const nameQuery = ref<string | number | null>(null)
-
-const rows = computed<EventCategoryTypeResponse[]>(() => {
-  const items = list.data.value ?? []
-  const query = nameQuery.value == null ? '' : String(nameQuery.value).trim().toLowerCase()
-  if (!query) return items
-  return items.filter((item) => (item.name ?? '').toLowerCase().includes(query))
-})
 
 watch(dialogVisible, (open) => {
   if (!open) return
@@ -97,47 +88,65 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       <Button label="Nueva" icon="pi pi-plus" size="small" @click="openCreate" />
     </div>
 
-    <DataState
-      :loading="list.isLoading.value"
-      :error="list.isError.value"
-      :empty="(list.data.value?.length ?? 0) === 0"
-      empty-text="Sin categorías."
+    <DataTable
+      lazy
+      :value="table.items.value"
+      :total-records="table.total.value"
+      :loading="table.loading.value"
+      data-key="id"
+      striped-rows
+      paginator
+      :rows="table.rows.value"
+      :first="table.first.value"
+      :rows-per-page-options="[25, 50, 100]"
+      :sort-field="table.sortField.value"
+      :sort-order="table.sortOrder.value"
+      removable-sort
+      @page="table.onPage"
+      @sort="table.onSort"
     >
-      <DataTable :value="rows" data-key="id" striped-rows removable-sort>
-        <template #empty>Sin coincidencias.</template>
-        <Column field="name" sortable>
-          <template #header>
-            <ColumnSearch v-model="nameQuery" label="Nombre" placeholder="Buscar nombre" />
-          </template>
-        </Column>
-        <Column header="Color" style="width: 160px">
-          <template #body="{ data }">
-            <ColorTag :value="data.name ?? ''" :color="data.color" />
-          </template>
-        </Column>
-        <Column header="Acciones" style="width: 120px">
-          <template #body="{ data }">
-            <div class="catalog__actions">
-              <Button
-                icon="pi pi-pencil"
-                text
-                rounded
-                aria-label="Editar"
-                @click="openEdit(data)"
-              />
-              <Button
-                icon="pi pi-trash"
-                text
-                rounded
-                severity="danger"
-                aria-label="Eliminar"
-                @click="confirmDelete(data)"
-              />
-            </div>
-          </template>
-        </Column>
-      </DataTable>
-    </DataState>
+      <template #empty>
+        <span v-if="table.isError.value">No se pudieron cargar las categorías.</span>
+        <span v-else>Sin categorías.</span>
+      </template>
+
+      <Column field="name" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('name').value"
+            label="Nombre"
+            placeholder="Buscar nombre"
+            @apply="table.onFilter"
+          />
+        </template>
+      </Column>
+      <Column header="Color" style="width: 160px">
+        <template #body="{ data }">
+          <ColorTag :value="data.name ?? ''" :color="data.color" />
+        </template>
+      </Column>
+      <Column header="Acciones" style="width: 120px">
+        <template #body="{ data }">
+          <div class="catalog__actions">
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              aria-label="Editar"
+              @click="openEdit(data)"
+            />
+            <Button
+              icon="pi pi-trash"
+              text
+              rounded
+              severity="danger"
+              aria-label="Eliminar"
+              @click="confirmDelete(data)"
+            />
+          </div>
+        </template>
+      </Column>
+    </DataTable>
 
     <Dialog
       v-model:visible="dialogVisible"

@@ -1057,9 +1057,7 @@ public sealed class ActivityServiceAssignmentTests
     [Fact]
     public async Task VerifyTimeOverlapsAsync_ActivityMissing_ReturnsNotFound()
     {
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((Activity?)null);
+        activities.Query().Returns(new List<Activity>().AsQueryable());
 
         var result = await sut.VerifyTimeOverlapsAsync(
             Guid.NewGuid(),
@@ -1072,29 +1070,20 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task VerifyTimeOverlapsAsync_OverlappingAssignments_ReportsOverlapsExcludingTarget()
+    public async Task VerifyTimeOverlapsAsync_OverlappingAssignments_ReportsOverlapsExcludingTargetAndOtherUsers()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var target = OverlapActivity(activityId, 10, 12);
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(target);
-
-        var overlappingId = Guid.NewGuid();
-        activities
-            .GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>())
-            .Returns([
-                new() { ActivityId = activityId, Activity = OverlapActivity(activityId, 10, 12) },
-                new()
-                {
-                    ActivityId = overlappingId,
-                    Activity = OverlapActivity(overlappingId, 11, 13, "Choque"),
-                },
-            ]);
+        var target = OverlapActivity(Guid.NewGuid(), 10, 12);
+        var clash = OverlapActivity(Guid.NewGuid(), 11, 13, "Choque");
+        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
+        HasAssignments(
+            OverlapAssignment(userId, target),
+            OverlapAssignment(userId, clash),
+            OverlapAssignment(Guid.NewGuid(), OverlapActivity(Guid.NewGuid(), 11, 13, "Ajeno"))
+        );
 
         var result = await sut.VerifyTimeOverlapsAsync(
-            activityId,
+            target.Id,
             userId,
             TestContext.Current.CancellationToken
         );
@@ -1102,30 +1091,48 @@ public sealed class ActivityServiceAssignmentTests
         result.IsSuccess.Should().BeTrue();
         result.Value.HasOverlaps.Should().BeTrue();
         result.Value.Overlaps.Should().ContainSingle();
-        result.Value.Overlaps[0].ActivityId.Should().Be(overlappingId);
+        result.Value.Overlaps[0].ActivityId.Should().Be(clash.Id);
         result.Value.Overlaps[0].Title.Should().Be("Choque");
+    }
+
+    [Fact]
+    public async Task VerifyTimeOverlapsAsync_MultipleOverlaps_OrdersByStartThenActivityId()
+    {
+        var userId = Guid.NewGuid();
+        var target = OverlapActivity(Guid.NewGuid(), 9, 14);
+        var earliest = OverlapActivity(Guid.NewGuid(), 10, 11);
+        var tieFirst = OverlapActivity(new Guid("00000000-0000-0000-0000-000000000001"), 11, 12);
+        var tieSecond = OverlapActivity(new Guid("00000000-0000-0000-0000-000000000002"), 11, 12);
+        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
+        HasAssignments(
+            OverlapAssignment(userId, tieSecond),
+            OverlapAssignment(userId, tieFirst),
+            OverlapAssignment(userId, earliest)
+        );
+
+        var result = await sut.VerifyTimeOverlapsAsync(
+            target.Id,
+            userId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result
+            .Value.Overlaps.Select(o => o.ActivityId)
+            .Should()
+            .Equal(earliest.Id, tieFirst.Id, tieSecond.Id);
     }
 
     [Fact]
     public async Task VerifyTimeOverlapsAsync_DisjointAssignments_ReportsNoOverlaps()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(OverlapActivity(activityId, 10, 12));
-        activities
-            .GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>())
-            .Returns([
-                new()
-                {
-                    ActivityId = Guid.NewGuid(),
-                    Activity = OverlapActivity(Guid.NewGuid(), 13, 14),
-                },
-            ]);
+        var target = OverlapActivity(Guid.NewGuid(), 10, 12);
+        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
+        HasAssignments(OverlapAssignment(userId, OverlapActivity(Guid.NewGuid(), 13, 14)));
 
         var result = await sut.VerifyTimeOverlapsAsync(
-            activityId,
+            target.Id,
             userId,
             TestContext.Current.CancellationToken
         );
@@ -1138,24 +1145,13 @@ public sealed class ActivityServiceAssignmentTests
     [Fact]
     public async Task VerifyTimeOverlapsAsync_AdjacentAssignments_ReportsNoOverlaps()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(OverlapActivity(activityId, 10, 12));
-        activities
-            .GetUserAssignmentsAsync(userId, Arg.Any<CancellationToken>())
-            .Returns([
-                new()
-                {
-                    ActivityId = Guid.NewGuid(),
-                    Activity = OverlapActivity(Guid.NewGuid(), 12, 14),
-                },
-            ]);
+        var target = OverlapActivity(Guid.NewGuid(), 10, 12);
+        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
+        HasAssignments(OverlapAssignment(userId, OverlapActivity(Guid.NewGuid(), 12, 14)));
 
         var result = await sut.VerifyTimeOverlapsAsync(
-            activityId,
+            target.Id,
             userId,
             TestContext.Current.CancellationToken
         );
@@ -1164,6 +1160,9 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.HasOverlaps.Should().BeFalse();
         result.Value.Overlaps.Should().BeEmpty();
     }
+
+    private void HasAssignments(params ActivityUserRoleAssignment[] assignments) =>
+        activities.QueryAssignments().Returns(assignments.AsQueryable());
 
     private static Activity OverlapActivity(
         Guid id,
@@ -1181,50 +1180,62 @@ public sealed class ActivityServiceAssignmentTests
             ActivityEndsAt = new DateTimeOffset(2026, 7, 10, endHour, 0, 0, TimeSpan.Zero),
         };
 
+    private static ActivityUserRoleAssignment OverlapAssignment(Guid userId, Activity activity) =>
+        new()
+        {
+            UserId = userId,
+            ActivityId = activity.Id,
+            Activity = activity,
+        };
+
+    private static User HouseholdUser(
+        Guid id,
+        string firstName,
+        string lastName,
+        Guid? parentId = null
+    ) =>
+        new()
+        {
+            Id = id,
+            FirstName = firstName,
+            LastName = lastName,
+            ParentId = parentId,
+        };
+
+    private static ActivityUserRoleAssignment HouseholdAssignment(
+        User user,
+        Guid eventId,
+        int startHour = 10,
+        string roleName = "Participante",
+        string statusName = "Solicitado"
+    )
+    {
+        var activity = OverlapActivity(Guid.NewGuid(), startHour, startHour + 1);
+        activity.EventId = eventId;
+        return new ActivityUserRoleAssignment
+        {
+            UserId = user.Id,
+            User = user,
+            ActivityId = activity.Id,
+            Activity = activity,
+            ActivityRoleTypeId = Guid.NewGuid(),
+            ActivityRoleType = new ActivityRoleType { Name = roleName, Description = "d" },
+            AssignmentStatusId = Guid.NewGuid(),
+            AssignmentStatus = new AssignmentStatusType { Name = statusName, Color = "#000" },
+        };
+    }
+
     [Fact]
-    public async Task GetHouseholdAssignmentsAsync_NullNavigationsPresent_MapsChildrenAndFallsBack()
+    public async Task GetHouseholdAssignmentsAsync_ParentAndChildAssigned_OrdersByFirstNameAndIncludesChild()
     {
         var actingUserId = Guid.NewGuid();
-        var childId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
-        users
-            .ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>())
-            .Returns([
-                new()
-                {
-                    Id = childId,
-                    FirstName = "Kid",
-                    LastName = "One",
-                },
-            ]);
-
-        var withNavs = new ActivityUserRoleAssignment
-        {
-            ActivityId = Guid.NewGuid(),
-            UserId = actingUserId,
-            User = new User { FirstName = "Ada", LastName = "Parent" },
-            ActivityRoleTypeId = Guid.NewGuid(),
-            ActivityRoleType = new ActivityRoleType { Name = "Líder", Description = "d" },
-            AssignmentStatusId = Guid.NewGuid(),
-            AssignmentStatus = new AssignmentStatusType { Name = "Confirmado", Color = "#0f0" },
-        };
-        var withoutNavs = new ActivityUserRoleAssignment
-        {
-            ActivityId = Guid.NewGuid(),
-            UserId = childId,
-            User = new User { FirstName = "Kid", LastName = "One" },
-            ActivityRoleTypeId = Guid.NewGuid(),
-            ActivityRoleType = null!,
-            AssignmentStatusId = Guid.NewGuid(),
-            AssignmentStatus = null!,
-        };
-        activities
-            .GetAssignmentsForUsersByEventAsync(
-                Arg.Any<IReadOnlyList<Guid>>(),
-                eventId,
-                Arg.Any<CancellationToken>()
-            )
-            .Returns([withNavs, withoutNavs]);
+        var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
+        var child = HouseholdUser(Guid.NewGuid(), "Ana", "Kid", actingUserId);
+        HasAssignments(
+            HouseholdAssignment(parent, eventId, roleName: "Líder", statusName: "Confirmado"),
+            HouseholdAssignment(child, eventId)
+        );
 
         var result = await sut.GetHouseholdAssignmentsAsync(
             actingUserId,
@@ -1233,14 +1244,59 @@ public sealed class ActivityServiceAssignmentTests
         );
 
         result.Should().HaveCount(2);
-        result[0].FirstName.Should().Be("Ada");
-        result[0].RoleName.Should().Be("Líder");
-        result[0].StatusName.Should().Be("Confirmado");
-        result[1].RoleName.Should().BeEmpty();
-        result[1].StatusName.Should().BeEmpty();
-        await users
-            .Received(1)
-            .ListChildrenWithDetailsAsync(actingUserId, Arg.Any<CancellationToken>());
+        result[0].UserId.Should().Be(child.Id);
+        result[0].FirstName.Should().Be("Ana");
+        result[0].LastName.Should().Be("Kid");
+        result[0].RoleName.Should().Be("Participante");
+        result[0].StatusName.Should().Be("Solicitado");
+        result[1].UserId.Should().Be(actingUserId);
+        result[1].FirstName.Should().Be("Zoe");
+        result[1].RoleName.Should().Be("Líder");
+        result[1].StatusName.Should().Be("Confirmado");
+    }
+
+    [Fact]
+    public async Task GetHouseholdAssignmentsAsync_SameUserMultipleActivities_OrdersByActivityStart()
+    {
+        var actingUserId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
+        var late = HouseholdAssignment(parent, eventId, startHour: 15);
+        var early = HouseholdAssignment(parent, eventId, startHour: 9);
+        HasAssignments(late, early);
+
+        var result = await sut.GetHouseholdAssignmentsAsync(
+            actingUserId,
+            eventId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Select(a => a.ActivityId).Should().Equal(early.ActivityId, late.ActivityId);
+    }
+
+    [Fact]
+    public async Task GetHouseholdAssignmentsAsync_StrangerOrOtherEventAssignments_AreExcluded()
+    {
+        var actingUserId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
+        var stranger = HouseholdUser(Guid.NewGuid(), "Bob", "Stranger");
+        var mine = HouseholdAssignment(parent, eventId);
+        HasAssignments(
+            mine,
+            HouseholdAssignment(parent, Guid.NewGuid()),
+            HouseholdAssignment(stranger, eventId)
+        );
+
+        var result = await sut.GetHouseholdAssignmentsAsync(
+            actingUserId,
+            eventId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Should().ContainSingle();
+        result[0].UserId.Should().Be(actingUserId);
+        result[0].ActivityId.Should().Be(mine.ActivityId);
     }
 
     [Fact]

@@ -32,6 +32,12 @@ public class EventService(
             .Default("eventStartsAt")
             .Tie(e => e.Id);
 
+    private static readonly SortMap<EventCategoryTypeResponse> CategoryTypeSort =
+        new SortMap<EventCategoryTypeResponse>()
+            .Add("name", c => c.Name)
+            .Default("name")
+            .Tie(c => c.Id);
+
     public Task<PagedResult<EventListItemResponse>> ListAsync(
         EventListQuery query,
         CancellationToken ct = default
@@ -251,14 +257,25 @@ public class EventService(
             : await GetByIdAsync(id, ct);
     }
 
-    public async Task<IReadOnlyList<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+    public Task<PagedResult<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+        EventCategoryTypeListQuery query,
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            categoryTypes.Query().OrderBy(c => c.Name).Select(Projections.EventCategoryType),
-            ct
-        );
+        var source = categoryTypes.Query().Select(Projections.EventCategoryType);
+
+        if (!string.IsNullOrWhiteSpace(query.Name))
+        {
+            source = source.Where(
+                TextSearch.Contains<EventCategoryTypeResponse>(
+                    c => c.Name,
+                    TextSearch.Normalize(query.Name)
+                )
+            );
+        }
+
+        source = CategoryTypeSort.Apply(source, query.Sort);
+        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
     public async Task<Result<EventCategoryTypeResponse>> CreateCategoryTypeAsync(

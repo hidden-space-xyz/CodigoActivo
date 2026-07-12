@@ -6,7 +6,6 @@ import {
   AppButton as Button,
   ColumnFilterSelect,
   ColumnSearch,
-  DataState,
   ListThumbnail,
 } from '@/shared/ui'
 import Column from 'primevue/column'
@@ -52,28 +51,16 @@ const summaryCards = computed(() => {
   return cards
 })
 
-const titleQuery = ref<string | number | null>(null)
-const modalityFilter = ref<string | boolean | null>(null)
+const modalityOptions = computed(() =>
+  (modalityTypes.data.value ?? []).map((modality) => ({
+    label: modality.name ?? '—',
+    value: modality.id ?? '',
+  })),
+)
 
-const modalityOptions = computed(() => {
-  const names = new Set<string>()
-  for (const activity of activities.list.data.value ?? []) {
-    if (activity.modalityName) names.add(activity.modalityName)
-  }
-  return [...names].sort().map((name) => ({ label: name, value: name }))
-})
-
-const filteredActivities = computed(() => {
-  const query = String(titleQuery.value ?? '')
-    .trim()
-    .toLowerCase()
-  const modality = modalityFilter.value
-  return (activities.list.data.value ?? []).filter((activity) => {
-    if (query && !(activity.title ?? '').toLowerCase().includes(query)) return false
-    if (modality != null && activity.modalityName !== modality) return false
-    return true
-  })
-})
+function onModalityFilter(value: string | boolean | null): void {
+  activities.modalityTypeId.value = typeof value === 'string' ? value : null
+}
 
 const activityDialogVisible = ref(false)
 const selectedActivity = ref<ActivityResponse | null>(null)
@@ -186,80 +173,100 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
       </TabList>
       <TabPanels>
         <TabPanel value="activities">
-          <DataState
-            :loading="activities.list.isLoading.value"
-            :error="activities.list.isError.value"
-            :empty="(activities.list.data.value?.length ?? 0) === 0"
-            empty-text="Este evento aún no tiene actividades."
+          <DataTable
+            lazy
+            :value="activities.table.items.value"
+            :total-records="activities.table.total.value"
+            :loading="activities.table.loading.value"
+            data-key="id"
+            striped-rows
+            paginator
+            :rows="activities.table.rows.value"
+            :first="activities.table.first.value"
+            :rows-per-page-options="[25, 50, 100]"
+            :sort-field="activities.table.sortField.value"
+            :sort-order="activities.table.sortOrder.value"
+            removable-sort
+            @page="activities.table.onPage"
+            @sort="activities.table.onSort"
           >
-            <DataTable :value="filteredActivities" data-key="id" striped-rows removable-sort>
-              <template #empty>Sin coincidencias.</template>
+            <template #empty>
+              <span v-if="activities.table.isError.value">
+                No se pudieron cargar las actividades.
+              </span>
+              <span v-else>Este evento aún no tiene actividades.</span>
+            </template>
 
-              <Column header="Imagen" style="width: 110px">
-                <template #body="{ data }">
-                  <ListThumbnail
-                    :thumbnail-id="data.thumbnailId"
-                    :alt="data.title"
-                    style="width: 88px"
+            <Column header="Imagen" style="width: 110px">
+              <template #body="{ data }">
+                <ListThumbnail
+                  :thumbnail-id="data.thumbnailId"
+                  :alt="data.title"
+                  style="width: 88px"
+                />
+              </template>
+            </Column>
+            <Column field="title" sortable>
+              <template #header>
+                <ColumnSearch
+                  v-model="activities.table.columnFilter('title').value"
+                  label="Título"
+                  placeholder="Buscar título"
+                  @apply="activities.table.onFilter"
+                />
+              </template>
+            </Column>
+            <Column field="activityStartsAt" header="Horario" sortable>
+              <template #body="{ data }">
+                {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
+              </template>
+            </Column>
+            <Column field="modalityName" sortable>
+              <template #header>
+                <ColumnFilterSelect
+                  :model-value="activities.modalityTypeId.value"
+                  label="Modalidad"
+                  :options="modalityOptions"
+                  @update:model-value="onModalityFilter"
+                />
+              </template>
+              <template #body="{ data }">
+                <div class="modality-cell">
+                  <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>
+                  <span v-if="data.location" class="modality-cell__loc">{{ data.location }}</span>
+                </div>
+              </template>
+            </Column>
+            <Column header="Acciones" style="width: 120px">
+              <template #body="{ data }">
+                <div class="row-actions">
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    rounded
+                    aria-label="Editar"
+                    @click="openEditActivity(data)"
                   />
-                </template>
-              </Column>
-              <Column field="title" sortable>
-                <template #header>
-                  <ColumnSearch v-model="titleQuery" label="Título" placeholder="Buscar título" />
-                </template>
-              </Column>
-              <Column field="activityStartsAt" header="Horario" sortable>
-                <template #body="{ data }">
-                  {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
-                </template>
-              </Column>
-              <Column field="modalityName" sortable>
-                <template #header>
-                  <ColumnFilterSelect
-                    v-model="modalityFilter"
-                    label="Modalidad"
-                    :options="modalityOptions"
+                  <Button
+                    icon="pi pi-trash"
+                    text
+                    rounded
+                    severity="danger"
+                    aria-label="Eliminar"
+                    @click="confirmDeleteActivity(data)"
                   />
-                </template>
-                <template #body="{ data }">
-                  <div class="modality-cell">
-                    <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>
-                    <span v-if="data.location" class="modality-cell__loc">{{ data.location }}</span>
-                  </div>
-                </template>
-              </Column>
-              <Column header="Acciones" style="width: 120px">
-                <template #body="{ data }">
-                  <div class="row-actions">
-                    <Button
-                      icon="pi pi-pencil"
-                      text
-                      rounded
-                      aria-label="Editar"
-                      @click="openEditActivity(data)"
-                    />
-                    <Button
-                      icon="pi pi-trash"
-                      text
-                      rounded
-                      severity="danger"
-                      aria-label="Eliminar"
-                      @click="confirmDeleteActivity(data)"
-                    />
-                  </div>
-                </template>
-              </Column>
-            </DataTable>
-          </DataState>
+                </div>
+              </template>
+            </Column>
+          </DataTable>
         </TabPanel>
         <TabPanel value="attendees">
           <EventAttendeesTab
             :event-id="eventId"
             :active="activeTab === 'attendees'"
-            :activities="activities.list.data.value ?? []"
-            :activities-loading="activities.list.isLoading.value"
-            :activities-error="activities.list.isError.value"
+            :activities="activities.options.data.value ?? []"
+            :activities-loading="activities.options.isLoading.value"
+            :activities-error="activities.options.isError.value"
           />
         </TabPanel>
       </TabPanels>

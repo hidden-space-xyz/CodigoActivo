@@ -3,7 +3,7 @@ export {
   changeUserTypeRequest,
   deleteUserRequest,
   getUserRequest,
-  getUsersRequest,
+  getUsersPageRequest,
   setUserAdminRequest,
   updateUserRequest,
 } from './api/requests'

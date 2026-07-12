@@ -1,10 +1,48 @@
 <script setup lang="ts">
-import { PastEventCard, usePastEvents, useUpcomingEvents } from '@/entities/event'
-import EventBoard from './EventBoard.vue'
-import { SectionEyebrow, YearFilter } from '@/shared/ui'
+import { computed, ref, watch } from 'vue'
 
-const { upcomingEvents, isLoading: isLoadingUpcoming } = useUpcomingEvents()
-const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = usePastEvents()
+import {
+  PastEventCard,
+  usePastEventsPaged,
+  usePastEventYears,
+  useUpcomingEventsPaged,
+} from '@/entities/event'
+import EventBoard from './EventBoard.vue'
+import { AppButton, SectionEyebrow, YearFilter } from '@/shared/ui'
+
+const {
+  items: upcomingEvents,
+  hasMore: hasMoreUpcoming,
+  loadMore: loadMoreUpcoming,
+  isLoading: isLoadingUpcoming,
+  isFetchingMore: isFetchingMoreUpcoming,
+} = useUpcomingEventsPaged()
+
+const { years, isLoading: isLoadingYears } = usePastEventYears()
+const selectedYear = ref('')
+
+watch(
+  years,
+  (list) => {
+    const [first] = list
+    if (first && !selectedYear.value) selectedYear.value = first
+  },
+  { immediate: true },
+)
+
+function setYear(year: string): void {
+  selectedYear.value = year
+}
+
+const {
+  items: pastEvents,
+  hasMore: hasMorePast,
+  loadMore: loadMorePast,
+  isLoading: isLoadingPastEvents,
+  isFetchingMore: isFetchingMorePast,
+} = usePastEventsPaged(() => selectedYear.value)
+
+const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents.value)
 </script>
 
 <template>
@@ -27,7 +65,15 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
           <h2 class="events-section__title">Próximos eventos</h2>
         </div>
         <p v-if="isLoadingUpcoming" class="events-loading">Cargando…</p>
-        <EventBoard v-else :events="upcomingEvents ?? []" />
+        <EventBoard v-else :events="upcomingEvents" />
+        <div v-if="hasMoreUpcoming" class="events-more">
+          <AppButton
+            label="Cargar más"
+            outlined
+            :loading="isFetchingMoreUpcoming"
+            @click="loadMoreUpcoming"
+          />
+        </div>
       </div>
     </section>
 
@@ -46,6 +92,14 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
         <p v-if="isLoadingPast" class="events-loading">Cargando…</p>
         <div v-else class="events-grid">
           <PastEventCard v-for="event in pastEvents" :key="event.id" :event="event" />
+        </div>
+        <div v-if="hasMorePast" class="events-more">
+          <AppButton
+            label="Cargar más"
+            outlined
+            :loading="isFetchingMorePast"
+            @click="loadMorePast"
+          />
         </div>
       </div>
     </section>
@@ -106,5 +160,11 @@ const { pastEvents, years, selectedYear, setYear, isLoading: isLoadingPast } = u
 .events-loading {
   color: var(--ca-text-dim);
   font-family: var(--ca-font-mono);
+}
+
+.events-more {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
 }
 </style>

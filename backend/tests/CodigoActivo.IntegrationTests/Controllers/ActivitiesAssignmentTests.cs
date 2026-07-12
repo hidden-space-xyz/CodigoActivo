@@ -371,11 +371,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task HouseholdAssignments_MemberAndChildrenAssigned_ReturnsBoth()
+    public async Task HouseholdAssignments_MemberAndChildrenAssigned_ReturnsBothOrderedByFirstName()
     {
         var (eventId, activityId) = await SeedActivityAsync();
-        await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
         await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
+        await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
         var client = await LoginAsMemberAsync();
 
         var response = await client.GetAsync(
@@ -387,9 +387,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var body = await response.ReadJsonAsync<IReadOnlyList<HouseholdMemberAssignmentResponse>>(
             TestContext.Current.CancellationToken
         );
-        body!.Should().HaveCount(2);
-        body.Should().Contain(a => a.UserId == TestSeedData.Users.MemberId);
-        body.Should().Contain(a => a.UserId == TestSeedData.Users.MemberChildId);
+        body!
+            .Select(a => a.UserId)
+            .Should()
+            .Equal(TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId);
+        body!.Select(a => a.FirstName).Should().Equal("Marta", "Mateo");
     }
 
     [Fact]

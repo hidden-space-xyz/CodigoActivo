@@ -14,6 +14,8 @@ public record UserResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     Guid? ParentId,
+    string? ParentName,
+    int? DependentCount,
     UserStatusResponse Status,
     bool IsAdmin,
     UserTypeSummaryResponse? Type
@@ -29,6 +31,8 @@ public record UserResponse(
             default,
             null,
             default,
+            null,
+            null,
             null,
             null,
             null!,

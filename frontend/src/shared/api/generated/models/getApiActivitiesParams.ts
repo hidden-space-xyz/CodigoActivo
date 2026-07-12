@@ -8,6 +8,7 @@
 export type GetApiActivitiesParams = {
 eventId?: string;
 title?: string;
+modalityTypeId?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

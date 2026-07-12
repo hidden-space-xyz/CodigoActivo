@@ -17,15 +17,3 @@ export function toPage<T>(response: { data: { items?: T[] | null; total?: number
 } {
   return { items: response.data.items ?? [], total: response.data.total ?? 0 }
 }
-
-export async function fetchAllPages<T>(
-  fetchPage: (page: number, pageSize: number) => Promise<{ items: T[]; total: number }>,
-  pageSize = 100,
-): Promise<T[]> {
-  const first = await fetchPage(1, pageSize)
-  const pageCount = Math.ceil(first.total / pageSize)
-  const rest = await Promise.all(
-    Array.from({ length: Math.max(0, pageCount - 1) }, (_, i) => fetchPage(i + 2, pageSize)),
-  )
-  return [...first.items, ...rest.flatMap((page) => page.items)]
-}
