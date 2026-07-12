@@ -18,7 +18,7 @@ public class ActivityUserRoleAssignmentConfiguration
 
         builder
             .HasOne(x => x.User)
-            .WithMany()
+            .WithMany(u => u.Assignments)
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 

@@ -221,6 +221,10 @@ public static class Projections
             CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt,
             ParentId = user.ParentId,
+            ParentName = user.Parent == null
+                ? null
+                : user.Parent.FirstName + " " + user.Parent.LastName,
+            DependentCount = user.Children.Count,
             Status = new UserStatusResponse(
                 user.UserStatusTypeId,
                 user.UserStatusType.Name,

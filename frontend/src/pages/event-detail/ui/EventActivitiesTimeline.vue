@@ -83,9 +83,7 @@ const items = computed<TimelineActivity[]>(() =>
 )
 
 const scheduled = computed(() =>
-  items.value
-    .filter((a): a is TimelineActivity & { start: Date } => a.start !== null)
-    .sort((x, y) => x.start.getTime() - y.start.getTime()),
+  items.value.filter((a): a is TimelineActivity & { start: Date } => a.start !== null),
 )
 
 const unscheduled = computed(() => items.value.filter((a) => a.start === null))

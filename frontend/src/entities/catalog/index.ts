@@ -6,5 +6,6 @@ export {
   useAssignmentStatusTypesList,
   useEventCategoryTypesList,
   useResourceTypesList,
+  useUserStatusTypesList,
   useUserTypesList,
 } from './api/queries'

@@ -32,8 +32,10 @@ import type {
   CreateEventCategoryTypeRequest,
   CreateEventRequest,
   EventCategoryTypeResponse,
+  EventCategoryTypeResponsePagedResult,
   EventListItemResponsePagedResult,
   EventResponse,
+  GetApiEventsCategoryTypeParams,
   GetApiEventsParams,
   UpdateEventCategoryTypeRequest,
   UpdateEventRequest
@@ -538,7 +540,7 @@ export function useDeleteApiEventsEventId<TData = Awaited<ReturnType<typeof dele
 
 
 export type getApiEventsCategoryTypeResponse200 = {
-  data: EventCategoryTypeResponse[]
+  data: EventCategoryTypeResponsePagedResult
   status: 200
 }
 
@@ -549,17 +551,24 @@ export type getApiEventsCategoryTypeResponseSuccess = (getApiEventsCategoryTypeR
 
 export type getApiEventsCategoryTypeResponse = (getApiEventsCategoryTypeResponseSuccess)
 
-export const getGetApiEventsCategoryTypeUrl = () => {
+export const getGetApiEventsCategoryTypeUrl = (params?: GetApiEventsCategoryTypeParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/events/categoryType`
+  return stringifiedParams.length > 0 ? `/api/events/categoryType?${stringifiedParams}` : `/api/events/categoryType`
 }
 
-export const getApiEventsCategoryType = async ( options?: RequestInit): Promise<getApiEventsCategoryTypeResponse> => {
+export const getApiEventsCategoryType = async (params?: GetApiEventsCategoryTypeParams, options?: RequestInit): Promise<getApiEventsCategoryTypeResponse> => {
 
-  return httpClient<getApiEventsCategoryTypeResponse>(getGetApiEventsCategoryTypeUrl(),
+  return httpClient<getApiEventsCategoryTypeResponse>(getGetApiEventsCategoryTypeUrl(params),
   {
     ...options,
     method: 'GET'
@@ -573,8 +582,8 @@ export const getApiEventsCategoryType = async ( options?: RequestInit): Promise<
 
 
 export const getGetApiEventsCategoryTypeMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,{params?: GetApiEventsCategoryTypeParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,{params?: GetApiEventsCategoryTypeParams}, TContext> => {
 
 const mutationKey = ['getApiEventsCategoryType'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -586,10 +595,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsCategoryType>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsCategoryType>>, {params?: GetApiEventsCategoryTypeParams}> = (props) => {
+          const {params} = props ?? {};
 
-
-          return  getApiEventsCategoryType(requestOptions)
+          return  getApiEventsCategoryType(params,requestOptions)
         }
 
 
@@ -604,11 +613,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type GetApiEventsCategoryTypeMutationError = unknown
 
     export const useGetApiEventsCategoryType = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsCategoryType>>, TError,{params?: GetApiEventsCategoryTypeParams}, TContext>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient): UseMutationReturnType<
         Awaited<ReturnType<typeof getApiEventsCategoryType>>,
         TError,
-        void,
+        {params?: GetApiEventsCategoryTypeParams},
         TContext
       > => {
       return useMutation(getGetApiEventsCategoryTypeMutationOptions(options), queryClient);

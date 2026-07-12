@@ -82,7 +82,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     private async Task<Guid> SeedActivityAsync(
         Guid eventId,
         Guid thumbnailId,
-        string title = "Actividad"
+        string title = "Actividad",
+        Guid? modalityId = null
     )
     {
         var id = Guid.NewGuid();
@@ -95,7 +96,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     Title = title,
                     Description = "Descripcion",
                     Location = "Sala",
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    ActivityModalityTypeId = modalityId ?? SeedIds.ActivityModalityTypes.Presencial,
                     ActivityStartsAt = ActivityStart,
                     ActivityEndsAt = ActivityEnd,
                     EventId = eventId,
@@ -148,6 +149,35 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(a => a.Title == "Alpha");
+    }
+
+    [Fact]
+    public async Task List_ModalityTypeIdFilter_ReturnsOnlyMatchingModality()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        await SeedActivityAsync(
+            eventId,
+            thumb,
+            "En sala",
+            SeedIds.ActivityModalityTypes.Presencial
+        );
+        await SeedActivityAsync(eventId, thumb, "En remoto", SeedIds.ActivityModalityTypes.Online);
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            $"/api/activities?modalityTypeId={SeedIds.ActivityModalityTypes.Online}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        var item = page.Items.Should().ContainSingle().Subject;
+        item.Title.Should().Be("En remoto");
+        item.ModalityId.Should().Be(SeedIds.ActivityModalityTypes.Online);
     }
 
     [Fact]

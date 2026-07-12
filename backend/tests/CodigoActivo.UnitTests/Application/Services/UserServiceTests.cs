@@ -80,7 +80,11 @@ public sealed class UserServiceTests
         DateOnly? dob = null,
         string? email = "ana@test.com",
         string? phone = "555-0100",
-        bool isAdmin = false
+        bool isAdmin = false,
+        Guid? typeId = null,
+        Guid? statusId = null,
+        string typeName = "Socio",
+        string statusName = "Active"
     ) =>
         new()
         {
@@ -91,18 +95,18 @@ public sealed class UserServiceTests
             Phone = phone,
             BirthDate = dob ?? AdultDob,
             ParentId = parentId,
-            UserStatusTypeId = Guid.NewGuid(),
+            UserStatusTypeId = statusId ?? Guid.NewGuid(),
             UserStatusType = new UserStatusType
             {
-                Name = "Active",
+                Name = statusName,
                 Color = "#111",
                 Description = "",
             },
             IsAdmin = isAdmin,
-            UserTypeId = Guid.NewGuid(),
+            UserTypeId = typeId ?? Guid.NewGuid(),
             UserType = new UserType
             {
-                Name = "Socio",
+                Name = typeName,
                 Color = "#111",
                 Description = "",
             },
@@ -190,12 +194,12 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_FirstNameSearch_IsAccentAndCaseInsensitive()
+    public async Task ListAsync_NameSearch_IsAccentAndCaseInsensitive()
     {
         HasUsers(NewUser(first: "Ávila"), NewUser(first: "Benito"));
 
         var result = await sut.ListAsync(
-            new UserListQuery { FirstName = "avila" },
+            new UserListQuery { Name = "avila" },
             Guid.NewGuid(),
             isAdmin: true,
             TestContext.Current.CancellationToken
@@ -205,18 +209,238 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ListAsync_LastNameSearch_MatchesSubstring()
+    public async Task ListAsync_NameSearchByLastName_MatchesSubstring()
     {
         HasUsers(NewUser(last: "Gonzalez"), NewUser(last: "Martinez"));
 
         var result = await sut.ListAsync(
-            new UserListQuery { LastName = "gonz" },
+            new UserListQuery { Name = "gonz" },
             Guid.NewGuid(),
             isAdmin: true,
             TestContext.Current.CancellationToken
         );
 
         result.Items.Should().ContainSingle().Which.LastName.Should().Be("Gonzalez");
+    }
+
+    [Fact]
+    public async Task ListAsync_NameSearchSpansFirstAndLastName_MatchesCombinedFullName()
+    {
+        HasUsers(
+            NewUser(first: "Ana", last: "García"),
+            NewUser(first: "Ana", last: "Benitez"),
+            NewUser(first: "Gara", last: "Anaya")
+        );
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Name = "ana gar" },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.LastName.Should().Be("García");
+    }
+
+    [Fact]
+    public async Task ListAsync_PhoneFilter_MatchesSubstring()
+    {
+        HasUsers(NewUser(phone: "600111222"), NewUser(phone: "699888777"));
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Phone = "111" },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Phone.Should().Be("600111222");
+    }
+
+    [Fact]
+    public async Task ListAsync_IdFilter_ReturnsOnlyMatchingUser()
+    {
+        var target = NewUser(first: "Target");
+        HasUsers(target, NewUser(first: "Other"), NewUser(first: "Another"));
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Id = target.Id },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Id.Should().Be(target.Id);
+    }
+
+    [Fact]
+    public async Task ListAsync_UserTypeIdFilter_ReturnsOnlyMatchingType()
+    {
+        var typeId = Guid.NewGuid();
+        HasUsers(NewUser(first: "Match", typeId: typeId), NewUser(first: "Other"));
+
+        var result = await sut.ListAsync(
+            new UserListQuery { UserTypeId = typeId },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Match");
+    }
+
+    [Fact]
+    public async Task ListAsync_UserStatusTypeIdFilter_ReturnsOnlyMatchingStatus()
+    {
+        var statusId = Guid.NewGuid();
+        HasUsers(NewUser(first: "Match", statusId: statusId), NewUser(first: "Other"));
+
+        var result = await sut.ListAsync(
+            new UserListQuery { UserStatusTypeId = statusId },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Match");
+    }
+
+    [Fact]
+    public async Task ListAsync_IsAdminFilter_ReturnsOnlyAdmins()
+    {
+        HasUsers(NewUser(first: "Boss", isAdmin: true), NewUser(first: "Plain"));
+
+        var result = await sut.ListAsync(
+            new UserListQuery { IsAdmin = true },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Boss");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByEmail_OrdersResultsByEmail()
+    {
+        HasUsers(
+            NewUser(email: "charlie@test.com"),
+            NewUser(email: "alice@test.com"),
+            NewUser(email: "bob@test.com")
+        );
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Sort = "email" },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(u => u.Email)
+            .Should()
+            .ContainInOrder("alice@test.com", "bob@test.com", "charlie@test.com");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByStatus_OrdersByStatusTypeName()
+    {
+        HasUsers(
+            NewUser(statusName: "Pending"),
+            NewUser(statusName: "Active"),
+            NewUser(statusName: "Blocked")
+        );
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Sort = "status" },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(u => u.Status.Name)
+            .Should()
+            .ContainInOrder("Active", "Blocked", "Pending");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByType_OrdersByUserTypeName()
+    {
+        HasUsers(
+            NewUser(typeName: "Voluntario"),
+            NewUser(typeName: "Miembro"),
+            NewUser(typeName: "Patrocinador")
+        );
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Sort = "type" },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(u => u.Type!.Name)
+            .Should()
+            .ContainInOrder("Miembro", "Patrocinador", "Voluntario");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByIsAdminDescending_PutsAdminsFirst()
+    {
+        HasUsers(NewUser(first: "Plain"), NewUser(first: "Boss", isAdmin: true));
+
+        var result = await sut.ListAsync(
+            new UserListQuery { Sort = "-isAdmin" },
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(u => u.FirstName).Should().ContainInOrder("Boss", "Plain");
+    }
+
+    [Fact]
+    public async Task ListAsync_AdminProjection_FillsParentNameAndDependentCount()
+    {
+        var parent = NewUser(first: "Padre", last: "Perez");
+        var child = NewUser(first: "Kid", last: "Perez", parentId: parent.Id);
+        child.Parent = parent;
+        parent.Children.Add(child);
+        HasUsers(parent, child);
+
+        var result = await sut.ListAsync(
+            new UserListQuery(),
+            Guid.NewGuid(),
+            isAdmin: true,
+            TestContext.Current.CancellationToken
+        );
+
+        var kid = result.Items.Single(u => u.FirstName == "Kid");
+        kid.ParentName.Should().Be("Padre Perez");
+        kid.DependentCount.Should().Be(0);
+        var padre = result.Items.Single(u => u.FirstName == "Padre");
+        padre.ParentName.Should().BeNull();
+        padre.DependentCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ListAsync_NonAdminProjection_LeavesParentNameAndDependentCountNull()
+    {
+        var callerId = Guid.NewGuid();
+        var caller = NewUser(first: "Self", id: callerId);
+        var child = NewUser(first: "Kid", parentId: callerId);
+        child.Parent = caller;
+        caller.Children.Add(child);
+        HasUsers(caller, child);
+
+        var result = await sut.ListAsync(
+            new UserListQuery(),
+            callerId,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().HaveCount(2);
+        result.Items.Should().OnlyContain(u => u.ParentName == null && u.DependentCount == null);
     }
 
     [Fact]

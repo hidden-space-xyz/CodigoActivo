@@ -28,8 +28,6 @@ public interface IUserRepository : IDbRepository<User>
 
 public interface IEventRepository : IDbRepository<Event>
 {
-    Task<Event?> GetWithActivitiesAndAssignmentsAsync(Guid id, CancellationToken ct = default);
-
     Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
     Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
@@ -54,17 +52,6 @@ public interface IActivityRepository : IDbRepository<Activity>
 
     Task AddAssignmentAsync(ActivityUserRoleAssignment assignment, CancellationToken ct = default);
     void RemoveAssignment(ActivityUserRoleAssignment assignment);
-
-    Task<IReadOnlyList<ActivityUserRoleAssignment>> GetUserAssignmentsAsync(
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    Task<IReadOnlyList<ActivityUserRoleAssignment>> GetAssignmentsForUsersByEventAsync(
-        IReadOnlyList<Guid> userIds,
-        Guid eventId,
-        CancellationToken ct = default
-    );
 
     IQueryable<ActivityUserRoleAssignment> QueryAssignments();
 }

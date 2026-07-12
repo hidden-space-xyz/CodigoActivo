@@ -3,11 +3,9 @@ import {
   getApiAnnouncementsAnnouncementId,
   getApiAnnouncementsYears,
 } from '@/shared/api/generated/endpoints/announcements/announcements'
-import type {
-  AnnouncementListItemResponse,
-  AnnouncementResponse,
-} from '@/shared/api/generated/models'
-import { FEATURED_FIRST_SORT, fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
+import type { AnnouncementResponse } from '@/shared/api/generated/models'
+import { FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
+import type { PagedListPage } from '@/shared/lib'
 
 import type { Announcement, AnnouncementSummary, HomeAnnouncements } from '../model/types'
 import { toAnnouncement, toAnnouncementSummary } from './mapper'
@@ -17,13 +15,19 @@ export async function getAnnouncementYearsRequest(): Promise<readonly string[]> 
   return (data ?? []).map(String)
 }
 
-export async function getAnnouncementsByYearRequest(
+export async function getAnnouncementsByYearPageRequest(
   year: string,
-): Promise<readonly AnnouncementSummary[]> {
-  const items = await fetchAllPages<AnnouncementListItemResponse>((page, pageSize) =>
-    getApiAnnouncements({ year: Number(year), sort: '-createdAt', page, pageSize }).then(toPage),
-  )
-  return items.map(toAnnouncementSummary)
+  page: number,
+  pageSize: number,
+): Promise<PagedListPage<AnnouncementSummary>> {
+  const result = await getApiAnnouncements({
+    year: Number(year),
+    sort: '-createdAt',
+    page,
+    pageSize,
+  })
+  const { items, total } = toPage(result)
+  return { items: items.map(toAnnouncementSummary), total }
 }
 
 export async function getHomeAnnouncementsRequest(): Promise<HomeAnnouncements> {

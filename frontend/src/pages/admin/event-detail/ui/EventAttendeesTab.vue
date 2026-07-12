@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Paginator from 'primevue/paginator'
+import type { PageState } from 'primevue/paginator'
 import Select from 'primevue/select'
 
 import { useAssignments } from '@/features/manage-activities'
-import { useEventAttendees } from '@/features/manage-events'
-import { useActivityRoleTypesList, useAssignmentStatusTypesList } from '@/entities/catalog'
+import { useEventAttendeesTable } from '@/features/manage-events'
+import {
+  useActivityRoleTypesList,
+  useAssignmentStatusTypesList,
+  useUserTypesList,
+} from '@/entities/catalog'
 import type {
   ActivityResponse,
   EventAttendeeAssignmentResponse,
@@ -24,28 +30,53 @@ const props = defineProps<{
 }>()
 
 const feedback = useCrudFeedback()
-const attendees = useEventAttendees(
+const attendees = useEventAttendeesTable(
   () => props.eventId,
   () => props.active,
 )
 const assignments = useAssignments(() => props.eventId)
 const statusTypes = useAssignmentStatusTypesList()
 const roleTypes = useActivityRoleTypesList()
+const userTypes = useUserTypesList()
 
-const query = ref('')
-const typeFilter = ref<string | null>(null)
-const activityFilter = ref<string | null>(null)
-const roleFilter = ref<string | null>(null)
-const statusFilter = ref<string | null>(null)
+const searchText = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | undefined
 
-type SortField = 'firstName' | 'lastName'
-const sortField = ref<SortField>('firstName')
-const sortAsc = ref(true)
+watch(searchText, (value) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    attendees.search.value = value
+  }, 300)
+})
 
-const sortOptions: { label: string; value: SortField }[] = [
+onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
+})
+
+const sortOptions: { label: string; value: string }[] = [
   { label: 'Nombre', value: 'firstName' },
   { label: 'Apellidos', value: 'lastName' },
 ]
+
+const sortField = computed({
+  get: () => attendees.table.sortField.value ?? 'firstName',
+  set: (value: string) => {
+    attendees.table.sortField.value = value
+    attendees.table.first.value = 0
+  },
+})
+
+const sortAsc = computed(() => attendees.table.sortOrder.value !== -1)
+
+function toggleSortDirection(): void {
+  attendees.table.sortOrder.value = sortAsc.value ? -1 : 1
+  attendees.table.first.value = 0
+}
+
+function onPage(event: PageState): void {
+  attendees.table.first.value = event.first
+  attendees.table.rows.value = event.rows
+}
 
 const activityOptions = computed(() =>
   props.activities.map((activity) => ({
@@ -54,33 +85,34 @@ const activityOptions = computed(() =>
   })),
 )
 
-const typeOptions = computed(() => {
-  const seen = new Set<string>()
-  for (const attendee of attendees.data.value?.attendees ?? []) {
-    if (attendee.userTypeName) seen.add(attendee.userTypeName)
-  }
-  return [...seen]
-    .sort((a, b) => a.localeCompare(b, 'es'))
-    .map((name) => ({ label: name, value: name }))
-})
+const typeOptions = computed(() =>
+  (userTypes.data.value ?? []).map((type) => ({
+    label: type.name ?? '—',
+    value: type.id ?? '',
+  })),
+)
 
-const roleOptions = computed(() => {
-  const seen = new Map<string, string>()
-  for (const attendee of attendees.data.value?.attendees ?? []) {
-    for (const assignment of attendee.assignments ?? []) {
-      if (assignment.roleTypeId && !seen.has(assignment.roleTypeId)) {
-        seen.set(assignment.roleTypeId, assignment.roleTypeName ?? '—')
-      }
-    }
-  }
-  return Array.from(seen, ([value, label]) => ({ label, value }))
-})
+const roleOptions = computed(() =>
+  (roleTypes.data.value ?? []).map((role) => ({
+    label: role.name ?? '—',
+    value: role.id ?? '',
+  })),
+)
 
 const statusOptions = computed(() =>
   (statusTypes.data.value ?? []).map((status) => ({
     label: status.name ?? '—',
     value: status.id ?? '',
   })),
+)
+
+const hasActiveFilters = computed(
+  () =>
+    searchText.value.trim() !== '' ||
+    attendees.userTypeId.value !== null ||
+    attendees.activityId.value !== null ||
+    attendees.roleTypeId.value !== null ||
+    attendees.statusId.value !== null,
 )
 
 const statusColorById = computed(() => {
@@ -111,54 +143,6 @@ function attendeeStyle(attendee: EventAttendeeResponse): Record<string, string> 
 function hasConflicts(attendee: EventAttendeeResponse): boolean {
   return (attendee.assignments ?? []).some((assignment) => assignment.hasTimeConflict)
 }
-
-const hasAssignmentFilter = computed(
-  () => activityFilter.value !== null || roleFilter.value !== null || statusFilter.value !== null,
-)
-
-function assignmentMatches(assignment: EventAttendeeAssignmentResponse): boolean {
-  if (activityFilter.value && assignment.activityId !== activityFilter.value) return false
-  if (roleFilter.value && assignment.roleTypeId !== roleFilter.value) return false
-  if (statusFilter.value && assignment.statusId !== statusFilter.value) return false
-  return true
-}
-
-function visibleAssignments(attendee: EventAttendeeResponse): EventAttendeeAssignmentResponse[] {
-  const list = attendee.assignments ?? []
-  return hasAssignmentFilter.value ? list.filter(assignmentMatches) : [...list]
-}
-
-function matches(attendee: EventAttendeeResponse): boolean {
-  const text = query.value.trim().toLowerCase()
-  if (text) {
-    const guardian = attendee.guardian
-    const haystack =
-      `${attendee.firstName ?? ''} ${attendee.lastName ?? ''} ${attendee.email ?? ''} ${attendee.phone ?? ''} ` +
-      `${guardian?.firstName ?? ''} ${guardian?.lastName ?? ''} ${guardian?.email ?? ''} ${guardian?.phone ?? ''}`
-    if (!haystack.toLowerCase().includes(text)) return false
-  }
-  if (typeFilter.value && attendee.userTypeName !== typeFilter.value) return false
-  if (hasAssignmentFilter.value && !(attendee.assignments ?? []).some(assignmentMatches)) {
-    return false
-  }
-  return true
-}
-
-function compare(a: EventAttendeeResponse, b: EventAttendeeResponse): number {
-  const field = sortField.value
-  const result = (a[field] ?? '').localeCompare(b[field] ?? '', 'es', { sensitivity: 'base' })
-  if (result !== 0) return result
-  return fullName(a).localeCompare(fullName(b), 'es', { sensitivity: 'base' })
-}
-
-const filteredAttendees = computed(() => {
-  const direction = sortAsc.value ? 1 : -1
-  return (attendees.data.value?.attendees ?? [])
-    .filter(matches)
-    .toSorted((a, b) => direction * compare(a, b))
-})
-
-const totalCount = computed(() => attendees.data.value?.attendees?.length ?? 0)
 
 type DialogTarget = {
   attendee: EventAttendeeResponse
@@ -201,13 +185,6 @@ const roleDialogVisible = ref(false)
 const roleTarget = ref<DialogTarget | null>(null)
 const selectedRoleId = ref<string | null>(null)
 
-const roleDialogOptions = computed(() =>
-  (roleTypes.data.value ?? []).map((role) => ({
-    label: role.name ?? '—',
-    value: role.id ?? '',
-  })),
-)
-
 function openChangeRole(
   attendee: EventAttendeeResponse,
   assignment: EventAttendeeAssignmentResponse,
@@ -241,12 +218,12 @@ function submitChangeRole(): void {
   <div>
     <div class="toolbar">
       <InputText
-        v-model="query"
+        v-model="searchText"
         placeholder="Buscar por nombre, correo o teléfono"
         class="toolbar__search"
       />
       <Select
-        v-model="typeFilter"
+        v-model="attendees.userTypeId.value"
         :options="typeOptions"
         option-label="label"
         option-value="value"
@@ -255,7 +232,7 @@ function submitChangeRole(): void {
         class="toolbar__filter"
       />
       <Select
-        v-model="activityFilter"
+        v-model="attendees.activityId.value"
         :options="activityOptions"
         option-label="label"
         option-value="value"
@@ -264,7 +241,7 @@ function submitChangeRole(): void {
         class="toolbar__filter"
       />
       <Select
-        v-model="roleFilter"
+        v-model="attendees.roleTypeId.value"
         :options="roleOptions"
         option-label="label"
         option-value="value"
@@ -273,7 +250,7 @@ function submitChangeRole(): void {
         class="toolbar__filter"
       />
       <Select
-        v-model="statusFilter"
+        v-model="attendees.statusId.value"
         :options="statusOptions"
         option-label="label"
         option-value="value"
@@ -294,27 +271,30 @@ function submitChangeRole(): void {
           text
           rounded
           :aria-label="sortAsc ? 'Orden ascendente' : 'Orden descendente'"
-          @click="sortAsc = !sortAsc"
+          @click="toggleSortDirection"
         />
       </div>
     </div>
 
     <DataState
-      :loading="attendees.isLoading.value || activitiesLoading"
-      :error="attendees.isError.value || activitiesError"
-      :empty="totalCount === 0"
-      empty-text="Todavía no hay usuarios apuntados a este evento."
+      :loading="
+        (attendees.table.loading.value && attendees.table.items.value.length === 0) ||
+        activitiesLoading
+      "
+      :error="attendees.table.isError.value || activitiesError"
+      :empty="attendees.table.total.value === 0 && !attendees.table.loading.value"
+      :empty-text="
+        hasActiveFilters ? 'Sin coincidencias.' : 'Todavía no hay usuarios apuntados a este evento.'
+      "
     >
       <p class="count">
-        {{ filteredAttendees.length }} de {{ totalCount }}
-        {{ totalCount === 1 ? 'asistente' : 'asistentes' }}
+        {{ attendees.table.total.value }}
+        {{ attendees.table.total.value === 1 ? 'asistente' : 'asistentes' }}
       </p>
 
-      <p v-if="filteredAttendees.length === 0" class="no-match">Sin coincidencias.</p>
-
-      <ul v-else class="attendees">
+      <ul class="attendees">
         <li
-          v-for="attendee in filteredAttendees"
+          v-for="attendee in attendees.table.items.value"
           :key="attendee.userId"
           class="attendee"
           :style="attendeeStyle(attendee)"
@@ -361,7 +341,7 @@ function submitChangeRole(): void {
 
           <ul class="attendee__assignments">
             <li
-              v-for="assignment in visibleAssignments(attendee)"
+              v-for="assignment in attendee.assignments ?? []"
               :key="assignment.activityId"
               class="assignment"
             >
@@ -403,6 +383,16 @@ function submitChangeRole(): void {
           </ul>
         </li>
       </ul>
+
+      <Paginator
+        v-if="attendees.table.total.value > 25 || attendees.table.first.value > 0"
+        :first="attendees.table.first.value"
+        :rows="attendees.table.rows.value"
+        :total-records="attendees.table.total.value"
+        :rows-per-page-options="[25, 50, 100]"
+        class="paginator"
+        @page="onPage"
+      />
     </DataState>
 
     <Dialog
@@ -419,13 +409,13 @@ function submitChangeRole(): void {
         <label>Rol</label>
         <Select
           v-model="selectedRoleId"
-          :options="roleDialogOptions"
+          :options="roleOptions"
           option-label="label"
           option-value="value"
           placeholder="Selecciona un rol"
           fluid
         />
-        <small v-if="roleDialogOptions.length === 0" class="form__warning">
+        <small v-if="roleOptions.length === 0" class="form__warning">
           No se han podido cargar los roles.
         </small>
       </div>
@@ -440,7 +430,7 @@ function submitChangeRole(): void {
         <Button
           label="Aplicar"
           :loading="assignments.changeRole.isPending.value"
-          :disabled="!selectedRoleId || roleDialogOptions.length === 0"
+          :disabled="!selectedRoleId || roleOptions.length === 0"
           @click="submitChangeRole"
         />
       </template>
@@ -517,11 +507,6 @@ function submitChangeRole(): void {
   margin-bottom: 12px;
 }
 
-.no-match {
-  color: var(--ca-text-dim);
-  font-family: var(--ca-font-mono);
-}
-
 .attendees {
   list-style: none;
   margin: 0;
@@ -529,6 +514,10 @@ function submitChangeRole(): void {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.paginator {
+  margin-top: 16px;
 }
 
 .attendee {

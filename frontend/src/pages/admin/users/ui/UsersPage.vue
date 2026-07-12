@@ -1,27 +1,26 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import {
   AdminPageHeader,
   AppButton as Button,
   ColorTag,
   ColumnFilterSelect,
   ColumnSearch,
-  DataState,
 } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import type { DataTablePageEvent } from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 
-import { useUserTypesList } from '@/entities/catalog'
+import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { ageFrom, formatDate, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
-const { list, update, remove, changeType, setAdmin, fetchOne } = useUsers()
+const { table, relationFilter, update, remove, changeType, setAdmin, fetchOne } = useUsers()
 const userTypes = useUserTypesList()
+const userStatusTypes = useUserStatusTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
@@ -43,74 +42,16 @@ function birthDateWithAge(user: UserResponse): string {
   return age === null ? formatted : `${formatted} (${age})`
 }
 
-const users = computed(() => list.data.value ?? [])
-
-const nameById = computed(() => {
-  const map = new Map<string, string>()
-  for (const user of users.value) {
-    if (user.id) map.set(user.id, fullName(user))
-  }
-  return map
-})
-
-const dependentCountById = computed(() => {
-  const map = new Map<string, number>()
-  for (const user of users.value) {
-    if (user.parentId) map.set(user.parentId, (map.get(user.parentId) ?? 0) + 1)
-  }
-  return map
-})
-
-function tutorName(parentId: string | null | undefined): string {
-  if (!parentId) return '—'
-  return nameById.value.get(parentId) ?? '—'
-}
-
-function dependentCount(user: UserResponse): number {
-  return user.id ? (dependentCountById.value.get(user.id) ?? 0) : 0
-}
-
 function dependentsLabel(count: number): string {
   return count === 1 ? '1 dependiente' : `${count} dependientes`
 }
 
-const nameQuery = ref<string | number | null>(null)
-const emailQuery = ref<string | number | null>(null)
-const phoneQuery = ref<string | number | null>(null)
-const statusId = ref<string | boolean | null>(null)
-const typeId = ref<string | boolean | null>(null)
-const adminFilter = ref<string | boolean | null>(null)
-
-interface RelationFilter {
-  kind: 'tutor' | 'dependents'
-  userId: string
-}
-
-const relationFilter = ref<RelationFilter | null>(null)
-
-const relationUser = computed(() => {
-  const relation = relationFilter.value
-  if (!relation) return null
-  return users.value.find((user) => user.id === relation.userId) ?? null
-})
-
-const relationFilterLabel = computed(() => {
-  const relation = relationFilter.value
-  const origin = relationUser.value
-  if (!relation || !origin) return ''
-  return relation.kind === 'tutor'
-    ? `Tutor de ${fullName(origin)}`
-    : `Dependientes de ${fullName(origin)}`
-})
-
-const statusOptions = computed(() => {
-  const seen = new Map<string, string>()
-  for (const user of users.value) {
-    const status = user.status
-    if (status?.id && !seen.has(status.id)) seen.set(status.id, status.name ?? '—')
-  }
-  return Array.from(seen, ([value, label]) => ({ label, value }))
-})
+const statusOptions = computed(() =>
+  (userStatusTypes.data.value ?? []).map((status) => ({
+    label: status.name ?? '—',
+    value: status.id ?? '',
+  })),
+)
 
 const typeOptions = computed(() =>
   (userTypes.data.value ?? []).map((type) => ({ label: type.name ?? '—', value: type.id ?? '' })),
@@ -121,68 +62,29 @@ const adminOptions: { label: string; value: boolean }[] = [
   { label: 'No', value: false },
 ]
 
-function textMatch(haystack: string, query: string | number | null): boolean {
-  if (query == null || query === '') return true
-  return haystack.toLowerCase().includes(String(query).toLowerCase())
-}
-
-function matchesRelation(user: UserResponse): boolean {
-  const relation = relationFilter.value
-  if (!relation) return true
-  if (relation.kind === 'tutor') {
-    const parentId = relationUser.value?.parentId
-    return parentId != null && user.id === parentId
-  }
-  return user.parentId != null && user.parentId === relation.userId
-}
-
-function matches(user: UserResponse): boolean {
-  return (
-    matchesRelation(user) &&
-    textMatch(fullName(user), nameQuery.value) &&
-    textMatch(user.email ?? '', emailQuery.value) &&
-    textMatch(user.phone ?? '', phoneQuery.value) &&
-    (statusId.value == null || user.status?.id === statusId.value) &&
-    (typeId.value == null || user.type?.id === typeId.value) &&
-    (adminFilter.value == null || !!user.isAdmin === adminFilter.value)
-  )
-}
-
-const rows = computed(() => users.value.filter(matches))
-
-const first = ref(0)
-
-function onPage(event: DataTablePageEvent): void {
-  first.value = event.first
-}
-
-watch([nameQuery, emailQuery, phoneQuery, statusId, typeId, adminFilter, relationFilter], () => {
-  first.value = 0
-})
-
-watch(relationUser, (current) => {
-  if (relationFilter.value && !current) relationFilter.value = null
-})
-
 function clearColumnFilters(): void {
-  nameQuery.value = null
-  emailQuery.value = null
-  phoneQuery.value = null
-  statusId.value = null
-  typeId.value = null
-  adminFilter.value = null
+  for (const key of ['name', 'email', 'phone', 'status', 'type', 'isAdmin']) {
+    table.columnFilter(key).value = null
+  }
+  table.onFilter()
 }
 
 function showTutorOf(user: UserResponse): void {
-  if (!user.id) return
+  if (!user.parentId) return
   clearColumnFilters()
-  relationFilter.value = { kind: 'tutor', userId: user.id }
+  relationFilter.value = {
+    label: `Tutor de ${fullName(user)}`,
+    params: { id: user.parentId },
+  }
 }
 
 function showDependentsOf(user: UserResponse): void {
   if (!user.id) return
   clearColumnFilters()
-  relationFilter.value = { kind: 'dependents', userId: user.id }
+  relationFilter.value = {
+    label: `Dependientes de ${fullName(user)}`,
+    params: { parentId: user.id },
+  }
 }
 
 function clearRelationFilter(): void {
@@ -265,7 +167,7 @@ function confirmDelete(user: UserResponse): void {
 
     <div v-if="relationFilter" class="relation-filter">
       <i class="pi pi-filter relation-filter__icon" />
-      <span class="relation-filter__label">{{ relationFilterLabel }}</span>
+      <span class="relation-filter__label">{{ relationFilter.label }}</span>
       <Button
         icon="pi pi-times"
         text
@@ -276,135 +178,162 @@ function confirmDelete(user: UserResponse): void {
       />
     </div>
 
-    <DataState
-      :loading="list.isLoading.value"
-      :error="list.isError.value"
-      :empty="(list.data.value?.length ?? 0) === 0"
-      empty-text="No hay usuarios."
+    <DataTable
+      lazy
+      :value="table.items.value"
+      :total-records="table.total.value"
+      :loading="table.loading.value"
+      data-key="id"
+      striped-rows
+      paginator
+      :rows="table.rows.value"
+      :first="table.first.value"
+      :rows-per-page-options="[25, 50, 100]"
+      :sort-field="table.sortField.value"
+      :sort-order="table.sortOrder.value"
+      removable-sort
+      @page="table.onPage"
+      @sort="table.onSort"
     >
-      <DataTable
-        :value="rows"
-        data-key="id"
-        striped-rows
-        paginator
-        :rows="10"
-        :first="first"
-        removable-sort
-        @page="onPage"
-      >
-        <template #empty>Sin coincidencias.</template>
+      <template #empty>
+        <span v-if="table.isError.value">No se pudieron cargar los usuarios.</span>
+        <span v-else>No hay usuarios.</span>
+      </template>
 
-        <Column field="firstName" sortable>
-          <template #header>
-            <ColumnSearch v-model="nameQuery" label="Nombre" placeholder="Buscar nombre" />
-          </template>
-          <template #body="{ data }">{{ fullName(data) }}</template>
-        </Column>
-        <Column field="email" sortable>
-          <template #header>
-            <ColumnSearch v-model="emailQuery" label="Correo" placeholder="Buscar correo" />
-          </template>
-          <template #body="{ data }">{{ data.email || '—' }}</template>
-        </Column>
-        <Column field="phone" sortable>
-          <template #header>
-            <ColumnSearch v-model="phoneQuery" label="Teléfono" placeholder="Buscar teléfono" />
-          </template>
-          <template #body="{ data }">{{ data.phone || '—' }}</template>
-        </Column>
-        <Column field="birthDate" header="Nacimiento" sortable>
-          <template #body="{ data }">{{ birthDateWithAge(data) }}</template>
-        </Column>
-        <Column field="status.name" sortable>
-          <template #header>
-            <ColumnFilterSelect v-model="statusId" label="Estado" :options="statusOptions" />
-          </template>
-          <template #body="{ data }">
-            <ColorTag
-              v-if="data.status?.name"
-              :value="data.status.name"
-              :color="data.status.color"
+      <Column field="firstName" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('name').value"
+            label="Nombre"
+            placeholder="Buscar nombre"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #body="{ data }">{{ fullName(data) }}</template>
+      </Column>
+      <Column field="email" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('email').value"
+            label="Correo"
+            placeholder="Buscar correo"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #body="{ data }">{{ data.email || '—' }}</template>
+      </Column>
+      <Column field="phone" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('phone').value"
+            label="Teléfono"
+            placeholder="Buscar teléfono"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #body="{ data }">{{ data.phone || '—' }}</template>
+      </Column>
+      <Column field="birthDate" header="Nacimiento" sortable>
+        <template #body="{ data }">{{ birthDateWithAge(data) }}</template>
+      </Column>
+      <Column field="status" sortable>
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('status').value"
+            label="Estado"
+            :options="statusOptions"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #body="{ data }">
+          <ColorTag
+            v-if="data.status?.name"
+            :value="data.status.name"
+            :color="data.status.color"
+          />
+          <span v-else>—</span>
+        </template>
+      </Column>
+      <Column field="type" sortable>
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('type').value"
+            label="Tipo"
+            :options="typeOptions"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #body="{ data }">
+          <ColorTag v-if="data.type" :value="data.type.name ?? ''" :color="data.type.color" />
+          <span v-else>—</span>
+        </template>
+      </Column>
+      <Column header="Familia">
+        <template #body="{ data }">
+          <div class="family-cell">
+            <Button
+              v-if="data.parentId"
+              :label="data.parentName ?? '—'"
+              icon="pi pi-user"
+              text
+              size="small"
+              tooltip="Mostrar solo a su tutor"
+              @click="showTutorOf(data)"
             />
-            <span v-else>—</span>
-          </template>
-        </Column>
-        <Column field="type.name" sortable>
-          <template #header>
-            <ColumnFilterSelect v-model="typeId" label="Tipo" :options="typeOptions" />
-          </template>
-          <template #body="{ data }">
-            <ColorTag v-if="data.type" :value="data.type.name ?? ''" :color="data.type.color" />
-            <span v-else>—</span>
-          </template>
-        </Column>
-        <Column header="Familia">
-          <template #body="{ data }">
-            <div class="family-cell">
-              <Button
-                v-if="data.parentId"
-                :label="tutorName(data.parentId)"
-                icon="pi pi-user"
-                text
-                size="small"
-                tooltip="Mostrar solo a su tutor"
-                @click="showTutorOf(data)"
-              />
-              <Button
-                v-if="dependentCount(data) > 0"
-                :label="dependentsLabel(dependentCount(data))"
-                icon="pi pi-users"
-                text
-                size="small"
-                tooltip="Mostrar sus dependientes"
-                @click="showDependentsOf(data)"
-              />
-              <span v-if="!data.parentId && dependentCount(data) === 0">—</span>
-            </div>
-          </template>
-        </Column>
-        <Column field="isAdmin" sortable style="width: 130px">
-          <template #header>
-            <ColumnFilterSelect v-model="adminFilter" label="Admin" :options="adminOptions" />
-          </template>
-          <template #body="{ data }">
-            <ToggleSwitch
-              :model-value="!!data.isAdmin"
-              :disabled="setAdmin.isPending.value"
-              aria-label="Administrador"
-              @update:model-value="(value: boolean) => toggleAdmin(data, value)"
+            <Button
+              v-if="(data.dependentCount ?? 0) > 0"
+              :label="dependentsLabel(data.dependentCount ?? 0)"
+              icon="pi pi-users"
+              text
+              size="small"
+              tooltip="Mostrar sus dependientes"
+              @click="showDependentsOf(data)"
             />
-          </template>
-        </Column>
-        <Column header="Acciones" style="width: 180px">
-          <template #body="{ data }">
-            <div class="row-actions">
-              <Button
-                icon="pi pi-pencil"
-                text
-                rounded
-                aria-label="Editar"
-                @click="openEdit(data)"
-              />
-              <Button
-                icon="pi pi-sync"
-                text
-                rounded
-                aria-label="Cambiar tipo"
-                @click="openChangeType(data)"
-              />
-              <Button
-                icon="pi pi-trash"
-                text
-                rounded
-                severity="danger"
-                aria-label="Eliminar"
-                @click="confirmDelete(data)"
-              />
-            </div>
-          </template>
-        </Column>
-      </DataTable>
-    </DataState>
+            <span v-if="!data.parentId && (data.dependentCount ?? 0) === 0">—</span>
+          </div>
+        </template>
+      </Column>
+      <Column field="isAdmin" sortable style="width: 130px">
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('isAdmin').value"
+            label="Admin"
+            :options="adminOptions"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #body="{ data }">
+          <ToggleSwitch
+            :model-value="!!data.isAdmin"
+            :disabled="setAdmin.isPending.value"
+            aria-label="Administrador"
+            @update:model-value="(value: boolean) => toggleAdmin(data, value)"
+          />
+        </template>
+      </Column>
+      <Column header="Acciones" style="width: 180px">
+        <template #body="{ data }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-sync"
+              text
+              rounded
+              aria-label="Cambiar tipo"
+              @click="openChangeType(data)"
+            />
+            <Button
+              icon="pi pi-trash"
+              text
+              rounded
+              severity="danger"
+              aria-label="Eliminar"
+              @click="confirmDelete(data)"
+            />
+          </div>
+        </template>
+      </Column>
+    </DataTable>
 
     <UserFormDialog
       v-model:visible="dialogVisible"

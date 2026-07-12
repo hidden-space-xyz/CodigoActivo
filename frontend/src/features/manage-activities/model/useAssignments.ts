@@ -15,9 +15,7 @@ export function useAssignments(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['reports', 'event-summary', toValue(eventId)] })
-    void queryClient.invalidateQueries({
-      queryKey: ['reports', 'event-attendees', toValue(eventId)],
-    })
+    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-attendees'] })
   }
 
   const changeStatus = useMutation({

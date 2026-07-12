@@ -28,6 +28,7 @@ public class ActivityService(
         .Add("activityStartsAt", a => a.ActivityStartsAt)
         .Add("activityEndsAt", a => a.ActivityEndsAt)
         .Add("title", a => a.Title)
+        .Add("modalityName", a => a.ModalityName)
         .Add("createdAt", a => a.CreatedAt)
         .Default("activityStartsAt")
         .Tie(a => a.Id);
@@ -41,6 +42,8 @@ public class ActivityService(
 
         if (query.EventId is { } eventId)
             source = source.Where(a => a.EventId == eventId);
+        if (query.ModalityTypeId is { } modalityTypeId)
+            source = source.Where(a => a.ModalityId == modalityTypeId);
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
             source = source.Where(
@@ -71,15 +74,20 @@ public class ActivityService(
 
     public async Task<IReadOnlyList<AssignedActivityResponse>> ListAssignedAsync(
         Guid userId,
+        Guid? eventId = null,
         CancellationToken ct = default
     )
     {
+        var source = activities
+            .QueryAssignments()
+            .Where(assignment => assignment.UserId == userId)
+            .Select(Projections.AssignedActivity);
+
+        if (eventId is { } filterEventId)
+            source = source.Where(assignment => assignment.EventId == filterEventId);
+
         return await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(assignment => assignment.UserId == userId)
-                .Select(Projections.AssignedActivity)
-                .OrderBy(assignment => assignment.ActivityStartsAt),
+            source.OrderBy(assignment => assignment.ActivityStartsAt),
             ct
         );
     }
@@ -502,20 +510,35 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var target = await activities.FindAsync(a => a.Id == activityId, ct);
+        var target = await executor.FirstOrDefaultAsync(
+            activities
+                .Query()
+                .Where(a => a.Id == activityId)
+                .Select(a => new { a.ActivityStartsAt, a.ActivityEndsAt }),
+            ct
+        );
         if (target is null)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
-        var assignments = await activities.GetUserAssignmentsAsync(userId, ct);
-        var overlaps = assignments
-            .Where(x => x.ActivityId != activityId && Overlaps(target, x.Activity))
-            .Select(x => new OverlappingActivityResponse(
-                x.ActivityId,
-                x.Activity.Title,
-                x.Activity.ActivityStartsAt,
-                x.Activity.ActivityEndsAt
-            ))
-            .ToList();
+        var overlaps = await executor.ToListAsync(
+            activities
+                .QueryAssignments()
+                .Where(x =>
+                    x.UserId == userId
+                    && x.ActivityId != activityId
+                    && x.Activity.ActivityStartsAt < target.ActivityEndsAt
+                    && target.ActivityStartsAt < x.Activity.ActivityEndsAt
+                )
+                .OrderBy(x => x.Activity.ActivityStartsAt)
+                .ThenBy(x => x.ActivityId)
+                .Select(x => new OverlappingActivityResponse(
+                    x.ActivityId,
+                    x.Activity.Title,
+                    x.Activity.ActivityStartsAt,
+                    x.Activity.ActivityEndsAt
+                )),
+            ct
+        );
 
         return new TimeOverlapResponse(overlaps.Count > 0, overlaps);
     }
@@ -524,23 +547,29 @@ public class ActivityService(
         IReadOnlyList<HouseholdMemberAssignmentResponse>
     > GetHouseholdAssignmentsAsync(Guid actingUserId, Guid eventId, CancellationToken ct = default)
     {
-        var children = await users.ListChildrenWithDetailsAsync(actingUserId, ct);
-        var ids = new List<Guid> { actingUserId };
-        ids.AddRange(children.Select(child => child.Id));
-
-        var assignments = await activities.GetAssignmentsForUsersByEventAsync(ids, eventId, ct);
-        return assignments
-            .Select(x => new HouseholdMemberAssignmentResponse(
-                x.ActivityId,
-                x.UserId,
-                x.User.FirstName,
-                x.User.LastName,
-                x.ActivityRoleTypeId,
-                x.ActivityRoleType?.Name ?? string.Empty,
-                x.AssignmentStatusId,
-                x.AssignmentStatus?.Name ?? string.Empty
-            ))
-            .ToList();
+        return await executor.ToListAsync(
+            activities
+                .QueryAssignments()
+                .Where(x =>
+                    x.Activity.EventId == eventId
+                    && (x.UserId == actingUserId || x.User.ParentId == actingUserId)
+                )
+                .OrderBy(x => x.User.FirstName)
+                .ThenBy(x => x.User.LastName)
+                .ThenBy(x => x.Activity.ActivityStartsAt)
+                .ThenBy(x => x.ActivityId)
+                .Select(x => new HouseholdMemberAssignmentResponse(
+                    x.ActivityId,
+                    x.UserId,
+                    x.User.FirstName,
+                    x.User.LastName,
+                    x.ActivityRoleTypeId,
+                    x.ActivityRoleType.Name,
+                    x.AssignmentStatusId,
+                    x.AssignmentStatus.Name
+                )),
+            ct
+        );
     }
 
     public async Task<IReadOnlyList<HouseholdSignupRolesResponse>> GetHouseholdSignupRolesAsync(
@@ -638,11 +667,6 @@ public class ActivityService(
     private static bool IsSignupRoleAllowed(Guid userTypeId, Guid roleTypeId)
     {
         return SignupRoleIdsFor(userTypeId).Contains(roleTypeId);
-    }
-
-    private static bool Overlaps(Activity a, Activity b)
-    {
-        return a.ActivityStartsAt < b.ActivityEndsAt && b.ActivityStartsAt < a.ActivityEndsAt;
     }
 
     private async Task<Result> EnsureSignupOpenAsync(

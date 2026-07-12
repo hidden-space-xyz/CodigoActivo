@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ResourceCard, useResources } from '@/entities/resource'
-import { SectionEyebrow } from '@/shared/ui'
+import { AppButton, SectionEyebrow } from '@/shared/ui'
 
-const { resources, isLoading } = useResources()
+const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources()
 </script>
 
 <template>
@@ -20,6 +20,9 @@ const { resources, isLoading } = useResources()
         <p v-if="isLoading" class="resources-loading">Cargando…</p>
         <div v-else class="resources-grid">
           <ResourceCard v-for="resource in resources" :key="resource.id" :resource="resource" />
+        </div>
+        <div v-if="hasMore" class="resources-more">
+          <AppButton label="Cargar más" outlined :loading="isFetchingMore" @click="loadMore" />
         </div>
       </div>
     </section>
@@ -60,5 +63,11 @@ const { resources, isLoading } = useResources()
 .resources-loading {
   color: var(--ca-text-dim);
   font-family: var(--ca-font-mono);
+}
+
+.resources-more {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
 }
 </style>

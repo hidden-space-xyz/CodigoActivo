@@ -39,11 +39,12 @@ public class EventsController(IEventService events) : ApiControllerBase
 
     [HttpGet("categoryType")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<EventCategoryTypeResponse>>> CategoryTypes(
+    public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypes(
+        [FromQuery] EventCategoryTypeListQuery query,
         CancellationToken ct
     )
     {
-        return Ok(await events.ListCategoryTypesAsync(ct));
+        return Ok(await events.ListCategoryTypesAsync(query, ct));
     }
 
     [HttpPost]

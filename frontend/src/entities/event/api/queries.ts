@@ -1,26 +1,45 @@
-import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+
+import { usePagedList } from '@/shared/lib'
 
 import { eventQueryKeys } from './query-keys'
 import {
   getEventByIdRequest,
   getHomeEventsRequest,
-  getPastEventsRequest,
+  getPastEventsPageRequest,
   getPastEventYearsRequest,
-  getUpcomingEventsRequest,
+  getUpcomingEventsPageRequest,
 } from './requests'
 
-export function useUpcomingEvents() {
+export function useUpcomingEventsPaged() {
+  return usePagedList({
+    queryKey: () => eventQueryKeys.upcoming(),
+    fetchPage: (page, pageSize) => getUpcomingEventsPageRequest(page, pageSize),
+  })
+}
+
+export function usePastEventYears() {
   const query = useQuery({
-    queryKey: eventQueryKeys.upcoming(),
-    queryFn: () => getUpcomingEventsRequest(),
+    queryKey: eventQueryKeys.pastYears(),
+    queryFn: () => getPastEventYearsRequest(),
   })
 
   return {
-    upcomingEvents: query.data,
+    years: computed(() => query.data.value ?? []),
     isLoading: query.isLoading,
     isError: query.isError,
   }
+}
+
+export function usePastEventsPaged(year: MaybeRefOrGetter<string>) {
+  const selectedYear = computed(() => toValue(year))
+
+  return usePagedList({
+    queryKey: () => eventQueryKeys.past(selectedYear.value),
+    fetchPage: (page, pageSize) => getPastEventsPageRequest(selectedYear.value, page, pageSize),
+    enabled: () => selectedYear.value !== '',
+  })
 }
 
 export function useHomeEvents() {
@@ -34,44 +53,6 @@ export function useHomeEvents() {
     items: computed(() => query.data.value?.items ?? []),
     isLoading: query.isLoading,
     isError: query.isError,
-  }
-}
-
-export function usePastEvents() {
-  const yearsQuery = useQuery({
-    queryKey: eventQueryKeys.pastYears(),
-    queryFn: () => getPastEventYearsRequest(),
-  })
-
-  const years = computed(() => yearsQuery.data.value ?? [])
-  const selectedYear = ref<string>('')
-
-  watch(
-    years,
-    (list) => {
-      const [first] = list
-      if (first && !selectedYear.value) selectedYear.value = first
-    },
-    { immediate: true },
-  )
-
-  const eventsQuery = useQuery({
-    queryKey: computed(() => eventQueryKeys.past(selectedYear.value)),
-    queryFn: () => getPastEventsRequest(selectedYear.value),
-    enabled: computed(() => Boolean(selectedYear.value)),
-  })
-
-  function setYear(year: string): void {
-    selectedYear.value = year
-  }
-
-  return {
-    years,
-    selectedYear,
-    setYear,
-    pastEvents: computed(() => eventsQuery.data.value ?? []),
-    isLoading: computed(() => yearsQuery.isLoading.value || eventsQuery.isLoading.value),
-    isError: computed(() => yearsQuery.isError.value || eventsQuery.isError.value),
   }
 }
 

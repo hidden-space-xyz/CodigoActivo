@@ -24,6 +24,8 @@ public static class MappingExtensions
             user.CreatedAt,
             user.UpdatedAt,
             user.ParentId,
+            null,
+            null,
             status,
             user.IsAdmin,
             null

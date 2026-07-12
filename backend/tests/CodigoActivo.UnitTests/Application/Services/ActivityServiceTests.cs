@@ -121,7 +121,9 @@ public sealed class ActivityServiceTests
     private static Activity NewActivity(
         string title = "Taller",
         Guid? id = null,
-        Guid? eventId = null
+        Guid? eventId = null,
+        Guid? modalityId = null,
+        string modalityName = "Presencial"
     ) =>
         new()
         {
@@ -132,8 +134,8 @@ public sealed class ActivityServiceTests
             ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
             EventId = eventId ?? Guid.NewGuid(),
-            ActivityModalityTypeId = Guid.NewGuid(),
-            ActivityModalityType = new ActivityModalityType { Name = "Presencial" },
+            ActivityModalityTypeId = modalityId ?? Guid.NewGuid(),
+            ActivityModalityType = new ActivityModalityType { Name = modalityName },
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
@@ -212,6 +214,45 @@ public sealed class ActivityServiceTests
         );
 
         result.Items.Select(a => a.Title).Should().ContainInOrder("Zeta", "Mint", "Alpha");
+    }
+
+    [Fact]
+    public async Task ListAsync_ModalityTypeIdFilter_ReturnsMatchingActivity()
+    {
+        var modalityId = Guid.NewGuid();
+        HasActivities(
+            NewActivity("En sala", modalityId: modalityId),
+            NewActivity("En remoto", modalityName: "Online")
+        );
+
+        var result = await sut.ListAsync(
+            new ActivityListQuery { ModalityTypeId = modalityId },
+            TestContext.Current.CancellationToken
+        );
+
+        var item = result.Items.Should().ContainSingle().Subject;
+        item.Title.Should().Be("En sala");
+        item.ModalityId.Should().Be(modalityId);
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByModalityName_OrdersByModalityName()
+    {
+        HasActivities(
+            NewActivity("Tercera", modalityName: "Presencial"),
+            NewActivity("Primera", modalityName: "Híbrida"),
+            NewActivity("Segunda", modalityName: "Online")
+        );
+
+        var result = await sut.ListAsync(
+            new ActivityListQuery { Sort = "modalityName" },
+            TestContext.Current.CancellationToken
+        );
+
+        result
+            .Items.Select(a => a.ModalityName)
+            .Should()
+            .ContainInOrder("Híbrida", "Online", "Presencial");
     }
 
     [Fact]
@@ -1020,16 +1061,56 @@ public sealed class ActivityServiceTests
                 }.AsQueryable()
             );
 
-        var result = await sut.ListAssignedAsync(userId, TestContext.Current.CancellationToken);
+        var result = await sut.ListAssignedAsync(
+            userId,
+            eventId: null,
+            TestContext.Current.CancellationToken
+        );
 
         result.Select(a => a.Title).Should().ContainInOrder("Early", "Late");
         result.Should().HaveCount(2);
     }
 
+    [Fact]
+    public async Task ListAssignedAsync_EventIdFilter_ExcludesOtherEventAssignments()
+    {
+        var userId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        activities
+            .QueryAssignments()
+            .Returns(
+                new List<ActivityUserRoleAssignment>
+                {
+                    Assignment(
+                        userId,
+                        "Mine",
+                        new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero),
+                        eventId
+                    ),
+                    Assignment(
+                        userId,
+                        "OtherEvent",
+                        new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
+                    ),
+                }.AsQueryable()
+            );
+
+        var result = await sut.ListAssignedAsync(
+            userId,
+            eventId,
+            TestContext.Current.CancellationToken
+        );
+
+        var assigned = result.Should().ContainSingle().Subject;
+        assigned.Title.Should().Be("Mine");
+        assigned.EventId.Should().Be(eventId);
+    }
+
     private static ActivityUserRoleAssignment Assignment(
         Guid userId,
         string title,
-        DateTimeOffset startsAt
+        DateTimeOffset startsAt,
+        Guid? eventId = null
     ) =>
         new()
         {
@@ -1041,7 +1122,7 @@ public sealed class ActivityServiceTests
                 Description = "{}",
                 ActivityStartsAt = startsAt,
                 ActivityEndsAt = startsAt.AddHours(1),
-                EventId = Guid.NewGuid(),
+                EventId = eventId ?? Guid.NewGuid(),
             },
             ActivityRoleTypeId = Guid.NewGuid(),
             ActivityRoleType = new ActivityRoleType { Name = "Líder" },

@@ -58,24 +58,14 @@ function fullNameOf(participant: EventRosterParticipantResponse): string {
 function rowsFor(activity: EventRosterActivityResponse): RosterRow[] {
   const rows: RosterRow[] = []
   let currentRole: string | null = null
-  let group: EventRosterParticipantResponse[] = []
-  const flushGroup = (): void => {
-    group.sort((a, b) => fullNameOf(a).localeCompare(fullNameOf(b), 'es', { sensitivity: 'base' }))
-    for (const participant of group) {
-      rows.push({ kind: 'participant', key: `p:${participant.userId}`, participant })
-    }
-    group = []
-  }
   for (const participant of activity.participants ?? []) {
     const role = participant.roleName ?? ''
     if (role !== currentRole) {
-      flushGroup()
       currentRole = role
       rows.push({ kind: 'role', key: `role:${role}`, label: pluralizeRole(role) })
     }
-    group.push(participant)
+    rows.push({ kind: 'participant', key: `p:${participant.userId}`, participant })
   }
-  flushGroup()
   return rows
 }
 

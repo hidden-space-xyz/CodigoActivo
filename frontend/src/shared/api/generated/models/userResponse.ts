@@ -25,6 +25,10 @@ export interface UserResponse {
   updatedAt?: string | null;
   /** @nullable */
   parentId?: string | null;
+  /** @nullable */
+  parentName?: string | null;
+  /** @nullable */
+  dependentCount?: number | null;
   status?: UserStatusResponse;
   isAdmin?: boolean;
   type?: UserTypeSummaryResponse;

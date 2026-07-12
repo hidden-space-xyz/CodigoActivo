@@ -970,27 +970,63 @@ public sealed class EventServiceTests
         result.Value.Featured.Should().BeTrue();
     }
 
+    private static EventCategoryType NewCategoryType(string name) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Color = "#000000",
+        };
+
     [Fact]
-    public async Task ListCategoryTypesAsync_MultipleTypes_ReturnsOrderedByName()
+    public async Task ListCategoryTypesAsync_DefaultSort_OrdersByNameAscending()
     {
         HasCategoryTypes(
-            new EventCategoryType
-            {
-                Id = Guid.NewGuid(),
-                Name = "Zeta",
-                Color = "#000000",
-            },
-            new EventCategoryType
-            {
-                Id = Guid.NewGuid(),
-                Name = "Alpha",
-                Color = "#ffffff",
-            }
+            NewCategoryType("Zeta"),
+            NewCategoryType("Alpha"),
+            NewCategoryType("Mint")
         );
 
-        var result = await sut.ListCategoryTypesAsync(TestContext.Current.CancellationToken);
+        var result = await sut.ListCategoryTypesAsync(
+            new EventCategoryTypeListQuery(),
+            TestContext.Current.CancellationToken
+        );
 
-        result.Select(c => c.Name).Should().ContainInOrder("Alpha", "Zeta");
+        result.Items.Select(c => c.Name).Should().ContainInOrder("Alpha", "Mint", "Zeta");
+    }
+
+    [Fact]
+    public async Task ListCategoryTypesAsync_NameFilter_IsAccentAndCaseInsensitive()
+    {
+        HasCategoryTypes(NewCategoryType("Robótica"), NewCategoryType("Charlas"));
+
+        var result = await sut.ListCategoryTypesAsync(
+            new EventCategoryTypeListQuery { Name = "ROBOTICA" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Total.Should().Be(1);
+        result.Items.Should().ContainSingle().Which.Name.Should().Be("Robótica");
+    }
+
+    [Fact]
+    public async Task ListCategoryTypesAsync_SecondPage_ReturnsRemainingItemsWithTotal()
+    {
+        HasCategoryTypes(
+            NewCategoryType("Alpha"),
+            NewCategoryType("Mint"),
+            NewCategoryType("Zeta")
+        );
+
+        var result = await sut.ListCategoryTypesAsync(
+            new EventCategoryTypeListQuery { Page = 2, PageSize = 2 },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Total.Should().Be(3);
+        result.Page.Should().Be(2);
+        result.PageSize.Should().Be(2);
+        result.Items.Should().ContainSingle().Which.Name.Should().Be("Zeta");
     }
 
     [Fact]

@@ -221,7 +221,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void User_UserWithStatusAndType_MapsScalarsStatusIsAdminWithNullType()
+    public void User_UserWithParentAndChildren_MapsScalarsLeavingTypeParentNameAndDependentCountNull()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -238,6 +238,13 @@ public sealed class ProjectionsTests
             CreatedAt = Created,
             UpdatedAt = Updated,
             ParentId = parentId,
+            Parent = new User
+            {
+                Id = parentId,
+                FirstName = "Grace",
+                LastName = "Hopper",
+            },
+            Children = [new User { FirstName = "Kid", LastName = "One" }],
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType
             {
@@ -267,13 +274,15 @@ public sealed class ProjectionsTests
         response.CreatedAt.Should().Be(Created);
         response.UpdatedAt.Should().Be(Updated);
         response.ParentId.Should().Be(parentId);
+        response.ParentName.Should().BeNull();
+        response.DependentCount.Should().BeNull();
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
         response.IsAdmin.Should().BeTrue();
         response.Type.Should().BeNull();
     }
 
     [Fact]
-    public void UserWithType_UserWithStatusAndType_MapsScalarsStatusIsAdminAndType()
+    public void UserWithType_UserWithParentAndChildren_MapsScalarsTypeParentNameAndDependentCount()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -290,6 +299,17 @@ public sealed class ProjectionsTests
             CreatedAt = Created,
             UpdatedAt = Updated,
             ParentId = parentId,
+            Parent = new User
+            {
+                Id = parentId,
+                FirstName = "Grace",
+                LastName = "Hopper",
+            },
+            Children =
+            [
+                new User { FirstName = "Kid", LastName = "One" },
+                new User { FirstName = "Kid", LastName = "Two" },
+            ],
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType
             {
@@ -319,9 +339,46 @@ public sealed class ProjectionsTests
         response.CreatedAt.Should().Be(Created);
         response.UpdatedAt.Should().Be(Updated);
         response.ParentId.Should().Be(parentId);
+        response.ParentName.Should().Be("Grace Hopper");
+        response.DependentCount.Should().Be(2);
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
         response.IsAdmin.Should().BeTrue();
         response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#00f"));
+    }
+
+    [Fact]
+    public void UserWithType_UserWithoutParentOrChildren_YieldsNullParentNameAndZeroDependentCount()
+    {
+        var statusId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Ada",
+            LastName = "Lovelace",
+            BirthDate = new DateOnly(1990, 3, 4),
+            CreatedAt = Created,
+            UserStatusTypeId = statusId,
+            UserStatusType = new UserStatusType
+            {
+                Id = statusId,
+                Name = "Active",
+                Color = "#0f0",
+            },
+            UserTypeId = typeId,
+            UserType = new UserType
+            {
+                Id = typeId,
+                Name = "Member",
+                Color = "#00f",
+            },
+        };
+
+        var response = Project(Projections.UserWithType, user);
+
+        response.ParentId.Should().BeNull();
+        response.ParentName.Should().BeNull();
+        response.DependentCount.Should().Be(0);
     }
 
     [Fact]

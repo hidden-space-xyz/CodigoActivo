@@ -5,10 +5,8 @@
  * OpenAPI spec version: 1.0
  */
 
-export type GetApiActivitiesParams = {
-eventId?: string;
-title?: string;
-modalityTypeId?: string;
+export type GetApiEventsCategoryTypeParams = {
+name?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

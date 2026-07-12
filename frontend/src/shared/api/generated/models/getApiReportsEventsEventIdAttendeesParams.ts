@@ -5,10 +5,12 @@
  * OpenAPI spec version: 1.0
  */
 
-export type GetApiActivitiesParams = {
-eventId?: string;
-title?: string;
-modalityTypeId?: string;
+export type GetApiReportsEventsEventIdAttendeesParams = {
+search?: string;
+userTypeId?: string;
+activityId?: string;
+roleTypeId?: string;
+statusId?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

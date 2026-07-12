@@ -99,7 +99,8 @@ public interface IEventService
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
     Task<Result<EventResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 
-    Task<IReadOnlyList<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+    Task<PagedResult<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+        EventCategoryTypeListQuery query,
         CancellationToken ct = default
     );
 
@@ -128,6 +129,7 @@ public interface IActivityService
 
     Task<IReadOnlyList<AssignedActivityResponse>> ListAssignedAsync(
         Guid userId,
+        Guid? eventId = null,
         CancellationToken ct = default
     );
 
@@ -321,8 +323,9 @@ public interface IReportService
         CancellationToken ct = default
     );
 
-    Task<Result<EventAttendeesResponse>> GetEventAttendeesAsync(
+    Task<PagedResult<EventAttendeeResponse>> ListEventAttendeesAsync(
         Guid eventId,
+        EventAttendeeListQuery query,
         CancellationToken ct = default
     );
 

@@ -37,6 +37,7 @@ public class User : IdentifiableEntity
     public DateTimeOffset? PasswordResetLastSentAt { get; set; }
 
     public ICollection<User> Children { get; set; } = [];
+    public ICollection<ActivityUserRoleAssignment> Assignments { get; set; } = [];
 
     public void IssueOtp(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {

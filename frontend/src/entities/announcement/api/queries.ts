@@ -1,11 +1,13 @@
 import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
+import { usePagedList } from '@/shared/lib'
+
 import { announcementQueryKeys } from './query-keys'
 import {
   getAnnouncementByIdRequest,
+  getAnnouncementsByYearPageRequest,
   getAnnouncementYearsRequest,
-  getAnnouncementsByYearRequest,
   getHomeAnnouncementsRequest,
 } from './requests'
 
@@ -34,23 +36,27 @@ export function useAnnouncements() {
     selectedYear.value = year
   }
 
-  const byYearQuery = useQuery({
-    queryKey: computed(() => announcementQueryKeys.byYear(selectedYear.value)),
-    queryFn: () => getAnnouncementsByYearRequest(selectedYear.value),
-    enabled: computed(() => selectedYear.value !== ''),
+  const byYearList = usePagedList({
+    queryKey: () => announcementQueryKeys.byYear(selectedYear.value),
+    fetchPage: (page, pageSize) =>
+      getAnnouncementsByYearPageRequest(selectedYear.value, page, pageSize),
+    enabled: () => selectedYear.value !== '',
   })
 
   const isLoading = computed(
-    () => yearsQuery.isLoading.value || (selectedYear.value !== '' && byYearQuery.isLoading.value),
+    () => yearsQuery.isLoading.value || (selectedYear.value !== '' && byYearList.isLoading.value),
   )
 
   return {
     years,
     selectedYear,
     setYear,
-    announcements: byYearQuery.data,
+    announcements: byYearList.items,
+    hasMore: byYearList.hasMore,
+    loadMore: byYearList.loadMore,
+    isFetchingMore: byYearList.isFetchingMore,
     isLoading,
-    isError: computed(() => yearsQuery.isError.value || byYearQuery.isError.value),
+    isError: computed(() => yearsQuery.isError.value || byYearList.isError.value),
   }
 }
 

@@ -1,6 +1,6 @@
 export { useEvent, useEventsAdmin } from './model/useEventsAdmin'
 export {
-  useEventAttendees,
+  useEventAttendeesTable,
   useEventBadges,
   useEventRoster,
   useEventSummary,

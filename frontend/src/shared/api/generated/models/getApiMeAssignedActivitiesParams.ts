@@ -5,11 +5,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export type GetApiActivitiesParams = {
+export type GetApiMeAssignedActivitiesParams = {
 eventId?: string;
-title?: string;
-modalityTypeId?: string;
-page?: number;
-pageSize?: number;
-sort?: string;
 };

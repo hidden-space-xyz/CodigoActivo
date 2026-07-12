@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
 import {
@@ -8,6 +8,12 @@ import {
   getApiReportsEventsEventIdRoster,
   getApiReportsEventsEventIdSummary,
 } from '@/shared/api/generated/endpoints/reports/reports'
+import type {
+  EventAttendeeResponse,
+  GetApiReportsEventsEventIdAttendeesParams,
+} from '@/shared/api/generated/models'
+import { toPage } from '@/shared/api'
+import { useServerTable } from '@/shared/lib'
 
 export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
@@ -16,15 +22,33 @@ export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   })
 }
 
-export function useEventAttendees(
+export function useEventAttendeesTable(
   eventId: MaybeRefOrGetter<string>,
-  enabled: MaybeRefOrGetter<boolean> = true,
+  active: MaybeRefOrGetter<boolean>,
 ) {
-  return useQuery({
-    queryKey: computed(() => ['reports', 'event-attendees', toValue(eventId)] as const),
-    queryFn: () => getApiReportsEventsEventIdAttendees(toValue(eventId)).then((r) => r.data),
-    enabled: computed(() => toValue(enabled)),
+  const search = ref('')
+  const userTypeId = ref<string | null>(null)
+  const activityId = ref<string | null>(null)
+  const roleTypeId = ref<string | null>(null)
+  const statusId = ref<string | null>(null)
+
+  const table = useServerTable<EventAttendeeResponse, GetApiReportsEventsEventIdAttendeesParams>({
+    queryKey: ['reports', 'event-attendees'],
+    fetchPage: (params) =>
+      getApiReportsEventsEventIdAttendees(toValue(eventId), params).then(toPage),
+    defaultSort: { field: 'firstName', order: 1 },
+    extraParams: () => ({
+      eventId: toValue(eventId),
+      search: search.value.trim() || undefined,
+      userTypeId: userTypeId.value ?? undefined,
+      activityId: activityId.value ?? undefined,
+      roleTypeId: roleTypeId.value ?? undefined,
+      statusId: statusId.value ?? undefined,
+    }),
+    enabled: () => toValue(active),
   })
+
+  return { table, search, userTypeId, activityId, roleTypeId, statusId }
 }
 
 export function useEventBadges(eventId: MaybeRefOrGetter<string>) {

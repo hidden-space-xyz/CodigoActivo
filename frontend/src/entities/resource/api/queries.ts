@@ -1,19 +1,24 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
+import { usePagedList } from '@/shared/lib'
+
 import { resourceQueryKeys } from './query-keys'
-import { getResourceByIdRequest, getResourcesRequest } from './requests'
+import { getResourceByIdRequest, getResourcesPageRequest } from './requests'
 
 export function useResources() {
-  const query = useQuery({
-    queryKey: resourceQueryKeys.all,
-    queryFn: () => getResourcesRequest(),
+  const list = usePagedList({
+    queryKey: () => resourceQueryKeys.list(),
+    fetchPage: (page, pageSize) => getResourcesPageRequest(page, pageSize),
   })
 
   return {
-    resources: query.data,
-    isLoading: query.isLoading,
-    isError: query.isError,
+    resources: list.items,
+    hasMore: list.hasMore,
+    loadMore: list.loadMore,
+    isFetchingMore: list.isFetchingMore,
+    isLoading: list.isLoading,
+    isError: list.isError,
   }
 }
 

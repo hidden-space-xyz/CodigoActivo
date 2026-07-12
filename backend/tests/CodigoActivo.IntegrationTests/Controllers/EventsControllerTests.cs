@@ -401,7 +401,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CategoryTypes_AsAdmin_ReturnsSeededTypes()
+    public async Task CategoryTypes_AsAdmin_ReturnsPagedEnvelopeWithSeededTypes()
     {
         await SeedCategoryTypeAsync("Alpha");
         var client = await LoginAsAdminAsync();
@@ -412,10 +412,55 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var types = await response.ReadJsonAsync<IReadOnlyList<EventCategoryTypeResponse>>(
+        var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
             TestContext.Current.CancellationToken
         );
-        types.Should().ContainSingle(t => t.Name == "Alpha");
+        page!.Total.Should().Be(1);
+        page.Page.Should().Be(1);
+        page.PageSize.Should().Be(25);
+        page.Items.Should().ContainSingle(t => t.Name == "Alpha");
+    }
+
+    [Fact]
+    public async Task CategoryTypes_NameFilter_MatchesAccentAndCaseInsensitively()
+    {
+        await SeedCategoryTypeAsync("Robótica", "#112233");
+        await SeedCategoryTypeAsync("Charlas", "#445566");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/events/categoryType?name=ROBOTICA",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle().Which.Name.Should().Be("Robótica");
+    }
+
+    [Fact]
+    public async Task CategoryTypes_SecondPageOfOne_ReturnsSecondTypeByNameWithTotal()
+    {
+        await SeedCategoryTypeAsync("Beta", "#222222");
+        await SeedCategoryTypeAsync("Alpha", "#111111");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/events/categoryType?pageSize=1&page=2",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(2);
+        page.Page.Should().Be(2);
+        page.PageSize.Should().Be(1);
+        page.Items.Should().ContainSingle().Which.Name.Should().Be("Beta");
     }
 
     [Fact]

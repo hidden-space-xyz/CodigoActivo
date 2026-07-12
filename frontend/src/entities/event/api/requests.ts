@@ -3,17 +3,20 @@ import {
   getApiEventsEventId,
   getApiEventsPastYears,
 } from '@/shared/api/generated/endpoints/events/events'
-import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
-import { FEATURED_FIRST_SORT, fetchAllPages, toPage, unwrapOrNull } from '@/shared/api'
+import type { EventResponse } from '@/shared/api/generated/models'
+import { FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
+import type { PagedListPage } from '@/shared/lib'
 
 import type { EventDetail, HomeEvents, PastEvent, UpcomingEvent } from '../model/types'
 import { toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
-export async function getUpcomingEventsRequest(): Promise<readonly UpcomingEvent[]> {
-  const items = await fetchAllPages<EventListItemResponse>((page, pageSize) =>
-    getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize }).then(toPage),
-  )
-  return items.map(toUpcomingEvent)
+export async function getUpcomingEventsPageRequest(
+  page: number,
+  pageSize: number,
+): Promise<PagedListPage<UpcomingEvent>> {
+  const result = await getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize })
+  const { items, total } = toPage(result)
+  return { items: items.map(toUpcomingEvent), total }
 }
 
 export async function getPastEventYearsRequest(): Promise<readonly string[]> {
@@ -21,17 +24,20 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
   return (data ?? []).map(String)
 }
 
-export async function getPastEventsRequest(year: string): Promise<readonly PastEvent[]> {
-  const items = await fetchAllPages<EventListItemResponse>((page, pageSize) =>
-    getApiEvents({
-      scope: 'Past',
-      year: Number(year),
-      sort: '-eventStartsAt',
-      page,
-      pageSize,
-    }).then(toPage),
-  )
-  return items.map(toPastEvent)
+export async function getPastEventsPageRequest(
+  year: string,
+  page: number,
+  pageSize: number,
+): Promise<PagedListPage<PastEvent>> {
+  const result = await getApiEvents({
+    scope: 'Past',
+    year: Number(year),
+    sort: '-eventStartsAt',
+    page,
+    pageSize,
+  })
+  const { items, total } = toPage(result)
+  return { items: items.map(toPastEvent), total }
 }
 
 async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
