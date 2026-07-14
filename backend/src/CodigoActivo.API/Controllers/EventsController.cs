@@ -1,11 +1,13 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -15,6 +17,7 @@ public class EventsController(IEventService events) : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Events)]
     public async Task<ActionResult<PagedResult<EventListItemResponse>>> List(
         [FromQuery] EventListQuery query,
         CancellationToken ct
@@ -25,6 +28,7 @@ public class EventsController(IEventService events) : ApiControllerBase
 
     [HttpGet("past-years")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Events)]
     public async Task<ActionResult<IReadOnlyList<int>>> PastYears(CancellationToken ct)
     {
         return Ok(await events.GetPastYearsAsync(ct));
@@ -32,6 +36,7 @@ public class EventsController(IEventService events) : ApiControllerBase
 
     [HttpGet("{eventId:guid}")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Events)]
     public async Task<ActionResult<EventResponse>> Get(Guid eventId, CancellationToken ct)
     {
         return ToOk(await events.GetByIdAsync(eventId, ct));

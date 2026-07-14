@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -8,6 +9,7 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -18,7 +20,9 @@ public class UserService(
     IPasswordHasher hasher,
     IQueryExecutor executor,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    HybridCache cache,
+    ICacheInvalidator cacheInvalidator
 ) : IUserService
 {
     private static readonly SortMap<User> Sort = new SortMap<User>()
@@ -150,6 +154,7 @@ public class UserService(
 
         users.Remove(user);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
         return Result.Success();
     }
 
@@ -225,6 +230,7 @@ public class UserService(
         };
         await users.AddAsync(child, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
         return await GetByIdAsync(child.Id, ct);
     }
@@ -255,8 +261,19 @@ public class UserService(
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            userStatusTypes.Query().OrderBy(type => type.Name).Select(Projections.UserStatusType),
+        return await cache.GetOrCreateAsync(
+            "users:status-types",
+            token => new ValueTask<IReadOnlyList<UserStatusTypeResponse>>(
+                executor.ToListAsync(
+                    userStatusTypes
+                        .Query()
+                        .OrderBy(type => type.Name)
+                        .Select(Projections.UserStatusType),
+                    token
+                )
+            ),
+            CachePolicies.Catalog,
+            [CacheTags.Catalogs],
             ct
         );
     }
@@ -265,8 +282,16 @@ public class UserService(
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            userTypes.Query().OrderBy(type => type.Name).Select(Projections.UserType),
+        return await cache.GetOrCreateAsync(
+            "users:types",
+            token => new ValueTask<IReadOnlyList<UserTypeResponse>>(
+                executor.ToListAsync(
+                    userTypes.Query().OrderBy(type => type.Name).Select(Projections.UserType),
+                    token
+                )
+            ),
+            CachePolicies.Catalog,
+            [CacheTags.Catalogs],
             ct
         );
     }

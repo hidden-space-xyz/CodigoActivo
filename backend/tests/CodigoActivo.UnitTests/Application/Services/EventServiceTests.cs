@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -23,6 +24,8 @@ public sealed class EventServiceTests
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakeHybridCache cache = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly EventService sut;
 
     public EventServiceTests()
@@ -35,7 +38,9 @@ public sealed class EventServiceTests
             categoryTypes,
             new FakeQueryExecutor(),
             clock,
-            uow
+            uow,
+            cache,
+            cacheInvalidator
         );
     }
 
@@ -749,6 +754,27 @@ public sealed class EventServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ValidRequest_InvalidatesEventsCache()
+    {
+        ThumbnailExists(true);
+        HasCategoryCount(1);
+        CaptureCreatedEvents();
+
+        var result = await sut.CreateAsync(
+            CreateReq(categoryTypeIds: [Guid.NewGuid()]),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Events))
+            );
+    }
+
+    [Fact]
     public async Task CreateAsync_DuplicateCategoryTypeIds_PersistsSingleCategory()
     {
         var categoryId = Guid.NewGuid();
@@ -984,6 +1010,27 @@ public sealed class EventServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_ValidRequest_InvalidatesEventsCache()
+    {
+        var ev = NewEvent();
+        PrepareUpdate(ev);
+
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: ev.ThumbnailId),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Events))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_SameThumbnail_DoesNotCleanUp()
     {
         var ev = NewEvent();
@@ -1151,6 +1198,30 @@ public sealed class EventServiceTests
         await fileService
             .DidNotReceiveWithAnyArgs()
             .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_EventExists_InvalidatesEventsAndActivitiesCache()
+    {
+        var ev = NewEvent();
+        events
+            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(ev);
+        activities.Query().Returns(Array.Empty<Activity>().AsQueryable());
+
+        var result = await sut.DeleteAsync(ev.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags.Contains(CacheTags.Events) && tags.Contains(CacheTags.Activities)
+                )
+            );
     }
 
     [Fact]
@@ -1243,6 +1314,23 @@ public sealed class EventServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(ev.Id);
         result.Value.Featured.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetFeaturedAsync_EventExists_InvalidatesEventsCache()
+    {
+        var ev = NewEvent(featured: true);
+        HasEvents(ev);
+        events.SetFeaturedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await sut.SetFeaturedAsync(ev.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Events))
+            );
     }
 
     private static EventCategoryType NewCategoryType(string name, string color = "#000000") =>
@@ -1389,6 +1477,31 @@ public sealed class EventServiceTests
     }
 
     [Fact]
+    public async Task CreateCategoryTypeAsync_ValidRequest_InvalidatesEventCategoryTypesCache()
+    {
+        categoryTypes
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(false);
+
+        var result = await sut.CreateCategoryTypeAsync(
+            new CreateEventCategoryTypeRequest("Talleres", "#112233"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags.Contains(CacheTags.EventCategoryTypes)
+                )
+            );
+    }
+
+    [Fact]
     public async Task UpdateCategoryTypeAsync_TypeMissing_ReturnsNotFound()
     {
         categoryTypes
@@ -1483,6 +1596,46 @@ public sealed class EventServiceTests
     }
 
     [Fact]
+    public async Task UpdateCategoryTypeAsync_ValidRequest_InvalidatesCategoryTypesAndEventsCache()
+    {
+        var id = Guid.NewGuid();
+        categoryTypes
+            .FindAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new EventCategoryType
+                {
+                    Id = id,
+                    Name = "Old",
+                    Color = "#000000",
+                }
+            );
+        categoryTypes
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(false);
+
+        var result = await sut.UpdateCategoryTypeAsync(
+            id,
+            new UpdateEventCategoryTypeRequest("New", "#abcdef"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags.Contains(CacheTags.EventCategoryTypes) && tags.Contains(CacheTags.Events)
+                )
+            );
+    }
+
+    [Fact]
     public async Task DeleteCategoryTypeAsync_NothingRemoved_ReturnsNotFound()
     {
         categoryTypes
@@ -1520,5 +1673,30 @@ public sealed class EventServiceTests
 
         result.IsSuccess.Should().BeTrue();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteCategoryTypeAsync_Removed_InvalidatesCategoryTypesAndEventsCache()
+    {
+        categoryTypes
+            .RemoveAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(1);
+
+        var result = await sut.DeleteCategoryTypeAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags.Contains(CacheTags.EventCategoryTypes) && tags.Contains(CacheTags.Events)
+                )
+            );
     }
 }

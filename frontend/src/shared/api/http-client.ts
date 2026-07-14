@@ -102,6 +102,7 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
     ...init,
     headers,
     credentials: 'include',
+    cache: 'no-store',
   })
 
   if (!response.ok) {

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -14,7 +15,8 @@ public class FileService(
     IUnitOfWork uow,
     ILocalFileSystemRepository storage,
     IClock clock,
-    FileStorageOptions options
+    FileStorageOptions options,
+    ICacheInvalidator cacheInvalidator
 ) : IFileService
 {
     private const int MaxNameLength = 260;
@@ -118,6 +120,7 @@ public class FileService(
 
         file.Name = SanitizeName(upload.FileName);
         file.Extension = format.Extension;
+        file.UploadedAt = clock.UtcNow;
 
         try
         {
@@ -133,6 +136,7 @@ public class FileService(
         if (extensionChanged)
             storage.Delete(oldStoredName);
 
+        await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         return file.ToResponse();
     }
 
@@ -151,6 +155,7 @@ public class FileService(
         await uow.SaveChangesAsync(ct);
 
         storage.Delete(storedName);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         return Result.Success();
     }
 
@@ -195,6 +200,8 @@ public class FileService(
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException) { }
             }
+
+            await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { }
     }

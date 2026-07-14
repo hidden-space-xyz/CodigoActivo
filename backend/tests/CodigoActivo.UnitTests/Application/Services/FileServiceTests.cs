@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
@@ -20,11 +21,12 @@ public sealed class FileServiceTests
         Substitute.For<ILocalFileSystemRepository>();
     private readonly TestClock clock = new();
     private readonly FileStorageOptions options = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly FileService sut;
 
     public FileServiceTests()
     {
-        sut = new FileService(files, uow, storage, clock, options);
+        sut = new FileService(files, uow, storage, clock, options, cacheInvalidator);
     }
 
     private static byte[] PngBytes()
@@ -368,6 +370,23 @@ public sealed class FileServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_ValidUpload_InvalidatesFilesCache()
+    {
+        var file = NewFile(name: "old.png", extension: "png");
+        FileFound(file);
+        var upload = new FileUploadRequest(PngStream(), "renamed.png", 32);
+
+        var result = await sut.UpdateAsync(file.Id, upload, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Files))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_ExtensionChanges_DeletesOldStoredFile()
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
@@ -447,6 +466,9 @@ public sealed class FileServiceTests
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]
@@ -462,6 +484,23 @@ public sealed class FileServiceTests
         files.Received(1).Remove(file);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{file.Id}.png");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NotInUse_InvalidatesFilesCache()
+    {
+        var file = NewFile(name: "gone.png", extension: "png");
+        FileFound(file);
+        FileReferenced(false);
+
+        var result = await sut.DeleteAsync(file.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Files))
+            );
     }
 
     [Fact]

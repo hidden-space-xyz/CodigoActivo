@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -7,6 +8,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -17,7 +19,9 @@ public class ResourceService(
     IFileService fileService,
     IQueryExecutor executor,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    HybridCache cache,
+    ICacheInvalidator cacheInvalidator
 ) : IResourceService
 {
     private static readonly SortMap<ResourceListItemResponse> Sort =
@@ -30,9 +34,25 @@ public class ResourceService(
             .Default("-createdAt")
             .Tie(r => r.Id);
 
-    public Task<PagedResult<ResourceListItemResponse>> ListAsync(
+    public async Task<PagedResult<ResourceListItemResponse>> ListAsync(
         ResourceListQuery query,
         CancellationToken ct = default
+    )
+    {
+        return await cache.GetOrCreateAsync(
+            CacheKeys.For("resources:list", query),
+            token => new ValueTask<PagedResult<ResourceListItemResponse>>(
+                FetchListAsync(query, token)
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Resources],
+            ct
+        );
+    }
+
+    private Task<PagedResult<ResourceListItemResponse>> FetchListAsync(
+        ResourceListQuery query,
+        CancellationToken ct
     )
     {
         var source = resources.Query().Select(Projections.ResourceListItem);
@@ -89,8 +109,19 @@ public class ResourceService(
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            resourceTypes.Query().OrderBy(type => type.Name).Select(Projections.ResourceType),
+        return await cache.GetOrCreateAsync(
+            "resources:types",
+            token => new ValueTask<IReadOnlyList<ResourceTypeResponse>>(
+                executor.ToListAsync(
+                    resourceTypes
+                        .Query()
+                        .OrderBy(type => type.Name)
+                        .Select(Projections.ResourceType),
+                    token
+                )
+            ),
+            CachePolicies.Catalog,
+            [CacheTags.Catalogs],
             ct
         );
     }
@@ -100,8 +131,16 @@ public class ResourceService(
         CancellationToken ct = default
     )
     {
-        var response = await executor.FirstOrDefaultAsync(
-            resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
+        var response = await cache.GetOrCreateAsync(
+            $"resources:id:{id}",
+            token => new ValueTask<ResourceResponse?>(
+                executor.FirstOrDefaultAsync(
+                    resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
+                    token
+                )
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Resources],
             ct
         );
         return response is null
@@ -145,6 +184,7 @@ public class ResourceService(
         };
         await resources.AddAsync(resource, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Resources);
         return resource.ToResponse();
     }
 
@@ -189,6 +229,7 @@ public class ResourceService(
         resource.UpdatedBy = userId;
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Resources);
 
         var orphanCandidates = RichTextFileReferences
             .ExtractRemoved(previousDescription, resource.Description)
@@ -208,6 +249,7 @@ public class ResourceService(
 
         resources.Remove(resource);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Resources);
 
         var orphanCandidates = RichTextFileReferences
             .Extract(resource.Description)

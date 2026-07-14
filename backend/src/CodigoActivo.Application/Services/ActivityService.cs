@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -7,6 +8,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -21,7 +23,9 @@ public class ActivityService(
     IUserRepository users,
     IQueryExecutor executor,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    HybridCache cache,
+    ICacheInvalidator cacheInvalidator
 ) : IActivityService
 {
     private static readonly SortMap<ActivityResponse> Sort = new SortMap<ActivityResponse>()
@@ -34,9 +38,23 @@ public class ActivityService(
         .Default("activityStartsAt")
         .Tie(a => a.Id);
 
-    public Task<PagedResult<ActivityResponse>> ListAsync(
+    public async Task<PagedResult<ActivityResponse>> ListAsync(
         ActivityListQuery query,
         CancellationToken ct = default
+    )
+    {
+        return await cache.GetOrCreateAsync(
+            CacheKeys.For("activities:list", query),
+            token => new ValueTask<PagedResult<ActivityResponse>>(FetchListAsync(query, token)),
+            CachePolicies.PublicContent,
+            [CacheTags.Activities],
+            ct
+        );
+    }
+
+    private Task<PagedResult<ActivityResponse>> FetchListAsync(
+        ActivityListQuery query,
+        CancellationToken ct
     )
     {
         var source = activities.Query().Select(Projections.Activity);
@@ -86,8 +104,16 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var response = await executor.FirstOrDefaultAsync(
-            activities.Query().Where(a => a.Id == id).Select(Projections.Activity),
+        var response = await cache.GetOrCreateAsync(
+            $"activities:id:{id}",
+            token => new ValueTask<ActivityResponse?>(
+                executor.FirstOrDefaultAsync(
+                    activities.Query().Where(a => a.Id == id).Select(Projections.Activity),
+                    token
+                )
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Activities],
             ct
         );
         return response is null
@@ -119,8 +145,19 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            roleTypes.Query().OrderBy(role => role.Name).Select(Projections.ActivityRoleType),
+        return await cache.GetOrCreateAsync(
+            "activities:role-types",
+            token => new ValueTask<IReadOnlyList<ActivityRoleTypeResponse>>(
+                executor.ToListAsync(
+                    roleTypes
+                        .Query()
+                        .OrderBy(role => role.Name)
+                        .Select(Projections.ActivityRoleType),
+                    token
+                )
+            ),
+            CachePolicies.Catalog,
+            [CacheTags.Catalogs],
             ct
         );
     }
@@ -129,11 +166,19 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            statuses
-                .Query()
-                .OrderBy(status => status.Name)
-                .Select(Projections.AssignmentStatusType),
+        return await cache.GetOrCreateAsync(
+            "activities:assignment-status-types",
+            token => new ValueTask<IReadOnlyList<AssignmentStatusTypeResponse>>(
+                executor.ToListAsync(
+                    statuses
+                        .Query()
+                        .OrderBy(status => status.Name)
+                        .Select(Projections.AssignmentStatusType),
+                    token
+                )
+            ),
+            CachePolicies.Catalog,
+            [CacheTags.Catalogs],
             ct
         );
     }
@@ -142,11 +187,19 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        return await executor.ToListAsync(
-            modalityTypes
-                .Query()
-                .OrderBy(modality => modality.Name)
-                .Select(Projections.ActivityModalityType),
+        return await cache.GetOrCreateAsync(
+            "activities:modality-types",
+            token => new ValueTask<IReadOnlyList<ActivityModalityTypeResponse>>(
+                executor.ToListAsync(
+                    modalityTypes
+                        .Query()
+                        .OrderBy(modality => modality.Name)
+                        .Select(Projections.ActivityModalityType),
+                    token
+                )
+            ),
+            CachePolicies.Catalog,
+            [CacheTags.Catalogs],
             ct
         );
     }
@@ -208,6 +261,7 @@ public class ActivityService(
 
         await activities.AddAsync(activity, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         return await GetByIdAsync(activity.Id, ct);
     }
@@ -265,6 +319,7 @@ public class ActivityService(
         SyncRoleCapacities(activity, capacities.Value);
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         if (previousThumbnailId != request.ThumbnailId)
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
@@ -280,6 +335,7 @@ public class ActivityService(
 
         activities.Remove(activity);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         await fileService.DeleteIfOrphanedAsync(activity.ThumbnailId, ct);
         return Result.Success();
@@ -320,6 +376,7 @@ public class ActivityService(
         };
         await activities.AddAssignmentAsync(assignment, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         var requestedStatus = await GetRequestedStatusAsync(ct);
         return new AssignmentResponse(
@@ -421,6 +478,8 @@ public class ActivityService(
         }
 
         await uow.SaveChangesAsync(ct);
+        if (created.Count > 0)
+            await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
         return Result.Success<IReadOnlyList<AssignmentResponse>>(created);
     }
 
@@ -444,6 +503,7 @@ public class ActivityService(
 
         activities.RemoveAssignment(assignment);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
         return Result.Success();
     }
 
@@ -464,6 +524,7 @@ public class ActivityService(
 
         assignment.AssignmentStatusId = status.Id;
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         return new AssignmentResponse(
             userId,
@@ -518,6 +579,7 @@ public class ActivityService(
             ct
         );
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         return new AssignmentResponse(
             userId,

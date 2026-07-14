@@ -1,10 +1,12 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Net.Http.Headers;
 
 namespace CodigoActivo.API.Controllers;
@@ -17,6 +19,7 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Files)]
     public async Task<ActionResult<FileResponse>> Get(Guid fileId, CancellationToken ct)
     {
         return ToOk(await files.GetByIdAsync(fileId, ct));
@@ -24,6 +27,7 @@ public class FilesController(IFileService files) : ApiControllerBase
 
     [HttpGet("{fileId:guid}/content")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Files)]
     public async Task<IActionResult> GetContent(Guid fileId, CancellationToken ct)
     {
         var result = await files.GetContentAsync(fileId, ct);
@@ -37,7 +41,7 @@ public class FilesController(IFileService files) : ApiControllerBase
         Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue
         {
             Private = true,
-            MaxAge = TimeSpan.FromMinutes(5),
+            NoCache = true,
         };
         return File(content.Content, content.ContentType, lastModified, etag);
     }

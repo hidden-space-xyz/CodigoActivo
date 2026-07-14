@@ -1,11 +1,13 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -15,6 +17,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 {
     [HttpGet]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Activities)]
     public async Task<ActionResult<PagedResult<ActivityResponse>>> List(
         [FromQuery] ActivityListQuery query,
         CancellationToken ct
@@ -25,6 +28,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpGet("{activityId:guid}")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Activities)]
     public async Task<ActionResult<ActivityResponse>> Get(Guid activityId, CancellationToken ct)
     {
         return ToOk(await activities.GetByIdAsync(activityId, ct));

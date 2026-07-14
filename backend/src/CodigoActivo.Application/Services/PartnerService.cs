@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -6,6 +7,7 @@ using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -15,7 +17,9 @@ public class PartnerService(
     IFileService fileService,
     IQueryExecutor executor,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    HybridCache cache,
+    ICacheInvalidator cacheInvalidator
 ) : IPartnerService
 {
     private static readonly SortMap<PartnerResponse> Sort = new SortMap<PartnerResponse>()
@@ -27,9 +31,23 @@ public class PartnerService(
         .Default("tier", "-fromDate")
         .Tie(p => p.Id);
 
-    public Task<PagedResult<PartnerResponse>> ListAsync(
+    public async Task<PagedResult<PartnerResponse>> ListAsync(
         PartnerListQuery query,
         CancellationToken ct = default
+    )
+    {
+        return await cache.GetOrCreateAsync(
+            CacheKeys.For("partners:list", query),
+            token => new ValueTask<PagedResult<PartnerResponse>>(FetchListAsync(query, token)),
+            CachePolicies.PublicContent,
+            [CacheTags.Partners],
+            ct
+        );
+    }
+
+    private Task<PagedResult<PartnerResponse>> FetchListAsync(
+        PartnerListQuery query,
+        CancellationToken ct
     )
     {
         var source = partners.Query().Select(Projections.Partner);
@@ -63,8 +81,16 @@ public class PartnerService(
 
     public async Task<Result<PartnerResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var response = await executor.FirstOrDefaultAsync(
-            partners.Query().Where(p => p.Id == id).Select(Projections.Partner),
+        var response = await cache.GetOrCreateAsync(
+            $"partners:id:{id}",
+            token => new ValueTask<PartnerResponse?>(
+                executor.FirstOrDefaultAsync(
+                    partners.Query().Where(p => p.Id == id).Select(Projections.Partner),
+                    token
+                )
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Partners],
             ct
         );
         return response is null
@@ -98,6 +124,7 @@ public class PartnerService(
         };
         await partners.AddAsync(partner, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
         return partner.ToResponse();
     }
 
@@ -131,6 +158,7 @@ public class PartnerService(
         partner.UpdatedBy = userId;
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
 
         if (previousThumbnailId != request.ThumbnailId)
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
@@ -146,6 +174,7 @@ public class PartnerService(
 
         partners.Remove(partner);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
 
         await fileService.DeleteIfOrphanedAsync(partner.ThumbnailId, ct);
         return Result.Success();

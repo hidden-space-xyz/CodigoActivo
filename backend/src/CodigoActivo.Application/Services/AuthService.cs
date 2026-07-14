@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Extensions;
@@ -22,7 +23,8 @@ public class AuthService(
     AccountVerificationOptions verification,
     PasswordResetOptions passwordReset,
     ApplicationOptions application,
-    ILogger<AuthService> logger
+    ILogger<AuthService> logger,
+    ICacheInvalidator cacheInvalidator
 ) : IAuthService
 {
     private const string VerificationPath = "/verify-account";
@@ -147,6 +149,7 @@ public class AuthService(
         }
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
         if (otpCode is not null)
             await TrySendVerificationEmailAsync(adult, otpCode, ct);

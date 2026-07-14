@@ -1,11 +1,13 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -15,6 +17,7 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Partners)]
     public async Task<ActionResult<PagedResult<PartnerResponse>>> List(
         [FromQuery] PartnerListQuery query,
         CancellationToken ct
@@ -25,6 +28,7 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
 
     [HttpGet("{partnerId:guid}")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Partners)]
     public async Task<ActionResult<PartnerResponse>> Get(Guid partnerId, CancellationToken ct)
     {
         return ToOk(await partners.GetByIdAsync(partnerId, ct));

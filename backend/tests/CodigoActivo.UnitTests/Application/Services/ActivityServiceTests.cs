@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -29,6 +30,8 @@ public sealed class ActivityServiceTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakeHybridCache cache = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly ActivityService sut;
 
     public ActivityServiceTests()
@@ -44,7 +47,9 @@ public sealed class ActivityServiceTests
             users,
             new FakeQueryExecutor(),
             clock,
-            uow
+            uow,
+            cache,
+            cacheInvalidator
         );
     }
 
@@ -589,6 +594,39 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ValidRequest_InvalidatesActivitiesCache()
+    {
+        var ev = EventExists();
+        ThumbnailExists(true);
+        ModalityExists(true);
+
+        var stored = new List<Activity>();
+        activities.Query().Returns(_ => stored.AsQueryable());
+        activities
+            .When(a => a.AddAsync(Arg.Any<Activity>(), Arg.Any<CancellationToken>()))
+            .Do(ci =>
+            {
+                var activity = ci.Arg<Activity>();
+                activity.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
+                stored.Add(activity);
+            });
+
+        var result = await sut.CreateAsync(
+            ev.Id,
+            CreateRequest(),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+            );
+    }
+
+    [Fact]
     public async Task CreateAsync_WithRoleCapacities_PersistsDesiredCounts()
     {
         var ev = EventExists();
@@ -828,6 +866,31 @@ public sealed class ActivityServiceTests
         activity.UpdatedBy.Should().Be(caller);
         activity.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ValidRequest_InvalidatesActivitiesCache()
+    {
+        var activity = NewActivity();
+        HasActivities(activity);
+        ActivityFound(activity);
+        EventExistsFor(activity);
+        ThumbnailExists(true);
+        ModalityExists(true);
+
+        var result = await sut.UpdateAsync(
+            activity.Id,
+            UpdateRequest(thumbnailId: activity.ThumbnailId),
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+            );
     }
 
     [Fact]
@@ -1077,6 +1140,26 @@ public sealed class ActivityServiceTests
         await fileService
             .DidNotReceiveWithAnyArgs()
             .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ActivityExists_InvalidatesActivitiesCache()
+    {
+        var activity = NewActivity();
+        ActivityFound(activity);
+
+        var result = await sut.DeleteAsync(activity.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        activities.Received(1).Remove(activity);
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+            );
     }
 
     [Fact]
