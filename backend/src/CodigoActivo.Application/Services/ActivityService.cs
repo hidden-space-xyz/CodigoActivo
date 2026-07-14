@@ -29,6 +29,7 @@ public class ActivityService(
         .Add("activityEndsAt", a => a.ActivityEndsAt)
         .Add("title", a => a.Title)
         .Add("modalityName", a => a.ModalityName)
+        .Add("location", a => a.Location)
         .Add("createdAt", a => a.CreatedAt)
         .Default("activityStartsAt")
         .Tie(a => a.Id);
@@ -44,12 +45,34 @@ public class ActivityService(
             source = source.Where(a => a.EventId == eventId);
         if (query.ModalityTypeId is { } modalityTypeId)
             source = source.Where(a => a.ModalityId == modalityTypeId);
+        if (query.ActivityDateFrom is { } activityDateFrom)
+        {
+            var activityLower = LocalDayRange.LowerUtc(activityDateFrom, clock.TimeZone);
+            source = source.Where(a => a.ActivityEndsAt >= activityLower);
+        }
+
+        if (query.ActivityDateTo is { } activityDateTo)
+        {
+            var activityUpper = LocalDayRange.UpperExclusiveUtc(activityDateTo, clock.TimeZone);
+            source = source.Where(a => a.ActivityStartsAt < activityUpper);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
             source = source.Where(
                 TextSearch.Contains<ActivityResponse>(
                     a => a.Title,
                     TextSearch.Normalize(query.Title)
+                )
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Location))
+        {
+            source = source.Where(
+                TextSearch.Contains<ActivityResponse>(
+                    a => a.Location,
+                    TextSearch.Normalize(query.Location)
                 )
             );
         }
@@ -135,12 +158,12 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var ev = await events.FindAsync(e => e.Id == eventId, ct);
-        if (ev is null)
+        var eventDates = await GetEventDatesAsync(eventId, ct);
+        if (eventDates is null)
             return Error.NotFound(ErrorCode.EventNotFound);
 
         var schedule = ValidateActivitySchedule(
-            ev,
+            eventDates,
             request.ActivityStartsAt,
             request.ActivityEndsAt
         );
@@ -200,12 +223,12 @@ public class ActivityService(
         if (activity is null)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
-        var ev = await events.FindAsync(e => e.Id == activity.EventId, ct);
-        if (ev is null)
+        var eventDates = await GetEventDatesAsync(activity.EventId, ct);
+        if (eventDates is null)
             return Error.NotFound(ErrorCode.EventNotFound);
 
         var schedule = ValidateActivitySchedule(
-            ev,
+            eventDates,
             request.ActivityStartsAt,
             request.ActivityEndsAt
         );
@@ -274,14 +297,17 @@ public class ActivityService(
         if (signup.IsFailure)
             return signup.Error!;
 
-        var user = await users.FindAsync(u => u.Id == userId, ct);
-        if (user is null)
+        var userTypeId = await executor.FirstOrDefaultAsync(
+            users.Query().Where(u => u.Id == userId).Select(u => (Guid?)u.UserTypeId),
+            ct
+        );
+        if (userTypeId is null)
             return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (!IsSignupRoleAllowed(user.UserTypeId, request.ActivityRoleTypeId))
+        if (!IsSignupRoleAllowed(userTypeId.Value, request.ActivityRoleTypeId))
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
 
-        if (await activities.GetAssignmentAsync(userId, activityId, ct) is not null)
+        if (await activities.AssignmentExistsAsync(userId, activityId, ct))
             return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
 
         var assignment = new ActivityUserRoleAssignment
@@ -321,36 +347,34 @@ public class ActivityService(
             return signup.Error!;
 
         var items = request.Assignments.DistinctBy(a => a.UserId).ToList();
-
-        var memberIds = items.Select(item => item.UserId).Where(id => id != actingUserId).ToList();
-        if (memberIds.Count > 0)
-        {
-            var householdIds = await executor.ToListAsync(
-                users
-                    .Query()
-                    .Where(u => memberIds.Contains(u.Id) && u.ParentId == actingUserId)
-                    .Select(u => u.Id),
-                ct
-            );
-            if (memberIds.Except(householdIds).Any())
-                return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
-        }
-
         var userIds = items.ConvertAll(item => item.UserId);
 
-        var userTypeById = (
-            await executor.ToListAsync(
-                users
-                    .Query()
-                    .Where(u => userIds.Contains(u.Id))
-                    .Select(u => new { u.Id, u.UserTypeId }),
-                ct
-            )
-        ).ToDictionary(u => u.Id, u => u.UserTypeId);
+        var members = await executor.ToListAsync(
+            users
+                .Query()
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new
+                {
+                    u.Id,
+                    u.UserTypeId,
+                    u.ParentId,
+                }),
+            ct
+        );
+        var memberById = members.ToDictionary(u => u.Id);
+
+        var outsideHousehold = userIds
+            .Where(id => id != actingUserId)
+            .Any(id =>
+                !memberById.TryGetValue(id, out var member) || member.ParentId != actingUserId
+            );
+        if (outsideHousehold)
+            return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
+
         if (
             items.Exists(item =>
-                !userTypeById.TryGetValue(item.UserId, out var userTypeId)
-                || !IsSignupRoleAllowed(userTypeId, item.ActivityRoleTypeId)
+                !memberById.TryGetValue(item.UserId, out var member)
+                || !IsSignupRoleAllowed(member.UserTypeId, item.ActivityRoleTypeId)
             )
         )
         {
@@ -611,8 +635,9 @@ public class ActivityService(
         if (requests.DistinctBy(item => item.ActivityRoleTypeId).Count() != requests.Count)
             return Error.BadRequest(ErrorCode.ActivityRoleCapacityDuplicated);
 
-        var knownRoleIds = (await roleTypes.GetAllAsync(ct)).Select(role => role.Id).ToHashSet();
-        if (requests.Any(item => !knownRoleIds.Contains(item.ActivityRoleTypeId)))
+        var roleIds = requests.Select(item => item.ActivityRoleTypeId).ToList();
+        var knownCount = await roleTypes.CountAsync(role => roleIds.Contains(role.Id), ct);
+        if (knownCount != roleIds.Count)
             return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
 
         return requests
@@ -693,18 +718,32 @@ public class ActivityService(
 
     private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
     {
-        var status = await statuses.FindAsync(
-            s => s.Id == SeedIds.AssignmentStatusTypes.Requested,
+        var name = await executor.FirstOrDefaultAsync(
+            statuses
+                .Query()
+                .Where(s => s.Id == SeedIds.AssignmentStatusTypes.Requested)
+                .Select(s => s.Name),
             ct
         );
         return new AssignmentStatusResponse(
             SeedIds.AssignmentStatusTypes.Requested,
-            status?.Name ?? string.Empty
+            name ?? string.Empty
+        );
+    }
+
+    private Task<EventDates?> GetEventDatesAsync(Guid eventId, CancellationToken ct)
+    {
+        return executor.FirstOrDefaultAsync(
+            events
+                .Query()
+                .Where(e => e.Id == eventId)
+                .Select(e => new EventDates(e.EventStartsAt, e.EventEndsAt)),
+            ct
         );
     }
 
     private Result<ActivitySchedule> ValidateActivitySchedule(
-        Event ev,
+        EventDates eventDates,
         DateTimeOffset? startsAt,
         DateTimeOffset? endsAt
     )
@@ -719,7 +758,7 @@ public class ActivityService(
             TimeZoneInfo.ConvertTime(start, clock.TimeZone).DateTime
         );
         var endDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end, clock.TimeZone).DateTime);
-        return startDate < ev.EventStartsAt || endDate > ev.EventEndsAt
+        return startDate < eventDates.StartsAt || endDate > eventDates.EndsAt
             ? (Result<ActivitySchedule>)
                 Error.BadRequest(ErrorCode.ActivityScheduleOutsideEventRange)
             : (Result<ActivitySchedule>)
@@ -727,6 +766,8 @@ public class ActivityService(
     }
 
     private readonly record struct ActivitySchedule(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
+    private sealed record EventDates(DateOnly StartsAt, DateOnly EndsAt);
 
     private readonly record struct RoleCapacityItem(Guid RoleTypeId, int DesiredCount);
 

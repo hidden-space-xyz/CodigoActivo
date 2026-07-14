@@ -16,6 +16,9 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.CreatedAt).IsRequired();
         builder.Property(e => e.Featured).HasDefaultValue(false);
 
+        builder.HasIndex(e => e.EventStartsAt);
+        builder.HasIndex(e => e.EventEndsAt);
+
         builder
             .HasOne(e => e.Thumbnail)
             .WithMany()

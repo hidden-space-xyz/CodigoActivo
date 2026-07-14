@@ -67,34 +67,49 @@ public sealed class ActivityServiceTests
             )
             .Returns(exists);
 
-    private void EventFound(Event? ev) =>
-        events
-            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(ev);
+    private void HasEvents(params Event[] items) => events.Query().Returns(items.AsQueryable());
 
-    private void HasRoleCatalog() =>
+    private Event EventExists()
+    {
+        var ev = NewEvent();
+        HasEvents(ev);
+        return ev;
+    }
+
+    private void EventExistsFor(Activity activity) => HasEvents(NewEvent(id: activity.EventId));
+
+    private void HasRoleCatalog()
+    {
+        var catalog = new List<ActivityRoleType>
+        {
+            new()
+            {
+                Id = SeedIds.ActivityRoleTypes.Leader,
+                Name = "Líder",
+                Description = "d",
+            },
+            new()
+            {
+                Id = SeedIds.ActivityRoleTypes.Volunteer,
+                Name = "Voluntario",
+                Description = "d",
+            },
+            new()
+            {
+                Id = SeedIds.ActivityRoleTypes.Participant,
+                Name = "Participante",
+                Description = "d",
+            },
+        };
         roleTypes
-            .GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns([
-                new ActivityRoleType
-                {
-                    Id = SeedIds.ActivityRoleTypes.Leader,
-                    Name = "Líder",
-                    Description = "d",
-                },
-                new ActivityRoleType
-                {
-                    Id = SeedIds.ActivityRoleTypes.Volunteer,
-                    Name = "Voluntario",
-                    Description = "d",
-                },
-                new ActivityRoleType
-                {
-                    Id = SeedIds.ActivityRoleTypes.Participant,
-                    Name = "Participante",
-                    Description = "d",
-                },
-            ]);
+            .CountAsync(
+                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(ci =>
+                catalog.Count(ci.Arg<Expression<Func<ActivityRoleType, bool>>>().Compile().Invoke)
+            );
+    }
 
     private void ActivityFound(Activity? activity)
     {
@@ -106,10 +121,10 @@ public sealed class ActivityServiceTests
             .Returns(activity);
     }
 
-    private static Event NewEvent() =>
+    private static Event NewEvent(Guid? id = null) =>
         new()
         {
-            Id = Guid.NewGuid(),
+            Id = id ?? Guid.NewGuid(),
             Title = "Feria",
             Subtitle = "s",
             EventStartsAt = new DateOnly(2026, 7, 1),
@@ -123,16 +138,19 @@ public sealed class ActivityServiceTests
         Guid? id = null,
         Guid? eventId = null,
         Guid? modalityId = null,
-        string modalityName = "Presencial"
+        string modalityName = "Presencial",
+        string location = "Sala",
+        DateTimeOffset? startsAt = null,
+        DateTimeOffset? endsAt = null
     ) =>
         new()
         {
             Id = id ?? Guid.NewGuid(),
             Title = title,
             Description = "{}",
-            Location = "Sala",
-            ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
-            ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
+            Location = location,
+            ActivityStartsAt = startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
+            ActivityEndsAt = endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
             EventId = eventId ?? Guid.NewGuid(),
             ActivityModalityTypeId = modalityId ?? Guid.NewGuid(),
             ActivityModalityType = new ActivityModalityType { Name = modalityName },
@@ -256,6 +274,102 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
+    public async Task ListAsync_LocationSearch_IsAccentAndCaseInsensitive()
+    {
+        HasActivities(
+            NewActivity("Con acento", location: "Salón Ávila"),
+            NewActivity("Otra", location: "Patio")
+        );
+
+        var result = await sut.ListAsync(
+            new ActivityListQuery { Location = "avila" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Con acento");
+    }
+
+    [Fact]
+    public async Task ListAsync_ActivityDateRangeFilter_KeepsActivitiesOverlappingRange()
+    {
+        HasActivities(
+            NewActivity(
+                "Antes",
+                startsAt: new DateTimeOffset(2026, 7, 5, 10, 0, 0, TimeSpan.Zero),
+                endsAt: new DateTimeOffset(2026, 7, 5, 12, 0, 0, TimeSpan.Zero)
+            ),
+            NewActivity(
+                "Dentro",
+                startsAt: new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
+                endsAt: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
+            ),
+            NewActivity(
+                "Despues",
+                startsAt: new DateTimeOffset(2026, 7, 20, 10, 0, 0, TimeSpan.Zero),
+                endsAt: new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero)
+            )
+        );
+
+        var result = await sut.ListAsync(
+            new ActivityListQuery
+            {
+                ActivityDateFrom = new DateOnly(2026, 7, 10),
+                ActivityDateTo = new DateOnly(2026, 7, 10),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Dentro");
+    }
+
+    [Fact]
+    public async Task ListAsync_ActivityDateFromFilter_UsesAppTimeZoneDayStart()
+    {
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            TimeSpan.FromHours(2),
+            "UTC+02",
+            "UTC+02"
+        );
+        HasActivities(
+            NewActivity(
+                "Madrugada",
+                startsAt: new DateTimeOffset(2026, 7, 9, 22, 30, 0, TimeSpan.Zero),
+                endsAt: new DateTimeOffset(2026, 7, 9, 23, 0, 0, TimeSpan.Zero)
+            ),
+            NewActivity(
+                "Anterior",
+                startsAt: new DateTimeOffset(2026, 7, 9, 20, 0, 0, TimeSpan.Zero),
+                endsAt: new DateTimeOffset(2026, 7, 9, 21, 0, 0, TimeSpan.Zero)
+            )
+        );
+
+        var result = await sut.ListAsync(
+            new ActivityListQuery { ActivityDateFrom = new DateOnly(2026, 7, 10) },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Madrugada");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByLocation_OrdersByLocation()
+    {
+        HasActivities(
+            NewActivity("Ultima", location: "Zaguán"),
+            NewActivity("Primera", location: "Aula"),
+            NewActivity("Segunda", location: "Mercado")
+        );
+
+        var result = await sut.ListAsync(
+            new ActivityListQuery { Sort = "location" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(a => a.Location).Should().ContainInOrder("Aula", "Mercado", "Zaguán");
+    }
+
+    [Fact]
     public async Task GetByIdAsync_ActivityExists_ReturnsActivity()
     {
         var activity = NewActivity();
@@ -283,7 +397,7 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_EventMissing_ReturnsNotFound()
     {
-        EventFound(null);
+        HasEvents();
 
         var result = await sut.CreateAsync(
             Guid.NewGuid(),
@@ -301,7 +415,7 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_StartMissing_ReturnsScheduleRequired()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
 
         var request = new CreateActivityRequest(
             "  Taller  ",
@@ -315,7 +429,7 @@ public sealed class ActivityServiceTests
         );
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             request,
             Guid.NewGuid(),
             TestContext.Current.CancellationToken
@@ -330,11 +444,11 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_EndNotAfterStart_ReturnsInvalidRange()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
         var when = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(startsAt: when, endsAt: when),
             Guid.NewGuid(),
             TestContext.Current.CancellationToken
@@ -349,10 +463,10 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_DatesExceedEventRange_ReturnsOutsideEventRange()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(
                 startsAt: new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 8, 1, 12, 0, 0, TimeSpan.Zero)
@@ -370,10 +484,10 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_StartsBeforeEventRange_ReturnsOutsideEventRange()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(
                 startsAt: new DateTimeOffset(2026, 6, 25, 10, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero)
@@ -391,11 +505,11 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
         ThumbnailExists(false);
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(),
             Guid.NewGuid(),
             TestContext.Current.CancellationToken
@@ -410,12 +524,12 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_ModalityMissing_ReturnsModalityTypeNotFound()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
         ThumbnailExists(true);
         ModalityExists(false);
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(),
             Guid.NewGuid(),
             TestContext.Current.CancellationToken
@@ -433,7 +547,7 @@ public sealed class ActivityServiceTests
         var eventId = Guid.NewGuid();
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
-        EventFound(NewEvent());
+        HasEvents(NewEvent(id: eventId));
         ThumbnailExists(true);
         ModalityExists(true);
 
@@ -477,7 +591,7 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_WithRoleCapacities_PersistsDesiredCounts()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
         ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
@@ -494,7 +608,7 @@ public sealed class ActivityServiceTests
             });
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(
                 roleCapacities:
                 [
@@ -530,13 +644,13 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_DuplicatedRoleCapacityRole_ReturnsBadRequest()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
         ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(
                 roleCapacities:
                 [
@@ -557,13 +671,13 @@ public sealed class ActivityServiceTests
     [Fact]
     public async Task CreateAsync_UnknownRoleCapacityRole_ReturnsRoleTypeNotFound()
     {
-        EventFound(NewEvent());
+        var ev = EventExists();
         ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
 
         var result = await sut.CreateAsync(
-            Guid.NewGuid(),
+            ev.Id,
             CreateRequest(roleCapacities: [new ActivityRoleCapacityRequest(Guid.NewGuid(), 5)]),
             Guid.NewGuid(),
             TestContext.Current.CancellationToken
@@ -598,7 +712,7 @@ public sealed class ActivityServiceTests
     {
         var activity = NewActivity();
         ActivityFound(activity);
-        EventFound(null);
+        HasEvents();
 
         var result = await sut.UpdateAsync(
             activity.Id,
@@ -618,7 +732,7 @@ public sealed class ActivityServiceTests
     {
         var activity = NewActivity();
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
 
         var request = new UpdateActivityRequest(
             "  New  ",
@@ -649,7 +763,7 @@ public sealed class ActivityServiceTests
     {
         var activity = NewActivity();
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(false);
 
         var result = await sut.UpdateAsync(
@@ -669,7 +783,7 @@ public sealed class ActivityServiceTests
     {
         var activity = NewActivity();
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(true);
         ModalityExists(false);
 
@@ -697,7 +811,7 @@ public sealed class ActivityServiceTests
         var stored = new List<Activity> { activity };
         activities.Query().Returns(_ => stored.AsQueryable());
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(true);
         ModalityExists(true);
 
@@ -737,7 +851,7 @@ public sealed class ActivityServiceTests
         ];
         HasActivities(activity);
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
@@ -785,7 +899,7 @@ public sealed class ActivityServiceTests
         ];
         HasActivities(activity);
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(true);
         ModalityExists(true);
 
@@ -909,7 +1023,7 @@ public sealed class ActivityServiceTests
         var previousThumbnailId = activity.ThumbnailId;
         HasActivities(activity);
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(true);
         ModalityExists(true);
 
@@ -932,7 +1046,7 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         HasActivities(activity);
         ActivityFound(activity);
-        EventFound(NewEvent());
+        EventExistsFor(activity);
         ThumbnailExists(true);
         ModalityExists(true);
 

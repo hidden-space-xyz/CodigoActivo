@@ -4,12 +4,15 @@ import {
   AdminPageHeader,
   AppButton as Button,
   ColorTag,
+  ColumnFilterDate,
+  ColumnFilterSelect,
   ColumnSearch,
   ListThumbnail,
 } from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
+import { useResourceTypesList } from '@/entities/catalog'
 import { ResourceFormDialog, useResourcesAdmin } from '@/features/manage-resources'
 import type {
   CreateResourceRequest,
@@ -20,6 +23,7 @@ import type {
 import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { table, create, update, remove, fetchOne } = useResourcesAdmin()
+const resourceTypes = useResourceTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
@@ -27,6 +31,13 @@ const dialogVisible = ref(false)
 const selected = ref<ResourceResponse | null>(null)
 const loadingDetail = ref(false)
 const saving = computed(() => create.isPending.value || update.isPending.value)
+
+const typeOptions = computed(() =>
+  (resourceTypes.data.value ?? []).map((type) => ({
+    label: type.name ?? '—',
+    value: type.id ?? '',
+  })),
+)
 
 function openCreate(): void {
   if (loadingDetail.value) return
@@ -151,13 +162,29 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         </template>
         <template #body="{ data }">{{ data.subtitle || '—' }}</template>
       </Column>
-      <Column header="Tipo" style="width: 120px">
+      <Column sort-field="type" sortable style="width: 120px">
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('type').value"
+            label="Tipo"
+            :options="typeOptions"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           <ColorTag v-if="data.type?.name" :value="data.type.name" :color="data.type.color" />
           <span v-else>—</span>
         </template>
       </Column>
-      <Column header="Enlace">
+      <Column sort-field="url" sortable>
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('url').value"
+            label="Enlace"
+            placeholder="Buscar enlace"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           <a
             v-if="data.url"
@@ -171,7 +198,14 @@ function confirmDelete(resource: ResourceListItemResponse): void {
           <span v-else>—</span>
         </template>
       </Column>
-      <Column field="createdAt" header="Creado" sortable style="width: 200px">
+      <Column field="createdAt" sortable style="width: 200px">
+        <template #header>
+          <ColumnFilterDate
+            v-model="table.columnFilter('created').value"
+            label="Creado"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
       </Column>
       <Column header="Acciones" style="width: 170px">

@@ -15,6 +15,9 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
         builder.Property(a => a.Location).IsRequired();
         builder.Property(a => a.CreatedAt).IsRequired();
 
+        builder.HasIndex(a => a.ActivityStartsAt);
+        builder.HasIndex(a => new { a.EventId, a.ActivityStartsAt });
+
         builder
             .HasOne(a => a.Event)
             .WithMany(e => e.Activities)

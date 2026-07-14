@@ -126,6 +126,19 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             CreatedBy = AuthorId,
         };
 
+    private static Resource NewResource(string title = "Resource") =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Title = title,
+            Subtitle = "sub",
+            Description = "{}",
+            ResourceTypeId = SeedIds.ResourceTypes.Internal,
+            ThumbnailId = ThumbId,
+            CreatedAt = Fixed,
+            CreatedBy = AuthorId,
+        };
+
     private static Activity NewActivity(
         Guid eventId,
         string title = "Activity",
@@ -338,7 +351,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetByIdWithDetailsAsync_UserExists_IncludesStatusAndType()
+    public async Task GetByIdWithDetailsAsync_UserExists_IncludesStatus()
     {
         await using var ctx = NewContext();
         var user = NewUser("Ada", "Admin");
@@ -354,7 +367,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         result.Should().NotBeNull();
         result!.UserStatusType.Name.Should().Be("Activo");
-        result.UserType.Name.Should().Be("Socio");
+        result.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
     }
 
     [Fact]
@@ -812,6 +825,222 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             .Should()
             .BeTrue();
         (await repo.IsInUseAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
+            .Should()
+            .BeFalse();
+    }
+
+    [Fact]
+    public async Task GetInUseAsync_MixedReferences_ReturnsOnlyReferencedCandidates()
+    {
+        await using var ctx = NewContext();
+
+        var embeddedInEventId = Guid.NewGuid();
+        var embeddedInAnnouncementId = Guid.NewGuid();
+        var embeddedInResourceId = Guid.NewGuid();
+        var embeddedButNotCandidateId = Guid.NewGuid();
+        var unreferencedId = Guid.NewGuid();
+
+        var ev = NewEvent();
+        ev.Description =
+            $"{{\"a\":\"/api/files/{embeddedInEventId}/content\","
+            + $"\"b\":\"/api/files/{embeddedButNotCandidateId}/content\"}}";
+        var announcement = NewAnnouncement();
+        announcement.Description =
+            $"{{\"img\":\"https://api.example.org/api/files/{embeddedInAnnouncementId}/content\"}}";
+        var resource = NewResource();
+        resource.Description = $"{{\"img\":\"/api/files/{embeddedInResourceId}/content\"}}";
+        ctx.AddRange(ev, announcement, resource);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new FileRepository(ctx);
+
+        var inUse = await repo.GetInUseAsync(
+            [
+                ThumbId,
+                embeddedInEventId,
+                embeddedInAnnouncementId,
+                embeddedInResourceId,
+                unreferencedId,
+            ],
+            TestContext.Current.CancellationToken
+        );
+
+        inUse
+            .Should()
+            .BeEquivalentTo([
+                ThumbId,
+                embeddedInEventId,
+                embeddedInAnnouncementId,
+                embeddedInResourceId,
+            ]);
+    }
+
+    [Fact]
+    public async Task GetInUseAsync_EmptyInput_ReturnsEmpty()
+    {
+        await using var ctx = NewContext();
+        var repo = new FileRepository(ctx);
+
+        var inUse = await repo.GetInUseAsync([], TestContext.Current.CancellationToken);
+
+        inUse.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AssignmentExistsAsync_AssignmentPresentOrAbsent_ReportsExistence()
+    {
+        await using var ctx = NewContext();
+        var user = NewUser();
+        var role = NewRoleType();
+        var status = NewAssignmentStatus();
+        var ev = NewEvent();
+        var assigned = NewActivity(ev.Id, "Con inscripción");
+        var unassigned = NewActivity(ev.Id, "Sin inscripción");
+        ctx.AddRange(user, role, status, ev, assigned, unassigned);
+        ctx.ActivityUserRoleAssignments.Add(
+            new ActivityUserRoleAssignment
+            {
+                UserId = user.Id,
+                ActivityId = assigned.Id,
+                ActivityRoleTypeId = role.Id,
+                AssignmentStatusId = status.Id,
+            }
+        );
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new ActivityRepository(ctx);
+
+        (
+            await repo.AssignmentExistsAsync(
+                user.Id,
+                assigned.Id,
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeTrue();
+        (
+            await repo.AssignmentExistsAsync(
+                user.Id,
+                unassigned.Id,
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .BeFalse();
+    }
+
+    [Fact]
+    public async Task RemoveAsync_EventCategoryTypeMatchesById_DeletesImmediatelyAndReturnsOne()
+    {
+        await using var ctx = NewContext();
+        var categoryType = new EventCategoryType
+        {
+            Id = Guid.NewGuid(),
+            Name = "Efímera",
+            Color = "#123456",
+        };
+        ctx.EventCategoryTypes.Add(categoryType);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new EventCategoryTypeRepository(ctx);
+
+        var removed = await repo.RemoveAsync(
+            x => x.Id == categoryType.Id,
+            TestContext.Current.CancellationToken
+        );
+
+        removed.Should().Be(1);
+        await using var probe = NewContext();
+        (
+            await probe.EventCategoryTypes.CountAsync(
+                x => x.Id == categoryType.Id,
+                TestContext.Current.CancellationToken
+            )
+        )
+            .Should()
+            .Be(0, "ExecuteDelete removes the row without a SaveChanges call");
+    }
+
+    [Fact]
+    public async Task RemoveAsync_EventCategoryTypeMissing_ReturnsZero()
+    {
+        await using var ctx = NewContext();
+        var repo = new EventCategoryTypeRepository(ctx);
+        var missingId = Guid.NewGuid();
+
+        (await repo.RemoveAsync(x => x.Id == missingId, TestContext.Current.CancellationToken))
+            .Should()
+            .Be(0);
+    }
+
+    [Fact]
+    public async Task SetFeaturedAsync_AnotherEventWasFeatured_LeavesExactlyTargetFeatured()
+    {
+        await using var ctx = NewContext();
+        var previous = NewEvent("Anterior", featured: true);
+        var target = NewEvent("Objetivo");
+        ctx.Events.AddRange(previous, target);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new EventRepository(ctx);
+
+        var result = await repo.SetFeaturedAsync(target.Id, TestContext.Current.CancellationToken);
+
+        result.Should().BeTrue();
+        await using var probe = NewContext();
+        var featuredIds = await probe
+            .Events.Where(e => e.Featured)
+            .Select(e => e.Id)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        featuredIds.Should().Equal(target.Id);
+    }
+
+    [Fact]
+    public async Task SetFeaturedAsync_EventMissing_ReturnsFalseWithoutChangingFlags()
+    {
+        await using var ctx = NewContext();
+        var featured = NewEvent("Destacado", featured: true);
+        ctx.Events.Add(featured);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new EventRepository(ctx);
+
+        var result = await repo.SetFeaturedAsync(
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Should().BeFalse();
+        await using var probe = NewContext();
+        (await probe.Events.CountAsync(e => e.Featured, TestContext.Current.CancellationToken))
+            .Should()
+            .Be(1);
+    }
+
+    [Fact]
+    public async Task SetFeaturedAsync_AnotherAnnouncementWasFeatured_LeavesExactlyTargetFeatured()
+    {
+        await using var ctx = NewContext();
+        var previous = NewAnnouncement("Anterior", featured: true);
+        var target = NewAnnouncement("Objetivo");
+        ctx.Announcements.AddRange(previous, target);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = new AnnouncementRepository(ctx);
+
+        var result = await repo.SetFeaturedAsync(target.Id, TestContext.Current.CancellationToken);
+
+        result.Should().BeTrue();
+        await using var probe = NewContext();
+        var featuredIds = await probe
+            .Announcements.Where(a => a.Featured)
+            .Select(a => a.Id)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        featuredIds.Should().Equal(target.Id);
+    }
+
+    [Fact]
+    public async Task SetFeaturedAsync_AnnouncementMissing_ReturnsFalse()
+    {
+        await using var ctx = NewContext();
+        var repo = new AnnouncementRepository(ctx);
+
+        (await repo.SetFeaturedAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
             .Should()
             .BeFalse();
     }

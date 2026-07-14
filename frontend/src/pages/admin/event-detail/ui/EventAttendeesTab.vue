@@ -56,6 +56,8 @@ onBeforeUnmount(() => {
 const sortOptions: { label: string; value: string }[] = [
   { label: 'Nombre', value: 'firstName' },
   { label: 'Apellidos', value: 'lastName' },
+  { label: 'Fecha de nacimiento', value: 'birthDate' },
+  { label: 'Tipo', value: 'type' },
 ]
 
 const sortField = computed({

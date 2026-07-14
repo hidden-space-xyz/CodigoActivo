@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import {
   AdminPageHeader,
   AppButton as Button,
+  ColumnFilterDate,
   ColumnSearch,
   ListThumbnail,
   RichTextEditor,
@@ -214,7 +215,14 @@ function confirmDelete(item: ContentItem): void {
           />
         </template>
       </Column>
-      <Column field="createdAt" header="Creado" sortable style="width: 200px">
+      <Column field="createdAt" sortable style="width: 200px">
+        <template #header>
+          <ColumnFilterDate
+            v-model="table.columnFilter('created').value"
+            label="Creado"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
       </Column>
       <Column header="Acciones" style="width: 170px">

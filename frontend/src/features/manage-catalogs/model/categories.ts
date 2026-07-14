@@ -26,6 +26,7 @@ export function useEventCategories() {
     defaultSort: { field: 'name', order: 1 },
     columns: {
       name: { type: 'text' },
+      color: { type: 'text' },
     },
   })
 

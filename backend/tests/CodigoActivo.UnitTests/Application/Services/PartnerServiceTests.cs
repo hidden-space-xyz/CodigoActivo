@@ -41,7 +41,8 @@ public sealed class PartnerServiceTests
     private static Partner NewPartner(
         string name = "Acme",
         int tier = 1,
-        string? web = "https://acme.test"
+        string? web = "https://acme.test",
+        DateOnly? fromDate = null
     ) =>
         new()
         {
@@ -49,7 +50,7 @@ public sealed class PartnerServiceTests
             Name = name,
             Tier = tier,
             Web = web,
-            FromDate = new DateOnly(2024, 1, 1),
+            FromDate = fromDate ?? new DateOnly(2024, 1, 1),
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
@@ -66,6 +67,44 @@ public sealed class PartnerServiceTests
         );
 
         result.Items.Should().ContainSingle().Which.Name.Should().Be("Silver");
+    }
+
+    [Fact]
+    public async Task ListAsync_FromDateRangeFilter_KeepsPartnersWithinInclusiveBounds()
+    {
+        HasPartners(
+            NewPartner("Antes", fromDate: new DateOnly(2019, 12, 31)),
+            NewPartner("Inicio", fromDate: new DateOnly(2020, 1, 1)),
+            NewPartner("Fin", fromDate: new DateOnly(2023, 6, 30)),
+            NewPartner("Despues", fromDate: new DateOnly(2023, 7, 1))
+        );
+
+        var result = await sut.ListAsync(
+            new PartnerListQuery
+            {
+                FromDateFrom = new DateOnly(2020, 1, 1),
+                FromDateTo = new DateOnly(2023, 6, 30),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(p => p.Name).Should().BeEquivalentTo("Inicio", "Fin");
+    }
+
+    [Fact]
+    public async Task ListAsync_FromDateFromFilter_ExcludesEarlierPartners()
+    {
+        HasPartners(
+            NewPartner("Viejo", fromDate: new DateOnly(2018, 5, 5)),
+            NewPartner("Nuevo", fromDate: new DateOnly(2024, 5, 5))
+        );
+
+        var result = await sut.ListAsync(
+            new PartnerListQuery { FromDateFrom = new DateOnly(2020, 1, 1) },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Name.Should().Be("Nuevo");
     }
 
     [Fact]

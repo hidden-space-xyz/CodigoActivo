@@ -63,6 +63,6 @@ public class UserRepository(CodigoActivoDbContext context)
     private IQueryable<User> QueryWithDetails(bool tracked = false)
     {
         var query = tracked ? Set : Set.AsNoTracking();
-        return query.Include(u => u.UserStatusType).Include(u => u.UserType);
+        return query.Include(u => u.UserStatusType);
     }
 }

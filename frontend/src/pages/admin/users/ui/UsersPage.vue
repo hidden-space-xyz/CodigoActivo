@@ -4,6 +4,7 @@ import {
   AdminPageHeader,
   AppButton as Button,
   ColorTag,
+  ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
 } from '@/shared/ui'
@@ -63,7 +64,7 @@ const adminOptions: { label: string; value: boolean }[] = [
 ]
 
 function clearColumnFilters(): void {
-  for (const key of ['name', 'email', 'phone', 'status', 'type', 'isAdmin']) {
+  for (const key of ['name', 'email', 'phone', 'birthDate', 'status', 'type', 'isAdmin']) {
     table.columnFilter(key).value = null
   }
   table.onFilter()
@@ -233,7 +234,14 @@ function confirmDelete(user: UserResponse): void {
         </template>
         <template #body="{ data }">{{ data.phone || '—' }}</template>
       </Column>
-      <Column field="birthDate" header="Nacimiento" sortable>
+      <Column field="birthDate" sortable>
+        <template #header>
+          <ColumnFilterDate
+            v-model="table.columnFilter('birthDate').value"
+            label="Nacimiento"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">{{ birthDateWithAge(data) }}</template>
       </Column>
       <Column field="status" sortable>
@@ -246,11 +254,7 @@ function confirmDelete(user: UserResponse): void {
           />
         </template>
         <template #body="{ data }">
-          <ColorTag
-            v-if="data.status?.name"
-            :value="data.status.name"
-            :color="data.status.color"
-          />
+          <ColorTag v-if="data.status?.name" :value="data.status.name" :color="data.status.color" />
           <span v-else>—</span>
         </template>
       </Column>
@@ -268,7 +272,7 @@ function confirmDelete(user: UserResponse): void {
           <span v-else>—</span>
         </template>
       </Column>
-      <Column header="Familia">
+      <Column header="Familia" sortable sort-field="dependents">
         <template #body="{ data }">
           <div class="family-cell">
             <Button

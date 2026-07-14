@@ -25,11 +25,12 @@ public static class Projections
             ThumbnailId = @event.ThumbnailId,
             Featured = @event.Featured,
             Categories = @event
-                .Categories.Select(category => new EventCategoryResponse(
-                    category.EventCategoryTypeId,
-                    category.EventCategoryType.Name,
-                    category.EventCategoryType.Color
-                ))
+                .Categories.Select(category => new EventCategoryResponse
+                {
+                    CategoryTypeId = category.EventCategoryTypeId,
+                    Name = category.EventCategoryType.Name,
+                    Color = category.EventCategoryType.Color,
+                })
                 .ToList(),
         };
 
@@ -50,11 +51,12 @@ public static class Projections
             ThumbnailId = @event.ThumbnailId,
             Featured = @event.Featured,
             Categories = @event
-                .Categories.Select(category => new EventCategoryResponse(
-                    category.EventCategoryTypeId,
-                    category.EventCategoryType.Name,
-                    category.EventCategoryType.Color
-                ))
+                .Categories.Select(category => new EventCategoryResponse
+                {
+                    CategoryTypeId = category.EventCategoryTypeId,
+                    Name = category.EventCategoryType.Name,
+                    Color = category.EventCategoryType.Color,
+                })
                 .ToList(),
         };
 
@@ -221,9 +223,8 @@ public static class Projections
             CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt,
             ParentId = user.ParentId,
-            ParentName = user.Parent == null
-                ? null
-                : user.Parent.FirstName + " " + user.Parent.LastName,
+            ParentName =
+                user.Parent == null ? null : user.Parent.FirstName + " " + user.Parent.LastName,
             DependentCount = user.Children.Count,
             Status = new UserStatusResponse(
                 user.UserStatusTypeId,

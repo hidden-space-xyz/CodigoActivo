@@ -314,6 +314,8 @@ public interface IFileService
     Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 
     Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default);
+
+    Task DeleteOrphanedAsync(IReadOnlyCollection<Guid> fileIds, CancellationToken ct = default);
 }
 
 public interface IReportService

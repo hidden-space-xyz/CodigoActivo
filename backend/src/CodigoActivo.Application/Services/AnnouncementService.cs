@@ -36,9 +36,39 @@ public class AnnouncementService(
         var source = announcements.Query().Select(Projections.AnnouncementListItem);
 
         if (query.Year is { } year)
-            source = source.Where(a => a.CreatedAt.Year == year);
+        {
+            if (year is < 1 or > 9999)
+            {
+                source = source.Where(a => a.CreatedAt > DateTimeOffset.MaxValue);
+            }
+            else
+            {
+                var yearStart = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
+                source =
+                    year == 9999
+                        ? source.Where(a => a.CreatedAt >= yearStart)
+                        : source.Where(a =>
+                            a.CreatedAt >= yearStart
+                            && a.CreatedAt
+                                < new DateTimeOffset(year + 1, 1, 1, 0, 0, 0, TimeSpan.Zero)
+                        );
+            }
+        }
+
         if (query.Featured is { } featured)
             source = source.Where(a => a.Featured == featured);
+        if (query.CreatedFrom is { } createdFrom)
+        {
+            var createdLower = LocalDayRange.LowerUtc(createdFrom, clock.TimeZone);
+            source = source.Where(a => a.CreatedAt >= createdLower);
+        }
+
+        if (query.CreatedTo is { } createdTo)
+        {
+            var createdUpper = LocalDayRange.UpperExclusiveUtc(createdTo, clock.TimeZone);
+            source = source.Where(a => a.CreatedAt < createdUpper);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
             source = source.Where(
@@ -148,16 +178,12 @@ public class AnnouncementService(
 
         await uow.SaveChangesAsync(ct);
 
+        var orphanCandidates = RichTextFileReferences
+            .ExtractRemoved(previousDescription, announcement.Description)
+            .ToList();
         if (previousThumbnailId != request.ThumbnailId)
-            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
-
-        foreach (
-            var fileId in RichTextFileReferences.ExtractRemoved(
-                previousDescription,
-                announcement.Description
-            )
-        )
-            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+            orphanCandidates.Add(previousThumbnailId);
+        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return announcement.ToResponse();
     }
@@ -171,9 +197,12 @@ public class AnnouncementService(
         announcements.Remove(announcement);
         await uow.SaveChangesAsync(ct);
 
-        await fileService.DeleteIfOrphanedAsync(announcement.ThumbnailId, ct);
-        foreach (var fileId in RichTextFileReferences.Extract(announcement.Description))
-            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+        var orphanCandidates = RichTextFileReferences
+            .Extract(announcement.Description)
+            .Append(announcement.ThumbnailId)
+            .Distinct()
+            .ToList();
+        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return Result.Success();
     }

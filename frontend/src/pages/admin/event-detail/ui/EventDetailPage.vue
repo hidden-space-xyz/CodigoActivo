@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   AdminPageHeader,
   AppButton as Button,
+  ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
   ListThumbnail,
@@ -216,7 +217,14 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
                 />
               </template>
             </Column>
-            <Column field="activityStartsAt" header="Horario" sortable>
+            <Column field="activityStartsAt" sortable>
+              <template #header>
+                <ColumnFilterDate
+                  v-model="activities.table.columnFilter('activityDate').value"
+                  label="Horario"
+                  @apply="activities.table.onFilter"
+                />
+              </template>
               <template #body="{ data }">
                 {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
               </template>

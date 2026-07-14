@@ -120,7 +120,15 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
           />
         </template>
       </Column>
-      <Column header="Color" style="width: 160px">
+      <Column sortable sort-field="color" style="width: 160px">
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('color').value"
+            label="Color"
+            placeholder="Buscar color"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           <ColorTag :value="data.name ?? ''" :color="data.color" />
         </template>
@@ -128,13 +136,7 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       <Column header="Acciones" style="width: 120px">
         <template #body="{ data }">
           <div class="catalog__actions">
-            <Button
-              icon="pi pi-pencil"
-              text
-              rounded
-              aria-label="Editar"
-              @click="openEdit(data)"
-            />
+            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
             <Button
               icon="pi pi-trash"
               text

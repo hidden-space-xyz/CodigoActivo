@@ -77,7 +77,11 @@ public record EventListItemResponse(
         ) { }
 }
 
-public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color);
+public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color)
+{
+    public EventCategoryResponse()
+        : this(default, string.Empty, string.Empty) { }
+}
 
 public record CreateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,

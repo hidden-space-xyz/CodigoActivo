@@ -9,6 +9,8 @@ export type GetApiPartnersParams = {
 name?: string;
 website?: string;
 tier?: number;
+fromDateFrom?: string;
+fromDateTo?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

@@ -61,34 +61,38 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         DateOnly end,
         bool featured = false,
         string title = "Evento",
-        Guid? categoryTypeId = null
+        Guid? categoryTypeId = null,
+        IReadOnlyList<Guid>? categoryTypeIds = null,
+        DateTimeOffset? signupStartsAt = null,
+        DateTimeOffset? signupEndsAt = null
     )
     {
         var thumbnailId = await SeedThumbnailAsync();
-        var categoryId =
-            categoryTypeId ?? await SeedCategoryTypeAsync(Guid.NewGuid().ToString("N"));
+        var categoryIds =
+            categoryTypeIds
+            ?? [categoryTypeId ?? await SeedCategoryTypeAsync(Guid.NewGuid().ToString("N"))];
         var id = Guid.NewGuid();
         var startAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         await Factory.SeedAsync(db =>
         {
-            db.Events.Add(
-                new Event
-                {
-                    Id = id,
-                    Title = title,
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    EventStartsAt = start,
-                    EventEndsAt = end,
-                    SignupStartsAt = startAt.AddDays(-10),
-                    SignupEndsAt = startAt.AddDays(-1),
-                    Featured = featured,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                    Categories = { new EventCategory { EventCategoryTypeId = categoryId } },
-                }
-            );
+            var ev = new Event
+            {
+                Id = id,
+                Title = title,
+                Subtitle = "Sub",
+                Description = "{}",
+                EventStartsAt = start,
+                EventEndsAt = end,
+                SignupStartsAt = signupStartsAt ?? startAt.AddDays(-10),
+                SignupEndsAt = signupEndsAt ?? startAt.AddDays(-1),
+                Featured = featured,
+                ThumbnailId = thumbnailId,
+                CreatedAt = SeededAt,
+                CreatedBy = TestSeedData.Users.AdminId,
+            };
+            foreach (var catId in categoryIds)
+                ev.Categories.Add(new EventCategory { EventCategoryTypeId = catId });
+            db.Events.Add(ev);
             return Task.CompletedTask;
         });
         return id;
@@ -203,6 +207,325 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         years.Should().Equal(2025, 2024);
+    }
+
+    [Fact]
+    public async Task List_SortByCategories_OrdersByMinimumCategoryName()
+    {
+        var ajedrez = await SeedCategoryTypeAsync("Ajedrez");
+        var charla = await SeedCategoryTypeAsync("Charla");
+        var musica = await SeedCategoryTypeAsync("Música");
+        var taller = await SeedCategoryTypeAsync("Taller");
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "Uno",
+            categoryTypeIds: [taller, charla]
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 3),
+            new DateOnly(2026, 8, 4),
+            title: "Dos",
+            categoryTypeIds: [musica]
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 5),
+            new DateOnly(2026, 8, 6),
+            title: "Tres",
+            categoryTypeIds: [taller, ajedrez]
+        );
+        var client = CreateClient();
+
+        var ascending = await client.GetAsync(
+            "/api/events?sort=categories",
+            TestContext.Current.CancellationToken
+        );
+        var descending = await client.GetAsync(
+            "/api/events?sort=-categories",
+            TestContext.Current.CancellationToken
+        );
+
+        ascending.StatusCode.Should().Be(HttpStatusCode.OK);
+        var ascendingPage = await ascending.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        ascendingPage!.Items.Select(e => e.Title).Should().Equal("Tres", "Uno", "Dos");
+
+        descending.StatusCode.Should().Be(HttpStatusCode.OK);
+        var descendingPage = await descending.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        descendingPage!.Items.Select(e => e.Title).Should().Equal("Dos", "Uno", "Tres");
+    }
+
+    [Fact]
+    public async Task List_SortBySignupStartsAt_OrdersIndependentlyOfEventDates()
+    {
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "Primero",
+            signupStartsAt: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero)
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 10),
+            new DateOnly(2026, 8, 11),
+            title: "Segundo",
+            signupStartsAt: new DateTimeOffset(2026, 7, 5, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 5),
+            new DateOnly(2026, 8, 6),
+            title: "Tercero",
+            signupStartsAt: new DateTimeOffset(2026, 7, 10, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 15, 0, 0, 0, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/events?sort=signupStartsAt",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Select(e => e.Title).Should().Equal("Segundo", "Tercero", "Primero");
+    }
+
+    [Fact]
+    public async Task List_SortBySignupEndsAtDescending_OrdersByLatestSignupClose()
+    {
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "Primero",
+            signupStartsAt: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero)
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 10),
+            new DateOnly(2026, 8, 11),
+            title: "Segundo",
+            signupStartsAt: new DateTimeOffset(2026, 7, 5, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 5),
+            new DateOnly(2026, 8, 6),
+            title: "Tercero",
+            signupStartsAt: new DateTimeOffset(2026, 7, 10, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 15, 0, 0, 0, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/events?sort=-signupEndsAt",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Select(e => e.Title).Should().Equal("Segundo", "Primero", "Tercero");
+    }
+
+    [Fact]
+    public async Task List_FilterByCategoryTypeId_ReturnsOnlyEventsWithThatCategory()
+    {
+        var robotica = await SeedCategoryTypeAsync("Robótica");
+        var charlas = await SeedCategoryTypeAsync("Charlas");
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "ConRobotica",
+            categoryTypeIds: [robotica, charlas]
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 3),
+            new DateOnly(2026, 8, 4),
+            title: "SoloCharlas",
+            categoryTypeIds: [charlas]
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            $"/api/events?categoryTypeId={robotica}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(e => e.Title == "ConRobotica");
+    }
+
+    [Fact]
+    public async Task List_FilterByEventDateRange_MatchesEventsOverlappingRange()
+    {
+        await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Corto");
+        await SeedEventAsync(new DateOnly(2026, 8, 10), new DateOnly(2026, 8, 12), title: "Tardio");
+        await SeedEventAsync(new DateOnly(2026, 8, 4), new DateOnly(2026, 8, 11), title: "Largo");
+        var client = CreateClient();
+
+        var rangeResponse = await client.GetAsync(
+            "/api/events?eventDateFrom=2026-08-06&eventDateTo=2026-08-10",
+            TestContext.Current.CancellationToken
+        );
+        var boundaryResponse = await client.GetAsync(
+            "/api/events?eventDateTo=2026-08-01",
+            TestContext.Current.CancellationToken
+        );
+
+        rangeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var rangePage = await rangeResponse.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        rangePage!.Total.Should().Be(2);
+        rangePage.Items.Select(e => e.Title).Should().BeEquivalentTo("Tardio", "Largo");
+
+        boundaryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var boundaryPage = await boundaryResponse.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        boundaryPage!.Total.Should().Be(1);
+        boundaryPage.Items.Should().ContainSingle(e => e.Title == "Corto");
+    }
+
+    [Fact]
+    public async Task List_SignupFromFilter_UsesAppTimezoneDayLowerBound()
+    {
+        Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            TimeSpan.FromHours(2),
+            "UTC+02",
+            "UTC+02"
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "EnLimite",
+            signupStartsAt: new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 9, 22, 0, 0, TimeSpan.Zero)
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 3),
+            new DateOnly(2026, 8, 4),
+            title: "Anterior",
+            signupStartsAt: new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 9, 21, 59, 59, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/events?signupFrom=2026-07-10",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(e => e.Title == "EnLimite");
+    }
+
+    [Fact]
+    public async Task List_SignupToFilter_UsesAppTimezoneDayUpperBound()
+    {
+        Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            TimeSpan.FromHours(2),
+            "UTC+02",
+            "UTC+02"
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "DentroDelDia",
+            signupStartsAt: new DateTimeOffset(2026, 7, 10, 21, 59, 59, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 3),
+            new DateOnly(2026, 8, 4),
+            title: "DiaSiguiente",
+            signupStartsAt: new DateTimeOffset(2026, 7, 10, 22, 0, 0, TimeSpan.Zero),
+            signupEndsAt: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/events?signupTo=2026-07-10",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(e => e.Title == "DentroDelDia");
+    }
+
+    [Fact]
+    public async Task List_FilterByYear_UsesEventStartBoundaries()
+    {
+        await SeedEventAsync(
+            new DateOnly(2025, 12, 31),
+            new DateOnly(2026, 1, 2),
+            title: "Nochevieja"
+        );
+        await SeedEventAsync(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 3), title: "AnoNuevo");
+        var client = CreateClient();
+
+        var previousYearResponse = await client.GetAsync(
+            "/api/events?year=2025",
+            TestContext.Current.CancellationToken
+        );
+        var currentYearResponse = await client.GetAsync(
+            "/api/events?year=2026",
+            TestContext.Current.CancellationToken
+        );
+
+        previousYearResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var previousYearPage = await previousYearResponse.ReadJsonAsync<
+            PagedResult<EventListItemResponse>
+        >(TestContext.Current.CancellationToken);
+        previousYearPage!.Total.Should().Be(1);
+        previousYearPage.Items.Should().ContainSingle(e => e.Title == "Nochevieja");
+
+        currentYearResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var currentYearPage = await currentYearResponse.ReadJsonAsync<
+            PagedResult<EventListItemResponse>
+        >(TestContext.Current.CancellationToken);
+        currentYearPage!.Total.Should().Be(1);
+        currentYearPage.Items.Should().ContainSingle(e => e.Title == "AnoNuevo");
+    }
+
+    [Fact]
+    public async Task List_YearZero_ReturnsEmptyPage()
+    {
+        await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2), title: "Alguno");
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/events?year=0",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(0);
+        page.Items.Should().BeEmpty();
     }
 
     [Fact]
@@ -439,6 +762,73 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         );
         page!.Total.Should().Be(1);
         page.Items.Should().ContainSingle().Which.Name.Should().Be("Robótica");
+    }
+
+    [Fact]
+    public async Task CategoryTypes_ColorFilter_MatchesCaseInsensitively()
+    {
+        await SeedCategoryTypeAsync("Robótica", "#AABB01");
+        await SeedCategoryTypeAsync("Charlas", "#CCDD02");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/events/categoryType?color=aabb01",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle().Which.Name.Should().Be("Robótica");
+    }
+
+    [Fact]
+    public async Task CategoryTypes_SortByColor_OrdersByColorInsteadOfName()
+    {
+        await SeedCategoryTypeAsync("Alpha", "#333333");
+        await SeedCategoryTypeAsync("Beta", "#111111");
+        await SeedCategoryTypeAsync("Gamma", "#222222");
+        var client = await LoginAsAdminAsync();
+
+        var ascending = await client.GetAsync(
+            "/api/events/categoryType?sort=color",
+            TestContext.Current.CancellationToken
+        );
+        var descending = await client.GetAsync(
+            "/api/events/categoryType?sort=-color",
+            TestContext.Current.CancellationToken
+        );
+
+        ascending.StatusCode.Should().Be(HttpStatusCode.OK);
+        var ascendingPage = await ascending.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        ascendingPage!.Items.Select(t => t.Name).Should().Equal("Beta", "Gamma", "Alpha");
+
+        descending.StatusCode.Should().Be(HttpStatusCode.OK);
+        var descendingPage = await descending.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        descendingPage!.Items.Select(t => t.Name).Should().Equal("Alpha", "Gamma", "Beta");
+    }
+
+    [Fact]
+    public async Task DeleteCategoryType_MissingId_Returns404WithErrorCode()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync(
+            $"/api/events/categoryType/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var error = await response.ReadJsonAsync<ApiErrorResponse>(
+            TestContext.Current.CancellationToken
+        );
+        error!.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]

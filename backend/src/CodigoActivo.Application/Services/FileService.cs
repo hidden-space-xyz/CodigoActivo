@@ -163,6 +163,42 @@ public class FileService(
         catch (Exception ex) when (ex is not OperationCanceledException) { }
     }
 
+    public async Task DeleteOrphanedAsync(
+        IReadOnlyCollection<Guid> fileIds,
+        CancellationToken ct = default
+    )
+    {
+        try
+        {
+            var candidates = fileIds.Distinct().ToList();
+            if (candidates.Count == 0)
+                return;
+
+            var inUse = await files.GetInUseAsync(candidates, ct);
+            var orphanIds = candidates.Except(inUse).ToList();
+            if (orphanIds.Count == 0)
+                return;
+
+            var orphans = await files.GetAsync(f => orphanIds.Contains(f.Id), ct);
+            if (orphans.Count == 0)
+                return;
+
+            foreach (var file in orphans)
+                files.Remove(file);
+            await uow.SaveChangesAsync(ct);
+
+            foreach (var file in orphans)
+            {
+                try
+                {
+                    storage.Delete(StoredName(file.Id, file.Extension));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException) { }
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
+    }
+
     private async Task<Result<ImageFormat>> ValidateAndDetectAsync(
         FileUploadRequest? upload,
         CancellationToken ct
