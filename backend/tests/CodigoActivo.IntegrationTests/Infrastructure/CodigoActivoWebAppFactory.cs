@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Security;
@@ -104,6 +105,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     {
         EmailSender.Clear();
         ResetClock();
+        await ResetCachesAsync();
 
         await using var scope = Services.CreateAsyncScope();
         var provider = scope.ServiceProvider;
@@ -122,12 +124,25 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         Clock.TimeZone = TimeZoneInfo.Utc;
     }
 
+    private async Task ResetCachesAsync()
+    {
+        await PurgeCachesAsync(Services);
+        if (verificationDisabled is not null)
+            await PurgeCachesAsync(verificationDisabled.Services);
+    }
+
+    private static async Task PurgeCachesAsync(IServiceProvider services)
+    {
+        await services.GetRequiredService<ICacheInvalidator>().InvalidateAsync(CacheTags.All);
+    }
+
     public async Task SeedAsync(Func<CodigoActivoDbContext, Task> seed)
     {
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
         await seed(db);
         await db.SaveChangesAsync();
+        await ResetCachesAsync();
     }
 
     public async Task<T> QueryAsync<T>(Func<CodigoActivoDbContext, Task<T>> query)

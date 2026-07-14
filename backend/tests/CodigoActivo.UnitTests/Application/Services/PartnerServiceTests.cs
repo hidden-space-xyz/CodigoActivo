@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -20,11 +21,22 @@ public sealed class PartnerServiceTests
     private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakeHybridCache cache = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly PartnerService sut;
 
     public PartnerServiceTests()
     {
-        sut = new PartnerService(partners, files, fileService, new FakeQueryExecutor(), clock, uow);
+        sut = new PartnerService(
+            partners,
+            files,
+            fileService,
+            new FakeQueryExecutor(),
+            clock,
+            uow,
+            cache,
+            cacheInvalidator
+        );
     }
 
     private void HasPartners(params Partner[] items) =>
@@ -281,6 +293,32 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ValidRequest_InvalidatesPartnersCache()
+    {
+        ThumbnailExists(true);
+        var request = new CreatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            1,
+            "https://acme.test",
+            Guid.NewGuid()
+        );
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_PartnerMissing_ReturnsNotFound()
     {
         partners
@@ -368,6 +406,37 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_ValidRequest_InvalidatesPartnersCache()
+    {
+        var partner = NewPartner();
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(partner);
+        ThumbnailExists(true);
+        var request = new UpdatePartnerRequest(
+            "Acme",
+            new DateOnly(2024, 1, 1),
+            1,
+            null,
+            partner.ThumbnailId
+        );
+
+        var result = await sut.UpdateAsync(
+            partner.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_ThumbnailReplaced_CleansUpPreviousFileAfterSave()
     {
         var partner = NewPartner();
@@ -441,5 +510,27 @@ public sealed class PartnerServiceTests
         await fileService
             .DidNotReceiveWithAnyArgs()
             .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_PartnerExists_InvalidatesPartnersCache()
+    {
+        var partner = NewPartner();
+        partners
+            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(partner);
+
+        var result = await sut.DeleteAsync(partner.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        partners.Received(1).Remove(partner);
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+            );
     }
 }

@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Text.Json.Serialization;
+using CodigoActivo.API.Caching;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.API.OpenApi;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -110,6 +112,14 @@ try
         options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()
     );
 
+    var outputCacheLifetime = TimeSpan.FromMinutes(1);
+    builder.Services.AddOutputCache(options =>
+    {
+        foreach (var tag in CacheTags.OutputCached)
+            options.AddPolicy(tag, policy => policy.Expire(outputCacheLifetime).Tag(tag));
+    });
+    builder.Services.AddSingleton<ICacheInvalidator, HttpCacheInvalidator>();
+
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
@@ -150,10 +160,14 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseMiddleware<CacheControlMiddleware>();
+
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.UseMiddleware<CsrfValidationMiddleware>();
+
+    app.UseOutputCache();
 
     app.MapControllers();
 

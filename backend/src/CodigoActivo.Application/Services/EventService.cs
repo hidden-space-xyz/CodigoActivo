@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -7,6 +8,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -18,7 +20,9 @@ public class EventService(
     IEventCategoryTypeRepository categoryTypes,
     IQueryExecutor executor,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    HybridCache cache,
+    ICacheInvalidator cacheInvalidator
 ) : IEventService
 {
     private static readonly SortMap<EventListItemResponse> Sort =
@@ -42,9 +46,25 @@ public class EventService(
             .Default("name")
             .Tie(c => c.Id);
 
-    public Task<PagedResult<EventListItemResponse>> ListAsync(
+    public async Task<PagedResult<EventListItemResponse>> ListAsync(
         EventListQuery query,
         CancellationToken ct = default
+    )
+    {
+        return await cache.GetOrCreateAsync(
+            CacheKeys.For($"events:list:{clock.Today.DayNumber}", query),
+            token => new ValueTask<PagedResult<EventListItemResponse>>(
+                FetchListAsync(query, token)
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Events],
+            ct
+        );
+    }
+
+    private Task<PagedResult<EventListItemResponse>> FetchListAsync(
+        EventListQuery query,
+        CancellationToken ct
     )
     {
         var today = clock.Today;
@@ -122,8 +142,16 @@ public class EventService(
 
     public async Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var response = await executor.FirstOrDefaultAsync(
-            events.Query().Where(e => e.Id == id).Select(Projections.Event),
+        var response = await cache.GetOrCreateAsync(
+            $"events:id:{id}",
+            token => new ValueTask<EventResponse?>(
+                executor.FirstOrDefaultAsync(
+                    events.Query().Where(e => e.Id == id).Select(Projections.Event),
+                    token
+                )
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Events],
             ct
         );
         return response is null
@@ -133,8 +161,19 @@ public class EventService(
 
     public async Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default)
     {
+        return await cache.GetOrCreateAsync(
+            $"events:past-years:{clock.Today.DayNumber}",
+            token => new ValueTask<IReadOnlyList<int>>(FetchPastYearsAsync(token)),
+            CachePolicies.PublicContent,
+            [CacheTags.Events],
+            ct
+        );
+    }
+
+    private Task<IReadOnlyList<int>> FetchPastYearsAsync(CancellationToken ct)
+    {
         var today = clock.Today;
-        return await executor.ToListAsync(
+        return executor.ToListAsync(
             events
                 .Query()
                 .Where(e => e.EventEndsAt < today)
@@ -189,6 +228,7 @@ public class EventService(
 
         await events.AddAsync(ev, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Events);
 
         return await GetByIdAsync(ev.Id, ct);
     }
@@ -249,6 +289,7 @@ public class EventService(
         SyncCategories(ev, request.CategoryTypeIds!);
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Events);
 
         var orphanCandidates = RichTextFileReferences
             .ExtractRemoved(previousDescription, ev.Description)
@@ -273,6 +314,7 @@ public class EventService(
 
         events.Remove(ev);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Events, CacheTags.Activities);
 
         var orphanCandidates = activityThumbnailIds
             .Append(ev.ThumbnailId)
@@ -289,14 +331,32 @@ public class EventService(
         CancellationToken ct = default
     )
     {
-        return !await events.SetFeaturedAsync(id, ct)
-            ? (Result<EventResponse>)Error.NotFound(ErrorCode.EventNotFound)
-            : await GetByIdAsync(id, ct);
+        if (!await events.SetFeaturedAsync(id, ct))
+            return Error.NotFound(ErrorCode.EventNotFound);
+
+        await cacheInvalidator.InvalidateAsync(CacheTags.Events);
+        return await GetByIdAsync(id, ct);
     }
 
-    public Task<PagedResult<EventCategoryTypeResponse>> ListCategoryTypesAsync(
+    public async Task<PagedResult<EventCategoryTypeResponse>> ListCategoryTypesAsync(
         EventCategoryTypeListQuery query,
         CancellationToken ct = default
+    )
+    {
+        return await cache.GetOrCreateAsync(
+            CacheKeys.For("events:category-types", query),
+            token => new ValueTask<PagedResult<EventCategoryTypeResponse>>(
+                FetchCategoryTypesAsync(query, token)
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.EventCategoryTypes],
+            ct
+        );
+    }
+
+    private Task<PagedResult<EventCategoryTypeResponse>> FetchCategoryTypesAsync(
+        EventCategoryTypeListQuery query,
+        CancellationToken ct
     )
     {
         var source = categoryTypes.Query().Select(Projections.EventCategoryType);
@@ -337,6 +397,7 @@ public class EventService(
         var categoryType = new EventCategoryType { Name = name, Color = request.Color.Trim() };
         await categoryTypes.AddAsync(categoryType, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes);
         return categoryType.ToResponse();
     }
 
@@ -357,6 +418,7 @@ public class EventService(
         categoryType.Name = name;
         categoryType.Color = request.Color.Trim();
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes, CacheTags.Events);
         return categoryType.ToResponse();
     }
 
@@ -366,6 +428,7 @@ public class EventService(
             return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes, CacheTags.Events);
         return Result.Success();
     }
 

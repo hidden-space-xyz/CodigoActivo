@@ -20,6 +20,7 @@ public sealed class ReportServiceTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IDashboardRepository dashboard = Substitute.For<IDashboardRepository>();
+    private readonly FakeHybridCache cache = new();
     private readonly ReportService sut;
 
     private static readonly Guid QueriedEventId = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -41,7 +42,8 @@ public sealed class ReportServiceTests
             activities,
             users,
             dashboard,
-            new FakeQueryExecutor()
+            new FakeQueryExecutor(),
+            cache
         );
     }
 

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -26,6 +27,8 @@ public sealed class ResourceServiceTests
     private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakeHybridCache cache = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly ResourceService sut;
 
     public ResourceServiceTests()
@@ -37,7 +40,9 @@ public sealed class ResourceServiceTests
             fileService,
             new FakeQueryExecutor(),
             clock,
-            uow
+            uow,
+            cache,
+            cacheInvalidator
         );
     }
 
@@ -555,6 +560,34 @@ public sealed class ResourceServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ValidRequest_InvalidatesResourcesCache()
+    {
+        var type = TypeExists();
+        ThumbnailExists(true);
+        var request = new CreateResourceRequest(
+            "Title",
+            "Subtitle",
+            SomeRichText,
+            null,
+            type.Id,
+            Guid.NewGuid()
+        );
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Resources))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_ResourceMissing_ReturnsNotFound()
     {
         resources
@@ -745,6 +778,39 @@ public sealed class ResourceServiceTests
         resource.UpdatedBy.Should().Be(caller);
         resource.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ValidRequest_InvalidatesResourcesCache()
+    {
+        var resource = NewResource();
+        resources
+            .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
+        var type = TypeExists();
+        ThumbnailExists(true);
+        var request = new UpdateResourceRequest(
+            "Title",
+            "Subtitle",
+            SomeRichText,
+            null,
+            type.Id,
+            resource.ThumbnailId
+        );
+
+        var result = await sut.UpdateAsync(
+            resource.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Resources))
+            );
     }
 
     [Fact]
@@ -948,6 +1014,9 @@ public sealed class ResourceServiceTests
         await fileService
             .DidNotReceiveWithAnyArgs()
             .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]
@@ -969,6 +1038,25 @@ public sealed class ResourceServiceTests
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(resource.ThumbnailId)),
                 Arg.Any<CancellationToken>()
+            );
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ResourceExists_InvalidatesResourcesCache()
+    {
+        var resource = NewResource();
+        resource.Description = "{}";
+        resources
+            .FindAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(resource);
+
+        var result = await sut.DeleteAsync(resource.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Resources))
             );
     }
 

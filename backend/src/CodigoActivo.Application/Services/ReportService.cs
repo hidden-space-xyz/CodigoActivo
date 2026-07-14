@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -5,6 +6,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -14,7 +16,8 @@ public class ReportService(
     IActivityRepository activities,
     IUserRepository users,
     IDashboardRepository dashboard,
-    IQueryExecutor executor
+    IQueryExecutor executor,
+    HybridCache cache
 ) : IReportService
 {
     private static readonly SortMap<User> AttendeeSort = new SortMap<User>()
@@ -432,14 +435,30 @@ public class ReportService(
         CancellationToken ct = default
     )
     {
-        var counts = await dashboard.GetCountsAsync(ct);
-        return new DashboardSummaryResponse(
-            counts.Events,
-            counts.Activities,
-            counts.Resources,
-            counts.Announcements,
-            counts.Partners,
-            counts.Users
+        return await cache.GetOrCreateAsync(
+            "reports:dashboard",
+            async token =>
+            {
+                var counts = await dashboard.GetCountsAsync(token);
+                return new DashboardSummaryResponse(
+                    counts.Events,
+                    counts.Activities,
+                    counts.Resources,
+                    counts.Announcements,
+                    counts.Partners,
+                    counts.Users
+                );
+            },
+            CachePolicies.Dashboard,
+            [
+                CacheTags.Events,
+                CacheTags.Activities,
+                CacheTags.Resources,
+                CacheTags.Announcements,
+                CacheTags.Partners,
+                CacheTags.Users,
+            ],
+            ct
         );
     }
 

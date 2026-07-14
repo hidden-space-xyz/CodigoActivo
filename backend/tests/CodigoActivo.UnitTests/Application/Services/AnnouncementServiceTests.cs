@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -21,6 +22,8 @@ public sealed class AnnouncementServiceTests
     private readonly IFileService fileService = Substitute.For<IFileService>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakeHybridCache cache = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly AnnouncementService sut;
 
     public AnnouncementServiceTests()
@@ -31,7 +34,9 @@ public sealed class AnnouncementServiceTests
             fileService,
             new FakeQueryExecutor(),
             clock,
-            uow
+            uow,
+            cache,
+            cacheInvalidator
         );
     }
 
@@ -337,6 +342,26 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ValidRequest_InvalidatesAnnouncementsCache()
+    {
+        ThumbnailExists(true);
+        var request = new CreateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_AnnouncementMissing_ReturnsNotFound()
     {
         announcements
@@ -361,6 +386,9 @@ public sealed class AnnouncementServiceTests
             .ExistsAsync(default!, TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]
@@ -425,6 +453,39 @@ public sealed class AnnouncementServiceTests
         announcement.UpdatedBy.Should().Be(caller);
         announcement.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ValidRequest_InvalidatesAnnouncementsCache()
+    {
+        var announcement = NewAnnouncement();
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(announcement);
+        ThumbnailExists(true);
+        var request = new UpdateAnnouncementRequest(
+            "Title",
+            "Subtitle",
+            "{}",
+            announcement.ThumbnailId
+        );
+
+        var result = await sut.UpdateAsync(
+            announcement.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+            );
     }
 
     [Fact]
@@ -582,6 +643,28 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_AnnouncementExists_InvalidatesAnnouncementsCache()
+    {
+        var announcement = NewAnnouncement();
+        announcement.Description = "{}";
+        announcements
+            .FindAsync(
+                Arg.Any<Expression<Func<Announcement, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(announcement);
+
+        var result = await sut.DeleteAsync(announcement.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+            );
+    }
+
+    [Fact]
     public async Task SetFeaturedAsync_IdMissing_ReturnsNotFound()
     {
         announcements
@@ -613,5 +696,25 @@ public sealed class AnnouncementServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(announcement.Id);
         result.Value.Featured.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetFeaturedAsync_Marked_InvalidatesAnnouncementsCache()
+    {
+        var announcement = NewAnnouncement("Featured", featured: true);
+        announcements.SetFeaturedAsync(announcement.Id, Arg.Any<CancellationToken>()).Returns(true);
+        HasAnnouncements(announcement);
+
+        var result = await sut.SetFeaturedAsync(
+            announcement.Id,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+            );
     }
 }

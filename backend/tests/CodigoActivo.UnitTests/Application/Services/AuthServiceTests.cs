@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
@@ -23,6 +24,7 @@ public sealed class AuthServiceTests
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly AuthService sut;
 
     public AuthServiceTests()
@@ -36,7 +38,8 @@ public sealed class AuthServiceTests
             verification,
             passwordReset,
             application,
-            NullLogger<AuthService>.Instance
+            NullLogger<AuthService>.Instance,
+            cacheInvalidator
         );
     }
 
@@ -303,6 +306,9 @@ public sealed class AuthServiceTests
         result.Error.Code.Should().Be(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]
@@ -391,6 +397,27 @@ public sealed class AuthServiceTests
 
         added.Should().ContainSingle();
         added[0].OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_NewAdult_InvalidatesUsersCache()
+    {
+        ExistsReturns(false, false);
+        users
+            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(NewUser());
+        users
+            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+            );
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -7,6 +8,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Services;
 
@@ -16,7 +18,9 @@ public class AnnouncementService(
     IFileService fileService,
     IQueryExecutor executor,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    HybridCache cache,
+    ICacheInvalidator cacheInvalidator
 ) : IAnnouncementService
 {
     private static readonly SortMap<AnnouncementListItemResponse> Sort =
@@ -28,9 +32,25 @@ public class AnnouncementService(
             .Default("-createdAt")
             .Tie(a => a.Id);
 
-    public Task<PagedResult<AnnouncementListItemResponse>> ListAsync(
+    public async Task<PagedResult<AnnouncementListItemResponse>> ListAsync(
         AnnouncementListQuery query,
         CancellationToken ct = default
+    )
+    {
+        return await cache.GetOrCreateAsync(
+            CacheKeys.For("announcements:list", query),
+            token => new ValueTask<PagedResult<AnnouncementListItemResponse>>(
+                FetchListAsync(query, token)
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Announcements],
+            ct
+        );
+    }
+
+    private Task<PagedResult<AnnouncementListItemResponse>> FetchListAsync(
+        AnnouncementListQuery query,
+        CancellationToken ct
     )
     {
         var source = announcements.Query().Select(Projections.AnnouncementListItem);
@@ -98,8 +118,16 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        var response = await executor.FirstOrDefaultAsync(
-            announcements.Query().Where(a => a.Id == id).Select(Projections.Announcement),
+        var response = await cache.GetOrCreateAsync(
+            $"announcements:id:{id}",
+            token => new ValueTask<AnnouncementResponse?>(
+                executor.FirstOrDefaultAsync(
+                    announcements.Query().Where(a => a.Id == id).Select(Projections.Announcement),
+                    token
+                )
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Announcements],
             ct
         );
         return response is null
@@ -109,12 +137,20 @@ public class AnnouncementService(
 
     public async Task<IReadOnlyList<int>> GetYearsAsync(CancellationToken ct = default)
     {
-        return await executor.ToListAsync(
-            announcements
-                .Query()
-                .Select(a => a.CreatedAt.Year)
-                .Distinct()
-                .OrderByDescending(year => year),
+        return await cache.GetOrCreateAsync(
+            "announcements:years",
+            token => new ValueTask<IReadOnlyList<int>>(
+                executor.ToListAsync(
+                    announcements
+                        .Query()
+                        .Select(a => a.CreatedAt.Year)
+                        .Distinct()
+                        .OrderByDescending(year => year),
+                    token
+                )
+            ),
+            CachePolicies.PublicContent,
+            [CacheTags.Announcements],
             ct
         );
     }
@@ -144,6 +180,7 @@ public class AnnouncementService(
         };
         await announcements.AddAsync(announcement, ct);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Announcements);
         return announcement.ToResponse();
     }
 
@@ -177,6 +214,7 @@ public class AnnouncementService(
         announcement.UpdatedBy = userId;
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Announcements);
 
         var orphanCandidates = RichTextFileReferences
             .ExtractRemoved(previousDescription, announcement.Description)
@@ -196,6 +234,7 @@ public class AnnouncementService(
 
         announcements.Remove(announcement);
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Announcements);
 
         var orphanCandidates = RichTextFileReferences
             .Extract(announcement.Description)
@@ -212,8 +251,10 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        return !await announcements.SetFeaturedAsync(id, ct)
-            ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound)
-            : await GetByIdAsync(id, ct);
+        if (!await announcements.SetFeaturedAsync(id, ct))
+            return Error.NotFound(ErrorCode.AnnouncementNotFound);
+
+        await cacheInvalidator.InvalidateAsync(CacheTags.Announcements);
+        return await GetByIdAsync(id, ct);
     }
 }

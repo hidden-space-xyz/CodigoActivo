@@ -23,6 +23,9 @@ namespace CodigoActivo.Composition;
 
 public static class DependencyInjection
 {
+    private const long LocalCacheSizeLimitBytes = 64 * 1024 * 1024;
+    private const long MaximumCachedPayloadBytes = 1024 * 1024;
+
     public static IServiceCollection AddCodigoActivo(
         this IServiceCollection services,
         IConfiguration configuration
@@ -36,8 +39,15 @@ public static class DependencyInjection
         AddAccountVerification(services, configuration);
         AddPasswordReset(services, configuration);
         AddEmail(services, configuration);
+        AddCaching(services);
         AddApplicationServices(services);
         return services;
+    }
+
+    private static void AddCaching(IServiceCollection services)
+    {
+        services.AddMemoryCache(options => options.SizeLimit = LocalCacheSizeLimitBytes);
+        services.AddHybridCache(options => options.MaximumPayloadBytes = MaximumCachedPayloadBytes);
     }
 
     private static void AddApplicationOptions(

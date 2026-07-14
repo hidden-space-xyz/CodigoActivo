@@ -1,11 +1,13 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -15,6 +17,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 {
     [HttpGet]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Announcements)]
     public async Task<ActionResult<PagedResult<AnnouncementListItemResponse>>> List(
         [FromQuery] AnnouncementListQuery query,
         CancellationToken ct
@@ -25,6 +28,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 
     [HttpGet("years")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Announcements)]
     public async Task<ActionResult<IReadOnlyList<int>>> Years(CancellationToken ct)
     {
         return Ok(await announcements.GetYearsAsync(ct));
@@ -32,6 +36,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 
     [HttpGet("{announcementId:guid}")]
     [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Announcements)]
     public async Task<ActionResult<AnnouncementResponse>> Get(
         Guid announcementId,
         CancellationToken ct

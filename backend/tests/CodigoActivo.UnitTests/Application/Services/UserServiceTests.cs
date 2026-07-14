@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
@@ -26,6 +27,8 @@ public sealed class UserServiceTests
     private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly FakeHybridCache cache = new();
+    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UserService sut;
 
     public UserServiceTests()
@@ -37,7 +40,9 @@ public sealed class UserServiceTests
             hasher,
             new FakeQueryExecutor(),
             clock,
-            uow
+            uow,
+            cache,
+            cacheInvalidator
         );
     }
 
@@ -918,6 +923,9 @@ public sealed class UserServiceTests
         result.Error.Code.Should().Be(ErrorCode.UserNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]
@@ -931,6 +939,24 @@ public sealed class UserServiceTests
         result.IsSuccess.Should().BeTrue();
         users.Received(1).Remove(user);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_UserExists_InvalidatesUsersAndActivitiesCache()
+    {
+        var user = NewUser(isAdmin: false);
+        FindReturns(user);
+
+        var result = await sut.DeleteAsync(user.Id, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags.Contains(CacheTags.Users) && tags.Contains(CacheTags.Activities)
+                )
+            );
     }
 
     [Fact]
@@ -1192,6 +1218,28 @@ public sealed class UserServiceTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddChildAsync_ValidRequest_InvalidatesUsersCache()
+    {
+        var parentId = Guid.NewGuid();
+        var parent = NewUser(id: parentId, dob: AdultDob);
+        FindReturns(parent);
+        CaptureAddedUsers(parent);
+
+        var result = await sut.AddChildAsync(
+            parentId,
+            new RegisterMinorRequest("Kid", "Doe", MinorDob),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+            );
     }
 
     [Fact]
