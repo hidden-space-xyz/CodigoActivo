@@ -41,7 +41,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     private async Task<Guid> SeedResourceAsync(
         string title = "Existing",
         string subtitle = "Sub",
-        string? url = null
+        string? url = null,
+        DateTimeOffset? createdAt = null
     )
     {
         var thumbnailId = await SeedThumbnailAsync();
@@ -60,7 +61,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                         ? SeedIds.ResourceTypes.Internal
                         : SeedIds.ResourceTypes.External,
                     ThumbnailId = thumbnailId,
-                    CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    CreatedAt = createdAt ?? new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
@@ -91,6 +92,137 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         item.Type.Name.Should().Be("Interno");
         item.Type.IsExternal.Should().BeFalse();
         item.Url.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task List_FilterByResourceTypeId_ReturnsOnlyMatchingType()
+    {
+        await SeedResourceAsync("Guia interna");
+        var externalId = await SeedResourceAsync("Curso externo", url: ExternalUrl);
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            $"/api/resources?resourceTypeId={SeedIds.ResourceTypes.External}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        var item = page.Items.Should().ContainSingle().Subject;
+        item.Id.Should().Be(externalId);
+        item.Type.Id.Should().Be(SeedIds.ResourceTypes.External);
+    }
+
+    [Fact]
+    public async Task List_FilterByUrl_MatchesAccentAndCaseInsensitively()
+    {
+        await SeedResourceAsync("Robotica", url: "https://ejemplo.es/robótica-avanzada");
+        await SeedResourceAsync("Ajedrez", url: "https://ejemplo.es/ajedrez");
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/resources?url=ROBOTICA",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(r => r.Title == "Robotica");
+    }
+
+    [Fact]
+    public async Task List_FilterByCreatedRange_UsesAppTimezoneDayBounds()
+    {
+        Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            TimeSpan.FromHours(2),
+            "UTC+02",
+            "UTC+02"
+        );
+        await SeedResourceAsync(
+            "DiaDiez",
+            createdAt: new DateTimeOffset(2026, 3, 9, 22, 0, 0, TimeSpan.Zero)
+        );
+        await SeedResourceAsync(
+            "DiaNueve",
+            createdAt: new DateTimeOffset(2026, 3, 9, 21, 0, 0, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var fromResponse = await client.GetAsync(
+            "/api/resources?createdFrom=2026-03-10",
+            TestContext.Current.CancellationToken
+        );
+        var toResponse = await client.GetAsync(
+            "/api/resources?createdTo=2026-03-09",
+            TestContext.Current.CancellationToken
+        );
+
+        fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        fromPage!.Total.Should().Be(1);
+        fromPage.Items.Should().ContainSingle(r => r.Title == "DiaDiez");
+
+        toResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var toPage = await toResponse.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        toPage!.Total.Should().Be(1);
+        toPage.Items.Should().ContainSingle(r => r.Title == "DiaNueve");
+    }
+
+    [Fact]
+    public async Task List_SortByType_OrdersByTypeName()
+    {
+        await SeedResourceAsync(
+            "Interno",
+            createdAt: new DateTimeOffset(2024, 2, 1, 0, 0, 0, TimeSpan.Zero)
+        );
+        await SeedResourceAsync(
+            "Externo",
+            url: ExternalUrl,
+            createdAt: new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/resources?sort=type",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Select(r => r.Type.Name).Should().Equal("Externo", "Interno");
+    }
+
+    [Fact]
+    public async Task List_SortByUrl_OrdersByUrlWithNullsLast()
+    {
+        await SeedResourceAsync("SinUrl");
+        await SeedResourceAsync("UrlB", url: "https://beta.test/recurso");
+        await SeedResourceAsync("UrlA", url: "https://alfa.test/recurso");
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/resources?sort=url",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Select(r => r.Title).Should().Equal("UrlA", "UrlB", "SinUrl");
     }
 
     [Fact]

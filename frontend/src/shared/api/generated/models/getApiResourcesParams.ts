@@ -8,6 +8,10 @@
 export type GetApiResourcesParams = {
 title?: string;
 subtitle?: string;
+resourceTypeId?: string;
+url?: string;
+createdFrom?: string;
+createdTo?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

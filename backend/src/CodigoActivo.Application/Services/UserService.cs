@@ -31,6 +31,8 @@ public class UserService(
         .Add("status", u => u.UserStatusType.Name)
         .Add("type", u => u.UserType.Name)
         .Add("isAdmin", u => u.IsAdmin)
+        .Add("parentName", u => u.Parent!.FirstName)
+        .Add("dependents", u => u.Children.Count)
         .Default("firstName")
         .Tie(u => u.Id);
 
@@ -56,6 +58,10 @@ public class UserService(
             source = source.Where(u => u.UserStatusTypeId == userStatusTypeId);
         if (query.IsAdmin is { } admin)
             source = source.Where(u => u.IsAdmin == admin);
+        if (query.BirthDateFrom is { } birthDateFrom)
+            source = source.Where(u => u.BirthDate >= birthDateFrom);
+        if (query.BirthDateTo is { } birthDateTo)
+            source = source.Where(u => u.BirthDate <= birthDateTo);
         if (!string.IsNullOrWhiteSpace(query.Name))
         {
             source = source.Where(
@@ -130,8 +136,7 @@ public class UserService(
 
         await uow.SaveChangesAsync(ct);
 
-        var updated = await users.GetByIdWithDetailsAsync(id, ct);
-        return updated!.ToResponse();
+        return await GetByIdAsync(id, ct);
     }
 
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -176,7 +181,7 @@ public class UserService(
         if (user is null)
             return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (await userTypes.FindAsync(ut => ut.Id == userTypeId, ct) is null)
+        if (!await userTypes.ExistsAsync(ut => ut.Id == userTypeId, ct))
             return Error.NotFound(ErrorCode.UserTypeNotFound);
 
         if (user.UserTypeId != userTypeId)
@@ -221,8 +226,7 @@ public class UserService(
         await users.AddAsync(child, ct);
         await uow.SaveChangesAsync(ct);
 
-        var created = await users.GetByIdWithDetailsAsync(child.Id, ct);
-        return created!.ToResponse();
+        return await GetByIdAsync(child.Id, ct);
     }
 
     public async Task<Result> ChangePasswordAsync(

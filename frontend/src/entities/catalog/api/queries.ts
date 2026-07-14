@@ -7,7 +7,10 @@ import {
 } from '@/shared/api/generated/endpoints/activities/activities'
 import { getApiEventsCategoryType } from '@/shared/api/generated/endpoints/events/events'
 import { getApiResourcesTypes } from '@/shared/api/generated/endpoints/resources/resources'
-import { getApiUsersStatusTypes, getApiUsersTypes } from '@/shared/api/generated/endpoints/users/users'
+import {
+  getApiUsersStatusTypes,
+  getApiUsersTypes,
+} from '@/shared/api/generated/endpoints/users/users'
 
 import { catalogQueryKeys } from './query-keys'
 

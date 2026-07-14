@@ -6,11 +6,20 @@ import type {
   DataTableSortEvent,
 } from 'primevue/datatable'
 
-export type ServerTableFieldType = 'text' | 'number'
+export type ServerTableFieldType = 'text' | 'number' | 'dateRange'
 
 export interface ServerTableColumn {
   readonly param?: string
   readonly type?: ServerTableFieldType
+  readonly fromParam?: string
+  readonly toParam?: string
+}
+
+function toDateParam(value: unknown): string | undefined {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  return `${value.getFullYear()}-${month}-${day}`
 }
 
 export interface ServerTablePage<T> {
@@ -63,7 +72,13 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     for (const [key, column] of Object.entries(columns)) {
       const value = filters.value[key]?.value
       if (value === null || value === undefined || value === '') continue
-      if (column.type === 'number') {
+      if (column.type === 'dateRange') {
+        const range: unknown[] = Array.isArray(value) ? value : []
+        const from = toDateParam(range[0])
+        const to = toDateParam(range[1])
+        if (from) result[column.fromParam ?? `${key}From`] = from
+        if (to) result[column.toParam ?? `${key}To`] = to
+      } else if (column.type === 'number') {
         const parsed = Number(value)
         if (!Number.isFinite(parsed)) continue
         result[column.param ?? key] = parsed

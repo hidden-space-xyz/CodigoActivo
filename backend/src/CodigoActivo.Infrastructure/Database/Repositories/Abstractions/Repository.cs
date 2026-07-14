@@ -69,9 +69,7 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         CancellationToken ct = default
     )
     {
-        var entities = await Set.Where(predicate).ToListAsync(ct);
-        Set.RemoveRange(entities);
-        return entities.Count;
+        return await Set.Where(predicate).ExecuteDeleteAsync(ct);
     }
 
     protected static async Task<bool> SetExclusiveFeaturedAsync<TFeaturable>(
@@ -84,14 +82,15 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         if (!await set.AnyAsync(e => e.Id == id, ct))
             return false;
 
-        await set.ExecuteUpdateAsync(
-            s =>
-                s.SetProperty(
-                    e => EF.Property<bool>(e, nameof(IFeaturable.Featured)),
-                    e => e.Id == id
-                ),
-            ct
-        );
+        await set.Where(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)) || e.Id == id)
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(
+                        e => EF.Property<bool>(e, nameof(IFeaturable.Featured)),
+                        e => e.Id == id
+                    ),
+                ct
+            );
         return true;
     }
 }

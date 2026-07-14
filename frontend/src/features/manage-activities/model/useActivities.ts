@@ -39,6 +39,7 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
     defaultSort: { field: 'activityStartsAt', order: 1 },
     columns: {
       title: { type: 'text' },
+      activityDate: { type: 'dateRange', fromParam: 'activityDateFrom', toParam: 'activityDateTo' },
     },
     extraParams: () => ({
       eventId: toValue(eventId),

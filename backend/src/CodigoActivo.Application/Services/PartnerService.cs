@@ -36,6 +36,10 @@ public class PartnerService(
 
         if (query.Tier is { } tier)
             source = source.Where(p => p.Tier == tier);
+        if (query.FromDateFrom is { } fromDateFrom)
+            source = source.Where(p => p.FromDate >= fromDateFrom);
+        if (query.FromDateTo is { } fromDateTo)
+            source = source.Where(p => p.FromDate <= fromDateTo);
         if (!string.IsNullOrWhiteSpace(query.Name))
         {
             source = source.Where(

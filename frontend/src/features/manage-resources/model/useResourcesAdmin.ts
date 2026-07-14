@@ -29,6 +29,9 @@ export function useResourcesAdmin() {
     columns: {
       title: { type: 'text' },
       subtitle: { type: 'text' },
+      type: { param: 'resourceTypeId' },
+      url: { type: 'text' },
+      created: { type: 'dateRange', fromParam: 'createdFrom', toParam: 'createdTo' },
     },
   })
 

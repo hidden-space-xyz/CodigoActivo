@@ -4,6 +4,8 @@ import {
   AdminPageHeader,
   AppButton as Button,
   ColorTag,
+  ColumnFilterDate,
+  ColumnFilterSelect,
   ColumnSearch,
   ListThumbnail,
 } from '@/shared/ui'
@@ -11,6 +13,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Tag from 'primevue/tag'
 
+import { useEventCategoryTypesList } from '@/entities/catalog'
 import { EventFormDialog, useEventsAdmin } from '@/features/manage-events'
 import type {
   CreateEventRequest,
@@ -21,8 +24,16 @@ import type {
 import { formatDate, formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { table, create, update, remove, feature, fetchOne } = useEventsAdmin()
+const categoryTypes = useEventCategoryTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
+
+const categoryOptions = computed(() =>
+  (categoryTypes.data.value ?? []).map((category) => ({
+    label: category.name ?? '—',
+    value: category.id ?? '',
+  })),
+)
 
 function onFeature(event: EventListItemResponse): void {
   if (!event.id || event.featured) return
@@ -173,7 +184,15 @@ function confirmDelete(event: EventListItemResponse): void {
         </template>
         <template #body="{ data }">{{ data.subtitle || '—' }}</template>
       </Column>
-      <Column header="Categorías">
+      <Column sort-field="categories" sortable>
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('category').value"
+            label="Categorías"
+            :options="categoryOptions"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           <div class="cats-cell">
             <ColorTag
@@ -186,12 +205,26 @@ function confirmDelete(event: EventListItemResponse): void {
           </div>
         </template>
       </Column>
-      <Column field="eventStartsAt" header="Duración" sortable>
+      <Column field="eventStartsAt" sortable>
+        <template #header>
+          <ColumnFilterDate
+            v-model="table.columnFilter('eventDate').value"
+            label="Duración"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           {{ formatDate(data.eventStartsAt) }} – {{ formatDate(data.eventEndsAt) }}
         </template>
       </Column>
-      <Column header="Inscripción">
+      <Column sort-field="signupStartsAt" sortable>
+        <template #header>
+          <ColumnFilterDate
+            v-model="table.columnFilter('signup').value"
+            label="Inscripción"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">
           {{ formatDateTimeRange(data.signupStartsAt, data.signupEndsAt) }}
         </template>

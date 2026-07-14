@@ -34,6 +34,18 @@ public class ActivityRepository(CodigoActivoDbContext context)
             .FirstOrDefaultAsync(a => a.Id == activityId, ct);
     }
 
+    public Task<bool> AssignmentExistsAsync(
+        Guid userId,
+        Guid activityId,
+        CancellationToken ct = default
+    )
+    {
+        return Context.ActivityUserRoleAssignments.AnyAsync(
+            x => x.UserId == userId && x.ActivityId == activityId,
+            ct
+        );
+    }
+
     public async Task<ActivityUserRoleAssignment?> GetAssignmentAsync(
         Guid userId,
         Guid activityId,

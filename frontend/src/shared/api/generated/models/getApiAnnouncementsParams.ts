@@ -10,6 +10,8 @@ title?: string;
 subtitle?: string;
 featured?: boolean;
 year?: number;
+createdFrom?: string;
+createdTo?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

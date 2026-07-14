@@ -88,7 +88,9 @@ public sealed class EventServiceTests
         string subtitle = "Innovación",
         DateOnly? starts = null,
         DateOnly? ends = null,
-        bool featured = false
+        bool featured = false,
+        DateTimeOffset? signupStart = null,
+        DateTimeOffset? signupEnd = null
     )
     {
         var start = starts ?? new DateOnly(2026, 8, 1);
@@ -101,14 +103,32 @@ public sealed class EventServiceTests
             Description = "{}",
             EventStartsAt = start,
             EventEndsAt = end,
-            SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-            SignupEndsAt = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+            SignupStartsAt = signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+            SignupEndsAt = signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             Featured = featured,
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
             Categories = [],
         };
+    }
+
+    private static Event WithCategory(Event ev, Guid categoryTypeId, string name)
+    {
+        ev.Categories.Add(
+            new EventCategory
+            {
+                EventId = ev.Id,
+                EventCategoryTypeId = categoryTypeId,
+                EventCategoryType = new EventCategoryType
+                {
+                    Id = categoryTypeId,
+                    Name = name,
+                    Color = "#112233",
+                },
+            }
+        );
+        return ev;
     }
 
     private static CreateEventRequest CreateReq(
@@ -204,6 +224,178 @@ public sealed class EventServiceTests
         );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Y2025");
+    }
+
+    [Fact]
+    public async Task ListAsync_YearOutOfRange_ReturnsEmpty()
+    {
+        HasEvents(
+            NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { Year = 0 },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Total.Should().Be(0);
+        result.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListAsync_YearMaximumSupported_ReturnsEventsOfYear9999()
+    {
+        HasEvents(
+            NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2)),
+            NewEvent("Y9999", starts: new DateOnly(9999, 6, 15), ends: new DateOnly(9999, 6, 16))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { Year = 9999 },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle(e => e.Title == "Y9999");
+    }
+
+    [Fact]
+    public async Task ListAsync_CategoryTypeIdFilter_KeepsEventsWithMatchingCategory()
+    {
+        var categoryId = Guid.NewGuid();
+        HasEvents(
+            WithCategory(NewEvent("Con"), categoryId, "Talleres"),
+            WithCategory(NewEvent("Sin"), Guid.NewGuid(), "Charlas")
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { CategoryTypeId = categoryId },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Con");
+    }
+
+    [Fact]
+    public async Task ListAsync_EventDateRangeFilter_KeepsEventsOverlappingRange()
+    {
+        HasEvents(
+            NewEvent("Antes", starts: new DateOnly(2026, 3, 1), ends: new DateOnly(2026, 3, 2)),
+            NewEvent("Solapa", starts: new DateOnly(2026, 4, 28), ends: new DateOnly(2026, 5, 2)),
+            NewEvent("Dentro", starts: new DateOnly(2026, 5, 10), ends: new DateOnly(2026, 5, 11)),
+            NewEvent("Despues", starts: new DateOnly(2026, 6, 1), ends: new DateOnly(2026, 6, 2))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery
+            {
+                EventDateFrom = new DateOnly(2026, 5, 1),
+                EventDateTo = new DateOnly(2026, 5, 31),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(e => e.Title).Should().BeEquivalentTo("Solapa", "Dentro");
+    }
+
+    [Fact]
+    public async Task ListAsync_SignupFromFilter_UsesAppTimeZoneDayStart()
+    {
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            TimeSpan.FromHours(2),
+            "UTC+02",
+            "UTC+02"
+        );
+        HasEvents(
+            NewEvent(
+                "EnLimite",
+                signupEnd: new DateTimeOffset(2026, 7, 19, 23, 0, 0, TimeSpan.Zero)
+            ),
+            NewEvent("Cerrado", signupEnd: new DateTimeOffset(2026, 7, 19, 21, 0, 0, TimeSpan.Zero))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { SignupFrom = new DateOnly(2026, 7, 20) },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("EnLimite");
+    }
+
+    [Fact]
+    public async Task ListAsync_SignupToFilter_ExcludesSignupsStartingAfterDayEnd()
+    {
+        HasEvents(
+            NewEvent(
+                "Abierto",
+                signupStart: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
+            ),
+            NewEvent("Futuro", signupStart: new DateTimeOffset(2026, 7, 11, 0, 0, 0, TimeSpan.Zero))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { SignupTo = new DateOnly(2026, 7, 10) },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Abierto");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortBySignupStartsAt_OrdersBySignupStart()
+    {
+        HasEvents(
+            NewEvent(
+                "Tercero",
+                signupStart: new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
+            ),
+            NewEvent(
+                "Primero",
+                signupStart: new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
+            ),
+            NewEvent("Segundo", signupStart: new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { Sort = "signupStartsAt" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(e => e.Title).Should().ContainInOrder("Primero", "Segundo", "Tercero");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortBySignupEndsAtDescending_OrdersBySignupEndDescending()
+    {
+        HasEvents(
+            NewEvent("Medio", signupEnd: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)),
+            NewEvent("Ultimo", signupEnd: new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero)),
+            NewEvent("Primero", signupEnd: new DateTimeOffset(2026, 7, 15, 0, 0, 0, TimeSpan.Zero))
+        );
+
+        var result = await sut.ListAsync(
+            new EventListQuery { Sort = "-signupEndsAt" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(e => e.Title).Should().ContainInOrder("Ultimo", "Medio", "Primero");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByCategories_OrdersByMinimumCategoryName()
+    {
+        var second = WithCategory(NewEvent("Segundo"), Guid.NewGuid(), "Charlas");
+        WithCategory(second, Guid.NewGuid(), "Zumba");
+        var first = WithCategory(NewEvent("Primero"), Guid.NewGuid(), "Ajedrez");
+        var third = WithCategory(NewEvent("Tercero"), Guid.NewGuid(), "Mercadillo");
+        HasEvents(second, first, third);
+
+        var result = await sut.ListAsync(
+            new EventListQuery { Sort = "categories" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(e => e.Title).Should().ContainInOrder("Primero", "Segundo", "Tercero");
     }
 
     [Fact]
@@ -807,8 +999,84 @@ public sealed class EventServiceTests
 
         result.IsSuccess.Should().BeTrue();
         await fileService
-            .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
+            .Received(1)
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 0),
+                Arg.Any<CancellationToken>()
+            );
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ThumbnailReplaced_IncludesPreviousThumbnailInOrphanBatch()
+    {
+        var ev = NewEvent();
+        var previousThumbnailId = ev.ThumbnailId;
+        PrepareUpdate(ev);
+        var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: Guid.NewGuid());
+
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await fileService
+            .Received(1)
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 1 && ids.Contains(previousThumbnailId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
+    }
+
+    [Fact]
+    public async Task UpdateAsync_UnchangedCategories_KeepsExistingCategoryInstances()
+    {
+        var keptA = Guid.NewGuid();
+        var keptB = Guid.NewGuid();
+        var ev = NewEvent();
+        var categoryA = new EventCategory
+        {
+            EventId = ev.Id,
+            EventCategoryTypeId = keptA,
+            EventCategoryType = new EventCategoryType
+            {
+                Id = keptA,
+                Name = "Talleres",
+                Color = "#111111",
+            },
+        };
+        var categoryB = new EventCategory
+        {
+            EventId = ev.Id,
+            EventCategoryTypeId = keptB,
+            EventCategoryType = new EventCategoryType
+            {
+                Id = keptB,
+                Name = "Charlas",
+                Color = "#222222",
+            },
+        };
+        ev.Categories.Add(categoryA);
+        ev.Categories.Add(categoryB);
+        PrepareUpdate(ev);
+        HasCategoryCount(2);
+        var request = UpdateReq(categoryTypeIds: [keptA, keptB], thumbnailId: ev.ThumbnailId);
+
+        var result = await sut.UpdateAsync(
+            ev.Id,
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        ev.Categories.Should().HaveCount(2);
+        ev.Categories.Should().Contain(categoryA);
+        ev.Categories.Should().Contain(categoryB);
     }
 
     [Fact]
@@ -836,10 +1104,12 @@ public sealed class EventServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
-        await fileService
-            .DidNotReceive()
-            .DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Contains(removedId) && !ids.Contains(keptId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     private void PrepareUpdate(Event ev)
@@ -880,7 +1150,7 @@ public sealed class EventServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
+            .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -914,13 +1184,15 @@ public sealed class EventServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(ev.ThumbnailId, Arg.Any<CancellationToken>());
-        await fileService
-            .Received(1)
-            .DeleteIfOrphanedAsync(sharedActivityThumbnailId, Arg.Any<CancellationToken>());
-        await fileService
-            .DidNotReceive()
-            .DeleteIfOrphanedAsync(foreignActivity.ThumbnailId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 2
+                    && ids.Contains(ev.ThumbnailId)
+                    && ids.Contains(sharedActivityThumbnailId)
+                    && !ids.Contains(foreignActivity.ThumbnailId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -939,7 +1211,10 @@ public sealed class EventServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(embeddedId)),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -970,12 +1245,12 @@ public sealed class EventServiceTests
         result.Value.Featured.Should().BeTrue();
     }
 
-    private static EventCategoryType NewCategoryType(string name) =>
+    private static EventCategoryType NewCategoryType(string name, string color = "#000000") =>
         new()
         {
             Id = Guid.NewGuid(),
             Name = name,
-            Color = "#000000",
+            Color = color,
         };
 
     [Fact]
@@ -1007,6 +1282,39 @@ public sealed class EventServiceTests
 
         result.Total.Should().Be(1);
         result.Items.Should().ContainSingle().Which.Name.Should().Be("Robótica");
+    }
+
+    [Fact]
+    public async Task ListCategoryTypesAsync_ColorFilter_MatchesSubstringCaseInsensitively()
+    {
+        HasCategoryTypes(
+            NewCategoryType("Talleres", color: "#AABB11"),
+            NewCategoryType("Charlas", color: "#22CC33")
+        );
+
+        var result = await sut.ListCategoryTypesAsync(
+            new EventCategoryTypeListQuery { Color = "aabb" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Name.Should().Be("Talleres");
+    }
+
+    [Fact]
+    public async Task ListCategoryTypesAsync_SortByColor_OrdersByColor()
+    {
+        HasCategoryTypes(
+            NewCategoryType("Tercero", color: "#333333"),
+            NewCategoryType("Primero", color: "#111111"),
+            NewCategoryType("Segundo", color: "#222222")
+        );
+
+        var result = await sut.ListCategoryTypesAsync(
+            new EventCategoryTypeListQuery { Sort = "color" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(c => c.Name).Should().ContainInOrder("Primero", "Segundo", "Tercero");
     }
 
     [Fact]

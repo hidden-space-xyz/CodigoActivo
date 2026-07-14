@@ -36,6 +36,7 @@ export function useUsers() {
       name: { type: 'text' },
       email: { type: 'text' },
       phone: { type: 'text' },
+      birthDate: { type: 'dateRange', fromParam: 'birthDateFrom', toParam: 'birthDateTo' },
       status: { param: 'userStatusTypeId' },
       type: { param: 'userTypeId' },
       isAdmin: { param: 'isAdmin' },

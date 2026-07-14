@@ -50,7 +50,8 @@ public sealed class AnnouncementServiceTests
         string title = "Hello",
         string subtitle = "World",
         bool featured = false,
-        int year = 2024
+        int year = 2024,
+        DateTimeOffset? createdAt = null
     ) =>
         new()
         {
@@ -60,7 +61,7 @@ public sealed class AnnouncementServiceTests
             Description = "{}",
             Featured = featured,
             ThumbnailId = Guid.NewGuid(),
-            CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            CreatedAt = createdAt ?? new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
 
@@ -75,6 +76,94 @@ public sealed class AnnouncementServiceTests
         );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("New");
+    }
+
+    [Fact]
+    public async Task ListAsync_YearOutOfRange_ReturnsEmpty()
+    {
+        HasAnnouncements(NewAnnouncement("Any", year: 2025));
+
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Year = 0 },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Total.Should().Be(0);
+        result.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListAsync_YearMaximumSupported_ReturnsAnnouncementsOfYear9999()
+    {
+        HasAnnouncements(
+            NewAnnouncement("Antiguo", year: 2025),
+            NewAnnouncement("Futuro", year: 9999)
+        );
+
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { Year = 9999 },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle(a => a.Title == "Futuro");
+    }
+
+    [Fact]
+    public async Task ListAsync_CreatedRangeFilter_KeepsAnnouncementsWithinDayBounds()
+    {
+        HasAnnouncements(
+            NewAnnouncement(
+                "Antes",
+                createdAt: new DateTimeOffset(2024, 5, 9, 23, 59, 0, TimeSpan.Zero)
+            ),
+            NewAnnouncement(
+                "Dentro",
+                createdAt: new DateTimeOffset(2024, 5, 10, 12, 0, 0, TimeSpan.Zero)
+            ),
+            NewAnnouncement(
+                "Despues",
+                createdAt: new DateTimeOffset(2024, 5, 11, 0, 0, 0, TimeSpan.Zero)
+            )
+        );
+
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery
+            {
+                CreatedFrom = new DateOnly(2024, 5, 10),
+                CreatedTo = new DateOnly(2024, 5, 10),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Dentro");
+    }
+
+    [Fact]
+    public async Task ListAsync_CreatedToFilter_UsesAppTimeZoneDayEnd()
+    {
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            TimeSpan.FromHours(2),
+            "UTC+02",
+            "UTC+02"
+        );
+        HasAnnouncements(
+            NewAnnouncement(
+                "Dentro",
+                createdAt: new DateTimeOffset(2024, 5, 10, 21, 0, 0, TimeSpan.Zero)
+            ),
+            NewAnnouncement(
+                "Fuera",
+                createdAt: new DateTimeOffset(2024, 5, 10, 23, 0, 0, TimeSpan.Zero)
+            )
+        );
+
+        var result = await sut.ListAsync(
+            new AnnouncementListQuery { CreatedTo = new DateOnly(2024, 5, 10) },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Dentro");
     }
 
     [Theory]
@@ -362,7 +451,12 @@ public sealed class AnnouncementServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 1 && ids.Contains(previousThumbnailId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -392,8 +486,11 @@ public sealed class AnnouncementServiceTests
 
         result.IsSuccess.Should().BeTrue();
         await fileService
-            .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .Received(1)
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 0),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -428,10 +525,12 @@ public sealed class AnnouncementServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
-        await fileService
-            .DidNotReceive()
-            .DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Contains(removedId) && !ids.Contains(keptId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -453,7 +552,7 @@ public sealed class AnnouncementServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -474,7 +573,12 @@ public sealed class AnnouncementServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Contains(embeddedId) && ids.Contains(announcement.ThumbnailId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]

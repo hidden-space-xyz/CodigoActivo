@@ -79,16 +79,24 @@ public sealed class ActivityServiceAssignmentTests
 
     private void TargetUser(Guid userId, Guid userTypeId) =>
         users
-            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Query()
             .Returns(
-                new User
+                new List<User>
                 {
-                    Id = userId,
-                    FirstName = "Test",
-                    LastName = "User",
-                    UserTypeId = userTypeId,
-                }
+                    new()
+                    {
+                        Id = userId,
+                        FirstName = "Test",
+                        LastName = "User",
+                        UserTypeId = userTypeId,
+                    },
+                }.AsQueryable()
             );
+
+    private void AssignmentExists(bool exists) =>
+        activities
+            .AssignmentExistsAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(exists);
 
     private void HouseholdUsers(params User[] members) =>
         users.Query().Returns(members.AsQueryable());
@@ -124,18 +132,21 @@ public sealed class ActivityServiceAssignmentTests
 
     private void RequestedStatusNamed(string name) =>
         statuses
-            .FindAsync(
-                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .Query()
             .Returns(
-                new AssignmentStatusType
+                new List<AssignmentStatusType>
                 {
-                    Id = SeedIds.AssignmentStatusTypes.Requested,
-                    Name = name,
-                    Color = "#000",
-                }
+                    new()
+                    {
+                        Id = SeedIds.AssignmentStatusTypes.Requested,
+                        Name = name,
+                        Color = "#000",
+                    },
+                }.AsQueryable()
             );
+
+    private void NoStatusCatalog() =>
+        statuses.Query().Returns(new List<AssignmentStatusType>().AsQueryable());
 
     private static ActivityUserRoleAssignment Assignment(
         Guid userId,
@@ -199,9 +210,7 @@ public sealed class ActivityServiceAssignmentTests
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users
-            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((User?)null);
+        HouseholdUsers();
 
         var result = await sut.AssignAsync(
             activityId,
@@ -225,7 +234,7 @@ public sealed class ActivityServiceAssignmentTests
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         TargetUser(userId, SeedIds.UserTypes.Participant);
-        ExistingAssignment(null);
+        AssignmentExists(false);
         RequestedStatusNamed("Solicitado");
 
         var result = await sut.AssignAsync(
@@ -258,7 +267,7 @@ public sealed class ActivityServiceAssignmentTests
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         TargetUser(userId, SeedIds.UserTypes.Member);
-        ExistingAssignment(null);
+        AssignmentExists(false);
         RequestedStatusNamed("Solicitado");
 
         var result = await sut.AssignAsync(
@@ -359,7 +368,7 @@ public sealed class ActivityServiceAssignmentTests
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         TargetUser(userId, SeedIds.UserTypes.Participant);
-        ExistingAssignment(Assignment(userId, activityId));
+        AssignmentExists(true);
 
         var result = await sut.AssignAsync(
             activityId,
@@ -386,7 +395,7 @@ public sealed class ActivityServiceAssignmentTests
         var roleId = SeedIds.ActivityRoleTypes.Participant;
         HasActivityWindow(activityId, PastStart, PastEnd);
         TargetUser(userId, SeedIds.UserTypes.Participant);
-        ExistingAssignment(null);
+        AssignmentExists(false);
         RequestedStatusNamed("Solicitado");
 
         var result = await sut.AssignAsync(
@@ -428,7 +437,7 @@ public sealed class ActivityServiceAssignmentTests
 
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         TargetUser(userId, SeedIds.UserTypes.Participant);
-        ExistingAssignment(null);
+        AssignmentExists(false);
         RequestedStatusNamed("Solicitado");
 
         var result = await sut.AssignAsync(
@@ -462,7 +471,7 @@ public sealed class ActivityServiceAssignmentTests
 
         HasActivityWindow(activityId, OpenStart, OpenEnd);
         TargetUser(userId, SeedIds.UserTypes.Participant);
-        ExistingAssignment(null);
+        AssignmentExists(false);
         RequestedStatusNamed("Solicitado");
 
         var result = await sut.AssignAsync(
@@ -720,6 +729,7 @@ public sealed class ActivityServiceAssignmentTests
                     new() { UserId = childId, ActivityId = activityId },
                 }.AsQueryable()
             );
+        NoStatusCatalog();
 
         var request = new AssignHouseholdRequest([
             new(actingUserId, roleId),

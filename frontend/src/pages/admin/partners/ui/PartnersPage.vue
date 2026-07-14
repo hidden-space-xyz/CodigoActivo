@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AdminPageHeader, AppButton as Button, ColumnSearch, ListThumbnail } from '@/shared/ui'
+import {
+  AdminPageHeader,
+  AppButton as Button,
+  ColumnFilterDate,
+  ColumnSearch,
+  ListThumbnail,
+} from '@/shared/ui'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
@@ -140,7 +146,14 @@ function confirmDelete(partner: PartnerResponse): void {
           <span v-else>—</span>
         </template>
       </Column>
-      <Column field="fromDate" header="Alta" sortable style="width: 160px">
+      <Column field="fromDate" sortable style="width: 190px">
+        <template #header>
+          <ColumnFilterDate
+            v-model="table.columnFilter('fromDate').value"
+            label="Alta"
+            @apply="table.onFilter"
+          />
+        </template>
         <template #body="{ data }">{{ formatDate(data.fromDate) }}</template>
       </Column>
       <Column header="Acciones" style="width: 130px">

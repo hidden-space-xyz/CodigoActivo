@@ -326,6 +326,107 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EventAttendees_SortByEmail_OrdersByEmailWithNullsLast()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?sort=email",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Select(a => a.FirstName).Should().Equal("Ada", "Bruno", "Pedro", "Mateo");
+    }
+
+    [Fact]
+    public async Task EventAttendees_SortByBirthDateDescending_OrdersYoungestFirst()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?sort=-birthDate",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Items.Select(a => a.FirstName).Should().Equal("Mateo", "Pedro", "Bruno", "Ada");
+    }
+
+    [Fact]
+    public async Task EventAttendees_SortByType_OrdersByUserTypeName()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?sort=type",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!
+            .Items.Select(a => a.UserTypeName)
+            .Should()
+            .Equal("Participante", "Socio", "Socio", "Socio");
+        page.Items.Select(a => a.FirstName).Should().Equal("Mateo", "Ada", "Pedro", "Bruno");
+    }
+
+    [Fact]
+    public async Task EventAttendees_ActivityFilter_ComputesConflictFromHiddenAssignments()
+    {
+        await SeedEventGraphAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(Thumbnail(ActivityCThumbnailId));
+            db.Activities.Add(
+                BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, At.AddHours(1))
+            );
+            db.ActivityUserRoleAssignments.Add(
+                Assignment(
+                    ActivityCId,
+                    TestSeedData.Users.MemberChildId,
+                    SeedIds.ActivityRoleTypes.Participant,
+                    SeedIds.AssignmentStatusTypes.Requested
+                )
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?activityId={ActivityCId}",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        var child = page
+            .Items.Should()
+            .ContainSingle(a => a.UserId == TestSeedData.Users.MemberChildId)
+            .Subject;
+        var assignment = child.Assignments.Should().ContainSingle().Subject;
+        assignment.ActivityId.Should().Be(ActivityCId);
+        assignment
+            .HasTimeConflict.Should()
+            .BeTrue("the overlapping assignment hidden by the filter still counts");
+    }
+
+    [Fact]
     public async Task EventAttendees_SearchFilter_MatchesGuardianData()
     {
         await SeedEventGraphAsync();

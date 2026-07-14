@@ -15,6 +15,8 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
         builder.Property(r => r.Description).HasColumnType("jsonb").IsRequired();
         builder.Property(r => r.CreatedAt).IsRequired();
 
+        builder.HasIndex(r => r.CreatedAt);
+
         builder
             .HasOne(r => r.ResourceType)
             .WithMany(t => t.Resources)

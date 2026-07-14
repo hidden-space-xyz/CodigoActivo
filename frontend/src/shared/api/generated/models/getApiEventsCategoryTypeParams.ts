@@ -7,6 +7,7 @@
 
 export type GetApiEventsCategoryTypeParams = {
 name?: string;
+color?: string;
 page?: number;
 pageSize?: number;
 sort?: string;

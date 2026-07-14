@@ -83,7 +83,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         Guid eventId,
         Guid thumbnailId,
         string title = "Actividad",
-        Guid? modalityId = null
+        Guid? modalityId = null,
+        string location = "Sala",
+        DateTimeOffset? startsAt = null,
+        DateTimeOffset? endsAt = null
     )
     {
         var id = Guid.NewGuid();
@@ -95,10 +98,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     Id = id,
                     Title = title,
                     Description = "Descripcion",
-                    Location = "Sala",
+                    Location = location,
                     ActivityModalityTypeId = modalityId ?? SeedIds.ActivityModalityTypes.Presencial,
-                    ActivityStartsAt = ActivityStart,
-                    ActivityEndsAt = ActivityEnd,
+                    ActivityStartsAt = startsAt ?? ActivityStart,
+                    ActivityEndsAt = endsAt ?? ActivityEnd,
                     EventId = eventId,
                     ThumbnailId = thumbnailId,
                     CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -178,6 +181,112 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var item = page.Items.Should().ContainSingle().Subject;
         item.Title.Should().Be("En remoto");
         item.ModalityId.Should().Be(SeedIds.ActivityModalityTypes.Online);
+    }
+
+    [Fact]
+    public async Task List_LocationFilter_MatchesAccentAndCaseInsensitively()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        await SeedActivityAsync(eventId, thumb, "Ponencia", location: "Salón de actos");
+        await SeedActivityAsync(eventId, thumb, "Lectura", location: "Biblioteca");
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/activities?location=SALON",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(1);
+        page.Items.Should().ContainSingle(a => a.Title == "Ponencia");
+    }
+
+    [Fact]
+    public async Task List_FilterByActivityDateRange_MatchesActivitiesOverlappingRange()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        await SeedActivityAsync(
+            eventId,
+            thumb,
+            "Temprana",
+            startsAt: new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
+            endsAt: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
+        );
+        await SeedActivityAsync(
+            eventId,
+            thumb,
+            "Tardia",
+            startsAt: new DateTimeOffset(2026, 7, 20, 10, 0, 0, TimeSpan.Zero),
+            endsAt: new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero)
+        );
+        await SeedActivityAsync(
+            eventId,
+            thumb,
+            "Nocturna",
+            startsAt: new DateTimeOffset(2026, 7, 12, 23, 0, 0, TimeSpan.Zero),
+            endsAt: new DateTimeOffset(2026, 7, 13, 1, 0, 0, TimeSpan.Zero)
+        );
+        var client = CreateClient();
+
+        var fromResponse = await client.GetAsync(
+            "/api/activities?activityDateFrom=2026-07-13",
+            TestContext.Current.CancellationToken
+        );
+        var toResponse = await client.GetAsync(
+            "/api/activities?activityDateTo=2026-07-12",
+            TestContext.Current.CancellationToken
+        );
+
+        fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        fromPage!.Total.Should().Be(2);
+        fromPage.Items.Select(a => a.Title).Should().BeEquivalentTo("Tardia", "Nocturna");
+
+        toResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var toPage = await toResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        toPage!.Total.Should().Be(2);
+        toPage.Items.Select(a => a.Title).Should().BeEquivalentTo("Temprana", "Nocturna");
+    }
+
+    [Fact]
+    public async Task List_SortByLocation_OrdersByLocation()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        await SeedActivityAsync(eventId, thumb, "Dos", location: "Sala 2");
+        await SeedActivityAsync(eventId, thumb, "Uno", location: "Auditorio");
+        await SeedActivityAsync(eventId, thumb, "Tres", location: "Biblioteca");
+        var client = CreateClient();
+
+        var ascending = await client.GetAsync(
+            "/api/activities?sort=location",
+            TestContext.Current.CancellationToken
+        );
+        var descending = await client.GetAsync(
+            "/api/activities?sort=-location",
+            TestContext.Current.CancellationToken
+        );
+
+        ascending.StatusCode.Should().Be(HttpStatusCode.OK);
+        var ascendingPage = await ascending.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        ascendingPage!.Items.Select(a => a.Title).Should().Equal("Uno", "Tres", "Dos");
+
+        descending.StatusCode.Should().Be(HttpStatusCode.OK);
+        var descendingPage = await descending.ReadJsonAsync<PagedResult<ActivityResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        descendingPage!.Items.Select(a => a.Title).Should().Equal("Dos", "Tres", "Uno");
     }
 
     [Fact]

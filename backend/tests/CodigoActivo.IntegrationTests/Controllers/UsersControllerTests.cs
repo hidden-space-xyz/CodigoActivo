@@ -216,6 +216,96 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task List_FilterByBirthDateRange_AppliesInclusiveBounds()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?birthDateFrom=1988-09-09&birthDateTo=1992-07-30",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(3);
+        page.Items.Select(u => u.Id)
+            .Should()
+            .BeEquivalentTo([
+                TestSeedData.Users.MemberId,
+                TestSeedData.Users.PendingId,
+                TestSeedData.Users.BlockedId,
+            ]);
+    }
+
+    [Fact]
+    public async Task List_SortByDependentsDescending_OrdersByChildrenCount()
+    {
+        await Factory.SeedAsync(db =>
+        {
+            db.Users.AddRange(
+                SeedChild("Iris", TestSeedData.Users.AdminId),
+                SeedChild("Hugo", TestSeedData.Users.AdminId)
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?sort=-dependents",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(7);
+        page.Items[0].Id.Should().Be(TestSeedData.Users.AdminId);
+        page.Items[1].Id.Should().Be(TestSeedData.Users.MemberId);
+        page.Items.Select(u => u.DependentCount).Should().Equal(2, 1, 0, 0, 0, 0, 0);
+    }
+
+    [Fact]
+    public async Task List_SortByParentName_OrdersChildrenByParentThenParentlessLast()
+    {
+        await Factory.SeedAsync(db =>
+        {
+            db.Users.Add(SeedChild("Iris", TestSeedData.Users.AdminId));
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            "/api/users?sort=parentName",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(6);
+        page.Items.Select(u => u.ParentName)
+            .Should()
+            .Equal("Ada Admin", "Marta Miembro", null, null, null, null);
+    }
+
+    private static User SeedChild(string firstName, Guid parentId) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            FirstName = firstName,
+            LastName = "Menor",
+            BirthDate = new DateOnly(2017, 3, 3),
+            ParentId = parentId,
+            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+            UserTypeId = SeedIds.UserTypes.Participant,
+            CreatedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
+        };
+
+    [Fact]
     public async Task Types_AsAdmin_ReturnsAllUserTypes()
     {
         var client = await LoginAsAdminAsync();
@@ -320,6 +410,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.ReadJsonAsync<UserResponse>(
+            TestContext.Current.CancellationToken
+        );
+        updated!.Type.Should().NotBeNull();
+        updated.Type!.Id.Should().Be(SeedIds.UserTypes.Member);
+        updated.Type.Name.Should().Be("Socio");
+        updated.ParentName.Should().BeNull();
+        updated.DependentCount.Should().Be(1);
         var stored = await Factory.QueryAsync(db =>
             db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
                 .AsTask()
@@ -480,7 +578,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             TestContext.Current.CancellationToken
         );
         created!.ParentId.Should().Be(TestSeedData.Users.MemberId);
-        created.Type.Should().BeNull();
+        created.ParentName.Should().Be("Marta Miembro");
+        created.DependentCount.Should().Be(0);
+        created.Type.Should().NotBeNull();
+        created.Type!.Id.Should().Be(SeedIds.UserTypes.Participant);
+        created.Type.Name.Should().Be("Participante");
 
         var stored = await Factory.QueryAsync(db =>
             db.Users.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()

@@ -33,7 +33,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         return id;
     }
 
-    private async Task<Guid> SeedPartnerAsync(string name = "Existing")
+    private async Task<Guid> SeedPartnerAsync(string name = "Existing", DateOnly? fromDate = null)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var id = Guid.NewGuid();
@@ -45,7 +45,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
                     Id = id,
                     Name = name,
                     Tier = 1,
-                    FromDate = new DateOnly(2024, 1, 1),
+                    FromDate = fromDate ?? new DateOnly(2024, 1, 1),
                     ThumbnailId = thumbnailId,
                     CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     CreatedBy = TestSeedData.Users.AdminId,
@@ -74,6 +74,28 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(p => p.Name == "Alpha");
+    }
+
+    [Fact]
+    public async Task List_FilterByFromDateRange_AppliesInclusiveBounds()
+    {
+        await SeedPartnerAsync("Antiguo", new DateOnly(2024, 1, 1));
+        await SeedPartnerAsync("Medio", new DateOnly(2024, 6, 15));
+        await SeedPartnerAsync("Reciente", new DateOnly(2024, 12, 31));
+        await SeedPartnerAsync("Fuera", new DateOnly(2025, 1, 1));
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            "/api/partners?fromDateFrom=2024-06-15&fromDateTo=2024-12-31",
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<PartnerResponse>>(
+            TestContext.Current.CancellationToken
+        );
+        page!.Total.Should().Be(2);
+        page.Items.Select(p => p.Name).Should().BeEquivalentTo("Medio", "Reciente");
     }
 
     [Fact]

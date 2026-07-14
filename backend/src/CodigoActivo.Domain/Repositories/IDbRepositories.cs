@@ -1,6 +1,12 @@
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Domain.Repositories;
+
+public interface IDashboardRepository
+{
+    Task<DashboardCounts> GetCountsAsync(CancellationToken ct = default);
+}
 
 public interface IUserRepository : IDbRepository<User>
 {
@@ -42,6 +48,8 @@ public interface IActivityRepository : IDbRepository<Activity>
         CancellationToken ct = default
     );
 
+    Task<bool> AssignmentExistsAsync(Guid userId, Guid activityId, CancellationToken ct = default);
+
     Task<Activity?> FindWithRoleCapacitiesAsync(Guid activityId, CancellationToken ct = default);
 
     Task<ActivityUserRoleAssignment?> GetAssignmentAsync(
@@ -70,6 +78,11 @@ public interface IPartnerRepository : IDbRepository<Partner>;
 public interface IFileRepository : IDbRepository<FileEntity>
 {
     Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<Guid>> GetInUseAsync(
+        IReadOnlyCollection<Guid> fileIds,
+        CancellationToken ct = default
+    );
 }
 
 public interface IUserTypeRepository : IDbRepository<UserType>;

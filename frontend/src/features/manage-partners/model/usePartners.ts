@@ -28,6 +28,7 @@ export function usePartners() {
       name: { type: 'text' },
       tier: { type: 'number' },
       website: { type: 'text' },
+      fromDate: { type: 'dateRange', fromParam: 'fromDateFrom', toParam: 'fromDateTo' },
     },
   })
 

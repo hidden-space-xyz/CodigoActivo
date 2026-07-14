@@ -25,16 +25,20 @@ public class EventService(
         new SortMap<EventListItemResponse>()
             .Add("eventStartsAt", e => e.EventStartsAt)
             .Add("eventEndsAt", e => e.EventEndsAt)
+            .Add("signupStartsAt", e => e.SignupStartsAt)
+            .Add("signupEndsAt", e => e.SignupEndsAt)
             .Add("createdAt", e => e.CreatedAt)
             .Add("title", e => e.Title)
             .Add("subtitle", e => e.Subtitle)
             .Add("featured", e => e.Featured)
+            .Add("categories", e => e.Categories.Select(c => c.Name).Min())
             .Default("eventStartsAt")
             .Tie(e => e.Id);
 
     private static readonly SortMap<EventCategoryTypeResponse> CategoryTypeSort =
         new SortMap<EventCategoryTypeResponse>()
             .Add("name", c => c.Name)
+            .Add("color", c => c.Color)
             .Default("name")
             .Tie(c => c.Id);
 
@@ -54,9 +58,44 @@ public class EventService(
         };
 
         if (query.Year is { } year)
-            source = source.Where(e => e.EventStartsAt.Year == year);
+        {
+            if (year is < 1 or > 9999)
+            {
+                source = source.Where(e => e.EventStartsAt > DateOnly.MaxValue);
+            }
+            else
+            {
+                var yearStart = new DateOnly(year, 1, 1);
+                source =
+                    year == 9999
+                        ? source.Where(e => e.EventStartsAt >= yearStart)
+                        : source.Where(e =>
+                            e.EventStartsAt >= yearStart
+                            && e.EventStartsAt < new DateOnly(year + 1, 1, 1)
+                        );
+            }
+        }
+
         if (query.Featured is { } featured)
             source = source.Where(e => e.Featured == featured);
+        if (query.CategoryTypeId is { } categoryTypeId)
+            source = source.Where(e => e.Categories.Any(c => c.CategoryTypeId == categoryTypeId));
+        if (query.EventDateFrom is { } eventDateFrom)
+            source = source.Where(e => e.EventEndsAt >= eventDateFrom);
+        if (query.EventDateTo is { } eventDateTo)
+            source = source.Where(e => e.EventStartsAt <= eventDateTo);
+        if (query.SignupFrom is { } signupFrom)
+        {
+            var signupLower = LocalDayRange.LowerUtc(signupFrom, clock.TimeZone);
+            source = source.Where(e => e.SignupEndsAt >= signupLower);
+        }
+
+        if (query.SignupTo is { } signupTo)
+        {
+            var signupUpper = LocalDayRange.UpperExclusiveUtc(signupTo, clock.TimeZone);
+            source = source.Where(e => e.SignupStartsAt < signupUpper);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
             source = source.Where(
@@ -207,18 +246,16 @@ public class EventService(
         ev.UpdatedAt = clock.UtcNow;
         ev.UpdatedBy = userId;
 
-        ev.Categories.Clear();
-        ApplyCategories(ev, request.CategoryTypeIds!);
+        SyncCategories(ev, request.CategoryTypeIds!);
 
         await uow.SaveChangesAsync(ct);
 
+        var orphanCandidates = RichTextFileReferences
+            .ExtractRemoved(previousDescription, ev.Description)
+            .ToList();
         if (previousThumbnailId != request.ThumbnailId)
-            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
-
-        foreach (
-            var fileId in RichTextFileReferences.ExtractRemoved(previousDescription, ev.Description)
-        )
-            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+            orphanCandidates.Add(previousThumbnailId);
+        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return await GetByIdAsync(id, ct);
     }
@@ -240,9 +277,9 @@ public class EventService(
         var orphanCandidates = activityThumbnailIds
             .Append(ev.ThumbnailId)
             .Concat(RichTextFileReferences.Extract(ev.Description))
-            .Distinct();
-        foreach (var fileId in orphanCandidates)
-            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+            .Distinct()
+            .ToList();
+        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return Result.Success();
     }
@@ -270,6 +307,16 @@ public class EventService(
                 TextSearch.Contains<EventCategoryTypeResponse>(
                     c => c.Name,
                     TextSearch.Normalize(query.Name)
+                )
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Color))
+        {
+            source = source.Where(
+                TextSearch.Contains<EventCategoryTypeResponse>(
+                    c => c.Color,
+                    TextSearch.Normalize(query.Color)
                 )
             );
         }
@@ -347,6 +394,25 @@ public class EventService(
         }
     }
 
+    private static void SyncCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)
+    {
+        var desired = categoryTypeIds.Distinct().ToHashSet();
+
+        foreach (var existing in ev.Categories.ToList())
+        {
+            if (!desired.Contains(existing.EventCategoryTypeId))
+                ev.Categories.Remove(existing);
+        }
+
+        var current = ev.Categories.Select(c => c.EventCategoryTypeId).ToHashSet();
+        foreach (var categoryTypeId in desired.Except(current))
+        {
+            ev.Categories.Add(
+                new EventCategory { EventId = ev.Id, EventCategoryTypeId = categoryTypeId }
+            );
+        }
+    }
+
     private static Result<EventSchedule> ValidateSchedule(
         DateOnly? eventStartsAt,
         DateOnly? eventEndsAt,
@@ -383,18 +449,10 @@ public class EventService(
         DateOnly eventEnd
     )
     {
-        var lower = new DateTimeOffset(
-            TimeZoneInfo.ConvertTimeToUtc(eventStart.ToDateTime(TimeOnly.MinValue), clock.TimeZone),
-            TimeSpan.Zero
+        return (
+            LocalDayRange.LowerUtc(eventStart, clock.TimeZone),
+            LocalDayRange.UpperExclusiveUtc(eventEnd, clock.TimeZone)
         );
-        var upperExclusive = new DateTimeOffset(
-            TimeZoneInfo.ConvertTimeToUtc(
-                eventEnd.AddDays(1).ToDateTime(TimeOnly.MinValue),
-                clock.TimeZone
-            ),
-            TimeSpan.Zero
-        );
-        return (lower, upperExclusive);
     }
 
     private readonly record struct EventSchedule(

@@ -25,6 +25,8 @@ public class ResourceService(
             .Add("createdAt", r => r.CreatedAt)
             .Add("title", r => r.Title)
             .Add("subtitle", r => r.Subtitle)
+            .Add("type", r => r.Type.Name)
+            .Add("url", r => r.Url)
             .Default("-createdAt")
             .Tie(r => r.Id);
 
@@ -34,6 +36,20 @@ public class ResourceService(
     )
     {
         var source = resources.Query().Select(Projections.ResourceListItem);
+
+        if (query.ResourceTypeId is { } resourceTypeId)
+            source = source.Where(r => r.Type.Id == resourceTypeId);
+        if (query.CreatedFrom is { } createdFrom)
+        {
+            var createdLower = LocalDayRange.LowerUtc(createdFrom, clock.TimeZone);
+            source = source.Where(r => r.CreatedAt >= createdLower);
+        }
+
+        if (query.CreatedTo is { } createdTo)
+        {
+            var createdUpper = LocalDayRange.UpperExclusiveUtc(createdTo, clock.TimeZone);
+            source = source.Where(r => r.CreatedAt < createdUpper);
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
@@ -51,6 +67,16 @@ public class ResourceService(
                 TextSearch.Contains<ResourceListItemResponse>(
                     r => r.Subtitle,
                     TextSearch.Normalize(query.Subtitle)
+                )
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Url))
+        {
+            source = source.Where(
+                TextSearch.Contains<ResourceListItemResponse>(
+                    r => r.Url,
+                    TextSearch.Normalize(query.Url)
                 )
             );
         }
@@ -164,16 +190,12 @@ public class ResourceService(
 
         await uow.SaveChangesAsync(ct);
 
+        var orphanCandidates = RichTextFileReferences
+            .ExtractRemoved(previousDescription, resource.Description)
+            .ToList();
         if (previousThumbnailId != request.ThumbnailId)
-            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
-
-        foreach (
-            var fileId in RichTextFileReferences.ExtractRemoved(
-                previousDescription,
-                resource.Description
-            )
-        )
-            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+            orphanCandidates.Add(previousThumbnailId);
+        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return resource.ToResponse();
     }
@@ -187,9 +209,12 @@ public class ResourceService(
         resources.Remove(resource);
         await uow.SaveChangesAsync(ct);
 
-        await fileService.DeleteIfOrphanedAsync(resource.ThumbnailId, ct);
-        foreach (var fileId in RichTextFileReferences.Extract(resource.Description))
-            await fileService.DeleteIfOrphanedAsync(fileId, ct);
+        var orphanCandidates = RichTextFileReferences
+            .Extract(resource.Description)
+            .Append(resource.ThumbnailId)
+            .Distinct()
+            .ToList();
+        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return Result.Success();
     }

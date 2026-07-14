@@ -249,6 +249,7 @@ public static class DependencyInjection
         services.AddScoped<IAssignmentStatusTypeRepository, AssignmentStatusTypeRepository>();
         services.AddScoped<IEventCategoryTypeRepository, EventCategoryTypeRepository>();
         services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
     }
 
     private static void AddFileStorage(IServiceCollection services, IConfiguration configuration)

@@ -12,16 +12,19 @@ public class ReportService(
     IEventRepository events,
     IActivityRoleTypeRepository roleTypes,
     IActivityRepository activities,
-    IResourceRepository resources,
-    IAnnouncementRepository announcements,
-    IPartnerRepository partners,
     IUserRepository users,
+    IDashboardRepository dashboard,
     IQueryExecutor executor
 ) : IReportService
 {
     private static readonly SortMap<User> AttendeeSort = new SortMap<User>()
         .Add("firstName", u => u.FirstName)
         .Add("lastName", u => u.LastName)
+        .Add("email", u => u.Email)
+        .Add("phone", u => u.Phone)
+        .Add("birthDate", u => u.BirthDate)
+        .Add("type", u => u.UserType.Name)
+        .Add("createdAt", u => u.CreatedAt)
         .Default("firstName")
         .Tie(u => u.Id);
 
@@ -95,7 +98,7 @@ public class ReportService(
         );
     }
 
-    public Task<PagedResult<EventAttendeeResponse>> ListEventAttendeesAsync(
+    public async Task<PagedResult<EventAttendeeResponse>> ListEventAttendeesAsync(
         Guid eventId,
         EventAttendeeListQuery query,
         CancellationToken ct = default
@@ -150,7 +153,7 @@ public class ReportService(
 
         var projected = AttendeeSort
             .Apply(source, query.Sort)
-            .Select(u => new EventAttendeeResponse(
+            .Select(u => new AttendeeRow(
                 u.Id,
                 u.FirstName,
                 u.LastName,
@@ -175,7 +178,7 @@ public class ReportService(
                     )
                     .OrderBy(a => a.Activity.ActivityStartsAt)
                     .ThenBy(a => a.Activity.Title)
-                    .Select(a => new EventAttendeeAssignmentResponse(
+                    .Select(a => new AttendeeAssignmentRow(
                         a.ActivityId,
                         a.Activity.Title,
                         a.Activity.ActivityStartsAt,
@@ -184,29 +187,100 @@ public class ReportService(
                         a.ActivityRoleType.Name,
                         a.AssignmentStatusId,
                         a.AssignmentStatus.Name,
-                        a.CreatedAt,
-                        a.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
-                            && u.Assignments.Any(other =>
-                                other.ActivityId != a.ActivityId
-                                && other.Activity.EventId == eventId
-                                && other.AssignmentStatusId
-                                    != SeedIds.AssignmentStatusTypes.Denied
-                                && a.Activity.ActivityStartsAt < other.Activity.ActivityEndsAt
-                                && other.Activity.ActivityStartsAt < a.Activity.ActivityEndsAt
-                            )
+                        a.CreatedAt
+                    ))
+                    .ToList(),
+                u.Assignments.Where(a =>
+                        a.Activity.EventId == eventId
+                        && a.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                    )
+                    .Select(a => new AssignmentWindow(
+                        a.ActivityId,
+                        a.Activity.ActivityStartsAt,
+                        a.Activity.ActivityEndsAt
                     ))
                     .ToList()
             ));
 
-        return executor.ToPagedAsync(projected, query.Page, query.PageSize, ct);
+        var page = await executor.ToPagedAsync(projected, query.Page, query.PageSize, ct);
+        var items = page.Items.Select(ToAttendeeResponse).ToList();
+        return new PagedResult<EventAttendeeResponse>(items, page.Total, page.Page, page.PageSize);
     }
+
+    private static EventAttendeeResponse ToAttendeeResponse(AttendeeRow row)
+    {
+        var assignments = row
+            .Assignments.Select(a => new EventAttendeeAssignmentResponse(
+                a.ActivityId,
+                a.ActivityTitle,
+                a.ActivityStartsAt,
+                a.ActivityEndsAt,
+                a.RoleTypeId,
+                a.RoleTypeName,
+                a.StatusId,
+                a.StatusName,
+                a.SignedUpAt,
+                a.StatusId != SeedIds.AssignmentStatusTypes.Denied
+                    && row.Windows.Exists(w =>
+                        w.ActivityId != a.ActivityId
+                        && a.ActivityStartsAt < w.EndsAt
+                        && w.StartsAt < a.ActivityEndsAt
+                    )
+            ))
+            .ToList();
+
+        return new EventAttendeeResponse(
+            row.UserId,
+            row.FirstName,
+            row.LastName,
+            row.Email,
+            row.Phone,
+            row.BirthDate,
+            row.UserTypeName,
+            row.UserTypeColor,
+            row.Guardian,
+            assignments
+        );
+    }
+
+    private sealed record AttendeeRow(
+        Guid UserId,
+        string? FirstName,
+        string? LastName,
+        string? Email,
+        string? Phone,
+        DateOnly BirthDate,
+        string UserTypeName,
+        string UserTypeColor,
+        EventAttendeeGuardianResponse? Guardian,
+        List<AttendeeAssignmentRow> Assignments,
+        List<AssignmentWindow> Windows
+    );
+
+    private sealed record AttendeeAssignmentRow(
+        Guid ActivityId,
+        string ActivityTitle,
+        DateTimeOffset ActivityStartsAt,
+        DateTimeOffset ActivityEndsAt,
+        Guid RoleTypeId,
+        string? RoleTypeName,
+        Guid StatusId,
+        string? StatusName,
+        DateTimeOffset SignedUpAt
+    );
+
+    private sealed record AssignmentWindow(
+        Guid ActivityId,
+        DateTimeOffset StartsAt,
+        DateTimeOffset EndsAt
+    );
 
     public async Task<Result<EventBadgesResponse>> GetEventBadgesAsync(
         Guid eventId,
         CancellationToken ct = default
     )
     {
-        var ev = await events.FindAsync(e => e.Id == eventId, ct);
+        var ev = await GetEventHeaderAsync(eventId, ct);
         if (ev is null)
             return Error.NotFound(ErrorCode.EventNotFound);
 
@@ -271,7 +345,7 @@ public class ReportService(
         CancellationToken ct = default
     )
     {
-        var ev = await events.FindAsync(e => e.Id == eventId, ct);
+        var ev = await GetEventHeaderAsync(eventId, ct);
         if (ev is null)
             return Error.NotFound(ErrorCode.EventNotFound);
 
@@ -358,13 +432,24 @@ public class ReportService(
         CancellationToken ct = default
     )
     {
+        var counts = await dashboard.GetCountsAsync(ct);
         return new DashboardSummaryResponse(
-            await events.CountAsync(_ => true, ct),
-            await activities.CountAsync(_ => true, ct),
-            await resources.CountAsync(_ => true, ct),
-            await announcements.CountAsync(_ => true, ct),
-            await partners.CountAsync(_ => true, ct),
-            await users.CountAsync(_ => true, ct)
+            counts.Events,
+            counts.Activities,
+            counts.Resources,
+            counts.Announcements,
+            counts.Partners,
+            counts.Users
         );
     }
+
+    private Task<EventHeader?> GetEventHeaderAsync(Guid eventId, CancellationToken ct)
+    {
+        return executor.FirstOrDefaultAsync(
+            events.Query().Where(e => e.Id == eventId).Select(e => new EventHeader(e.Id, e.Title)),
+            ct
+        );
+    }
+
+    private sealed record EventHeader(Guid Id, string Title);
 }

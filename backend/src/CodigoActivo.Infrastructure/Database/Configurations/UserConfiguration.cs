@@ -17,6 +17,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.Email).IsUnique();
         builder.HasIndex(u => u.Phone).IsUnique();
+        builder.HasIndex(u => new { u.FirstName, u.LastName });
 
         builder
             .HasOne(u => u.UserStatusType)

@@ -86,17 +86,20 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("ActivityModalityTypeId")
                         .HasDatabaseName("ix_activities_activity_modality_type_id");
 
+                    b.HasIndex("ActivityStartsAt")
+                        .HasDatabaseName("ix_activities_activity_starts_at");
+
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_activities_created_by");
-
-                    b.HasIndex("EventId")
-                        .HasDatabaseName("ix_activities_event_id");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_activities_thumbnail_id");
 
                     b.HasIndex("UpdatedBy")
                         .HasDatabaseName("ix_activities_updated_by");
+
+                    b.HasIndex("EventId", "ActivityStartsAt")
+                        .HasDatabaseName("ix_activities_event_id_activity_starts_at");
 
                     b.ToTable("activities", (string)null);
                 });
@@ -261,6 +264,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_announcements");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_announcements_created_at");
+
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_announcements_created_by");
 
@@ -375,6 +381,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_events_created_by");
+
+                    b.HasIndex("EventEndsAt")
+                        .HasDatabaseName("ix_events_event_ends_at");
+
+                    b.HasIndex("EventStartsAt")
+                        .HasDatabaseName("ix_events_event_starts_at");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_events_thumbnail_id");
@@ -522,6 +534,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("UpdatedBy")
                         .HasDatabaseName("ix_partners_updated_by");
 
+                    b.HasIndex("Tier", "FromDate")
+                        .HasDatabaseName("ix_partners_tier_from_date");
+
                     b.ToTable("partners", (string)null);
                 });
 
@@ -577,6 +592,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_resources");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_resources_created_at");
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_resources_created_by");
@@ -735,6 +753,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("UserTypeId")
                         .HasDatabaseName("ix_users_user_type_id");
 
+                    b.HasIndex("FirstName", "LastName")
+                        .HasDatabaseName("ix_users_first_name_last_name");
+
                     b.ToTable("users", (string)null);
                 });
 
@@ -892,7 +913,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_activity_user_role_assignments_assignment_status_types_assi");
 
                     b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("Assignments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -1117,6 +1138,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
                 {
+                    b.Navigation("Assignments");
+
                     b.Navigation("Children");
                 });
 

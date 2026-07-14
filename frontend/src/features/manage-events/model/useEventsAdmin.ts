@@ -32,6 +32,9 @@ export function useEventsAdmin() {
     columns: {
       title: { type: 'text' },
       subtitle: { type: 'text' },
+      category: { param: 'categoryTypeId' },
+      eventDate: { type: 'dateRange', fromParam: 'eventDateFrom', toParam: 'eventDateTo' },
+      signup: { type: 'dateRange', fromParam: 'signupFrom', toParam: 'signupTo' },
     },
   })
 

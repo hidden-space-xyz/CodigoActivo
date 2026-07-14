@@ -88,18 +88,21 @@ public sealed class ResourceServiceTests
     private static Resource NewResource(
         string title = "Guide",
         string subtitle = "Intro",
-        int year = 2024
+        int year = 2024,
+        string? url = null,
+        ResourceType? type = null
     )
     {
-        var type = NewResourceType();
+        var resourceType = type ?? NewResourceType();
         return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
             Subtitle = subtitle,
             Description = SomeRichText,
-            ResourceTypeId = type.Id,
-            ResourceType = type,
+            Url = url,
+            ResourceTypeId = resourceType.Id,
+            ResourceType = resourceType,
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
@@ -163,6 +166,97 @@ public sealed class ResourceServiceTests
         );
 
         result.Items.Select(r => r.Title).Should().ContainInOrder("Newest", "Mid", "Old");
+    }
+
+    [Fact]
+    public async Task ListAsync_ResourceTypeIdFilter_KeepsResourcesOfThatType()
+    {
+        var target = NewResource("Interno");
+        HasResources(target, NewResource("Otro"));
+
+        var result = await sut.ListAsync(
+            new ResourceListQuery { ResourceTypeId = target.ResourceTypeId },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Interno");
+    }
+
+    [Fact]
+    public async Task ListAsync_UrlFilter_IsAccentAndCaseInsensitive()
+    {
+        HasResources(
+            NewResource("Curso", url: "https://cursos.es/robótica"),
+            NewResource("Otro", url: "https://cursos.es/ajedrez")
+        );
+
+        var result = await sut.ListAsync(
+            new ResourceListQuery { Url = "ROBOTICA" },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Curso");
+    }
+
+    [Fact]
+    public async Task ListAsync_CreatedRangeFilter_KeepsResourcesWithinDayBounds()
+    {
+        HasResources(
+            NewResource("Viejo", year: 2022),
+            NewResource("Medio", year: 2024),
+            NewResource("Nuevo", year: 2026)
+        );
+
+        var result = await sut.ListAsync(
+            new ResourceListQuery
+            {
+                CreatedFrom = new DateOnly(2023, 1, 1),
+                CreatedTo = new DateOnly(2025, 1, 1),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Medio");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByType_OrdersByTypeName()
+    {
+        HasResources(
+            NewResource("Tercero", type: NewResourceType(name: "Video")),
+            NewResource("Primero", type: NewResourceType(name: "Documento")),
+            NewResource("Segundo", type: NewResourceType(name: "Enlace"))
+        );
+
+        var result = await sut.ListAsync(
+            new ResourceListQuery { Sort = "type" },
+            TestContext.Current.CancellationToken
+        );
+
+        result
+            .Items.Select(r => r.Type.Name)
+            .Should()
+            .ContainInOrder("Documento", "Enlace", "Video");
+    }
+
+    [Fact]
+    public async Task ListAsync_SortByUrlDescending_OrdersByUrlDescending()
+    {
+        HasResources(
+            NewResource("A", url: "https://a.es"),
+            NewResource("C", url: "https://c.es"),
+            NewResource("B", url: "https://b.es")
+        );
+
+        var result = await sut.ListAsync(
+            new ResourceListQuery { Sort = "-url" },
+            TestContext.Current.CancellationToken
+        );
+
+        result
+            .Items.Select(r => r.Url)
+            .Should()
+            .ContainInOrder("https://c.es", "https://b.es", "https://a.es");
     }
 
     [Fact]
@@ -624,12 +718,12 @@ public sealed class ResourceServiceTests
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        const string newDescription =
+        const string NewDescription =
             "{\"type\":\"doc\",\"content\":[{\"type\":\"text\",\"text\":\"Nuevo\"}]}";
         var request = new UpdateResourceRequest(
             "  New  ",
             "  NewSub  ",
-            newDescription,
+            NewDescription,
             null,
             type.Id,
             thumbnailId
@@ -645,7 +739,7 @@ public sealed class ResourceServiceTests
         result.IsSuccess.Should().BeTrue();
         resource.Title.Should().Be("New");
         resource.Subtitle.Should().Be("NewSub");
-        resource.Description.Should().Be(newDescription);
+        resource.Description.Should().Be(NewDescription);
         resource.ResourceTypeId.Should().Be(type.Id);
         resource.ThumbnailId.Should().Be(thumbnailId);
         resource.UpdatedBy.Should().Be(caller);
@@ -687,7 +781,10 @@ public sealed class ResourceServiceTests
         resource.ResourceTypeId.Should().Be(type.Id);
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(embeddedId)),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -751,7 +848,12 @@ public sealed class ResourceServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 1 && ids.Contains(previousThumbnailId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -782,8 +884,11 @@ public sealed class ResourceServiceTests
 
         result.IsSuccess.Should().BeTrue();
         await fileService
-            .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .Received(1)
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 0),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -818,10 +923,12 @@ public sealed class ResourceServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(removedId, Arg.Any<CancellationToken>());
-        await fileService
-            .DidNotReceive()
-            .DeleteIfOrphanedAsync(keptId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Contains(removedId) && !ids.Contains(keptId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -840,7 +947,7 @@ public sealed class ResourceServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -859,7 +966,10 @@ public sealed class ResourceServiceTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(resource.ThumbnailId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(resource.ThumbnailId)),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -877,6 +987,11 @@ public sealed class ResourceServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .Received(1)
-            .DeleteIfOrphanedAsync(embeddedId, Arg.Any<CancellationToken>());
+            .DeleteOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Contains(embeddedId) && ids.Contains(resource.ThumbnailId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 }

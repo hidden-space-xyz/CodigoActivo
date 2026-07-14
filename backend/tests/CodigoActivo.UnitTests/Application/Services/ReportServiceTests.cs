@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
@@ -19,11 +18,8 @@ public sealed class ReportServiceTests
     private readonly IActivityRoleTypeRepository roleTypes =
         Substitute.For<IActivityRoleTypeRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IAnnouncementRepository announcements =
-        Substitute.For<IAnnouncementRepository>();
-    private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IDashboardRepository dashboard = Substitute.For<IDashboardRepository>();
     private readonly ReportService sut;
 
     private static readonly Guid QueriedEventId = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -43,10 +39,8 @@ public sealed class ReportServiceTests
             events,
             roleTypes,
             activities,
-            resources,
-            announcements,
-            partners,
             users,
+            dashboard,
             new FakeQueryExecutor()
         );
     }
@@ -60,11 +54,6 @@ public sealed class ReportServiceTests
         activities.QueryAssignments().Returns(assignments.AsQueryable());
 
     private void HasUsers(params User[] list) => users.Query().Returns(list.AsQueryable());
-
-    private void HasEvent(Event? ev) =>
-        events
-            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(ev);
 
     private static ActivityUserRoleAssignment SummaryAsg(
         Guid userId,
@@ -189,19 +178,26 @@ public sealed class ReportServiceTests
         result.Value.RoleTypeBreakdown.Should().BeEmpty();
     }
 
-    private static User NewUser(string first, User? parent = null, Guid? userTypeId = null) =>
+    private static User NewUser(
+        string first,
+        User? parent = null,
+        Guid? userTypeId = null,
+        string? email = null,
+        DateOnly? birthDate = null,
+        string typeName = "Socio"
+    ) =>
         new()
         {
             Id = Guid.NewGuid(),
             FirstName = first,
             LastName = first + "-last",
-            Email = first + "@test.local",
+            Email = email ?? first + "@test.local",
             Phone = "555-" + first,
-            BirthDate = new DateOnly(1990, 6, 15),
+            BirthDate = birthDate ?? new DateOnly(1990, 6, 15),
             Parent = parent,
             ParentId = parent?.Id,
             UserTypeId = userTypeId ?? SeedIds.UserTypes.Member,
-            UserType = new UserType { Name = "Socio", Color = "#EF4444" },
+            UserType = new UserType { Name = typeName, Color = "#EF4444" },
         };
 
     private static ActivityUserRoleAssignment Enroll(
@@ -438,6 +434,73 @@ public sealed class ReportServiceTests
     }
 
     [Fact]
+    public async Task ListEventAttendeesAsync_SortByEmail_OrdersByEmailAscending()
+    {
+        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+        var carla = NewUser("Carla", email: "charlie@test.local");
+        var ana = NewUser("Ana", email: "alice@test.local");
+        var berto = NewUser("Berto", email: "bob@test.local");
+        Enroll(carla, "Taller", when, Confirmed, "Confirmada");
+        Enroll(ana, "Taller", when, Confirmed, "Confirmada");
+        Enroll(berto, "Taller", when, Confirmed, "Confirmada");
+        HasUsers(carla, ana, berto);
+
+        var page = await sut.ListEventAttendeesAsync(
+            QueriedEventId,
+            new EventAttendeeListQuery { Sort = "email" },
+            TestContext.Current.CancellationToken
+        );
+
+        page.Items.Select(a => a.Email)
+            .Should()
+            .Equal("alice@test.local", "bob@test.local", "charlie@test.local");
+    }
+
+    [Fact]
+    public async Task ListEventAttendeesAsync_SortByBirthDateDescending_OrdersOldestLast()
+    {
+        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+        var oldest = NewUser("Vieja", birthDate: new DateOnly(1980, 1, 1));
+        var youngest = NewUser("Joven", birthDate: new DateOnly(2010, 1, 1));
+        var middle = NewUser("Media", birthDate: new DateOnly(1995, 1, 1));
+        Enroll(oldest, "Taller", when, Confirmed, "Confirmada");
+        Enroll(youngest, "Taller", when, Confirmed, "Confirmada");
+        Enroll(middle, "Taller", when, Confirmed, "Confirmada");
+        HasUsers(oldest, youngest, middle);
+
+        var page = await sut.ListEventAttendeesAsync(
+            QueriedEventId,
+            new EventAttendeeListQuery { Sort = "-birthDate" },
+            TestContext.Current.CancellationToken
+        );
+
+        page.Items.Select(a => a.FirstName).Should().Equal("Joven", "Media", "Vieja");
+    }
+
+    [Fact]
+    public async Task ListEventAttendeesAsync_SortByType_OrdersByUserTypeName()
+    {
+        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+        var volunteer = NewUser("Vero", typeName: "Voluntario");
+        var member = NewUser("Mario", typeName: "Miembro");
+        var sponsor = NewUser("Sonia", typeName: "Patrocinador");
+        Enroll(volunteer, "Taller", when, Confirmed, "Confirmada");
+        Enroll(member, "Taller", when, Confirmed, "Confirmada");
+        Enroll(sponsor, "Taller", when, Confirmed, "Confirmada");
+        HasUsers(volunteer, member, sponsor);
+
+        var page = await sut.ListEventAttendeesAsync(
+            QueriedEventId,
+            new EventAttendeeListQuery { Sort = "type" },
+            TestContext.Current.CancellationToken
+        );
+
+        page.Items.Select(a => a.UserTypeName)
+            .Should()
+            .Equal("Miembro", "Patrocinador", "Voluntario");
+    }
+
+    [Fact]
     public async Task ListEventAttendeesAsync_EventMissing_ReturnsEmptyPage()
     {
         var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
@@ -524,7 +587,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventBadgesAsync_EventMissing_ReturnsNotFound()
     {
-        HasEvent(null);
+        HasEvents();
 
         var result = await sut.GetEventBadgesAsync(
             QueriedEventId,
@@ -547,7 +610,7 @@ public sealed class ReportServiceTests
         var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", createdAt, parent);
         var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444", createdAt);
 
-        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             BadgeAsg(adult, "Charla", when.AddHours(2), Confirmed),
             BadgeAsg(adult, "Taller", when, Confirmed),
@@ -592,7 +655,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventBadgesAsync_NoConfirmedAssignments_ReturnsEmptyBadges()
     {
-        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments();
 
         var result = await sut.GetEventBadgesAsync(
@@ -643,7 +706,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventRosterAsync_EventMissing_ReturnsNotFound()
     {
-        HasEvent(null);
+        HasEvents();
 
         var result = await sut.GetEventRosterAsync(
             QueriedEventId,
@@ -673,7 +736,7 @@ public sealed class ReportServiceTests
         var requestedUser = NewUser("Rita");
         var deniedUser = NewUser("Dario");
 
-        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             RosterAsg(adult, charla, Confirmed),
             RosterAsg(adult, taller, Confirmed),
@@ -737,7 +800,7 @@ public sealed class ReportServiceTests
         var vera = NewUser("Vera");
         vera.LastName = "Alfa";
 
-        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             RosterAsg(bruno, taller, Confirmed),
             RosterAsg(bruno, taller, Confirmed, SeedIds.ActivityRoleTypes.Leader, "Líder"),
@@ -764,7 +827,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventRosterAsync_NoConfirmedAssignments_ReturnsEmptyActivities()
     {
-        HasEvent(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments();
 
         var result = await sut.GetEventRosterAsync(
@@ -779,27 +842,19 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetDashboardSummaryAsync_RepositoryCounts_MapsInOrder()
     {
-        events
-            .CountAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
-        activities
-            .CountAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(2);
-        resources
-            .CountAsync(Arg.Any<Expression<Func<Resource, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(3);
-        announcements
-            .CountAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(4);
-        partners
-            .CountAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(5);
-        users
-            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(6);
+        dashboard
+            .GetCountsAsync(Arg.Any<CancellationToken>())
+            .Returns(
+                new DashboardCounts
+                {
+                    Events = 1,
+                    Activities = 2,
+                    Resources = 3,
+                    Announcements = 4,
+                    Partners = 5,
+                    Users = 6,
+                }
+            );
 
         var result = await sut.GetDashboardSummaryAsync(TestContext.Current.CancellationToken);
 

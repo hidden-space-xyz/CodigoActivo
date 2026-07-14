@@ -15,6 +15,8 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
         builder.Property(p => p.Tier).IsRequired();
         builder.Property(p => p.CreatedAt).IsRequired();
 
+        builder.HasIndex(p => new { p.Tier, p.FromDate });
+
         builder
             .HasOne(p => p.Thumbnail)
             .WithMany()

@@ -19,6 +19,7 @@ const controller = useContentEntity<GetApiAnnouncementsParams>({
   columns: {
     title: { type: 'text' },
     subtitle: { type: 'text' },
+    created: { type: 'dateRange', fromParam: 'createdFrom', toParam: 'createdTo' },
   },
   fetchOne: (id) => unwrapOrNull(getApiAnnouncementsAnnouncementId(id)),
   create: (body) => postApiAnnouncements(body),

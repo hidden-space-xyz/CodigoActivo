@@ -14,6 +14,8 @@ userTypeId?: string;
 userStatusTypeId?: string;
 isAdmin?: boolean;
 parentId?: string;
+birthDateFrom?: string;
+birthDateTo?: string;
 page?: number;
 pageSize?: number;
 sort?: string;
