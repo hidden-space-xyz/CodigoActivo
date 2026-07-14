@@ -8,6 +8,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -105,7 +106,9 @@ try
                 ctx.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
         });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+        options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()
+    );
 
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
