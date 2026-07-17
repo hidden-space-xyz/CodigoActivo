@@ -76,25 +76,25 @@
 .ca-dark {
   color-scheme: dark;
 
-  --ca-bg: #12100e;
-  --ca-bg-deep: #0d0b09;
-  --ca-surface-2: #17140f;
-  --ca-bg-elevated: #221d17;
-  --ca-surface: #1e1a15;
-  --ca-input-bg: #16130f;
+  --ca-bg: #101014;
+  --ca-bg-deep: #0a0a0d;
+  --ca-surface-2: #161619;
+  --ca-bg-elevated: #202026;
+  --ca-surface: #1a1a1f;
+  --ca-input-bg: #131317;
 
   --ca-border: rgba(255, 255, 255, 0.08);
   --ca-border-soft: rgba(255, 255, 255, 0.07);
   --ca-border-strong: rgba(255, 255, 255, 0.13);
   --ca-border-strong-2: rgba(255, 255, 255, 0.16);
 
-  --ca-text-bright: #f7f3ec;
-  --ca-text: #ece7dd;
-  --ca-text-muted: #a79d8c;
-  --ca-text-dim: #978d7c;
-  --ca-text-faint-2: #877e6e;
-  --ca-text-faint: #776f60;
-  --ca-text-ghost: #675f52;
+  --ca-text-bright: #f3f4f6;
+  --ca-text: #e6e7ea;
+  --ca-text-muted: #9a9ba1;
+  --ca-text-dim: #8a8b91;
+  --ca-text-faint-2: #7a7b81;
+  --ca-text-faint: #6b6c72;
+  --ca-text-ghost: #5c5d63;
 
   --ca-orange: #22d3ee;
   --ca-orange-strong: #06b6d4;
@@ -122,7 +122,7 @@
   --ca-danger-ink: #ff8a80;
   --ca-danger-soft: rgba(255, 111, 98, 0.16);
 
-  --ca-glass-bg: rgba(18, 16, 14, 0.82);
+  --ca-glass-bg: rgba(16, 16, 20, 0.82);
   --ca-grid-line: rgba(34, 211, 238, 0.055);
   --ca-vignette: rgba(0, 0, 0, 0.55);
   --ca-glyph-op: 0.2;
