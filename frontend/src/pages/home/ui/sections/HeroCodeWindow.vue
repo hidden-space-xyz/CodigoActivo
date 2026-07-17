@@ -34,8 +34,8 @@
 
 <style scoped>
 .code-window {
-  background: #1c1813;
-  color: #d9d2c4;
+  background: #17181d;
+  color: #d3d4da;
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 16px;
   box-shadow: var(--ca-shadow-lg);
@@ -49,7 +49,7 @@
   gap: 8px;
   padding: 13px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background: #15110b;
+  background: #101116;
 }
 
 .code-window__dot {
@@ -62,7 +62,7 @@
   margin-left: 8px;
   font-family: var(--ca-font-mono);
   font-size: 12px;
-  color: #7a7264;
+  color: #71727a;
 }
 
 .code-window__body {
@@ -73,7 +73,7 @@
 }
 
 .code-window__comment {
-  color: #7a7264;
+  color: #71727a;
 }
 
 .code-window__indent {
