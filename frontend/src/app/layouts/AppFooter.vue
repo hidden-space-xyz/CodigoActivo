@@ -26,22 +26,28 @@ const currentYear = new Date().getFullYear()
               target="_blank"
               rel="noopener"
               class="footer__social-link"
-              >Instagram</a
             >
+              <i class="pi pi-instagram" aria-hidden="true"></i>
+              Instagram
+            </a>
             <a
               :href="CONTACT.social.facebook"
               target="_blank"
               rel="noopener"
               class="footer__social-link"
-              >Facebook</a
             >
+              <i class="pi pi-facebook" aria-hidden="true"></i>
+              Facebook
+            </a>
             <a
               :href="CONTACT.social.linkedin"
               target="_blank"
               rel="noopener"
               class="footer__social-link"
-              >LinkedIn</a
             >
+              <i class="pi pi-linkedin" aria-hidden="true"></i>
+              LinkedIn
+            </a>
           </div>
         </div>
       </div>
@@ -113,8 +119,15 @@ const currentYear = new Date().getFullYear()
 }
 
 .footer__social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--ca-text-muted);
   text-decoration: none;
+}
+
+.footer__social-link .pi {
+  font-size: 13px;
 }
 
 .footer__social-link:hover {
