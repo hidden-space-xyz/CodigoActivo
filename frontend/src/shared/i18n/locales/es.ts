@@ -741,7 +741,6 @@ export const es = {
         stats: {
           years: 'años',
           free: 'gratuito',
-          events: 'eventos',
         },
       },
       about: {
