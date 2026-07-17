@@ -109,3 +109,31 @@ function hasRichTextContent(node: JSONContent): boolean {
   if (typeof node.text === 'string' && node.text.trim().length > 0) return true
   return (node.content ?? []).some(hasRichTextContent)
 }
+
+function collectRichTextStrings(node: JSONContent): string[] {
+  if (typeof node.text === 'string') return [node.text]
+  const parts: string[] = []
+  let inline = ''
+  for (const child of node.content ?? []) {
+    if (typeof child.text === 'string') {
+      inline += child.text
+      continue
+    }
+    if (inline) {
+      parts.push(inline)
+      inline = ''
+    }
+    parts.push(...collectRichTextStrings(child))
+  }
+  if (inline) parts.push(inline)
+  return parts
+}
+
+export function richTextExcerpt(value: string | null | undefined, maxLength = 160): string {
+  const text = collectRichTextStrings(parseRichText(value)).join(' ').replace(/\s+/g, ' ').trim()
+  if (text.length <= maxLength) return text
+  const cut = text.slice(0, maxLength)
+  const boundary = cut.lastIndexOf(' ')
+  const truncated = boundary > 0 ? cut.slice(0, boundary) : cut
+  return `${truncated.trimEnd()}…`
+}

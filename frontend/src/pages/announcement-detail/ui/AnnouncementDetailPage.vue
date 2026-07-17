@@ -1,16 +1,57 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useAnnouncementDetail } from '@/entities/announcement'
 import { BaseButton, RichTextContent } from '@/shared/ui'
-import { fileContentUrl, isRichTextEmpty } from '@/shared/lib'
+import {
+  absoluteUrl,
+  fileContentUrl,
+  isRichTextEmpty,
+  richTextExcerpt,
+  useSeo,
+  type SeoData,
+} from '@/shared/lib'
 
 const props = defineProps<{ announcementId: string }>()
 
+const route = useRoute()
 const { announcement, isLoading, notFound } = useAnnouncementDetail(() => props.announcementId)
 
 const posterUrl = computed(() => fileContentUrl(announcement.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(announcement.value?.description))
+
+const seo = computed<SeoData | undefined>(() => {
+  if (notFound.value) return { title: 'Anuncio no encontrado', noindex: true }
+  const current = announcement.value
+  if (!current) return undefined
+  const description = richTextExcerpt(current.description) || current.subtitle
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: current.title,
+    url: absoluteUrl(route.path),
+    author: { '@type': 'Organization', name: 'Código Activo' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Código Activo',
+      logo: { '@type': 'ImageObject', url: absoluteUrl('/apple-touch-icon.png') },
+    },
+  }
+  if (description) jsonLd.description = description
+  if (posterUrl.value) jsonLd.image = absoluteUrl(posterUrl.value)
+  if (current.publishedAt) jsonLd.datePublished = current.publishedAt
+  if (current.updatedAt) jsonLd.dateModified = current.updatedAt
+  return {
+    title: current.title,
+    description: description || undefined,
+    image: posterUrl.value || undefined,
+    type: 'article',
+    jsonLd,
+  }
+})
+
+useSeo(seo)
 </script>
 
 <template>

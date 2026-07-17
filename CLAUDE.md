@@ -29,7 +29,7 @@ The Vite proxy target defaults to `https://localhost:5001`; point it at the loca
 
 ## Docker (the deploy path)
 
-`docker-compose.yml` defines the whole stack: `db` (postgres:17-alpine, internal network), `api` (built from `backend/src/CodigoActivo.API/Dockerfile`, listens on `:8080`, hardened — read-only, non-root uid 1654, all caps dropped), `web` (nginx from `frontend/Dockerfile`, published on `${HTTP_PORT:-8080}`, reverse-proxying `/api` → `api:8080`). All config comes from the root `.env` (copy `.env.example`, set at least `POSTGRES_PASSWORD`).
+`docker-compose.yml` defines the whole stack: `db` (postgres:17-alpine, internal network), `api` (built from `backend/src/CodigoActivo.API/Dockerfile`, listens on `:8080`, hardened — read-only, non-root uid 1654, all caps dropped), `web` (nginx from `frontend/Dockerfile`, published on `${HTTP_PORT:-8080}`, reverse-proxying `/api` — plus the root `/sitemap.xml` and `/robots.txt` — → `api:8080`). All config comes from the root `.env` (copy `.env.example`, set at least `POSTGRES_PASSWORD`).
 
 - Local/debug: `docker compose up` — auto-merges `docker-compose.override.yml` (Development env, API on `:5150`, db on `127.0.0.1:5432`, hardening relaxed; also drives Visual Studio F5 via `backend/docker-compose.dcproj`).
 - Production: `docker compose -f docker-compose.yml up -d --build` — **must** pass `-f docker-compose.yml` to exclude the dev override.

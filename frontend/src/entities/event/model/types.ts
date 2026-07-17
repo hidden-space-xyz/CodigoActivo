@@ -28,6 +28,8 @@ export interface EventDetail {
   readonly title: string
   readonly subtitle: string
   readonly description: string
+  readonly startsAt: string | null
+  readonly endsAt: string | null
   readonly dateLabel: string
   readonly signupLabel: string
   readonly status: string

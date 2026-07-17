@@ -13,7 +13,7 @@ git-ignored root `.env` file (copy `.env.example`). For local development withou
 | ------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **db**  | `postgres:17-alpine`                                 | PostgreSQL. On the **internal** `backend` network only (not published in production).         |
 | **api** | built from `backend/src/CodigoActivo.API/Dockerfile` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
-| **web** | built from `frontend/Dockerfile` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` → `api:8080`. Published on `${HTTP_PORT:-8080}:8080`. |
+| **web** | built from `frontend/Dockerfile` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${HTTP_PORT:-8080}:8080`. |
 
 **Networks**: `frontend` (bridge) and `backend` (internal — the DB is unreachable from outside).
 **Volumes**: `db-data` (database), `api-files` (uploads), `api-logs` (Serilog output),
@@ -41,7 +41,9 @@ docker compose -f docker-compose.yml up -d --build
 > `https://` URL.
 
 The API has forwarded headers enabled and, in Production, issues `Secure` cookies and redirects
-HTTP → HTTPS. `APP_BASE_URL` is used in links and outgoing emails; set `AUTH_SAMESITE` to match your
+HTTP → HTTPS. `APP_BASE_URL` is used in links, outgoing emails and every URL of the generated
+`/sitemap.xml` and `/robots.txt` — if it is left at the compose fallback (`https://localhost`),
+search engines receive a sitemap full of unusable URLs. Set `AUTH_SAMESITE` to match your
 cross-site needs.
 
 ## Local / debug overlay
@@ -67,7 +69,7 @@ them into the `api` service; the connection string is built from `POSTGRES_*` in
 | `POSTGRES_DB`                   | Database name                                                     | `codigoactivo`                  |
 | `POSTGRES_USER`                 | Database user                                                     | `codigoactivo`                  |
 | `POSTGRES_PASSWORD`             | Database password — **required**                                  | *(none)*                        |
-| `APP_BASE_URL`                  | Public base URL used in links and outgoing emails                 | `http://localhost:5173`         |
+| `APP_BASE_URL`                  | Public base URL used in links, outgoing emails and the generated sitemap/robots | `http://localhost:5173`         |
 | `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | host local (image sets `Europe/Madrid`) |
 | `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite` — `Lax` / `Strict` / `None`        | `Lax`                           |
 | `DEMO_MODE`                     | Seed/purge realistic demo data on startup (see below)             | `false`                         |

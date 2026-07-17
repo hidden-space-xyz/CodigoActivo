@@ -9,7 +9,9 @@ as a **same-origin** stack:
 In every environment the browser talks to a **single origin** and the SPA calls the API with
 relative `/api/...` URLs. In development the Vite dev server proxies `/api` to the backend; in
 production the `web` (nginx) container serves the SPA and reverse-proxies `/api` to the `api`
-container. There is no CORS layer and no cross-origin token — see [SECURITY.md](SECURITY.md)
+container. The root `/sitemap.xml` and `/robots.txt` are also proxied (rewritten to
+`/api/sitemap.xml` and `/api/robots.txt`) in both environments — the API generates them from
+`APP_BASE_URL` and the public content. There is no CORS layer and no cross-origin token — see [SECURITY.md](SECURITY.md)
 for the session/auth model and [DEPLOYMENT.md](DEPLOYMENT.md) for the runtime topology.
 
 ## Backend — clean architecture

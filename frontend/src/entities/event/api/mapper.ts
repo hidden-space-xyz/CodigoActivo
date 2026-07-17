@@ -56,6 +56,8 @@ export function toEventDetail(event: EventResponse): EventDetail {
     title: event.title ?? '',
     subtitle: event.subtitle ?? '',
     description: event.description ?? '',
+    startsAt: start ?? null,
+    endsAt: end ?? null,
     dateLabel,
     signupLabel,
     status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
