@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import HeroCodeWindow from './HeroCodeWindow.vue'
+import RobotGameSection from './RobotGameSection.vue'
 import { FOUNDING_YEAR } from '@/shared/config'
 import { BaseButton } from '@/shared/ui'
 
@@ -42,7 +42,7 @@ const stats = [
         </div>
       </div>
 
-      <HeroCodeWindow />
+      <RobotGameSection />
     </div>
   </section>
 </template>
