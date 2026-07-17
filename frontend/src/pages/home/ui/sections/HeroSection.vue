@@ -10,7 +10,6 @@ const { t } = useI18n()
 const stats = [
   { value: '8–18', label: t('pages.home.hero.stats.years'), color: 'var(--ca-orange-ink)' },
   { value: '100%', label: t('pages.home.hero.stats.free'), color: 'var(--ca-success-ink)' },
-  { value: '+15', label: t('pages.home.hero.stats.events'), color: 'var(--ca-azure-ink)' },
 ] as const
 </script>
 
