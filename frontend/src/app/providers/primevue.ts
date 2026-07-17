@@ -6,6 +6,8 @@ import PrimeVue from 'primevue/config'
 import 'primeicons/primeicons.css'
 import '@/assets/styles/primevue-overrides.css'
 
+import { primevueEs } from '@/shared/i18n'
+
 const CodigoActivoPreset = definePreset(Aura, {
   semantic: {
     primary: {
@@ -25,6 +27,7 @@ const CodigoActivoPreset = definePreset(Aura, {
 })
 
 const options: PrimeVueConfiguration = {
+  locale: primevueEs,
   theme: {
     preset: CodigoActivoPreset,
     options: {

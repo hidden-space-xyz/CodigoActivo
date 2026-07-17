@@ -1,11 +1,11 @@
 import { ApiError } from '@/shared/api/http-client'
-import { errorMessages } from '@/shared/api/error-messages'
+import { i18n } from '@/shared/i18n'
 
-const GENERIC_ERROR_MESSAGE = 'Ha ocurrido un error. Inténtalo de nuevo.'
-
-export function getErrorMessage(error: unknown, fallback = GENERIC_ERROR_MESSAGE): string {
+export function getErrorMessage(error: unknown, fallback = i18n.global.t('errors.generic')): string {
   if (error instanceof ApiError) {
-    return (error.code && errorMessages[error.code]) || fallback
+    const key = error.code ? `errors.${error.code}` : null
+    if (key && i18n.global.te(key)) return i18n.global.t(key)
+    return fallback
   }
   if (error instanceof Error && error.message) return error.message
   return fallback

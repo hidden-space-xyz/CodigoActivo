@@ -7,14 +7,15 @@ import { BaseButton, SectionEyebrow } from '@/shared/ui'
     <section class="not-found">
       <div class="not-found__glow" aria-hidden="true" />
       <div class="ca-container--narrow not-found__inner">
-        <SectionEyebrow text="// error 404" color="var(--ca-orange-ink)" />
-        <h1 class="not-found__title">Página no encontrada</h1>
+        <SectionEyebrow :text="$t('pages.notFound.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="not-found__title">{{ $t('pages.notFound.title') }}</h1>
         <p class="not-found__text">
-          La página que buscas no existe o ha cambiado de dirección. Vuelve al inicio para seguir
-          navegando.
+          {{ $t('pages.notFound.text') }}
         </p>
         <div class="not-found__actions">
-          <BaseButton variant="primary" :to="{ name: 'home' }">Volver al inicio</BaseButton>
+          <BaseButton variant="primary" :to="{ name: 'home' }">{{
+            $t('common.backToHome')
+          }}</BaseButton>
         </div>
       </div>
     </section>

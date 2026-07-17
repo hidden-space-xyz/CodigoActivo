@@ -14,7 +14,7 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
   <div class="featured">
     <div class="featured__grid">
       <div class="featured__body">
-        <span class="featured__badge"> ★ Anuncio destacado </span>
+        <span class="featured__badge">{{ $t('entities.announcement.featured.badge') }}</span>
 
         <h2 class="featured__title">{{ announcement.title }}</h2>
         <div v-if="announcement.subtitle" class="featured__slogan">
@@ -23,7 +23,9 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
 
         <div v-if="announcement.date" class="featured__meta">
           <div class="featured__meta-item">
-            <span class="featured__meta-label">Publicado</span>
+            <span class="featured__meta-label">{{
+              $t('entities.announcement.featured.publishedLabel')
+            }}</span>
             <span class="featured__meta-value">{{ announcement.date }}</span>
           </div>
         </div>
@@ -33,7 +35,7 @@ const posterUrl = computed(() => fileContentUrl(props.announcement.thumbnailId))
           variant="light"
           class="featured__cta"
         >
-          Leer más →
+          {{ $t('entities.announcement.featured.readMore') }}
         </BaseButton>
       </div>
 

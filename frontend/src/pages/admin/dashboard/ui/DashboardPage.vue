@@ -98,7 +98,10 @@ const view = computed(() => {
 
 <template>
   <div>
-    <AdminPageHeader title="Panel" subtitle="Crecimiento y actividad de la plataforma">
+    <AdminPageHeader
+      :title="$t('pages.admin.dashboard.header.title')"
+      :subtitle="$t('pages.admin.dashboard.header.subtitle')"
+    >
       <template #actions>
         <RangeFilter
           :preset="preset"
@@ -113,7 +116,7 @@ const view = computed(() => {
       :loading="isLoading"
       :error="isError"
       :empty="false"
-      error-text="No se pudieron cargar las estadísticas."
+      :error-text="$t('pages.admin.dashboard.error')"
     >
       <div v-if="data" class="dashboard" :class="{ 'dashboard--refetching': isFetching }">
         <KpiCards :kpis="data.kpis ?? []" />
@@ -121,8 +124,8 @@ const view = computed(() => {
         <div class="dashboard__grid">
           <div class="g-7">
             <AnalyticsChart
-              title="Crecimiento de usuarios"
-              subtitle="Total acumulado por tipo"
+              :title="$t('pages.admin.dashboard.charts.userGrowth.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.userGrowth.subtitle')"
               type="line"
               :data="view.userGrowth.data"
               :options="view.userGrowth.options"
@@ -132,8 +135,8 @@ const view = computed(() => {
           </div>
           <div class="g-5">
             <AnalyticsChart
-              title="Inscripciones a lo largo del tiempo"
-              subtitle="Altas por estado en el periodo"
+              :title="$t('pages.admin.dashboard.charts.inscriptions.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.inscriptions.subtitle')"
               type="bar"
               :data="view.inscriptions.data"
               :options="view.inscriptions.options"
@@ -144,8 +147,8 @@ const view = computed(() => {
 
           <div class="g-7">
             <AnalyticsChart
-              title="Eventos con más inscripciones"
-              subtitle="Confirmadas · histórico"
+              :title="$t('pages.admin.dashboard.charts.topEvents.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.topEvents.subtitle')"
               type="bar"
               :data="view.topEvents.data"
               :options="view.topEvents.options"
@@ -155,8 +158,8 @@ const view = computed(() => {
           </div>
           <div class="g-5">
             <AnalyticsChart
-              title="Publicación de contenido"
-              subtitle="Anuncios y recursos publicados en el periodo"
+              :title="$t('pages.admin.dashboard.charts.content.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.content.subtitle')"
               type="bar"
               :data="view.content.data"
               :options="view.content.options"
@@ -167,8 +170,8 @@ const view = computed(() => {
 
           <div class="g-4">
             <AnalyticsChart
-              title="Usuarios por tipo"
-              subtitle="Composición actual"
+              :title="$t('pages.admin.dashboard.charts.usersByType.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
               type="doughnut"
               :data="view.usersByType.data"
               :options="view.usersByType.options"
@@ -178,8 +181,8 @@ const view = computed(() => {
           </div>
           <div class="g-4">
             <AnalyticsChart
-              title="Adultos y menores"
-              subtitle="Composición actual"
+              :title="$t('pages.admin.dashboard.charts.audience.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
               type="doughnut"
               :data="view.audience.data"
               :options="view.audience.options"
@@ -189,8 +192,8 @@ const view = computed(() => {
           </div>
           <div class="g-4">
             <AnalyticsChart
-              title="Recursos por tipo"
-              subtitle="Composición actual"
+              :title="$t('pages.admin.dashboard.charts.resources.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
               type="doughnut"
               :data="view.resources.data"
               :options="view.resources.options"
@@ -201,8 +204,8 @@ const view = computed(() => {
 
           <div class="g-5">
             <AnalyticsChart
-              title="Eventos por categoría"
-              subtitle="Composición actual"
+              :title="$t('pages.admin.dashboard.charts.categories.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
               type="doughnut"
               :data="view.categories.data"
               :options="view.categories.options"
@@ -212,8 +215,8 @@ const view = computed(() => {
           </div>
           <div class="g-7">
             <AnalyticsChart
-              title="Calendario de eventos"
-              subtitle="Eventos por mes · pasados y próximos (±6 meses)"
+              :title="$t('pages.admin.dashboard.charts.calendar.title')"
+              :subtitle="$t('pages.admin.dashboard.charts.calendar.subtitle')"
               type="bar"
               :data="view.calendar.data"
               :options="view.calendar.options"

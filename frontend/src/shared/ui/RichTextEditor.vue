@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
+import { useI18n } from 'vue-i18n'
 
 import { postApiFiles } from '@/shared/api/generated/endpoints/files/files'
 import { fileContentUrl, parseRichText, richTextExtensions, serializeRichText } from '@/shared/lib'
+
+const { t } = useI18n()
 
 const props = defineProps<{ modelValue?: string | null; invalid?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -11,6 +14,8 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const uploadError = ref('')
+
+const placeholderVar = computed(() => JSON.stringify(t('editor.placeholder')))
 
 const editor = useEditor({
   extensions: richTextExtensions(),
@@ -46,7 +51,7 @@ async function onFileChange(event: Event): Promise<void> {
     const url = fileContentUrl(response.data.id)
     if (url) editor.value.chain().focus().setImage({ src: url, alt: file.name }).run()
   } catch {
-    uploadError.value = 'No se pudo subir la imagen.'
+    uploadError.value = t('editor.uploadError')
   } finally {
     uploading.value = false
   }
@@ -72,7 +77,7 @@ function toggleLink(): void {
   const instance = editor.value
   if (!instance) return
   const previous = (instance.getAttributes('link').href as string | undefined) ?? ''
-  const url = window.prompt('URL del enlace (déjalo vacío para quitarlo):', previous)
+  const url = window.prompt(t('editor.linkPrompt'), previous)
   if (url === null) return
   const chain = instance.chain().focus().extendMarkRange('link')
   if (url.trim() === '') chain.unsetLink().run()
@@ -87,13 +92,13 @@ onBeforeUnmount(() => editor.value?.destroy())
 </script>
 
 <template>
-  <div class="rt" :class="{ 'rt--invalid': invalid }">
+  <div class="rt" :class="{ 'rt--invalid': invalid }" :style="{ '--rt-placeholder': placeholderVar }">
     <div v-if="editor" class="rt__toolbar">
       <button
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('bold') }"
-        title="Negrita"
+        :title="$t('editor.bold')"
         @click="editor.chain().focus().toggleBold().run()"
       >
         <strong>B</strong>
@@ -102,7 +107,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('italic') }"
-        title="Cursiva"
+        :title="$t('editor.italic')"
         @click="editor.chain().focus().toggleItalic().run()"
       >
         <em>I</em>
@@ -111,7 +116,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('underline') }"
-        title="Subrayado"
+        :title="$t('editor.underline')"
         @click="editor.chain().focus().toggleUnderline().run()"
       >
         <span style="text-decoration: underline">U</span>
@@ -120,7 +125,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('strike') }"
-        title="Tachado"
+        :title="$t('editor.strike')"
         @click="editor.chain().focus().toggleStrike().run()"
       >
         <s>S</s>
@@ -132,7 +137,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('heading', { level: 1 }) }"
-        title="Título 1"
+        :title="$t('editor.heading1')"
         @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
       >
         H1
@@ -141,7 +146,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('heading', { level: 2 }) }"
-        title="Título 2"
+        :title="$t('editor.heading2')"
         @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
       >
         H2
@@ -150,7 +155,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('heading', { level: 3 }) }"
-        title="Subtítulo"
+        :title="$t('editor.subtitle')"
         @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
       >
         H3
@@ -158,7 +163,7 @@ onBeforeUnmount(() => editor.value?.destroy())
 
       <span class="rt__sep" />
 
-      <label class="rt__btn rt__color" title="Color de texto">
+      <label class="rt__btn rt__color" :title="$t('editor.textColor')">
         <span class="rt__color-letter">A</span>
         <input
           type="color"
@@ -166,7 +171,7 @@ onBeforeUnmount(() => editor.value?.destroy())
           @input="setColor(($event.target as HTMLInputElement).value)"
         />
       </label>
-      <label class="rt__btn rt__color" title="Resaltado">
+      <label class="rt__btn rt__color" :title="$t('editor.highlight')">
         <i class="pi pi-palette" />
         <input
           type="color"
@@ -174,7 +179,12 @@ onBeforeUnmount(() => editor.value?.destroy())
           @input="setHighlight(($event.target as HTMLInputElement).value)"
         />
       </label>
-      <button type="button" class="rt__btn" title="Quitar color y resaltado" @click="clearColors">
+      <button
+        type="button"
+        class="rt__btn"
+        :title="$t('editor.clearFormatting')"
+        @click="clearColors"
+      >
         <i class="pi pi-ban" />
       </button>
 
@@ -184,7 +194,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive({ textAlign: 'left' }) }"
-        title="Alinear a la izquierda"
+        :title="$t('editor.alignLeft')"
         @click="setAlign('left')"
       >
         <i class="pi pi-align-left" />
@@ -193,7 +203,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive({ textAlign: 'center' }) }"
-        title="Centrar"
+        :title="$t('editor.alignCenter')"
         @click="setAlign('center')"
       >
         <i class="pi pi-align-center" />
@@ -202,7 +212,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive({ textAlign: 'right' }) }"
-        title="Alinear a la derecha"
+        :title="$t('editor.alignRight')"
         @click="setAlign('right')"
       >
         <i class="pi pi-align-right" />
@@ -214,7 +224,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('bulletList') }"
-        title="Lista con viñetas"
+        :title="$t('editor.bulletList')"
         @click="editor.chain().focus().toggleBulletList().run()"
       >
         <i class="pi pi-list" />
@@ -223,7 +233,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('orderedList') }"
-        title="Lista numerada"
+        :title="$t('editor.orderedList')"
         @click="editor.chain().focus().toggleOrderedList().run()"
       >
         1.
@@ -232,7 +242,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('blockquote') }"
-        title="Cita"
+        :title="$t('editor.blockquote')"
         @click="editor.chain().focus().toggleBlockquote().run()"
       >
         <i class="pi pi-comment" />
@@ -244,7 +254,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         type="button"
         class="rt__btn"
         :class="{ 'rt__btn--active': editor.isActive('link') }"
-        title="Enlace"
+        :title="$t('editor.link')"
         @click="toggleLink"
       >
         <i class="pi pi-link" />
@@ -252,13 +262,13 @@ onBeforeUnmount(() => editor.value?.destroy())
       <button
         type="button"
         class="rt__btn"
-        title="Insertar imagen"
+        :title="$t('editor.insertImage')"
         :disabled="uploading"
         @click="pickImage"
       >
         <i :class="uploading ? 'pi pi-spin pi-spinner' : 'pi pi-image'" />
       </button>
-      <button type="button" class="rt__btn" title="Insertar tabla" @click="insertTable">
+      <button type="button" class="rt__btn" :title="$t('editor.insertTable')" @click="insertTable">
         <i class="pi pi-table" />
       </button>
 
@@ -267,7 +277,7 @@ onBeforeUnmount(() => editor.value?.destroy())
       <button
         type="button"
         class="rt__btn"
-        title="Deshacer"
+        :title="$t('editor.undo')"
         :disabled="!editor.can().undo()"
         @click="editor.chain().focus().undo().run()"
       >
@@ -276,7 +286,7 @@ onBeforeUnmount(() => editor.value?.destroy())
       <button
         type="button"
         class="rt__btn"
-        title="Rehacer"
+        :title="$t('editor.redo')"
         :disabled="!editor.can().redo()"
         @click="editor.chain().focus().redo().run()"
       >
@@ -285,51 +295,51 @@ onBeforeUnmount(() => editor.value?.destroy())
     </div>
 
     <div v-if="editor && editor.isActive('table')" class="rt__toolbar rt__toolbar--table">
-      <span class="rt__table-label">Tabla:</span>
+      <span class="rt__table-label">{{ $t('editor.tableLabel') }}</span>
       <button
         type="button"
         class="rt__btn"
-        title="Añadir columna"
+        :title="$t('editor.addColumn')"
         @click="editor.chain().focus().addColumnAfter().run()"
       >
-        + Columna
+        {{ $t('editor.columnAdd') }}
       </button>
       <button
         type="button"
         class="rt__btn"
-        title="Eliminar columna"
+        :title="$t('editor.deleteColumn')"
         @click="editor.chain().focus().deleteColumn().run()"
       >
-        − Columna
+        {{ $t('editor.columnRemove') }}
       </button>
       <button
         type="button"
         class="rt__btn"
-        title="Añadir fila"
+        :title="$t('editor.addRow')"
         @click="editor.chain().focus().addRowAfter().run()"
       >
-        + Fila
+        {{ $t('editor.rowAdd') }}
       </button>
       <button
         type="button"
         class="rt__btn"
-        title="Eliminar fila"
+        :title="$t('editor.deleteRow')"
         @click="editor.chain().focus().deleteRow().run()"
       >
-        − Fila
+        {{ $t('editor.rowRemove') }}
       </button>
       <button
         type="button"
         class="rt__btn"
-        title="Alternar fila de cabecera"
+        :title="$t('editor.toggleHeaderRow')"
         @click="editor.chain().focus().toggleHeaderRow().run()"
       >
-        Cabecera
+        {{ $t('editor.headerCell') }}
       </button>
       <button
         type="button"
         class="rt__btn rt__btn--danger"
-        title="Eliminar tabla"
+        :title="$t('editor.deleteTable')"
         @click="editor.chain().focus().deleteTable().run()"
       >
         <i class="pi pi-trash" />
@@ -457,7 +467,7 @@ onBeforeUnmount(() => editor.value?.destroy())
 }
 
 .rt__content:deep(.ProseMirror p.is-editor-empty:first-child::before) {
-  content: 'Escribe aquí…';
+  content: var(--rt-placeholder);
   color: var(--ca-text-faint);
   float: left;
   height: 0;

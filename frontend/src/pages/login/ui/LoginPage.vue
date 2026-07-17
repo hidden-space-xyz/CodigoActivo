@@ -13,10 +13,10 @@ const { form, submit, isSubmitting, isError } = useLogin()
     <section class="login-head">
       <div class="login-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow login-head__inner">
-        <SectionEyebrow text="// iniciar sesión" color="var(--ca-orange-ink)" />
-        <h1 class="login-head__title">Bienvenido de nuevo</h1>
+        <SectionEyebrow :text="$t('pages.login.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="login-head__title">{{ $t('pages.login.title') }}</h1>
         <p class="login-head__intro">
-          Inicia sesión en tu cuenta para participar en nuestras actividades.
+          {{ $t('pages.login.intro') }}
         </p>
       </div>
     </section>
@@ -25,11 +25,11 @@ const { form, submit, isSubmitting, isError } = useLogin()
       <div class="login-card">
         <form class="login-form" @submit.prevent="submit">
           <div class="login-field">
-            <label class="login-label" for="login-identifier">Correo o usuario</label>
+            <label class="login-label" for="login-identifier">{{ $t('pages.login.identifierLabel') }}</label>
             <InputText id="login-identifier" v-model="form.identifier" required fluid />
           </div>
           <div class="login-field">
-            <label class="login-label" for="login-password">Contraseña</label>
+            <label class="login-label" for="login-password">{{ $t('common.password') }}</label>
             <Password
               input-id="login-password"
               v-model="form.password"
@@ -41,21 +41,21 @@ const { form, submit, isSubmitting, isError } = useLogin()
           </div>
 
           <RouterLink :to="{ name: 'forgot-password' }" class="login-forgot">
-            ¿Has olvidado tu contraseña?
+            {{ $t('pages.login.forgotLink') }}
           </RouterLink>
 
           <p v-if="isError" class="login-error" role="alert">
-            No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo.
+            {{ $t('pages.login.error') }}
           </p>
 
           <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
-            Iniciar sesión
+            {{ $t('common.login') }}
           </BaseButton>
         </form>
 
         <p class="login-alt">
-          ¿Aún no tienes cuenta?
-          <RouterLink :to="{ name: 'register' }" class="login-alt__link"> Regístrate </RouterLink>
+          {{ $t('pages.login.noAccount') }}
+          <RouterLink :to="{ name: 'register' }" class="login-alt__link"> {{ $t('common.register') }} </RouterLink>
         </p>
       </div>
     </section>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, ColumnSearch } from '@/shared/ui'
 import ColorPicker from 'primevue/colorpicker'
 import Column from 'primevue/column'
@@ -11,6 +12,7 @@ import { useEventCategories } from '../model/categories'
 import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
+const { t } = useI18n()
 const { table, create, update, remove } = useEventCategories()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
@@ -49,7 +51,7 @@ function save(): void {
       { id: selected.value.id, body },
       {
         onSuccess: () => {
-          feedback.success('Categoría actualizada.')
+          feedback.success(t('features.manageCatalogs.updated'))
           dialogVisible.value = false
         },
         onError: (error) => feedback.error(error),
@@ -59,7 +61,7 @@ function save(): void {
   }
   create.mutate(body, {
     onSuccess: () => {
-      feedback.success('Categoría creada.')
+      feedback.success(t('features.manageCatalogs.created'))
       dialogVisible.value = false
     },
     onError: (error) => feedback.error(error),
@@ -68,12 +70,12 @@ function save(): void {
 
 function confirmDelete(item: EventCategoryTypeResponse): void {
   requireDelete({
-    header: 'Eliminar categoría',
-    message: `¿Seguro que quieres eliminar "${item.name}"? Se quitará de los eventos que la usen.`,
+    header: t('features.manageCatalogs.deleteHeader'),
+    message: t('features.manageCatalogs.deleteMessage', { name: item.name }),
     accept: () => {
       if (!item.id) return
       remove.mutate(item.id, {
-        onSuccess: () => feedback.success('Categoría eliminada.'),
+        onSuccess: () => feedback.success(t('features.manageCatalogs.deleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -84,8 +86,13 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
 <template>
   <section class="catalog">
     <div class="catalog__head">
-      <h2 class="catalog__title">Categorías de eventos</h2>
-      <Button label="Nueva" icon="pi pi-plus" size="small" @click="openCreate" />
+      <h2 class="catalog__title">{{ $t('features.manageCatalogs.title') }}</h2>
+      <Button
+        :label="$t('features.manageCatalogs.newButton')"
+        icon="pi pi-plus"
+        size="small"
+        @click="openCreate"
+      />
     </div>
 
     <DataTable
@@ -106,16 +113,16 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       @sort="table.onSort"
     >
       <template #empty>
-        <span v-if="table.isError.value">No se pudieron cargar las categorías.</span>
-        <span v-else>Sin categorías.</span>
+        <span v-if="table.isError.value">{{ $t('features.manageCatalogs.loadError') }}</span>
+        <span v-else>{{ $t('features.manageCatalogs.empty') }}</span>
       </template>
 
       <Column field="name" sortable>
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
-            label="Nombre"
-            placeholder="Buscar nombre"
+            :label="$t('common.name')"
+            :placeholder="$t('features.manageCatalogs.searchName')"
             @apply="table.onFilter"
           />
         </template>
@@ -124,8 +131,8 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('color').value"
-            label="Color"
-            placeholder="Buscar color"
+            :label="$t('features.manageCatalogs.color')"
+            :placeholder="$t('features.manageCatalogs.searchColor')"
             @apply="table.onFilter"
           />
         </template>
@@ -133,16 +140,22 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
           <ColorTag :value="data.name ?? ''" :color="data.color" />
         </template>
       </Column>
-      <Column header="Acciones" style="width: 120px">
+      <Column :header="$t('common.actions')" style="width: 120px">
         <template #body="{ data }">
           <div class="catalog__actions">
-            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              :aria-label="$t('common.edit')"
+              @click="openEdit(data)"
+            />
             <Button
               icon="pi pi-trash"
               text
               rounded
               severity="danger"
-              aria-label="Eliminar"
+              :aria-label="$t('common.delete')"
               @click="confirmDelete(data)"
             />
           </div>
@@ -153,12 +166,12 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
     <Dialog
       v-model:visible="dialogVisible"
       modal
-      :header="selected ? 'Editar categoría' : 'Nueva categoría'"
+      :header="selected ? $t('features.manageCatalogs.editHeader') : $t('features.manageCatalogs.newHeader')"
       :style="{ width: '440px' }"
     >
       <form class="catalog__form" @submit.prevent="save">
         <div class="catalog__field">
-          <label>Nombre</label>
+          <label>{{ $t('common.name') }}</label>
           <InputText
             v-model="form.name"
             :maxlength="120"
@@ -167,23 +180,23 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
           />
         </div>
         <div class="catalog__field">
-          <label>Color</label>
+          <label>{{ $t('features.manageCatalogs.color') }}</label>
           <div class="catalog__color">
             <ColorPicker v-model="form.color" />
-            <ColorTag :value="form.name.trim() || 'Ejemplo'" :color="colorHex" />
+            <ColorTag :value="form.name.trim() || $t('features.manageCatalogs.example')" :color="colorHex" />
             <span class="catalog__hex">{{ colorHex }}</span>
           </div>
         </div>
       </form>
       <template #footer>
         <Button
-          label="Cancelar"
+          :label="$t('common.cancel')"
           text
           severity="secondary"
           :disabled="saving"
           @click="dialogVisible = false"
         />
-        <Button label="Guardar" :loading="saving" @click="save" />
+        <Button :label="$t('common.save')" :loading="saving" @click="save" />
       </template>
     </Dialog>
   </section>

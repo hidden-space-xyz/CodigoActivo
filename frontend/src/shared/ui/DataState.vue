@@ -1,28 +1,24 @@
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
 
-withDefaults(
-  defineProps<{
-    loading: boolean
-    error: boolean
-    empty: boolean
-    emptyText?: string
-    errorText?: string
-  }>(),
-  {
-    emptyText: 'No hay datos todavía.',
-    errorText: 'No se pudieron cargar los datos.',
-  },
-)
+defineProps<{
+  loading: boolean
+  error: boolean
+  empty: boolean
+  emptyText?: string
+  errorText?: string
+}>()
 </script>
 
 <template>
   <div v-if="loading" class="data-state">
     <ProgressSpinner style="width: 36px; height: 36px" stroke-width="4" />
-    <span>Cargando…</span>
+    <span>{{ $t('common.loading') }}</span>
   </div>
-  <div v-else-if="error" class="data-state data-state--error">{{ errorText }}</div>
-  <div v-else-if="empty" class="data-state">{{ emptyText }}</div>
+  <div v-else-if="error" class="data-state data-state--error">
+    {{ errorText ?? $t('dataState.error') }}
+  </div>
+  <div v-else-if="empty" class="data-state">{{ emptyText ?? $t('dataState.empty') }}</div>
   <slot v-else />
 </template>
 

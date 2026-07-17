@@ -17,13 +17,13 @@ function isActive(routeName: string): boolean {
 <template>
   <header class="header">
     <div class="header__inner">
-      <RouterLink :to="{ name: 'home' }" class="header__brand" aria-label="Código Activo">
+      <RouterLink :to="{ name: 'home' }" class="header__brand" :aria-label="$t('layout.brandAria')">
         <BrandLogo />
       </RouterLink>
 
       <div class="header__spacer" />
 
-      <nav class="header__nav" aria-label="Principal">
+      <nav class="header__nav" :aria-label="$t('layout.navAria')">
         <RouterLink
           v-for="item in PRIMARY_NAV"
           :key="item.routeName"
@@ -31,33 +31,33 @@ function isActive(routeName: string): boolean {
           class="header__link"
           :class="{ 'header__link--active': isActive(item.routeName) }"
         >
-          {{ item.label }}
+          {{ $t(item.labelKey) }}
         </RouterLink>
 
         <template v-if="isAuthenticated">
-          <RouterLink v-if="isAdmin" :to="{ name: 'admin-dashboard' }" class="header__link"
-            >Administración</RouterLink
-          >
+          <RouterLink v-if="isAdmin" :to="{ name: 'admin-dashboard' }" class="header__link">{{
+            $t('common.admin')
+          }}</RouterLink>
           <RouterLink
             :to="{ name: 'account' }"
             class="header__link"
             :class="{ 'header__link--active': isActive('account') }"
           >
-            Mi cuenta
+            {{ $t('common.myAccount') }}
           </RouterLink>
-          <span class="header__greeting">Hola, {{ displayName }}</span>
+          <span class="header__greeting">{{ $t('common.greeting', { name: displayName }) }}</span>
           <ThemeToggle class="header__theme" />
           <BaseButton variant="ghost" class="header__cta" @click="logout()">
-            Cerrar sesión
+            {{ $t('common.logout') }}
           </BaseButton>
         </template>
         <template v-else>
           <ThemeToggle class="header__theme" />
           <BaseButton :to="{ name: 'login' }" variant="link" class="header__login">
-            Iniciar sesión
+            {{ $t('common.login') }}
           </BaseButton>
           <BaseButton :to="{ name: 'register' }" variant="primary" class="header__cta">
-            Regístrate
+            {{ $t('common.register') }}
           </BaseButton>
         </template>
       </nav>

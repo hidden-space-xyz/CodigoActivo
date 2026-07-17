@@ -1,12 +1,12 @@
 interface NavItem {
   readonly routeName: string
-  readonly label: string
+  readonly labelKey: string
 }
 
 export const PRIMARY_NAV: readonly NavItem[] = [
-  { routeName: 'home', label: 'Inicio' },
-  { routeName: 'announcements', label: 'Anuncios' },
-  { routeName: 'events', label: 'Eventos' },
-  { routeName: 'resources', label: 'Recursos' },
-  { routeName: 'about', label: 'Nosotros' },
+  { routeName: 'home', labelKey: 'nav.home' },
+  { routeName: 'announcements', labelKey: 'nav.announcements' },
+  { routeName: 'events', labelKey: 'nav.events' },
+  { routeName: 'resources', labelKey: 'nav.resources' },
+  { routeName: 'about', labelKey: 'nav.about' },
 ]

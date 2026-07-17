@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useResourceDetail } from '@/entities/resource'
 import { BaseButton, RichTextContent } from '@/shared/ui'
@@ -13,13 +14,15 @@ import {
 
 const props = defineProps<{ resourceId: string }>()
 
+const { t } = useI18n()
+
 const { resource, isLoading, notFound } = useResourceDetail(() => props.resourceId)
 
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
 
 const seo = computed<SeoData | undefined>(() => {
-  if (notFound.value) return { title: 'Recurso no encontrado', noindex: true }
+  if (notFound.value) return { title: t('pages.resourceDetail.seoNotFound'), noindex: true }
   const current = resource.value
   if (!current) return undefined
   if (current.url) return { title: current.title, noindex: true }
@@ -44,18 +47,20 @@ watchEffect(() => {
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="link" :to="{ name: 'resources' }"> ← Volver a recursos </BaseButton>
+        <BaseButton variant="link" :to="{ name: 'resources' }">
+          {{ $t('pages.resourceDetail.back') }}
+        </BaseButton>
       </div>
     </section>
 
-    <p v-if="isLoading" class="detail-state ca-container--narrow">Cargando…</p>
+    <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
     <p v-else-if="notFound || !resource" class="detail-state ca-container--narrow">
-      No hemos encontrado ese recurso.
+      {{ $t('pages.resourceDetail.notFound') }}
     </p>
 
     <p v-else-if="resource.url" class="detail-state ca-container--narrow">
-      Redirigiendo al recurso…
+      {{ $t('pages.resourceDetail.redirecting') }}
     </p>
 
     <template v-else>
@@ -71,7 +76,7 @@ watchEffect(() => {
           class="detail__body"
         />
         <p v-else class="detail__body detail__body--muted">
-          Este recurso todavía no tiene una descripción.
+          {{ $t('pages.resourceDetail.noDescription') }}
         </p>
       </article>
     </template>

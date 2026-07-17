@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { useEventDetail } from '@/entities/event'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
 import { BaseButton, ColorTag, RichTextContent } from '@/shared/ui'
+import { i18n } from '@/shared/i18n'
 import {
   absoluteUrl,
   fileContentUrl,
@@ -17,6 +19,7 @@ import {
 const props = defineProps<{ eventId: string }>()
 
 const route = useRoute()
+const { t } = useI18n()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 
 const tab = ref<'info' | 'activities'>('info')
@@ -26,9 +29,9 @@ const hasDescription = computed(() => !isRichTextEmpty(event.value?.description)
 const infoRows = computed(() =>
   event.value
     ? [
-        { label: 'Fecha', value: event.value.dateLabel },
-        { label: 'Inscripción', value: event.value.signupLabel },
-        { label: 'Estado', value: event.value.status },
+        { label: t('pages.eventDetail.info.date'), value: event.value.dateLabel },
+        { label: t('pages.eventDetail.info.signup'), value: event.value.signupLabel },
+        { label: t('common.status'), value: event.value.status },
       ]
     : [],
 )
@@ -36,7 +39,7 @@ const infoRows = computed(() =>
 const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
 
 const seo = computed<SeoData | undefined>(() => {
-  if (notFound.value) return { title: 'Evento no encontrado', noindex: true }
+  if (notFound.value) return { title: t('pages.eventDetail.seo.notFound'), noindex: true }
   const current = event.value
   if (!current) return undefined
   const description = richTextExcerpt(current.description) || current.subtitle
@@ -47,10 +50,10 @@ const seo = computed<SeoData | undefined>(() => {
         name: current.title,
         url: absoluteUrl(route.path),
         startDate: current.startsAt,
-        organizer: { '@type': 'Organization', name: 'Código Activo' },
+        organizer: { '@type': 'Organization', name: i18n.global.t('seo.siteName') },
         location: {
           '@type': 'Place',
-          name: 'Código Activo',
+          name: i18n.global.t('seo.siteName'),
           address: {
             '@type': 'PostalAddress',
             addressLocality: 'León',
@@ -80,21 +83,25 @@ useSeo(seo)
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="link" :to="{ name: 'events' }"> ← Volver a eventos </BaseButton>
+        <BaseButton variant="link" :to="{ name: 'events' }">
+          {{ $t('pages.eventDetail.backToEvents') }}
+        </BaseButton>
       </div>
     </section>
 
-    <p v-if="isLoading" class="detail-state ca-container--narrow">Cargando…</p>
+    <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
     <p v-else-if="notFound || !event" class="detail-state ca-container--narrow">
-      No hemos encontrado ese evento.
+      {{ $t('pages.eventDetail.notFound') }}
     </p>
 
     <template v-else>
       <section class="detail-head">
         <div class="ca-container--narrow">
           <h1 class="detail-head__title">{{ event.title }}</h1>
-          <div v-if="event.subtitle" class="detail-head__slogan">«{{ event.subtitle }}»</div>
+          <div v-if="event.subtitle" class="detail-head__slogan">
+            {{ $t('pages.eventDetail.slogan', { subtitle: event.subtitle }) }}
+          </div>
           <div v-if="event.categories.length" class="detail-head__cats">
             <ColorTag
               v-for="cat in event.categories"
@@ -112,19 +119,19 @@ useSeo(seo)
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'info' }"
-            title="Ver información"
+            :title="$t('pages.eventDetail.tabs.viewInfo')"
             @click="tab = 'info'"
           >
-            Información
+            {{ $t('pages.eventDetail.tabs.info') }}
           </button>
           <button
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'activities' }"
-            title="Ver actividades"
+            :title="$t('pages.eventDetail.tabs.viewActivities')"
             @click="tab = 'activities'"
           >
-            Actividades
+            {{ $t('pages.eventDetail.tabs.activities') }}
           </button>
         </div>
       </nav>
@@ -134,24 +141,24 @@ useSeo(seo)
           <div class="detail-body__main">
             <img v-if="posterUrl" :src="posterUrl" :alt="event.title" class="detail-body__poster" />
 
-            <h2 class="detail-body__h2">Sobre el evento</h2>
+            <h2 class="detail-body__h2">{{ $t('pages.eventDetail.aboutEvent') }}</h2>
             <RichTextContent v-if="hasDescription" :content="event.description" />
             <p v-else class="detail-body__p detail-body__p--muted">
-              Este evento todavía no tiene una descripción.
+              {{ $t('pages.eventDetail.noDescription') }}
             </p>
           </div>
 
           <aside class="detail-body__panel">
-            <h3 class="detail-panel__title">Información</h3>
+            <h3 class="detail-panel__title">{{ $t('pages.eventDetail.tabs.info') }}</h3>
             <dl class="detail-panel__info">
               <div v-for="row in infoRows" :key="row.label" class="detail-panel__row">
                 <dt class="detail-panel__label">{{ row.label }}</dt>
                 <dd class="detail-panel__value">{{ row.value }}</dd>
               </div>
             </dl>
-            <p class="detail-panel__note">Apúntate a las actividades de este evento.</p>
+            <p class="detail-panel__note">{{ $t('pages.eventDetail.panelNote') }}</p>
             <BaseButton variant="primary" block @click="tab = 'activities'">
-              Ver actividades
+              {{ $t('pages.eventDetail.tabs.viewActivities') }}
             </BaseButton>
           </aside>
         </div>

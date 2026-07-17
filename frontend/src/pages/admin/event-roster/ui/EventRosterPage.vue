@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { DataState } from '@/shared/ui'
 
 import { useEventRoster } from '@/features/manage-events'
@@ -9,6 +10,8 @@ import type {
   EventRosterParticipantResponse,
 } from '@/shared/api/generated/models'
 import { ageFrom, formatDateTimeRange } from '@/shared/lib'
+
+const { t } = useI18n()
 
 const SHEET_WIDTH_MM = 210
 const USABLE_HEIGHT_MM = 275
@@ -47,7 +50,7 @@ interface SheetChunk {
 }
 
 function pluralizeRole(name: string): string {
-  if (!name) return 'Participantes'
+  if (!name) return t('pages.admin.eventRoster.roleFallback')
   return /[aeiouáéíóú]$/i.test(name) ? `${name}s` : `${name}es`
 }
 
@@ -149,11 +152,11 @@ watch(rosterActivities, () => void paginate(), { immediate: true })
 
 function ageLabel(participant: EventRosterParticipantResponse): string {
   const age = ageFrom(participant.birthDate)
-  return age === null ? '—' : `${age} años`
+  return age === null ? '—' : t('pages.admin.eventRoster.ageYears', { age })
 }
 
 function participantsLabel(count: number): string {
-  return count === 1 ? '1 inscrito' : `${count} inscritos`
+  return t('pages.admin.eventRoster.participantsCount', { count }, count)
 }
 
 function contactLines(participant: EventRosterParticipantResponse): string[] {
@@ -172,7 +175,7 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
   <div class="roster">
     <div class="back-row no-print">
       <RouterLink :to="{ name: 'admin-event-detail', params: { eventId } }" class="back">
-        ← Volver al evento
+        {{ $t('pages.admin.eventRoster.back') }}
       </RouterLink>
     </div>
 
@@ -181,13 +184,13 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
       :loading="report.isLoading.value"
       :error="report.isError.value"
       :empty="rosterActivities.length === 0"
-      empty-text="Este evento no tiene asignaciones confirmadas, así que no hay listados que imprimir."
+      :empty-text="$t('pages.admin.eventRoster.emptyText')"
     >
       <span />
     </DataState>
 
     <div v-for="(page, pageIndex) in sheets" :key="pageIndex" class="sheet">
-      <p class="sheet__event">{{ eventTitle }} · Listado de asistencia</p>
+      <p class="sheet__event">{{ $t('pages.admin.eventRoster.sheetHeader', { title: eventTitle }) }}</p>
 
       <section
         v-for="chunk in page"
@@ -197,7 +200,9 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
         <header class="chunk__head">
           <h2 class="chunk__title">
             {{ chunk.activity.title
-            }}<span v-if="chunk.continued" class="chunk__cont"> (continuación)</span>
+            }}<span v-if="chunk.continued" class="chunk__cont">{{
+              $t('pages.admin.eventRoster.continued')
+            }}</span>
           </h2>
           <p class="chunk__meta">
             <span>{{
@@ -211,11 +216,11 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
         <table class="list">
           <thead>
             <tr>
-              <th class="list__check-col">Asiste</th>
-              <th class="list__name-col">Nombre y apellidos</th>
-              <th class="list__age-col">Edad</th>
-              <th>Contacto</th>
-              <th>Tutor/a</th>
+              <th class="list__check-col">{{ $t('pages.admin.eventRoster.colAttends') }}</th>
+              <th class="list__name-col">{{ $t('pages.admin.eventRoster.colFullName') }}</th>
+              <th class="list__age-col">{{ $t('pages.admin.eventRoster.colAge') }}</th>
+              <th>{{ $t('pages.admin.eventRoster.colContact') }}</th>
+              <th>{{ $t('pages.admin.eventRoster.colGuardian') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -251,7 +256,7 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
     </div>
 
     <div ref="measureEl" class="sheet measure" aria-hidden="true">
-      <p class="sheet__event" data-part="sheet-head">{{ eventTitle }} · Listado de asistencia</p>
+      <p class="sheet__event" data-part="sheet-head">{{ $t('pages.admin.eventRoster.sheetHeader', { title: eventTitle }) }}</p>
       <section
         v-for="(activity, index) in rosterActivities"
         :key="activity.activityId"
@@ -272,11 +277,11 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
         <table class="list">
           <thead>
             <tr>
-              <th class="list__check-col">Asiste</th>
-              <th class="list__name-col">Nombre y apellidos</th>
-              <th class="list__age-col">Edad</th>
-              <th>Contacto</th>
-              <th>Tutor/a</th>
+              <th class="list__check-col">{{ $t('pages.admin.eventRoster.colAttends') }}</th>
+              <th class="list__name-col">{{ $t('pages.admin.eventRoster.colFullName') }}</th>
+              <th class="list__age-col">{{ $t('pages.admin.eventRoster.colAge') }}</th>
+              <th>{{ $t('pages.admin.eventRoster.colContact') }}</th>
+              <th>{{ $t('pages.admin.eventRoster.colGuardian') }}</th>
             </tr>
           </thead>
           <tbody>

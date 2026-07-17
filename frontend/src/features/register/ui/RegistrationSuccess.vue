@@ -36,56 +36,56 @@ function submitVerify(): void {
 <template>
   <div class="reg-success">
     <div class="reg-success__check" aria-hidden="true">✓</div>
-    <h2 class="reg-success__title">¡Registro completado!</h2>
+    <h2 class="reg-success__title">{{ $t('features.register.success.title') }}</h2>
     <p v-if="minorCount > 0" class="reg-success__role">
-      También has inscrito a
-      <b>{{ minorCount }} {{ minorCount === 1 ? 'menor' : 'menores' }}</b> a tu cargo.
+      {{ $t('features.register.success.minorsEnrolledBefore') }}
+      <b>{{ $t('features.register.success.minorsEnrolled', { n: minorCount }, minorCount) }}</b>
+      {{ $t('features.register.success.minorsEnrolledAfter') }}
     </p>
 
     <p class="reg-success__thanks">
-      Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes
-      posible para conocernos más.
+      {{ $t('features.register.success.thanks') }}
     </p>
     <p class="reg-success__reminder">
-      Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la
-      sección de eventos.
+      {{ $t('features.register.success.reminder') }}
     </p>
 
     <div v-if="isVerified || !props.requiresVerification" class="reg-success__verified">
       {{
         props.requiresVerification
-          ? 'Tu cuenta ha sido verificada. Ya puedes iniciar sesión.'
-          : 'Tu cuenta está activa. Ya puedes iniciar sesión.'
+          ? $t('features.register.success.verifiedRequired')
+          : $t('features.register.success.verifiedActive')
       }}
       <BaseButton :to="{ name: 'login' }" variant="primary" class="reg-success__login">
-        Iniciar sesión
+        {{ $t('common.login') }}
       </BaseButton>
     </div>
 
     <form v-else class="reg-success__verify" @submit.prevent="submitVerify">
       <p class="reg-success__verify-intro">
-        Te hemos enviado un correo electrónico de verificación a <b>{{ email }}</b
-        >. Pulsa el enlace del mensaje para activar tu cuenta, o pega aquí el código que aparece en
-        el correo.
+        {{ $t('features.register.success.verifyIntroBefore') }} <b>{{ email }}</b
+        >{{ $t('features.register.success.verifyIntroAfter') }}
       </p>
-      <label class="reg-success__verify-label" for="reg-otp">Código de verificación</label>
+      <label class="reg-success__verify-label" for="reg-otp">{{
+        $t('features.register.success.otpLabel')
+      }}</label>
       <div class="reg-success__verify-row">
         <InputText
           id="reg-otp"
           v-model="otp"
-          placeholder="Pega aquí el código del correo"
+          :placeholder="$t('features.register.success.otpPlaceholder')"
           :invalid="verifyError !== null"
           fluid
         />
         <BaseButton type="submit" variant="primary" :loading="isVerifying" :disabled="!otp.trim()">
-          Verificar
+          {{ $t('features.register.success.verify') }}
         </BaseButton>
       </div>
       <small v-if="verifyError" class="reg-success__verify-error" role="alert">
         {{ verifyError }}
       </small>
       <p class="reg-success__resend">
-        ¿No has recibido el correo? Revisa la carpeta de spam o
+        {{ $t('features.register.success.resendPrompt') }}
         <BaseButton
           variant="link"
           class="reg-success__resend-button"
@@ -93,18 +93,22 @@ function submitVerify(): void {
           :loading="isResending"
           @click="emit('resend')"
         >
-          {{ resendCooldown > 0 ? `reenviar código (${resendCooldown}s)` : 'reenviar código' }}
+          {{
+            resendCooldown > 0
+              ? $t('features.register.success.resendCountdown', { s: resendCooldown })
+              : $t('features.register.success.resend')
+          }}
         </BaseButton>
       </p>
     </form>
 
     <div class="reg-success__actions">
-      <BaseButton :to="{ name: 'home' }" variant="primary"> Volver al inicio </BaseButton>
-      <BaseButton :to="{ name: 'events' }" variant="ghost"> Ver eventos </BaseButton>
+      <BaseButton :to="{ name: 'home' }" variant="primary"> {{ $t('common.backToHome') }} </BaseButton>
+      <BaseButton :to="{ name: 'events' }" variant="ghost"> {{ $t('features.register.success.viewEvents') }} </BaseButton>
     </div>
 
     <BaseButton variant="link" class="reg-success__again" @click="emit('reset')">
-      Registrar a otra persona
+      {{ $t('features.register.success.registerAnother') }}
     </BaseButton>
   </div>
 </template>

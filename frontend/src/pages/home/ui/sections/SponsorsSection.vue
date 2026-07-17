@@ -41,14 +41,14 @@ function distanceOf(offset: number): number {
 <template>
   <section class="sponsors">
     <div class="ca-container">
-      <div class="sponsors__heading">Con el apoyo de</div>
+      <div class="sponsors__heading">{{ $t('pages.home.sponsors.heading') }}</div>
 
       <div class="sponsors__carousel" @mouseenter="pause" @mouseleave="resume">
         <button
           type="button"
           class="sponsors__arrow"
-          aria-label="Patrocinador anterior"
-          title="Patrocinador anterior"
+          :aria-label="$t('pages.home.sponsors.prev')"
+          :title="$t('pages.home.sponsors.prev')"
           @click="prev"
         >
           ‹
@@ -90,8 +90,8 @@ function distanceOf(offset: number): number {
         <button
           type="button"
           class="sponsors__arrow"
-          aria-label="Patrocinador siguiente"
-          title="Patrocinador siguiente"
+          :aria-label="$t('pages.home.sponsors.next')"
+          :title="$t('pages.home.sponsors.next')"
           @click="next"
         >
           ›

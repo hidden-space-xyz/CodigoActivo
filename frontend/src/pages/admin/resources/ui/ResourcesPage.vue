@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -22,6 +23,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
+const { t } = useI18n()
 const { table, create, update, remove, fetchOne } = useResourcesAdmin()
 const resourceTypes = useResourceTypesList()
 const feedback = useCrudFeedback()
@@ -51,7 +53,7 @@ async function openEdit(resource: ResourceListItemResponse): Promise<void> {
   try {
     const detail = await fetchOne(resource.id)
     if (!detail) {
-      feedback.error('Este recurso ya no existe.')
+      feedback.error(t('pages.admin.resources.toasts.notFound'))
       return
     }
     selected.value = detail
@@ -69,7 +71,7 @@ function onSubmit(body: CreateResourceRequest | UpdateResourceRequest): void {
       { id: selected.value.id, body: body as UpdateResourceRequest },
       {
         onSuccess: () => {
-          feedback.success('Recurso actualizado.')
+          feedback.success(t('pages.admin.resources.toasts.updated'))
           dialogVisible.value = false
         },
         onError: (error) => feedback.error(error),
@@ -79,7 +81,7 @@ function onSubmit(body: CreateResourceRequest | UpdateResourceRequest): void {
   }
   create.mutate(body as CreateResourceRequest, {
     onSuccess: () => {
-      feedback.success('Recurso creado.')
+      feedback.success(t('pages.admin.resources.toasts.created'))
       dialogVisible.value = false
     },
     onError: (error) => feedback.error(error),
@@ -88,12 +90,12 @@ function onSubmit(body: CreateResourceRequest | UpdateResourceRequest): void {
 
 function confirmDelete(resource: ResourceListItemResponse): void {
   requireDelete({
-    header: 'Eliminar recurso',
-    message: `¿Seguro que quieres eliminar "${resource.title}"?`,
+    header: t('pages.admin.resources.delete.header'),
+    message: t('pages.admin.resources.delete.message', { title: resource.title }),
     accept: () => {
       if (!resource.id) return
       remove.mutate(resource.id, {
-        onSuccess: () => feedback.success('Recurso eliminado.'),
+        onSuccess: () => feedback.success(t('pages.admin.resources.toasts.deleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -103,10 +105,13 @@ function confirmDelete(resource: ResourceListItemResponse): void {
 
 <template>
   <div>
-    <AdminPageHeader title="Recursos" subtitle="Material formativo publicado">
+    <AdminPageHeader
+      :title="$t('pages.admin.resources.header.title')"
+      :subtitle="$t('pages.admin.resources.header.subtitle')"
+    >
       <template #actions>
         <Button
-          label="Nuevo recurso"
+          :label="$t('pages.admin.resources.newResource')"
           icon="pi pi-plus"
           :disabled="loadingDetail"
           @click="openCreate"
@@ -132,11 +137,11 @@ function confirmDelete(resource: ResourceListItemResponse): void {
       @sort="table.onSort"
     >
       <template #empty>
-        <span v-if="table.isError.value">No se pudieron cargar los recursos.</span>
-        <span v-else>Aún no hay recursos.</span>
+        <span v-if="table.isError.value">{{ $t('pages.admin.resources.empty.error') }}</span>
+        <span v-else>{{ $t('pages.admin.resources.empty.none') }}</span>
       </template>
 
-      <Column header="Imagen" style="width: 110px">
+      <Column :header="$t('common.image')" style="width: 110px">
         <template #body="{ data }">
           <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
         </template>
@@ -145,8 +150,8 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('title').value"
-            label="Título"
-            placeholder="Buscar título"
+            :label="$t('pages.admin.resources.columns.title')"
+            :placeholder="$t('pages.admin.resources.search.title')"
             @apply="table.onFilter"
           />
         </template>
@@ -155,8 +160,8 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('subtitle').value"
-            label="Subtítulo"
-            placeholder="Buscar subtítulo"
+            :label="$t('pages.admin.resources.columns.subtitle')"
+            :placeholder="$t('pages.admin.resources.search.subtitle')"
             @apply="table.onFilter"
           />
         </template>
@@ -166,7 +171,7 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
-            label="Tipo"
+            :label="$t('pages.admin.resources.columns.type')"
             :options="typeOptions"
             @apply="table.onFilter"
           />
@@ -180,8 +185,8 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('url').value"
-            label="Enlace"
-            placeholder="Buscar enlace"
+            :label="$t('pages.admin.resources.columns.url')"
+            :placeholder="$t('pages.admin.resources.search.url')"
             @apply="table.onFilter"
           />
         </template>
@@ -202,20 +207,20 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('created').value"
-            label="Creado"
+            :label="$t('pages.admin.resources.columns.created')"
             @apply="table.onFilter"
           />
         </template>
         <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
       </Column>
-      <Column header="Acciones" style="width: 170px">
+      <Column :header="$t('common.actions')" style="width: 170px">
         <template #body="{ data }">
           <div class="row-actions">
             <Button
               icon="pi pi-pencil"
               text
               rounded
-              aria-label="Editar"
+              :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
               @click="openEdit(data)"
             />
@@ -224,7 +229,7 @@ function confirmDelete(resource: ResourceListItemResponse): void {
               text
               rounded
               severity="danger"
-              aria-label="Eliminar"
+              :aria-label="$t('common.delete')"
               @click="confirmDelete(data)"
             />
           </div>

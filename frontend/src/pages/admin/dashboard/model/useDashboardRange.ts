@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 
+import { i18n } from '@/shared/i18n'
 import { toDateOnly } from '@/shared/lib'
 
 export type RangePreset = '30d' | '90d' | '12m' | 'custom'
@@ -10,9 +11,9 @@ export interface RangeOption {
 }
 
 export const RANGE_OPTIONS: readonly RangeOption[] = [
-  { value: '30d', label: '30 días' },
-  { value: '90d', label: '90 días' },
-  { value: '12m', label: '12 meses' },
+  { value: '30d', label: i18n.global.t('pages.admin.dashboard.range.preset30d') },
+  { value: '90d', label: i18n.global.t('pages.admin.dashboard.range.preset90d') },
+  { value: '12m', label: i18n.global.t('pages.admin.dashboard.range.preset12m') },
 ]
 
 function startOfToday(): Date {

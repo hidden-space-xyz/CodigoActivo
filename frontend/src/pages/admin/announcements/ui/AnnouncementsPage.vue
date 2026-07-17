@@ -31,10 +31,10 @@ const controller = useContentEntity<GetApiAnnouncementsParams>({
 
 <template>
   <ContentEntityPage
-    title="Anuncios"
-    subtitle="Comunicaciones para la comunidad"
-    new-label="Nuevo anuncio"
-    entity-label="anuncio"
+    :title="$t('pages.admin.announcements.title')"
+    :subtitle="$t('pages.admin.announcements.subtitle')"
+    :new-label="$t('pages.admin.announcements.newLabel')"
+    :entity-label="$t('pages.admin.announcements.entityLabel')"
     :controller="controller"
   />
 </template>

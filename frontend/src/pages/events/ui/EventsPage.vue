@@ -49,11 +49,10 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
   <div>
     <section class="events-head">
       <div class="ca-container">
-        <SectionEyebrow text="// eventos" color="var(--ca-orange-ink)" />
-        <h1 class="events-head__title">Eventos</h1>
+        <SectionEyebrow :text="$t('pages.events.eyebrowEvents')" color="var(--ca-orange-ink)" />
+        <h1 class="events-head__title">{{ $t('pages.events.title') }}</h1>
         <p class="events-head__intro">
-          Todo lo que tenemos por delante y todo lo que ya hemos hecho juntos. Explora los próximos
-          eventos y el archivo.
+          {{ $t('pages.events.intro') }}
         </p>
       </div>
     </section>
@@ -61,14 +60,14 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
     <section class="events-section">
       <div class="ca-container">
         <div class="events-section__head">
-          <SectionEyebrow text="// próximamente" color="var(--ca-lime-ink)" />
-          <h2 class="events-section__title">Próximos eventos</h2>
+          <SectionEyebrow :text="$t('pages.events.eyebrowUpcoming')" color="var(--ca-lime-ink)" />
+          <h2 class="events-section__title">{{ $t('pages.events.upcomingTitle') }}</h2>
         </div>
-        <p v-if="isLoadingUpcoming" class="events-loading">Cargando…</p>
+        <p v-if="isLoadingUpcoming" class="events-loading">{{ $t('common.loading') }}</p>
         <EventBoard v-else :events="upcomingEvents" />
         <div v-if="hasMoreUpcoming" class="events-more">
           <AppButton
-            label="Cargar más"
+            :label="$t('common.loadMore')"
             outlined
             :loading="isFetchingMoreUpcoming"
             @click="loadMoreUpcoming"
@@ -80,8 +79,8 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
     <section class="events-section events-section--past">
       <div class="ca-container">
         <div class="events-section__head">
-          <SectionEyebrow text="// archivo" color="var(--ca-orange-ink)" />
-          <h2 class="events-section__title">Eventos anteriores</h2>
+          <SectionEyebrow :text="$t('pages.events.eyebrowArchive')" color="var(--ca-orange-ink)" />
+          <h2 class="events-section__title">{{ $t('pages.events.pastTitle') }}</h2>
           <YearFilter
             class="events-section__filter"
             :years="years"
@@ -89,13 +88,13 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
             @select="setYear"
           />
         </div>
-        <p v-if="isLoadingPast" class="events-loading">Cargando…</p>
+        <p v-if="isLoadingPast" class="events-loading">{{ $t('common.loading') }}</p>
         <div v-else class="events-grid">
           <PastEventCard v-for="event in pastEvents" :key="event.id" :event="event" />
         </div>
         <div v-if="hasMorePast" class="events-more">
           <AppButton
-            label="Cargar más"
+            :label="$t('common.loadMore')"
             outlined
             :loading="isFetchingMorePast"
             @click="loadMorePast"

@@ -9,15 +9,11 @@ const { values } = useOrganizationContent()
   <section class="about-preview">
     <div class="ca-container about-preview__grid">
       <div>
-        <SectionEyebrow text="// quiénes somos" color="var(--ca-azure-ink)" />
-        <h2 class="about-preview__title">Voluntariado que enseña a crear con código</h2>
-        <p class="about-preview__text">
-          Somos educadores, profesionales del sector tech y familias que creemos que aprender a
-          programar abre puertas. Organizamos talleres, campeonatos y eventos gratuitos en entornos
-          rurales y urbanos.
-        </p>
+        <SectionEyebrow :text="$t('pages.home.about.eyebrow')" color="var(--ca-azure-ink)" />
+        <h2 class="about-preview__title">{{ $t('pages.home.about.title') }}</h2>
+        <p class="about-preview__text">{{ $t('pages.home.about.body') }}</p>
         <BaseButton :to="{ name: 'about' }" variant="purple" class="about-preview__cta">
-          Sobre la asociación →
+          {{ $t('pages.home.about.cta') }}
         </BaseButton>
       </div>
 

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useTheme } from '@/shared/lib'
 
+const { t } = useI18n()
 const { theme, toggleTheme } = useTheme()
 
 const isDark = computed(() => theme.value === 'dark')
-const label = computed(() => (isDark.value ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'))
+const label = computed(() => (isDark.value ? t('theme.toLight') : t('theme.toDark')))
 </script>
 
 <template>

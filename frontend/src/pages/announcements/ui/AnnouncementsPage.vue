@@ -22,10 +22,10 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
   <div>
     <section class="announcements-head">
       <div class="ca-container">
-        <SectionEyebrow text="// anuncios" color="var(--ca-orange-ink)" />
-        <h1 class="announcements-head__title">Anuncios</h1>
+        <SectionEyebrow :text="$t('pages.announcements.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="announcements-head__title">{{ $t('pages.announcements.title') }}</h1>
         <p class="announcements-head__intro">
-          Novedades y comunicaciones de la comunidad de Código Activo.
+          {{ $t('pages.announcements.intro') }}
         </p>
       </div>
     </section>
@@ -40,8 +40,8 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
           @select="setYear"
         />
 
-        <p v-if="isLoading" class="announcements-loading">Cargando…</p>
-        <p v-else-if="isEmpty" class="announcements-loading">Todavía no hay anuncios.</p>
+        <p v-if="isLoading" class="announcements-loading">{{ $t('common.loading') }}</p>
+        <p v-else-if="isEmpty" class="announcements-loading">{{ $t('pages.announcements.empty') }}</p>
         <div v-else class="announcements-list">
           <AnnouncementCard
             v-for="announcement in announcements"
@@ -50,7 +50,7 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
           />
         </div>
         <div v-if="hasMore" class="announcements-more">
-          <AppButton label="Cargar más" outlined :loading="isFetchingMore" @click="loadMore" />
+          <AppButton :label="$t('common.loadMore')" outlined :loading="isFetchingMore" @click="loadMore" />
         </div>
       </div>
     </section>

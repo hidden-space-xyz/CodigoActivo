@@ -10,13 +10,15 @@ const { featured, items, isLoading } = useHomeEvents()
     <div class="ca-container">
       <div class="home-section__head">
         <div>
-          <SectionEyebrow text="// eventos" color="var(--ca-orange-ink)" />
-          <h2 class="home-section__title">Eventos</h2>
+          <SectionEyebrow :text="$t('pages.home.events.eyebrow')" color="var(--ca-orange-ink)" />
+          <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
         </div>
-        <BaseButton variant="link" :to="{ name: 'events' }"> Ver todos los eventos → </BaseButton>
+        <BaseButton variant="link" :to="{ name: 'events' }">
+          {{ $t('pages.home.events.viewAll') }}
+        </BaseButton>
       </div>
 
-      <p v-if="isLoading" class="home-section__loading">Cargando…</p>
+      <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>
       <template v-else-if="featured">
         <FeaturedEventCard :event="featured" />
         <div v-if="items.length" class="home-section__grid">

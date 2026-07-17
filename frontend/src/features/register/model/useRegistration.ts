@@ -1,4 +1,5 @@
 import { computed, onScopeDispose, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
 import { getErrorMessage, scrollToTop, useCrudFeedback } from '@/shared/lib'
@@ -15,6 +16,7 @@ export type RegistrationStep = 'age-gate' | 'form' | 'success'
 const RESEND_COOLDOWN_SECONDS = 60
 
 export function useRegistration() {
+  const { t } = useI18n()
   const feedback = useCrudFeedback()
 
   const step = ref<RegistrationStep>('age-gate')
@@ -86,7 +88,10 @@ export function useRegistration() {
       verifyMutation.reset()
       resendCount.value += 1
       startCooldown()
-      feedback.success('Te hemos enviado un nuevo código de verificación.', 'Código reenviado')
+      feedback.success(
+        t('features.register.toast.codeResentDetail'),
+        t('features.register.toast.codeResentSummary'),
+      )
     },
     onError: (error) => {
       feedback.error(error)

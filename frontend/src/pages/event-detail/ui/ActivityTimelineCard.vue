@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AppButton as Button, BaseButton } from '@/shared/ui'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
@@ -26,6 +27,8 @@ const emit = defineEmits<{
   login: []
 }>()
 
+const { t } = useI18n()
+
 const selectedRoleId = ref('')
 
 watch(
@@ -48,7 +51,7 @@ const selectedRoleHighDemand = computed(
 
 function scheduleLabel(): string {
   const { start, end } = props.activity
-  if (!start) return 'Sin horario'
+  if (!start) return t('pages.eventDetail.card.noSchedule')
   return formatTimeRange(start, end, props.referenceDate)
 }
 
@@ -98,8 +101,8 @@ function onSignup(): void {
           v-if="signupOpen"
           type="button"
           class="act__member-remove"
-          aria-label="Desapuntar"
-          title="Desapuntar"
+          :aria-label="$t('pages.eventDetail.card.unassignMember')"
+          :title="$t('pages.eventDetail.card.unassignMember')"
           :disabled="busy"
           @click="emit('unassignMember', member.userId)"
         >
@@ -110,26 +113,29 @@ function onSignup(): void {
 
     <p v-if="selectedRoleHighDemand" class="act__demand">
       <i class="pi pi-exclamation-triangle" />
-      <span>
-        Esta actividad está muy solicitada y es posible que se agoten las plazas. Te recomendamos
-        elegir otras opciones adicionales.
-      </span>
+      <span>{{ $t('pages.eventDetail.highDemandWarning') }}</span>
     </p>
 
     <div class="act__actions">
       <template v-if="!authenticated">
-        <BaseButton variant="ghost" @click="emit('login')">Inicia sesión para apuntarte</BaseButton>
+        <BaseButton variant="ghost" @click="emit('login')">
+          {{ $t('pages.eventDetail.card.loginToSignup') }}
+        </BaseButton>
       </template>
 
       <template v-else-if="hasHousehold">
         <template v-if="!signupOpen">
           <span v-if="!activity.household.length" class="act__note">
-            La inscripción no está abierta.
+            {{ $t('pages.eventDetail.card.signupClosed') }}
           </span>
         </template>
         <Button
           v-else
-          :label="activity.household.length ? 'Apuntar a otro miembro' : 'Apuntar a mi familia'"
+          :label="
+            activity.household.length
+              ? $t('pages.eventDetail.card.enrollAnother')
+              : $t('pages.eventDetail.card.enrollFamily')
+          "
           size="small"
           :loading="busy || rolesLoading"
           @click="emit('household')"
@@ -137,24 +143,28 @@ function onSignup(): void {
       </template>
 
       <template v-else-if="activity.assignment">
-        <span class="act__note">Inscrito como {{ activity.assignment.roleName || '—' }}</span>
+        <span class="act__note">
+          {{ $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName || '—' }) }}
+        </span>
         <Button
           v-if="signupOpen"
-          label="Desapuntarme"
+          :label="$t('pages.eventDetail.card.unassignSelf')"
           severity="secondary"
           size="small"
           :loading="busy"
           @click="emit('unassign')"
         />
-        <span v-else class="act__note">El periodo de inscripción ha finalizado.</span>
+        <span v-else class="act__note">{{ $t('pages.eventDetail.card.signupEnded') }}</span>
       </template>
       <template v-else-if="!signupOpen">
-        <span class="act__note">La inscripción no está abierta.</span>
+        <span class="act__note">{{ $t('pages.eventDetail.card.signupClosed') }}</span>
       </template>
       <template v-else>
-        <span v-if="rolesLoading" class="act__note">Cargando roles…</span>
+        <span v-if="rolesLoading" class="act__note">{{
+          $t('pages.eventDetail.card.loadingRoles')
+        }}</span>
         <span v-else-if="roles.length === 0" class="act__note">
-          No se pudieron cargar los roles de inscripción.
+          {{ $t('pages.eventDetail.activities.rolesLoadError') }}
         </span>
         <template v-else>
           <Select
@@ -163,11 +173,11 @@ function onSignup(): void {
             :options="[...roles]"
             option-label="name"
             option-value="id"
-            placeholder="Elige un rol"
+            :placeholder="$t('pages.eventDetail.chooseRole')"
             class="act__role-select"
           />
           <Button
-            label="Apuntarme"
+            :label="$t('pages.eventDetail.card.enrollSelf')"
             size="small"
             :loading="busy"
             :disabled="!selectedRoleId"

@@ -1,5 +1,7 @@
 import { useConfirm } from 'primevue/useconfirm'
 
+import { i18n } from '@/shared/i18n'
+
 export function useDeleteConfirm() {
   const confirm = useConfirm()
 
@@ -7,8 +9,8 @@ export function useDeleteConfirm() {
     confirm.require({
       ...options,
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
+      acceptLabel: i18n.global.t('common.delete'),
+      rejectLabel: i18n.global.t('common.cancel'),
       acceptClass: 'p-button-danger',
     })
   }

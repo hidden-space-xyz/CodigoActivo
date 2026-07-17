@@ -6,7 +6,7 @@ Vue 3 + Vite SPA (TypeScript). See the repo root `CLAUDE.md` for the overall pic
 
 - **Never hand-edit `src/shared/api/generated/`** — Orval wipes it (`clean: true`). Regenerate with `npm run api:generate` after refreshing `swagger.json` from the backend.
 - **Import across slices only through a slice's `index.ts`** public API; the sole deep-import exception is `@/shared/api/generated/…`. Steiger (`npm run lint:fsd`) enforces the FSD layer/import rules — not ESLint.
-- **All UI text is hardcoded Spanish** (no i18n) — write Spanish string literals.
+- **All UI text goes through Vue I18n — never hardcode string literals.** Messages live centrally in `src/shared/i18n/locales/es.ts` (namespaced: `common`, `nav`, `errors`, `pages.*`, `features.*`, `entities.*`, …). Use `$t('key')` in templates, `const { t } = useI18n()` in `<script setup>`, and `i18n.global.t('key')` (from `@/shared/i18n`) outside setup (mappers, router guards, plain modules). The app is **Spanish-only** (single `es` locale); a second language is a drop-in `en.ts` next to `es.ts`. PrimeVue built-ins are localized via `src/shared/i18n/primevue-locale.ts`.
 - `@` is the only path alias (`→ ./src`).
 
 ## Commands

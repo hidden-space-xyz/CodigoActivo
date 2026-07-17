@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -18,6 +19,8 @@ import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { ageFrom, formatDate, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+
+const { t } = useI18n()
 
 const { table, relationFilter, update, remove, changeType, setAdmin, fetchOne } = useUsers()
 const userTypes = useUserTypesList()
@@ -40,11 +43,11 @@ function birthDateWithAge(user: UserResponse): string {
   const formatted = formatDate(user.birthDate)
   if (formatted === '—') return '—'
   const age = ageFrom(user.birthDate)
-  return age === null ? formatted : `${formatted} (${age})`
+  return age === null ? formatted : t('pages.admin.users.birthDateWithAge', { formatted, age })
 }
 
 function dependentsLabel(count: number): string {
-  return count === 1 ? '1 dependiente' : `${count} dependientes`
+  return t('pages.admin.users.dependentsLabel', { count }, count)
 }
 
 const statusOptions = computed(() =>
@@ -59,8 +62,8 @@ const typeOptions = computed(() =>
 )
 
 const adminOptions: { label: string; value: boolean }[] = [
-  { label: 'Sí', value: true },
-  { label: 'No', value: false },
+  { label: t('common.yes'), value: true },
+  { label: t('common.no'), value: false },
 ]
 
 function clearColumnFilters(): void {
@@ -74,7 +77,7 @@ function showTutorOf(user: UserResponse): void {
   if (!user.parentId) return
   clearColumnFilters()
   relationFilter.value = {
-    label: `Tutor de ${fullName(user)}`,
+    label: t('pages.admin.users.relation.tutorOf', { fullName: fullName(user) }),
     params: { id: user.parentId },
   }
 }
@@ -83,7 +86,7 @@ function showDependentsOf(user: UserResponse): void {
   if (!user.id) return
   clearColumnFilters()
   relationFilter.value = {
-    label: `Dependientes de ${fullName(user)}`,
+    label: t('pages.admin.users.relation.dependentsOf', { fullName: fullName(user) }),
     params: { parentId: user.id },
   }
 }
@@ -107,7 +110,7 @@ function onSubmit(body: UpdateUserRequest): void {
     { id: selected.value.id, body },
     {
       onSuccess: () => {
-        feedback.success('Usuario actualizado.')
+        feedback.success(t('pages.admin.users.toasts.updated'))
         dialogVisible.value = false
       },
       onError: (error) => feedback.error(error),
@@ -127,7 +130,11 @@ function toggleAdmin(user: UserResponse, value: boolean): void {
     { id: user.id, isAdmin: value },
     {
       onSuccess: () =>
-        feedback.success(value ? 'Administrador concedido.' : 'Administrador retirado.'),
+        feedback.success(
+          value
+            ? t('pages.admin.users.toasts.adminGranted')
+            : t('pages.admin.users.toasts.adminRevoked'),
+        ),
       onError: (error) => feedback.error(error),
     },
   )
@@ -139,7 +146,7 @@ function submitChangeType(): void {
     { id: typeUser.value.id, roleId: selectedRoleId.value },
     {
       onSuccess: () => {
-        feedback.success('Tipo de usuario actualizado.')
+        feedback.success(t('pages.admin.users.toasts.typeUpdated'))
         typeDialogVisible.value = false
       },
       onError: (error) => feedback.error(error),
@@ -149,12 +156,12 @@ function submitChangeType(): void {
 
 function confirmDelete(user: UserResponse): void {
   requireDelete({
-    header: 'Eliminar usuario',
-    message: `¿Seguro que quieres eliminar a "${fullName(user)}"?`,
+    header: t('pages.admin.users.delete.header'),
+    message: t('pages.admin.users.delete.message', { fullName: fullName(user) }),
     accept: () => {
       if (!user.id) return
       remove.mutate(user.id, {
-        onSuccess: () => feedback.success('Usuario eliminado.'),
+        onSuccess: () => feedback.success(t('pages.admin.users.toasts.deleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -164,7 +171,10 @@ function confirmDelete(user: UserResponse): void {
 
 <template>
   <div>
-    <AdminPageHeader title="Usuarios" subtitle="Personas registradas en la plataforma" />
+    <AdminPageHeader
+      :title="$t('pages.admin.users.header.title')"
+      :subtitle="$t('pages.admin.users.header.subtitle')"
+    />
 
     <div v-if="relationFilter" class="relation-filter">
       <i class="pi pi-filter relation-filter__icon" />
@@ -174,7 +184,7 @@ function confirmDelete(user: UserResponse): void {
         text
         rounded
         size="small"
-        aria-label="Quitar filtro"
+        :aria-label="$t('pages.admin.users.relation.clear')"
         @click="clearRelationFilter"
       />
     </div>
@@ -197,16 +207,16 @@ function confirmDelete(user: UserResponse): void {
       @sort="table.onSort"
     >
       <template #empty>
-        <span v-if="table.isError.value">No se pudieron cargar los usuarios.</span>
-        <span v-else>No hay usuarios.</span>
+        <span v-if="table.isError.value">{{ $t('pages.admin.users.empty.error') }}</span>
+        <span v-else>{{ $t('pages.admin.users.empty.none') }}</span>
       </template>
 
       <Column field="firstName" sortable>
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
-            label="Nombre"
-            placeholder="Buscar nombre"
+            :label="$t('common.name')"
+            :placeholder="$t('pages.admin.users.search.name')"
             @apply="table.onFilter"
           />
         </template>
@@ -216,8 +226,8 @@ function confirmDelete(user: UserResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('email').value"
-            label="Correo"
-            placeholder="Buscar correo"
+            :label="$t('common.email')"
+            :placeholder="$t('pages.admin.users.search.email')"
             @apply="table.onFilter"
           />
         </template>
@@ -227,8 +237,8 @@ function confirmDelete(user: UserResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('phone').value"
-            label="Teléfono"
-            placeholder="Buscar teléfono"
+            :label="$t('common.phone')"
+            :placeholder="$t('pages.admin.users.search.phone')"
             @apply="table.onFilter"
           />
         </template>
@@ -238,7 +248,7 @@ function confirmDelete(user: UserResponse): void {
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('birthDate').value"
-            label="Nacimiento"
+            :label="$t('pages.admin.users.columns.birth')"
             @apply="table.onFilter"
           />
         </template>
@@ -248,7 +258,7 @@ function confirmDelete(user: UserResponse): void {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('status').value"
-            label="Estado"
+            :label="$t('common.status')"
             :options="statusOptions"
             @apply="table.onFilter"
           />
@@ -262,7 +272,7 @@ function confirmDelete(user: UserResponse): void {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
-            label="Tipo"
+            :label="$t('pages.admin.users.columns.type')"
             :options="typeOptions"
             @apply="table.onFilter"
           />
@@ -272,7 +282,7 @@ function confirmDelete(user: UserResponse): void {
           <span v-else>—</span>
         </template>
       </Column>
-      <Column header="Familia" sortable sort-field="dependents">
+      <Column :header="$t('pages.admin.users.columns.family')" sortable sort-field="dependents">
         <template #body="{ data }">
           <div class="family-cell">
             <Button
@@ -281,7 +291,7 @@ function confirmDelete(user: UserResponse): void {
               icon="pi pi-user"
               text
               size="small"
-              tooltip="Mostrar solo a su tutor"
+              :tooltip="$t('pages.admin.users.tooltips.showTutor')"
               @click="showTutorOf(data)"
             />
             <Button
@@ -290,7 +300,7 @@ function confirmDelete(user: UserResponse): void {
               icon="pi pi-users"
               text
               size="small"
-              tooltip="Mostrar sus dependientes"
+              :tooltip="$t('pages.admin.users.tooltips.showDependents')"
               @click="showDependentsOf(data)"
             />
             <span v-if="!data.parentId && (data.dependentCount ?? 0) === 0">—</span>
@@ -301,7 +311,7 @@ function confirmDelete(user: UserResponse): void {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('isAdmin').value"
-            label="Admin"
+            :label="$t('pages.admin.users.columns.admin')"
             :options="adminOptions"
             @apply="table.onFilter"
           />
@@ -310,20 +320,26 @@ function confirmDelete(user: UserResponse): void {
           <ToggleSwitch
             :model-value="!!data.isAdmin"
             :disabled="setAdmin.isPending.value"
-            aria-label="Administrador"
+            :aria-label="$t('pages.admin.users.aria.admin')"
             @update:model-value="(value: boolean) => toggleAdmin(data, value)"
           />
         </template>
       </Column>
-      <Column header="Acciones" style="width: 180px">
+      <Column :header="$t('common.actions')" style="width: 180px">
         <template #body="{ data }">
           <div class="row-actions">
-            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              :aria-label="$t('common.edit')"
+              @click="openEdit(data)"
+            />
             <Button
               icon="pi pi-sync"
               text
               rounded
-              aria-label="Cambiar tipo"
+              :aria-label="$t('pages.admin.users.aria.changeType')"
               @click="openChangeType(data)"
             />
             <Button
@@ -331,7 +347,7 @@ function confirmDelete(user: UserResponse): void {
               text
               rounded
               severity="danger"
-              aria-label="Eliminar"
+              :aria-label="$t('common.delete')"
               @click="confirmDelete(data)"
             />
           </div>
@@ -349,30 +365,30 @@ function confirmDelete(user: UserResponse): void {
     <Dialog
       v-model:visible="typeDialogVisible"
       modal
-      header="Cambiar tipo de usuario"
+      :header="$t('pages.admin.users.typeDialog.header')"
       :style="{ width: '420px' }"
     >
       <div class="form__field">
-        <label>Tipo de usuario</label>
+        <label>{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
         <Select
           v-model="selectedRoleId"
           :options="userTypes.data.value ?? []"
           option-label="name"
           option-value="id"
-          placeholder="Selecciona un tipo"
+          :placeholder="$t('pages.admin.users.typeDialog.placeholder')"
           fluid
         />
       </div>
       <template #footer>
         <Button
-          label="Cancelar"
+          :label="$t('common.cancel')"
           text
           severity="secondary"
           :disabled="changeType.isPending.value"
           @click="typeDialogVisible = false"
         />
         <Button
-          label="Aplicar"
+          :label="$t('common.apply')"
           :loading="changeType.isPending.value"
           :disabled="!selectedRoleId"
           @click="submitChangeType"

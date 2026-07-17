@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -18,6 +19,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { formatDate, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
+const { t } = useI18n()
 const { table, create, update, remove } = usePartners()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
@@ -42,7 +44,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
       { id: selected.value.id, body: body as UpdatePartnerRequest },
       {
         onSuccess: () => {
-          feedback.success('Patrocinador actualizado.')
+          feedback.success(t('pages.admin.partners.toasts.updated'))
           dialogVisible.value = false
         },
         onError: (error) => feedback.error(error),
@@ -52,7 +54,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
   }
   create.mutate(body as CreatePartnerRequest, {
     onSuccess: () => {
-      feedback.success('Patrocinador creado.')
+      feedback.success(t('pages.admin.partners.toasts.created'))
       dialogVisible.value = false
     },
     onError: (error) => feedback.error(error),
@@ -61,12 +63,12 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
 
 function confirmDelete(partner: PartnerResponse): void {
   requireDelete({
-    header: 'Eliminar patrocinador',
-    message: `¿Seguro que quieres eliminar a "${partner.name}"? Esta acción no se puede deshacer.`,
+    header: t('pages.admin.partners.delete.header'),
+    message: t('pages.admin.partners.delete.message', { name: partner.name }),
     accept: () => {
       if (!partner.id) return
       remove.mutate(partner.id, {
-        onSuccess: () => feedback.success('Patrocinador eliminado.'),
+        onSuccess: () => feedback.success(t('pages.admin.partners.toasts.deleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -76,9 +78,16 @@ function confirmDelete(partner: PartnerResponse): void {
 
 <template>
   <div>
-    <AdminPageHeader title="Patrocinadores" subtitle="Empresas y entidades colaboradoras">
+    <AdminPageHeader
+      :title="$t('pages.admin.partners.header.title')"
+      :subtitle="$t('pages.admin.partners.header.subtitle')"
+    >
       <template #actions>
-        <Button label="Nuevo patrocinador" icon="pi pi-plus" @click="openCreate" />
+        <Button
+          :label="$t('pages.admin.partners.newPartner')"
+          icon="pi pi-plus"
+          @click="openCreate"
+        />
       </template>
     </AdminPageHeader>
 
@@ -100,11 +109,11 @@ function confirmDelete(partner: PartnerResponse): void {
       @sort="table.onSort"
     >
       <template #empty>
-        <span v-if="table.isError.value">No se pudieron cargar los patrocinadores.</span>
-        <span v-else>Aún no hay patrocinadores. Crea el primero.</span>
+        <span v-if="table.isError.value">{{ $t('pages.admin.partners.empty.error') }}</span>
+        <span v-else>{{ $t('pages.admin.partners.empty.none') }}</span>
       </template>
 
-      <Column header="Logo" style="width: 110px">
+      <Column :header="$t('pages.admin.partners.columns.logo')" style="width: 110px">
         <template #body="{ data }">
           <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.name" style="width: 88px" />
         </template>
@@ -113,8 +122,8 @@ function confirmDelete(partner: PartnerResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
-            label="Nombre"
-            placeholder="Buscar nombre"
+            :label="$t('common.name')"
+            :placeholder="$t('pages.admin.partners.search.name')"
             @apply="table.onFilter"
           />
         </template>
@@ -123,8 +132,8 @@ function confirmDelete(partner: PartnerResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('tier').value"
-            label="Nivel"
-            placeholder="Nivel"
+            :label="$t('pages.admin.partners.columns.tier')"
+            :placeholder="$t('pages.admin.partners.columns.tier')"
             input-type="number"
             @apply="table.onFilter"
           />
@@ -134,8 +143,8 @@ function confirmDelete(partner: PartnerResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('website').value"
-            label="Sitio web"
-            placeholder="Buscar sitio"
+            :label="$t('pages.admin.partners.columns.website')"
+            :placeholder="$t('pages.admin.partners.search.website')"
             @apply="table.onFilter"
           />
         </template>
@@ -150,22 +159,28 @@ function confirmDelete(partner: PartnerResponse): void {
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('fromDate').value"
-            label="Alta"
+            :label="$t('pages.admin.partners.columns.fromDate')"
             @apply="table.onFilter"
           />
         </template>
         <template #body="{ data }">{{ formatDate(data.fromDate) }}</template>
       </Column>
-      <Column header="Acciones" style="width: 130px">
+      <Column :header="$t('common.actions')" style="width: 130px">
         <template #body="{ data }">
           <div class="row-actions">
-            <Button icon="pi pi-pencil" text rounded aria-label="Editar" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-pencil"
+              text
+              rounded
+              :aria-label="$t('common.edit')"
+              @click="openEdit(data)"
+            />
             <Button
               icon="pi pi-trash"
               text
               rounded
               severity="danger"
-              aria-label="Eliminar"
+              :aria-label="$t('common.delete')"
               @click="confirmDelete(data)"
             />
           </div>

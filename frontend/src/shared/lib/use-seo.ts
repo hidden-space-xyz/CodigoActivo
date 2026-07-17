@@ -1,22 +1,22 @@
 import { toValue, watchEffect, type MaybeRefOrGetter } from 'vue'
 import { useRoute, type RouteLocationNormalized } from 'vue-router'
 
+import { i18n } from '@/shared/i18n'
+
 export interface SeoRouteMeta {
-  readonly title?: string | undefined
-  readonly description?: string | undefined
+  readonly titleKey?: string | undefined
+  readonly descriptionKey?: string | undefined
   readonly noindex?: boolean | undefined
 }
 
-export interface SeoData extends SeoRouteMeta {
+export interface SeoData {
+  readonly title?: string | undefined
+  readonly description?: string | undefined
+  readonly noindex?: boolean | undefined
   readonly image?: string | undefined
   readonly type?: 'website' | 'article' | undefined
   readonly jsonLd?: Record<string, unknown> | undefined
 }
-
-export const SITE_NAME = 'Código Activo'
-export const DEFAULT_TITLE = 'Código Activo · Programación para tod@s en León'
-export const DEFAULT_DESCRIPTION =
-  'Código Activo es una asociación sin ánimo de lucro de León que acerca la programación a todas las personas: talleres, eventos y recursos gratuitos.'
 
 const JSON_LD_ID = 'ca-jsonld'
 
@@ -67,9 +67,20 @@ function setJsonLd(jsonLd: Record<string, unknown> | undefined): void {
   element.textContent = JSON.stringify(jsonLd)
 }
 
+function resolveRouteSeo(meta: SeoRouteMeta): SeoData {
+  return {
+    title: meta.titleKey ? i18n.global.t(meta.titleKey) : undefined,
+    description: meta.descriptionKey ? i18n.global.t(meta.descriptionKey) : undefined,
+    noindex: meta.noindex,
+  }
+}
+
 function applySeo(path: string, seo: SeoData): void {
-  const title = seo.title ? `${seo.title} · ${SITE_NAME}` : DEFAULT_TITLE
-  const description = seo.description ?? DEFAULT_DESCRIPTION
+  const siteName = i18n.global.t('seo.siteName')
+  const title = seo.title
+    ? `${seo.title}${i18n.global.t('seo.titleSeparator')}${siteName}`
+    : i18n.global.t('seo.defaultTitle')
+  const description = seo.description ?? i18n.global.t('seo.defaultDescription')
   const url = absoluteUrl(path)
   const image = absoluteUrl(seo.image || '/og-image.png')
 
@@ -96,8 +107,8 @@ function withoutUndefined(seo: SeoData): SeoData {
 }
 
 export function applyRouteSeo(to: RouteLocationNormalized): void {
-  const meta = to.meta.seo ?? {}
-  applySeo(to.path, to.meta.layout === 'admin' ? { ...meta, noindex: true } : meta)
+  const resolved = resolveRouteSeo(to.meta.seo ?? {})
+  applySeo(to.path, to.meta.layout === 'admin' ? { ...resolved, noindex: true } : resolved)
 }
 
 export function useSeo(seo: MaybeRefOrGetter<SeoData | undefined>): void {
@@ -107,6 +118,6 @@ export function useSeo(seo: MaybeRefOrGetter<SeoData | undefined>): void {
   watchEffect(() => {
     const value = toValue(seo)
     if (!value || route.name !== routeName) return
-    applySeo(route.path, { ...route.meta.seo, ...withoutUndefined(value) })
+    applySeo(route.path, { ...resolveRouteSeo(route.meta.seo ?? {}), ...withoutUndefined(value) })
   })
 }

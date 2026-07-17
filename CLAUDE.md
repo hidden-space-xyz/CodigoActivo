@@ -9,7 +9,7 @@ Guidance for Claude Code when working in this repository. **Each app has its own
 
 ## Hard rules
 
-- **All user-facing text is Spanish; there is no i18n layer** — write Spanish string literals directly.
+- **All user-facing text goes through Vue I18n** — never hardcode string literals in components. Every UI string is a key in `frontend/src/shared/i18n/locales/es.ts` (rendered with `$t`/`t`). The app is **Spanish-only** for now (single `es` locale); adding a second language is a drop-in `en.ts`. See `frontend/CLAUDE.md`.
 - **Never commit secrets.** Runtime config is flat env vars: the git-ignored root `.env` (backend, consumed by Docker Compose) and `frontend/.env.local` (frontend); templates are `.env.example`. There are **no** `dotnet user-secrets` and **no** `ConnectionStrings` section anymore.
 - **A change that crosses the API boundary must be made on both sides in the same pass** (see the pipeline below).
 - **Style violations fail the build/lint on both apps** — fix the code, never disable the rule.

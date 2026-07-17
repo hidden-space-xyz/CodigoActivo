@@ -54,8 +54,8 @@ function toggle(event: MouseEvent): void {
       type="button"
       class="column-filter__toggle"
       :class="{ 'column-filter__toggle--active': active }"
-      :aria-label="`Filtrar por ${label}`"
-      :title="`Filtrar por ${label}`"
+      :aria-label="$t('table.filterBy', { label })"
+      :title="$t('table.filterBy', { label })"
       @click.stop="toggle"
     >
       <i :class="active ? 'pi pi-filter-fill' : 'pi pi-search'" aria-hidden="true" />
@@ -68,7 +68,7 @@ function toggle(event: MouseEvent): void {
           :options="options"
           option-label="label"
           option-value="value"
-          :placeholder="`Filtrar por ${label}`"
+          :placeholder="$t('table.filterBy', { label })"
           show-clear
           fluid
           @change="onChange"
@@ -77,8 +77,8 @@ function toggle(event: MouseEvent): void {
           v-if="draft != null"
           type="button"
           class="column-filter__clear"
-          aria-label="Limpiar filtro"
-          title="Limpiar"
+          :aria-label="$t('table.clearFilter')"
+          :title="$t('table.clear')"
           @click="clear"
         >
           <i class="pi pi-times" aria-hidden="true" />

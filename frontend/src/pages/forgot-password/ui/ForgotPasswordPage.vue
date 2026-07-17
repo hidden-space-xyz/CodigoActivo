@@ -12,10 +12,10 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
     <section class="forgot-head">
       <div class="forgot-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow forgot-head__inner">
-        <SectionEyebrow text="// contraseña" color="var(--ca-orange-ink)" />
-        <h1 class="forgot-head__title">¿Has olvidado tu contraseña?</h1>
+        <SectionEyebrow :text="$t('pages.forgotPassword.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="forgot-head__title">{{ $t('pages.forgotPassword.title') }}</h1>
         <p class="forgot-head__intro">
-          Escribe el correo con el que te registraste y te enviaremos un enlace para restablecerla.
+          {{ $t('pages.forgotPassword.intro') }}
         </p>
       </div>
     </section>
@@ -24,7 +24,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
       <div class="forgot-card">
         <form v-if="!sent" class="forgot-form" @submit.prevent="submit">
           <div class="forgot-field">
-            <label class="forgot-label" for="forgot-email">Correo electrónico</label>
+            <label class="forgot-label" for="forgot-email">{{ $t('common.emailLong') }}</label>
             <InputText
               id="forgot-email"
               v-model="form.email"
@@ -36,26 +36,26 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
           </div>
 
           <p v-if="isError" class="forgot-error" role="alert">
-            No hemos podido enviar el correo. Inténtalo de nuevo en unos minutos.
+            {{ $t('pages.forgotPassword.error') }}
           </p>
 
           <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
-            Enviarme un enlace
+            {{ $t('pages.forgotPassword.submit') }}
           </BaseButton>
         </form>
 
         <div v-else class="forgot-sent" aria-live="polite">
           <div class="forgot-sent__icon" aria-hidden="true">✓</div>
-          <h2 class="forgot-sent__title">Revisa tu correo</h2>
+          <h2 class="forgot-sent__title">{{ $t('pages.forgotPassword.sentTitle') }}</h2>
           <p class="forgot-sent__text">
-            Si el correo está registrado, te hemos enviado un enlace para restablecer tu contraseña.
-            El enlace caduca en 15 minutos.
+            {{ $t('pages.forgotPassword.sentBody') }}
+            {{ $t('pages.forgotPassword.sentExpiry', { minutes: 15 }) }}
           </p>
         </div>
 
         <p class="forgot-alt">
-          ¿La has recordado?
-          <RouterLink :to="{ name: 'login' }" class="forgot-alt__link"> Inicia sesión </RouterLink>
+          {{ $t('pages.forgotPassword.rememberedAlt') }}
+          <RouterLink :to="{ name: 'login' }" class="forgot-alt__link"> {{ $t('common.login') }} </RouterLink>
         </p>
       </div>
     </section>

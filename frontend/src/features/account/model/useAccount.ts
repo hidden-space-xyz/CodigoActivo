@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
@@ -24,6 +25,7 @@ import type {
 import { getCurrentUserRequest, logoutRequest, useSession } from '@/entities/session'
 
 export function useAccount() {
+  const { t } = useI18n()
   const session = useSession()
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -58,7 +60,8 @@ export function useAccount() {
 
   const updateProfile = useMutation({
     mutationFn: (input: UpdateProfileInput) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      if (!userId.value)
+      return Promise.reject(new Error(t('features.account.notAuthenticated')))
       return updateAccountProfileRequest(userId.value, input)
     },
     onSuccess: syncProfile,
@@ -66,14 +69,16 @@ export function useAccount() {
 
   const changePassword = useMutation({
     mutationFn: (input: ChangePasswordInput) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      if (!userId.value)
+      return Promise.reject(new Error(t('features.account.notAuthenticated')))
       return changeAccountPasswordRequest(userId.value, input)
     },
   })
 
   const addChild = useMutation({
     mutationFn: (input: AddMinorInput) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      if (!userId.value)
+      return Promise.reject(new Error(t('features.account.notAuthenticated')))
       return addAccountChildRequest(userId.value, input)
     },
     onSuccess: invalidateChildren,
@@ -81,7 +86,8 @@ export function useAccount() {
 
   const updateChild = useMutation({
     mutationFn: (vars: { childId: string; input: UpdateMinorInput }) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      if (!userId.value)
+      return Promise.reject(new Error(t('features.account.notAuthenticated')))
       return updateAccountChildRequest(vars.childId, userId.value, vars.input)
     },
     onSuccess: invalidateChildren,
@@ -94,7 +100,8 @@ export function useAccount() {
 
   const deleteOwnAccount = useMutation({
     mutationFn: () => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      if (!userId.value)
+      return Promise.reject(new Error(t('features.account.notAuthenticated')))
       return deleteAccountRequest(userId.value)
     },
     onSuccess: async () => {

@@ -23,7 +23,7 @@ defineProps<{ event: UpcomingEvent }>()
 
     <div class="event-card__footer">
       <span class="event-card__status">{{ event.status }}</span>
-      <span class="event-card__more">Más info →</span>
+      <span class="event-card__more">{{ $t('entities.event.card.moreInfo') }}</span>
     </div>
   </RouterLink>
 </template>

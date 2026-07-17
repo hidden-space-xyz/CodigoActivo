@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -23,6 +24,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { formatDate, formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
+const { t } = useI18n()
 const { table, create, update, remove, feature, fetchOne } = useEventsAdmin()
 const categoryTypes = useEventCategoryTypesList()
 const feedback = useCrudFeedback()
@@ -38,7 +40,7 @@ const categoryOptions = computed(() =>
 function onFeature(event: EventListItemResponse): void {
   if (!event.id || event.featured) return
   feature.mutate(event.id, {
-    onSuccess: () => feedback.success('Evento destacado.'),
+    onSuccess: () => feedback.success(t('pages.admin.events.toasts.featured')),
     onError: (error) => feedback.error(error),
   })
 }
@@ -67,7 +69,7 @@ async function openEdit(event: EventListItemResponse): Promise<void> {
     const detail = await fetchOne(event.id)
     if (!detail) {
       // 404: the row was deleted between listing and editing — don't fall through to a create.
-      feedback.error('Este evento ya no existe.')
+      feedback.error(t('pages.admin.events.toasts.notFound'))
       return
     }
     selected.value = detail
@@ -85,7 +87,7 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
       { id: selected.value.id, body: body as UpdateEventRequest },
       {
         onSuccess: () => {
-          feedback.success('Evento actualizado.')
+          feedback.success(t('pages.admin.events.toasts.updated'))
           dialogVisible.value = false
         },
         onError: (error) => feedback.error(error),
@@ -95,7 +97,7 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
   }
   create.mutate(body as CreateEventRequest, {
     onSuccess: () => {
-      feedback.success('Evento creado.')
+      feedback.success(t('pages.admin.events.toasts.created'))
       dialogVisible.value = false
     },
     onError: (error) => feedback.error(error),
@@ -104,12 +106,12 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
 
 function confirmDelete(event: EventListItemResponse): void {
   requireDelete({
-    header: 'Eliminar evento',
-    message: `¿Seguro que quieres eliminar "${event.title}"? Se perderán también sus actividades.`,
+    header: t('pages.admin.events.delete.header'),
+    message: t('pages.admin.events.delete.message', { title: event.title }),
     accept: () => {
       if (!event.id) return
       remove.mutate(event.id, {
-        onSuccess: () => feedback.success('Evento eliminado.'),
+        onSuccess: () => feedback.success(t('pages.admin.events.toasts.deleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -119,10 +121,13 @@ function confirmDelete(event: EventListItemResponse): void {
 
 <template>
   <div>
-    <AdminPageHeader title="Eventos" subtitle="Gestión de eventos y sus actividades">
+    <AdminPageHeader
+      :title="$t('pages.admin.events.header.title')"
+      :subtitle="$t('pages.admin.events.header.subtitle')"
+    >
       <template #actions>
         <Button
-          label="Nuevo evento"
+          :label="$t('pages.admin.events.newEvent')"
           icon="pi pi-plus"
           :disabled="loadingDetail"
           @click="openCreate"
@@ -148,11 +153,11 @@ function confirmDelete(event: EventListItemResponse): void {
       @sort="table.onSort"
     >
       <template #empty>
-        <span v-if="table.isError.value">No se pudieron cargar los eventos.</span>
-        <span v-else>Aún no hay eventos.</span>
+        <span v-if="table.isError.value">{{ $t('pages.admin.events.empty.error') }}</span>
+        <span v-else>{{ $t('pages.admin.events.empty.none') }}</span>
       </template>
 
-      <Column header="Imagen" style="width: 110px">
+      <Column :header="$t('common.image')" style="width: 110px">
         <template #body="{ data }">
           <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
         </template>
@@ -161,15 +166,15 @@ function confirmDelete(event: EventListItemResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('title').value"
-            label="Título"
-            placeholder="Buscar título"
+            :label="$t('pages.admin.events.columns.title')"
+            :placeholder="$t('pages.admin.events.columns.searchTitle')"
             @apply="table.onFilter"
           />
         </template>
         <template #body="{ data }">
           <span class="title-cell">
             {{ data.title }}
-            <Tag v-if="data.featured" value="Destacado" severity="warn" />
+            <Tag v-if="data.featured" :value="$t('pages.admin.events.tag.featured')" severity="warn" />
           </span>
         </template>
       </Column>
@@ -177,8 +182,8 @@ function confirmDelete(event: EventListItemResponse): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('subtitle').value"
-            label="Subtítulo"
-            placeholder="Buscar subtítulo"
+            :label="$t('pages.admin.events.columns.subtitle')"
+            :placeholder="$t('pages.admin.events.columns.searchSubtitle')"
             @apply="table.onFilter"
           />
         </template>
@@ -188,7 +193,7 @@ function confirmDelete(event: EventListItemResponse): void {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('category').value"
-            label="Categorías"
+            :label="$t('pages.admin.events.columns.categories')"
             :options="categoryOptions"
             @apply="table.onFilter"
           />
@@ -209,7 +214,7 @@ function confirmDelete(event: EventListItemResponse): void {
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('eventDate').value"
-            label="Duración"
+            :label="$t('pages.admin.events.columns.duration')"
             @apply="table.onFilter"
           />
         </template>
@@ -221,7 +226,7 @@ function confirmDelete(event: EventListItemResponse): void {
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('signup').value"
-            label="Inscripción"
+            :label="$t('pages.admin.events.columns.signup')"
             @apply="table.onFilter"
           />
         </template>
@@ -229,26 +234,30 @@ function confirmDelete(event: EventListItemResponse): void {
           {{ formatDateTimeRange(data.signupStartsAt, data.signupEndsAt) }}
         </template>
       </Column>
-      <Column header="Acciones" style="width: 230px">
+      <Column :header="$t('common.actions')" style="width: 230px">
         <template #body="{ data }">
           <div class="row-actions">
             <Button
               :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
               text
               rounded
-              :aria-label="data.featured ? 'Evento destacado' : 'Destacar evento'"
+              :aria-label="
+                data.featured
+                  ? $t('pages.admin.events.aria.featured')
+                  : $t('pages.admin.events.aria.feature')
+              "
               :disabled="data.featured || feature.isPending.value"
               :class="{ 'is-featured': data.featured }"
               @click="onFeature(data)"
             />
             <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: data.id } }">
-              <Button icon="pi pi-cog" text rounded aria-label="Gestionar" />
+              <Button icon="pi pi-cog" text rounded :aria-label="$t('pages.admin.events.aria.manage')" />
             </RouterLink>
             <Button
               icon="pi pi-pencil"
               text
               rounded
-              aria-label="Editar"
+              :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
               @click="openEdit(data)"
             />
@@ -257,7 +266,7 @@ function confirmDelete(event: EventListItemResponse): void {
               text
               rounded
               severity="danger"
-              aria-label="Eliminar"
+              :aria-label="$t('common.delete')"
               @click="confirmDelete(data)"
             />
           </div>

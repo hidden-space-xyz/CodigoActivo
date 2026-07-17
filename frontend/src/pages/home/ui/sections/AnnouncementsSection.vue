@@ -14,15 +14,15 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
     <div class="ca-container">
       <div class="home-section__head">
         <div>
-          <SectionEyebrow text="// anuncios" color="var(--ca-orange-ink)" />
-          <h2 class="home-section__title">Anuncios</h2>
+          <SectionEyebrow :text="$t('pages.home.announcements.eyebrow')" color="var(--ca-orange-ink)" />
+          <h2 class="home-section__title">{{ $t('pages.home.announcements.title') }}</h2>
         </div>
         <BaseButton variant="link" :to="{ name: 'announcements' }">
-          Ver todas los anuncios →
+          {{ $t('pages.home.announcements.viewAll') }}
         </BaseButton>
       </div>
 
-      <p v-if="isLoading" class="home-section__loading">Cargando…</p>
+      <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>
       <template v-else-if="featured">
         <FeaturedAnnouncementCard :announcement="featured" />
         <div v-if="recent.length" class="home-section__grid">

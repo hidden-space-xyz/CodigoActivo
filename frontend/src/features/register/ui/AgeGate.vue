@@ -11,27 +11,30 @@ const declined = ref(false)
 <template>
   <div class="age-gate">
     <template v-if="!declined">
-      <h2 class="age-gate__heading">Antes de empezar…</h2>
+      <h2 class="age-gate__heading">{{ $t('features.register.ageGate.heading') }}</h2>
       <p class="age-gate__lead">
-        Para registrarte necesitas ser mayor de edad. Si tienes menores a tu cargo, podrás
-        inscribirlos a todos durante el registro.
+        {{ $t('features.register.ageGate.lead') }}
       </p>
-      <p class="age-gate__question">¿Eres mayor de edad?</p>
+      <p class="age-gate__question">{{ $t('features.register.ageGate.question') }}</p>
       <div class="age-gate__actions">
-        <BaseButton variant="primary" @click="emit('confirm')">Sí, soy mayor de edad</BaseButton>
-        <BaseButton variant="ghost" @click="declined = true">No, soy menor</BaseButton>
+        <BaseButton variant="primary" @click="emit('confirm')">{{
+          $t('features.register.ageGate.confirm')
+        }}</BaseButton>
+        <BaseButton variant="ghost" @click="declined = true">{{
+          $t('features.register.ageGate.decline')
+        }}</BaseButton>
       </div>
     </template>
 
     <div v-else class="age-gate__blocked">
       <div class="age-gate__blocked-icon" aria-hidden="true">🔒</div>
-      <h2 class="age-gate__heading">Necesitas a tu padre, madre o tutor legal</h2>
+      <h2 class="age-gate__heading">{{ $t('features.register.ageGate.blockedHeading') }}</h2>
       <p class="age-gate__lead">
-        Los menores de edad no pueden registrarse por su cuenta. Pídele a tu padre, madre o tutor
-        legal que cree su cuenta; durante su registro podrá inscribirte a ti y al resto de menores a
-        su cargo.
+        {{ $t('features.register.ageGate.blockedLead') }}
       </p>
-      <BaseButton variant="link" @click="declined = false">← Volver</BaseButton>
+      <BaseButton variant="link" @click="declined = false">{{
+        $t('features.register.back')
+      }}</BaseButton>
     </div>
   </div>
 </template>
