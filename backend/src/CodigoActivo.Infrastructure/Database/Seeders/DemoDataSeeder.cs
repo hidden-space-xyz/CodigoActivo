@@ -232,7 +232,7 @@ public sealed class DemoDataSeeder(
                     UserTypeId = ResolveUserTypeId(seed.Kind),
                     IsAdmin = seed.Kind == UserKind.Admin,
                     LastLoginAt = isChild ? null : now.AddDays(-(i % 9)),
-                    CreatedAt = now.AddDays(-120),
+                    CreatedAt = SpreadCreatedAt(now, i, UserSeeds.Length, 450, 35),
                 }
             );
         }
@@ -267,6 +267,7 @@ public sealed class DemoDataSeeder(
             var end = start.AddDays(duration - 1);
             var signupOpensAt = ToUtc(clock.TimeZone, start.AddDays(-30), 9, 0);
             var label = (e + 1).ToString("D2", CultureInfo.InvariantCulture);
+            var eventCreatedAt = SpreadCreatedAt(now, e, DemoEvents.Length, 210, 12);
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
 
             events.Add(
@@ -282,7 +283,7 @@ public sealed class DemoDataSeeder(
                     SignupEndsAt = ToUtc(clock.TimeZone, start.AddDays(-1), 23, 59),
                     Featured = e is 2 or 7 or 12 or 17,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
-                    CreatedAt = now.AddDays(-90),
+                    CreatedAt = eventCreatedAt,
                     CreatedBy = AdminId,
                 }
             );
@@ -316,7 +317,7 @@ public sealed class DemoDataSeeder(
                         EventId = eventId,
                         ActivityModalityTypeId = ResolveModalityId(activity.Modality),
                         ThumbnailId = NewFile(files, $"evento-{label}-actividad-{a + 1}.jpg", now),
-                        CreatedAt = now.AddDays(-85),
+                        CreatedAt = eventCreatedAt.AddMinutes(a * 20),
                         CreatedBy = AdminId,
                         RoleCapacities = BuildRoleCapacities(globalIndex).ToList(),
                     }
@@ -399,7 +400,7 @@ public sealed class DemoDataSeeder(
                     Web = seed.Web,
                     FromDate = clock.Today.AddMonths(-(6 + (i * 4))),
                     ThumbnailId = NewFile(files, $"partner-{label}-logo.jpg", now),
-                    CreatedAt = now.AddDays(-200),
+                    CreatedAt = SpreadCreatedAt(now, i, DemoPartners.Length, 720, 30),
                     CreatedBy = AdminId,
                 }
             );
@@ -417,6 +418,19 @@ public sealed class DemoDataSeeder(
             resources,
             partners
         );
+    }
+
+    private static DateTimeOffset SpreadCreatedAt(
+        DateTimeOffset now,
+        int index,
+        int count,
+        int oldestDaysAgo,
+        int newestDaysAgo
+    )
+    {
+        var steps = count <= 1 ? 1 : count - 1;
+        var daysAgo = oldestDaysAgo - ((oldestDaysAgo - newestDaysAgo) * index / steps);
+        return now.AddDays(-daysAgo).AddHours(index % 12);
     }
 
     private static Guid NewFile(List<FileEntity> files, string name, DateTimeOffset now)

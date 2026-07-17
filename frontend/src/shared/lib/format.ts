@@ -9,6 +9,10 @@ const timeFormatter = new Intl.DateTimeFormat('es-ES', { timeStyle: 'short' })
 
 const dayMonthFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
 
+const monthYearFormatter = new Intl.DateTimeFormat('es-ES', { month: 'short', year: '2-digit' })
+
+const numberFormatter = new Intl.NumberFormat('es-ES')
+
 const RANGE_SEPARATOR = '–'
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
@@ -46,6 +50,24 @@ export function ageFrom(value?: Date | string | null): number | null {
   const monthDiff = now.getMonth() - birth.getMonth()
   if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) age--
   return age
+}
+
+export function formatNumber(value?: number | null): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return numberFormatter.format(value)
+}
+
+export function formatSignedPercent(value: number): string {
+  if (!Number.isFinite(value)) return '—'
+  const rounded = Math.round(value)
+  const sign = rounded > 0 ? '+' : ''
+  return `${sign}${rounded}%`
+}
+
+export function formatBucketLabel(iso: string, granularity: string): string {
+  const date = parseDateOnly(iso)
+  if (!date) return iso
+  return granularity === 'month' ? monthYearFormatter.format(date) : dayMonthFormatter.format(date)
 }
 
 function parseDisplayDate(value: string): Date {

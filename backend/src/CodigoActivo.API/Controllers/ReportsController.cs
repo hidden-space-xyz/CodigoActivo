@@ -60,4 +60,14 @@ public class ReportsController(IReportService reports) : ApiControllerBase
     {
         return Ok(await reports.GetDashboardSummaryAsync(ct));
     }
+
+    [HttpGet("dashboard/analytics")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<DashboardAnalyticsResponse>> DashboardAnalytics(
+        [FromQuery] DashboardAnalyticsQuery query,
+        CancellationToken ct
+    )
+    {
+        return Ok(await reports.GetDashboardAnalyticsAsync(query, ct));
+    }
 }
