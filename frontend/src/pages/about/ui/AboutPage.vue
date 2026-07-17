@@ -10,14 +10,13 @@ const { values, activities } = useOrganizationContent()
     <section class="about-hero">
       <div class="about-hero__glow" aria-hidden="true" />
       <div class="about-hero__inner">
-        <SectionEyebrow text="// nosotros" color="var(--ca-azure-ink)" />
+        <SectionEyebrow :text="$t('pages.about.eyebrowUs')" color="var(--ca-azure-ink)" />
         <h1 class="about-hero__title">
-          Hacemos que programar<br />sea de <span style="color: var(--ca-azure)">tod@s</span>
+          {{ $t('pages.about.hero.titleLine1') }}<br />{{ $t('pages.about.hero.titleLine2') }}
+          <span style="color: var(--ca-azure)">{{ $t('pages.about.hero.titleHighlight') }}</span>
         </h1>
         <p class="about-hero__lead">
-          Código Activo es una asociación sin ánimo de lucro nacida en 2018 en León. Llevamos la
-          programación y el pensamiento computacional a quienes muchas veces quedan más lejos de la
-          tecnología: el mundo rural, las familias y las nuevas generaciones.
+          {{ $t('pages.about.hero.lead') }}
         </p>
       </div>
     </section>
@@ -34,8 +33,8 @@ const { values, activities } = useOrganizationContent()
           foto del equipo / taller en acción 1200 × 900
         </div>
         <div>
-          <SectionEyebrow text="// qué hacemos" color="var(--ca-lime-ink)" />
-          <h2 class="about-what__title">De Scratch a la IA</h2>
+          <SectionEyebrow :text="$t('pages.about.eyebrowWhat')" color="var(--ca-lime-ink)" />
+          <h2 class="about-what__title">{{ $t('pages.about.what.title') }}</h2>
           <div class="about-what__list">
             <ActivityStep v-for="activity in activities" :key="activity.id" :activity="activity" />
           </div>
@@ -45,13 +44,14 @@ const { values, activities } = useOrganizationContent()
 
     <section class="about-cta">
       <div class="ca-container--wide about-cta__card">
-        <h2 class="about-cta__title">¿Te sumas al proyecto?</h2>
+        <h2 class="about-cta__title">{{ $t('pages.about.cta.title') }}</h2>
         <p class="about-cta__text">
-          Buscamos voluntariado para dinamizar talleres y empresas que quieran patrocinar la
-          siguiente edición. No hace falta saber programar.
+          {{ $t('pages.about.cta.text') }}
         </p>
         <div class="about-cta__actions">
-          <BaseButton :to="{ name: 'register' }" variant="primary"> Regístrate </BaseButton>
+          <BaseButton :to="{ name: 'register' }" variant="primary">
+            {{ $t('common.register') }}
+          </BaseButton>
         </div>
       </div>
     </section>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Paginator from 'primevue/paginator'
@@ -29,6 +30,7 @@ const props = defineProps<{
   activitiesError: boolean
 }>()
 
+const { t } = useI18n()
 const feedback = useCrudFeedback()
 const attendees = useEventAttendeesTable(
   () => props.eventId,
@@ -54,10 +56,10 @@ onBeforeUnmount(() => {
 })
 
 const sortOptions: { label: string; value: string }[] = [
-  { label: 'Nombre', value: 'firstName' },
-  { label: 'Apellidos', value: 'lastName' },
-  { label: 'Fecha de nacimiento', value: 'birthDate' },
-  { label: 'Tipo', value: 'type' },
+  { label: t('common.name'), value: 'firstName' },
+  { label: t('common.lastName'), value: 'lastName' },
+  { label: t('common.birthDate'), value: 'birthDate' },
+  { label: t('pages.admin.eventDetail.attendees.type'), value: 'type' },
 ]
 
 const sortField = computed({
@@ -175,7 +177,7 @@ function submitChangeStatus(): void {
     },
     {
       onSuccess: () => {
-        feedback.success('Estado actualizado.')
+        feedback.success(t('pages.admin.eventDetail.attendees.toast.statusUpdated'))
         statusDialogVisible.value = false
       },
       onError: (error) => feedback.error(error),
@@ -207,7 +209,7 @@ function submitChangeRole(): void {
     },
     {
       onSuccess: () => {
-        feedback.success('Rol actualizado.')
+        feedback.success(t('pages.admin.eventDetail.attendees.toast.roleUpdated'))
         roleDialogVisible.value = false
       },
       onError: (error) => feedback.error(error),
@@ -221,7 +223,7 @@ function submitChangeRole(): void {
     <div class="toolbar">
       <InputText
         v-model="searchText"
-        placeholder="Buscar por nombre, correo o teléfono"
+        :placeholder="$t('pages.admin.eventDetail.attendees.search.placeholder')"
         class="toolbar__search"
       />
       <Select
@@ -229,7 +231,7 @@ function submitChangeRole(): void {
         :options="typeOptions"
         option-label="label"
         option-value="value"
-        placeholder="Tipo"
+        :placeholder="$t('pages.admin.eventDetail.attendees.type')"
         show-clear
         class="toolbar__filter"
       />
@@ -238,7 +240,7 @@ function submitChangeRole(): void {
         :options="activityOptions"
         option-label="label"
         option-value="value"
-        placeholder="Actividad"
+        :placeholder="$t('pages.admin.eventDetail.attendees.filters.activity')"
         show-clear
         class="toolbar__filter"
       />
@@ -247,7 +249,7 @@ function submitChangeRole(): void {
         :options="roleOptions"
         option-label="label"
         option-value="value"
-        placeholder="Rol"
+        :placeholder="$t('pages.admin.eventDetail.attendees.role')"
         show-clear
         class="toolbar__filter"
       />
@@ -256,7 +258,7 @@ function submitChangeRole(): void {
         :options="statusOptions"
         option-label="label"
         option-value="value"
-        placeholder="Estado"
+        :placeholder="$t('common.status')"
         show-clear
         class="toolbar__filter"
       />
@@ -266,13 +268,17 @@ function submitChangeRole(): void {
           :options="sortOptions"
           option-label="label"
           option-value="value"
-          aria-label="Ordenar por"
+          :aria-label="$t('pages.admin.eventDetail.attendees.sort.ariaSortBy')"
         />
         <Button
           :icon="sortAsc ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down'"
           text
           rounded
-          :aria-label="sortAsc ? 'Orden ascendente' : 'Orden descendente'"
+          :aria-label="
+            sortAsc
+              ? $t('pages.admin.eventDetail.attendees.sort.ascending')
+              : $t('pages.admin.eventDetail.attendees.sort.descending')
+          "
           @click="toggleSortDirection"
         />
       </div>
@@ -286,12 +292,13 @@ function submitChangeRole(): void {
       :error="attendees.table.isError.value || activitiesError"
       :empty="attendees.table.total.value === 0 && !attendees.table.loading.value"
       :empty-text="
-        hasActiveFilters ? 'Sin coincidencias.' : 'Todavía no hay usuarios apuntados a este evento.'
+        hasActiveFilters
+          ? $t('pages.admin.eventDetail.attendees.empty.noMatches')
+          : $t('pages.admin.eventDetail.attendees.empty.none')
       "
     >
       <p class="count">
-        {{ attendees.table.total.value }}
-        {{ attendees.table.total.value === 1 ? 'asistente' : 'asistentes' }}
+        {{ $t('pages.admin.eventDetail.attendees.count', attendees.table.total.value) }}
       </p>
 
       <ul class="attendees">
@@ -305,21 +312,27 @@ function submitChangeRole(): void {
             <div class="attendee__identity">
               <span class="attendee__name">{{ fullName(attendee) }}</span>
               <span v-if="ageFrom(attendee.birthDate) !== null" class="attendee__age">
-                {{ ageFrom(attendee.birthDate) }} años
+                {{ $t('pages.admin.eventDetail.attendees.age', { age: ageFrom(attendee.birthDate) }) }}
               </span>
               <span
                 v-if="hasConflicts(attendee)"
                 class="attendee__conflict"
-                title="Tiene actividades solapadas en el tiempo"
+                :title="$t('pages.admin.eventDetail.attendees.conflict.attendeeTitle')"
               >
-                <i class="pi pi-exclamation-triangle" aria-hidden="true" /> Solapamiento
+                <i class="pi pi-exclamation-triangle" aria-hidden="true" />
+                {{ $t('pages.admin.eventDetail.attendees.conflict.badge') }}
               </span>
             </div>
             <div class="attendee__contact">
               <template v-if="attendee.guardian">
                 <span>
-                  <i class="pi pi-user" aria-hidden="true" /> Tutor/a:
-                  {{ attendee.guardian.firstName }} {{ attendee.guardian.lastName }}
+                  <i class="pi pi-user" aria-hidden="true" />
+                  {{
+                    $t('pages.admin.eventDetail.attendees.guardian', {
+                      firstName: attendee.guardian.firstName,
+                      lastName: attendee.guardian.lastName,
+                    })
+                  }}
                 </span>
                 <span>
                   <i class="pi pi-envelope" aria-hidden="true" />
@@ -349,7 +362,10 @@ function submitChangeRole(): void {
             >
               <span class="assignment__title">{{ assignment.activityTitle || '—' }}</span>
               <span class="assignment__role">{{ assignment.roleTypeName || '—' }}</span>
-              <span class="assignment__signed" title="Fecha de inscripción">
+              <span
+                class="assignment__signed"
+                :title="$t('pages.admin.eventDetail.attendees.signedUpTitle')"
+              >
                 <i class="pi pi-calendar-plus" aria-hidden="true" />
                 {{ formatDateTime(assignment.signedUpAt) }}
               </span>
@@ -358,7 +374,7 @@ function submitChangeRole(): void {
                 <span
                   v-if="assignment.hasTimeConflict"
                   class="assignment__warning"
-                  title="Se solapa en el tiempo con otra actividad de este usuario"
+                  :title="$t('pages.admin.eventDetail.attendees.conflict.assignmentTitle')"
                 >
                   <i class="pi pi-exclamation-triangle" aria-hidden="true" />
                 </span>
@@ -369,7 +385,7 @@ function submitChangeRole(): void {
                   text
                   rounded
                   size="small"
-                  aria-label="Cambiar rol"
+                  :aria-label="$t('pages.admin.eventDetail.attendees.changeRole')"
                   @click="openChangeRole(attendee, assignment)"
                 />
                 <Button
@@ -377,7 +393,7 @@ function submitChangeRole(): void {
                   text
                   rounded
                   size="small"
-                  aria-label="Cambiar estado"
+                  :aria-label="$t('pages.admin.eventDetail.attendees.changeStatus')"
                   @click="openChangeStatus(attendee, assignment)"
                 />
               </div>
@@ -400,37 +416,41 @@ function submitChangeRole(): void {
     <Dialog
       v-model:visible="roleDialogVisible"
       modal
-      header="Cambiar rol"
+      :header="$t('pages.admin.eventDetail.attendees.changeRole')"
       :style="{ width: '400px' }"
     >
       <p class="dialog-context">
-        {{ roleTarget ? fullName(roleTarget.attendee) : '' }} ·
-        {{ roleTarget?.assignment.activityTitle }}
+        {{
+          $t('pages.admin.eventDetail.attendees.dialogContext', {
+            name: roleTarget ? fullName(roleTarget.attendee) : '',
+            activity: roleTarget?.assignment.activityTitle,
+          })
+        }}
       </p>
       <div class="form__field">
-        <label>Rol</label>
+        <label>{{ $t('pages.admin.eventDetail.attendees.role') }}</label>
         <Select
           v-model="selectedRoleId"
           :options="roleOptions"
           option-label="label"
           option-value="value"
-          placeholder="Selecciona un rol"
+          :placeholder="$t('pages.admin.eventDetail.attendees.selectRole')"
           fluid
         />
         <small v-if="roleOptions.length === 0" class="form__warning">
-          No se han podido cargar los roles.
+          {{ $t('pages.admin.eventDetail.attendees.rolesLoadError') }}
         </small>
       </div>
       <template #footer>
         <Button
-          label="Cancelar"
+          :label="$t('common.cancel')"
           text
           severity="secondary"
           :disabled="assignments.changeRole.isPending.value"
           @click="roleDialogVisible = false"
         />
         <Button
-          label="Aplicar"
+          :label="$t('common.apply')"
           :loading="assignments.changeRole.isPending.value"
           :disabled="!selectedRoleId || roleOptions.length === 0"
           @click="submitChangeRole"
@@ -441,34 +461,38 @@ function submitChangeRole(): void {
     <Dialog
       v-model:visible="statusDialogVisible"
       modal
-      header="Cambiar estado"
+      :header="$t('pages.admin.eventDetail.attendees.changeStatus')"
       :style="{ width: '400px' }"
     >
       <p class="dialog-context">
-        {{ statusTarget ? fullName(statusTarget.attendee) : '' }} ·
-        {{ statusTarget?.assignment.activityTitle }}
+        {{
+          $t('pages.admin.eventDetail.attendees.dialogContext', {
+            name: statusTarget ? fullName(statusTarget.attendee) : '',
+            activity: statusTarget?.assignment.activityTitle,
+          })
+        }}
       </p>
       <div class="form__field">
-        <label>Estado</label>
+        <label>{{ $t('common.status') }}</label>
         <Select
           v-model="selectedStatusId"
           :options="statusOptions"
           option-label="label"
           option-value="value"
-          placeholder="Selecciona un estado"
+          :placeholder="$t('pages.admin.eventDetail.attendees.selectStatus')"
           fluid
         />
       </div>
       <template #footer>
         <Button
-          label="Cancelar"
+          :label="$t('common.cancel')"
           text
           severity="secondary"
           :disabled="assignments.changeStatus.isPending.value"
           @click="statusDialogVisible = false"
         />
         <Button
-          label="Aplicar"
+          :label="$t('common.apply')"
           :loading="assignments.changeStatus.isPending.value"
           :disabled="!selectedStatusId"
           @click="submitChangeStatus"

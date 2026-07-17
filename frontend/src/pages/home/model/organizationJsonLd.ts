@@ -1,14 +1,15 @@
 import { CONTACT } from '@/shared/config'
+import { i18n } from '@/shared/i18n'
 import { absoluteUrl } from '@/shared/lib'
 
 export function organizationJsonLd(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'NGO',
-    name: 'Código Activo',
+    name: i18n.global.t('seo.siteName'),
     url: absoluteUrl('/'),
     logo: absoluteUrl('/apple-touch-icon.png'),
-    slogan: 'Programación para tod@s',
+    slogan: i18n.global.t('pages.home.jsonLd.slogan'),
     foundingDate: '2018',
     address: {
       '@type': 'PostalAddress',

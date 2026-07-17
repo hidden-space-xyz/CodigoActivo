@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AppButton as Button } from '@/shared/ui'
 import { fileContentUrl } from '@/shared/lib'
 
 import { getThumbnailNameRequest } from '../api/requests'
+
+const { t } = useI18n()
 
 const props = defineProps<{ existingThumbnailId?: string | null | undefined; invalid?: boolean }>()
 
@@ -61,7 +64,7 @@ function onChange(event: Event): void {
   input.value = ''
   if (!file) return
   if (file.size > MAX_SIZE) {
-    sizeError.value = 'La imagen supera el tamaño máximo de 10 MB.'
+    sizeError.value = t('entities.file.thumbnail.tooLarge')
     return
   }
   sizeError.value = ''
@@ -90,14 +93,23 @@ onBeforeUnmount(revokeObjectUrl)
 <template>
   <div class="thumb">
     <div class="thumb__preview" :class="{ 'thumb__preview--invalid': invalid }">
-      <img v-if="previewUrl" :src="previewUrl" alt="Miniatura" class="thumb__img" />
-      <span v-else class="thumb__placeholder">Sin imagen</span>
+      <img
+        v-if="previewUrl"
+        :src="previewUrl"
+        :alt="$t('entities.file.thumbnail.alt')"
+        class="thumb__img"
+      />
+      <span v-else class="thumb__placeholder">{{ $t('entities.file.thumbnail.placeholder') }}</span>
     </div>
 
     <div class="thumb__controls">
       <Button
         type="button"
-        :label="previewUrl ? 'Cambiar imagen' : 'Seleccionar imagen'"
+        :label="
+          previewUrl
+            ? $t('entities.file.thumbnail.change')
+            : $t('entities.file.thumbnail.select')
+        "
         icon="pi pi-image"
         size="small"
         severity="secondary"
@@ -106,7 +118,7 @@ onBeforeUnmount(revokeObjectUrl)
       <Button
         v-if="pickedFile"
         type="button"
-        label="Quitar"
+        :label="$t('entities.file.thumbnail.remove')"
         text
         size="small"
         severity="secondary"

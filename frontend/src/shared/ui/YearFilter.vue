@@ -8,7 +8,7 @@ const emit = defineEmits<{ select: [year: string] }>()
 </script>
 
 <template>
-  <div class="year-filter" role="group" aria-label="Filtrar por año">
+  <div class="year-filter" role="group" :aria-label="$t('table.filterByYear')">
     <button
       v-for="year in years"
       :key="year"
@@ -16,7 +16,7 @@ const emit = defineEmits<{ select: [year: string] }>()
       class="year-filter__pill"
       :class="{ 'year-filter__pill--active': year === selected }"
       :aria-pressed="year === selected"
-      :title="`Filtrar por ${year}`"
+      :title="$t('table.filterByYearValue', { year })"
       @click="emit('select', year)"
     >
       {{ year }}

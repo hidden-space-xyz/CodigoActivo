@@ -11,7 +11,7 @@ const { displayName, logout } = useAuth()
 <template>
   <div class="admin">
     <aside class="admin__sidebar">
-      <RouterLink :to="{ name: 'home' }" class="admin__brand">Código Activo</RouterLink>
+      <RouterLink :to="{ name: 'home' }" class="admin__brand">{{ $t('layout.brandAria') }}</RouterLink>
       <nav class="admin__nav">
         <RouterLink
           v-for="item in ADMIN_NAV"
@@ -21,19 +21,24 @@ const { displayName, logout } = useAuth()
           active-class="admin__link--active"
         >
           <i :class="item.icon" />
-          <span>{{ item.label }}</span>
+          <span>{{ $t(item.labelKey) }}</span>
         </RouterLink>
       </nav>
     </aside>
 
     <div class="admin__body">
       <header class="admin__topbar">
-        <RouterLink :to="{ name: 'home' }" class="admin__home">← Ir al sitio</RouterLink>
+        <RouterLink :to="{ name: 'home' }" class="admin__home">{{ $t('layout.adminGoToSite') }}</RouterLink>
         <div class="admin__user">
           <ThemeToggle />
           <span class="admin__username">{{ displayName }}</span>
-          <button type="button" class="admin__logout" title="Cerrar sesión" @click="logout()">
-            Cerrar sesión
+          <button
+            type="button"
+            class="admin__logout"
+            :title="$t('common.logout')"
+            @click="logout()"
+          >
+            {{ $t('common.logout') }}
           </button>
         </div>
       </header>

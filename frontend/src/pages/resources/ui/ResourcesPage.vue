@@ -9,20 +9,20 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
   <div>
     <section class="resources-head">
       <div class="ca-container">
-        <SectionEyebrow text="// recursos" color="var(--ca-lime-ink)" />
-        <h1 class="resources-head__title">Aprende por tu cuenta</h1>
-        <p class="resources-head__intro">Material de nuestros talleres, abierto y gratuito.</p>
+        <SectionEyebrow :text="$t('pages.resources.eyebrow')" color="var(--ca-lime-ink)" />
+        <h1 class="resources-head__title">{{ $t('pages.resources.title') }}</h1>
+        <p class="resources-head__intro">{{ $t('pages.resources.intro') }}</p>
       </div>
     </section>
 
     <section class="resources-grid-section">
       <div class="ca-container">
-        <p v-if="isLoading" class="resources-loading">Cargando…</p>
+        <p v-if="isLoading" class="resources-loading">{{ $t('common.loading') }}</p>
         <div v-else class="resources-grid">
           <ResourceCard v-for="resource in resources" :key="resource.id" :resource="resource" />
         </div>
         <div v-if="hasMore" class="resources-more">
-          <AppButton label="Cargar más" outlined :loading="isFetchingMore" @click="loadMore" />
+          <AppButton :label="$t('common.loadMore')" outlined :loading="isFetchingMore" @click="loadMore" />
         </div>
       </div>
     </section>

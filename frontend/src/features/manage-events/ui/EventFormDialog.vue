@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
 import ColorPicker from 'primevue/colorpicker'
 import DatePicker from 'primevue/datepicker'
@@ -23,6 +24,8 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   submit: [body: CreateEventRequest | UpdateEventRequest]
 }>()
+
+const { t } = useI18n()
 
 interface EventForm {
   title: string
@@ -90,7 +93,7 @@ function submitNewCategory(): void {
         catDialogVisible.value = false
       },
       onError: (error) => {
-        catError.value = getErrorMessage(error, 'No se pudo crear la categoría.')
+        catError.value = getErrorMessage(error, t('features.manageEvents.categoryDialog.createError'))
       },
     },
   )
@@ -183,14 +186,14 @@ async function save(): Promise<void> {
   <Dialog
     :visible="visible"
     modal
-    :header="event ? 'Editar evento' : 'Nuevo evento'"
+    :header="event ? $t('features.manageEvents.editHeader') : $t('features.manageEvents.newHeader')"
     :style="{ width: '94vw', maxWidth: '920px' }"
     :content-style="{ maxHeight: '78vh' }"
     @update:visible="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__field">
-        <label>Título</label>
+        <label>{{ $t('features.manageEvents.fields.title') }}</label>
         <InputText
           v-model="form.title"
           :maxlength="200"
@@ -199,7 +202,7 @@ async function save(): Promise<void> {
         />
       </div>
       <div class="form__field">
-        <label>Subtítulo</label>
+        <label>{{ $t('features.manageEvents.fields.subtitle') }}</label>
         <InputText
           v-model="form.subtitle"
           :maxlength="300"
@@ -208,31 +211,37 @@ async function save(): Promise<void> {
         />
       </div>
       <div class="form__field">
-        <label>Categorías</label>
+        <label>{{ $t('features.manageEvents.fields.categories') }}</label>
         <div class="form__cats">
           <MultiSelect
             v-model="form.categoryIds"
             :options="categoryOptions"
             option-label="name"
             option-value="id"
-            placeholder="Selecciona categorías"
+            :placeholder="$t('features.manageEvents.categoriesPlaceholder')"
             :invalid="submitted && categoriesMissing"
             filter
             class="form__cats-select"
           />
-          <Button label="Nueva" icon="pi pi-plus" text size="small" @click="openNewCategory" />
+          <Button
+            :label="$t('features.manageEvents.newCategory')"
+            icon="pi pi-plus"
+            text
+            size="small"
+            @click="openNewCategory"
+          />
         </div>
         <small v-if="submitted && categoriesMissing" class="form__error"
-          >Selecciona al menos una categoría.</small
+          >{{ $t('features.manageEvents.errors.categoriesRequired') }}</small
         >
       </div>
       <div class="form__field">
-        <label>Descripción</label>
+        <label>{{ $t('features.manageEvents.fields.description') }}</label>
         <RichTextEditor v-model="form.description" />
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>Inicio del evento</label>
+          <label>{{ $t('features.manageEvents.fields.eventStart') }}</label>
           <DatePicker
             v-model="form.eventStartsAt"
             date-format="dd/mm/yy"
@@ -240,11 +249,11 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && eventStartMissing" class="form__error"
-            >La fecha de inicio es obligatoria.</small
+            >{{ $t('features.manageEvents.errors.eventStartRequired') }}</small
           >
         </div>
         <div class="form__field">
-          <label>Fin del evento</label>
+          <label>{{ $t('features.manageEvents.fields.eventEnd') }}</label>
           <DatePicker
             v-model="form.eventEndsAt"
             date-format="dd/mm/yy"
@@ -253,16 +262,16 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && eventEndMissing" class="form__error"
-            >La fecha de fin es obligatoria.</small
+            >{{ $t('features.manageEvents.errors.eventEndRequired') }}</small
           >
           <small v-else-if="submitted && eventOrderInvalid" class="form__error"
-            >El fin no puede ser anterior al inicio.</small
+            >{{ $t('features.manageEvents.errors.eventOrderInvalid') }}</small
           >
         </div>
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>Apertura de inscripción</label>
+          <label>{{ $t('features.manageEvents.fields.signupStart') }}</label>
           <DatePicker
             v-model="form.signupStartsAt"
             show-time
@@ -272,14 +281,14 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && signupStartMissing" class="form__error"
-            >La apertura de inscripción es obligatoria.</small
+            >{{ $t('features.manageEvents.errors.signupStartRequired') }}</small
           >
           <small v-else-if="submitted && signupAfterEventEnd" class="form__error"
-            >La inscripción debe abrir antes de que termine el evento.</small
+            >{{ $t('features.manageEvents.errors.signupAfterEventEnd') }}</small
           >
         </div>
         <div class="form__field">
-          <label>Cierre de inscripción</label>
+          <label>{{ $t('features.manageEvents.fields.signupEnd') }}</label>
           <DatePicker
             v-model="form.signupEndsAt"
             show-time
@@ -290,22 +299,22 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && signupEndMissing" class="form__error"
-            >El cierre de inscripción es obligatorio.</small
+            >{{ $t('features.manageEvents.errors.signupEndRequired') }}</small
           >
           <small v-else-if="submitted && signupOrderInvalid" class="form__error"
-            >El cierre debe ser posterior a la apertura.</small
+            >{{ $t('features.manageEvents.errors.signupOrderInvalid') }}</small
           >
         </div>
       </div>
       <div class="form__field">
-        <label>Imagen</label>
+        <label>{{ $t('common.image') }}</label>
         <ThumbnailField
           :existing-thumbnail-id="event?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
         <small v-if="submitted && missingThumbnail" class="form__error"
-          >La imagen es obligatoria.</small
+          >{{ $t('common.imageRequired') }}</small
         >
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
@@ -313,25 +322,25 @@ async function save(): Promise<void> {
 
     <template #footer>
       <Button
-        label="Cancelar"
+        :label="$t('common.cancel')"
         text
         severity="secondary"
         :disabled="saving || uploading"
         @click="close"
       />
-      <Button label="Guardar" :loading="saving || uploading" @click="save" />
+      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
   </Dialog>
 
   <Dialog
     v-model:visible="catDialogVisible"
     modal
-    header="Nueva categoría"
+    :header="$t('features.manageEvents.categoryDialog.header')"
     :style="{ width: '380px' }"
   >
     <form class="form" @submit.prevent="submitNewCategory">
       <div class="form__field">
-        <label>Nombre</label>
+        <label>{{ $t('common.name') }}</label>
         <InputText
           v-model="newCat.name"
           :maxlength="120"
@@ -340,10 +349,13 @@ async function save(): Promise<void> {
         />
       </div>
       <div class="form__field">
-        <label>Color</label>
+        <label>{{ $t('features.manageEvents.categoryDialog.colorLabel') }}</label>
         <div class="form__cat-color">
           <ColorPicker v-model="newCat.color" />
-          <ColorTag :value="newCat.name.trim() || 'Ejemplo'" :color="newCatHex" />
+          <ColorTag
+            :value="newCat.name.trim() || $t('features.manageEvents.categoryDialog.example')"
+            :color="newCatHex"
+          />
           <span class="form__hex">{{ newCatHex }}</span>
         </div>
       </div>
@@ -351,13 +363,13 @@ async function save(): Promise<void> {
     </form>
     <template #footer>
       <Button
-        label="Cancelar"
+        :label="$t('common.cancel')"
         text
         severity="secondary"
         :disabled="creatingCat"
         @click="catDialogVisible = false"
       />
-      <Button label="Crear" :loading="creatingCat" @click="submitNewCategory" />
+      <Button :label="$t('common.create')" :loading="creatingCat" @click="submitNewCategory" />
     </template>
   </Dialog>
 </template>

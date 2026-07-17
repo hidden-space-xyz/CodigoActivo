@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DatePicker from 'primevue/datepicker'
 import Popover from 'primevue/popover'
 
 import { formatDate } from '@/shared/lib'
 import { RANGE_OPTIONS, type RangePreset } from '../model/useDashboardRange'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   preset: RangePreset
@@ -21,7 +24,8 @@ const draft = ref<(Date | null)[] | null>(props.customRange)
 
 const customLabel = computed(() => {
   const range = props.customRange
-  if (props.preset !== 'custom' || !(range?.[0] instanceof Date)) return 'Personalizado'
+  if (props.preset !== 'custom' || !(range?.[0] instanceof Date))
+    return t('pages.admin.dashboard.range.custom')
   const end = range[1] instanceof Date ? range[1] : range[0]
   return `${formatDate(range[0].toISOString())} – ${formatDate(end.toISOString())}`
 })
@@ -41,7 +45,7 @@ function onSelect(): void {
 </script>
 
 <template>
-  <div class="range-filter" role="group" aria-label="Rango de tiempo">
+  <div class="range-filter" role="group" :aria-label="$t('pages.admin.dashboard.range.aria')">
     <button
       v-for="option in RANGE_OPTIONS"
       :key="option.value"
@@ -72,7 +76,7 @@ function onSelect(): void {
           selection-mode="range"
           :manual-input="false"
           date-format="dd/mm/yy"
-          placeholder="Desde – Hasta"
+          :placeholder="$t('table.rangePlaceholder')"
           inline
           @update:model-value="onSelect"
         />

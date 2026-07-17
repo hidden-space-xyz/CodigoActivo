@@ -8,10 +8,10 @@ import { SectionEyebrow } from '@/shared/ui'
     <section class="account-head">
       <div class="account-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow account-head__inner">
-        <SectionEyebrow text="// mi cuenta" color="var(--ca-orange-ink)" />
-        <h1 class="account-head__title">Mi área de usuario</h1>
+        <SectionEyebrow :text="$t('pages.account.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="account-head__title">{{ $t('pages.account.title') }}</h1>
         <p class="account-head__intro">
-          Gestiona tus datos, tu contraseña y los menores a tu cargo.
+          {{ $t('pages.account.intro') }}
         </p>
       </div>
     </section>

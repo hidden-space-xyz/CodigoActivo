@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -10,6 +11,7 @@ import { useSession } from '@/entities/session'
 import { BaseButton } from '@/shared/ui'
 import { formatDate, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib'
 
+const { t } = useI18n()
 const feedback = useCrudFeedback()
 const session = useSession()
 const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
@@ -46,7 +48,10 @@ function saveEdit(): void {
   updateProfile.mutate(request, {
     onSuccess: () => {
       editVisible.value = false
-      feedback.success('Tu información se ha guardado.', 'Datos actualizados')
+      feedback.success(
+        t('features.account.profile.savedDetail'),
+        t('features.account.profile.savedSummary'),
+      )
     },
     onError: (error) => feedback.error(error),
   })
@@ -67,11 +72,11 @@ function openPassword(): void {
 function savePassword(): void {
   passwordError.value = ''
   if (passwordForm.next.length < 8) {
-    passwordError.value = 'La nueva contraseña debe tener al menos 8 caracteres.'
+    passwordError.value = t('validation.newPasswordMin')
     return
   }
   if (passwordForm.next !== passwordForm.confirm) {
-    passwordError.value = 'Las contraseñas no coinciden.'
+    passwordError.value = t('validation.passwordsMismatch')
     return
   }
   changePassword.mutate(
@@ -79,10 +84,13 @@ function savePassword(): void {
     {
       onSuccess: () => {
         passwordVisible.value = false
-        feedback.success('Tu contraseña se ha actualizado.', 'Contraseña cambiada')
+        feedback.success(
+          t('features.account.profile.passwordUpdatedDetail'),
+          t('features.account.profile.passwordUpdatedSummary'),
+        )
       },
       onError: () => {
-        passwordError.value = 'No se pudo cambiar. Revisa tu contraseña actual.'
+        passwordError.value = t('features.account.profile.passwordChangeFailed')
       },
     },
   )
@@ -100,36 +108,40 @@ function confirmDeleteAccount(): void {
 <template>
   <section class="acc-card">
     <div class="acc-card__head">
-      <h2 class="acc-card__title">Mis datos</h2>
+      <h2 class="acc-card__title">{{ $t('features.account.profile.title') }}</h2>
       <div class="acc-card__actions">
-        <BaseButton variant="ghost" @click="openEdit">Editar datos</BaseButton>
-        <BaseButton variant="ghost" @click="openPassword">Cambiar contraseña</BaseButton>
+        <BaseButton variant="ghost" @click="openEdit">{{
+          $t('features.account.profile.editData')
+        }}</BaseButton>
+        <BaseButton variant="ghost" @click="openPassword">{{
+          $t('features.account.profile.changePassword')
+        }}</BaseButton>
         <BaseButton v-if="!session.isAdmin" variant="ghost" @click="deleteVisible = true">
-          Eliminar mi cuenta
+          {{ $t('features.account.profile.deleteAccount') }}
         </BaseButton>
       </div>
     </div>
 
-    <p v-if="profile.isLoading.value" class="acc-card__state">Cargando…</p>
+    <p v-if="profile.isLoading.value" class="acc-card__state">{{ $t('common.loading') }}</p>
     <dl v-else-if="user" class="acc-info">
       <div class="acc-info__row">
-        <dt>Nombre</dt>
+        <dt>{{ $t('common.name') }}</dt>
         <dd>{{ user.firstName }} {{ user.lastName }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>Correo</dt>
+        <dt>{{ $t('common.email') }}</dt>
         <dd>{{ user.email || '—' }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>Teléfono</dt>
+        <dt>{{ $t('common.phone') }}</dt>
         <dd>{{ user.phone || '—' }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>Fecha de nacimiento</dt>
+        <dt>{{ $t('common.birthDate') }}</dt>
         <dd>{{ formatDate(user.birthDate) }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>Estado</dt>
+        <dt>{{ $t('common.status') }}</dt>
         <dd>{{ user.statusName || '—' }}</dd>
       </div>
     </dl>
@@ -137,13 +149,13 @@ function confirmDeleteAccount(): void {
     <Dialog
       v-model:visible="editVisible"
       modal
-      header="Editar mis datos"
+      :header="$t('features.account.profile.editDialogHeader')"
       :style="{ width: '90vw', maxWidth: '520px' }"
     >
       <form class="acc-form" @submit.prevent="saveEdit">
         <div class="acc-form__grid">
           <div class="acc-form__field">
-            <label for="p-firstname">Nombre</label>
+            <label for="p-firstname">{{ $t('common.firstName') }}</label>
             <InputText
               id="p-firstname"
               v-model="editForm.firstName"
@@ -153,7 +165,7 @@ function confirmDeleteAccount(): void {
             />
           </div>
           <div class="acc-form__field">
-            <label for="p-lastname">Apellidos</label>
+            <label for="p-lastname">{{ $t('common.lastName') }}</label>
             <InputText
               id="p-lastname"
               v-model="editForm.lastName"
@@ -163,7 +175,7 @@ function confirmDeleteAccount(): void {
             />
           </div>
           <div class="acc-form__field">
-            <label for="p-email">Correo</label>
+            <label for="p-email">{{ $t('common.email') }}</label>
             <InputText
               id="p-email"
               v-model="editForm.email"
@@ -174,7 +186,7 @@ function confirmDeleteAccount(): void {
             />
           </div>
           <div class="acc-form__field">
-            <label for="p-phone">Teléfono</label>
+            <label for="p-phone">{{ $t('common.phone') }}</label>
             <InputText
               id="p-phone"
               v-model="editForm.phone"
@@ -185,7 +197,7 @@ function confirmDeleteAccount(): void {
             />
           </div>
           <div class="acc-form__field">
-            <label for="p-dob">Fecha de nacimiento</label>
+            <label for="p-dob">{{ $t('common.birthDate') }}</label>
             <input
               id="p-dob"
               v-model="editForm.birthDate"
@@ -197,11 +209,11 @@ function confirmDeleteAccount(): void {
           </div>
         </div>
         <div class="acc-form__actions">
-          <BaseButton variant="link" type="button" @click="editVisible = false"
-            >Cancelar</BaseButton
-          >
+          <BaseButton variant="link" type="button" @click="editVisible = false">{{
+            $t('common.cancel')
+          }}</BaseButton>
           <BaseButton variant="primary" type="submit" :loading="updateProfile.isPending.value">
-            Guardar
+            {{ $t('common.save') }}
           </BaseButton>
         </div>
       </form>
@@ -210,12 +222,12 @@ function confirmDeleteAccount(): void {
     <Dialog
       v-model:visible="passwordVisible"
       modal
-      header="Cambiar contraseña"
+      :header="$t('features.account.profile.changePassword')"
       :style="{ width: '90vw', maxWidth: '460px' }"
     >
       <form class="acc-form" @submit.prevent="savePassword">
         <div class="acc-form__field">
-          <label for="p-cur">Contraseña actual</label>
+          <label for="p-cur">{{ $t('features.account.profile.currentPassword') }}</label>
           <Password
             input-id="p-cur"
             v-model="passwordForm.current"
@@ -226,7 +238,7 @@ function confirmDeleteAccount(): void {
           />
         </div>
         <div class="acc-form__field">
-          <label for="p-new">Nueva contraseña</label>
+          <label for="p-new">{{ $t('features.account.profile.newPassword') }}</label>
           <Password
             input-id="p-new"
             v-model="passwordForm.next"
@@ -237,7 +249,7 @@ function confirmDeleteAccount(): void {
           />
         </div>
         <div class="acc-form__field">
-          <label for="p-conf">Repite la nueva contraseña</label>
+          <label for="p-conf">{{ $t('features.account.profile.confirmNewPassword') }}</label>
           <Password
             input-id="p-conf"
             v-model="passwordForm.confirm"
@@ -250,10 +262,10 @@ function confirmDeleteAccount(): void {
         <p v-if="passwordError" class="acc-form__error">{{ passwordError }}</p>
         <div class="acc-form__actions">
           <BaseButton variant="link" type="button" @click="passwordVisible = false">
-            Cancelar
+            {{ $t('common.cancel') }}
           </BaseButton>
           <BaseButton variant="primary" type="submit" :loading="changePassword.isPending.value">
-            Guardar
+            {{ $t('common.save') }}
           </BaseButton>
         </div>
       </form>
@@ -262,23 +274,22 @@ function confirmDeleteAccount(): void {
     <Dialog
       v-model:visible="deleteVisible"
       modal
-      header="Eliminar mi cuenta"
+      :header="$t('features.account.profile.deleteAccount')"
       :style="{ width: '90vw', maxWidth: '460px' }"
     >
       <p class="acc-confirm">
-        ¿Seguro que quieres eliminar tu cuenta? Se eliminarán también los menores a tu cargo y todas
-        tus inscripciones. Esta acción no se puede deshacer.
+        {{ $t('features.account.profile.deleteConfirm') }}
       </p>
       <div class="acc-form__actions">
-        <BaseButton variant="link" type="button" @click="deleteVisible = false"
-          >Cancelar</BaseButton
-        >
+        <BaseButton variant="link" type="button" @click="deleteVisible = false">{{
+          $t('common.cancel')
+        }}</BaseButton>
         <BaseButton
           variant="primary"
           :loading="deleteOwnAccount.isPending.value"
           @click="confirmDeleteAccount"
         >
-          Eliminar
+          {{ $t('common.delete') }}
         </BaseButton>
       </div>
     </Dialog>

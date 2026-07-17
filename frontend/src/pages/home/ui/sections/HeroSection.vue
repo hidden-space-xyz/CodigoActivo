@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import HeroCodeWindow from './HeroCodeWindow.vue'
 import { FOUNDING_YEAR } from '@/shared/config'
 import { BaseButton } from '@/shared/ui'
 
+const { t } = useI18n()
+
 const stats = [
-  { value: '8–18', label: 'años', color: 'var(--ca-orange-ink)' },
-  { value: '100%', label: 'gratuito', color: 'var(--ca-success-ink)' },
-  { value: '+15', label: 'eventos', color: 'var(--ca-azure-ink)' },
+  { value: '8–18', label: t('pages.home.hero.stats.years'), color: 'var(--ca-orange-ink)' },
+  { value: '100%', label: t('pages.home.hero.stats.free'), color: 'var(--ca-success-ink)' },
+  { value: '+15', label: t('pages.home.hero.stats.events'), color: 'var(--ca-azure-ink)' },
 ] as const
 </script>
 
@@ -14,18 +18,20 @@ const stats = [
   <section class="hero">
     <div class="ca-container hero__grid">
       <div>
-        <div class="hero__badge">● Asociación sin ánimo de lucro · desde {{ FOUNDING_YEAR }}</div>
+        <div class="hero__badge">● {{ $t('pages.home.hero.badge', { year: FOUNDING_YEAR }) }}</div>
         <h1 class="hero__title">
-          Programación<br />para <span style="color: var(--ca-orange)">tod@s</span>.
+          {{ $t('pages.home.hero.titleLine1') }}<br />{{ $t('pages.home.hero.titleLine2') }}
+          <span style="color: var(--ca-orange)">{{ $t('pages.home.hero.titleHighlight') }}</span>.
         </h1>
-        <p class="hero__subtitle">
-          Acercamos el código y el pensamiento computacional a niñas, niños y jóvenes de 8 a 18
-          años. Gratis, divertido y desde León.
-        </p>
+        <p class="hero__subtitle">{{ $t('pages.home.hero.subtitle') }}</p>
 
         <div class="hero__actions">
-          <BaseButton :to="{ name: 'register' }" variant="primary"> Regístrate </BaseButton>
-          <BaseButton :to="{ name: 'about' }" variant="ghost"> Conócenos </BaseButton>
+          <BaseButton :to="{ name: 'register' }" variant="primary">
+            {{ $t('common.register') }}
+          </BaseButton>
+          <BaseButton :to="{ name: 'about' }" variant="ghost">
+            {{ $t('pages.home.hero.aboutCta') }}
+          </BaseButton>
         </div>
 
         <div class="hero__stats">

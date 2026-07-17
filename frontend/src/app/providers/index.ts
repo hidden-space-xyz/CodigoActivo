@@ -6,10 +6,12 @@ import Tooltip from 'primevue/tooltip'
 import { primevue } from './primevue'
 import { queryClient } from './query-client'
 import { router } from '@/app/router'
+import { i18n } from '@/shared/i18n'
 
 import { VueQueryPlugin } from '@tanstack/vue-query'
 
 export function registerProviders(app: App): void {
+  app.use(i18n)
   app.use(primevue.plugin, primevue.options)
   app.use(ToastService)
   app.use(ConfirmationService)

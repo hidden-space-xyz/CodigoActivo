@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { useAnnouncementDetail } from '@/entities/announcement'
+import { i18n } from '@/shared/i18n'
 import { BaseButton, RichTextContent } from '@/shared/ui'
 import {
   absoluteUrl,
@@ -15,6 +17,7 @@ import {
 
 const props = defineProps<{ announcementId: string }>()
 
+const { t } = useI18n()
 const route = useRoute()
 const { announcement, isLoading, notFound } = useAnnouncementDetail(() => props.announcementId)
 
@@ -22,7 +25,7 @@ const posterUrl = computed(() => fileContentUrl(announcement.value?.thumbnailId)
 const hasDescription = computed(() => !isRichTextEmpty(announcement.value?.description))
 
 const seo = computed<SeoData | undefined>(() => {
-  if (notFound.value) return { title: 'Anuncio no encontrado', noindex: true }
+  if (notFound.value) return { title: t('pages.announcementDetail.notFoundTitle'), noindex: true }
   const current = announcement.value
   if (!current) return undefined
   const description = richTextExcerpt(current.description) || current.subtitle
@@ -31,10 +34,10 @@ const seo = computed<SeoData | undefined>(() => {
     '@type': 'NewsArticle',
     headline: current.title,
     url: absoluteUrl(route.path),
-    author: { '@type': 'Organization', name: 'Código Activo' },
+    author: { '@type': 'Organization', name: i18n.global.t('seo.siteName') },
     publisher: {
       '@type': 'Organization',
-      name: 'Código Activo',
+      name: i18n.global.t('seo.siteName'),
       logo: { '@type': 'ImageObject', url: absoluteUrl('/apple-touch-icon.png') },
     },
   }
@@ -59,15 +62,15 @@ useSeo(seo)
     <section class="detail-back">
       <div class="ca-container--narrow">
         <BaseButton variant="link" :to="{ name: 'announcements' }">
-          ← Volver a anuncios
+          {{ $t('pages.announcementDetail.back') }}
         </BaseButton>
       </div>
     </section>
 
-    <p v-if="isLoading" class="detail-state ca-container--narrow">Cargando…</p>
+    <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
     <p v-else-if="notFound || !announcement" class="detail-state ca-container--narrow">
-      No hemos encontrado ese anuncio.
+      {{ $t('pages.announcementDetail.notFound') }}
     </p>
 
     <template v-else>

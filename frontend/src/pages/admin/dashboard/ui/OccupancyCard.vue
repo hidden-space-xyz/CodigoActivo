@@ -28,16 +28,25 @@ function percent(confirmed?: number, desired?: number): number | null {
 
 <template>
   <ChartCard
-    title="Ocupación de próximas actividades"
-    subtitle="Plazas confirmadas frente al aforo previsto · pulsa un evento para ver sus actividades"
+    :title="$t('pages.admin.dashboard.occupancy.title')"
+    :subtitle="$t('pages.admin.dashboard.occupancy.subtitle')"
   >
-    <p v-if="overall !== null" class="occupancy__overall">
-      Media global <strong>{{ overall }}%</strong> · {{ formatNumber(occupancy.confirmed) }} de
-      {{ formatNumber(occupancy.desired) }} plazas
-    </p>
+    <i18n-t
+      v-if="overall !== null"
+      keypath="pages.admin.dashboard.occupancy.summary"
+      tag="p"
+      class="occupancy__overall"
+      scope="global"
+    >
+      <template #overall
+        ><strong>{{ overall }}%</strong></template
+      >
+      <template #confirmed>{{ formatNumber(occupancy.confirmed) }}</template>
+      <template #desired>{{ formatNumber(occupancy.desired) }}</template>
+    </i18n-t>
 
     <div v-if="events.length === 0" class="occupancy__empty">
-      No hay próximas actividades con aforo definido.
+      {{ $t('pages.admin.dashboard.occupancy.empty') }}
     </div>
 
     <ul v-else class="occupancy__list">

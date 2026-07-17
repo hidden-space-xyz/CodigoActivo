@@ -11,12 +11,12 @@ const currentYear = new Date().getFullYear()
       <div class="footer__brandcol">
         <BrandLogo size="sm" />
         <p class="footer__tagline">
-          Programación para tod@s. Asociación sin ánimo de lucro · León · desde 2018.
+          {{ $t('layout.footerTagline') }}
         </p>
       </div>
 
       <div class="footer__col">
-        <div class="footer__heading">Contacto</div>
+        <div class="footer__heading">{{ $t('layout.footerContact') }}</div>
         <div class="footer__links">
           <a :href="`mailto:${CONTACT.email}`" class="footer__link">{{ CONTACT.email }}</a>
           <span class="footer__link footer__link--static">{{ CONTACT.phone }}</span>
@@ -53,7 +53,7 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <div class="footer__legal">© {{ currentYear }} Código Activo — programación para tod@s</div>
+    <div class="footer__legal">{{ $t('layout.footerLegal', { year: currentYear }) }}</div>
   </footer>
 </template>
 

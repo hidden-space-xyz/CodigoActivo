@@ -6,6 +6,8 @@ import type {
   TimeOverlapResponse,
 } from '@/shared/api/generated/models'
 
+import { i18n } from '@/shared/i18n'
+
 import type {
   ActivityAssignment,
   ActivityOverlap,
@@ -19,7 +21,7 @@ import type {
 export function toEventActivity(activity: ActivityResponse): EventActivity {
   return {
     id: activity.id ?? '',
-    title: activity.title ?? 'Actividad',
+    title: activity.title ?? i18n.global.t('entities.activity.fallback.title'),
     description: activity.description ?? '',
     location: activity.location ?? '',
     modality: activity.modalityName ?? '',
@@ -36,7 +38,10 @@ export function toHouseholdSignupRoles(item: HouseholdSignupRolesResponse): Hous
     userId: item.userId ?? '',
     roles: (item.roles ?? [])
       .filter((role) => role.id)
-      .map((role) => ({ id: role.id as string, name: role.name ?? 'Rol' })),
+      .map((role) => ({
+        id: role.id as string,
+        name: role.name ?? i18n.global.t('entities.activity.fallback.role'),
+      })),
   }
 }
 

@@ -20,6 +20,7 @@ import type {
   OverlapCheck,
 } from '@/entities/activity'
 import { useSession } from '@/entities/session'
+import { i18n } from '@/shared/i18n'
 
 export function useEventActivities(eventId: () => string) {
   const session = useSession()
@@ -89,7 +90,10 @@ export function useEventActivities(eventId: () => string) {
   )
 
   const members = computed<HouseholdMember[]>(() => {
-    const self: HouseholdMember = { id: userId.value ?? '', name: session.user?.firstName ?? 'Yo' }
+    const self: HouseholdMember = {
+      id: userId.value ?? '',
+      name: session.user?.firstName ?? i18n.global.t('pages.eventDetail.selfMember'),
+    }
     return [self, ...(householdMembers.data.value ?? [])]
   })
 
@@ -101,7 +105,7 @@ export function useEventActivities(eventId: () => string) {
 
   const assign = useMutation({
     mutationFn: (vars: { activityId: string; activityRoleTypeId: string }) => {
-      if (!userId.value) return Promise.reject(new Error('No autenticado'))
+      if (!userId.value) return Promise.reject(new Error(i18n.global.t('pages.eventDetail.notAuthenticated')))
       return assignActivityRequest(vars.activityId, userId.value, vars.activityRoleTypeId)
     },
     onSuccess: invalidate,

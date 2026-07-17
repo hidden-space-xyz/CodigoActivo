@@ -185,13 +185,15 @@ async function save(): Promise<void> {
   <Dialog
     :visible="visible"
     modal
-    :header="activity ? 'Editar actividad' : 'Nueva actividad'"
+    :header="
+      activity ? $t('features.manageActivities.editHeader') : $t('features.manageActivities.newHeader')
+    "
     :style="{ width: '560px' }"
     @update:visible="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__field">
-        <label>Título</label>
+        <label>{{ $t('features.manageActivities.fields.title') }}</label>
         <InputText
           v-model="form.title"
           :maxlength="200"
@@ -200,7 +202,7 @@ async function save(): Promise<void> {
         />
       </div>
       <div class="form__field">
-        <label>Descripción</label>
+        <label>{{ $t('features.manageActivities.fields.description') }}</label>
         <Textarea
           v-model="form.description"
           :maxlength="4000"
@@ -212,22 +214,22 @@ async function save(): Promise<void> {
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>Modalidad</label>
+          <label>{{ $t('features.manageActivities.fields.modality') }}</label>
           <Select
             v-model="form.modalityId"
             :options="modalityTypes"
             option-label="name"
             option-value="id"
-            placeholder="Presencial / Online"
+            :placeholder="$t('features.manageActivities.modalityPlaceholder')"
             :invalid="submitted && modalityMissing"
             fluid
           />
           <small v-if="submitted && modalityMissing" class="form__error"
-            >La modalidad es obligatoria.</small
+            >{{ $t('features.manageActivities.errors.modalityRequired') }}</small
           >
         </div>
         <div class="form__field">
-          <label>Ubicación o plataforma</label>
+          <label>{{ $t('features.manageActivities.fields.location') }}</label>
           <InputText
             v-model="form.location"
             :maxlength="200"
@@ -235,13 +237,13 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && locationMissing" class="form__error"
-            >La ubicación es obligatoria.</small
+            >{{ $t('features.manageActivities.errors.locationRequired') }}</small
           >
         </div>
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>Inicio</label>
+          <label>{{ $t('features.manageActivities.fields.start') }}</label>
           <DatePicker
             v-model="form.activityStartsAt"
             show-time
@@ -253,11 +255,11 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && startMissing" class="form__error"
-            >La fecha y hora de inicio son obligatorias.</small
+            >{{ $t('features.manageActivities.errors.startRequired') }}</small
           >
         </div>
         <div class="form__field">
-          <label>Fin</label>
+          <label>{{ $t('features.manageActivities.fields.end') }}</label>
           <DatePicker
             v-model="form.activityEndsAt"
             show-time
@@ -269,18 +271,18 @@ async function save(): Promise<void> {
             fluid
           />
           <small v-if="submitted && endMissing" class="form__error"
-            >La fecha y hora de fin son obligatorias.</small
+            >{{ $t('features.manageActivities.errors.endRequired') }}</small
           >
           <small v-else-if="submitted && orderInvalid" class="form__error"
-            >El fin debe ser posterior al inicio.</small
+            >{{ $t('features.manageActivities.errors.orderInvalid') }}</small
           >
         </div>
       </div>
       <small v-if="submitted && outsideEvent" class="form__error"
-        >La actividad debe estar dentro de las fechas del evento.</small
+        >{{ $t('features.manageActivities.errors.outsideEvent') }}</small
       >
       <div v-if="roleTypes.length" class="form__field">
-        <label>Número deseado de inscritos por rol</label>
+        <label>{{ $t('features.manageActivities.fields.desiredCounts') }}</label>
         <div class="form__capacities">
           <div v-for="role in roleTypes" :key="role.id ?? ''" class="form__capacity">
             <span class="form__capacity-name">{{ role.name }}</span>
@@ -288,25 +290,24 @@ async function save(): Promise<void> {
               v-model="desiredCounts[role.id ?? '']"
               :min="1"
               :max="10000"
-              placeholder="Sin objetivo"
+              :placeholder="$t('features.manageActivities.noTargetPlaceholder')"
               fluid
             />
           </div>
         </div>
         <small class="form__hint">
-          Opcional. Al superarse, el listado avisará de que la actividad está muy solicitada; nunca
-          se impide la inscripción.
+          {{ $t('features.manageActivities.hint') }}
         </small>
       </div>
       <div class="form__field">
-        <label>Imagen</label>
+        <label>{{ $t('common.image') }}</label>
         <ThumbnailField
           :existing-thumbnail-id="activity?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
         <small v-if="submitted && missingThumbnail" class="form__error"
-          >La imagen es obligatoria.</small
+          >{{ $t('common.imageRequired') }}</small
         >
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
@@ -314,13 +315,13 @@ async function save(): Promise<void> {
 
     <template #footer>
       <Button
-        label="Cancelar"
+        :label="$t('common.cancel')"
         text
         severity="secondary"
         :disabled="saving || uploading"
         @click="close"
       />
-      <Button label="Guardar" :loading="saving || uploading" @click="save" />
+      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
   </Dialog>
 </template>

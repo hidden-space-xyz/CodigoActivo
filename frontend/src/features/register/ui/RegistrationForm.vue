@@ -51,14 +51,14 @@ function removeMinor(index: number): void {
 <template>
   <div class="reg">
     <div class="reg__head">
-      <BaseButton variant="link" @click="emit('back')">← Volver</BaseButton>
+      <BaseButton variant="link" @click="emit('back')">{{ $t('features.register.back') }}</BaseButton>
     </div>
 
     <form class="reg__form" @submit.prevent="onSubmit">
-      <h2 class="reg__section-title">Tus datos</h2>
+      <h2 class="reg__section-title">{{ $t('features.register.form.yourData') }}</h2>
       <div class="reg__grid">
         <div class="reg__field">
-          <label class="reg__label" for="reg-firstname">Nombre</label>
+          <label class="reg__label" for="reg-firstname">{{ $t('common.firstName') }}</label>
           <InputText
             id="reg-firstname"
             v-model="model.firstName"
@@ -69,7 +69,7 @@ function removeMinor(index: number): void {
           />
         </div>
         <div class="reg__field">
-          <label class="reg__label" for="reg-lastname">Apellidos</label>
+          <label class="reg__label" for="reg-lastname">{{ $t('common.lastName') }}</label>
           <InputText
             id="reg-lastname"
             v-model="model.lastName"
@@ -80,7 +80,7 @@ function removeMinor(index: number): void {
           />
         </div>
         <div class="reg__field">
-          <label class="reg__label" for="reg-email">Correo</label>
+          <label class="reg__label" for="reg-email">{{ $t('common.email') }}</label>
           <InputText
             id="reg-email"
             v-model="model.email"
@@ -90,12 +90,12 @@ function removeMinor(index: number): void {
             required
             fluid
           />
-          <small v-if="submitted && !emailValid" class="reg__error"
-            >Introduce un correo válido.</small
-          >
+          <small v-if="submitted && !emailValid" class="reg__error">{{
+            $t('validation.emailInvalid')
+          }}</small>
         </div>
         <div class="reg__field">
-          <label class="reg__label" for="reg-phone">Teléfono</label>
+          <label class="reg__label" for="reg-phone">{{ $t('common.phone') }}</label>
           <InputText
             id="reg-phone"
             v-model="model.phone"
@@ -107,7 +107,7 @@ function removeMinor(index: number): void {
           />
         </div>
         <div class="reg__field">
-          <label class="reg__label" for="reg-password">Contraseña</label>
+          <label class="reg__label" for="reg-password">{{ $t('common.password') }}</label>
           <Password
             input-id="reg-password"
             v-model="model.password"
@@ -118,12 +118,12 @@ function removeMinor(index: number): void {
             required
             fluid
           />
-          <small v-if="submitted && passwordTooShort" class="reg__error"
-            >La contraseña debe tener al menos 8 caracteres.</small
-          >
+          <small v-if="submitted && passwordTooShort" class="reg__error">{{
+            $t('validation.passwordMin')
+          }}</small>
         </div>
         <div class="reg__field">
-          <label class="reg__label" for="reg-dob">Fecha de nacimiento</label>
+          <label class="reg__label" for="reg-dob">{{ $t('common.birthDate') }}</label>
           <input
             id="reg-dob"
             v-model="model.dateOfBirth"
@@ -137,29 +137,34 @@ function removeMinor(index: number): void {
 
       <div class="reg__minors">
         <div class="reg__minors-head">
-          <h2 class="reg__section-title">Menores a mi cargo</h2>
-          <BaseButton variant="ghost" type="button" @click="addMinor">+ Añadir menor</BaseButton>
+          <h2 class="reg__section-title">{{ $t('features.register.form.minorsTitle') }}</h2>
+          <BaseButton variant="ghost" type="button" @click="addMinor">{{
+            $t('features.register.form.addMinor')
+          }}</BaseButton>
         </div>
         <p class="reg__minors-note">
-          Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre y su fecha
-          de nacimiento.
+          {{ $t('features.register.form.minorsNote') }}
         </p>
 
         <transition-group name="reg-fade" tag="div">
           <fieldset v-for="(minor, index) in model.minors" :key="minor.key" class="reg__minor">
-            <legend class="reg__minor-legend">Menor {{ index + 1 }}</legend>
+            <legend class="reg__minor-legend">{{
+              $t('features.register.form.minorLegend', { n: index + 1 })
+            }}</legend>
             <button
               type="button"
               class="reg__minor-remove"
-              aria-label="Quitar menor"
-              title="Quitar menor"
+              :aria-label="$t('features.register.form.removeMinor')"
+              :title="$t('features.register.form.removeMinor')"
               @click="removeMinor(index)"
             >
               ✕
             </button>
             <div class="reg__grid">
               <div class="reg__field">
-                <label class="reg__label" :for="`minor-firstname-${index}`">Nombre</label>
+                <label class="reg__label" :for="`minor-firstname-${index}`">{{
+                  $t('common.firstName')
+                }}</label>
                 <InputText
                   :id="`minor-firstname-${index}`"
                   v-model="minor.firstName"
@@ -170,7 +175,9 @@ function removeMinor(index: number): void {
                 />
               </div>
               <div class="reg__field">
-                <label class="reg__label" :for="`minor-lastname-${index}`">Apellidos</label>
+                <label class="reg__label" :for="`minor-lastname-${index}`">{{
+                  $t('common.lastName')
+                }}</label>
                 <InputText
                   :id="`minor-lastname-${index}`"
                   v-model="minor.lastName"
@@ -181,7 +188,9 @@ function removeMinor(index: number): void {
                 />
               </div>
               <div class="reg__field">
-                <label class="reg__label" :for="`minor-dob-${index}`">Fecha de nacimiento</label>
+                <label class="reg__label" :for="`minor-dob-${index}`">{{
+                  $t('common.birthDate')
+                }}</label>
                 <input
                   :id="`minor-dob-${index}`"
                   v-model="minor.dateOfBirth"
@@ -198,7 +207,7 @@ function removeMinor(index: number): void {
       </div>
 
       <BaseButton type="submit" variant="primary" block :loading="isSubmitting" class="reg__submit">
-        Completar registro
+        {{ $t('features.register.form.submit') }}
       </BaseButton>
     </form>
   </div>

@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
 import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
@@ -8,6 +9,7 @@ import { resendVerificationRequest, verifyRegistrationRequest } from '../api/req
 export type LinkVerificationState = 'verifying' | 'success' | 'error'
 
 export function useAccountVerification() {
+  const { t } = useI18n()
   const feedback = useCrudFeedback()
 
   const state = ref<LinkVerificationState>('verifying')
@@ -33,8 +35,8 @@ export function useAccountVerification() {
     },
     onSuccess: () => {
       feedback.success(
-        'Te hemos enviado un nuevo enlace de verificación. Revisa tu correo.',
-        'Código reenviado',
+        t('features.register.toast.linkResentDetail'),
+        t('features.register.toast.codeResentSummary'),
       )
     },
     onError: (error) => {
@@ -46,7 +48,7 @@ export function useAccountVerification() {
     userId.value = id
     if (!id || !code) {
       state.value = 'error'
-      errorMessage.value = 'El enlace de verificación no es válido o está incompleto.'
+      errorMessage.value = t('features.register.verify.incompleteLink')
       return
     }
     state.value = 'verifying'

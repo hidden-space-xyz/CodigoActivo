@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -26,6 +27,7 @@ const props = defineProps<{
   controller: ContentController
 }>()
 
+const { t } = useI18n()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
@@ -85,7 +87,7 @@ async function openEdit(item: ContentItem): Promise<void> {
     const detail = await props.controller.fetchOne(item.id)
     if (!detail) {
       // 404: the row was deleted between listing and editing — don't fall through to a create.
-      feedback.error(`Este ${props.entityLabel} ya no existe.`)
+      feedback.error(t('widgets.contentEntityPage.toasts.notFound', { label: props.entityLabel }))
       return
     }
     editing.value = detail
@@ -114,7 +116,7 @@ async function save(): Promise<void> {
       { id: editing.value.id, body },
       {
         onSuccess: () => {
-          feedback.success('Cambios guardados.')
+          feedback.success(t('widgets.contentEntityPage.toasts.saved'))
           dialogVisible.value = false
         },
         onError: (error) => feedback.error(error),
@@ -124,7 +126,7 @@ async function save(): Promise<void> {
   }
   props.controller.create.mutate(body, {
     onSuccess: () => {
-      feedback.success('Creado correctamente.')
+      feedback.success(t('widgets.contentEntityPage.toasts.created'))
       dialogVisible.value = false
     },
     onError: (error) => feedback.error(error),
@@ -134,19 +136,19 @@ async function save(): Promise<void> {
 function onFeature(item: ContentItem): void {
   if (!item.id || item.featured) return
   props.controller.feature.mutate(item.id, {
-    onSuccess: () => feedback.success('Destacado actualizado.'),
+    onSuccess: () => feedback.success(t('widgets.contentEntityPage.toasts.featured')),
     onError: (error) => feedback.error(error),
   })
 }
 
 function confirmDelete(item: ContentItem): void {
   requireDelete({
-    header: `Eliminar ${props.entityLabel}`,
-    message: `¿Seguro que quieres eliminar "${item.title}"? Esta acción no se puede deshacer.`,
+    header: t('widgets.contentEntityPage.confirm.header', { label: props.entityLabel }),
+    message: t('widgets.contentEntityPage.confirm.message', { title: item.title }),
     accept: () => {
       if (!item.id) return
       props.controller.remove.mutate(item.id, {
-        onSuccess: () => feedback.success('Eliminado.'),
+        onSuccess: () => feedback.success(t('widgets.contentEntityPage.toasts.deleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -180,11 +182,13 @@ function confirmDelete(item: ContentItem): void {
       @sort="table.onSort"
     >
       <template #empty>
-        <span v-if="table.isError.value">No se pudieron cargar los registros.</span>
-        <span v-else>Aún no hay registros.</span>
+        <span v-if="table.isError.value">{{
+          $t('widgets.contentEntityPage.table.loadError')
+        }}</span>
+        <span v-else>{{ $t('widgets.contentEntityPage.table.empty') }}</span>
       </template>
 
-      <Column header="Imagen" style="width: 110px">
+      <Column :header="$t('common.image')" style="width: 110px">
         <template #body="{ data }">
           <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
         </template>
@@ -193,15 +197,19 @@ function confirmDelete(item: ContentItem): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('title').value"
-            label="Título"
-            placeholder="Buscar título"
+            :label="$t('widgets.contentEntityPage.columns.title')"
+            :placeholder="$t('widgets.contentEntityPage.columns.searchTitle')"
             @apply="table.onFilter"
           />
         </template>
         <template #body="{ data }">
           <span class="title-cell">
             {{ data.title }}
-            <Tag v-if="controller.canFeature && data.featured" value="Destacado" severity="warn" />
+            <Tag
+              v-if="controller.canFeature && data.featured"
+              :value="$t('widgets.contentEntityPage.featured')"
+              severity="warn"
+            />
           </span>
         </template>
       </Column>
@@ -209,8 +217,8 @@ function confirmDelete(item: ContentItem): void {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('subtitle').value"
-            label="Subtítulo"
-            placeholder="Buscar subtítulo"
+            :label="$t('widgets.contentEntityPage.columns.subtitle')"
+            :placeholder="$t('widgets.contentEntityPage.columns.searchSubtitle')"
             @apply="table.onFilter"
           />
         </template>
@@ -219,13 +227,13 @@ function confirmDelete(item: ContentItem): void {
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('created').value"
-            label="Creado"
+            :label="$t('widgets.contentEntityPage.columns.created')"
             @apply="table.onFilter"
           />
         </template>
         <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
       </Column>
-      <Column header="Acciones" style="width: 170px">
+      <Column :header="$t('common.actions')" style="width: 170px">
         <template #body="{ data }">
           <div class="row-actions">
             <Button
@@ -233,7 +241,11 @@ function confirmDelete(item: ContentItem): void {
               :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
               text
               rounded
-              :aria-label="data.featured ? 'Destacado' : 'Destacar'"
+              :aria-label="
+                data.featured
+                  ? $t('widgets.contentEntityPage.featured')
+                  : $t('widgets.contentEntityPage.feature')
+              "
               :disabled="data.featured || controller.feature.isPending.value"
               :class="{ 'is-featured': data.featured }"
               @click="onFeature(data)"
@@ -242,7 +254,7 @@ function confirmDelete(item: ContentItem): void {
               icon="pi pi-pencil"
               text
               rounded
-              aria-label="Editar"
+              :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
               @click="openEdit(data)"
             />
@@ -251,7 +263,7 @@ function confirmDelete(item: ContentItem): void {
               text
               rounded
               severity="danger"
-              aria-label="Eliminar"
+              :aria-label="$t('common.delete')"
               @click="confirmDelete(data)"
             />
           </div>
@@ -262,13 +274,13 @@ function confirmDelete(item: ContentItem): void {
     <Dialog
       v-model:visible="dialogVisible"
       modal
-      :header="editing ? `Editar ${entityLabel}` : newLabel"
+      :header="editing ? $t('widgets.contentEntityPage.dialog.editHeader', { label: entityLabel }) : newLabel"
       :style="{ width: '94vw', maxWidth: '920px' }"
       :content-style="{ maxHeight: '78vh' }"
     >
       <form class="form" @submit.prevent="save">
         <div class="form__field">
-          <label>Título</label>
+          <label>{{ $t('widgets.contentEntityPage.form.title') }}</label>
           <InputText
             v-model="form.title"
             :maxlength="200"
@@ -277,7 +289,7 @@ function confirmDelete(item: ContentItem): void {
           />
         </div>
         <div class="form__field">
-          <label>Subtítulo</label>
+          <label>{{ $t('widgets.contentEntityPage.form.subtitle') }}</label>
           <InputText
             v-model="form.subtitle"
             :maxlength="300"
@@ -286,31 +298,35 @@ function confirmDelete(item: ContentItem): void {
           />
         </div>
         <div class="form__field">
-          <label>Descripción</label>
+          <label>{{ $t('widgets.contentEntityPage.form.description') }}</label>
           <RichTextEditor v-model="form.description" />
         </div>
         <div class="form__field">
-          <label>Imagen</label>
+          <label>{{ $t('common.image') }}</label>
           <ThumbnailField
             :existing-thumbnail-id="editing?.thumbnailId"
             :invalid="submitted && missingThumbnail"
             @update:file="pickedFile = $event"
           />
-          <small v-if="submitted && missingThumbnail" class="form__error"
-            >La imagen es obligatoria.</small
-          >
+          <small v-if="submitted && missingThumbnail" class="form__error">{{
+            $t('common.imageRequired')
+          }}</small>
           <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
         </div>
       </form>
       <template #footer>
         <Button
-          label="Cancelar"
+          :label="$t('common.cancel')"
           text
           severity="secondary"
           :disabled="saving || uploading"
           @click="dialogVisible = false"
         />
-        <Button label="Guardar" :loading="saving || uploading || loadingDetail" @click="save" />
+        <Button
+          :label="$t('common.save')"
+          :loading="saving || uploading || loadingDetail"
+          @click="save"
+        />
       </template>
     </Dialog>
   </div>

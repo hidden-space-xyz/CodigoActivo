@@ -20,7 +20,7 @@ withDefaults(
 <template>
   <ChartCard :title="title" :subtitle="subtitle">
     <div v-if="empty" class="analytics-chart__empty" :style="{ height: `${height}px` }">
-      Sin datos en este periodo.
+      {{ $t('pages.admin.dashboard.chart.empty') }}
     </div>
     <div v-else class="analytics-chart__canvas" :style="{ height: `${height}px` }">
       <Chart :type="type" :data="data" :options="options" />

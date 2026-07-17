@@ -1,3 +1,5 @@
+import { i18n } from '@/shared/i18n'
+
 export interface OrganizationValue {
   readonly id: string
   readonly title: string
@@ -20,29 +22,29 @@ const VALUES: readonly OrganizationValue[] = [
     id: 'free',
     icon: '🎟️',
     soft: 'rgba(255,107,94,0.13)',
-    title: 'Gratuito',
-    description: 'Todas nuestras actividades son siempre sin coste para las familias.',
+    title: i18n.global.t('entities.organization.values.free.title'),
+    description: i18n.global.t('entities.organization.values.free.description'),
   },
   {
     id: 'inclusive',
     icon: '🌍',
     soft: 'rgba(45,212,217,0.13)',
-    title: 'Inclusivo',
-    description: 'Llevamos el código al mundo rural y a quien tiene menos acceso.',
+    title: i18n.global.t('entities.organization.values.inclusive.title'),
+    description: i18n.global.t('entities.organization.values.inclusive.description'),
   },
   {
     id: 'community',
     icon: '🤝',
     soft: 'rgba(167,139,250,0.13)',
-    title: 'En comunidad',
-    description: 'Voluntariado, familias y empresas que reman en la misma dirección.',
+    title: i18n.global.t('entities.organization.values.community.title'),
+    description: i18n.global.t('entities.organization.values.community.description'),
   },
   {
     id: 'fun',
     icon: '🚀',
     soft: 'rgba(91,229,132,0.13)',
-    title: 'Divertido',
-    description: 'Se aprende creando, jugando y compartiendo proyectos propios.',
+    title: i18n.global.t('entities.organization.values.fun.title'),
+    description: i18n.global.t('entities.organization.values.fun.description'),
   },
 ]
 
@@ -52,33 +54,32 @@ const ACTIVITIES: readonly OrganizationActivity[] = [
     number: '01',
     color: '#5BE584',
     soft: 'rgba(91,229,132,0.13)',
-    title: 'Talleres de programación',
-    description: 'De Scratch y robótica a Python e inteligencia artificial, por edades.',
+    title: i18n.global.t('entities.organization.activities.workshops.title'),
+    description: i18n.global.t('entities.organization.activities.workshops.description'),
   },
   {
     id: 'annualDay',
     number: '02',
     color: '#2DD4D9',
     soft: 'rgba(45,212,217,0.13)',
-    title: 'El Día Código Activo',
-    description: 'Nuestro gran evento anual con un lema y un reto temático distinto cada año.',
+    title: i18n.global.t('entities.organization.activities.annualDay.title'),
+    description: i18n.global.t('entities.organization.activities.annualDay.description'),
   },
   {
     id: 'meetAndCode',
     number: '03',
     color: '#A78BFA',
     soft: 'rgba(167,139,250,0.13)',
-    title: 'Meet and Code',
-    description:
-      'Participamos en la Semana Europea de la Programación con actividades para 8-18 años.',
+    title: i18n.global.t('entities.organization.activities.meetAndCode.title'),
+    description: i18n.global.t('entities.organization.activities.meetAndCode.description'),
   },
   {
     id: 'competitions',
     number: '04',
     color: '#FF6B5E',
     soft: 'rgba(255,107,94,0.13)',
-    title: 'Competiciones',
-    description: 'Preparamos a jóvenes para la Olimpiada Informática y otros campeonatos.',
+    title: i18n.global.t('entities.organization.activities.competitions.title'),
+    description: i18n.global.t('entities.organization.activities.competitions.description'),
   },
 ]
 

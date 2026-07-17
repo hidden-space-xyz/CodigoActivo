@@ -5,7 +5,10 @@ import { AdminPageHeader } from '@/shared/ui'
 
 <template>
   <div>
-    <AdminPageHeader title="Configuración" subtitle="Catálogos configurables del sistema" />
+    <AdminPageHeader
+      :title="$t('pages.admin.catalogs.title')"
+      :subtitle="$t('pages.admin.catalogs.subtitle')"
+    />
 
     <div class="catalogs-grid">
       <EventCategoriesSection />

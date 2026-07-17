@@ -90,14 +90,14 @@ function save(): void {
   <Dialog
     :visible="visible"
     modal
-    header="Editar usuario"
+    :header="$t('features.manageUsers.editHeader')"
     :style="{ width: '480px' }"
     @update:visible="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__row">
         <div class="form__field">
-          <label>Nombre</label>
+          <label>{{ $t('common.firstName') }}</label>
           <InputText
             v-model="form.firstName"
             :maxlength="120"
@@ -106,7 +106,7 @@ function save(): void {
           />
         </div>
         <div class="form__field">
-          <label>Apellidos</label>
+          <label>{{ $t('common.lastName') }}</label>
           <InputText
             v-model="form.lastName"
             :maxlength="120"
@@ -116,7 +116,7 @@ function save(): void {
         </div>
       </div>
       <div class="form__field">
-        <label>Fecha de nacimiento</label>
+        <label>{{ $t('common.birthDate') }}</label>
         <DatePicker
           v-model="form.birthDate"
           date-format="dd/mm/yy"
@@ -126,11 +126,11 @@ function save(): void {
           fluid
         />
         <small v-if="submitted && birthDateInvalid" class="form__error"
-          >Indica una fecha de nacimiento válida.</small
+          >{{ $t('features.manageUsers.birthDateInvalid') }}</small
         >
       </div>
       <div class="form__field">
-        <label>Correo{{ isMinor ? ' (opcional)' : '' }}</label>
+        <label>{{ $t('common.email') }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label>
         <InputText
           v-model="form.email"
           type="email"
@@ -139,11 +139,11 @@ function save(): void {
           fluid
         />
         <small v-if="submitted && emailInvalid" class="form__error"
-          >El correo no tiene un formato válido.</small
+          >{{ $t('validation.emailFormat') }}</small
         >
       </div>
       <div class="form__field">
-        <label>Teléfono{{ isMinor ? ' (opcional)' : '' }}</label>
+        <label>{{ $t('common.phone') }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label>
         <InputText
           v-model="form.phone"
           type="tel"
@@ -152,14 +152,14 @@ function save(): void {
           fluid
         />
         <small v-if="submitted && contactMissing" class="form__error"
-          >Los usuarios adultos necesitan correo y teléfono.</small
+          >{{ $t('features.manageUsers.contactRequired') }}</small
         >
       </div>
     </form>
 
     <template #footer>
-      <Button label="Cancelar" text severity="secondary" :disabled="saving" @click="close" />
-      <Button label="Guardar" :loading="saving" @click="save" />
+      <Button :label="$t('common.cancel')" text severity="secondary" :disabled="saving" @click="close" />
+      <Button :label="$t('common.save')" :loading="saving" @click="save" />
     </template>
   </Dialog>
 </template>

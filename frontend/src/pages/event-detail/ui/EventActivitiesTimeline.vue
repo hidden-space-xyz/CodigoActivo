@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { AppButton as Button } from '@/shared/ui'
 import Checkbox from 'primevue/checkbox'
@@ -16,6 +17,7 @@ import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/l
 const props = defineProps<{ eventId: string; signupOpen: boolean }>()
 
 const router = useRouter()
+const { t } = useI18n()
 const toast = useToast()
 const feedback = useCrudFeedback()
 const {
@@ -166,8 +168,12 @@ function doAssign(activityId: string, roleId: string): void {
   assign.mutate(
     { activityId, activityRoleTypeId: roleId },
     {
-      onSuccess: () => feedback.success('Te has apuntado a la actividad.', 'Inscripción enviada'),
-      onError: (error) => feedback.error(error, 'No se pudo apuntar'),
+      onSuccess: () =>
+        feedback.success(
+          t('pages.eventDetail.toast.signupSuccess'),
+          t('pages.eventDetail.toast.signupSent'),
+        ),
+      onError: (error) => feedback.error(error, t('pages.eventDetail.toast.signupFailed')),
       onSettled: () => {
         busyId.value = null
       },
@@ -212,8 +218,8 @@ function confirmHousehold(): void {
   if (missingRole) {
     toast.add({
       severity: 'warn',
-      summary: 'Falta el rol',
-      detail: 'Selecciona un rol para cada integrante que quieras apuntar.',
+      summary: t('pages.eventDetail.toast.missingRole'),
+      detail: t('pages.eventDetail.toast.missingRoleDetail'),
       life: 3500,
     })
     return
@@ -232,9 +238,12 @@ function confirmHousehold(): void {
     {
       onSuccess: () => {
         householdDialog.visible = false
-        feedback.success('Habéis quedado apuntados a la actividad.', 'Inscripción enviada')
+        feedback.success(
+          t('pages.eventDetail.toast.householdSuccess'),
+          t('pages.eventDetail.toast.signupSent'),
+        )
       },
-      onError: (error) => feedback.error(error, 'No se pudo apuntar'),
+      onError: (error) => feedback.error(error, t('pages.eventDetail.toast.signupFailed')),
       onSettled: () => {
         busyId.value = null
       },
@@ -248,7 +257,11 @@ function onUnassignMember(activity: TimelineActivity, memberId: string): void {
   unassign.mutate(
     { activityId: activity.id, userId: memberId },
     {
-      onSuccess: () => feedback.success('Se ha eliminado la inscripción.', 'Inscripción cancelada'),
+      onSuccess: () =>
+        feedback.success(
+          t('pages.eventDetail.toast.unassignSuccess'),
+          t('pages.eventDetail.toast.unassignSummary'),
+        ),
       onError: (error) => feedback.error(error),
       onSettled: () => {
         busyId.value = null
@@ -265,22 +278,24 @@ function onUnassign(activity: TimelineActivity): void {
 
 <template>
   <div class="activities">
-    <p v-if="activities.isLoading.value" class="activities__state">Cargando actividades…</p>
+    <p v-if="activities.isLoading.value" class="activities__state">
+      {{ $t('pages.eventDetail.activities.loading') }}
+    </p>
     <p v-else-if="activities.isError.value" class="activities__state">
-      No se pudieron cargar las actividades.
+      {{ $t('pages.eventDetail.activities.loadError') }}
     </p>
     <p v-else-if="items.length === 0" class="activities__state">
-      Este evento todavía no tiene actividades.
+      {{ $t('pages.eventDetail.activities.empty') }}
     </p>
 
     <template v-else>
       <p v-if="!signupOpen" class="signup-closed">
-        <i class="pi pi-info-circle" /> La inscripción no está abierta para este evento.
+        <i class="pi pi-info-circle" /> {{ $t('pages.eventDetail.activities.signupClosed') }}
       </p>
       <p v-else-if="isAuthenticated && signupRoles.isError.value" class="signup-closed">
-        <i class="pi pi-info-circle" /> No se pudieron cargar los roles de inscripción.
+        <i class="pi pi-info-circle" /> {{ $t('pages.eventDetail.activities.rolesLoadError') }}
         <Button
-          label="Reintentar"
+          :label="$t('common.retry')"
           size="small"
           text
           :loading="signupRoles.isFetching.value"
@@ -297,7 +312,7 @@ function onUnassign(activity: TimelineActivity): void {
             <div class="tl-time">
               {{ formatDateTime(cluster.start.toISOString()) }}
               <span v-if="cluster.items.length > 1" class="tl-simul">
-                · {{ cluster.items.length }} simultáneas
+                · {{ $t('pages.eventDetail.simultaneous', cluster.items.length) }}
               </span>
             </div>
             <div class="tl-cards" :class="{ 'tl-cards--multi': cluster.items.length > 1 }">
@@ -324,7 +339,7 @@ function onUnassign(activity: TimelineActivity): void {
       </ol>
 
       <section v-if="unscheduled.length" class="unscheduled">
-        <h3 class="unscheduled__title">Sin horario asignado</h3>
+        <h3 class="unscheduled__title">{{ $t('pages.eventDetail.activities.noSchedule') }}</h3>
         <div class="tl-cards tl-cards--multi">
           <ActivityTimelineCard
             v-for="act in unscheduled"
@@ -349,12 +364,13 @@ function onUnassign(activity: TimelineActivity): void {
     <Dialog
       v-model:visible="householdDialog.visible"
       modal
-      header="¿A quién quieres apuntar?"
+      :header="$t('pages.eventDetail.household.header')"
       :style="{ width: '90vw', maxWidth: '560px' }"
     >
       <p class="household__lead">
-        Marca a las personas que quieras apuntar a
-        <b>{{ householdDialog.activity?.title }}</b> y elige el rol de cada una.
+        {{ $t('pages.eventDetail.household.leadBefore') }}
+        <b>{{ householdDialog.activity?.title }}</b>
+        {{ $t('pages.eventDetail.household.leadAfter') }}
       </p>
       <ul class="household__list">
         <li v-for="row in householdDialog.rows" :key="row.userId" class="household__row">
@@ -368,7 +384,7 @@ function onUnassign(activity: TimelineActivity): void {
             <label :for="`hh-${row.userId}`" class="household__name">{{ row.name }}</label>
           </div>
           <span v-if="row.alreadyAssigned" class="household__already">
-            Ya inscrito como {{ row.assignedRole || '—' }}
+            {{ $t('pages.eventDetail.household.alreadyAs', { role: row.assignedRole || '—' }) }}
           </span>
           <Select
             v-else
@@ -376,31 +392,28 @@ function onUnassign(activity: TimelineActivity): void {
             :options="[...rolesFor(row.userId)]"
             option-label="name"
             option-value="id"
-            placeholder="Elige un rol"
+            :placeholder="$t('pages.eventDetail.chooseRole')"
             :disabled="!row.include"
             class="household__role"
           />
         </li>
       </ul>
       <p v-if="householdSelectable.length === 0" class="household__note">
-        Toda tu familia ya está inscrita en esta actividad.
+        {{ $t('pages.eventDetail.household.allInscribed') }}
       </p>
       <p v-if="householdHighDemand" class="household__demand">
         <i class="pi pi-exclamation-triangle" />
-        <span>
-          Esta actividad está muy solicitada y es posible que se agoten las plazas. Te recomendamos
-          elegir otras opciones adicionales.
-        </span>
+        <span>{{ $t('pages.eventDetail.highDemandWarning') }}</span>
       </p>
       <template #footer>
         <Button
-          label="Cancelar"
+          :label="$t('common.cancel')"
           text
           severity="secondary"
           @click="householdDialog.visible = false"
         />
         <Button
-          label="Apuntar"
+          :label="$t('pages.eventDetail.household.enroll')"
           :disabled="householdSelectable.length === 0"
           @click="confirmHousehold"
         />
@@ -410,11 +423,11 @@ function onUnassign(activity: TimelineActivity): void {
     <Dialog
       v-model:visible="overlapDialog.visible"
       modal
-      header="Coincidencia de horario"
+      :header="$t('pages.eventDetail.overlap.header')"
       :style="{ width: '90vw', maxWidth: '480px' }"
     >
       <p class="overlap__lead">
-        Ya estás apuntado a otra actividad que coincide en el tiempo con esta:
+        {{ $t('pages.eventDetail.overlap.lead') }}
       </p>
       <ul class="overlap__list">
         <li v-for="o in overlapDialog.overlaps" :key="o.activityId">
@@ -424,10 +437,15 @@ function onUnassign(activity: TimelineActivity): void {
           </span>
         </li>
       </ul>
-      <p class="overlap__q">¿Quieres apuntarte de todos modos?</p>
+      <p class="overlap__q">{{ $t('pages.eventDetail.overlap.question') }}</p>
       <template #footer>
-        <Button label="Cancelar" text severity="secondary" @click="overlapDialog.visible = false" />
-        <Button label="Apuntarme igualmente" @click="confirmOverlapSignup" />
+        <Button
+          :label="$t('common.cancel')"
+          text
+          severity="secondary"
+          @click="overlapDialog.visible = false"
+        />
+        <Button :label="$t('pages.eventDetail.overlap.enrollAnyway')" @click="confirmOverlapSignup" />
       </template>
     </Dialog>
   </div>

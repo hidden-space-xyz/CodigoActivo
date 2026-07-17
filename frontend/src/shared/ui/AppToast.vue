@@ -30,7 +30,7 @@ const SEVERITY_ICON: Record<string, string> = {
             v-if="(slotProps.message as ErrorToastMessageOptions).traceId"
             class="app-toast__trace"
           >
-            Ref: {{ (slotProps.message as ErrorToastMessageOptions).traceId }}
+            {{ $t('table.ref', { id: (slotProps.message as ErrorToastMessageOptions).traceId }) }}
           </div>
         </div>
       </div>

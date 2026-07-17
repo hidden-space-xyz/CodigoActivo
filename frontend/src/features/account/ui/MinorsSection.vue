@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 
@@ -8,6 +9,7 @@ import type { AccountChild } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
 import { formatDate, toDateInput, todayIso, useCrudFeedback, yearsAgoIso } from '@/shared/lib'
 
+const { t } = useI18n()
 const feedback = useCrudFeedback()
 const { children, addChild, updateChild, deleteChild } = useAccount()
 
@@ -56,7 +58,10 @@ function save(): void {
       {
         onSuccess: () => {
           dialogVisible.value = false
-          feedback.success('El menor se ha registrado a tu cargo.', 'Menor añadido')
+          feedback.success(
+            t('features.account.minors.addedDetail'),
+            t('features.account.minors.addedSummary'),
+          )
         },
         onError: notifyError,
       },
@@ -84,7 +89,10 @@ function save(): void {
 
 function finishEdit(): void {
   dialogVisible.value = false
-  feedback.success('Los datos del menor se han guardado.', 'Menor actualizado')
+  feedback.success(
+    t('features.account.minors.updatedDetail'),
+    t('features.account.minors.updatedSummary'),
+  )
 }
 
 const deleteTarget = ref<AccountChild | null>(null)
@@ -95,7 +103,10 @@ function confirmDelete(): void {
   deleteChild.mutate(id, {
     onSuccess: () => {
       deleteTarget.value = null
-      feedback.success('El menor se ha eliminado de tu cuenta.', 'Menor eliminado')
+      feedback.success(
+        t('features.account.minors.deletedDetail'),
+        t('features.account.minors.deletedSummary'),
+      )
     },
     onError: notifyError,
   })
@@ -105,13 +116,15 @@ function confirmDelete(): void {
 <template>
   <section class="acc-card">
     <div class="acc-card__head">
-      <h2 class="acc-card__title">Mis menores</h2>
-      <BaseButton variant="primary" @click="openAdd">+ Añadir menor</BaseButton>
+      <h2 class="acc-card__title">{{ $t('features.account.minors.title') }}</h2>
+      <BaseButton variant="primary" @click="openAdd">{{
+        $t('features.account.minors.add')
+      }}</BaseButton>
     </div>
 
-    <p v-if="children.isLoading.value" class="acc-card__state">Cargando…</p>
+    <p v-if="children.isLoading.value" class="acc-card__state">{{ $t('common.loading') }}</p>
     <p v-else-if="items.length === 0" class="acc-card__state">
-      No tienes menores a tu cargo. Puedes añadir los que quieras inscribir.
+      {{ $t('features.account.minors.empty') }}
     </p>
 
     <ul v-else class="acc-minors">
@@ -121,8 +134,10 @@ function confirmDelete(): void {
           <span class="acc-minor__meta">{{ formatDate(child.birthDate) }}</span>
         </div>
         <div class="acc-minor__actions">
-          <BaseButton variant="ghost" @click="openEdit(child)">Editar</BaseButton>
-          <BaseButton variant="link" @click="deleteTarget = child">Eliminar</BaseButton>
+          <BaseButton variant="ghost" @click="openEdit(child)">{{ $t('common.edit') }}</BaseButton>
+          <BaseButton variant="link" @click="deleteTarget = child">{{
+            $t('common.delete')
+          }}</BaseButton>
         </div>
       </li>
     </ul>
@@ -130,21 +145,25 @@ function confirmDelete(): void {
     <Dialog
       v-model:visible="dialogVisible"
       modal
-      :header="mode === 'add' ? 'Añadir menor' : 'Editar menor'"
+      :header="
+        mode === 'add'
+          ? $t('features.account.minors.addHeader')
+          : $t('features.account.minors.editHeader')
+      "
       :style="{ width: '90vw', maxWidth: '520px' }"
     >
       <form class="acc-form" @submit.prevent="save">
         <div class="acc-form__grid">
           <div class="acc-form__field">
-            <label for="m-firstname">Nombre</label>
+            <label for="m-firstname">{{ $t('common.firstName') }}</label>
             <InputText id="m-firstname" v-model="form.firstName" :maxlength="120" required fluid />
           </div>
           <div class="acc-form__field">
-            <label for="m-lastname">Apellidos</label>
+            <label for="m-lastname">{{ $t('common.lastName') }}</label>
             <InputText id="m-lastname" v-model="form.lastName" :maxlength="120" required fluid />
           </div>
           <div class="acc-form__field">
-            <label for="m-dob">Fecha de nacimiento</label>
+            <label for="m-dob">{{ $t('common.birthDate') }}</label>
             <input
               id="m-dob"
               v-model="form.birthDate"
@@ -158,9 +177,11 @@ function confirmDelete(): void {
         </div>
         <div class="acc-form__actions">
           <BaseButton variant="link" type="button" @click="dialogVisible = false">
-            Cancelar
+            {{ $t('common.cancel') }}
           </BaseButton>
-          <BaseButton variant="primary" type="submit" :loading="saving">Guardar</BaseButton>
+          <BaseButton variant="primary" type="submit" :loading="saving">{{
+            $t('common.save')
+          }}</BaseButton>
         </div>
       </form>
     </Dialog>
@@ -168,19 +189,21 @@ function confirmDelete(): void {
     <Dialog
       :visible="deleteTarget !== null"
       modal
-      header="Eliminar menor"
+      :header="$t('features.account.minors.deleteHeader')"
       :style="{ width: '90vw', maxWidth: '420px' }"
       @update:visible="(value) => !value && (deleteTarget = null)"
     >
-      <p class="acc-confirm">
-        ¿Seguro que quieres eliminar a
-        <b>{{ deleteTarget?.firstName }} {{ deleteTarget?.lastName }}</b
-        >? Esta acción no se puede deshacer.
-      </p>
+      <i18n-t keypath="features.account.minors.deleteConfirm" tag="p" class="acc-confirm">
+        <template #name
+          ><b>{{ deleteTarget?.firstName }} {{ deleteTarget?.lastName }}</b></template
+        >
+      </i18n-t>
       <div class="acc-form__actions">
-        <BaseButton variant="link" type="button" @click="deleteTarget = null">Cancelar</BaseButton>
+        <BaseButton variant="link" type="button" @click="deleteTarget = null">{{
+          $t('common.cancel')
+        }}</BaseButton>
         <BaseButton variant="primary" :loading="deleteChild.isPending.value" @click="confirmDelete">
-          Eliminar
+          {{ $t('common.delete') }}
         </BaseButton>
       </div>
     </Dialog>

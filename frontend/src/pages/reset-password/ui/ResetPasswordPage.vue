@@ -21,8 +21,8 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
     <section class="reset-head">
       <div class="reset-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow reset-head__inner">
-        <SectionEyebrow text="// contraseña" color="var(--ca-orange-ink)" />
-        <h1 class="reset-head__title">Elige una nueva contraseña</h1>
+        <SectionEyebrow :text="$t('pages.resetPassword.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="reset-head__title">{{ $t('pages.resetPassword.title') }}</h1>
       </div>
     </section>
 
@@ -30,33 +30,32 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
       <div class="reset-card">
         <div v-if="!hasValidLink" class="reset-panel">
           <div class="reset-panel__icon reset-panel__icon--error" aria-hidden="true">!</div>
-          <h2 class="reset-panel__title">El enlace no es válido</h2>
+          <h2 class="reset-panel__title">{{ $t('pages.resetPassword.invalidTitle') }}</h2>
           <p class="reset-panel__text" role="alert">
-            El enlace para restablecer la contraseña no es válido o está incompleto. Solicita uno
-            nuevo y te lo enviaremos por correo.
+            {{ $t('pages.resetPassword.invalidText') }}
           </p>
           <div class="reset-panel__actions">
             <BaseButton :to="{ name: 'forgot-password' }" variant="primary">
-              Solicitar un enlace nuevo
+              {{ $t('pages.resetPassword.requestNewLink') }}
             </BaseButton>
-            <BaseButton :to="{ name: 'home' }" variant="ghost">Volver al inicio</BaseButton>
+            <BaseButton :to="{ name: 'home' }" variant="ghost">{{ $t('common.backToHome') }}</BaseButton>
           </div>
         </div>
 
         <div v-else-if="state === 'success'" class="reset-panel">
           <div class="reset-panel__icon reset-panel__icon--ok" aria-hidden="true">✓</div>
-          <h2 class="reset-panel__title">¡Contraseña actualizada!</h2>
+          <h2 class="reset-panel__title">{{ $t('pages.resetPassword.successTitle') }}</h2>
           <p class="reset-panel__text">
-            Tu contraseña se ha cambiado correctamente. Ya puedes iniciar sesión con ella.
+            {{ $t('pages.resetPassword.successText') }}
           </p>
           <div class="reset-panel__actions">
-            <BaseButton :to="{ name: 'login' }" variant="primary">Iniciar sesión</BaseButton>
+            <BaseButton :to="{ name: 'login' }" variant="primary">{{ $t('common.login') }}</BaseButton>
           </div>
         </div>
 
         <form v-else class="reset-form" @submit.prevent="submit">
           <div class="reset-field">
-            <label class="reset-label" for="reset-password">Nueva contraseña</label>
+            <label class="reset-label" for="reset-password">{{ $t('pages.resetPassword.newPasswordLabel') }}</label>
             <Password
               input-id="reset-password"
               v-model="form.password"
@@ -68,7 +67,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             />
           </div>
           <div class="reset-field">
-            <label class="reset-label" for="reset-password-confirm">Repite la contraseña</label>
+            <label class="reset-label" for="reset-password-confirm">{{ $t('pages.resetPassword.confirmPasswordLabel') }}</label>
             <Password
               input-id="reset-password-confirm"
               v-model="form.confirmPassword"
@@ -86,11 +85,11 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             :to="{ name: 'forgot-password' }"
             class="reset-request-link"
           >
-            Solicitar un enlace nuevo
+            {{ $t('pages.resetPassword.requestNewLink') }}
           </RouterLink>
 
           <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
-            Cambiar contraseña
+            {{ $t('pages.resetPassword.submit') }}
           </BaseButton>
         </form>
       </div>

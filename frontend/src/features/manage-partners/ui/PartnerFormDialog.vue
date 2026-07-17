@@ -79,13 +79,13 @@ async function save(): Promise<void> {
   <Dialog
     :visible="visible"
     modal
-    :header="partner ? 'Editar patrocinador' : 'Nuevo patrocinador'"
+    :header="partner ? $t('features.managePartners.editHeader') : $t('features.managePartners.newHeader')"
     :style="{ width: '460px' }"
     @update:visible="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__field">
-        <label for="partner-name">Nombre</label>
+        <label for="partner-name">{{ $t('common.name') }}</label>
         <InputText
           id="partner-name"
           v-model="form.name"
@@ -94,12 +94,12 @@ async function save(): Promise<void> {
           fluid
         />
         <small v-if="submitted && !form.name.trim()" class="form__error"
-          >El nombre es obligatorio.</small
+          >{{ $t('features.managePartners.nameRequired') }}</small
         >
       </div>
 
       <div class="form__field">
-        <label for="partner-from">Fecha de alta</label>
+        <label for="partner-from">{{ $t('features.managePartners.fromDate') }}</label>
         <DatePicker
           id="partner-from"
           v-model="form.fromDate"
@@ -109,29 +109,34 @@ async function save(): Promise<void> {
           fluid
         />
         <small v-if="submitted && !form.fromDate" class="form__error"
-          >La fecha de alta es obligatoria.</small
+          >{{ $t('features.managePartners.fromDateRequired') }}</small
         >
       </div>
 
       <div class="form__field">
-        <label for="partner-tier">Nivel (tier)</label>
+        <label for="partner-tier">{{ $t('features.managePartners.tier') }}</label>
         <InputNumber id="partner-tier" v-model="form.tier" :min="0" show-buttons fluid />
       </div>
 
       <div class="form__field">
-        <label for="partner-website">Sitio web</label>
-        <InputText id="partner-website" v-model="form.website" placeholder="https://…" fluid />
+        <label for="partner-website">{{ $t('features.managePartners.website') }}</label>
+        <InputText
+          id="partner-website"
+          v-model="form.website"
+          :placeholder="$t('features.managePartners.urlPlaceholder')"
+          fluid
+        />
       </div>
 
       <div class="form__field">
-        <label>Imagen</label>
+        <label>{{ $t('common.image') }}</label>
         <ThumbnailField
           :existing-thumbnail-id="partner?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
         <small v-if="submitted && missingThumbnail" class="form__error"
-          >La imagen es obligatoria.</small
+          >{{ $t('common.imageRequired') }}</small
         >
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
@@ -139,13 +144,13 @@ async function save(): Promise<void> {
 
     <template #footer>
       <Button
-        label="Cancelar"
+        :label="$t('common.cancel')"
         text
         severity="secondary"
         :disabled="saving || uploading"
         @click="close"
       />
-      <Button label="Guardar" :loading="saving || uploading" @click="save" />
+      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
   </Dialog>
 </template>

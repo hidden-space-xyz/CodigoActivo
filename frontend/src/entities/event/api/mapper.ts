@@ -1,4 +1,5 @@
 import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
+import { i18n } from '@/shared/i18n'
 import { formatDate, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
 
 import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
@@ -35,8 +36,12 @@ export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
     id: event.id ?? '',
     title: event.title ?? '',
     slogan: event.subtitle ?? '',
-    date: event.eventStartsAt ? formatDate(event.eventStartsAt) : 'Próximamente',
-    status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
+    date: event.eventStartsAt
+      ? formatDate(event.eventStartsAt)
+      : i18n.global.t('entities.event.dateFallback'),
+    status: isSignupOpen(event)
+      ? i18n.global.t('entities.event.status.signupOpen')
+      : i18n.global.t('entities.event.status.upcoming'),
     thumbnailId: event.thumbnailId ?? '',
     categories: toCategoryTags(event),
   }
@@ -49,7 +54,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
     ? end
       ? `${formatDate(start)} – ${formatDate(end)}`
       : formatDate(start)
-    : 'Próximamente'
+    : i18n.global.t('entities.event.dateFallback')
   const signupLabel = formatDateTimeRange(event.signupStartsAt, event.signupEndsAt)
   return {
     id: event.id ?? '',
@@ -60,7 +65,9 @@ export function toEventDetail(event: EventResponse): EventDetail {
     endsAt: end ?? null,
     dateLabel,
     signupLabel,
-    status: isSignupOpen(event) ? 'Inscripción abierta' : 'Próximamente',
+    status: isSignupOpen(event)
+      ? i18n.global.t('entities.event.status.signupOpen')
+      : i18n.global.t('entities.event.status.upcoming'),
     thumbnailId: event.thumbnailId ?? '',
     signupOpen: isSignupWindowOpen(event),
     categories: toCategoryTags(event),

@@ -14,7 +14,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
   <div class="featured">
     <div class="featured__grid">
       <div class="featured__body">
-        <span class="featured__badge"> ★ Evento destacado </span>
+        <span class="featured__badge">{{ $t('entities.event.featured.badge') }}</span>
 
         <h2 class="featured__title">{{ event.title }}</h2>
         <div class="featured__slogan">«{{ event.slogan }}»</div>
@@ -30,7 +30,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
 
         <div class="featured__meta">
           <div class="featured__meta-item">
-            <span class="featured__meta-label">Fecha</span>
+            <span class="featured__meta-label">{{ $t('entities.event.featured.dateLabel') }}</span>
             <span class="featured__meta-value">{{ event.date }}</span>
           </div>
         </div>
@@ -40,7 +40,7 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
           variant="light"
           class="featured__cta"
         >
-          Ver detalles →
+          {{ $t('entities.event.featured.viewDetails') }}
         </BaseButton>
       </div>
 

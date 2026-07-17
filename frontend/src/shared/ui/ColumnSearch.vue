@@ -87,8 +87,8 @@ onBeforeUnmount(() => {
       type="button"
       class="column-search__toggle"
       :class="{ 'column-search__toggle--active': active }"
-      :aria-label="`Buscar por ${label}`"
-      :title="`Buscar por ${label}`"
+      :aria-label="$t('table.searchBy', { label })"
+      :title="$t('table.searchBy', { label })"
       @click.stop="toggle"
     >
       <i :class="active ? 'pi pi-filter-fill' : 'pi pi-search'" aria-hidden="true" />
@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
           ref="input"
           v-model="draft"
           :type="inputType"
-          :placeholder="placeholder || `Buscar por ${label}`"
+          :placeholder="placeholder || $t('table.searchBy', { label })"
           fluid
           @input="onInput"
           @keydown.enter="applyNow"
@@ -110,8 +110,8 @@ onBeforeUnmount(() => {
           v-if="draft"
           type="button"
           class="column-search__clear"
-          aria-label="Limpiar búsqueda"
-          title="Limpiar"
+          :aria-label="$t('table.clearSearch')"
+          :title="$t('table.clear')"
           @click="clear"
         >
           <i class="pi pi-times" aria-hidden="true" />

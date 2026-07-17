@@ -143,7 +143,7 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   <div ref="rootEl" class="badges">
     <div class="back-row no-print">
       <RouterLink :to="{ name: 'admin-event-detail', params: { eventId } }" class="back">
-        ← Volver al evento
+        {{ $t('pages.admin.eventBadges.back') }}
       </RouterLink>
     </div>
 
@@ -152,7 +152,7 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
       :loading="report.isLoading.value"
       :error="report.isError.value"
       :empty="badges.length === 0"
-      empty-text="Este evento no tiene asignaciones confirmadas, así que no hay etiquetas que imprimir."
+      :empty-text="$t('pages.admin.eventBadges.emptyText')"
     >
       <span />
     </DataState>
@@ -184,7 +184,7 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
               {{ activity }}
             </li>
             <li v-if="hiddenActivityCount(badge)" class="badge__activity badge__activity--more">
-              +{{ hiddenActivityCount(badge) }} más
+              {{ $t('pages.admin.eventBadges.moreActivities', { n: hiddenActivityCount(badge) }) }}
             </li>
           </ul>
         </div>
@@ -192,7 +192,7 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
         <footer class="badge__footer">
           <span class="badge__type">{{ badge.userTypeName || '—' }}</span>
           <span v-if="badge.guardian" class="badge__guardian">
-            <i class="pi pi-user badge__guardian-icon" aria-label="Responsable" />
+            <i class="pi pi-user badge__guardian-icon" :aria-label="$t('pages.admin.eventBadges.guardianAria')" />
             <span class="badge__guardian-name">{{ guardianName(badge) || '—' }}</span>
             <span v-if="badge.guardian.phone" class="badge__guardian-phone">
               <i class="pi pi-phone badge__phone-icon" /> {{ badge.guardian.phone }}

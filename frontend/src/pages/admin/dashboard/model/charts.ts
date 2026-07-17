@@ -1,5 +1,6 @@
 import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 
+import { i18n } from '@/shared/i18n'
 import { formatBucketLabel, formatNumber, type ChartPalette } from '@/shared/lib'
 import type {
   DashboardSliceResponse,
@@ -17,36 +18,92 @@ type StyleMap = Record<string, SeriesStyle>
 // Categorical hues are assigned per entity in a fixed order (never cycled) so the
 // same key keeps its colour across charts and across a range change.
 export const USER_TYPE_STYLE: StyleMap = {
-  member: { label: 'Socios', color: (p) => p.orange, soft: (p) => p.orangeSoft },
-  sponsor: { label: 'Patrocinadores', color: (p) => p.lime, soft: (p) => p.limeSoft },
-  participant: { label: 'Participantes', color: (p) => p.azure, soft: (p) => p.azureSoft },
+  member: {
+    label: i18n.global.t('pages.admin.dashboard.series.member'),
+    color: (p) => p.orange,
+    soft: (p) => p.orangeSoft,
+  },
+  sponsor: {
+    label: i18n.global.t('pages.admin.dashboard.series.sponsor'),
+    color: (p) => p.lime,
+    soft: (p) => p.limeSoft,
+  },
+  participant: {
+    label: i18n.global.t('pages.admin.dashboard.series.participant'),
+    color: (p) => p.azure,
+    soft: (p) => p.azureSoft,
+  },
 }
 
 // Semantic status colours are reserved; they always ride with a legend label.
 export const INSCRIPTION_STATUS_STYLE: StyleMap = {
-  confirmed: { label: 'Confirmadas', color: (p) => p.success, soft: (p) => p.successSoft },
-  requested: { label: 'Solicitadas', color: (p) => p.warning, soft: (p) => p.warningSoft },
-  denied: { label: 'Rechazadas', color: (p) => p.danger, soft: (p) => p.dangerSoft },
+  confirmed: {
+    label: i18n.global.t('pages.admin.dashboard.series.confirmed'),
+    color: (p) => p.success,
+    soft: (p) => p.successSoft,
+  },
+  requested: {
+    label: i18n.global.t('pages.admin.dashboard.series.requested'),
+    color: (p) => p.warning,
+    soft: (p) => p.warningSoft,
+  },
+  denied: {
+    label: i18n.global.t('pages.admin.dashboard.series.denied'),
+    color: (p) => p.danger,
+    soft: (p) => p.dangerSoft,
+  },
 }
 
 export const AUDIENCE_STYLE: StyleMap = {
-  adults: { label: 'Adultos', color: (p) => p.azure, soft: (p) => p.azureSoft },
-  minors: { label: 'Menores', color: (p) => p.lime, soft: (p) => p.limeSoft },
+  adults: {
+    label: i18n.global.t('pages.admin.dashboard.series.adults'),
+    color: (p) => p.azure,
+    soft: (p) => p.azureSoft,
+  },
+  minors: {
+    label: i18n.global.t('pages.admin.dashboard.series.minors'),
+    color: (p) => p.lime,
+    soft: (p) => p.limeSoft,
+  },
 }
 
 export const RESOURCE_TYPE_STYLE: StyleMap = {
-  internal: { label: 'Internos', color: (p) => p.azure, soft: (p) => p.azureSoft },
-  external: { label: 'Externos', color: (p) => p.orange, soft: (p) => p.orangeSoft },
+  internal: {
+    label: i18n.global.t('pages.admin.dashboard.series.internal'),
+    color: (p) => p.azure,
+    soft: (p) => p.azureSoft,
+  },
+  external: {
+    label: i18n.global.t('pages.admin.dashboard.series.external'),
+    color: (p) => p.orange,
+    soft: (p) => p.orangeSoft,
+  },
 }
 
 export const CONTENT_STYLE: StyleMap = {
-  announcements: { label: 'Anuncios', color: (p) => p.orange, soft: (p) => p.orangeSoft },
-  resources: { label: 'Recursos', color: (p) => p.azure, soft: (p) => p.azureSoft },
+  announcements: {
+    label: i18n.global.t('pages.admin.dashboard.series.announcements'),
+    color: (p) => p.orange,
+    soft: (p) => p.orangeSoft,
+  },
+  resources: {
+    label: i18n.global.t('pages.admin.dashboard.series.resources'),
+    color: (p) => p.azure,
+    soft: (p) => p.azureSoft,
+  },
 }
 
 export const CALENDAR_STYLE: StyleMap = {
-  past: { label: 'Pasados', color: (p) => p.azure, soft: (p) => p.azureSoft },
-  upcoming: { label: 'Próximos', color: (p) => p.orange, soft: (p) => p.orangeSoft },
+  past: {
+    label: i18n.global.t('pages.admin.dashboard.series.past'),
+    color: (p) => p.azure,
+    soft: (p) => p.azureSoft,
+  },
+  upcoming: {
+    label: i18n.global.t('pages.admin.dashboard.series.upcoming'),
+    color: (p) => p.orange,
+    soft: (p) => p.orangeSoft,
+  },
 }
 
 function axisLabels(
@@ -177,7 +234,7 @@ export function rankingBarData(
     labels,
     datasets: [
       {
-        label: 'Inscripciones confirmadas',
+        label: i18n.global.t('pages.admin.dashboard.series.confirmedDataset'),
         data: values,
         backgroundColor: color,
         borderColor: palette.surface,
@@ -291,7 +348,10 @@ export function rankingOptions(palette: ChartPalette, fullLabels: string[]): Cha
         ...tooltipBox(palette),
         callbacks: {
           title: (items: TooltipItem<'bar'>[]) => fullLabels[items[0]?.dataIndex ?? 0] ?? '',
-          label: (item: TooltipItem<'bar'>) => ` ${formatNumber(item.parsed.x)} confirmadas`,
+          label: (item: TooltipItem<'bar'>) =>
+            i18n.global.t('pages.admin.dashboard.tooltip.ranking', {
+              n: formatNumber(item.parsed.x),
+            }),
         },
       },
     },
@@ -321,7 +381,11 @@ export function doughnutOptions(palette: ChartPalette): ChartOptions<'doughnut'>
             )
             const value = item.parsed
             const percent = total > 0 ? Math.round((value / total) * 100) : 0
-            return ` ${item.label}: ${formatNumber(value)} (${percent}%)`
+            return i18n.global.t('pages.admin.dashboard.tooltip.slice', {
+              label: item.label,
+              n: formatNumber(value),
+              p: percent,
+            })
           },
         },
       },

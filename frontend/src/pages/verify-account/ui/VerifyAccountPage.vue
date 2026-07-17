@@ -23,8 +23,8 @@ onMounted(() => {
     <section class="verify-head">
       <div class="verify-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow verify-head__inner">
-        <SectionEyebrow text="// verificación" color="var(--ca-orange-ink)" />
-        <h1 class="verify-head__title">Verifica tu cuenta</h1>
+        <SectionEyebrow :text="$t('pages.verifyAccount.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="verify-head__title">{{ $t('pages.verifyAccount.title') }}</h1>
       </div>
     </section>
 
@@ -33,32 +33,32 @@ onMounted(() => {
         <div class="verify-card" :class="`verify-card--${state}`">
           <template v-if="state === 'verifying'">
             <i class="pi pi-spin pi-spinner verify-card__icon" aria-hidden="true" />
-            <p class="verify-card__text" aria-live="polite">Estamos verificando tu cuenta…</p>
+            <p class="verify-card__text" aria-live="polite">{{ $t('pages.verifyAccount.verifying') }}</p>
           </template>
 
           <template v-else-if="state === 'success'">
             <div class="verify-card__icon verify-card__icon--ok" aria-hidden="true">✓</div>
-            <h2 class="verify-card__title">¡Cuenta verificada!</h2>
+            <h2 class="verify-card__title">{{ $t('pages.verifyAccount.successTitle') }}</h2>
             <p class="verify-card__text">
-              Tu cuenta ha sido activada correctamente. Ya puedes iniciar sesión.
+              {{ $t('pages.verifyAccount.successText') }}
             </p>
-            <BaseButton :to="{ name: 'login' }" variant="primary">Iniciar sesión</BaseButton>
+            <BaseButton :to="{ name: 'login' }" variant="primary">{{ $t('common.login') }}</BaseButton>
           </template>
 
           <template v-else>
             <div class="verify-card__icon verify-card__icon--error" aria-hidden="true">!</div>
-            <h2 class="verify-card__title">No hemos podido verificar tu cuenta</h2>
+            <h2 class="verify-card__title">{{ $t('pages.verifyAccount.errorTitle') }}</h2>
             <p class="verify-card__text" role="alert">
-              {{ errorMessage ?? 'El enlace de verificación no es válido o ha caducado.' }}
+              {{ errorMessage ?? $t('pages.verifyAccount.defaultError') }}
             </p>
             <p class="verify-card__hint">
-              Si el enlace ha caducado, pídenos un enlace nuevo y te lo enviaremos por correo.
+              {{ $t('pages.verifyAccount.hint') }}
             </p>
             <div class="verify-card__actions">
               <BaseButton v-if="canResend" variant="primary" :loading="isResending" @click="resend">
-                Enviarme un enlace nuevo
+                {{ $t('pages.verifyAccount.resend') }}
               </BaseButton>
-              <BaseButton :to="{ name: 'home' }" variant="ghost">Volver al inicio</BaseButton>
+              <BaseButton :to="{ name: 'home' }" variant="ghost">{{ $t('common.backToHome') }}</BaseButton>
             </div>
           </template>
         </div>

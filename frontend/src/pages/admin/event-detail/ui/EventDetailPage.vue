@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
@@ -30,6 +31,7 @@ import { formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const eventId = computed(() => String(route.params.eventId))
 
 const feedback = useCrudFeedback()
@@ -45,7 +47,9 @@ const roleTypes = useActivityRoleTypesList()
 
 const summaryCards = computed(() => {
   const data = summary.data.value
-  const cards = [{ label: 'Actividades', value: data?.activitiesCount ?? 0 }]
+  const cards = [
+    { label: t('pages.admin.eventDetail.tabs.activities'), value: data?.activitiesCount ?? 0 },
+  ]
   for (const role of data?.roleTypeBreakdown ?? []) {
     cards.push({ label: role.roleTypeName ?? '—', value: role.approvedAssignments ?? 0 })
   }
@@ -98,7 +102,7 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
       { id: selectedActivity.value.id, body: body as UpdateActivityRequest },
       {
         onSuccess: () => {
-          feedback.success('Actividad actualizada.')
+          feedback.success(t('pages.admin.eventDetail.toast.activityUpdated'))
           activityDialogVisible.value = false
         },
         onError: (error) => feedback.error(error),
@@ -108,7 +112,7 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
   }
   activities.create.mutate(body as CreateActivityRequest, {
     onSuccess: () => {
-      feedback.success('Actividad creada.')
+      feedback.success(t('pages.admin.eventDetail.toast.activityCreated'))
       activityDialogVisible.value = false
     },
     onError: (error) => feedback.error(error),
@@ -117,12 +121,12 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
 
 function confirmDeleteActivity(activity: ActivityResponse): void {
   requireDelete({
-    header: 'Eliminar actividad',
-    message: `¿Seguro que quieres eliminar "${activity.title}"?`,
+    header: t('pages.admin.eventDetail.deleteConfirm.header'),
+    message: t('pages.admin.eventDetail.deleteConfirm.message', { title: activity.title }),
     accept: () => {
       if (!activity.id) return
       activities.remove.mutate(activity.id, {
-        onSuccess: () => feedback.success('Actividad eliminada.'),
+        onSuccess: () => feedback.success(t('pages.admin.eventDetail.toast.activityDeleted')),
         onError: (error) => feedback.error(error),
       })
     },
@@ -132,27 +136,29 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 <template>
   <div>
-    <RouterLink :to="{ name: 'admin-events' }" class="back">← Volver a eventos</RouterLink>
+    <RouterLink :to="{ name: 'admin-events' }" class="back">{{
+      $t('pages.admin.eventDetail.back')
+    }}</RouterLink>
 
     <AdminPageHeader
-      :title="event.data.value?.title ?? 'Evento'"
+      :title="event.data.value?.title ?? $t('pages.admin.eventDetail.headerFallback')"
       :subtitle="event.data.value?.subtitle ?? ''"
     >
       <template #actions>
         <Button
-          label="Nueva actividad"
+          :label="$t('pages.admin.eventDetail.newActivity')"
           icon="pi pi-plus"
           severity="secondary"
           @click="openCreateActivity"
         />
         <Button
-          label="Imprimir etiquetas"
+          :label="$t('pages.admin.eventDetail.printBadges')"
           icon="pi pi-print"
           severity="secondary"
           @click="openBadges"
         />
         <Button
-          label="Imprimir listados"
+          :label="$t('pages.admin.eventDetail.printRoster')"
           icon="pi pi-list"
           severity="secondary"
           @click="openRoster"
@@ -169,8 +175,8 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
     <Tabs v-model:value="activeTab" class="tabs">
       <TabList>
-        <Tab value="activities">Actividades</Tab>
-        <Tab value="attendees">Asistentes</Tab>
+        <Tab value="activities">{{ $t('pages.admin.eventDetail.tabs.activities') }}</Tab>
+        <Tab value="attendees">{{ $t('pages.admin.eventDetail.tabs.attendees') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="activities">
@@ -193,12 +199,12 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
           >
             <template #empty>
               <span v-if="activities.table.isError.value">
-                No se pudieron cargar las actividades.
+                {{ $t('pages.admin.eventDetail.empty.error') }}
               </span>
-              <span v-else>Este evento aún no tiene actividades.</span>
+              <span v-else>{{ $t('pages.admin.eventDetail.empty.none') }}</span>
             </template>
 
-            <Column header="Imagen" style="width: 110px">
+            <Column :header="$t('common.image')" style="width: 110px">
               <template #body="{ data }">
                 <ListThumbnail
                   :thumbnail-id="data.thumbnailId"
@@ -211,8 +217,8 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               <template #header>
                 <ColumnSearch
                   v-model="activities.table.columnFilter('title').value"
-                  label="Título"
-                  placeholder="Buscar título"
+                  :label="$t('pages.admin.eventDetail.columns.title')"
+                  :placeholder="$t('pages.admin.eventDetail.columns.searchTitle')"
                   @apply="activities.table.onFilter"
                 />
               </template>
@@ -221,7 +227,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               <template #header>
                 <ColumnFilterDate
                   v-model="activities.table.columnFilter('activityDate').value"
-                  label="Horario"
+                  :label="$t('pages.admin.eventDetail.columns.schedule')"
                   @apply="activities.table.onFilter"
                 />
               </template>
@@ -233,7 +239,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               <template #header>
                 <ColumnFilterSelect
                   :model-value="activities.modalityTypeId.value"
-                  label="Modalidad"
+                  :label="$t('pages.admin.eventDetail.columns.modality')"
                   :options="modalityOptions"
                   @update:model-value="onModalityFilter"
                 />
@@ -245,14 +251,14 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
                 </div>
               </template>
             </Column>
-            <Column header="Acciones" style="width: 120px">
+            <Column :header="$t('common.actions')" style="width: 120px">
               <template #body="{ data }">
                 <div class="row-actions">
                   <Button
                     icon="pi pi-pencil"
                     text
                     rounded
-                    aria-label="Editar"
+                    :aria-label="$t('common.edit')"
                     @click="openEditActivity(data)"
                   />
                   <Button
@@ -260,7 +266,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
                     text
                     rounded
                     severity="danger"
-                    aria-label="Eliminar"
+                    :aria-label="$t('common.delete')"
                     @click="confirmDeleteActivity(data)"
                   />
                 </div>

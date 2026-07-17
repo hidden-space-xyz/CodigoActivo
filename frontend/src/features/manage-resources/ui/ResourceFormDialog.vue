@@ -128,14 +128,14 @@ async function save(): Promise<void> {
   <Dialog
     :visible="visible"
     modal
-    :header="resource ? 'Editar recurso' : 'Nuevo recurso'"
+    :header="resource ? $t('features.manageResources.editHeader') : $t('features.manageResources.newHeader')"
     :style="{ width: '94vw', maxWidth: '920px' }"
     :content-style="{ maxHeight: '78vh' }"
     @update:visible="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__field">
-        <label>Título</label>
+        <label>{{ $t('features.manageResources.title') }}</label>
         <InputText
           v-model="form.title"
           :maxlength="200"
@@ -144,7 +144,7 @@ async function save(): Promise<void> {
         />
       </div>
       <div class="form__field">
-        <label>Subtítulo</label>
+        <label>{{ $t('features.manageResources.subtitle') }}</label>
         <InputText
           v-model="form.subtitle"
           :maxlength="300"
@@ -153,57 +153,56 @@ async function save(): Promise<void> {
         />
       </div>
       <div class="form__field">
-        <label>Tipo</label>
+        <label>{{ $t('features.manageResources.type') }}</label>
         <Select
           v-model="form.resourceTypeId"
           :options="typeOptions"
           option-label="name"
           option-value="id"
-          placeholder="Selecciona un tipo"
+          :placeholder="$t('features.manageResources.typePlaceholder')"
           :loading="typesQuery.isLoading.value"
           :invalid="submitted && typeMissing"
           fluid
         />
-        <small v-if="typesQuery.isError.value" class="form__error"
-          >No se pudieron cargar los tipos de recurso. Cierra el diálogo y vuelve a
-          intentarlo.</small
-        >
+        <small v-if="typesQuery.isError.value" class="form__error">{{
+          $t('features.manageResources.typesLoadError')
+        }}</small>
         <small v-else-if="submitted && typeMissing" class="form__error"
-          >Selecciona el tipo de recurso.</small
+          >{{ $t('features.manageResources.typeRequired') }}</small
         >
       </div>
       <div v-if="selectedType && !isExternal" class="form__field">
-        <label>Descripción</label>
+        <label>{{ $t('features.manageResources.description') }}</label>
         <RichTextEditor v-model="form.description" />
         <small v-if="submitted && descriptionMissing" class="form__error"
-          >La descripción es obligatoria en los recursos internos.</small
+          >{{ $t('features.manageResources.descriptionRequired') }}</small
         >
       </div>
       <div v-if="isExternal" class="form__field">
-        <label>Enlace</label>
+        <label>{{ $t('features.manageResources.url') }}</label>
         <InputText
           v-model="form.url"
           :maxlength="500"
-          placeholder="https://…"
+          :placeholder="$t('features.manageResources.urlPlaceholder')"
           :invalid="submitted && (urlMissing || urlInvalid)"
           fluid
         />
         <small v-if="submitted && urlMissing" class="form__error"
-          >El enlace es obligatorio en los recursos externos.</small
+          >{{ $t('features.manageResources.urlRequired') }}</small
         >
         <small v-else-if="submitted && urlInvalid" class="form__error"
-          >El enlace debe ser una URL válida que empiece por http:// o https://.</small
+          >{{ $t('features.manageResources.urlInvalid') }}</small
         >
       </div>
       <div class="form__field">
-        <label>Imagen</label>
+        <label>{{ $t('common.image') }}</label>
         <ThumbnailField
           :existing-thumbnail-id="resource?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
         <small v-if="submitted && missingThumbnail" class="form__error"
-          >La imagen es obligatoria.</small
+          >{{ $t('common.imageRequired') }}</small
         >
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
@@ -211,13 +210,13 @@ async function save(): Promise<void> {
 
     <template #footer>
       <Button
-        label="Cancelar"
+        :label="$t('common.cancel')"
         text
         severity="secondary"
         :disabled="saving || uploading"
         @click="close"
       />
-      <Button label="Guardar" :loading="saving || uploading" @click="save" />
+      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
   </Dialog>
 </template>

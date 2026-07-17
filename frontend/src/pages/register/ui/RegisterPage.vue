@@ -34,10 +34,10 @@ const {
     <section class="register-head">
       <div class="register-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow register-head__inner">
-        <SectionEyebrow text="// regístrate" color="var(--ca-orange-ink)" />
-        <h1 class="register-head__title">Únete a Código Activo</h1>
+        <SectionEyebrow :text="$t('pages.register.eyebrow')" color="var(--ca-orange-ink)" />
+        <h1 class="register-head__title">{{ $t('pages.register.title') }}</h1>
         <p class="register-head__intro">
-          Regístrate y, si tienes menores a tu cargo, inscríbelos a todos en un solo paso.
+          {{ $t('pages.register.intro') }}
         </p>
       </div>
     </section>

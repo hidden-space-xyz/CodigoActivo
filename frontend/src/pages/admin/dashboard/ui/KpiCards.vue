@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { formatNumber, formatSignedPercent } from '@/shared/lib'
 import type { DashboardKpiResponse } from '@/shared/api/generated/models'
+
+const { t } = useI18n()
 
 const props = defineProps<{ kpis: DashboardKpiResponse[] }>()
 
@@ -14,17 +17,42 @@ interface TileMeta {
 }
 
 const TILES: readonly TileMeta[] = [
-  { key: 'users', label: 'Usuarios', icon: 'pi pi-users', color: 'var(--ca-azure)' },
-  { key: 'members', label: 'Socios', icon: 'pi pi-id-card', color: 'var(--ca-orange)' },
+  {
+    key: 'users',
+    label: t('pages.admin.dashboard.kpi.users'),
+    icon: 'pi pi-users',
+    color: 'var(--ca-azure)',
+  },
+  {
+    key: 'members',
+    label: t('pages.admin.dashboard.kpi.members'),
+    icon: 'pi pi-id-card',
+    color: 'var(--ca-orange)',
+  },
   {
     key: 'inscriptions',
-    label: 'Inscripciones',
+    label: t('pages.admin.dashboard.kpi.inscriptions'),
     icon: 'pi pi-check-square',
     color: 'var(--ca-lime)',
   },
-  { key: 'events', label: 'Eventos', icon: 'pi pi-calendar', color: 'var(--ca-orange)' },
-  { key: 'resources', label: 'Recursos', icon: 'pi pi-book', color: 'var(--ca-azure)' },
-  { key: 'announcements', label: 'Anuncios', icon: 'pi pi-megaphone', color: 'var(--ca-lime)' },
+  {
+    key: 'events',
+    label: t('pages.admin.dashboard.kpi.events'),
+    icon: 'pi pi-calendar',
+    color: 'var(--ca-orange)',
+  },
+  {
+    key: 'resources',
+    label: t('pages.admin.dashboard.kpi.resources'),
+    icon: 'pi pi-book',
+    color: 'var(--ca-azure)',
+  },
+  {
+    key: 'announcements',
+    label: t('pages.admin.dashboard.kpi.announcements'),
+    icon: 'pi pi-megaphone',
+    color: 'var(--ca-lime)',
+  },
 ]
 
 const tiles = computed(() => {
@@ -71,7 +99,11 @@ const tiles = computed(() => {
       <div class="kpi-card__value">{{ formatNumber(tile.total) }}</div>
       <div class="kpi-card__label">{{ tile.label }}</div>
       <div class="kpi-card__foot">
-        {{ tile.inRange > 0 ? `+${formatNumber(tile.inRange)} en el periodo` : 'Sin altas nuevas' }}
+        {{
+          tile.inRange > 0
+            ? $t('pages.admin.dashboard.kpi.inRange', { n: formatNumber(tile.inRange) })
+            : $t('pages.admin.dashboard.kpi.noNew')
+        }}
       </div>
     </article>
   </div>
