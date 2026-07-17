@@ -21,5 +21,7 @@ export function toAnnouncement(response: AnnouncementResponse): Announcement {
   return {
     ...toAnnouncementSummary(response),
     description: response.description ?? '',
+    publishedAt: response.createdAt ?? null,
+    updatedAt: response.updatedAt ?? null,
   }
 }

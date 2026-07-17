@@ -3,7 +3,13 @@ import { computed, watchEffect } from 'vue'
 
 import { useResourceDetail } from '@/entities/resource'
 import { BaseButton, RichTextContent } from '@/shared/ui'
-import { fileContentUrl, isRichTextEmpty } from '@/shared/lib'
+import {
+  fileContentUrl,
+  isRichTextEmpty,
+  richTextExcerpt,
+  useSeo,
+  type SeoData,
+} from '@/shared/lib'
 
 const props = defineProps<{ resourceId: string }>()
 
@@ -11,6 +17,22 @@ const { resource, isLoading, notFound } = useResourceDetail(() => props.resource
 
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
+
+const seo = computed<SeoData | undefined>(() => {
+  if (notFound.value) return { title: 'Recurso no encontrado', noindex: true }
+  const current = resource.value
+  if (!current) return undefined
+  if (current.url) return { title: current.title, noindex: true }
+  const description = richTextExcerpt(current.description) || current.subtitle
+  return {
+    title: current.title,
+    description: description || undefined,
+    image: posterUrl.value || undefined,
+    type: 'article',
+  }
+})
+
+useSeo(seo)
 
 watchEffect(() => {
   const url = resource.value?.url

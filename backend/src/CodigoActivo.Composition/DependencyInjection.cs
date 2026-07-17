@@ -292,5 +292,6 @@ public static class DependencyInjection
         services.AddScoped<IPartnerService, PartnerService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<ISitemapService, SitemapService>();
     }
 }

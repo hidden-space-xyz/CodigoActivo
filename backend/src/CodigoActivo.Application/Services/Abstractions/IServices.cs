@@ -348,3 +348,10 @@ public interface IReportService
         CancellationToken ct = default
     );
 }
+
+public interface ISitemapService
+{
+    Task<string> GetSitemapXmlAsync(CancellationToken ct = default);
+
+    string GetRobotsTxt();
+}

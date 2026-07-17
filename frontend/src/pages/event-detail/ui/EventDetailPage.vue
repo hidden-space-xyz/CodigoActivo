@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useEventDetail } from '@/entities/event'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
 import { BaseButton, ColorTag, RichTextContent } from '@/shared/ui'
-import { fileContentUrl, isRichTextEmpty } from '@/shared/lib'
+import {
+  absoluteUrl,
+  fileContentUrl,
+  isRichTextEmpty,
+  richTextExcerpt,
+  useSeo,
+  type SeoData,
+} from '@/shared/lib'
 
 const props = defineProps<{ eventId: string }>()
 
+const route = useRoute()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 
 const tab = ref<'info' | 'activities'>('info')
@@ -25,6 +34,46 @@ const infoRows = computed(() =>
 )
 
 const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
+
+const seo = computed<SeoData | undefined>(() => {
+  if (notFound.value) return { title: 'Evento no encontrado', noindex: true }
+  const current = event.value
+  if (!current) return undefined
+  const description = richTextExcerpt(current.description) || current.subtitle
+  const jsonLd: Record<string, unknown> | undefined = current.startsAt
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Event',
+        name: current.title,
+        url: absoluteUrl(route.path),
+        startDate: current.startsAt,
+        organizer: { '@type': 'Organization', name: 'Código Activo' },
+        location: {
+          '@type': 'Place',
+          name: 'Código Activo',
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: 'León',
+            addressCountry: 'ES',
+          },
+        },
+      }
+    : undefined
+  if (jsonLd) {
+    if (description) jsonLd.description = description
+    if (posterUrl.value) jsonLd.image = absoluteUrl(posterUrl.value)
+    if (current.endsAt) jsonLd.endDate = current.endsAt
+  }
+  return {
+    title: current.title,
+    description: description || undefined,
+    image: posterUrl.value || undefined,
+    type: 'article',
+    jsonLd,
+  }
+})
+
+useSeo(seo)
 </script>
 
 <template>

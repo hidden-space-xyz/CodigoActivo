@@ -22,6 +22,18 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/sitemap.xml': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+          rewrite: () => '/api/sitemap.xml',
+        },
+        '/robots.txt': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+          rewrite: () => '/api/robots.txt',
+        },
       },
     },
   }

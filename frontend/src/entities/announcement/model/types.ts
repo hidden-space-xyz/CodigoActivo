@@ -9,6 +9,8 @@ export interface AnnouncementSummary {
 
 export interface Announcement extends AnnouncementSummary {
   readonly description: string
+  readonly publishedAt: string | null
+  readonly updatedAt: string | null
 }
 
 export interface HomeAnnouncements {

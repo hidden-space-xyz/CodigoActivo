@@ -1,6 +1,14 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
 import { redirectIfAuthenticated, requireAdmin, requireAuth } from '@/features/auth'
+import type { SeoRouteMeta } from '@/shared/lib'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    layout?: 'admin' | 'blank' | undefined
+    seo?: SeoRouteMeta | undefined
+  }
+}
 
 function adminRoute(
   path: string,
@@ -22,11 +30,25 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/about',
     name: 'about',
     component: () => import('@/pages/about').then((m) => m.AboutPage),
+    meta: {
+      seo: {
+        title: 'Quiénes somos',
+        description:
+          'Conoce Código Activo: quiénes somos, nuestros valores y qué hacemos para acercar la programación a tod@s en León desde 2018.',
+      },
+    },
   },
   {
     path: '/events',
     name: 'events',
     component: () => import('@/pages/events').then((m) => m.EventsPage),
+    meta: {
+      seo: {
+        title: 'Eventos',
+        description:
+          'Próximos talleres, encuentros y actividades de programación de Código Activo en León, y el archivo de ediciones pasadas.',
+      },
+    },
   },
   {
     path: '/events/:eventId',
@@ -38,6 +60,13 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/resources',
     name: 'resources',
     component: () => import('@/pages/resources').then((m) => m.ResourcesPage),
+    meta: {
+      seo: {
+        title: 'Recursos',
+        description:
+          'Material de nuestros talleres de programación: recursos abiertos y gratuitos de Código Activo.',
+      },
+    },
   },
   {
     path: '/resources/:resourceId',
@@ -49,6 +78,12 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/announcements',
     name: 'announcements',
     component: () => import('@/pages/announcements').then((m) => m.AnnouncementsPage),
+    meta: {
+      seo: {
+        title: 'Anuncios',
+        description: 'Novedades y comunicaciones de la comunidad de Código Activo.',
+      },
+    },
   },
   {
     path: '/announcements/:announcementId',
@@ -61,34 +96,46 @@ export const routes: readonly RouteRecordRaw[] = [
     name: 'register',
     component: () => import('@/pages/register').then((m) => m.RegisterPage),
     beforeEnter: () => redirectIfAuthenticated(),
+    meta: {
+      seo: {
+        title: 'Hazte socio',
+        description:
+          'Hazte socio de Código Activo y participa en nuestros talleres y eventos de programación para tod@s.',
+      },
+    },
   },
   {
     path: '/login',
     name: 'login',
     component: () => import('@/pages/login').then((m) => m.LoginPage),
     beforeEnter: () => redirectIfAuthenticated(),
+    meta: { seo: { title: 'Iniciar sesión', noindex: true } },
   },
   {
     path: '/verify-account',
     name: 'verify-account',
     component: () => import('@/pages/verify-account').then((m) => m.VerifyAccountPage),
+    meta: { seo: { title: 'Verificar cuenta', noindex: true } },
   },
   {
     path: '/forgot-password',
     name: 'forgot-password',
     component: () => import('@/pages/forgot-password').then((m) => m.ForgotPasswordPage),
     beforeEnter: () => redirectIfAuthenticated(),
+    meta: { seo: { title: 'Recuperar contraseña', noindex: true } },
   },
   {
     path: '/reset-password',
     name: 'reset-password',
     component: () => import('@/pages/reset-password').then((m) => m.ResetPasswordPage),
+    meta: { seo: { title: 'Restablecer contraseña', noindex: true } },
   },
   {
     path: '/account',
     name: 'account',
     component: () => import('@/pages/account').then((m) => m.AccountPage),
     beforeEnter: (to: RouteLocationNormalized) => requireAuth(to),
+    meta: { seo: { title: 'Mi cuenta', noindex: true } },
   },
   { path: '/admin', redirect: { name: 'admin-dashboard' } },
   adminRoute('/admin/dashboard', 'admin-dashboard', () =>
@@ -106,14 +153,14 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/admin/events/:eventId/badges',
     name: 'admin-event-badges',
     component: () => import('@/pages/admin/event-badges').then((m) => m.EventBadgesPage),
-    meta: { layout: 'blank' },
+    meta: { layout: 'blank', seo: { title: 'Acreditaciones', noindex: true } },
     beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
   },
   {
     path: '/admin/events/:eventId/roster',
     name: 'admin-event-roster',
     component: () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
-    meta: { layout: 'blank' },
+    meta: { layout: 'blank', seo: { title: 'Listado de asistentes', noindex: true } },
     beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
   },
   adminRoute('/admin/announcements', 'admin-announcements', () =>
@@ -134,6 +181,7 @@ export const routes: readonly RouteRecordRaw[] = [
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
-    redirect: { name: 'home' },
+    component: () => import('@/pages/not-found').then((m) => m.NotFoundPage),
+    meta: { seo: { title: 'Página no encontrada', noindex: true } },
   },
 ]

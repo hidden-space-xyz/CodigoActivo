@@ -117,6 +117,14 @@ try
     {
         foreach (var tag in CacheTags.OutputCached)
             options.AddPolicy(tag, policy => policy.Expire(outputCacheLifetime).Tag(tag));
+
+        options.AddPolicy(
+            OutputCachePolicies.Seo,
+            policy =>
+                policy
+                    .Expire(outputCacheLifetime)
+                    .Tag(CacheTags.Events, CacheTags.Announcements, CacheTags.Resources)
+        );
     });
     builder.Services.AddSingleton<ICacheInvalidator, HttpCacheInvalidator>();
 
