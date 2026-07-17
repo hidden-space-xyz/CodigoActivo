@@ -342,4 +342,9 @@ public interface IReportService
     );
 
     Task<DashboardSummaryResponse> GetDashboardSummaryAsync(CancellationToken ct = default);
+
+    Task<DashboardAnalyticsResponse> GetDashboardAnalyticsAsync(
+        DashboardAnalyticsQuery query,
+        CancellationToken ct = default
+    );
 }

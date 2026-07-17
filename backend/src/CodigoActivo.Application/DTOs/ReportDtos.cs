@@ -111,3 +111,55 @@ public record DashboardSummaryResponse(
     int Partners,
     int Users
 );
+
+public record DashboardKpiResponse(string Key, int Total, int InRange, int PreviousRange);
+
+public record DashboardSeriesResponse(string Key, IReadOnlyList<int> Values);
+
+public record DashboardTimeSeriesResponse(
+    IReadOnlyList<DateOnly> Buckets,
+    IReadOnlyList<DashboardSeriesResponse> Series
+);
+
+public record DashboardSliceResponse(string Key, string? Label, string? Color, int Count);
+
+public record DashboardTopEventResponse(Guid EventId, string Title, int Confirmed);
+
+public record DashboardOccupancyActivityResponse(
+    Guid ActivityId,
+    string Title,
+    DateTimeOffset StartsAt,
+    int Confirmed,
+    int Desired
+);
+
+public record DashboardOccupancyEventResponse(
+    Guid EventId,
+    string Title,
+    int Confirmed,
+    int Desired,
+    IReadOnlyList<DashboardOccupancyActivityResponse> Activities
+);
+
+public record DashboardOccupancyResponse(
+    int Confirmed,
+    int Desired,
+    IReadOnlyList<DashboardOccupancyEventResponse> Events
+);
+
+public record DashboardAnalyticsResponse(
+    DateOnly RangeStart,
+    DateOnly RangeEnd,
+    string Granularity,
+    IReadOnlyList<DashboardKpiResponse> Kpis,
+    DashboardTimeSeriesResponse UserGrowth,
+    DashboardTimeSeriesResponse Inscriptions,
+    DashboardTimeSeriesResponse ContentPublished,
+    IReadOnlyList<DashboardSliceResponse> UsersByType,
+    IReadOnlyList<DashboardSliceResponse> AudienceComposition,
+    IReadOnlyList<DashboardSliceResponse> ResourcesByType,
+    IReadOnlyList<DashboardSliceResponse> EventsByCategory,
+    IReadOnlyList<DashboardTopEventResponse> TopEvents,
+    DashboardTimeSeriesResponse EventsCalendar,
+    DashboardOccupancyResponse Occupancy
+);

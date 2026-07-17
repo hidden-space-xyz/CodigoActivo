@@ -2098,6 +2098,43 @@
         }
       }
     },
+    "/api/reports/dashboard/analytics": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardAnalyticsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/resources": {
       "get": {
         "tags": [
@@ -3397,6 +3434,219 @@
         },
         "additionalProperties": false
       },
+      "DashboardAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "rangeStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "rangeEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "granularity": {
+            "type": "string",
+            "nullable": true
+          },
+          "kpis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardKpiResponse"
+            },
+            "nullable": true
+          },
+          "userGrowth": {
+            "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
+          },
+          "inscriptions": {
+            "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
+          },
+          "contentPublished": {
+            "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
+          },
+          "usersByType": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSliceResponse"
+            },
+            "nullable": true
+          },
+          "audienceComposition": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSliceResponse"
+            },
+            "nullable": true
+          },
+          "resourcesByType": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSliceResponse"
+            },
+            "nullable": true
+          },
+          "eventsByCategory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSliceResponse"
+            },
+            "nullable": true
+          },
+          "topEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardTopEventResponse"
+            },
+            "nullable": true
+          },
+          "eventsCalendar": {
+            "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/DashboardOccupancyResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardKpiResponse": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inRange": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previousRange": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardOccupancyActivityResponse": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desired": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardOccupancyEventResponse": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desired": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardOccupancyActivityResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardOccupancyResponse": {
+        "type": "object",
+        "properties": {
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desired": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardOccupancyEventResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardSeriesResponse": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardSliceResponse": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "DashboardSummaryResponse": {
         "type": "object",
         "properties": {
@@ -3421,6 +3671,45 @@
             "format": "int32"
           },
           "users": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardTimeSeriesResponse": {
+        "type": "object",
+        "properties": {
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "nullable": true
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSeriesResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardTopEventResponse": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmed": {
             "type": "integer",
             "format": "int32"
           }

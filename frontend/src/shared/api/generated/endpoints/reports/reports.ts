@@ -15,11 +15,13 @@ import type {
 } from '@tanstack/vue-query';
 
 import type {
+  DashboardAnalyticsResponse,
   DashboardSummaryResponse,
   EventAttendeeResponsePagedResult,
   EventBadgesResponse,
   EventRosterResponse,
   EventSummaryResponse,
+  GetApiReportsDashboardAnalyticsParams,
   GetApiReportsEventsEventIdAttendeesParams
 } from '../../models';
 
@@ -418,4 +420,87 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiReportsDashboardMutationOptions(options), queryClient);
+    }
+    export type getApiReportsDashboardAnalyticsResponse200 = {
+  data: DashboardAnalyticsResponse
+  status: 200
+}
+
+export type getApiReportsDashboardAnalyticsResponseSuccess = (getApiReportsDashboardAnalyticsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiReportsDashboardAnalyticsResponse = (getApiReportsDashboardAnalyticsResponseSuccess)
+
+export const getGetApiReportsDashboardAnalyticsUrl = (params?: GetApiReportsDashboardAnalyticsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/dashboard/analytics?${stringifiedParams}` : `/api/reports/dashboard/analytics`
+}
+
+export const getApiReportsDashboardAnalytics = async (params?: GetApiReportsDashboardAnalyticsParams, options?: RequestInit): Promise<getApiReportsDashboardAnalyticsResponse> => {
+
+  return httpClient<getApiReportsDashboardAnalyticsResponse>(getGetApiReportsDashboardAnalyticsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiReportsDashboardAnalyticsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, TError,{params?: GetApiReportsDashboardAnalyticsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, TError,{params?: GetApiReportsDashboardAnalyticsParams}, TContext> => {
+
+const mutationKey = ['getApiReportsDashboardAnalytics'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, {params?: GetApiReportsDashboardAnalyticsParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiReportsDashboardAnalytics(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiReportsDashboardAnalyticsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>>
+
+    export type GetApiReportsDashboardAnalyticsMutationError = unknown
+
+    export const useGetApiReportsDashboardAnalytics = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, TError,{params?: GetApiReportsDashboardAnalyticsParams}, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>,
+        TError,
+        {params?: GetApiReportsDashboardAnalyticsParams},
+        TContext
+      > => {
+      return useMutation(getGetApiReportsDashboardAnalyticsMutationOptions(options), queryClient);
     }
