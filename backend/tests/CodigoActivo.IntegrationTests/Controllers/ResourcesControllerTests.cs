@@ -239,6 +239,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var types = await response.ReadJsonAsync<List<ResourceTypeResponse>>(
             TestContext.Current.CancellationToken
         );
+        types.Should().NotBeNull();
         types!.Select(t => t.Name).Should().ContainInOrder("Externo", "Interno");
         types.Single(t => t.Name == "Externo").IsExternal.Should().BeTrue();
         types.Single(t => t.Name == "Interno").IsExternal.Should().BeFalse();

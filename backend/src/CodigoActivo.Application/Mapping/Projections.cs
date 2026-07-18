@@ -178,10 +178,13 @@ public static class Projections
                 .Select(capacity => new ActivityRoleCapacityResponse(
                     capacity.ActivityRoleTypeId,
                     capacity.DesiredCount,
-                    activity.Assignments.Count(assignment =>
-                        assignment.ActivityRoleTypeId == capacity.ActivityRoleTypeId
-                        && assignment.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
-                    ) > capacity.DesiredCount
+                    activity
+                        .Assignments.Where(assignment =>
+                            assignment.ActivityRoleTypeId == capacity.ActivityRoleTypeId
+                            && assignment.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                        )
+                        .Skip(capacity.DesiredCount)
+                        .Any()
                 ))
                 .ToList(),
             CreatedAt = activity.CreatedAt,

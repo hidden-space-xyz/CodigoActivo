@@ -36,6 +36,10 @@ public class ReportService(
         .Default("firstName")
         .Tie(u => u.Id);
 
+    private static readonly string[] UserGrowthKeys = ["member", "sponsor", "participant"];
+
+    private static readonly string[] InscriptionKeys = ["requested", "confirmed", "denied"];
+
     public async Task<Result<EventSummaryResponse>> GetEventSummaryAsync(
         Guid eventId,
         CancellationToken ct = default
@@ -479,10 +483,12 @@ public class ReportService(
             (start, end) = (end, start);
 
         var totalDays = end.DayNumber - start.DayNumber + 1;
-        var granularity =
-            totalDays <= 45 ? "day"
-            : totalDays <= 182 ? "week"
-            : "month";
+        var granularity = totalDays switch
+        {
+            <= 45 => "day",
+            <= 182 => "week",
+            _ => "month",
+        };
 
         return await cache.GetOrCreateAsync(
             $"reports:dashboard:analytics:{start:yyyy-MM-dd}:{end:yyyy-MM-dd}:{granularity}",
@@ -689,12 +695,18 @@ public class ReportService(
 
         var userGrowth = new DashboardTimeSeriesResponse(
             buckets,
-            new[] { "member", "sponsor", "participant" }
+            UserGrowthKeys
                 .Select(key =>
                     Cumulative(
                         key,
                         userRows
-                            .Where(u => UserTypeKey(u.UserTypeId) == key)
+                            .Where(u =>
+                                string.Equals(
+                                    UserTypeKey(u.UserTypeId),
+                                    key,
+                                    StringComparison.Ordinal
+                                )
+                            )
                             .Select(u => u.CreatedAt)
                     )
                 )
@@ -703,12 +715,18 @@ public class ReportService(
 
         var inscriptions = new DashboardTimeSeriesResponse(
             buckets,
-            new[] { "requested", "confirmed", "denied" }
+            InscriptionKeys
                 .Select(key =>
                     Flow(
                         key,
                         assignmentRows
-                            .Where(a => AssignmentStatusKey(a.AssignmentStatusId) == key)
+                            .Where(a =>
+                                string.Equals(
+                                    AssignmentStatusKey(a.AssignmentStatusId),
+                                    key,
+                                    StringComparison.Ordinal
+                                )
+                            )
                             .Select(a => a.CreatedAt)
                     )
                 )
@@ -726,13 +744,13 @@ public class ReportService(
         var usersByType = FixedSlices(
             ["member", "sponsor", "participant"],
             userRows
-                .GroupBy(u => UserTypeKey(u.UserTypeId))
-                .ToDictionary(g => g.Key, g => g.Count())
+                .GroupBy(u => UserTypeKey(u.UserTypeId), StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
         );
 
         var audience = FixedSlices(
             ["adults", "minors"],
-            new Dictionary<string, int>
+            new Dictionary<string, int>(StringComparer.Ordinal)
             {
                 ["adults"] = userRows.Count(u => !u.IsMinor),
                 ["minors"] = userRows.Count(u => u.IsMinor),
@@ -742,8 +760,8 @@ public class ReportService(
         var resourcesByType = FixedSlices(
             ["internal", "external"],
             resourceRows
-                .GroupBy(r => ResourceTypeKey(r.ResourceTypeId))
-                .ToDictionary(g => g.Key, g => g.Count())
+                .GroupBy(r => ResourceTypeKey(r.ResourceTypeId), StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
         );
 
         var eventsByCategory = categoryRows
@@ -777,12 +795,12 @@ public class ReportService(
 
         var past = new int[calendarBuckets.Count];
         var upcoming = new int[calendarBuckets.Count];
-        foreach (var ev in eventRows)
+        foreach (var eventStartsAt in eventRows.Select(ev => ev.EventStartsAt))
         {
-            var monthStart = new DateOnly(ev.EventStartsAt.Year, ev.EventStartsAt.Month, 1);
+            var monthStart = new DateOnly(eventStartsAt.Year, eventStartsAt.Month, 1);
             if (!calendarIndex.TryGetValue(monthStart, out var idx))
                 continue;
-            if (ev.EventStartsAt < today)
+            if (eventStartsAt < today)
                 past[idx]++;
             else
                 upcoming[idx]++;
@@ -877,29 +895,37 @@ public class ReportService(
             _ => new DateOnly(date.Year, date.Month, 1),
         };
 
-    private static IReadOnlyList<DashboardSliceResponse> FixedSlices(
+    private static List<DashboardSliceResponse> FixedSlices(
         IReadOnlyList<string> keys,
         IReadOnlyDictionary<string, int> counts
     ) =>
         keys.Select(k => new DashboardSliceResponse(k, null, null, counts.GetValueOrDefault(k)))
             .ToList();
 
-    private static string UserTypeKey(Guid id) =>
-        id == SeedIds.UserTypes.Member ? "member"
-        : id == SeedIds.UserTypes.Sponsor ? "sponsor"
-        : id == SeedIds.UserTypes.Participant ? "participant"
-        : "other";
+    private static string UserTypeKey(Guid id)
+    {
+        if (id == SeedIds.UserTypes.Member)
+            return "member";
+        if (id == SeedIds.UserTypes.Sponsor)
+            return "sponsor";
+        return id == SeedIds.UserTypes.Participant ? "participant" : "other";
+    }
 
-    private static string AssignmentStatusKey(Guid id) =>
-        id == SeedIds.AssignmentStatusTypes.Requested ? "requested"
-        : id == SeedIds.AssignmentStatusTypes.Confirmed ? "confirmed"
-        : id == SeedIds.AssignmentStatusTypes.Denied ? "denied"
-        : "other";
+    private static string AssignmentStatusKey(Guid id)
+    {
+        if (id == SeedIds.AssignmentStatusTypes.Requested)
+            return "requested";
+        if (id == SeedIds.AssignmentStatusTypes.Confirmed)
+            return "confirmed";
+        return id == SeedIds.AssignmentStatusTypes.Denied ? "denied" : "other";
+    }
 
-    private static string ResourceTypeKey(Guid id) =>
-        id == SeedIds.ResourceTypes.Internal ? "internal"
-        : id == SeedIds.ResourceTypes.External ? "external"
-        : "other";
+    private static string ResourceTypeKey(Guid id)
+    {
+        if (id == SeedIds.ResourceTypes.Internal)
+            return "internal";
+        return id == SeedIds.ResourceTypes.External ? "external" : "other";
+    }
 
     private Task<EventHeader?> GetEventHeaderAsync(Guid eventId, CancellationToken ct)
     {

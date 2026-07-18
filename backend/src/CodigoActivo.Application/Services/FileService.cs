@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Services;
 
@@ -16,6 +17,7 @@ public class FileService(
     ILocalFileSystemRepository storage,
     IClock clock,
     FileStorageOptions options,
+    ILogger<FileService> logger,
     ICacheInvalidator cacheInvalidator
 ) : IFileService
 {
@@ -165,7 +167,11 @@ public class FileService(
         {
             _ = await DeleteAsync(fileId, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException) { }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug(ex, "Best-effort orphan cleanup failed for file {FileId}", fileId);
+        }
     }
 
     public async Task DeleteOrphanedAsync(
@@ -198,12 +204,28 @@ public class FileService(
                 {
                     storage.Delete(StoredName(file.Id, file.Extension));
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException) { }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    if (logger.IsEnabled(LogLevel.Debug))
+                        logger.LogDebug(
+                            ex,
+                            "Best-effort stored content deletion failed for file {FileId}",
+                            file.Id
+                        );
+                }
             }
 
             await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException) { }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug(
+                    ex,
+                    "Best-effort orphan cleanup failed for files {FileIds}",
+                    fileIds
+                );
+        }
     }
 
     private async Task<Result<ImageFormat>> ValidateAndDetectAsync(

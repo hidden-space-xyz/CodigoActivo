@@ -80,7 +80,7 @@ public record EventListItemResponse(
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color)
 {
     public EventCategoryResponse()
-        : this(default, string.Empty, string.Empty) { }
+        : this(Guid.Empty, string.Empty, string.Empty) { }
 }
 
 public record CreateEventRequest(

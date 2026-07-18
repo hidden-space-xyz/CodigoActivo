@@ -6,7 +6,7 @@ public class CacheControlMiddleware(RequestDelegate next)
 {
     public Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Path.StartsWithSegments("/api"))
+        if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
         {
             context.Response.OnStarting(
                 static state =>

@@ -14,6 +14,19 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              { name: 'primevue', test: /node_modules[\\/](primevue|@primeuix)[\\/]/, maxSize: 700_000 },
+              { name: 'editor', test: /node_modules[\\/](@tiptap|prosemirror-)/ },
+              { name: 'charts', test: /node_modules[\\/](chart\.js|@kurkle)[\\/]/ },
+            ],
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       proxy: {
