@@ -18,8 +18,14 @@ const currentYear = new Date().getFullYear()
       <div class="footer__col">
         <div class="footer__heading">{{ $t('layout.footerContact') }}</div>
         <div class="footer__links">
-          <a :href="`mailto:${CONTACT.email}`" class="footer__link">{{ CONTACT.email }}</a>
-          <span class="footer__link footer__link--static">{{ CONTACT.phone }}</span>
+          <a :href="`mailto:${CONTACT.email}`" class="footer__link footer__link--icon">
+            <i class="pi pi-envelope" aria-hidden="true"></i>
+            {{ CONTACT.email }}
+          </a>
+          <span class="footer__link footer__link--static footer__link--icon">
+            <i class="pi pi-phone" aria-hidden="true"></i>
+            {{ CONTACT.phone }}
+          </span>
           <div class="footer__social">
             <a
               :href="CONTACT.social.instagram"
@@ -108,6 +114,22 @@ const currentYear = new Date().getFullYear()
 
 .footer__link--static {
   cursor: default;
+}
+
+.footer__link--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer__link--icon .pi {
+  font-size: 13px;
+  color: var(--ca-text-ghost);
+  transition: color 0.15s ease;
+}
+
+a.footer__link--icon:hover .pi {
+  color: var(--ca-text-bright);
 }
 
 .footer__social {

@@ -1,7 +1,7 @@
 export const FOUNDING_YEAR = 2018
 
 export const CONTACT = {
-  email: 'hola@codigoactivo.org',
+  email: 'contacto@codigoactivo.es',
   phone: '684 39 44 90',
   social: {
     instagram: 'https://www.instagram.com/codigoactivo_',
