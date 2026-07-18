@@ -204,10 +204,16 @@ static SameSiteMode ResolveSameSite(string? value)
 
 static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
 {
-    return ex is not null
+    if (
+        ex is not null
         || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError
-            ? LogEventLevel.Error
-        : httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest ? LogEventLevel.Warning
+    )
+    {
+        return LogEventLevel.Error;
+    }
+
+    return httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
+        ? LogEventLevel.Warning
         : LogEventLevel.Information;
 }
 

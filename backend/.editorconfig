@@ -220,6 +220,10 @@ dotnet_diagnostic.S101.severity = none
 # bootstrap pattern - there is no outer caller that would end up double-logging it.
 dotnet_diagnostic.S2139.severity = none
 
+[**/Seeders/DemoDataSeeder.cs]
+# The demo-mode password is the intentional, publicly documented demo login (see CLAUDE.md), not a secret.
+dotnet_diagnostic.S2068.severity = none
+
 [tests/**/*.cs]
 # Test methods are named MethodUnderTest_Scenario_ExpectedBehavior on purpose (see CLAUDE.md). That
 # convention needs the underscores, so the underscore rule is the thing that has to give, not ~700

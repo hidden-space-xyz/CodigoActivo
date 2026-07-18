@@ -420,11 +420,10 @@ public class ActivityService(
         );
         var memberById = members.ToDictionary(u => u.Id);
 
-        var outsideHousehold = userIds
-            .Where(id => id != actingUserId)
-            .Any(id =>
-                !memberById.TryGetValue(id, out var member) || member.ParentId != actingUserId
-            );
+        var outsideHousehold = userIds.Exists(id =>
+            id != actingUserId
+            && (!memberById.TryGetValue(id, out var member) || member.ParentId != actingUserId)
+        );
         if (outsideHousehold)
             return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
 
@@ -694,7 +693,7 @@ public class ActivityService(
         if (requests is null || requests.Count == 0)
             return new List<RoleCapacityItem>();
 
-        if (requests.DistinctBy(item => item.ActivityRoleTypeId).Count() != requests.Count)
+        if (requests.Select(item => item.ActivityRoleTypeId).ToHashSet().Count != requests.Count)
             return Error.BadRequest(ErrorCode.ActivityRoleCapacityDuplicated);
 
         var roleIds = requests.Select(item => item.ActivityRoleTypeId).ToList();
@@ -714,11 +713,11 @@ public class ActivityService(
             item => item.DesiredCount
         );
 
-        foreach (var existing in activity.RoleCapacities.ToList())
-        {
-            if (!desiredByRole.ContainsKey(existing.ActivityRoleTypeId))
-                activity.RoleCapacities.Remove(existing);
-        }
+        var removed = activity.RoleCapacities.Where(capacity =>
+            !desiredByRole.ContainsKey(capacity.ActivityRoleTypeId)
+        );
+        foreach (var existing in removed.ToList())
+            activity.RoleCapacities.Remove(existing);
 
         foreach (var (roleTypeId, desiredCount) in desiredByRole)
         {

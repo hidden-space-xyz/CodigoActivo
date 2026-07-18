@@ -9,7 +9,7 @@ export default defineConfigWithVueTs(
   },
   {
     name: 'app/ignores',
-    ignores: ['dist/**', 'node_modules/**', 'src/shared/api/generated/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'src/shared/api/generated/**'],
   },
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,

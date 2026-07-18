@@ -25,9 +25,13 @@ public static class StreamExtensions
         if (IsPng(header))
             return new ImageFormat("png", "image/png");
 
-        return IsGif(header) ? new ImageFormat("gif", "image/gif")
-            : IsWebp(header, length) ? new ImageFormat("webp", "image/webp")
-            : null;
+        if (IsGif(header))
+            return new ImageFormat("gif", "image/gif");
+
+        if (IsWebp(header, length))
+            return new ImageFormat("webp", "image/webp");
+
+        return null;
     }
 
     private static bool IsJpeg(ReadOnlySpan<byte> header)

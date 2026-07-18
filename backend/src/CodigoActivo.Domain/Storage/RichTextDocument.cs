@@ -42,7 +42,7 @@ public static class RichTextDocument
         if (
             element.TryGetProperty("type", out var type)
             && type.ValueKind == JsonValueKind.String
-            && type.GetString() == "image"
+            && string.Equals(type.GetString(), "image", StringComparison.Ordinal)
         )
             return true;
 

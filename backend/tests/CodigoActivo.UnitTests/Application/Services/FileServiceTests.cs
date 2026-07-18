@@ -8,6 +8,7 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -26,7 +27,15 @@ public sealed class FileServiceTests
 
     public FileServiceTests()
     {
-        sut = new FileService(files, uow, storage, clock, options, cacheInvalidator);
+        sut = new FileService(
+            files,
+            uow,
+            storage,
+            clock,
+            options,
+            NullLogger<FileService>.Instance,
+            cacheInvalidator
+        );
     }
 
     private static byte[] PngBytes()

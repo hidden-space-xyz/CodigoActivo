@@ -461,10 +461,10 @@ public class EventService(
     {
         var desired = categoryTypeIds.Distinct().ToHashSet();
 
-        foreach (var existing in ev.Categories.ToList())
+        var removed = ev.Categories.Where(c => !desired.Contains(c.EventCategoryTypeId)).ToList();
+        foreach (var existing in removed)
         {
-            if (!desired.Contains(existing.EventCategoryTypeId))
-                ev.Categories.Remove(existing);
+            ev.Categories.Remove(existing);
         }
 
         var current = ev.Categories.Select(c => c.EventCategoryTypeId).ToHashSet();

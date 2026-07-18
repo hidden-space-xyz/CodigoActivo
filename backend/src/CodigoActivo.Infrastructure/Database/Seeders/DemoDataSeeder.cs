@@ -56,10 +56,14 @@ public sealed class DemoDataSeeder(
 
         try
         {
-            logger.LogInformation(
-                "Downloading {Count} demo images from picsum.photos",
-                fileIds.Count
-            );
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Downloading {Count} demo images from picsum.photos",
+                    fileIds.Count
+                );
+            }
+
             await DownloadImagesAsync(fileIds, ct);
 
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -95,13 +99,16 @@ public sealed class DemoDataSeeder(
             throw;
         }
 
-        logger.LogInformation(
-            "Demo data seeded: {Users} users, {Events} events, {Activities} activities, {Files} images",
-            graph.Users.Count,
-            graph.Events.Count,
-            graph.Activities.Count,
-            graph.Files.Count
-        );
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "Demo data seeded: {Users} users, {Events} events, {Activities} activities, {Files} images",
+                graph.Users.Count,
+                graph.Events.Count,
+                graph.Activities.Count,
+                graph.Files.Count
+            );
+        }
     }
 
     public async Task RemoveAsync(CancellationToken ct = default)
@@ -172,9 +179,7 @@ public sealed class DemoDataSeeder(
         await RemoveOrNeutralizeAdminAsync(ct);
 
         foreach (var file in reclaimableFiles)
-            storage.Delete(
-                string.Create(CultureInfo.InvariantCulture, $"{file.Id}.{file.Extension}")
-            );
+            storage.Delete($"{file.Id}.{file.Extension}");
 
         logger.LogInformation("Demo data removed");
     }
@@ -521,7 +526,7 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    private static IEnumerable<Guid> ResolveCategoryIds(
+    private static List<Guid> ResolveCategoryIds(
         string[] names,
         Dictionary<string, Guid> categoryIdByName
     )
@@ -551,11 +556,8 @@ public sealed class DemoDataSeeder(
         await throttle.WaitAsync(ct);
         try
         {
-            var url = string.Create(
-                CultureInfo.InvariantCulture,
-                $"https://picsum.photos/seed/{fileId:N}/1080/720"
-            );
-            for (var attempt = 1; ; attempt++)
+            var url = $"https://picsum.photos/seed/{fileId:N}/1080/720";
+            for (var attempt = 1; attempt <= 3; attempt++)
             {
                 try
                 {
@@ -582,14 +584,10 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    private static string BuildRichText(
-        IReadOnlyList<string> paragraphs,
-        Guid? imageId,
-        string? imageAlt
-    )
+    private static string BuildRichText(string[] paragraphs, Guid? imageId, string? imageAlt)
     {
         var content = new JsonArray();
-        for (var i = 0; i < paragraphs.Count; i++)
+        for (var i = 0; i < paragraphs.Length; i++)
         {
             content.Add(
                 new JsonObject
@@ -627,16 +625,10 @@ public sealed class DemoDataSeeder(
         return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(local, timeZone), TimeSpan.Zero);
     }
 
-    private static string StoredName(Guid fileId) =>
-        string.Create(CultureInfo.InvariantCulture, $"{fileId}.jpg");
+    private static string StoredName(Guid fileId) => $"{fileId}.jpg";
 
     private static Guid MakeId(int category, int index) =>
-        new(
-            string.Create(
-                CultureInfo.InvariantCulture,
-                $"dede{category:x4}-0000-0000-0000-{index:x12}"
-            )
-        );
+        new($"dede{category:x4}-0000-0000-0000-{index:x12}");
 
     private static Guid UserId(int index) => MakeId(1, index);
 
