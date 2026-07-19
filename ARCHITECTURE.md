@@ -104,7 +104,8 @@ composables in `api/queries.ts` / `api/mutations.ts`.
 
 `src/shared/api/http-client.ts` is the Orval mutator: native `fetch`, `credentials: 'include'`,
 same-origin relative `/api/...` URLs, transparent CSRF handling, and `ApiError` on failure. User-facing
-copy is resolved from `ErrorCode` to Spanish in `src/shared/api/error-messages.ts`.
+copy is resolved from `ErrorCode` to Spanish by `getErrorMessage()` in `src/shared/lib/api-error.ts`,
+which looks the code up under the `errors.*` namespace of `src/shared/i18n/locales/es.ts`.
 
 ### Routing, state & theming
 
@@ -124,8 +125,8 @@ Any change that crosses the API boundary must be made on both sides in the same 
 2. **`frontend/swagger.json`** — the committed contract — is refreshed from the running backend's
    Development-only Swagger endpoint.
 3. **`npm run api:generate`** (Orval) regenerates the typed client.
-4. **Errors**: a new failure mode adds an `ErrorCode` member in the backend and a Spanish message in the
-   frontend's `error-messages.ts`.
+4. **Errors**: a new failure mode adds an `ErrorCode` member in the backend and a Spanish message under
+   the frontend's `errors.*` i18n namespace (`src/shared/i18n/locales/es.ts`).
 5. **Auth**: a session cookie plus a CSRF token from `GET /api/auth/csrf` (sent as `X-CSRF-TOKEN` on unsafe
    methods). Authorization is a boolean admin flag, not roles — details in [SECURITY.md](SECURITY.md).
 
