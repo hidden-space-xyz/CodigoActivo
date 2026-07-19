@@ -139,6 +139,7 @@ public class UserService(
         user.UpdatedAt = clock.UtcNow;
 
         await uow.SaveChangesAsync(ct);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
         return await GetByIdAsync(id, ct);
     }
@@ -194,6 +195,7 @@ public class UserService(
             user.UserTypeId = userTypeId;
             user.UpdatedAt = clock.UtcNow;
             await uow.SaveChangesAsync(ct);
+            await cacheInvalidator.InvalidateAsync(CacheTags.Users);
         }
 
         return await GetByIdAsync(id, ct);

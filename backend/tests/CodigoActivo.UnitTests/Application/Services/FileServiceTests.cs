@@ -60,15 +60,25 @@ public sealed class FileServiceTests
 
     private static MemoryStream JunkStream() => new(new byte[32], writable: false);
 
-    private void FileFound(FileEntity file) =>
+    private void FileFound(FileEntity file)
+    {
         files
             .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(file);
+        files
+            .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns([file]);
+    }
 
-    private void FileMissing() =>
+    private void FileMissing()
+    {
         files
             .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns((FileEntity?)null);
+        files
+            .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+    }
 
     private void FileReferenced(bool referenced) =>
         files.IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(referenced);
