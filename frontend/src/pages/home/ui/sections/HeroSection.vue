@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import RobotGameSection from './RobotGameSection.vue'
+import { logoMarkLarge } from '@/shared/assets'
 import { FOUNDING_YEAR } from '@/shared/config'
 import { BaseButton } from '@/shared/ui'
 
@@ -41,7 +41,9 @@ const stats = [
         </div>
       </div>
 
-      <RobotGameSection />
+      <div class="hero__brand" aria-hidden="true">
+        <img class="hero__brand-logo" :src="logoMarkLarge" alt="" width="640" height="640" />
+      </div>
     </div>
   </section>
 </template>
@@ -59,6 +61,28 @@ const stats = [
   grid-template-columns: 1.05fr 0.95fr;
   gap: 56px;
   align-items: center;
+}
+
+.hero__brand {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 340px;
+}
+
+.hero__brand::before {
+  content: '';
+  position: absolute;
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ca-orange-soft), transparent 68%);
+}
+
+.hero__brand-logo {
+  position: relative;
+  width: min(100%, 380px);
+  height: auto;
 }
 
 .hero__badge {
@@ -124,6 +148,12 @@ const stats = [
   }
   .hero__title {
     font-size: 44px;
+  }
+  .hero__brand {
+    min-height: 0;
+  }
+  .hero__brand-logo {
+    width: min(72%, 260px);
   }
 }
 </style>

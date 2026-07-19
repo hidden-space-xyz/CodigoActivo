@@ -1,9 +1,5 @@
 <p align="center">
-  <img
-    width="100%"
-    alt="Código Activo"
-    src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:f9a320,50:ff6b5e,100:2dd4d9&text=C%C3%B3digo%20Activo&fontColor=ffffff&fontSize=52&fontAlign=50&fontAlignY=40&descAlignY=62&animation=fadeIn"
-  />
+  <img width="160" alt="Código Activo" src="frontend/brand/codigo-activo-logo.png" />
 </p>
 <p align="center">
 <img alt=".NET" src="https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
