@@ -1,15 +1,12 @@
 <script setup lang="ts">
+import { logoMark } from '@/shared/assets'
+
 withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 </script>
 
 <template>
   <div class="brand" :class="`brand--${size}`">
-    <div class="brand__mark" aria-hidden="true">
-      <span class="brand__cell" style="background: var(--ca-orange)" />
-      <span class="brand__cell" style="background: var(--ca-lime)" />
-      <span class="brand__cell" style="background: var(--ca-azure)" />
-      <span class="brand__cell" style="background: var(--ca-orange-strong)" />
-    </div>
+    <img class="brand__mark" :src="logoMark" alt="" aria-hidden="true" width="30" height="30" />
     <div class="brand__word">Código<span class="brand__accent">Activo</span></div>
   </div>
 </template>
@@ -22,17 +19,9 @@ withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 }
 
 .brand__mark {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 3px;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.brand__cell {
-  display: block;
+  object-fit: contain;
 }
 
 .brand__word {
@@ -50,7 +39,6 @@ withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 .brand--sm .brand__mark {
   width: 28px;
   height: 28px;
-  border-radius: 7px;
 }
 
 .brand--sm .brand__word {

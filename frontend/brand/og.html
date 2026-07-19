@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+      }
+      body {
+        background: #fdfbf7;
+        display: flex;
+        align-items: center;
+        gap: 56px;
+        padding: 0 96px;
+        font-kerning: normal;
+        -webkit-font-smoothing: antialiased;
+      }
+      .mark {
+        width: 300px;
+        height: 300px;
+        flex: none;
+        object-fit: contain;
+      }
+      .word {
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 96px;
+        letter-spacing: -0.02em;
+        color: #171717;
+        line-height: 1.05;
+      }
+      .word span {
+        color: #f9a320;
+      }
+      .tag {
+        margin-top: 18px;
+        font-family: 'Hanken Grotesk', system-ui, sans-serif;
+        font-weight: 500;
+        font-size: 44px;
+        letter-spacing: -0.005em;
+        color: #616161;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="mark" src="./logo-mark-512.png" alt="" />
+    <div>
+      <div class="word">Código<span>Activo</span></div>
+      <div class="tag">Programación para tod@s</div>
+    </div>
+  </body>
+</html>

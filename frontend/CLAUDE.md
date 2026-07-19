@@ -36,7 +36,7 @@ Layers under `src/` (imports flow downward only; slices in the same layer must n
 - `widgets/` — `content-entity-page`: a reusable admin CRUD widget (table + create/update/delete/feature mutations). Used by the **announcements** admin page; the events and resources admin pages are bespoke (`features/manage-events`, `features/manage-resources`).
 - `features/` — `auth`, `account`, `register`, and admin `manage-*` slices.
 - `entities/` — business entities. Segments: `api/` (`requests.ts`, `mapper.ts`, `queries.ts`, `query-keys.ts`, `mutations.ts`), `model/` (types + state), `ui/` (cards). **`entities/feed/` and `entities/participation/` are empty leftover directories** (no files, no `index.ts`, untracked by git) — dead, not a pattern to copy or extend.
-- `shared/` — `api/`, `config/`, `i18n/`, `lib/`, `ui/`.
+- `shared/` — `api/`, `assets/`, `config/`, `i18n/`, `lib/`, `ui/`. `assets/` holds bundled binary assets (`logo-mark.png` for `BrandLogo`, `logo-mark-large.png` for the home hero) and re-exports them through its `index.ts` — Steiger requires the public API even for a binary-only segment.
 
 Slices are **kebab-case** and each exposes a public API via `index.ts`. `fsd/insignificant-slice` is deliberately off in `steiger.config.ts` to allow single-consumer slices.
 
@@ -60,6 +60,14 @@ Slices are **kebab-case** and each exposes a public API via `index.ts`. `fsd/ins
 - **The pre-paint theme bootstrap is an external file, `public/theme-init.js`, loaded by `<script src="/theme-init.js">` in `index.html` — do not inline it.** It is external on purpose so the CSP served by nginx (`frontend/docker/security-headers.conf`) can stay `script-src 'self'` with no hash or `'unsafe-inline'`; inlining it silently breaks the theme in production.
 - PrimeVue 4 uses a customized Aura preset (`src/app/providers/primevue.ts`, `darkModeSelector: '.ca-dark'`), re-skinned by mapping `--p-*` tokens to `--ca-*` in `src/assets/styles/primevue-overrides.css`.
 - All component styles are `<style scoped>`; global styles live only in `src/assets/styles/` (`main.css`, `variables.css`, `primevue-overrides.css`, `richtext.css` — the last one styles rendered rich-text HTML, which is not scopeable).
+
+## Brand assets
+
+- **`brand/codigo-activo-logo.png` is the source master** (1254×1254, transparent). Every icon in `public/` is derived from it by `brand/generate-icons.py` (Pillow, run by hand — it is not wired into `npm run build`): `favicon.ico` (16/32/48), `favicon-96x96.png`, `apple-touch-icon.png` (180×180) — all transparent. Re-run it after replacing the master; never hand-edit the derived files. `brand/` is a build-time source folder and is not served — only `public/` and `dist/` are.
+- **`public/og-image.png` is rendered from `brand/og.html`**, not from Pillow, because the card needs the real Space Grotesk / Hanken Grotesk webfonts. Screenshot it at 1200×630 with `deviceScaleFactor: 2` and downscale to 1200×630.
+- **There is no SVG favicon.** The logo is a raster with gradients and cannot be faithfully vectorized, so `index.html` ships `favicon-96x96.png` + a multi-size `favicon.ico` instead of the `image/svg+xml` link it used to carry.
+- **Every derived asset keeps the master's transparency — never composite the logo onto a plate.** This is a deliberate brand decision and it has a known cost: the mark's darkest speed bars are `#070D4A`, which scores **1.05:1** against the dark theme background (`#101014`), so they fade out in dark mode and on dark browser chrome. That is accepted; do not "fix" it by reintroducing a background tile. On iOS home screens the transparent `apple-touch-icon.png` is composited onto black by the OS — the same trade-off, and also expected.
+- `BrandLogo` is the only component that renders the mark, from `@/shared/assets`. Unlike the old CSS 2×2 colour grid it replaced, it is a fixed-colour image and does **not** recolour with the theme. The printed badges (`pages/admin/event-badges`) and the admin sidebar deliberately keep their own text-only `</>` wordmark — they are not consumers of this asset.
 
 ## SEO
 
