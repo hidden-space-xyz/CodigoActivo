@@ -40,8 +40,6 @@ export function useRegistration() {
 
   function startCooldown(): void {
     stopCooldown()
-    // Derive the remaining time from a wall-clock deadline instead of counting ticks: a throttled
-    // background tab fires the interval less often, which would otherwise stretch the countdown.
     const deadline = Date.now() + RESEND_COOLDOWN_SECONDS * 1000
     const tick = (): void => {
       resendCooldown.value = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))

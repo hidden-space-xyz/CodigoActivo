@@ -17,8 +17,7 @@ const previewUrl = ref<string | null>(null)
 const fileName = ref<string>('')
 const pickedFile = ref<File | null>(null)
 const sizeError = ref('')
-// Mirrors the backend upload cap (FileStorageOptions.DefaultMaxSizeBytes = 10 MiB).
-const MAX_SIZE = 10 * 1024 * 1024
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 let objectUrl: string | null = null
 
 function revokeObjectUrl(): void {
@@ -30,7 +29,6 @@ function revokeObjectUrl(): void {
 
 function showExisting(id: string): void {
   revokeObjectUrl()
-  // The browser loads (and caches) the image itself — only the display name needs a request.
   previewUrl.value = fileContentUrl(id)
   fileName.value = ''
   void getThumbnailNameRequest(id)
@@ -63,7 +61,7 @@ function onChange(event: Event): void {
   const file = input.files?.[0] ?? null
   input.value = ''
   if (!file) return
-  if (file.size > MAX_SIZE) {
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
     sizeError.value = t('entities.file.thumbnail.tooLarge')
     return
   }

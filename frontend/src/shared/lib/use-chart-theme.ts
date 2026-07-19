@@ -31,7 +31,6 @@ export function useChartTheme() {
   const { theme } = useTheme()
 
   const palette = computed<ChartPalette>(() => {
-    // Depend on the theme so resolved tokens recompute when the class flips.
     void theme.value
     return {
       orange: cssVar('--ca-orange'),

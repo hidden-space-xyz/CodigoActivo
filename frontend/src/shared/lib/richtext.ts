@@ -25,11 +25,6 @@ function isSameOriginImageSrc(src: string): boolean {
   }
 }
 
-// The CSP served by nginx only allows same-origin images (img-src 'self'),
-// so images pasted from other sites would save fine but render broken for
-// every visitor. Rejecting them at parse time keeps pasted content honest;
-// the toolbar's upload flow inserts same-origin URLs via setImage and is
-// unaffected.
 const SameOriginImage = Image.extend({
   parseHTML() {
     return [

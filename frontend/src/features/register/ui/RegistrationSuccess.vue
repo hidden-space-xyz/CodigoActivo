@@ -19,8 +19,6 @@ const emit = defineEmits<{ reset: []; verify: [otp: string]; resend: [] }>()
 
 const otp = ref('')
 
-// After a successful resend the previous code is invalidated, so clear the stale value
-// instead of letting the user submit it against the freshly issued code.
 watch(
   () => props.resendCount,
   () => {

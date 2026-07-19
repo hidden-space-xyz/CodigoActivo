@@ -9,8 +9,6 @@ import type { EventBadgeResponse } from '@/shared/api/generated/models'
 const BADGES_PER_SHEET = 16
 const MAX_ACTIVITY_CHIPS = 6
 
-// Vue cannot scope an @page at-rule, so declaring it in <style> would leak it into every
-// other page's print layout for the rest of the session; attach it only while mounted.
 const pageStyle = document.createElement('style')
 pageStyle.textContent = '@page { size: A4 portrait; margin: 0; }'
 onMounted(() => document.head.appendChild(pageStyle))
@@ -31,12 +29,6 @@ const sheets = computed(() => {
   return pages
 })
 
-// Text scales per badge instead of using fixed sizes. Two independent passes:
-// 1) width pass — the full name gets its own factor (--name-fit) so it always
-//    occupies a SINGLE line, growing on short names and shrinking on long ones,
-//    which frees vertical room for the activity list;
-// 2) height pass — a binary search picks the largest body factor (--fit) whose
-//    activity list still fits the room the band and footer leave in the 37mm label.
 const MIN_FIT = 0.6
 const MAX_FIT = 1.5
 const NAME_MIN_FIT = 0.45
@@ -67,9 +59,11 @@ function fitBadge(el: HTMLElement): void {
       Number.parseFloat(style.paddingRight)
     nameFit = Math.min(NAME_MAX_FIT, (available / name.scrollWidth) * 0.97)
     setNameFit(nameFit)
-    // Glyph widths don't scale perfectly linearly with font-size, so re-measure
-    // and correct until the name truly fits: it must never overflow the label.
-    for (let i = 0; i < 5 && name.scrollWidth > available; i += 1) {
+    for (
+      let attempt = 0;
+      attempt < 5 && name.scrollWidth > available;
+      attempt += 1
+    ) {
       nameFit *= Math.min((available / name.scrollWidth) * 0.97, 0.97)
       setNameFit(nameFit)
     }
@@ -83,7 +77,6 @@ function fitBadge(el: HTMLElement): void {
     if (fits(mid)) low = mid
     else high = mid
   }
-  // Dense badges: if even the smallest body scale overflows, trade name size for room.
   while (!fits(low) && name && nameFit > NAME_MIN_FIT) {
     nameFit = Math.max(NAME_MIN_FIT, nameFit * 0.9)
     setNameFit(nameFit)
@@ -100,16 +93,14 @@ watch(
   sheets,
   async () => {
     await nextTick()
-    // Font metrics change line wrapping, so wait for the webfonts before measuring.
     await document.fonts.ready
     fitAllBadges()
   },
   { immediate: true },
 )
 
-// Colors come from the user-type catalog and can be arbitrary (Participante is
-// seeded as #FFFFFF): too-light accents would leave the band unreadable on paper.
 const FALLBACK_ACCENT = '#475569'
+const MIN_READABLE_LUMINANCE = 0.82
 
 function accentColor(badge: EventBadgeResponse): string {
   const raw = (badge.userTypeColor ?? '').trim()
@@ -119,7 +110,7 @@ function accentColor(badge: EventBadgeResponse): string {
   const green = Number.parseInt(hex.slice(3, 5), 16)
   const blue = Number.parseInt(hex.slice(5, 7), 16)
   const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-  return luminance > 0.82 ? FALLBACK_ACCENT : hex
+  return luminance > MIN_READABLE_LUMINANCE ? FALLBACK_ACCENT : hex
 }
 
 function fullName(badge: EventBadgeResponse): string {
@@ -269,7 +260,6 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   -webkit-print-color-adjust: exact;
 }
 
-/* Python-code watermark filling the whole label body behind the content. */
 .badge::after {
   content: 'def confirmar_asistencia(usuario, actividad):\A     asistente = {"nombre": usuario.nombre, "confirmado": True}\A     actividad.inscritos.append(asistente)\A     return f"¡Nos vemos alli, {usuario.nombre}!"\A \A actividades = ["robotica", "scratch", "huerto_urbano", "gymkhana"]\A evento = Evento("Feria de Voluntariado", anio=2026)\A \A for titulo in actividades:\A     taller = evento.crear_actividad(titulo, plazas=20)\A     for peque in taller.lista_espera:\A         confirmar_asistencia(peque, taller)\A \A print(f"{evento.nombre}: {len(evento.inscritos)} inscritos")';
   position: absolute;

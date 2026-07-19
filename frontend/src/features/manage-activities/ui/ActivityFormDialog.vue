@@ -88,8 +88,6 @@ const outsideEvent = computed(() => {
   if (!start || !end) return false
   const eventStart = props.eventStart?.slice(0, 10)
   const eventEnd = props.eventEnd?.slice(0, 10)
-  // Compare the activity's local calendar day (matching the picker's local min/max bounds and the
-  // backend's timezone-aware check), not its UTC day which drifts across midnight.
   if (eventStart && toDateOnly(start) < eventStart) return true
   if (eventEnd && toDateOnly(end) > eventEnd) return true
   return false
