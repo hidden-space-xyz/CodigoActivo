@@ -86,8 +86,8 @@ The apps are contractually linked; keep both sides in sync in the same change:
 1. Change the DTOs / endpoints in the backend.
 2. Refresh `frontend/swagger.json` from the running backend's Swagger endpoint.
 3. Run `npm run api:generate` — Orval wipes and regenerates `src/shared/api/generated/`.
-4. If you added a failure mode, add the `ErrorCode` member in the backend and its Spanish message in
-   `frontend/src/shared/api/error-messages.ts`.
+4. If you added a failure mode, add the `ErrorCode` member in the backend and its Spanish message under
+   the `errors.*` namespace in `frontend/src/shared/i18n/locales/es.ts`.
 
 > [!CAUTION]
 > Never hand-edit anything under `src/shared/api/generated/` — `npm run api:generate` wipes and rewrites the
