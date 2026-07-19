@@ -779,6 +779,38 @@ public sealed class UserServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_ValidAdultUpdate_InvalidatesUsersCache()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id);
+        FindReturns(user);
+        users
+            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        users
+            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        HasUsers(user);
+        var request = new UpdateUserRequest(
+            "New",
+            "Name",
+            "new@test.com",
+            "999",
+            AdultDob,
+            null
+        );
+
+        var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+            );
+    }
+
+    [Fact]
     public async Task UpdateAsync_MinorWithoutParentId_ReturnsBadRequest()
     {
         FindReturns(NewUser());
@@ -1089,6 +1121,29 @@ public sealed class UserServiceTests
         user.UserTypeId.Should().Be(roleId);
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeTypeAsync_NewTypeDiffersFromCurrent_InvalidatesUsersCache()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, dob: AdultDob);
+        FindReturns(user);
+        TypeExists(true);
+        HasUsers(NewUser(id: id));
+
+        var result = await sut.ChangeTypeAsync(
+            id,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+            );
     }
 
     [Fact]

@@ -26,8 +26,8 @@ public class FileService(
 
     public async Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var file = await files.FindAsync(f => f.Id == id, ct);
-        var response = file?.ToResponse();
+        var matches = await files.GetAsync(f => f.Id == id, ct);
+        var response = matches.Count == 0 ? null : matches[0].ToResponse();
 
         return response is null ? Error.NotFound(ErrorCode.FileNotFound) : Result.Success(response);
     }

@@ -427,7 +427,6 @@ public class EventService(
         if (await categoryTypes.RemoveAsync(x => x.Id == id, ct) == 0)
             return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
 
-        await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes, CacheTags.Events);
         return Result.Success();
     }

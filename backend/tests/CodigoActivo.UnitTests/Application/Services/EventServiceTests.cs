@@ -1657,25 +1657,6 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteCategoryTypeAsync_Removed_SavesChanges()
-    {
-        categoryTypes
-            .RemoveAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(1);
-
-        var result = await sut.DeleteCategoryTypeAsync(
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task DeleteCategoryTypeAsync_Removed_InvalidatesCategoryTypesAndEventsCache()
     {
         categoryTypes
