@@ -15,8 +15,6 @@ export interface SeriesStyle {
 
 type StyleMap = Record<string, SeriesStyle>
 
-// Categorical hues are assigned per entity in a fixed order (never cycled) so the
-// same key keeps its colour across charts and across a range change.
 export const USER_TYPE_STYLE: StyleMap = {
   member: {
     label: i18n.global.t('pages.admin.dashboard.series.member'),
@@ -35,7 +33,6 @@ export const USER_TYPE_STYLE: StyleMap = {
   },
 }
 
-// Semantic status colours are reserved; they always ride with a legend label.
 export const INSCRIPTION_STATUS_STYLE: StyleMap = {
   confirmed: {
     label: i18n.global.t('pages.admin.dashboard.series.confirmed'),

@@ -87,7 +87,6 @@ function submitNewCategory(): void {
   createCategory.mutate(
     { name: newCat.name.trim(), color: newCatHex.value },
     {
-      // The mutation refreshes the category list before settling, so the new id is selectable.
       onSuccess: (created) => {
         if (created.id && !form.categoryIds.includes(created.id)) form.categoryIds.push(created.id)
         catDialogVisible.value = false

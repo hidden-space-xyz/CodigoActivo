@@ -65,9 +65,6 @@ watch([dialogVisible, editing], ([open]) => {
 })
 
 function openCreate(): void {
-  // Don't open a create dialog while an edit-detail fetch is in flight: the late fetch would set
-  // `editing` under the already-open dialog, clobbering the form (the watch repopulates on
-  // `editing` changes) and retargeting the save at that item instead of creating a new one.
   if (loadingDetail.value) return
   editing.value = null
   dialogVisible.value = true
@@ -79,14 +76,10 @@ async function openEdit(item: ContentItem): Promise<void> {
     dialogVisible.value = true
     return
   }
-  // Load the full detail (which carries the description the list row omits) BEFORE opening, so the
-  // form is populated once from complete data. Populating from the list row and then letting a late
-  // fetch re-trigger the form watch would clobber anything the user had already typed.
   loadingDetail.value = true
   try {
     const detail = await props.controller.fetchOne(item.id)
     if (!detail) {
-      // 404: the row was deleted between listing and editing — don't fall through to a create.
       feedback.error(t('widgets.contentEntityPage.toasts.notFound', { label: props.entityLabel }))
       return
     }

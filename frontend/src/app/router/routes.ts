@@ -144,8 +144,6 @@ export const routes: readonly RouteRecordRaw[] = [
     import('@/pages/admin/event-detail').then((m) => m.EventDetailPage),
   ),
   {
-    // Printable badge sheet: admin-only but rendered without the admin chrome so the
-    // printed pages contain nothing but the labels.
     path: '/admin/events/:eventId/badges',
     name: 'admin-event-badges',
     component: () => import('@/pages/admin/event-badges').then((m) => m.EventBadgesPage),
