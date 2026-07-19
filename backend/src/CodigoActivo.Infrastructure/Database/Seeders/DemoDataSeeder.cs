@@ -747,13 +747,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Primeros pasos con Python y el entorno de trabajo",
                     "Instalamos Python y el editor Visual Studio Code, configuramos el entorno y ejecutamos nuestro primer programa. Repasamos cómo funciona un intérprete y por qué es tan importante practicar poco a poco.",
-                    "Centro Cívico El Pozo del Tío Raimundo, Madrid",
+                    "Aula de formación de la sede de la asociación",
                     "Presencial"
                 ),
                 new(
                     "Variables, tipos de datos y estructuras de control",
                     "Aprendemos a guardar información en variables, a trabajar con números y textos, y a tomar decisiones en el código con condicionales y bucles. Practicamos con ejercicios cortos y resolvemos dudas en directo.",
-                    "Centro Cívico El Pozo del Tío Raimundo, Madrid",
+                    "Aula de formación de la sede de la asociación",
                     "Presencial"
                 ),
                 new(
@@ -765,7 +765,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Tu primer proyecto: una agenda de contactos",
                     "Ponemos en práctica todo lo aprendido construyendo una pequeña agenda que permite añadir, buscar y borrar contactos. Un proyecto real que demuestra que ya sabes programar cosas útiles.",
-                    "Centro Cívico El Pozo del Tío Raimundo, Madrid",
+                    "Aula de formación de la sede de la asociación",
                     "Presencial"
                 ),
                 new(
@@ -789,31 +789,31 @@ public sealed class DemoDataSeeder(
                 new(
                     "La placa Arduino y sus componentes",
                     "Conocemos las partes de la placa, la protoboard y los componentes básicos como resistencias, cables y LEDs. Montamos nuestro primer circuito que enciende una luz de forma segura.",
-                    "Espacio Maker de la Biblioteca Pública de Valencia",
+                    "Espacio maker de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Programar luces: parpadeos y semáforos",
                     "Damos el salto al código para controlar cuándo se encienden y apagan las luces. Construimos un semáforo con tres LEDs y ajustamos sus tiempos, entendiendo cómo el software gobierna el hardware.",
-                    "Espacio Maker de la Biblioteca Pública de Valencia",
+                    "Espacio maker de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Sensores: que el robot perciba el mundo",
                     "Conectamos sensores de luz, temperatura y distancia para que el circuito reaccione a lo que ocurre a su alrededor. Aprendemos a leer sus valores y a tomar decisiones con ellos.",
-                    "Espacio Maker de la Biblioteca Pública de Valencia",
+                    "Espacio maker de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Movimiento: motores y servos",
                     "Incorporamos motores y servomotores para dar movimiento a nuestros montajes. Controlamos velocidad y giro, y preparamos las piezas que darán vida al robot final.",
-                    "Espacio Maker de la Biblioteca Pública de Valencia",
+                    "Espacio maker de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Proyecto final: robot que esquiva obstáculos",
                     "Unimos sensores y motores para montar un robot capaz de detectar obstáculos y cambiar de dirección. Cada equipo presenta su creación y comparte los retos que ha superado.",
-                    "Espacio Maker de la Biblioteca Pública de Valencia",
+                    "Espacio maker de la biblioteca municipal",
                     "Presencial"
                 ),
             ]
@@ -831,13 +831,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Mapa de riesgos de tu negocio",
                     "Identificamos qué información y qué sistemas son críticos para tu actividad y dónde están tus puntos débiles. Elaboramos un inventario sencillo que sirve de base para todo lo demás.",
-                    "Cámara de Comercio de Bilbao",
+                    "Sala de formación del vivero de empresas municipal",
                     "Presencial"
                 ),
                 new(
                     "Contraseñas y doble factor sin dolores de cabeza",
                     "Aprendemos a usar un gestor de contraseñas y a activar la verificación en dos pasos en las herramientas del día a día. Descartamos hábitos peligrosos como reutilizar la misma clave en todo.",
-                    "Cámara de Comercio de Bilbao",
+                    "Sala de formación del vivero de empresas municipal",
                     "Presencial"
                 ),
                 new(
@@ -849,7 +849,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Copias de seguridad que de verdad funcionan",
                     "Diseñamos una estrategia de copias sencilla siguiendo la regla de las tres copias. Comprobamos que se puedan restaurar, porque una copia que no se puede recuperar no sirve de nada.",
-                    "Cámara de Comercio de Bilbao",
+                    "Sala de formación del vivero de empresas municipal",
                     "Presencial"
                 ),
                 new(
@@ -873,13 +873,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Cómo piensan los modelos de lenguaje",
                     "Explicamos de forma sencilla qué es un modelo de lenguaje, cómo se entrena y por qué a veces se inventa respuestas. Entender esto es clave para usarlo con criterio.",
-                    "Ateneu de Innovación, Barcelona",
+                    "Sala polivalente del centro de innovación local",
                     "Presencial"
                 ),
                 new(
                     "El arte de escribir buenas instrucciones",
                     "Practicamos cómo formular peticiones claras para obtener mejores resultados. Comparamos respuestas según cómo planteamos la instrucción y creamos nuestra propia biblioteca de prompts útiles.",
-                    "Ateneu de Innovación, Barcelona",
+                    "Sala polivalente del centro de innovación local",
                     "Presencial"
                 ),
                 new(
@@ -891,7 +891,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Automatizar tareas repetitivas con IA",
                     "Vemos cómo encadenar la IA con otras herramientas para resumir correos, clasificar documentos o redactar borradores. Diseñamos un pequeño flujo de trabajo pensado para ahorrar tiempo real.",
-                    "Ateneu de Innovación, Barcelona",
+                    "Sala polivalente del centro de innovación local",
                     "Presencial"
                 ),
                 new(
@@ -915,13 +915,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Descubre el motor Godot",
                     "Recorremos la interfaz del motor, creamos nuestro primer proyecto y entendemos cómo se organizan las escenas y los nodos. Ponemos un personaje en pantalla en la primera sesión.",
-                    "Fábrica de Innovación, Polígono Sur, Sevilla",
+                    "Aula multimedia del centro cívico del barrio",
                     "Presencial"
                 ),
                 new(
                     "Movimiento y físicas del personaje",
                     "Programamos los controles para mover al protagonista y hacer que salte. Trabajamos con la gravedad y las colisiones para que el mundo del juego se comporte de forma creíble.",
-                    "Fábrica de Innovación, Polígono Sur, Sevilla",
+                    "Aula multimedia del centro cívico del barrio",
                     "Presencial"
                 ),
                 new(
@@ -933,13 +933,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Sonido, música y detalles visuales",
                     "Incorporamos efectos de sonido y música, y damos vida a las pantallas con animaciones y menús. Estos detalles marcan la diferencia entre un prototipo y un juego que apetece jugar.",
-                    "Fábrica de Innovación, Polígono Sur, Sevilla",
+                    "Aula multimedia del centro cívico del barrio",
                     "Presencial"
                 ),
                 new(
                     "Exporta y comparte tu juego",
                     "Aprendemos a exportar el juego para que otras personas puedan jugarlo y lo mostramos al resto del grupo. Cerramos con ideas para seguir mejorándolo y ampliándolo en casa.",
-                    "Fábrica de Innovación, Polígono Sur, Sevilla",
+                    "Aula multimedia del centro cívico del barrio",
                     "Presencial"
                 ),
             ]
@@ -957,7 +957,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Cómo funciona una impresora 3D",
                     "Conocemos las partes de la máquina, los tipos de impresión y los materiales más habituales como el PLA. Entendemos el recorrido completo desde el modelo digital hasta el objeto físico.",
-                    "Laboratorio Ciudadano de Zaragoza (La Remolacha)",
+                    "Aula taller de impresión 3D del laboratorio ciudadano",
                     "Presencial"
                 ),
                 new(
@@ -969,19 +969,19 @@ public sealed class DemoDataSeeder(
                 new(
                     "Del diseño a la impresora: el laminado",
                     "Aprendemos a preparar el modelo con un programa laminador, ajustando relleno, altura de capa y soportes. Descubrimos cómo estas decisiones afectan al tiempo y a la calidad final.",
-                    "Laboratorio Ciudadano de Zaragoza (La Remolacha)",
+                    "Aula taller de impresión 3D del laboratorio ciudadano",
                     "Presencial"
                 ),
                 new(
                     "Calibración y primeras impresiones",
                     "Nivelamos la base, cargamos el filamento y lanzamos nuestras primeras piezas. Aprendemos a diagnosticar y corregir los problemas más frecuentes cuando algo no sale bien.",
-                    "Laboratorio Ciudadano de Zaragoza (La Remolacha)",
+                    "Aula taller de impresión 3D del laboratorio ciudadano",
                     "Presencial"
                 ),
                 new(
                     "Acabados, usos y comunidad maker",
                     "Vemos técnicas de postprocesado para mejorar el aspecto de las piezas y repositorios donde descargar y compartir diseños. Cada participante se lleva a casa sus propias impresiones.",
-                    "Laboratorio Ciudadano de Zaragoza (La Remolacha)",
+                    "Aula taller de impresión 3D del laboratorio ciudadano",
                     "Presencial"
                 ),
             ]
@@ -999,13 +999,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Qué son los datos abiertos y por qué importan",
                     "Explicamos el concepto de datos abiertos, sus licencias y su valor para la transparencia y la participación. Vemos ejemplos de proyectos ciudadanos nacidos de datos públicos.",
-                    "Centro de Cultura Antiguo Instituto, Gijón",
+                    "Salón de actos del centro cultural municipal",
                     "Presencial"
                 ),
                 new(
                     "Explorando los portales públicos",
                     "Navegamos por portales de datos abiertos autonómicos y municipales y aprendemos a buscar y descargar conjuntos de datos. Comentamos qué formatos existen y cuáles son más útiles.",
-                    "Centro de Cultura Antiguo Instituto, Gijón",
+                    "Salón de actos del centro cultural municipal",
                     "Presencial"
                 ),
                 new(
@@ -1017,13 +1017,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Contar historias con gráficos",
                     "Convertimos las tablas en gráficos claros que ayudan a entender la realidad de un vistazo. Reflexionamos sobre cómo una visualización puede aclarar o, mal usada, confundir.",
-                    "Centro de Cultura Antiguo Instituto, Gijón",
+                    "Salón de actos del centro cultural municipal",
                     "Presencial"
                 ),
                 new(
                     "Proyecto ciudadano con datos locales",
                     "En pequeños grupos analizamos un tema de interés del municipio y presentamos nuestras conclusiones al resto. Cerramos hablando de cómo trasladar estas ideas a la vida asociativa.",
-                    "Centro de Cultura Antiguo Instituto, Gijón",
+                    "Salón de actos del centro cultural municipal",
                     "Presencial"
                 ),
             ]
@@ -1041,25 +1041,25 @@ public sealed class DemoDataSeeder(
                 new(
                     "Manejar el móvil con confianza",
                     "Repasamos lo básico del teléfono: ajustar el tamaño de la letra, el volumen, la conexión a internet y organizar las aplicaciones. Practicamos con calma hasta que cada gesto resulte natural.",
-                    "Centro de Mayores San Juan, Salamanca",
+                    "Aula de informática del centro de personas mayores",
                     "Presencial"
                 ),
                 new(
                     "Mensajería y videollamadas con la familia",
                     "Aprendemos a enviar mensajes, fotos y notas de voz, y a hacer videollamadas para ver a los nietos aunque estén lejos. Un taller que conecta la tecnología con lo que de verdad importa.",
-                    "Centro de Mayores San Juan, Salamanca",
+                    "Aula de informática del centro de personas mayores",
                     "Presencial"
                 ),
                 new(
                     "Trámites y salud sin colas",
                     "Vemos cómo pedir cita médica, consultar recetas y realizar gestiones sencillas desde casa. Explicamos qué es la identificación digital y cómo usarla paso a paso.",
-                    "Centro de Mayores San Juan, Salamanca",
+                    "Aula de informática del centro de personas mayores",
                     "Presencial"
                 ),
                 new(
                     "Banca online con seguridad",
                     "Aprendemos a consultar el saldo y los movimientos de la cuenta con tranquilidad, entendiendo qué es seguro y qué no. Insistimos en no compartir nunca claves ni códigos con desconocidos.",
-                    "Centro de Mayores San Juan, Salamanca",
+                    "Aula de informática del centro de personas mayores",
                     "Presencial"
                 ),
                 new(
@@ -1083,31 +1083,31 @@ public sealed class DemoDataSeeder(
                 new(
                     "Conocemos a los personajes de Scratch",
                     "Descubrimos el entorno, elegimos personajes y escenarios y hacemos que se muevan por primera vez. Todo mediante bloques de colores que encajamos como piezas de un juego.",
-                    "Biblioteca Regional Manuel Altolaguirre, Málaga",
+                    "Sala infantil de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Que se muevan y hablen",
                     "Aprendemos a que los personajes caminen, salten y digan cosas en bocadillos. Los peques inventan pequeñas escenas y ven cómo sus ideas cobran vida en la pantalla.",
-                    "Biblioteca Regional Manuel Altolaguirre, Málaga",
+                    "Sala infantil de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Bucles y repeticiones divertidas",
                     "Introducimos la idea de repetir acciones para crear bailes, dibujos y patrones. Una forma sencilla de descubrir uno de los conceptos más importantes de la programación.",
-                    "Biblioteca Regional Manuel Altolaguirre, Málaga",
+                    "Sala infantil de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Creamos una historia interactiva",
                     "Cada peque construye un pequeño cuento en el que se puede elegir qué pasa a continuación. Trabajamos la narración, la secuencia y la creatividad en un mismo proyecto.",
-                    "Biblioteca Regional Manuel Altolaguirre, Málaga",
+                    "Sala infantil de la biblioteca municipal",
                     "Presencial"
                 ),
                 new(
                     "Nuestro primer minijuego",
                     "Programamos un juego sencillo de atrapar objetos con puntuación y lo mostramos a las familias. Celebramos juntos todo lo aprendido durante el taller.",
-                    "Biblioteca Regional Manuel Altolaguirre, Málaga",
+                    "Sala infantil de la biblioteca municipal",
                     "Presencial"
                 ),
             ]
@@ -1125,31 +1125,31 @@ public sealed class DemoDataSeeder(
                 new(
                     "Presentación de retos sociales",
                     "Diversas entidades locales exponen problemas reales que necesitan soluciones tecnológicas. Los retos abarcan desde la accesibilidad hasta la gestión de voluntariado o el medio ambiente.",
-                    "Escuela Técnica Superior de Ingeniería Informática, Granada",
+                    "Aulas de informática del campus colaborador",
                     "Presencial"
                 ),
                 new(
                     "Formación de equipos e ideación",
                     "Nos organizamos en equipos equilibrados según los perfiles y elegimos el reto que más nos motiva. Dedicamos las primeras horas a definir bien la idea antes de empezar a construir.",
-                    "Escuela Técnica Superior de Ingeniería Informática, Granada",
+                    "Aulas de informática del campus colaborador",
                     "Presencial"
                 ),
                 new(
                     "Mentorías técnicas y de producto",
                     "Personas expertas voluntarias rotan por las mesas para resolver dudas de programación, diseño y enfoque. Un apoyo clave para desatascar problemas y afinar el proyecto.",
-                    "Escuela Técnica Superior de Ingeniería Informática, Granada",
+                    "Aulas de informática del campus colaborador",
                     "Presencial"
                 ),
                 new(
                     "Desarrollo intensivo del prototipo",
                     "El grueso del evento: cada equipo construye una versión funcional mínima de su idea. Se trabaja en abierto y se comparte el código en un repositorio común desde el primer momento.",
-                    "Escuela Técnica Superior de Ingeniería Informática, Granada",
+                    "Aulas de informática del campus colaborador",
                     "Presencial"
                 ),
                 new(
                     "Presentaciones finales y celebración",
                     "Cada equipo dispone de unos minutos para mostrar lo conseguido ante el resto y las entidades. Más que competir, celebramos lo aprendido y buscamos cómo dar continuidad a los proyectos.",
-                    "Escuela Técnica Superior de Ingeniería Informática, Granada",
+                    "Aulas de informática del campus colaborador",
                     "Presencial"
                 ),
             ]
@@ -1251,13 +1251,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Maquetación con HTML y CSS",
                     "Aprendemos a estructurar el contenido de una página y a darle estilo para que se vea bien en cualquier pantalla. Construimos la interfaz de nuestro proyecto desde cero.",
-                    "Espacio de Coworking A Xanela, A Coruña",
+                    "Sala de trabajo del espacio de coworking colaborador",
                     "Presencial"
                 ),
                 new(
                     "Interactividad con JavaScript",
                     "Añadimos comportamiento a la página para que responda a las acciones de la persona usuaria. Trabajamos con eventos, formularios y actualización dinámica del contenido.",
-                    "Espacio de Coworking A Xanela, A Coruña",
+                    "Sala de trabajo del espacio de coworking colaborador",
                     "Presencial"
                 ),
                 new(
@@ -1269,7 +1269,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Guardar datos en una base de datos",
                     "Conectamos nuestra aplicación a una base de datos para almacenar y recuperar información de forma permanente. Aprendemos las operaciones básicas de crear, leer, actualizar y borrar.",
-                    "Espacio de Coworking A Xanela, A Coruña",
+                    "Sala de trabajo del espacio de coworking colaborador",
                     "Presencial"
                 ),
                 new(
@@ -1293,19 +1293,19 @@ public sealed class DemoDataSeeder(
                 new(
                     "Presentación del reto de la temporada",
                     "Conocemos el tablero, las misiones y las reglas de la temporada. Cada equipo empieza a planificar su estrategia y a repartir responsabilidades entre sus integrantes.",
-                    "Centro Tecnológico Juvenil, Murcia",
+                    "Taller de robótica del centro juvenil municipal",
                     "Presencial"
                 ),
                 new(
                     "Diseño y construcción del robot",
                     "Montamos la estructura del robot y experimentamos con distintos accesorios y ruedas. Aprendemos que un buen diseño mecánico es la mitad del éxito en cada misión.",
-                    "Centro Tecnológico Juvenil, Murcia",
+                    "Taller de robótica del centro juvenil municipal",
                     "Presencial"
                 ),
                 new(
                     "Programación de las misiones",
                     "Traducimos la estrategia en código para que el robot recorra el tablero y complete los objetivos. Probamos, medimos y ajustamos una y otra vez hasta afinar cada movimiento.",
-                    "Centro Tecnológico Juvenil, Murcia",
+                    "Taller de robótica del centro juvenil municipal",
                     "Presencial"
                 ),
                 new(
@@ -1317,7 +1317,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Torneo amistoso entre centros",
                     "Llega el gran día: los equipos ponen a prueba sus robots en varias rondas ante otros centros. Celebramos el esfuerzo, el trabajo en equipo y el juego limpio por encima del resultado.",
-                    "Pabellón Municipal de Deportes, Murcia",
+                    "Pabellón polideportivo municipal",
                     "Presencial"
                 ),
             ]
@@ -1335,13 +1335,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Introducción al modelado paramétrico",
                     "Descubrimos la lógica del diseño por parámetros, donde cada medida se puede modificar y todo se actualiza. Creamos nuestras primeras piezas controlando dimensiones con precisión.",
-                    "Fab Lab de Donostia / San Sebastián",
+                    "Aula de diseño y prototipado del centro tecnológico municipal",
                     "Presencial"
                 ),
                 new(
                     "Tolerancias y ensamblajes",
                     "Aprendemos a diseñar piezas que encajan entre sí dejando los huecos adecuados. Practicamos con uniones, encajes a presión y mecanismos sencillos que deben moverse.",
-                    "Fab Lab de Donostia / San Sebastián",
+                    "Aula de diseño y prototipado del centro tecnológico municipal",
                     "Presencial"
                 ),
                 new(
@@ -1353,13 +1353,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Optimizar el diseño para imprimir",
                     "Adaptamos las piezas para que se impriman mejor: orientación, soportes, grosores mínimos y ahorro de material. Un buen diseño evita fallos y reduce el tiempo de impresión.",
-                    "Fab Lab de Donostia / San Sebastián",
+                    "Aula de diseño y prototipado del centro tecnológico municipal",
                     "Presencial"
                 ),
                 new(
                     "Impresión y postprocesado del prototipo",
                     "Imprimimos nuestro prototipo funcional y lo pulimos con técnicas de acabado. Evaluamos el resultado, detectamos mejoras y planificamos una posible segunda versión.",
-                    "Fab Lab de Donostia / San Sebastián",
+                    "Aula de diseño y prototipado del centro tecnológico municipal",
                     "Presencial"
                 ),
             ]
@@ -1377,13 +1377,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Primeros pasos con pandas",
                     "Aprendemos a cargar datos desde archivos y a manejar tablas con filas y columnas. Descubrimos las operaciones básicas para seleccionar y filtrar la información que nos interesa.",
-                    "Distrito Digital, Alicante",
+                    "Aula de datos del centro de formación colaborador",
                     "Presencial"
                 ),
                 new(
                     "Limpieza y preparación de datos",
                     "Nos enfrentamos a datos desordenados, con valores ausentes o duplicados, y aprendemos a dejarlos listos para analizar. Descubrimos que esta fase suele ser la más larga y la más importante.",
-                    "Distrito Digital, Alicante",
+                    "Aula de datos del centro de formación colaborador",
                     "Presencial"
                 ),
                 new(
@@ -1395,7 +1395,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Visualización de resultados",
                     "Creamos gráficos claros con matplotlib para comunicar los hallazgos de forma comprensible. Reflexionamos sobre cómo elegir el tipo de gráfico adecuado para cada mensaje.",
-                    "Distrito Digital, Alicante",
+                    "Aula de datos del centro de formación colaborador",
                     "Presencial"
                 ),
                 new(
@@ -1419,31 +1419,31 @@ public sealed class DemoDataSeeder(
                 new(
                     "La palabra sorpresa y las ideas",
                     "Revelamos la palabra que inspirará todos los juegos y hacemos una lluvia de ideas por equipos. Aprendemos a elegir una idea sencilla que se pueda terminar en el tiempo disponible.",
-                    "Palacio de Congresos y Exposiciones, Córdoba",
+                    "Sala de actos del recinto ferial municipal",
                     "Presencial"
                 ),
                 new(
                     "Diseñamos personajes y escenarios",
                     "Dibujamos y damos forma a los protagonistas y a los mundos del juego. Quienes prefieren la parte artística tienen aquí su momento de brillar y aportar al equipo.",
-                    "Palacio de Congresos y Exposiciones, Córdoba",
+                    "Sala de actos del recinto ferial municipal",
                     "Presencial"
                 ),
                 new(
                     "Construimos los niveles",
                     "Montamos las pantallas y programamos las reglas básicas del juego con herramientas visuales. Probamos una y otra vez para que sea divertido y no demasiado difícil.",
-                    "Palacio de Congresos y Exposiciones, Córdoba",
+                    "Sala de actos del recinto ferial municipal",
                     "Presencial"
                 ),
                 new(
                     "Sonidos y últimos retoques",
                     "Añadimos efectos de sonido y música y pulimos los detalles finales. Cada equipo prepara su juego para que otras personas puedan jugarlo sin problemas.",
-                    "Palacio de Congresos y Exposiciones, Córdoba",
+                    "Sala de actos del recinto ferial municipal",
                     "Presencial"
                 ),
                 new(
                     "Muestra final para las familias",
                     "Abrimos las puertas para que familias y amistades prueben todos los juegos creados. Cada equipo cuenta cómo lo ha hecho y celebramos el esfuerzo de todo el fin de semana.",
-                    "Palacio de Congresos y Exposiciones, Córdoba",
+                    "Sala de actos del recinto ferial municipal",
                     "Presencial"
                 ),
             ]
@@ -1461,13 +1461,13 @@ public sealed class DemoDataSeeder(
                 new(
                     "Qué es Linux y por qué usarlo",
                     "Explicamos el origen de GNU/Linux, qué es una distribución y qué ventajas ofrece frente a otros sistemas. Vemos ejemplos de dónde se usa Linux, muchas veces sin que lo sepamos.",
-                    "Centro Insular de Cultura, Santa Cruz de Tenerife",
+                    "Aula de informática del centro cultural de la comarca",
                     "Presencial"
                 ),
                 new(
                     "Probar Linux sin instalar nada",
                     "Aprendemos a arrancar el sistema desde un USB para probarlo sin tocar nuestro ordenador. Una forma segura de experimentar y decidir si queremos dar el paso.",
-                    "Centro Insular de Cultura, Santa Cruz de Tenerife",
+                    "Aula de informática del centro cultural de la comarca",
                     "Presencial"
                 ),
                 new(
@@ -1479,7 +1479,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Instalar y actualizar programas",
                     "Aprendemos a gestionar el software mediante los centros de aplicaciones y los repositorios. Vemos lo cómodo y seguro que resulta mantener el sistema al día.",
-                    "Centro Insular de Cultura, Santa Cruz de Tenerife",
+                    "Aula de informática del centro cultural de la comarca",
                     "Presencial"
                 ),
                 new(
@@ -1545,19 +1545,19 @@ public sealed class DemoDataSeeder(
                 new(
                     "Iníciate en la soldadura",
                     "Aprendemos a soldar de forma segura y limpia, una habilidad básica del mundo maker. Practicamos con un pequeño montaje que nos llevamos a casa funcionando.",
-                    "Espacio Maker de la Escuela de Arte y Superior de Diseño, Pamplona",
+                    "Taller de electrónica de la escuela de arte colaboradora",
                     "Presencial"
                 ),
                 new(
                     "Circuitos electrónicos básicos",
                     "Descubrimos los componentes esenciales y cómo combinarlos en circuitos sencillos que hacen cosas. Entendemos conceptos como la corriente, el voltaje y la resistencia sin agobios.",
-                    "Espacio Maker de la Escuela de Arte y Superior de Diseño, Pamplona",
+                    "Taller de electrónica de la escuela de arte colaboradora",
                     "Presencial"
                 ),
                 new(
                     "Microcontroladores: dar inteligencia al circuito",
                     "Programamos un pequeño microcontrolador para que nuestro circuito reaccione y tome decisiones. Damos el salto de la electrónica fija a los proyectos programables.",
-                    "Espacio Maker de la Escuela de Arte y Superior de Diseño, Pamplona",
+                    "Taller de electrónica de la escuela de arte colaboradora",
                     "Presencial"
                 ),
                 new(
@@ -1569,7 +1569,7 @@ public sealed class DemoDataSeeder(
                 new(
                     "Proyecto maker colaborativo",
                     "En pequeños grupos ideamos y construimos un invento que combine todo lo aprendido. Compartimos los resultados con la comunidad y dejamos la puerta abierta a seguir mejorándolos.",
-                    "Espacio Maker de la Escuela de Arte y Superior de Diseño, Pamplona",
+                    "Taller de electrónica de la escuela de arte colaboradora",
                     "Presencial"
                 ),
             ]
@@ -1820,16 +1820,16 @@ public sealed class DemoDataSeeder(
 
     private static readonly PartnerSeed[] DemoPartners =
     [
-        new("Fundación Telefónica", 0, "https://www.fundaciontelefonica.com"),
-        new("Ayuntamiento de Zaragoza", 1, "https://www.zaragoza.es"),
-        new("Universitat Politècnica de València", 1, "https://www.upv.es"),
-        new("GMV Innovating Solutions", 2, "https://www.gmv.com"),
-        new("Fundación Orange España", 2, "https://www.fundacionorange.es"),
-        new("Ingeniería y Software Iberdata S.L.", 2, "https://www.iberdata.es"),
-        new("Academia de Robótica RoboKids", 3, "https://www.robokids.es"),
+        new("Fundación Almadía Digital", 0, "https://almadiadigital.example.com"),
+        new("Ayuntamiento de Villaejemplo", 1, "https://villaejemplo.example.com"),
+        new("Universidad Tecnológica de Ejemplo", 1, "https://universidadejemplo.example.com"),
+        new("Cuarzo Índigo Tecnologías", 2, "https://cuarzoindigo.example.com"),
+        new("Fundación Sillar Digital", 2, "https://sillardigital.example.com"),
+        new("Ingeniería y Software Quilmara S.L.", 2, "https://quilmara.example.com"),
+        new("Academia de Robótica Engranaje", 3, "https://engranaje.example.com"),
         new("Librería Técnica El Compilador", 3, null),
-        new("MakerLab 3D Estudio", 3, "https://www.makerlab3d.es"),
-        new("Cafetería Bit & Café", 3, null),
+        new("Taller 3D Filamento Verde", 3, "https://filamentoverde.example.com"),
+        new("Cafetería Molienda Binaria", 3, null),
     ];
     private static readonly UserSeed[] UserSeeds =
     [
