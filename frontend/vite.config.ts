@@ -15,11 +15,14 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      chunkSizeWarningLimit: 700,
       rolldownOptions: {
         output: {
           codeSplitting: {
             groups: [
-              { name: 'primevue', test: /node_modules[\\/](primevue|@primeuix)[\\/]/, maxSize: 700_000 },
+              { name: 'datatable', test: /node_modules[\\/]primevue[\\/]datatable[\\/]/ },
+              { name: 'primetheme', test: /node_modules[\\/]@primeuix[\\/]themes[\\/]/ },
+              { name: 'primevue', test: /node_modules[\\/](primevue|@primeuix)[\\/]/ },
               { name: 'editor', test: /node_modules[\\/](@tiptap|prosemirror-)/ },
               { name: 'charts', test: /node_modules[\\/](chart\.js|@kurkle)[\\/]/ },
             ],
