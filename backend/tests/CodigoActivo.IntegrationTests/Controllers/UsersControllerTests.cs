@@ -506,7 +506,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/change-type?roleId={SeedIds.UserTypes.Sponsor}",
+            $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={SeedIds.UserTypes.Sponsor}",
             ct: TestContext.Current.CancellationToken
         );
 
@@ -529,7 +529,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?roleId={SeedIds.UserTypes.Member}",
+            $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?userTypeId={SeedIds.UserTypes.Member}",
             ct: TestContext.Current.CancellationToken
         );
 
@@ -550,7 +550,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/change-type?roleId={Guid.NewGuid()}",
+            $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={Guid.NewGuid()}",
             ct: TestContext.Current.CancellationToken
         );
 

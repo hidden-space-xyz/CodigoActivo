@@ -33,7 +33,7 @@ const selected = ref<UserResponse | null>(null)
 
 const typeDialogVisible = ref(false)
 const typeUser = ref<UserResponse | null>(null)
-const selectedRoleId = ref<string | null>(null)
+const selectedUserTypeId = ref<string | null>(null)
 
 function fullName(user: UserResponse): string {
   return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—'
@@ -120,7 +120,7 @@ function onSubmit(body: UpdateUserRequest): void {
 
 function openChangeType(user: UserResponse): void {
   typeUser.value = user
-  selectedRoleId.value = user.type?.id ?? null
+  selectedUserTypeId.value = user.type?.id ?? null
   typeDialogVisible.value = true
 }
 
@@ -141,9 +141,9 @@ function toggleAdmin(user: UserResponse, value: boolean): void {
 }
 
 function submitChangeType(): void {
-  if (!typeUser.value?.id || !selectedRoleId.value) return
+  if (!typeUser.value?.id || !selectedUserTypeId.value) return
   changeType.mutate(
-    { id: typeUser.value.id, roleId: selectedRoleId.value },
+    { id: typeUser.value.id, userTypeId: selectedUserTypeId.value },
     {
       onSuccess: () => {
         feedback.success(t('pages.admin.users.toasts.typeUpdated'))
@@ -371,7 +371,7 @@ function confirmDelete(user: UserResponse): void {
       <div class="form__field">
         <label>{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
         <Select
-          v-model="selectedRoleId"
+          v-model="selectedUserTypeId"
           :options="userTypes.data.value ?? []"
           option-label="name"
           option-value="id"
@@ -390,7 +390,7 @@ function confirmDelete(user: UserResponse): void {
         <Button
           :label="$t('common.apply')"
           :loading="changeType.isPending.value"
-          :disabled="!selectedRoleId"
+          :disabled="!selectedUserTypeId"
           @click="submitChangeType"
         />
       </template>

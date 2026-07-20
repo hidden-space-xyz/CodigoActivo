@@ -3,7 +3,6 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services.Abstractions;
-using CodigoActivo.Domain.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -15,8 +14,6 @@ namespace CodigoActivo.API.Controllers;
 [Route("api/files")]
 public class FilesController(IFileService files) : ApiControllerBase
 {
-    private const long MaxRequestBodyBytes = FileStorageOptions.DefaultMaxSizeBytes + (64 * 1024);
-
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
@@ -49,7 +46,7 @@ public class FilesController(IFileService files) : ApiControllerBase
     [HttpPost]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(MaxRequestBodyBytes)]
+    [FileUploadSizeLimit]
     public async Task<ActionResult<FileResponse>> Create(IFormFile? file, CancellationToken ct)
     {
         return ToCreated(
@@ -61,7 +58,7 @@ public class FilesController(IFileService files) : ApiControllerBase
     [HttpPut("{fileId:guid}")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(MaxRequestBodyBytes)]
+    [FileUploadSizeLimit]
     public async Task<ActionResult<FileResponse>> Update(
         Guid fileId,
         IFormFile? file,

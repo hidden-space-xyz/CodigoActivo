@@ -101,10 +101,10 @@ public class UsersController(IUserService users) : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<UserResponse>> ChangeType(
         Guid userId,
-        [FromQuery] Guid roleId,
+        [FromQuery] Guid userTypeId,
         CancellationToken ct
     )
     {
-        return ToOk(await users.ChangeTypeAsync(userId, roleId, ct));
+        return ToOk(await users.ChangeTypeAsync(userId, userTypeId, ct));
     }
 }
