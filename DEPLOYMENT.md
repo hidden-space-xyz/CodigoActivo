@@ -88,6 +88,12 @@ A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsetting
 `AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`). Override any of them, if
 needed, with the standard .NET `Section__Key` environment-variable convention (e.g. `Auth__ExpireHours`).
 
+> [!NOTE]
+> `FileStorage:MaxSizeBytes` drives both the HTTP request-size limit on the upload endpoints (+64 KiB of
+> multipart overhead) and the business-rule check. In the Docker stack, nginx additionally caps request
+> bodies at `client_max_body_size 12m` (`frontend/docker/default.conf`) — raising the knob past ~12 MiB
+> requires raising that too.
+
 ## Demo mode
 
 Setting `DEMO_MODE=true` seeds a full, realistic demo dataset on startup via `DemoDataSeeder` (it downloads

@@ -32,8 +32,8 @@ export function deleteUserRequest(id: string) {
   return deleteApiUsersUserId(id)
 }
 
-export function changeUserTypeRequest(id: string, roleId: string) {
-  return patchApiUsersUserIdChangeType(id, { roleId }).then((r) => r.data)
+export function changeUserTypeRequest(id: string, userTypeId: string) {
+  return patchApiUsersUserIdChangeType(id, { userTypeId }).then((r) => r.data)
 }
 
 export function setUserAdminRequest(id: string, isAdmin: boolean) {
