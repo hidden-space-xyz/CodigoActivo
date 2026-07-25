@@ -1,4 +1,6 @@
 import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
+import { putApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
+import { getApiMeEventHistory } from '@/shared/api/generated/endpoints/me/me'
 import {
   deleteApiUsersUserId,
   getApiUsers,
@@ -11,14 +13,23 @@ import { ApiError, toPage } from '@/shared/api'
 import type {
   AddMinorInput,
   ChangePasswordInput,
+  EventRatingInput,
   UpdateMinorInput,
   UpdateProfileInput,
 } from '../model/account-inputs'
-import type { AccountChild, AccountProfile } from '../model/types'
+import type {
+  AccountChild,
+  AccountEventRating,
+  AccountHistoryEntry,
+  AccountProfile,
+} from '../model/types'
 import {
   toAccountChild,
+  toAccountEventRating,
+  toAccountHistoryEntry,
   toAccountProfile,
   toAddMinorRequest,
+  toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
 } from './mapper'
@@ -87,4 +98,17 @@ export async function updateAccountChildRequest(
 
 export async function deleteAccountChildRequest(childId: string): Promise<void> {
   await deleteApiUsersUserId(childId)
+}
+
+export async function getAccountHistoryRequest(): Promise<readonly AccountHistoryEntry[]> {
+  const { data } = await getApiMeEventHistory()
+  return (data ?? []).map(toAccountHistoryEntry)
+}
+
+export async function saveAccountEventRatingRequest(
+  eventId: string,
+  input: EventRatingInput,
+): Promise<AccountEventRating> {
+  const response = await putApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
+  return toAccountEventRating(response.data)
 }

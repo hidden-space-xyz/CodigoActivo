@@ -22,3 +22,10 @@ export interface UpdateMinorInput {
   lastName: string
   birthDate: string
 }
+
+export interface EventRatingInput {
+  score: number
+  mostLiked: string
+  leastLiked: string
+  suggestions: string
+}

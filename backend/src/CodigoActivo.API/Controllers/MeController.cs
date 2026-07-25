@@ -9,7 +9,8 @@ namespace CodigoActivo.API.Controllers;
 [ApiController]
 [Route("api/me")]
 [Authorize]
-public class MeController(IActivityService activities) : ApiControllerBase
+public class MeController(IActivityService activities, IParticipationService participation)
+    : ApiControllerBase
 {
     [HttpGet("assigned-activities")]
     public async Task<ActionResult<IReadOnlyList<AssignedActivityResponse>>> AssignedActivities(
@@ -18,5 +19,13 @@ public class MeController(IActivityService activities) : ApiControllerBase
     )
     {
         return Ok(await activities.ListAssignedAsync(UserId, eventId, ct));
+    }
+
+    [HttpGet("event-history")]
+    public async Task<ActionResult<IReadOnlyList<EventHistoryResponse>>> EventHistory(
+        CancellationToken ct
+    )
+    {
+        return Ok(await participation.GetHistoryAsync(UserId, ct));
     }
 }

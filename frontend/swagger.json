@@ -1448,6 +1448,98 @@
         }
       }
     },
+    "/api/events/{eventId}/ratings": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRatingListItemResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/rating": {
+      "put": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveEventRatingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRatingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/events/categoryType/{eventCategoryTypeId}": {
       "put": {
         "tags": [
@@ -1693,6 +1785,28 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/AssignedActivityResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/event-history": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventHistoryResponse"
                   }
                 }
               }
@@ -3743,6 +3857,8 @@
           "EventCategoriesRequired",
           "EventScheduleRequired",
           "EventScheduleInvalidRange",
+          "EventRatingNotFinished",
+          "EventRatingAttendanceRequired",
           "ResourceNotFound",
           "ResourceThumbnailNotFound",
           "ResourceTypeNotFound",
@@ -4077,6 +4193,105 @@
         },
         "additionalProperties": false
       },
+      "EventHistoryActivityResponse": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "modalityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isSelf": {
+            "type": "boolean"
+          },
+          "roleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "subtitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventStartsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "eventEndsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "thumbnailId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isPast": {
+            "type": "boolean"
+          },
+          "canRate": {
+            "type": "boolean"
+          },
+          "myRating": {
+            "$ref": "#/components/schemas/EventRatingResponse"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventHistoryActivityResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "EventListItemResponse": {
         "type": "object",
         "properties": {
@@ -4164,6 +4379,121 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventRatingListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mostLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "leastLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestions": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventRatingListItemResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventRatingListItemResponse"
+            },
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventRatingResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mostLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "leastLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestions": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -4410,6 +4740,15 @@
           "distinctVolunteers": {
             "type": "integer",
             "format": "int32"
+          },
+          "ratingsCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ratingsAverage": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "roleTypeBreakdown": {
             "type": "array",
@@ -4867,6 +5206,29 @@
           },
           "isExternal": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaveEventRatingRequest": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "mostLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "leastLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestions": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

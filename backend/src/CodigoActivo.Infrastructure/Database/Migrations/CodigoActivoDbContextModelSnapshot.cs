@@ -444,6 +444,61 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_category_types", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("LeastLiked")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("least_liked");
+
+                    b.Property<string>("MostLiked")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("most_liked");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
+
+                    b.Property<string>("Suggestions")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("suggestions");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_ratings");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_event_ratings_user_id");
+
+                    b.HasIndex("EventId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_ratings_event_id_user_id");
+
+                    b.ToTable("event_ratings", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -999,6 +1054,27 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("EventCategoryType");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRating", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
+                        .WithMany("Ratings")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_ratings_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_ratings_users_user_id");
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Entities.User", null)
@@ -1124,6 +1200,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Activities");
 
                     b.Navigation("Categories");
+
+                    b.Navigation("Ratings");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>

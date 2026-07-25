@@ -13,6 +13,7 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<UserType> UserTypes => Set<UserType>();
 
     public DbSet<Event> Events => Set<Event>();
+    public DbSet<EventRating> EventRatings => Set<EventRating>();
     public DbSet<Activity> Activities => Set<Activity>();
     public DbSet<ActivityRoleType> ActivityRoleTypes => Set<ActivityRoleType>();
 

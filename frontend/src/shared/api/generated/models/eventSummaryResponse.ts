@@ -16,6 +16,9 @@ export interface EventSummaryResponse {
   confirmedAssignments?: number;
   deniedAssignments?: number;
   distinctVolunteers?: number;
+  ratingsCount?: number;
+  /** @nullable */
+  ratingsAverage?: number | null;
   /** @nullable */
   roleTypeBreakdown?: EventRoleTypeSummaryResponse[] | null;
 }

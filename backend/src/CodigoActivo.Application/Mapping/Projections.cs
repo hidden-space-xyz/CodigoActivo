@@ -296,6 +296,36 @@ public static class Projections
             Color = userType.Color,
         };
 
+    public static readonly Expression<Func<EventRating, EventRatingResponse>> EventRating =
+        rating => new EventRatingResponse
+        {
+            Id = rating.Id,
+            EventId = rating.EventId,
+            UserId = rating.UserId,
+            Score = rating.Score,
+            MostLiked = rating.MostLiked,
+            LeastLiked = rating.LeastLiked,
+            Suggestions = rating.Suggestions,
+            CreatedAt = rating.CreatedAt,
+            UpdatedAt = rating.UpdatedAt,
+        };
+
+    public static readonly Expression<
+        Func<EventRating, EventRatingListItemResponse>
+    > EventRatingListItem = rating => new EventRatingListItemResponse
+    {
+        Id = rating.Id,
+        UserId = rating.UserId,
+        FirstName = rating.User.FirstName,
+        LastName = rating.User.LastName,
+        Score = rating.Score,
+        MostLiked = rating.MostLiked,
+        LeastLiked = rating.LeastLiked,
+        Suggestions = rating.Suggestions,
+        CreatedAt = rating.CreatedAt,
+        UpdatedAt = rating.UpdatedAt,
+    };
+
     public static readonly Expression<
         Func<ActivityUserRoleAssignment, AssignedActivityResponse>
     > AssignedActivity = assignment => new AssignedActivityResponse

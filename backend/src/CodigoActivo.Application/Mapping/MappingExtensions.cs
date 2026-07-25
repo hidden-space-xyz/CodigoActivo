@@ -113,4 +113,19 @@ public static class MappingExtensions
             categoryType.Color
         );
     }
+
+    public static EventRatingResponse ToResponse(this EventRating rating)
+    {
+        return new EventRatingResponse(
+            rating.Id,
+            rating.EventId,
+            rating.UserId,
+            rating.Score,
+            rating.MostLiked,
+            rating.LeastLiked,
+            rating.Suggestions,
+            rating.CreatedAt,
+            rating.UpdatedAt
+        );
+    }
 }

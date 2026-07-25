@@ -39,6 +39,8 @@ public interface IEventRepository : IDbRepository<Event>
     Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
+public interface IEventRatingRepository : IDbRepository<EventRating>;
+
 public interface IActivityRepository : IDbRepository<Activity>
 {
     Task<bool> AnyOutsideRangeAsync(

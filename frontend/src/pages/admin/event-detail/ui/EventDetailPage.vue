@@ -22,12 +22,13 @@ import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
 import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
 import { useEvent, useEventSummary } from '@/features/manage-events'
 import EventAttendeesTab from './EventAttendeesTab.vue'
+import EventOpinionsTab from './EventOpinionsTab.vue'
 import type {
   ActivityResponse,
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { formatDateTimeRange, formatNumber, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,6 +55,13 @@ const summaryCards = computed(() => {
     cards.push({ label: role.roleTypeName ?? '—', value: role.approvedAssignments ?? 0 })
   }
   return cards
+})
+
+const ratingsCount = computed(() => summary.data.value?.ratingsCount ?? 0)
+
+const ratingsAverage = computed(() => {
+  const average = summary.data.value?.ratingsAverage
+  return average == null ? '—' : formatNumber(Number(average.toFixed(1)))
 })
 
 const modalityOptions = computed(() =>
@@ -171,12 +179,22 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
         <div class="summary__value">{{ card.value }}</div>
         <div class="summary__label">{{ card.label }}</div>
       </div>
+      <div class="summary__card">
+        <div class="summary__value">
+          {{ ratingsAverage }}
+          <span v-if="ratingsCount > 0" class="summary__unit">/5</span>
+        </div>
+        <div class="summary__label">
+          {{ $t('pages.admin.eventDetail.summary.ratings', ratingsCount) }}
+        </div>
+      </div>
     </div>
 
     <Tabs v-model:value="activeTab" class="tabs">
       <TabList>
         <Tab value="activities">{{ $t('pages.admin.eventDetail.tabs.activities') }}</Tab>
         <Tab value="attendees">{{ $t('pages.admin.eventDetail.tabs.attendees') }}</Tab>
+        <Tab value="opinions">{{ $t('pages.admin.eventDetail.tabs.opinions') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="activities">
@@ -283,6 +301,9 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
             :activities-error="activities.options.isError.value"
           />
         </TabPanel>
+        <TabPanel value="opinions">
+          <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
+        </TabPanel>
       </TabPanels>
     </Tabs>
 
@@ -331,6 +352,12 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
   font-weight: 700;
   font-size: 26px;
   color: var(--ca-text-bright);
+}
+
+.summary__unit {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ca-text-muted);
 }
 
 .summary__label {

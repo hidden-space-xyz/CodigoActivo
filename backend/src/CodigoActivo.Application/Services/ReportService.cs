@@ -54,6 +54,8 @@ public class ReportService(
                     e.Id,
                     e.Title,
                     ActivitiesCount = e.Activities.Count,
+                    RatingsCount = e.Ratings.Count,
+                    RatingsAverage = e.Ratings.Average(rating => (double?)rating.Score),
                 }),
             ct
         );
@@ -106,6 +108,8 @@ public class ReportService(
             stats?.Confirmed ?? 0,
             stats?.Denied ?? 0,
             stats?.DistinctUsers ?? 0,
+            ev.RatingsCount,
+            ev.RatingsAverage,
             roleTypeBreakdown
         );
     }

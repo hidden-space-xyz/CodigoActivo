@@ -13,7 +13,8 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class EventsController(IEventService events) : ApiControllerBase
+public class EventsController(IEventService events, IParticipationService participation)
+    : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -85,6 +86,28 @@ public class EventsController(IEventService events) : ApiControllerBase
     public async Task<ActionResult<EventResponse>> Feature(Guid eventId, CancellationToken ct)
     {
         return ToOk(await events.SetFeaturedAsync(eventId, ct));
+    }
+
+    [HttpGet("{eventId:guid}/ratings")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> Ratings(
+        Guid eventId,
+        [FromQuery] EventRatingListQuery query,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await participation.ListEventRatingsAsync(eventId, query, ct));
+    }
+
+    [HttpPut("{eventId:guid}/rating")]
+    [Authorize]
+    public async Task<ActionResult<EventRatingResponse>> SaveRating(
+        Guid eventId,
+        [FromBody] SaveEventRatingRequest request,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await participation.SaveRatingAsync(eventId, UserId, request, ct));
     }
 
     [HttpPost("categoryType")]
