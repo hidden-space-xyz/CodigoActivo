@@ -47,13 +47,19 @@ const emit = defineEmits<{ select: [year: string] }>()
     border-color 0.15s ease;
 }
 
-.year-filter__pill:hover {
+.year-filter__pill:hover:not(.year-filter__pill--active) {
   color: var(--ca-text-bright);
+  border-color: var(--ca-text-muted);
 }
 
 .year-filter__pill--active {
   color: var(--ca-bg);
   background: var(--ca-text);
   border-color: var(--ca-text);
+}
+
+.year-filter__pill--active:hover {
+  background: var(--ca-text-bright);
+  border-color: var(--ca-text-bright);
 }
 </style>

@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import Dialog from 'primevue/dialog'
+
 import { ActivityStep, useOrganizationContent, ValueCard } from '@/entities/organization'
+import { CONTACT } from '@/shared/config'
 import { BaseButton, SectionEyebrow } from '@/shared/ui'
 
 const { values, activities } = useOrganizationContent()
+
+const joinVisible = ref(false)
 </script>
 
 <template>
@@ -49,12 +55,37 @@ const { values, activities } = useOrganizationContent()
           {{ $t('pages.about.cta.text') }}
         </p>
         <div class="about-cta__actions">
-          <BaseButton :to="{ name: 'register' }" variant="primary">
-            {{ $t('common.register') }}
+          <BaseButton variant="primary" @click="joinVisible = true">
+            {{ $t('pages.about.cta.join') }}
           </BaseButton>
         </div>
       </div>
     </section>
+
+    <Dialog
+      v-model:visible="joinVisible"
+      modal
+      :draggable="false"
+      :header="$t('pages.about.cta.dialog.header')"
+      :style="{ width: '90vw', maxWidth: '480px' }"
+    >
+      <p class="join__lead">{{ $t('pages.about.cta.dialog.lead') }}</p>
+
+      <ul class="join__contact">
+        <li class="join__item">
+          <i class="pi pi-envelope" aria-hidden="true" />
+          <span class="join__label">{{ $t('common.emailLong') }}</span>
+          <a :href="`mailto:${CONTACT.email}`" class="join__value">{{ CONTACT.email }}</a>
+        </li>
+        <li class="join__item">
+          <i class="pi pi-phone" aria-hidden="true" />
+          <span class="join__label">{{ $t('common.phone') }}</span>
+          <a :href="`tel:${CONTACT.phoneHref}`" class="join__value">{{ CONTACT.phone }}</a>
+        </li>
+      </ul>
+
+      <p class="join__note">{{ $t('pages.about.cta.dialog.note') }}</p>
+    </Dialog>
   </div>
 </template>
 
@@ -185,6 +216,73 @@ const { values, activities } = useOrganizationContent()
   justify-content: center;
   margin-top: 26px;
   flex-wrap: wrap;
+}
+
+.join__lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ca-text-muted);
+}
+
+.join__contact {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.join__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--ca-border-strong);
+  border-radius: 12px;
+  background: var(--ca-surface-2);
+}
+
+.join__item .pi {
+  font-size: 15px;
+  color: var(--ca-orange-ink);
+}
+
+.join__label {
+  font-family: var(--ca-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ca-text-muted);
+}
+
+.join__value {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--ca-text-bright);
+  text-decoration: none;
+}
+
+.join__value:hover {
+  color: var(--ca-orange-ink);
+  text-decoration: underline;
+}
+
+.join__note {
+  margin: 18px 0 0;
+  font-size: 14px;
+  color: var(--ca-text-dim);
+}
+
+@media (max-width: 480px) {
+  .join__item {
+    flex-wrap: wrap;
+  }
+  .join__value {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
 }
 
 @media (max-width: 860px) {
