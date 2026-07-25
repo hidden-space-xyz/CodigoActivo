@@ -58,38 +58,31 @@ export function useAccount() {
     void getCurrentUserRequest().then((user) => session.setUser(user))
   }
 
+  function withUserId<T>(run: (id: string) => Promise<T>): Promise<T> {
+    const id = userId.value
+    if (!id) return Promise.reject(new Error(t('features.account.notAuthenticated')))
+    return run(id)
+  }
+
   const updateProfile = useMutation({
-    mutationFn: (input: UpdateProfileInput) => {
-      if (!userId.value)
-      return Promise.reject(new Error(t('features.account.notAuthenticated')))
-      return updateAccountProfileRequest(userId.value, input)
-    },
+    mutationFn: (input: UpdateProfileInput) =>
+      withUserId((id) => updateAccountProfileRequest(id, input)),
     onSuccess: syncProfile,
   })
 
   const changePassword = useMutation({
-    mutationFn: (input: ChangePasswordInput) => {
-      if (!userId.value)
-      return Promise.reject(new Error(t('features.account.notAuthenticated')))
-      return changeAccountPasswordRequest(userId.value, input)
-    },
+    mutationFn: (input: ChangePasswordInput) =>
+      withUserId((id) => changeAccountPasswordRequest(id, input)),
   })
 
   const addChild = useMutation({
-    mutationFn: (input: AddMinorInput) => {
-      if (!userId.value)
-      return Promise.reject(new Error(t('features.account.notAuthenticated')))
-      return addAccountChildRequest(userId.value, input)
-    },
+    mutationFn: (input: AddMinorInput) => withUserId((id) => addAccountChildRequest(id, input)),
     onSuccess: invalidateChildren,
   })
 
   const updateChild = useMutation({
-    mutationFn: (vars: { childId: string; input: UpdateMinorInput }) => {
-      if (!userId.value)
-      return Promise.reject(new Error(t('features.account.notAuthenticated')))
-      return updateAccountChildRequest(vars.childId, userId.value, vars.input)
-    },
+    mutationFn: (vars: { childId: string; input: UpdateMinorInput }) =>
+      withUserId((id) => updateAccountChildRequest(vars.childId, id, vars.input)),
     onSuccess: invalidateChildren,
   })
 
@@ -99,11 +92,7 @@ export function useAccount() {
   })
 
   const deleteOwnAccount = useMutation({
-    mutationFn: () => {
-      if (!userId.value)
-      return Promise.reject(new Error(t('features.account.notAuthenticated')))
-      return deleteAccountRequest(userId.value)
-    },
+    mutationFn: () => withUserId((id) => deleteAccountRequest(id)),
     onSuccess: async () => {
       try {
         await logoutRequest()

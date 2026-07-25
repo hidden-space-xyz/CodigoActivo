@@ -19,7 +19,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
 
     public async ValueTask InitializeAsync()
     {
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
         await new DatabaseSeeder(db).SeedAsync();
     }
@@ -29,20 +29,10 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         return ValueTask.CompletedTask;
     }
 
-    private CodigoActivoDbContext NewContext()
-    {
-        return new CodigoActivoDbContext(
-            new DbContextOptionsBuilder<CodigoActivoDbContext>()
-                .UseNpgsql(postgres.ConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options
-        );
-    }
-
     [Fact]
     public async Task GetCountsAsync_EmptyDatabase_ReturnsZeroForEveryTable()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var repo = new DashboardRepository(ctx);
 
         var counts = await repo.GetCountsAsync(TestContext.Current.CancellationToken);
@@ -58,7 +48,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     [Fact]
     public async Task GetCountsAsync_SeededRows_ReturnsDistinctCountPerTable()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         SeedDistinctRowCounts(ctx);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new DashboardRepository(ctx);

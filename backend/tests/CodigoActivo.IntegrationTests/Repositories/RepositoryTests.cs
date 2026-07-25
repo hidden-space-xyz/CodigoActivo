@@ -19,7 +19,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
     public async ValueTask InitializeAsync()
     {
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
         await new DatabaseSeeder(db).SeedAsync();
 
@@ -51,16 +51,6 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public ValueTask DisposeAsync()
     {
         return ValueTask.CompletedTask;
-    }
-
-    private CodigoActivoDbContext NewContext()
-    {
-        return new CodigoActivoDbContext(
-            new DbContextOptionsBuilder<CodigoActivoDbContext>()
-                .UseNpgsql(postgres.ConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options
-        );
     }
 
     private static Partner NewPartner(string name = "Partner", int tier = 1) =>
@@ -180,7 +170,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task Query_PartnersExist_ReturnsAllRowsUntracked()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(NewPartner("A"), NewPartner("B"));
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         ctx.ChangeTracker.Clear();
@@ -196,12 +186,12 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task AddAsync_BeforeSaveChanges_DoesNotPersist()
     {
         var partner = NewPartner();
-        await using (var ctx = NewContext())
+        await using (var ctx = postgres.CreateContext())
         {
             var repo = new PartnerRepository(ctx);
             await repo.AddAsync(partner, TestContext.Current.CancellationToken);
 
-            await using (var probe = NewContext())
+            await using (var probe = postgres.CreateContext())
             {
                 (await probe.Partners.CountAsync(TestContext.Current.CancellationToken))
                     .Should()
@@ -211,7 +201,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        await using var verify = NewContext();
+        await using var verify = postgres.CreateContext();
         (await verify.Partners.FindAsync([partner.Id], TestContext.Current.CancellationToken))
             .Should()
             .NotBeNull();
@@ -220,7 +210,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task FindAsync_PredicateMatch_ReturnsFirstMatchOrNull()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var target = NewPartner("Target");
         ctx.Partners.AddRange(target, NewPartner("Other"));
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -240,7 +230,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetAsync_PredicateProvided_ReturnsOnlyMatchingRows()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(NewPartner("Keep", tier: 5), NewPartner("Drop", tier: 1));
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
@@ -253,7 +243,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetAllAsync_ThreeRowsStored_ReturnsAllRows()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(
             NewPartner("A", tier: 2),
             NewPartner("B", tier: 2),
@@ -268,7 +258,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task CountAsync_PredicateProvided_CountsMatchingRows()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(
             NewPartner("A", tier: 2),
             NewPartner("B", tier: 2),
@@ -287,7 +277,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [InlineData(99, false)]
     public async Task ExistsAsync_TierMatch_ReportsPresence(int tier, bool expected)
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.Add(NewPartner("A", tier: 9));
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
@@ -300,7 +290,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task Remove_ThenSaveChanges_DeletesEntity()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var partner = NewPartner();
         ctx.Partners.Add(partner);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -317,7 +307,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task RemoveAsync_MatchingRows_DeletesAndReturnsCount()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(
             NewPartner("X", tier: 1),
             NewPartner("Y", tier: 1),
@@ -339,7 +329,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task RemoveAsync_NoRowsMatch_ReturnsZero()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Partners.Add(NewPartner("Only", tier: 3));
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new PartnerRepository(ctx);
@@ -353,7 +343,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetByIdWithDetailsAsync_UserExists_IncludesStatus()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser("Ada", "Admin");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -373,7 +363,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetByIdWithDetailsAsync_UserMissing_ReturnsNull()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var repo = new UserRepository(ctx);
 
         (await repo.GetByIdWithDetailsAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))
@@ -388,7 +378,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         string identifier
     )
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -405,7 +395,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetByEmailOrPhoneAsync_UnknownIdentifier_ReturnsNull()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000"));
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repo = new UserRepository(ctx);
@@ -423,7 +413,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [InlineData("free@x.test", false)]
     public async Task EmailExistsAsync_NoExcludeUserId_ReportsPresence(string email, bool expected)
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -437,7 +427,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task EmailExistsAsync_ExcludeUserIdMatchesOwner_ReturnsFalse()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -457,7 +447,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task EmailExistsAsync_ExcludeUserIdIsOtherUser_ReturnsTrue()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -479,7 +469,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [InlineData("+999", false)]
     public async Task PhoneExistsAsync_NoExcludeUserId_ReportsPresence(string phone, bool expected)
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser(phone: "+100");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -493,7 +483,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task PhoneExistsAsync_ExcludeUserIdMatchesOwner_ReturnsFalse()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser(phone: "+100");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -513,7 +503,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task PhoneExistsAsync_ExcludeUserIdIsOtherUser_ReturnsTrue()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser(phone: "+100");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -533,7 +523,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task ListChildrenWithDetailsAsync_ParentHasChildren_ReturnsOrderedWithDetails()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var parent = NewUser("Parent", "P");
         var zoe = NewUser(
             "Zoe",
@@ -567,7 +557,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetForEditAsync_EventWithCategories_IncludesCategoriesOrReturnsNull()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var category = new EventCategoryType
         {
             Id = Guid.NewGuid(),
@@ -603,7 +593,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         bool expected
     )
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var ev = NewEvent();
         var lower = Fixed;
         var upper = Fixed.AddMinutes(60);
@@ -633,7 +623,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task AnyOutsideRangeAsync_ActivityBelongsToOtherEvent_IgnoresIt()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var target = NewEvent("Target");
         var other = NewEvent("Other");
         ctx.Events.AddRange(target, other);
@@ -659,7 +649,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetAssignmentAsync_AssignmentExistsOrNot_ReturnsWithIncludesOrNull()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser();
         var role = NewRoleType("Ayudante");
         var status = NewAssignmentStatus("Pending");
@@ -715,14 +705,14 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             AssignmentStatusId = status.Id,
         };
 
-        await using (var ctx = NewContext())
+        await using (var ctx = postgres.CreateContext())
         {
             ctx.AddRange(user, role, status, ev, activity);
             await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
             var repo = new ActivityRepository(ctx);
 
             await repo.AddAssignmentAsync(assignment, TestContext.Current.CancellationToken);
-            await using (var probe = NewContext())
+            await using (var probe = postgres.CreateContext())
             {
                 (
                     await probe.ActivityUserRoleAssignments.CountAsync(
@@ -736,7 +726,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        await using var verify = NewContext();
+        await using var verify = postgres.CreateContext();
         (await verify.ActivityUserRoleAssignments.CountAsync(TestContext.Current.CancellationToken))
             .Should()
             .Be(1);
@@ -745,7 +735,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task RemoveAssignment_ThenSaveChanges_DeletesRow()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -774,7 +764,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task QueryAssignments_AssignmentsExist_ExposesAllRowsUntracked()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -803,7 +793,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task IsInUseAsync_ThumbnailOrDescriptionReference_DetectsUsage()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
 
         var eventEmbeddedFileId = Guid.NewGuid();
         var announcementEmbeddedFileId = Guid.NewGuid();
@@ -832,7 +822,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetInUseAsync_MixedReferences_ReturnsOnlyReferencedCandidates()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
 
         var embeddedInEventId = Guid.NewGuid();
         var embeddedInAnnouncementId = Guid.NewGuid();
@@ -877,7 +867,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task GetInUseAsync_EmptyInput_ReturnsEmpty()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var repo = new FileRepository(ctx);
 
         var inUse = await repo.GetInUseAsync([], TestContext.Current.CancellationToken);
@@ -888,7 +878,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task AssignmentExistsAsync_AssignmentPresentOrAbsent_ReportsExistence()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var user = NewUser();
         var role = NewRoleType();
         var status = NewAssignmentStatus();
@@ -931,7 +921,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task RemoveAsync_EventCategoryTypeMatchesById_DeletesImmediatelyAndReturnsOne()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var categoryType = new EventCategoryType
         {
             Id = Guid.NewGuid(),
@@ -948,7 +938,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
 
         removed.Should().Be(1);
-        await using var probe = NewContext();
+        await using var probe = postgres.CreateContext();
         (
             await probe.EventCategoryTypes.CountAsync(
                 x => x.Id == categoryType.Id,
@@ -962,7 +952,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task RemoveAsync_EventCategoryTypeMissing_ReturnsZero()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var repo = new EventCategoryTypeRepository(ctx);
         var missingId = Guid.NewGuid();
 
@@ -974,7 +964,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task SetFeaturedAsync_AnotherEventWasFeatured_LeavesExactlyTargetFeatured()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var previous = NewEvent("Anterior", featured: true);
         var target = NewEvent("Objetivo");
         ctx.Events.AddRange(previous, target);
@@ -984,7 +974,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var result = await repo.SetFeaturedAsync(target.Id, TestContext.Current.CancellationToken);
 
         result.Should().BeTrue();
-        await using var probe = NewContext();
+        await using var probe = postgres.CreateContext();
         var featuredIds = await probe
             .Events.Where(e => e.Featured)
             .Select(e => e.Id)
@@ -995,7 +985,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task SetFeaturedAsync_EventMissing_ReturnsFalseWithoutChangingFlags()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var featured = NewEvent("Destacado", featured: true);
         ctx.Events.Add(featured);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -1007,7 +997,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
 
         result.Should().BeFalse();
-        await using var probe = NewContext();
+        await using var probe = postgres.CreateContext();
         (await probe.Events.CountAsync(e => e.Featured, TestContext.Current.CancellationToken))
             .Should()
             .Be(1);
@@ -1016,7 +1006,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task SetFeaturedAsync_AnotherAnnouncementWasFeatured_LeavesExactlyTargetFeatured()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var previous = NewAnnouncement("Anterior", featured: true);
         var target = NewAnnouncement("Objetivo");
         ctx.Announcements.AddRange(previous, target);
@@ -1026,7 +1016,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var result = await repo.SetFeaturedAsync(target.Id, TestContext.Current.CancellationToken);
 
         result.Should().BeTrue();
-        await using var probe = NewContext();
+        await using var probe = postgres.CreateContext();
         var featuredIds = await probe
             .Announcements.Where(a => a.Featured)
             .Select(a => a.Id)
@@ -1037,7 +1027,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Fact]
     public async Task SetFeaturedAsync_AnnouncementMissing_ReturnsFalse()
     {
-        await using var ctx = NewContext();
+        await using var ctx = postgres.CreateContext();
         var repo = new AnnouncementRepository(ctx);
 
         (await repo.SetFeaturedAsync(Guid.NewGuid(), TestContext.Current.CancellationToken))

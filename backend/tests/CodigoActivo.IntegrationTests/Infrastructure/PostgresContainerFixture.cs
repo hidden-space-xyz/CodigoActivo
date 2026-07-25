@@ -70,6 +70,16 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
         return container.GetConnectionString();
     }
 
+    public CodigoActivoDbContext CreateContext()
+    {
+        return new CodigoActivoDbContext(
+            new DbContextOptionsBuilder<CodigoActivoDbContext>()
+                .UseNpgsql(ConnectionString)
+                .UseSnakeCaseNamingConvention()
+                .Options
+        );
+    }
+
     private async Task MigrateSchemaOnceAsync()
     {
         var options = new DbContextOptionsBuilder<CodigoActivoDbContext>()

@@ -2,11 +2,14 @@ import { ApiError } from './http-client'
 
 export const FEATURED_FIRST_SORT = '-featured,-createdAt'
 
-export async function unwrapOrNull<T>(request: Promise<{ data: T }>): Promise<T | null> {
+export async function unwrapOrNull<T>(
+  request: Promise<{ data: T }>,
+  statuses: readonly number[] = [404],
+): Promise<T | null> {
   try {
     return (await request).data
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null
+    if (error instanceof ApiError && statuses.includes(error.status)) return null
     throw error
   }
 }

@@ -22,7 +22,13 @@ import type {
   EventResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { formatDate, formatDateTimeRange, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import {
+  formatDate,
+  formatDateTimeRange,
+  toSelectOptions,
+  useCrudFeedback,
+  useDeleteConfirm,
+} from '@/shared/lib'
 
 const { t } = useI18n()
 const { table, create, update, remove, feature, fetchOne } = useEventsAdmin()
@@ -30,12 +36,7 @@ const categoryTypes = useEventCategoryTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
 
-const categoryOptions = computed(() =>
-  (categoryTypes.data.value ?? []).map((category) => ({
-    label: category.name ?? '—',
-    value: category.id ?? '',
-  })),
-)
+const categoryOptions = computed(() => toSelectOptions(categoryTypes.data.value))
 
 function onFeature(event: EventListItemResponse): void {
   if (!event.id || event.featured) return

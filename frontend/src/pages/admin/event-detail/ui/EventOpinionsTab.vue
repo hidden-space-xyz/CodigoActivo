@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import Paginator from 'primevue/paginator'
-import type { PageState } from 'primevue/paginator'
 import Rating from 'primevue/rating'
 
 import { useEventRatingsTable } from '@/features/manage-events'
 import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
 import { DataState } from '@/shared/ui'
-import { formatDateTime } from '@/shared/lib'
+import { formatDateTime, fullName } from '@/shared/lib'
 
 const props = defineProps<{
   eventId: string
@@ -17,15 +16,6 @@ const ratings = useEventRatingsTable(
   () => props.eventId,
   () => props.active,
 )
-
-function onPage(event: PageState): void {
-  ratings.table.first.value = event.first
-  ratings.table.rows.value = event.rows
-}
-
-function fullName(rating: EventRatingListItemResponse): string {
-  return `${rating.firstName ?? ''} ${rating.lastName ?? ''}`.trim() || '—'
-}
 
 function answers(rating: EventRatingListItemResponse): { key: string; value: string }[] {
   return [
@@ -59,7 +49,7 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
 
           <dl v-if="answers(rating).length > 0" class="opinion__answers">
             <template v-for="answer in answers(rating)" :key="answer.key">
-              <dt>{{ $t(`pages.admin.eventDetail.opinions.questions.${answer.key}`) }}</dt>
+              <dt>{{ $t(`entities.event.ratingQuestions.${answer.key}`) }}</dt>
               <dd>{{ answer.value }}</dd>
             </template>
           </dl>
@@ -76,7 +66,7 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
         :total-records="ratings.table.total.value"
         :rows-per-page-options="[25, 50, 100]"
         class="paginator"
-        @page="onPage"
+        @page="ratings.table.onPage"
       />
     </DataState>
   </div>

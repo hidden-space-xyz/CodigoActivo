@@ -1,10 +1,8 @@
 import { computed, ref, watch } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
-import type {
-  DataTableFilterMetaData,
-  DataTablePageEvent,
-  DataTableSortEvent,
-} from 'primevue/datatable'
+import type { DataTableFilterMetaData, DataTableSortEvent } from 'primevue/datatable'
+
+import { toDateOnly } from './format'
 
 export type ServerTableFieldType = 'text' | 'number' | 'dateRange'
 
@@ -17,9 +15,7 @@ export interface ServerTableColumn {
 
 function toDateParam(value: unknown): string | undefined {
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined
-  const month = String(value.getMonth() + 1).padStart(2, '0')
-  const day = String(value.getDate()).padStart(2, '0')
-  return `${value.getFullYear()}-${month}-${day}`
+  return toDateOnly(value)
 }
 
 export interface ServerTablePage<T> {
@@ -105,7 +101,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     }
   })
 
-  function onPage(event: DataTablePageEvent): void {
+  function onPage(event: { first: number; rows: number }): void {
     first.value = event.first
     rows.value = event.rows
   }
@@ -118,6 +114,11 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
 
   function onFilter(): void {
     first.value = 0
+  }
+
+  function clearFilters(): void {
+    for (const meta of Object.values(filters.value)) meta.value = null
+    onFilter()
   }
 
   function columnFilter(key: string): DataTableFilterMetaData {
@@ -137,11 +138,10 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     rows,
     sortField,
     sortOrder,
-    filters,
     columnFilter,
+    clearFilters,
     onPage,
     onSort,
     onFilter,
-    refetch: tableQuery.refetch,
   }
 }

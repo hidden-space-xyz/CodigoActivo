@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Paginator from 'primevue/paginator'
-import type { PageState } from 'primevue/paginator'
 import Select from 'primevue/select'
 
 import { useAssignments } from '@/features/manage-activities'
@@ -26,7 +25,9 @@ import {
   buildCsv,
   downloadCsv,
   formatDateTime,
+  fullName,
   normalizeHexColor,
+  toSelectOptions,
   todayIso,
   useCrudFeedback,
 } from '@/shared/lib'
@@ -88,11 +89,6 @@ function toggleSortDirection(): void {
   attendees.table.first.value = 0
 }
 
-function onPage(event: PageState): void {
-  attendees.table.first.value = event.first
-  attendees.table.rows.value = event.rows
-}
-
 const activityOptions = computed(() =>
   props.activities.map((activity) => ({
     label: activity.title ?? '—',
@@ -100,26 +96,11 @@ const activityOptions = computed(() =>
   })),
 )
 
-const typeOptions = computed(() =>
-  (userTypes.data.value ?? []).map((type) => ({
-    label: type.name ?? '—',
-    value: type.id ?? '',
-  })),
-)
+const typeOptions = computed(() => toSelectOptions(userTypes.data.value))
 
-const roleOptions = computed(() =>
-  (roleTypes.data.value ?? []).map((role) => ({
-    label: role.name ?? '—',
-    value: role.id ?? '',
-  })),
-)
+const roleOptions = computed(() => toSelectOptions(roleTypes.data.value))
 
-const statusOptions = computed(() =>
-  (statusTypes.data.value ?? []).map((status) => ({
-    label: status.name ?? '—',
-    value: status.id ?? '',
-  })),
-)
+const statusOptions = computed(() => toSelectOptions(statusTypes.data.value))
 
 const hasActiveFilters = computed(
   () =>
@@ -183,10 +164,6 @@ const statusColorById = computed(() => {
 
 function statusColor(assignment: EventAttendeeAssignmentResponse): string | null {
   return assignment.statusId ? (statusColorById.value.get(assignment.statusId) ?? null) : null
-}
-
-function fullName(attendee: EventAttendeeResponse): string {
-  return `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim() || '—'
 }
 
 function typeName(attendee: EventAttendeeResponse): string {
@@ -480,7 +457,7 @@ function submitChangeRole(): void {
         :total-records="attendees.table.total.value"
         :rows-per-page-options="[25, 50, 100]"
         class="paginator"
-        @page="onPage"
+        @page="attendees.table.onPage"
       />
     </DataState>
 

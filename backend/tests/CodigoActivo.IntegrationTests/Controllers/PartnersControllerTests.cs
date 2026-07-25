@@ -13,26 +13,6 @@ namespace CodigoActivo.IntegrationTests.Controllers;
 public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private async Task<Guid> SeedThumbnailAsync()
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
-            );
-            return Task.CompletedTask;
-        });
-        return id;
-    }
-
     private async Task<Guid> SeedPartnerAsync(string name = "Existing", DateOnly? fromDate = null)
     {
         var thumbnailId = await SeedThumbnailAsync();

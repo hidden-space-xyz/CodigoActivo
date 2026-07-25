@@ -6,7 +6,7 @@ export {
   usePastEventYears,
   useUpcomingEventsPaged,
 } from './api/queries'
-export { eventQueryKeys } from './api/query-keys'
+export { eventQueryKeys, eventReportQueryKeys } from './api/query-keys'
 export { default as EventCard } from './ui/EventCard.vue'
 export { default as FeaturedEventCard } from './ui/FeaturedEventCard.vue'
 export { default as PastEventCard } from './ui/PastEventCard.vue'

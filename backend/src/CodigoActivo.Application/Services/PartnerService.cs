@@ -58,44 +58,23 @@ public class PartnerService(
             source = source.Where(p => p.FromDate >= fromDateFrom);
         if (query.FromDateTo is { } fromDateTo)
             source = source.Where(p => p.FromDate <= fromDateTo);
-        if (!string.IsNullOrWhiteSpace(query.Name))
-        {
-            source = source.Where(
-                TextSearch.Contains<PartnerResponse>(p => p.Name, TextSearch.Normalize(query.Name))
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Website))
-        {
-            source = source.Where(
-                TextSearch.Contains<PartnerResponse>(
-                    p => p.Website,
-                    TextSearch.Normalize(query.Website)
-                )
-            );
-        }
+        source = source.WhereContains(p => p.Name, query.Name);
+        source = source.WhereContains(p => p.Website, query.Website);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public async Task<Result<PartnerResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public Task<Result<PartnerResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var response = await cache.GetOrCreateAsync(
+        return cache.GetEntityAsync(
+            executor,
             $"partners:id:{id}",
-            token => new ValueTask<PartnerResponse?>(
-                executor.FirstOrDefaultAsync(
-                    partners.Query().Where(p => p.Id == id).Select(Projections.Partner),
-                    token
-                )
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Partners],
+            () => partners.Query().Where(p => p.Id == id).Select(Projections.Partner),
+            CacheTags.Partners,
+            ErrorCode.PartnerNotFound,
             ct
         );
-        return response is null
-            ? (Result<PartnerResponse>)Error.NotFound(ErrorCode.PartnerNotFound)
-            : (Result<PartnerResponse>)response;
     }
 
     public async Task<Result<PartnerResponse>> CreateAsync(

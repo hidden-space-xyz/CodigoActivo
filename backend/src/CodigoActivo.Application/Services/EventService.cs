@@ -116,47 +116,23 @@ public class EventService(
             source = source.Where(e => e.SignupStartsAt < signupUpper);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Title))
-        {
-            source = source.Where(
-                TextSearch.Contains<EventListItemResponse>(
-                    e => e.Title,
-                    TextSearch.Normalize(query.Title)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Subtitle))
-        {
-            source = source.Where(
-                TextSearch.Contains<EventListItemResponse>(
-                    e => e.Subtitle,
-                    TextSearch.Normalize(query.Subtitle)
-                )
-            );
-        }
+        source = source.WhereContains(e => e.Title, query.Title);
+        source = source.WhereContains(e => e.Subtitle, query.Subtitle);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public async Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var response = await cache.GetOrCreateAsync(
+        return cache.GetEntityAsync(
+            executor,
             $"events:id:{id}",
-            token => new ValueTask<EventResponse?>(
-                executor.FirstOrDefaultAsync(
-                    events.Query().Where(e => e.Id == id).Select(Projections.Event),
-                    token
-                )
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Events],
+            () => events.Query().Where(e => e.Id == id).Select(Projections.Event),
+            CacheTags.Events,
+            ErrorCode.EventNotFound,
             ct
         );
-        return response is null
-            ? (Result<EventResponse>)Error.NotFound(ErrorCode.EventNotFound)
-            : (Result<EventResponse>)response;
     }
 
     public async Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default)
@@ -224,7 +200,7 @@ public class EventService(
             CreatedAt = clock.UtcNow,
             CreatedBy = userId,
         };
-        ApplyCategories(ev, request.CategoryTypeIds!);
+        SyncCategories(ev, request.CategoryTypeIds!);
 
         await events.AddAsync(ev, ct);
         await uow.SaveChangesAsync(ct);
@@ -361,25 +337,8 @@ public class EventService(
     {
         var source = categoryTypes.Query().Select(Projections.EventCategoryType);
 
-        if (!string.IsNullOrWhiteSpace(query.Name))
-        {
-            source = source.Where(
-                TextSearch.Contains<EventCategoryTypeResponse>(
-                    c => c.Name,
-                    TextSearch.Normalize(query.Name)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Color))
-        {
-            source = source.Where(
-                TextSearch.Contains<EventCategoryTypeResponse>(
-                    c => c.Color,
-                    TextSearch.Normalize(query.Color)
-                )
-            );
-        }
+        source = source.WhereContains(c => c.Name, query.Name);
+        source = source.WhereContains(c => c.Color, query.Color);
 
         source = CategoryTypeSort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
@@ -444,16 +403,6 @@ public class EventService(
         return existing != distinct.Count
             ? (Result)Error.BadRequest(ErrorCode.EventCategoryTypeNotFound)
             : Result.Success();
-    }
-
-    private static void ApplyCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)
-    {
-        foreach (var categoryTypeId in categoryTypeIds.Distinct())
-        {
-            ev.Categories.Add(
-                new EventCategory { EventId = ev.Id, EventCategoryTypeId = categoryTypeId }
-            );
-        }
     }
 
     private static void SyncCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)

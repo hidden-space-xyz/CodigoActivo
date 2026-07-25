@@ -244,10 +244,6 @@ function removeMinor(index: number): void {
   flex-direction: column;
 }
 
-.reg__field--full {
-  grid-column: 1 / -1;
-}
-
 .reg__label {
   font-size: 13px;
   font-weight: 600;

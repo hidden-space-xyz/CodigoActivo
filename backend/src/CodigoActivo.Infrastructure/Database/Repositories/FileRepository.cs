@@ -17,19 +17,6 @@ public class FileRepository(CodigoActivoDbContext context)
     public async Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default)
     {
         var marker = RichTextFileReferences.ContentUrlMarker(fileId);
-
-        if (!Context.Database.IsNpgsql())
-        {
-            return await Context.Events.AnyAsync(e => e.ThumbnailId == fileId, ct)
-                || await Context.Activities.AnyAsync(a => a.ThumbnailId == fileId, ct)
-                || await Context.Announcements.AnyAsync(a => a.ThumbnailId == fileId, ct)
-                || await Context.Resources.AnyAsync(r => r.ThumbnailId == fileId, ct)
-                || await Context.Partners.AnyAsync(p => p.ThumbnailId == fileId, ct)
-                || await Context.Events.AnyAsync(e => e.Description.Contains(marker), ct)
-                || await Context.Announcements.AnyAsync(a => a.Description.Contains(marker), ct)
-                || await Context.Resources.AnyAsync(r => r.Description.Contains(marker), ct);
-        }
-
         var pattern = $"%{marker}%";
         FormattableString sql = $"""
             SELECT EXISTS (
@@ -63,18 +50,6 @@ public class FileRepository(CodigoActivoDbContext context)
             return [];
 
         var candidates = fileIds.Distinct().ToList();
-
-        if (!Context.Database.IsNpgsql())
-        {
-            var result = new List<Guid>();
-            foreach (var fileId in candidates)
-            {
-                if (await IsInUseAsync(fileId, ct))
-                    result.Add(fileId);
-            }
-
-            return result;
-        }
 
         var thumbnailRefs = await Context
             .Events.Where(e => candidates.Contains(e.ThumbnailId))

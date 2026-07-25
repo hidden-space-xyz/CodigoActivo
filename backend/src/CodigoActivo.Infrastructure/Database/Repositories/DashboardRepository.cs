@@ -9,19 +9,6 @@ public class DashboardRepository(CodigoActivoDbContext context) : IDashboardRepo
 {
     public async Task<DashboardCounts> GetCountsAsync(CancellationToken ct = default)
     {
-        if (!context.Database.IsNpgsql())
-        {
-            return new DashboardCounts
-            {
-                Events = await context.Events.CountAsync(ct),
-                Activities = await context.Activities.CountAsync(ct),
-                Resources = await context.Resources.CountAsync(ct),
-                Announcements = await context.Announcements.CountAsync(ct),
-                Partners = await context.Partners.CountAsync(ct),
-                Users = await context.Users.CountAsync(ct),
-            };
-        }
-
         FormattableString sql = $"""
             SELECT
                 (SELECT count(*)::int FROM events) AS events,

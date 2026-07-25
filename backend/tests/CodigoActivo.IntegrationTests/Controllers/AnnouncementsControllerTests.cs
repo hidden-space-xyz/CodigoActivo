@@ -15,26 +15,6 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
 {
     private const string Description = "{}";
 
-    private async Task<Guid> SeedThumbnailAsync()
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
-            );
-            return Task.CompletedTask;
-        });
-        return id;
-    }
-
     private async Task<Guid> SeedAnnouncementAsync(
         string title = "Existing",
         string subtitle = "Sub",

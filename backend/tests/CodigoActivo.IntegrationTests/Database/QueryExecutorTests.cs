@@ -16,19 +16,9 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
 
     private readonly QueryExecutor sut = new();
 
-    private CodigoActivoDbContext NewContext()
-    {
-        return new CodigoActivoDbContext(
-            new DbContextOptionsBuilder<CodigoActivoDbContext>()
-                .UseNpgsql(postgres.ConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options
-        );
-    }
-
     public async ValueTask InitializeAsync()
     {
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
         await new DatabaseSeeder(db).SeedAsync();
     }
@@ -40,7 +30,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
 
     private async Task SeedUsersAsync(params string[] firstNames)
     {
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
         db.Users.AddRange(
             firstNames.Select(firstName => new User
             {
@@ -64,7 +54,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async Task ToPagedAsync_MiddlePage_ReturnsTotalAndPageSlice()
     {
         await SeedUsersAsync("A", "B", "C", "D", "E");
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.ToPagedAsync(
             OrderedUsers(db),
@@ -83,7 +73,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async Task ToPagedAsync_LastPartialPage_ReturnsRemainingItems()
     {
         await SeedUsersAsync("A", "B", "C", "D", "E");
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.ToPagedAsync(
             OrderedUsers(db),
@@ -100,7 +90,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async Task ToPagedAsync_PageBeyondLast_ReturnsEmptySliceWithTotal()
     {
         await SeedUsersAsync("A", "B");
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.ToPagedAsync(
             OrderedUsers(db),
@@ -116,7 +106,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     [Fact]
     public async Task ToPagedAsync_EmptySource_ReturnsZeroTotalAndEmptySlice()
     {
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.ToPagedAsync(
             OrderedUsers(db),
@@ -133,7 +123,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async Task ToPagedAsync_PageNumberThatWouldOverflowInt32_ReturnsEmptySliceWithoutThrowing()
     {
         await SeedUsersAsync("A");
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.ToPagedAsync(
             OrderedUsers(db),
@@ -150,7 +140,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async Task ToListAsync_MatchingRows_MaterialisesEveryRow()
     {
         await SeedUsersAsync("A", "B", "C");
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.ToListAsync(OrderedUsers(db), TestContext.Current.CancellationToken);
 
@@ -161,7 +151,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async Task FirstOrDefaultAsync_MatchingRows_ReturnsTheFirstInQueryOrder()
     {
         await SeedUsersAsync("B", "A", "C");
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.FirstOrDefaultAsync(
             OrderedUsers(db),
@@ -174,7 +164,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     [Fact]
     public async Task FirstOrDefaultAsync_NoRows_ReturnsNull()
     {
-        await using var db = NewContext();
+        await using var db = postgres.CreateContext();
 
         var result = await sut.FirstOrDefaultAsync(
             OrderedUsers(db),

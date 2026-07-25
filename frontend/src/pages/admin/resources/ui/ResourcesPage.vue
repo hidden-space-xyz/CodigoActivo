@@ -21,7 +21,7 @@ import type {
   ResourceResponse,
   UpdateResourceRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { formatDateTime, toSelectOptions, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
 const { t } = useI18n()
 const { table, create, update, remove, fetchOne } = useResourcesAdmin()
@@ -34,12 +34,7 @@ const selected = ref<ResourceResponse | null>(null)
 const loadingDetail = ref(false)
 const saving = computed(() => create.isPending.value || update.isPending.value)
 
-const typeOptions = computed(() =>
-  (resourceTypes.data.value ?? []).map((type) => ({
-    label: type.name ?? '—',
-    value: type.id ?? '',
-  })),
-)
+const typeOptions = computed(() => toSelectOptions(resourceTypes.data.value))
 
 function openCreate(): void {
   if (loadingDetail.value) return

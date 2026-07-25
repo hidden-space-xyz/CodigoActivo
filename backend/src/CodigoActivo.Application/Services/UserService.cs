@@ -66,29 +66,9 @@ public class UserService(
             source = source.Where(u => u.BirthDate >= birthDateFrom);
         if (query.BirthDateTo is { } birthDateTo)
             source = source.Where(u => u.BirthDate <= birthDateTo);
-        if (!string.IsNullOrWhiteSpace(query.Name))
-        {
-            source = source.Where(
-                TextSearch.Contains<User>(
-                    u => u.FirstName + " " + u.LastName,
-                    TextSearch.Normalize(query.Name)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Email))
-        {
-            source = source.Where(
-                TextSearch.Contains<User>(u => u.Email, TextSearch.Normalize(query.Email))
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Phone))
-        {
-            source = source.Where(
-                TextSearch.Contains<User>(u => u.Phone, TextSearch.Normalize(query.Phone))
-            );
-        }
+        source = source.WhereContains(u => u.FirstName + " " + u.LastName, query.Name);
+        source = source.WhereContains(u => u.Email, query.Email);
+        source = source.WhereContains(u => u.Phone, query.Phone);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(
@@ -259,41 +239,30 @@ public class UserService(
         return Result.Success();
     }
 
-    public async Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(
+    public Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
+        return cache.GetCatalogAsync(
+            executor,
             "users:status-types",
-            token => new ValueTask<IReadOnlyList<UserStatusTypeResponse>>(
-                executor.ToListAsync(
-                    userStatusTypes
-                        .Query()
-                        .OrderBy(type => type.Name)
-                        .Select(Projections.UserStatusType),
-                    token
-                )
-            ),
-            CachePolicies.Catalog,
-            [CacheTags.Catalogs],
+            () =>
+                userStatusTypes
+                    .Query()
+                    .OrderBy(type => type.Name)
+                    .Select(Projections.UserStatusType),
             ct
         );
     }
 
-    public async Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(
+    public Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
+        return cache.GetCatalogAsync(
+            executor,
             "users:types",
-            token => new ValueTask<IReadOnlyList<UserTypeResponse>>(
-                executor.ToListAsync(
-                    userTypes.Query().OrderBy(type => type.Name).Select(Projections.UserType),
-                    token
-                )
-            ),
-            CachePolicies.Catalog,
-            [CacheTags.Catalogs],
+            () => userTypes.Query().OrderBy(type => type.Name).Select(Projections.UserType),
             ct
         );
     }

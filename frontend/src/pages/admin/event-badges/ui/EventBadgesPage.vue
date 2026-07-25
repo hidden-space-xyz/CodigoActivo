@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { DataState } from '@/shared/ui'
 
+import { fullName, normalizeHexColor } from '@/shared/lib'
 import { useEventBadges } from '@/features/manage-events'
 import type { EventBadgeResponse } from '@/shared/api/generated/models'
 
@@ -103,18 +104,13 @@ const FALLBACK_ACCENT = '#475569'
 const MIN_READABLE_LUMINANCE = 0.82
 
 function accentColor(badge: EventBadgeResponse): string {
-  const raw = (badge.userTypeColor ?? '').trim()
-  if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) return FALLBACK_ACCENT
-  const hex = raw.length === 4 ? `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}` : raw
+  const hex = normalizeHexColor(badge.userTypeColor)
+  if (!hex) return FALLBACK_ACCENT
   const red = Number.parseInt(hex.slice(1, 3), 16)
   const green = Number.parseInt(hex.slice(3, 5), 16)
   const blue = Number.parseInt(hex.slice(5, 7), 16)
   const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
   return luminance > MIN_READABLE_LUMINANCE ? FALLBACK_ACCENT : hex
-}
-
-function fullName(badge: EventBadgeResponse): string {
-  return [badge.firstName, badge.lastName].filter(Boolean).join(' ') || '—'
 }
 
 function guardianName(badge: EventBadgeResponse): string {

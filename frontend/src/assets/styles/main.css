@@ -44,8 +44,7 @@ a {
   margin: 0 auto;
 }
 
-.ca-container--narrow,
-.ca-container--wide {
+.ca-container--narrow {
   max-width: var(--ca-container-narrow);
   margin: 0 auto;
 }

@@ -103,7 +103,6 @@ async function save(): Promise<void> {
         <DatePicker
           id="partner-from"
           v-model="form.fromDate"
-          date-format="dd/mm/yy"
           show-icon
           :invalid="submitted && !form.fromDate"
           fluid

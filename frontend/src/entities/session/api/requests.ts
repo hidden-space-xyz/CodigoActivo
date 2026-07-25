@@ -3,22 +3,15 @@ import {
   postApiAuthLogin,
   postApiAuthLogout,
 } from '@/shared/api/generated/endpoints/auth/auth'
-import { ApiError, resetCsrfToken } from '@/shared/api'
+import { resetCsrfToken, unwrapOrNull } from '@/shared/api'
 
 import type { Credentials } from '../model/credentials'
 import type { AuthUser } from '../model/types'
 import { toAuthUser } from './mapper'
 
 export async function getCurrentUserRequest(): Promise<AuthUser | null> {
-  try {
-    const response = await getApiAuthMe()
-    return toAuthUser(response.data)
-  } catch (error) {
-    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-      return null
-    }
-    throw error
-  }
+  const data = await unwrapOrNull(getApiAuthMe(), [401, 403])
+  return data ? toAuthUser(data) : null
 }
 
 export async function loginRequest(credentials: Credentials): Promise<AuthUser> {

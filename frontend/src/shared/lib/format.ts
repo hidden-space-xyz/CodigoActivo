@@ -52,6 +52,21 @@ export function ageFrom(value?: Date | string | null): number | null {
   return age
 }
 
+export function fullName(person: { firstName?: string | null; lastName?: string | null }): string {
+  return `${person.firstName ?? ''} ${person.lastName ?? ''}`.trim() || '—'
+}
+
+export interface SelectOption {
+  readonly label: string
+  readonly value: string
+}
+
+export function toSelectOptions(
+  items?: readonly { id?: string | null; name?: string | null }[] | null,
+): SelectOption[] {
+  return (items ?? []).map((item) => ({ label: item.name ?? '—', value: item.id ?? '' }))
+}
+
 export function formatNumber(value?: number | null): string {
   if (value == null || Number.isNaN(value)) return '—'
   return numberFormatter.format(value)

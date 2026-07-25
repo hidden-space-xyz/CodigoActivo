@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 
-type Variant = 'primary' | 'ghost' | 'light' | 'purple' | 'link'
+type Variant = 'primary' | 'ghost' | 'light' | 'link'
 
 const props = withDefaults(
   defineProps<{
@@ -86,14 +86,6 @@ const bindings = computed(() => {
 .base-button--primary:hover {
   background: var(--ca-orange-strong);
   transform: translateY(-2px);
-}
-
-.base-button--purple {
-  color: var(--ca-on-primary);
-  background: var(--ca-azure);
-}
-.base-button--purple:hover {
-  background: color-mix(in srgb, var(--ca-azure) 82%, #ffffff);
 }
 
 .base-button--light {

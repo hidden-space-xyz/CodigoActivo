@@ -9,7 +9,7 @@ import type {
   EventRosterActivityResponse,
   EventRosterParticipantResponse,
 } from '@/shared/api/generated/models'
-import { ageFrom, formatDateTimeRange } from '@/shared/lib'
+import { ageFrom, formatDateTimeRange, fullName } from '@/shared/lib'
 
 const { t } = useI18n()
 
@@ -52,10 +52,6 @@ interface SheetChunk {
 function pluralizeRole(name: string): string {
   if (!name) return t('pages.admin.eventRoster.roleFallback')
   return /[aeiouáéíóú]$/i.test(name) ? `${name}s` : `${name}es`
-}
-
-function fullNameOf(participant: EventRosterParticipantResponse): string {
-  return [participant.firstName, participant.lastName].filter(Boolean).join(' ')
 }
 
 function rowsFor(activity: EventRosterActivityResponse): RosterRow[] {
@@ -230,7 +226,7 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
               </tr>
               <tr v-else>
                 <td class="list__check-col"><span class="list__checkbox" /></td>
-                <td class="list__name">{{ fullNameOf(row.participant) || '—' }}</td>
+                <td class="list__name">{{ fullName(row.participant) }}</td>
                 <td class="list__age-col">{{ ageLabel(row.participant) }}</td>
                 <td class="list__contact">
                   <template v-if="contactLines(row.participant).length">
@@ -291,7 +287,7 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
               </tr>
               <tr v-else>
                 <td class="list__check-col"><span class="list__checkbox" /></td>
-                <td class="list__name">{{ fullNameOf(row.participant) || '—' }}</td>
+                <td class="list__name">{{ fullName(row.participant) }}</td>
                 <td class="list__age-col">{{ ageLabel(row.participant) }}</td>
                 <td class="list__contact">
                   <template v-if="contactLines(row.participant).length">

@@ -15,26 +15,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    private async Task<Guid> SeedThumbnailAsync()
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
-            );
-            return Task.CompletedTask;
-        });
-        return id;
-    }
-
     private async Task<Guid> SeedCategoryTypeAsync(
         string name = "Formación",
         string color = "#112233"

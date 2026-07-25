@@ -243,7 +243,6 @@ async function save(): Promise<void> {
           <label>{{ $t('features.manageEvents.fields.eventStart') }}</label>
           <DatePicker
             v-model="form.eventStartsAt"
-            date-format="dd/mm/yy"
             :invalid="submitted && eventStartMissing"
             fluid
           />
@@ -255,7 +254,6 @@ async function save(): Promise<void> {
           <label>{{ $t('features.manageEvents.fields.eventEnd') }}</label>
           <DatePicker
             v-model="form.eventEndsAt"
-            date-format="dd/mm/yy"
             :min-date="form.eventStartsAt ?? undefined"
             :invalid="submitted && (eventEndMissing || eventOrderInvalid)"
             fluid
@@ -275,7 +273,6 @@ async function save(): Promise<void> {
             v-model="form.signupStartsAt"
             show-time
             hour-format="24"
-            date-format="dd/mm/yy"
             :invalid="submitted && (signupStartMissing || signupAfterEventEnd)"
             fluid
           />
@@ -292,7 +289,6 @@ async function save(): Promise<void> {
             v-model="form.signupEndsAt"
             show-time
             hour-format="24"
-            date-format="dd/mm/yy"
             :min-date="form.signupStartsAt ?? undefined"
             :invalid="submitted && (signupEndMissing || signupOrderInvalid)"
             fluid

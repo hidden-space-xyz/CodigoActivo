@@ -7,11 +7,13 @@ import Tag from 'primevue/tag'
 
 import { formatTimeRange } from '@/shared/lib'
 
-import type { TimelineActivity, TimelineRole } from '../model/activity-timeline.types'
+import type { ActivityRole } from '@/entities/activity'
+
+import type { TimelineActivity } from '../model/activity-timeline.types'
 
 const props = defineProps<{
   activity: TimelineActivity
-  roles: readonly TimelineRole[]
+  roles: readonly ActivityRole[]
   rolesLoading: boolean
   busy: boolean
   authenticated: boolean

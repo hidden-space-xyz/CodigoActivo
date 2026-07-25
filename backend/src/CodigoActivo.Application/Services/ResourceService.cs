@@ -71,81 +71,34 @@ public class ResourceService(
             source = source.Where(r => r.CreatedAt < createdUpper);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Title))
-        {
-            source = source.Where(
-                TextSearch.Contains<ResourceListItemResponse>(
-                    r => r.Title,
-                    TextSearch.Normalize(query.Title)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Subtitle))
-        {
-            source = source.Where(
-                TextSearch.Contains<ResourceListItemResponse>(
-                    r => r.Subtitle,
-                    TextSearch.Normalize(query.Subtitle)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Url))
-        {
-            source = source.Where(
-                TextSearch.Contains<ResourceListItemResponse>(
-                    r => r.Url,
-                    TextSearch.Normalize(query.Url)
-                )
-            );
-        }
+        source = source.WhereContains(r => r.Title, query.Title);
+        source = source.WhereContains(r => r.Subtitle, query.Subtitle);
+        source = source.WhereContains(r => r.Url, query.Url);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public async Task<IReadOnlyList<ResourceTypeResponse>> ListTypesAsync(
-        CancellationToken ct = default
-    )
+    public Task<IReadOnlyList<ResourceTypeResponse>> ListTypesAsync(CancellationToken ct = default)
     {
-        return await cache.GetOrCreateAsync(
+        return cache.GetCatalogAsync(
+            executor,
             "resources:types",
-            token => new ValueTask<IReadOnlyList<ResourceTypeResponse>>(
-                executor.ToListAsync(
-                    resourceTypes
-                        .Query()
-                        .OrderBy(type => type.Name)
-                        .Select(Projections.ResourceType),
-                    token
-                )
-            ),
-            CachePolicies.Catalog,
-            [CacheTags.Catalogs],
+            () => resourceTypes.Query().OrderBy(type => type.Name).Select(Projections.ResourceType),
             ct
         );
     }
 
-    public async Task<Result<ResourceResponse>> GetByIdAsync(
-        Guid id,
-        CancellationToken ct = default
-    )
+    public Task<Result<ResourceResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var response = await cache.GetOrCreateAsync(
+        return cache.GetEntityAsync(
+            executor,
             $"resources:id:{id}",
-            token => new ValueTask<ResourceResponse?>(
-                executor.FirstOrDefaultAsync(
-                    resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
-                    token
-                )
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Resources],
+            () => resources.Query().Where(r => r.Id == id).Select(Projections.Resource),
+            CacheTags.Resources,
+            ErrorCode.ResourceNotFound,
             ct
         );
-        return response is null
-            ? (Result<ResourceResponse>)Error.NotFound(ErrorCode.ResourceNotFound)
-            : (Result<ResourceResponse>)response;
     }
 
     public async Task<Result<ResourceResponse>> CreateAsync(
