@@ -26,7 +26,18 @@ public sealed class DemoDataSeeder(
     private const int MemberAdultCount = 14;
     private const int ChildCount = 5;
 
+    private const int EventSpacingDays = 22;
+    private const int OngoingEventIndex = 8;
+
     private static Guid AdminId => UserId(0);
+
+    private static readonly (int OpensDaysBeforeStart, int ClosesDaysBeforeStart)[] SignupWindows =
+    [
+        (95, 5),
+        (45, 25),
+        (50, 5),
+        (30, 3),
+    ];
 
     private static readonly string[] CategoryColors =
     [
@@ -268,9 +279,21 @@ public sealed class DemoDataSeeder(
             var seed = DemoEvents[e];
             var eventId = Guid.NewGuid();
             var duration = 1 + (e % 3);
-            var start = clock.Today.AddDays(-180 + (e * 22));
+            var start = clock.Today.AddDays((e - OngoingEventIndex) * EventSpacingDays);
             var end = start.AddDays(duration - 1);
-            var signupOpensAt = ToUtc(clock.TimeZone, start.AddDays(-30), 9, 0);
+            var signupWindow = SignupWindows[e % SignupWindows.Length];
+            var signupOpensAt = ToUtc(
+                clock.TimeZone,
+                start.AddDays(-signupWindow.OpensDaysBeforeStart),
+                9,
+                0
+            );
+            var signupClosesAt = ToUtc(
+                clock.TimeZone,
+                start.AddDays(-signupWindow.ClosesDaysBeforeStart),
+                23,
+                59
+            );
             var label = (e + 1).ToString("D2", CultureInfo.InvariantCulture);
             var eventCreatedAt = SpreadCreatedAt(now, e, DemoEvents.Length, 210, 12);
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
@@ -285,7 +308,7 @@ public sealed class DemoDataSeeder(
                     EventStartsAt = start,
                     EventEndsAt = end,
                     SignupStartsAt = signupOpensAt,
-                    SignupEndsAt = ToUtc(clock.TimeZone, start.AddDays(-1), 23, 59),
+                    SignupEndsAt = signupClosesAt,
                     Featured = e is 2 or 7 or 12 or 17,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
                     CreatedAt = eventCreatedAt,

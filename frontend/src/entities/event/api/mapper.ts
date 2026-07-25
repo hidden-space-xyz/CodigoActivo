@@ -1,8 +1,15 @@
 import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
 import { i18n } from '@/shared/i18n'
-import { formatDate, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
+import { formatDateRange, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
 
-import type { EventCategoryTag, EventDetail, PastEvent, UpcomingEvent } from '../model/types'
+import type {
+  EventCategoryTag,
+  EventDetail,
+  EventStatus,
+  EventStatusKind,
+  PastEvent,
+  UpcomingEvent,
+} from '../model/types'
 
 function toCategoryTags(event: EventListItemResponse): EventCategoryTag[] {
   return (event.categories ?? [])
@@ -14,21 +21,43 @@ function toCategoryTags(event: EventListItemResponse): EventCategoryTag[] {
     }))
 }
 
-function isSignupOpen(event: EventListItemResponse): boolean {
-  const now = Date.now()
-  const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
-  const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
-  if (start !== null && now < start) return false
-  if (end !== null && now > end) return false
-  return start !== null || end !== null
+function hasEnded(eventEndsAt?: string | null): boolean {
+  const end = parseDateOnly(eventEndsAt)
+  if (!end) return false
+  const now = new Date()
+  return end.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 }
 
-function isSignupWindowOpen(event: EventListItemResponse): boolean {
+function resolveStatusKind(event: EventListItemResponse): EventStatusKind {
+  if (hasEnded(event.eventEndsAt)) return 'finished'
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
   const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
-  if (start === null || end === null) return false
-  return now >= start && now <= end
+  if (start === null && end === null) return 'upcoming'
+  if (start !== null && now < start) return 'upcoming'
+  if (end !== null && now > end) return 'signupClosed'
+  return 'signupOpen'
+}
+
+const STATUS_LABEL_KEYS: Record<EventStatusKind, string> = {
+  upcoming: 'entities.event.status.upcoming',
+  signupOpen: 'entities.event.status.signupOpen',
+  signupClosed: 'entities.event.status.signupClosed',
+  finished: 'entities.event.status.finished',
+}
+
+function statusOf(kind: EventStatusKind): EventStatus {
+  return { kind, label: i18n.global.t(STATUS_LABEL_KEYS[kind]) }
+}
+
+function toStatus(event: EventListItemResponse): EventStatus {
+  return statusOf(resolveStatusKind(event))
+}
+
+function toEventDate(event: EventListItemResponse): string {
+  return event.eventStartsAt
+    ? formatDateRange(event.eventStartsAt, event.eventEndsAt)
+    : i18n.global.t('entities.event.dateFallback')
 }
 
 export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
@@ -36,52 +65,38 @@ export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
     id: event.id ?? '',
     title: event.title ?? '',
     slogan: event.subtitle ?? '',
-    date: event.eventStartsAt
-      ? formatDate(event.eventStartsAt)
-      : i18n.global.t('entities.event.dateFallback'),
-    status: isSignupOpen(event)
-      ? i18n.global.t('entities.event.status.signupOpen')
-      : i18n.global.t('entities.event.status.upcoming'),
+    date: toEventDate(event),
+    status: toStatus(event),
     thumbnailId: event.thumbnailId ?? '',
     categories: toCategoryTags(event),
   }
 }
 
 export function toEventDetail(event: EventResponse): EventDetail {
-  const start = event.eventStartsAt
-  const end = event.eventEndsAt
-  const dateLabel = start
-    ? end
-      ? `${formatDate(start)} – ${formatDate(end)}`
-      : formatDate(start)
-    : i18n.global.t('entities.event.dateFallback')
-  const signupLabel = formatDateTimeRange(event.signupStartsAt, event.signupEndsAt)
+  const status = toStatus(event)
   return {
     id: event.id ?? '',
     title: event.title ?? '',
     subtitle: event.subtitle ?? '',
     description: event.description ?? '',
-    startsAt: start ?? null,
-    endsAt: end ?? null,
-    dateLabel,
-    signupLabel,
-    status: isSignupOpen(event)
-      ? i18n.global.t('entities.event.status.signupOpen')
-      : i18n.global.t('entities.event.status.upcoming'),
+    startsAt: event.eventStartsAt ?? null,
+    endsAt: event.eventEndsAt ?? null,
+    dateLabel: toEventDate(event),
+    signupLabel: formatDateTimeRange(event.signupStartsAt, event.signupEndsAt),
+    status,
     thumbnailId: event.thumbnailId ?? '',
-    signupOpen: isSignupWindowOpen(event),
+    signupOpen: status.kind === 'signupOpen',
     categories: toCategoryTags(event),
   }
 }
 
 export function toPastEvent(event: EventListItemResponse): PastEvent {
-  const localStart = parseDateOnly(event.eventStartsAt)
-  const year = localStart ? String(localStart.getFullYear()) : '—'
   return {
     id: event.id ?? '',
     title: event.title ?? '',
     eventName: event.subtitle ?? '',
-    year,
+    date: toEventDate(event),
+    status: statusOf('finished'),
     thumbnailId: event.thumbnailId ?? '',
     categories: toCategoryTags(event),
   }

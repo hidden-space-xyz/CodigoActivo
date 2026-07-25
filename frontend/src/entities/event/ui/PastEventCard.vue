@@ -10,7 +10,8 @@ defineProps<{ event: PastEvent }>()
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
     <div class="past-card__body">
       <div class="past-card__top">
-        <span class="past-card__year">{{ event.year }}</span>
+        <span class="past-card__status">{{ event.status.label }}</span>
+        <span class="past-card__date">{{ event.date }}</span>
       </div>
       <h3 class="past-card__title">{{ event.title }}</h3>
       <div class="past-card__event">{{ event.eventName }}</div>
@@ -52,13 +53,21 @@ defineProps<{ event: PastEvent }>()
 .past-card__top {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
 }
 
-.past-card__year {
+.past-card__status {
   font-family: var(--ca-font-mono);
   font-size: 12px;
+  font-weight: 600;
+  color: var(--ca-text-dim);
+}
+
+.past-card__date {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--ca-text-faint-2);
 }
 

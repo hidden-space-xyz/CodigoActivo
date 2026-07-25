@@ -1093,7 +1093,9 @@ export const es = {
       dateFallback: 'Próximamente',
       status: {
         signupOpen: 'Inscripción abierta',
+        signupClosed: 'Inscripción cerrada',
         upcoming: 'Próximamente',
+        finished: 'Finalizado',
       },
       card: {
         moreInfo: 'Más info →',
