@@ -20,7 +20,15 @@ import type {
   EventAttendeeResponse,
 } from '@/shared/api/generated/models'
 import { AppButton as Button, ColorTag, DataState } from '@/shared/ui'
-import { ageFrom, formatDateTime, useCrudFeedback } from '@/shared/lib'
+import type { CsvValue } from '@/shared/lib'
+import {
+  ageFrom,
+  buildCsv,
+  downloadCsv,
+  formatDateTime,
+  todayIso,
+  useCrudFeedback,
+} from '@/shared/lib'
 
 const props = defineProps<{
   eventId: string
@@ -118,6 +126,49 @@ const hasActiveFilters = computed(
     attendees.roleTypeId.value !== null ||
     attendees.statusId.value !== null,
 )
+
+const exportHeaders = [
+  t('pages.admin.eventDetail.attendees.export.columns.firstName'),
+  t('pages.admin.eventDetail.attendees.export.columns.lastName'),
+  t('pages.admin.eventDetail.attendees.export.columns.email'),
+  t('pages.admin.eventDetail.attendees.export.columns.phone'),
+  t('pages.admin.eventDetail.attendees.export.columns.guardianFirstName'),
+  t('pages.admin.eventDetail.attendees.export.columns.guardianLastName'),
+  t('pages.admin.eventDetail.attendees.export.columns.guardianEmail'),
+  t('pages.admin.eventDetail.attendees.export.columns.guardianPhone'),
+]
+
+function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
+  return [
+    attendee.firstName,
+    attendee.lastName,
+    attendee.email,
+    attendee.phone,
+    attendee.guardian?.firstName,
+    attendee.guardian?.lastName,
+    attendee.guardian?.email,
+    attendee.guardian?.phone,
+  ]
+}
+
+const exporting = ref(false)
+
+async function exportCsv(): Promise<void> {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const rows = await attendees.fetchAllAttendees()
+    downloadCsv(
+      t('pages.admin.eventDetail.attendees.export.filename', { date: todayIso() }),
+      buildCsv(exportHeaders, rows.map(exportRow)),
+    )
+    feedback.success(t('pages.admin.eventDetail.attendees.export.toast.exported', rows.length))
+  } catch (error) {
+    feedback.error(error)
+  } finally {
+    exporting.value = false
+  }
+}
 
 const statusColorById = computed(() => {
   const map = new Map<string, string>()
@@ -261,6 +312,15 @@ function submitChangeRole(): void {
         :placeholder="$t('common.status')"
         show-clear
         class="toolbar__filter"
+      />
+      <Button
+        :label="$t('pages.admin.eventDetail.attendees.export.label')"
+        :tooltip="$t('pages.admin.eventDetail.attendees.export.tooltip')"
+        icon="pi pi-download"
+        severity="secondary"
+        :loading="exporting"
+        :disabled="attendees.table.total.value === 0"
+        @click="exportCsv"
       />
       <div class="toolbar__sort">
         <Select

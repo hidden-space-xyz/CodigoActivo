@@ -585,6 +585,24 @@ export const es = {
             statusUpdated: 'Estado actualizado.',
             roleUpdated: 'Rol actualizado.',
           },
+          export: {
+            label: 'Exportar CSV',
+            tooltip: 'Exportar los asistentes filtrados a CSV',
+            filename: 'asistentes-{date}.csv',
+            columns: {
+              firstName: 'Nombre',
+              lastName: 'Apellidos',
+              email: 'Email',
+              phone: 'Numero',
+              guardianFirstName: 'NombreDelTutor',
+              guardianLastName: 'ApellidosDelTutor',
+              guardianEmail: 'EmailDelTutor',
+              guardianPhone: 'NumeroDelTutor',
+            },
+            toast: {
+              exported: '{n} asistente exportado. | {n} asistentes exportados.',
+            },
+          },
         },
       },
       dashboard: {
