@@ -1,4 +1,5 @@
 export * from './api-error'
+export * from './color'
 export * from './csv'
 export * from './format'
 export * from './media'

@@ -1,4 +1,4 @@
-import { CONTACT } from '@/shared/config'
+import { CONTACT, FOUNDING_YEAR } from '@/shared/config'
 import { i18n } from '@/shared/i18n'
 import { absoluteUrl } from '@/shared/lib'
 
@@ -10,7 +10,7 @@ export function organizationJsonLd(): Record<string, unknown> {
     url: absoluteUrl('/'),
     logo: absoluteUrl('/apple-touch-icon.png'),
     slogan: i18n.global.t('pages.home.jsonLd.slogan'),
-    foundingDate: '2018',
+    foundingDate: String(FOUNDING_YEAR),
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'León',

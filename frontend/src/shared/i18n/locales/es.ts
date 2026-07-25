@@ -64,7 +64,7 @@ export const es = {
     brandAria: 'Código Activo',
     navAria: 'Principal',
     footerTagline:
-      "Programación para tod{'@'}s. Asociación sin ánimo de lucro · León · desde 2018.",
+      "Programación para tod{'@'}s. Asociación sin ánimo de lucro · León · desde 2016.",
     footerContact: 'Contacto',
     footerLegal: "© {year} Código Activo — programación para tod{'@'}s",
     adminGoToSite: '← Ir al sitio',
@@ -80,7 +80,7 @@ export const es = {
       about: {
         title: 'Quiénes somos',
         description:
-          "Conoce Código Activo: quiénes somos, nuestros valores y qué hacemos para acercar la programación a tod{'@'}s en León desde 2018.",
+          "Conoce Código Activo: quiénes somos, nuestros valores y qué hacemos para acercar la programación a tod{'@'}s en León desde 2016.",
       },
       events: {
         title: 'Eventos',
@@ -290,7 +290,7 @@ export const es = {
         titleLine1: 'Hacemos que programar',
         titleLine2: 'sea de',
         titleHighlight: "tod{'@'}s",
-        lead: 'Código Activo es una asociación sin ánimo de lucro nacida en 2018 en León. Llevamos la programación y el pensamiento computacional a quienes muchas veces quedan más lejos de la tecnología: el mundo rural, las familias y las nuevas generaciones.',
+        lead: 'Código Activo es una asociación sin ánimo de lucro nacida en 2016 en León. Llevamos la programación y el pensamiento computacional a quienes muchas veces quedan más lejos de la tecnología: el mundo rural, las familias y las nuevas generaciones.',
       },
       what: {
         title: 'De Scratch a la IA',
@@ -550,6 +550,7 @@ export const es = {
         },
         attendees: {
           type: 'Tipo',
+          typeTitle: 'Tipo de usuario: {name}',
           role: 'Rol',
           search: {
             placeholder: 'Buscar por nombre, correo o teléfono',
@@ -760,12 +761,6 @@ export const es = {
           years: 'años',
           free: 'gratuito',
         },
-      },
-      about: {
-        eyebrow: '// quiénes somos',
-        title: 'Voluntariado que enseña a crear con código',
-        body: 'Somos educadores, profesionales del sector tech y familias que creemos que aprender a programar abre puertas. Organizamos talleres, campeonatos y eventos gratuitos en entornos rurales y urbanos.',
-        cta: 'Sobre la asociación →',
       },
       announcements: {
         eyebrow: '// anuncios',

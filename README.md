@@ -20,7 +20,7 @@
 
 ## 📖 Overview
 
-`<Codigoactivo/>` is a León-based nonprofit that since 2018 has helped children and young people discover programming and computational thinking through free, hands-on learning — from their very first blocks in Scratch to Python and artificial intelligence.
+`<Codigoactivo/>` is a León-based nonprofit that since 2016 has helped children and young people discover programming and computational thinking through free, hands-on learning — from their very first blocks in Scratch to Python and artificial intelligence.
 
 
 This repository is its digital home: a **public site** for events, announcements, resources

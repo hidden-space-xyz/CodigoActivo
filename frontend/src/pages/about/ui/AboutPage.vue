@@ -23,7 +23,7 @@ const { values, activities } = useOrganizationContent()
 
     <section class="about-values">
       <div class="ca-container--wide about-values__grid">
-        <ValueCard v-for="value in values" :key="value.id" :value="value" size="md" />
+        <ValueCard v-for="value in values" :key="value.id" :value="value" />
       </div>
     </section>
 
