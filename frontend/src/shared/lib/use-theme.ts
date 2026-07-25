@@ -16,9 +16,7 @@ function apply(next: Theme): void {
   theme.value = next
   try {
     localStorage.setItem(STORAGE_KEY, next)
-  } catch {
-    theme.value = next
-  }
+  } catch {}
 }
 
 export function useTheme() {

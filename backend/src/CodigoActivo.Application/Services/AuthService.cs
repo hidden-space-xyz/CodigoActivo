@@ -331,7 +331,7 @@ public class AuthService(
             user.Email!,
             user.FirstName,
             otpCode,
-            BuildVerificationUrl(user.Id, otpCode),
+            BuildAccountUrl(VerificationPath, user.Id, otpCode),
             verification.OtpLifetime
         );
         return emailSender.SendAsync(message, ct);
@@ -342,20 +342,15 @@ public class AuthService(
         var message = PasswordResetEmail.Create(
             user.Email!,
             user.FirstName,
-            BuildPasswordResetUrl(user.Id, code),
+            BuildAccountUrl(PasswordResetPath, user.Id, code),
             passwordReset.CodeLifetime
         );
         return emailSender.SendAsync(message, ct);
     }
 
-    private string BuildVerificationUrl(Guid userId, string otpCode)
+    private string BuildAccountUrl(string path, Guid userId, string code)
     {
-        return $"{application.BaseUrl.TrimEnd('/')}{VerificationPath}?userId={userId}&code={Uri.EscapeDataString(otpCode)}";
-    }
-
-    private string BuildPasswordResetUrl(Guid userId, string code)
-    {
-        return $"{application.BaseUrl.TrimEnd('/')}{PasswordResetPath}?userId={userId}&code={Uri.EscapeDataString(code)}";
+        return $"{application.BaseUrl.TrimEnd('/')}{path}?userId={userId}&code={Uri.EscapeDataString(code)}";
     }
 
     private static string NormalizeOtp(string otp)

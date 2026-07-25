@@ -2,30 +2,15 @@
 import { computed } from 'vue'
 import Tag from 'primevue/tag'
 
+import { normalizeHexColor } from '@/shared/lib'
+
 const props = defineProps<{
   value: string
   color?: string | null
 }>()
 
-function normalizeHex(input?: string | null): string | null {
-  if (!input) return null
-  const value = input.trim()
-  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)) return null
-  if (value.length === 4) {
-    return (
-      '#' +
-      value
-        .slice(1)
-        .split('')
-        .map((ch) => ch + ch)
-        .join('')
-    )
-  }
-  return value
-}
-
 const tagStyle = computed(() => {
-  const hex = normalizeHex(props.color)
+  const hex = normalizeHexColor(props.color)
   if (!hex) return null
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)

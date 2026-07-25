@@ -108,27 +108,30 @@ public sealed class ActivityServiceAssignmentTests
 
     private void CatalogRoles() =>
         roleTypes
-            .GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns([
-                new ActivityRoleType
+            .Query()
+            .Returns(
+                new List<ActivityRoleType>
                 {
-                    Id = SeedIds.ActivityRoleTypes.Leader,
-                    Name = "Líder",
-                    Description = "d",
-                },
-                new ActivityRoleType
-                {
-                    Id = SeedIds.ActivityRoleTypes.Volunteer,
-                    Name = "Voluntario",
-                    Description = "d",
-                },
-                new ActivityRoleType
-                {
-                    Id = SeedIds.ActivityRoleTypes.Participant,
-                    Name = "Participante",
-                    Description = "d",
-                },
-            ]);
+                    new()
+                    {
+                        Id = SeedIds.ActivityRoleTypes.Leader,
+                        Name = "Líder",
+                        Description = "d",
+                    },
+                    new()
+                    {
+                        Id = SeedIds.ActivityRoleTypes.Volunteer,
+                        Name = "Voluntario",
+                        Description = "d",
+                    },
+                    new()
+                    {
+                        Id = SeedIds.ActivityRoleTypes.Participant,
+                        Name = "Participante",
+                        Description = "d",
+                    },
+                }.AsQueryable()
+            );
 
     private void ExistingAssignment(ActivityUserRoleAssignment? assignment) =>
         activities

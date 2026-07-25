@@ -10,12 +10,13 @@ import type {
   ChangeAssignmentRoleRequest,
   ChangeAssignmentStatusRequest,
 } from '@/shared/api/generated/models'
+import { eventReportQueryKeys } from '@/entities/event'
 
 export function useAssignments(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-summary', toValue(eventId)] })
-    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-attendees'] })
+    void queryClient.invalidateQueries({ queryKey: eventReportQueryKeys.summary(toValue(eventId)) })
+    void queryClient.invalidateQueries({ queryKey: eventReportQueryKeys.attendees() })
   }
 
   const changeStatus = useMutation({

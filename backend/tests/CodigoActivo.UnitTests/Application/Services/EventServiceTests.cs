@@ -508,52 +508,24 @@ public sealed class EventServiceTests
         var signupStart = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         var signupEnd = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero);
 
+        var complete = new CreateEventRequest(
+            Title: "Hackathon",
+            Subtitle: "Innovación",
+            Description: "{}",
+            EventStartsAt: eventStart,
+            EventEndsAt: eventEnd,
+            SignupStartsAt: signupStart,
+            SignupEndsAt: signupEnd,
+            ThumbnailId: Guid.NewGuid(),
+            CategoryTypeIds: [Guid.NewGuid()]
+        );
+
         return new TheoryData<CreateEventRequest>
         {
-            new CreateEventRequest(
-                Title: "Hackathon",
-                Subtitle: "Innovación",
-                Description: "{}",
-                EventStartsAt: null,
-                EventEndsAt: eventEnd,
-                SignupStartsAt: signupStart,
-                SignupEndsAt: signupEnd,
-                ThumbnailId: Guid.NewGuid(),
-                CategoryTypeIds: [Guid.NewGuid()]
-            ),
-            new CreateEventRequest(
-                Title: "Hackathon",
-                Subtitle: "Innovación",
-                Description: "{}",
-                EventStartsAt: eventStart,
-                EventEndsAt: null,
-                SignupStartsAt: signupStart,
-                SignupEndsAt: signupEnd,
-                ThumbnailId: Guid.NewGuid(),
-                CategoryTypeIds: [Guid.NewGuid()]
-            ),
-            new CreateEventRequest(
-                Title: "Hackathon",
-                Subtitle: "Innovación",
-                Description: "{}",
-                EventStartsAt: eventStart,
-                EventEndsAt: eventEnd,
-                SignupStartsAt: null,
-                SignupEndsAt: signupEnd,
-                ThumbnailId: Guid.NewGuid(),
-                CategoryTypeIds: [Guid.NewGuid()]
-            ),
-            new CreateEventRequest(
-                Title: "Hackathon",
-                Subtitle: "Innovación",
-                Description: "{}",
-                EventStartsAt: eventStart,
-                EventEndsAt: eventEnd,
-                SignupStartsAt: signupStart,
-                SignupEndsAt: null,
-                ThumbnailId: Guid.NewGuid(),
-                CategoryTypeIds: [Guid.NewGuid()]
-            ),
+            complete with { EventStartsAt = null },
+            complete with { EventEndsAt = null },
+            complete with { SignupStartsAt = null },
+            complete with { SignupEndsAt = null },
         };
     }
 
@@ -957,34 +929,7 @@ public sealed class EventServiceTests
         ev.Categories.Add(
             new EventCategory { EventId = ev.Id, EventCategoryTypeId = Guid.NewGuid() }
         );
-        var store = new List<Event> { ev };
-        events.Query().Returns(_ => store.AsQueryable());
-        events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
-        activities
-            .AnyOutsideRangeAsync(
-                ev.Id,
-                Arg.Any<DateTimeOffset>(),
-                Arg.Any<DateTimeOffset>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-        ThumbnailExists(true);
-        HasCategoryCount(1);
-        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .Returns(_ =>
-            {
-                foreach (var category in ev.Categories)
-                {
-                    category.EventCategoryType ??= new EventCategoryType
-                    {
-                        Id = category.EventCategoryTypeId,
-                        Name = "Charlas",
-                        Color = "#654321",
-                    };
-                }
-
-                return 1;
-            });
+        PrepareUpdate(ev);
 
         var request = UpdateReq(
             categoryTypeIds: [newCategoryId],

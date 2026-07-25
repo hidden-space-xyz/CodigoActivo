@@ -18,26 +18,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Contenido\"}]}]}";
     private const string ExternalUrl = "https://ejemplo.es/curso";
 
-    private async Task<Guid> SeedThumbnailAsync()
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
-            );
-            return Task.CompletedTask;
-        });
-        return id;
-    }
-
     private async Task<Guid> SeedResourceAsync(
         string title = "Existing",
         string subtitle = "Sub",

@@ -14,12 +14,13 @@ function adminRoute(
   path: string,
   name: string,
   component: RouteRecordRaw['component'],
+  meta?: RouteRecordRaw['meta'],
 ): RouteRecordRaw {
   return {
     path,
     name,
     component,
-    meta: { layout: 'admin' },
+    meta: { layout: 'admin', ...meta },
     beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
   } as RouteRecordRaw
 }
@@ -143,20 +144,18 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/events/:eventId', 'admin-event-detail', () =>
     import('@/pages/admin/event-detail').then((m) => m.EventDetailPage),
   ),
-  {
-    path: '/admin/events/:eventId/badges',
-    name: 'admin-event-badges',
-    component: () => import('@/pages/admin/event-badges').then((m) => m.EventBadgesPage),
-    meta: { layout: 'blank', seo: { titleKey: 'seo.routes.eventBadges.title', noindex: true } },
-    beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
-  },
-  {
-    path: '/admin/events/:eventId/roster',
-    name: 'admin-event-roster',
-    component: () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
-    meta: { layout: 'blank', seo: { titleKey: 'seo.routes.eventRoster.title', noindex: true } },
-    beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
-  },
+  adminRoute(
+    '/admin/events/:eventId/badges',
+    'admin-event-badges',
+    () => import('@/pages/admin/event-badges').then((m) => m.EventBadgesPage),
+    { layout: 'blank', seo: { titleKey: 'seo.routes.eventBadges.title', noindex: true } },
+  ),
+  adminRoute(
+    '/admin/events/:eventId/roster',
+    'admin-event-roster',
+    () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
+    { layout: 'blank', seo: { titleKey: 'seo.routes.eventRoster.title', noindex: true } },
+  ),
   adminRoute('/admin/announcements', 'admin-announcements', () =>
     import('@/pages/admin/announcements').then((m) => m.AnnouncementsPage),
   ),

@@ -89,50 +89,26 @@ public class AnnouncementService(
             source = source.Where(a => a.CreatedAt < createdUpper);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Title))
-        {
-            source = source.Where(
-                TextSearch.Contains<AnnouncementListItemResponse>(
-                    a => a.Title,
-                    TextSearch.Normalize(query.Title)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Subtitle))
-        {
-            source = source.Where(
-                TextSearch.Contains<AnnouncementListItemResponse>(
-                    a => a.Subtitle,
-                    TextSearch.Normalize(query.Subtitle)
-                )
-            );
-        }
+        source = source.WhereContains(a => a.Title, query.Title);
+        source = source.WhereContains(a => a.Subtitle, query.Subtitle);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public async Task<Result<AnnouncementResponse>> GetByIdAsync(
+    public Task<Result<AnnouncementResponse>> GetByIdAsync(
         Guid id,
         CancellationToken ct = default
     )
     {
-        var response = await cache.GetOrCreateAsync(
+        return cache.GetEntityAsync(
+            executor,
             $"announcements:id:{id}",
-            token => new ValueTask<AnnouncementResponse?>(
-                executor.FirstOrDefaultAsync(
-                    announcements.Query().Where(a => a.Id == id).Select(Projections.Announcement),
-                    token
-                )
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Announcements],
+            () => announcements.Query().Where(a => a.Id == id).Select(Projections.Announcement),
+            CacheTags.Announcements,
+            ErrorCode.AnnouncementNotFound,
             ct
         );
-        return response is null
-            ? (Result<AnnouncementResponse>)Error.NotFound(ErrorCode.AnnouncementNotFound)
-            : (Result<AnnouncementResponse>)response;
     }
 
     public async Task<IReadOnlyList<int>> GetYearsAsync(CancellationToken ct = default)

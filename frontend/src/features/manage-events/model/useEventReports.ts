@@ -17,13 +17,14 @@ import type {
 } from '@/shared/api/generated/models'
 import { toPage } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
+import { eventQueryKeys, eventReportQueryKeys } from '@/entities/event'
 
 const ATTENDEE_EXPORT_PAGE_SIZE = 100
 const ATTENDEE_EXPORT_PAGE_LIMIT = 200
 
 export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: computed(() => ['reports', 'event-summary', toValue(eventId)] as const),
+    queryKey: computed(() => eventReportQueryKeys.summary(toValue(eventId))),
     queryFn: () => getApiReportsEventsEventIdSummary(toValue(eventId)).then((r) => r.data),
   })
 }
@@ -47,7 +48,7 @@ export function useEventAttendeesTable(
   })
 
   const table = useServerTable<EventAttendeeResponse, GetApiReportsEventsEventIdAttendeesParams>({
-    queryKey: ['reports', 'event-attendees'],
+    queryKey: eventReportQueryKeys.attendees(),
     fetchPage: (params) =>
       getApiReportsEventsEventIdAttendees(toValue(eventId), params).then(toPage),
     defaultSort: { field: 'firstName', order: 1 },
@@ -88,7 +89,7 @@ export function useEventRatingsTable(
   active: MaybeRefOrGetter<boolean>,
 ) {
   const table = useServerTable<EventRatingListItemResponse, GetApiEventsEventIdRatingsParams>({
-    queryKey: ['events', 'ratings'],
+    queryKey: eventQueryKeys.ratings(),
     fetchPage: (params) => getApiEventsEventIdRatings(toValue(eventId), params).then(toPage),
     defaultSort: { field: 'createdAt', order: -1 },
     extraParams: () => ({ eventId: toValue(eventId) }),
@@ -100,7 +101,7 @@ export function useEventRatingsTable(
 
 export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: computed(() => ['reports', 'event-badges', toValue(eventId)] as const),
+    queryKey: computed(() => eventReportQueryKeys.badges(toValue(eventId))),
     queryFn: () => getApiReportsEventsEventIdBadges(toValue(eventId)).then((r) => r.data),
     staleTime: 0,
     refetchOnMount: 'always',
@@ -109,7 +110,7 @@ export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
 
 export function useEventRoster(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
-    queryKey: computed(() => ['reports', 'event-roster', toValue(eventId)] as const),
+    queryKey: computed(() => eventReportQueryKeys.roster(toValue(eventId))),
     queryFn: () => getApiReportsEventsEventIdRoster(toValue(eventId)).then((r) => r.data),
     staleTime: 0,
     refetchOnMount: 'always',

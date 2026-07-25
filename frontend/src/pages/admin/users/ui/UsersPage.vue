@@ -18,7 +18,14 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
-import { ageFrom, formatDate, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import {
+  ageFrom,
+  formatDate,
+  fullName,
+  toSelectOptions,
+  useCrudFeedback,
+  useDeleteConfirm,
+} from '@/shared/lib'
 
 const { t } = useI18n()
 
@@ -35,10 +42,6 @@ const typeDialogVisible = ref(false)
 const typeUser = ref<UserResponse | null>(null)
 const selectedUserTypeId = ref<string | null>(null)
 
-function fullName(user: UserResponse): string {
-  return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—'
-}
-
 function birthDateWithAge(user: UserResponse): string {
   const formatted = formatDate(user.birthDate)
   if (formatted === '—') return '—'
@@ -50,32 +53,18 @@ function dependentsLabel(count: number): string {
   return t('pages.admin.users.dependentsLabel', { count }, count)
 }
 
-const statusOptions = computed(() =>
-  (userStatusTypes.data.value ?? []).map((status) => ({
-    label: status.name ?? '—',
-    value: status.id ?? '',
-  })),
-)
+const statusOptions = computed(() => toSelectOptions(userStatusTypes.data.value))
 
-const typeOptions = computed(() =>
-  (userTypes.data.value ?? []).map((type) => ({ label: type.name ?? '—', value: type.id ?? '' })),
-)
+const typeOptions = computed(() => toSelectOptions(userTypes.data.value))
 
 const adminOptions: { label: string; value: boolean }[] = [
   { label: t('common.yes'), value: true },
   { label: t('common.no'), value: false },
 ]
 
-function clearColumnFilters(): void {
-  for (const key of ['name', 'email', 'phone', 'birthDate', 'status', 'type', 'isAdmin']) {
-    table.columnFilter(key).value = null
-  }
-  table.onFilter()
-}
-
 function showTutorOf(user: UserResponse): void {
   if (!user.parentId) return
-  clearColumnFilters()
+  table.clearFilters()
   relationFilter.value = {
     label: t('pages.admin.users.relation.tutorOf', { fullName: fullName(user) }),
     params: { id: user.parentId },
@@ -84,7 +73,7 @@ function showTutorOf(user: UserResponse): void {
 
 function showDependentsOf(user: UserResponse): void {
   if (!user.id) return
-  clearColumnFilters()
+  table.clearFilters()
   relationFilter.value = {
     label: t('pages.admin.users.relation.dependentsOf', { fullName: fullName(user) }),
     params: { parentId: user.id },

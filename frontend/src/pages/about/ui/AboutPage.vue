@@ -28,13 +28,13 @@ const joinVisible = ref(false)
     </section>
 
     <section class="about-values">
-      <div class="ca-container--wide about-values__grid">
+      <div class="ca-container--narrow about-values__grid">
         <ValueCard v-for="value in values" :key="value.id" :value="value" />
       </div>
     </section>
 
     <section class="about-what">
-      <div class="ca-container--wide about-what__grid">
+      <div class="ca-container--narrow about-what__grid">
         <div class="about-what__photo" aria-hidden="true">
           foto del equipo / taller en acción 1200 × 900
         </div>
@@ -49,7 +49,7 @@ const joinVisible = ref(false)
     </section>
 
     <section class="about-cta">
-      <div class="ca-container--wide about-cta__card">
+      <div class="ca-container--narrow about-cta__card">
         <h2 class="about-cta__title">{{ $t('pages.about.cta.title') }}</h2>
         <p class="about-cta__text">
           {{ $t('pages.about.cta.text') }}

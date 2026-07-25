@@ -547,11 +547,6 @@ export const es = {
           empty: 'Este evento todavía no tiene valoraciones.',
           count: 'Ninguna valoración | 1 valoración | {count} valoraciones',
           noAnswers: 'Sin comentarios.',
-          questions: {
-            mostLiked: '¿Qué fue lo que MÁS te gustó?',
-            leastLiked: '¿Qué fue lo que MENOS te gustó?',
-            suggestions: '¿Tienes alguna sugerencia para eventos FUTUROS?',
-          },
         },
         empty: {
           error: 'No se pudieron cargar las actividades.',
@@ -1035,9 +1030,6 @@ export const es = {
           header: 'Valorar evento',
           score: 'Tu puntuación',
           clearScore: 'Quitar puntuación',
-          mostLiked: '¿Qué fue lo que MÁS te gustó?',
-          leastLiked: '¿Qué fue lo que MENOS te gustó?',
-          suggestions: '¿Tienes alguna sugerencia para eventos FUTUROS?',
         },
       },
     },
@@ -1148,6 +1140,11 @@ export const es = {
         badge: '★ Evento destacado',
         dateLabel: 'Fecha',
         viewDetails: 'Ver detalles →',
+      },
+      ratingQuestions: {
+        mostLiked: '¿Qué fue lo que MÁS te gustó?',
+        leastLiked: '¿Qué fue lo que MENOS te gustó?',
+        suggestions: '¿Tienes alguna sugerencia para eventos FUTUROS?',
       },
     },
     announcement: {

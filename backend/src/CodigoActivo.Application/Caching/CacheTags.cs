@@ -12,6 +12,16 @@ public static class CacheTags
     public const string Users = "users";
     public const string Catalogs = "catalogs";
 
+    public static readonly IReadOnlyList<string> DashboardSources =
+    [
+        Events,
+        Activities,
+        Resources,
+        Announcements,
+        Partners,
+        Users,
+    ];
+
     public static readonly IReadOnlyList<string> OutputCached =
     [
         Events,

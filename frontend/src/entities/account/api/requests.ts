@@ -8,7 +8,7 @@ import {
   postApiUsersUserIdChildren,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
-import { ApiError, toPage } from '@/shared/api'
+import { toPage, unwrapOrNull } from '@/shared/api'
 
 import type {
   AddMinorInput,
@@ -35,15 +35,8 @@ import {
 } from './mapper'
 
 export async function getAccountProfileRequest(): Promise<AccountProfile | null> {
-  try {
-    const response = await getApiAuthMe()
-    return toAccountProfile(response.data)
-  } catch (error) {
-    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-      return null
-    }
-    throw error
-  }
+  const data = await unwrapOrNull(getApiAuthMe(), [401, 403])
+  return data ? toAccountProfile(data) : null
 }
 
 export async function getAccountChildrenRequest(

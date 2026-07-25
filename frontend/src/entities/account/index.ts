@@ -8,7 +8,6 @@ export type {
 export type {
   AccountChild,
   AccountEventRating,
-  AccountHistoryActivity,
   AccountHistoryEntry,
   AccountProfile,
 } from './model/types'

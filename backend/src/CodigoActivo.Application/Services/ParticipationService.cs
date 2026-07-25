@@ -148,24 +148,19 @@ public class ParticipationService(
                 UserId = userId,
                 CreatedAt = now,
             };
-            rating.Apply(
-                request.Score!.Value,
-                request.MostLiked,
-                request.LeastLiked,
-                request.Suggestions
-            );
             await ratings.AddAsync(rating, ct);
         }
         else
         {
-            rating.Apply(
-                request.Score!.Value,
-                request.MostLiked,
-                request.LeastLiked,
-                request.Suggestions
-            );
             rating.UpdatedAt = now;
         }
+
+        rating.Apply(
+            request.Score!.Value,
+            request.MostLiked,
+            request.LeastLiked,
+            request.Suggestions
+        );
 
         await unitOfWork.SaveChangesAsync(ct);
         return rating.ToResponse();

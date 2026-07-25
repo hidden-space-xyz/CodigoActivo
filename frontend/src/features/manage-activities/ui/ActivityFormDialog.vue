@@ -246,7 +246,6 @@ async function save(): Promise<void> {
             v-model="form.activityStartsAt"
             show-time
             hour-format="24"
-            date-format="dd/mm/yy"
             :min-date="minDate"
             :max-date="maxDate"
             :invalid="submitted && (startMissing || outsideEvent)"
@@ -262,7 +261,6 @@ async function save(): Promise<void> {
             v-model="form.activityEndsAt"
             show-time
             hour-format="24"
-            date-format="dd/mm/yy"
             :min-date="form.activityStartsAt ?? minDate"
             :max-date="maxDate"
             :invalid="submitted && (endMissing || orderInvalid || outsideEvent)"

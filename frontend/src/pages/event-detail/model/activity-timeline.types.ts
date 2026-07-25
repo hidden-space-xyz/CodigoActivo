@@ -1,8 +1,3 @@
-export interface TimelineRole {
-  id: string
-  name: string
-}
-
 export interface TimelineMemberAssignment {
   userId: string
   name: string

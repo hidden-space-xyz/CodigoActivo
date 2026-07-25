@@ -100,11 +100,6 @@ public static class MappingExtensions
         );
     }
 
-    public static ActivityRoleTypeResponse ToResponse(this ActivityRoleType roleType)
-    {
-        return new ActivityRoleTypeResponse(roleType.Id, roleType.Name, roleType.Description);
-    }
-
     public static EventCategoryTypeResponse ToResponse(this EventCategoryType categoryType)
     {
         return new EventCategoryTypeResponse(

@@ -75,50 +75,23 @@ public class ActivityService(
             source = source.Where(a => a.ActivityStartsAt < activityUpper);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Title))
-        {
-            source = source.Where(
-                TextSearch.Contains<ActivityResponse>(
-                    a => a.Title,
-                    TextSearch.Normalize(query.Title)
-                )
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Location))
-        {
-            source = source.Where(
-                TextSearch.Contains<ActivityResponse>(
-                    a => a.Location,
-                    TextSearch.Normalize(query.Location)
-                )
-            );
-        }
+        source = source.WhereContains(a => a.Title, query.Title);
+        source = source.WhereContains(a => a.Location, query.Location);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
     }
 
-    public async Task<Result<ActivityResponse>> GetByIdAsync(
-        Guid id,
-        CancellationToken ct = default
-    )
+    public Task<Result<ActivityResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var response = await cache.GetOrCreateAsync(
+        return cache.GetEntityAsync(
+            executor,
             $"activities:id:{id}",
-            token => new ValueTask<ActivityResponse?>(
-                executor.FirstOrDefaultAsync(
-                    activities.Query().Where(a => a.Id == id).Select(Projections.Activity),
-                    token
-                )
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Activities],
+            () => activities.Query().Where(a => a.Id == id).Select(Projections.Activity),
+            CacheTags.Activities,
+            ErrorCode.ActivityNotFound,
             ct
         );
-        return response is null
-            ? (Result<ActivityResponse>)Error.NotFound(ErrorCode.ActivityNotFound)
-            : (Result<ActivityResponse>)response;
     }
 
     public async Task<IReadOnlyList<AssignedActivityResponse>> ListAssignedAsync(
@@ -141,65 +114,46 @@ public class ActivityService(
         );
     }
 
-    public async Task<IReadOnlyList<ActivityRoleTypeResponse>> ListRoleTypesAsync(
+    public Task<IReadOnlyList<ActivityRoleTypeResponse>> ListRoleTypesAsync(
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
+        return cache.GetCatalogAsync(
+            executor,
             "activities:role-types",
-            token => new ValueTask<IReadOnlyList<ActivityRoleTypeResponse>>(
-                executor.ToListAsync(
-                    roleTypes
-                        .Query()
-                        .OrderBy(role => role.Name)
-                        .Select(Projections.ActivityRoleType),
-                    token
-                )
-            ),
-            CachePolicies.Catalog,
-            [CacheTags.Catalogs],
+            () => roleTypes.Query().OrderBy(role => role.Name).Select(Projections.ActivityRoleType),
             ct
         );
     }
 
-    public async Task<IReadOnlyList<AssignmentStatusTypeResponse>> ListAssignmentStatusTypesAsync(
+    public Task<IReadOnlyList<AssignmentStatusTypeResponse>> ListAssignmentStatusTypesAsync(
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
+        return cache.GetCatalogAsync(
+            executor,
             "activities:assignment-status-types",
-            token => new ValueTask<IReadOnlyList<AssignmentStatusTypeResponse>>(
-                executor.ToListAsync(
-                    statuses
-                        .Query()
-                        .OrderBy(status => status.Name)
-                        .Select(Projections.AssignmentStatusType),
-                    token
-                )
-            ),
-            CachePolicies.Catalog,
-            [CacheTags.Catalogs],
+            () =>
+                statuses
+                    .Query()
+                    .OrderBy(status => status.Name)
+                    .Select(Projections.AssignmentStatusType),
             ct
         );
     }
 
-    public async Task<IReadOnlyList<ActivityModalityTypeResponse>> ListModalityTypesAsync(
+    public Task<IReadOnlyList<ActivityModalityTypeResponse>> ListModalityTypesAsync(
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
+        return cache.GetCatalogAsync(
+            executor,
             "activities:modality-types",
-            token => new ValueTask<IReadOnlyList<ActivityModalityTypeResponse>>(
-                executor.ToListAsync(
-                    modalityTypes
-                        .Query()
-                        .OrderBy(modality => modality.Name)
-                        .Select(Projections.ActivityModalityType),
-                    token
-                )
-            ),
-            CachePolicies.Catalog,
-            [CacheTags.Catalogs],
+            () =>
+                modalityTypes
+                    .Query()
+                    .OrderBy(modality => modality.Name)
+                    .Select(Projections.ActivityModalityType),
             ct
         );
     }
@@ -211,32 +165,17 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var eventDates = await GetEventDatesAsync(eventId, ct);
-        if (eventDates is null)
-            return Error.NotFound(ErrorCode.EventNotFound);
-
-        var schedule = ValidateActivitySchedule(
-            eventDates,
+        var validated = await ValidateActivityAsync(
+            eventId,
             request.ActivityStartsAt,
-            request.ActivityEndsAt
-        );
-        if (schedule.IsFailure)
-            return schedule.Error!;
-
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ActivityEndsAt,
             request.ThumbnailId,
-            ErrorCode.ActivityThumbnailNotFound,
+            request.ActivityModalityTypeId,
+            request.RoleCapacities,
             ct
         );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
-
-        if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
-            return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
-
-        var capacities = await ValidateRoleCapacitiesAsync(request.RoleCapacities, ct);
-        if (capacities.IsFailure)
-            return capacities.Error!;
+        if (validated.IsFailure)
+            return validated.Error!;
 
         var activity = new Activity
         {
@@ -244,14 +183,14 @@ public class ActivityService(
             Description = request.Description,
             Location = request.Location.Trim(),
             ActivityModalityTypeId = request.ActivityModalityTypeId,
-            ActivityStartsAt = schedule.Value.StartsAt,
-            ActivityEndsAt = schedule.Value.EndsAt,
+            ActivityStartsAt = validated.Value.Schedule.StartsAt,
+            ActivityEndsAt = validated.Value.Schedule.EndsAt,
             EventId = eventId,
             ThumbnailId = request.ThumbnailId,
             CreatedAt = clock.UtcNow,
             CreatedBy = userId,
-            RoleCapacities = capacities
-                .Value.Select(item => new ActivityRoleCapacity
+            RoleCapacities = validated
+                .Value.Capacities.Select(item => new ActivityRoleCapacity
                 {
                     ActivityRoleTypeId = item.RoleTypeId,
                     DesiredCount = item.DesiredCount,
@@ -277,32 +216,17 @@ public class ActivityService(
         if (activity is null)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
-        var eventDates = await GetEventDatesAsync(activity.EventId, ct);
-        if (eventDates is null)
-            return Error.NotFound(ErrorCode.EventNotFound);
-
-        var schedule = ValidateActivitySchedule(
-            eventDates,
+        var validated = await ValidateActivityAsync(
+            activity.EventId,
             request.ActivityStartsAt,
-            request.ActivityEndsAt
-        );
-        if (schedule.IsFailure)
-            return schedule.Error!;
-
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            request.ActivityEndsAt,
             request.ThumbnailId,
-            ErrorCode.ActivityThumbnailNotFound,
+            request.ActivityModalityTypeId,
+            request.RoleCapacities,
             ct
         );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
-
-        if (!await modalityTypes.ExistsAsync(m => m.Id == request.ActivityModalityTypeId, ct))
-            return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
-
-        var capacities = await ValidateRoleCapacitiesAsync(request.RoleCapacities, ct);
-        if (capacities.IsFailure)
-            return capacities.Error!;
+        if (validated.IsFailure)
+            return validated.Error!;
 
         var previousThumbnailId = activity.ThumbnailId;
 
@@ -310,13 +234,13 @@ public class ActivityService(
         activity.Description = request.Description;
         activity.Location = request.Location.Trim();
         activity.ActivityModalityTypeId = request.ActivityModalityTypeId;
-        activity.ActivityStartsAt = schedule.Value.StartsAt;
-        activity.ActivityEndsAt = schedule.Value.EndsAt;
+        activity.ActivityStartsAt = validated.Value.Schedule.StartsAt;
+        activity.ActivityEndsAt = validated.Value.Schedule.EndsAt;
         activity.ThumbnailId = request.ThumbnailId;
         activity.UpdatedAt = clock.UtcNow;
         activity.UpdatedBy = userId;
 
-        SyncRoleCapacities(activity, capacities.Value);
+        SyncRoleCapacities(activity, validated.Value.Capacities);
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
@@ -670,7 +594,7 @@ public class ActivityService(
             ct
         );
 
-        var roleNames = (await roleTypes.GetAllAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
+        var roleNames = (await ListRoleTypesAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
 
         return members
             .Select(member => new HouseholdSignupRolesResponse(
@@ -779,16 +703,12 @@ public class ActivityService(
 
     private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
     {
-        var name = await executor.FirstOrDefaultAsync(
-            statuses
-                .Query()
-                .Where(s => s.Id == SeedIds.AssignmentStatusTypes.Requested)
-                .Select(s => s.Name),
-            ct
+        var status = (await ListAssignmentStatusTypesAsync(ct)).FirstOrDefault(s =>
+            s.Id == SeedIds.AssignmentStatusTypes.Requested
         );
         return new AssignmentStatusResponse(
             SeedIds.AssignmentStatusTypes.Requested,
-            name ?? string.Empty
+            status?.Name ?? string.Empty
         );
     }
 
@@ -801,6 +721,42 @@ public class ActivityService(
                 .Select(e => new EventDates(e.EventStartsAt, e.EventEndsAt)),
             ct
         );
+    }
+
+    private async Task<Result<ValidatedActivity>> ValidateActivityAsync(
+        Guid eventId,
+        DateTimeOffset? startsAt,
+        DateTimeOffset? endsAt,
+        Guid thumbnailId,
+        Guid modalityTypeId,
+        IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities,
+        CancellationToken ct
+    )
+    {
+        var eventDates = await GetEventDatesAsync(eventId, ct);
+        if (eventDates is null)
+            return Error.NotFound(ErrorCode.EventNotFound);
+
+        var schedule = ValidateActivitySchedule(eventDates, startsAt, endsAt);
+        if (schedule.IsFailure)
+            return schedule.Error!;
+
+        var thumbnail = await files.EnsureThumbnailExistsAsync(
+            thumbnailId,
+            ErrorCode.ActivityThumbnailNotFound,
+            ct
+        );
+        if (thumbnail.IsFailure)
+            return thumbnail.Error!;
+
+        if (!await modalityTypes.ExistsAsync(m => m.Id == modalityTypeId, ct))
+            return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
+
+        var capacities = await ValidateRoleCapacitiesAsync(roleCapacities, ct);
+        if (capacities.IsFailure)
+            return capacities.Error!;
+
+        return new ValidatedActivity(schedule.Value, capacities.Value);
     }
 
     private Result<ActivitySchedule> ValidateActivitySchedule(
@@ -827,6 +783,11 @@ public class ActivityService(
     }
 
     private readonly record struct ActivitySchedule(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
+    private readonly record struct ValidatedActivity(
+        ActivitySchedule Schedule,
+        List<RoleCapacityItem> Capacities
+    );
 
     private sealed record EventDates(DateOnly StartsAt, DateOnly EndsAt);
 

@@ -119,7 +119,6 @@ function save(): void {
         <label>{{ $t('common.birthDate') }}</label>
         <DatePicker
           v-model="form.birthDate"
-          date-format="dd/mm/yy"
           show-icon
           :max-date="maxBirthDate"
           :invalid="submitted && birthDateInvalid"

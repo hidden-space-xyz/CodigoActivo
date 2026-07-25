@@ -17,15 +17,16 @@ import type {
 import { toPage } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
 import { activityQueryKeys, getActivityByIdRequest } from '@/entities/activity'
+import { eventReportQueryKeys } from '@/entities/event'
 
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['activities'] })
     void queryClient.invalidateQueries({
-      queryKey: ['reports', 'event-summary', toValue(eventId)],
+      queryKey: eventReportQueryKeys.summary(toValue(eventId)),
     })
-    void queryClient.invalidateQueries({ queryKey: ['reports', 'event-attendees'] })
+    void queryClient.invalidateQueries({ queryKey: eventReportQueryKeys.attendees() })
     void queryClient.invalidateQueries({
       queryKey: activityQueryKeys.publicByEvent(toValue(eventId)),
     })

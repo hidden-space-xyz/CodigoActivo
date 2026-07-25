@@ -77,7 +77,7 @@ function onSubmit(): void {
       </div>
 
       <div class="acc-form__field">
-        <label for="rating-most">{{ $t('features.account.history.dialog.mostLiked') }}</label>
+        <label for="rating-most">{{ $t('entities.event.ratingQuestions.mostLiked') }}</label>
         <Textarea
           id="rating-most"
           v-model="form.mostLiked"
@@ -89,7 +89,7 @@ function onSubmit(): void {
       </div>
 
       <div class="acc-form__field">
-        <label for="rating-least">{{ $t('features.account.history.dialog.leastLiked') }}</label>
+        <label for="rating-least">{{ $t('entities.event.ratingQuestions.leastLiked') }}</label>
         <Textarea
           id="rating-least"
           v-model="form.leastLiked"
@@ -102,7 +102,7 @@ function onSubmit(): void {
 
       <div class="acc-form__field">
         <label for="rating-suggestions">{{
-          $t('features.account.history.dialog.suggestions')
+          $t('entities.event.ratingQuestions.suggestions')
         }}</label>
         <Textarea
           id="rating-suggestions"

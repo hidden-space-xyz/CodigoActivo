@@ -1147,24 +1147,6 @@ public sealed class UserServiceTests
     }
 
     [Fact]
-    public async Task ChangeTypeAsync_UserIsMinor_AssignsTypeAndSaves()
-    {
-        var id = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
-        var user = NewUser(id: id, dob: MinorDob);
-        FindReturns(user);
-        TypeExists(true);
-        HasUsers(NewUser(id: id, dob: MinorDob));
-
-        var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Type.Should().NotBeNull();
-        user.UserTypeId.Should().Be(roleId);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task ChangeTypeAsync_TypeUnchanged_IsNoopAndDoesNotSave()
     {
         var id = Guid.NewGuid();

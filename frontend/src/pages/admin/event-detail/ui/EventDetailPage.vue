@@ -28,7 +28,13 @@ import type {
   CreateActivityRequest,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import { formatDateTimeRange, formatNumber, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import {
+  formatDateTimeRange,
+  formatNumber,
+  toSelectOptions,
+  useCrudFeedback,
+  useDeleteConfirm,
+} from '@/shared/lib'
 
 const route = useRoute()
 const router = useRouter()
@@ -64,12 +70,7 @@ const ratingsAverage = computed(() => {
   return average == null ? '—' : formatNumber(Number(average.toFixed(1)))
 })
 
-const modalityOptions = computed(() =>
-  (modalityTypes.data.value ?? []).map((modality) => ({
-    label: modality.name ?? '—',
-    value: modality.id ?? '',
-  })),
-)
+const modalityOptions = computed(() => toSelectOptions(modalityTypes.data.value))
 
 function onModalityFilter(value: string | boolean | null): void {
   activities.modalityTypeId.value = typeof value === 'string' ? value : null

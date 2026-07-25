@@ -138,34 +138,29 @@ public class ReportService(
         if (query.UserTypeId is { } userTypeId)
             source = source.Where(u => u.UserTypeId == userTypeId);
 
-        if (!string.IsNullOrWhiteSpace(query.Search))
-        {
-            source = source.Where(
-                TextSearch.Contains<User>(
-                    u =>
-                        u.FirstName
-                        + " "
-                        + u.LastName
-                        + " "
-                        + (u.Email ?? "")
-                        + " "
-                        + (u.Phone ?? "")
-                        + (
-                            u.Parent == null
-                                ? ""
-                                : " "
-                                    + u.Parent.FirstName
-                                    + " "
-                                    + u.Parent.LastName
-                                    + " "
-                                    + (u.Parent.Email ?? "")
-                                    + " "
-                                    + (u.Parent.Phone ?? "")
-                        ),
-                    TextSearch.Normalize(query.Search)
-                )
-            );
-        }
+        source = source.WhereContains(
+            u =>
+                u.FirstName
+                + " "
+                + u.LastName
+                + " "
+                + (u.Email ?? "")
+                + " "
+                + (u.Phone ?? "")
+                + (
+                    u.Parent == null
+                        ? ""
+                        : " "
+                            + u.Parent.FirstName
+                            + " "
+                            + u.Parent.LastName
+                            + " "
+                            + (u.Parent.Email ?? "")
+                            + " "
+                            + (u.Parent.Phone ?? "")
+                ),
+            query.Search
+        );
 
         var projected = AttendeeSort
             .Apply(source, query.Sort)
@@ -463,14 +458,7 @@ public class ReportService(
                 );
             },
             CachePolicies.Dashboard,
-            [
-                CacheTags.Events,
-                CacheTags.Activities,
-                CacheTags.Resources,
-                CacheTags.Announcements,
-                CacheTags.Partners,
-                CacheTags.Users,
-            ],
+            CacheTags.DashboardSources,
             ct
         );
     }
@@ -498,14 +486,7 @@ public class ReportService(
             $"reports:dashboard:analytics:{start:yyyy-MM-dd}:{end:yyyy-MM-dd}:{granularity}",
             async token => await BuildAnalyticsAsync(start, end, granularity, token),
             CachePolicies.Dashboard,
-            [
-                CacheTags.Events,
-                CacheTags.Activities,
-                CacheTags.Resources,
-                CacheTags.Announcements,
-                CacheTags.Partners,
-                CacheTags.Users,
-            ],
+            CacheTags.DashboardSources,
             ct
         );
     }
@@ -621,7 +602,7 @@ public class ReportService(
             ct
         );
 
-        DashboardSeriesResponse Cumulative(string key, IEnumerable<DateTimeOffset> createdAts)
+        (int[] PerBucket, int Before) Distribute(IEnumerable<DateTimeOffset> createdAts)
         {
             var before = 0;
             var perBucket = new int[buckets.Count];
@@ -637,6 +618,13 @@ public class ReportService(
                     perBucket[idx]++;
             }
 
+            return (perBucket, before);
+        }
+
+        DashboardSeriesResponse Cumulative(string key, IEnumerable<DateTimeOffset> createdAts)
+        {
+            var (perBucket, before) = Distribute(createdAts);
+
             var values = new int[buckets.Count];
             var running = before;
             for (var i = 0; i < buckets.Count; i++)
@@ -650,19 +638,7 @@ public class ReportService(
 
         DashboardSeriesResponse Flow(string key, IEnumerable<DateTimeOffset> createdAts)
         {
-            var perBucket = new int[buckets.Count];
-            foreach (var ts in createdAts)
-            {
-                var day = LocalDate(ts);
-                if (
-                    day >= start
-                    && day <= end
-                    && bucketIndex.TryGetValue(BucketStart(day, granularity), out var idx)
-                )
-                    perBucket[idx]++;
-            }
-
-            return new DashboardSeriesResponse(key, perBucket);
+            return new DashboardSeriesResponse(key, Distribute(createdAts).PerBucket);
         }
 
         static int Between(
@@ -746,7 +722,7 @@ public class ReportService(
         );
 
         var usersByType = FixedSlices(
-            ["member", "sponsor", "participant"],
+            UserGrowthKeys,
             userRows
                 .GroupBy(u => UserTypeKey(u.UserTypeId), StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)

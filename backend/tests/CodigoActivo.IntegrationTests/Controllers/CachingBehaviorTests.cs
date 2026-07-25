@@ -345,25 +345,6 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
-    private async Task<Guid> SeedThumbnailAsync()
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
-            );
-            return Task.CompletedTask;
-        });
-        return id;
-    }
 
     private async Task<Guid> SeedAnnouncementAsync(Guid thumbnailId, string title)
     {

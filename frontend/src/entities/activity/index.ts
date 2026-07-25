@@ -1,11 +1,5 @@
 export type { HouseholdAssignmentInput } from './model/household-assignment-input'
-export type {
-  ActivityOverlap,
-  ActivityRole,
-  HouseholdMember,
-  HouseholdSignupRoles,
-  OverlapCheck,
-} from './model/types'
+export type { ActivityOverlap, ActivityRole, HouseholdMember, OverlapCheck } from './model/types'
 export { activityQueryKeys } from './api/query-keys'
 export {
   assignActivityRequest,

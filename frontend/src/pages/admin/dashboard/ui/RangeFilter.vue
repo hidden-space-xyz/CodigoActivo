@@ -75,7 +75,6 @@ function onSelect(): void {
           v-model="draft"
           selection-mode="range"
           :manual-input="false"
-          date-format="dd/mm/yy"
           :placeholder="$t('table.rangePlaceholder')"
           inline
           @update:model-value="onSelect"

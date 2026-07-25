@@ -63,6 +63,17 @@ public static class TextSearch
         body = Expression.Call(body, ContainsMethod, termAccess);
         return Expression.Lambda<Func<T, bool>>(body, selector.Parameters);
     }
+
+    public static IQueryable<T> WhereContains<T>(
+        this IQueryable<T> source,
+        Expression<Func<T, string?>> selector,
+        string? term
+    )
+    {
+        return string.IsNullOrWhiteSpace(term)
+            ? source
+            : source.Where(Contains(selector, Normalize(term)));
+    }
 }
 
 internal sealed record Term(string Value);
