@@ -4,12 +4,19 @@ export interface EventCategoryTag {
   readonly color: string
 }
 
+export type EventStatusKind = 'upcoming' | 'signupOpen' | 'signupClosed' | 'finished'
+
+export interface EventStatus {
+  readonly kind: EventStatusKind
+  readonly label: string
+}
+
 export interface UpcomingEvent {
   readonly id: string
   readonly title: string
   readonly slogan: string
   readonly date: string
-  readonly status: string
+  readonly status: EventStatus
   readonly thumbnailId: string
   readonly categories: readonly EventCategoryTag[]
 }
@@ -18,7 +25,8 @@ export interface PastEvent {
   readonly id: string
   readonly title: string
   readonly eventName: string
-  readonly year: string
+  readonly date: string
+  readonly status: EventStatus
   readonly thumbnailId: string
   readonly categories: readonly EventCategoryTag[]
 }
@@ -32,7 +40,7 @@ export interface EventDetail {
   readonly endsAt: string | null
   readonly dateLabel: string
   readonly signupLabel: string
-  readonly status: string
+  readonly status: EventStatus
   readonly thumbnailId: string
   readonly signupOpen: boolean
   readonly categories: readonly EventCategoryTag[]

@@ -125,6 +125,17 @@ export function formatDateTimeRange(
   return `${startText} ${RANGE_SEPARATOR} ${endText}`
 }
 
+export function formatDateRange(start?: string | null, end?: string | null): string {
+  if (!start) return '—'
+  const startDate = parseDisplayDate(start)
+  if (Number.isNaN(startDate.getTime())) return '—'
+  const endDate = end ? parseDisplayDate(end) : null
+  if (!endDate || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+    return dateFormatter.format(startDate)
+  }
+  return dateFormatter.formatRange(startDate, endDate)
+}
+
 export function formatTimeRange(
   start?: Date | string | null,
   end?: Date | string | null,

@@ -109,8 +109,9 @@ function distanceOf(offset: number): number {
 .sponsors__heading {
   text-align: center;
   font-family: var(--ca-font-mono);
-  font-size: 12px;
-  color: var(--ca-text-faint);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ca-text-muted);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 30px;

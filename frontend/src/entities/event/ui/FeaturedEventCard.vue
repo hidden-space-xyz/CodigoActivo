@@ -33,6 +33,10 @@ const posterUrl = computed(() => fileContentUrl(props.event.thumbnailId))
             <span class="featured__meta-label">{{ $t('entities.event.featured.dateLabel') }}</span>
             <span class="featured__meta-value">{{ event.date }}</span>
           </div>
+          <div class="featured__meta-item">
+            <span class="featured__meta-label">{{ $t('common.status') }}</span>
+            <span class="featured__meta-value">{{ event.status.label }}</span>
+          </div>
         </div>
 
         <BaseButton

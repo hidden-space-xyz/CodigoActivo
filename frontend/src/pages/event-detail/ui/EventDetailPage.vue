@@ -31,7 +31,7 @@ const infoRows = computed(() =>
     ? [
         { label: t('pages.eventDetail.info.date'), value: event.value.dateLabel },
         { label: t('pages.eventDetail.info.signup'), value: event.value.signupLabel },
-        { label: t('common.status'), value: event.value.status },
+        { label: t('common.status'), value: event.value.status.label },
       ]
     : [],
 )
