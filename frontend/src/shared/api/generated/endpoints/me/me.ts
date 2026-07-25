@@ -16,6 +16,7 @@ import type {
 
 import type {
   AssignedActivityResponse,
+  EventHistoryResponse,
   GetApiMeAssignedActivitiesParams
 } from '../../models';
 
@@ -108,4 +109,80 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiMeAssignedActivitiesMutationOptions(options), queryClient);
+    }
+    export type getApiMeEventHistoryResponse200 = {
+  data: EventHistoryResponse[]
+  status: 200
+}
+
+export type getApiMeEventHistoryResponseSuccess = (getApiMeEventHistoryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMeEventHistoryResponse = (getApiMeEventHistoryResponseSuccess)
+
+export const getGetApiMeEventHistoryUrl = () => {
+
+
+
+
+  return `/api/me/event-history`
+}
+
+export const getApiMeEventHistory = async ( options?: RequestInit): Promise<getApiMeEventHistoryResponse> => {
+
+  return httpClient<getApiMeEventHistoryResponse>(getGetApiMeEventHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiMeEventHistoryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeEventHistory>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeEventHistory>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiMeEventHistory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeEventHistory>>, void> = () => {
+
+
+          return  getApiMeEventHistory(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMeEventHistoryMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeEventHistory>>>
+
+    export type GetApiMeEventHistoryMutationError = unknown
+
+    export const useGetApiMeEventHistory = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeEventHistory>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMeEventHistory>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiMeEventHistoryMutationOptions(options), queryClient);
     }

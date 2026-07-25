@@ -7,7 +7,7 @@ Guidance for Claude Code when working in this repository. **Each app has its own
 
 There are also five human-facing docs at the root, kept in sync with the code: [README.md](README.md) (overview + doc index), [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [DEPLOYMENT.md](DEPLOYMENT.md) (env-var reference table), [SECURITY.md](SECURITY.md).
 
-`<Codigoactivo/>` is a nonprofit association's website (León, since 2016). Public side: home, events, announcements, resources, partners, member registration (adults can register dependent minors), plus the full account lifecycle — login, OTP account verification, forgot/reset password, self-service account page. Admin back-office: ten sections (events, event detail/roster/printable badges, announcements, resources, partners, users, catalogs, dashboard with charts).
+`<Codigoactivo/>` is a nonprofit association's website (León, since 2016). Public side: home, events, announcements, resources, partners, member registration (adults can register dependent minors), plus the full account lifecycle — login, OTP account verification, forgot/reset password, self-service account page (profile, dependent minors, and a participation **history** of past/upcoming events from which members rate finished events). Admin back-office: ten sections (events, event detail/roster/printable badges — the detail has *Actividades*/*Asistentes*/*Opiniones* tabs, announcements, resources, partners, users, catalogs, dashboard with charts).
 
 ## Hard rules
 

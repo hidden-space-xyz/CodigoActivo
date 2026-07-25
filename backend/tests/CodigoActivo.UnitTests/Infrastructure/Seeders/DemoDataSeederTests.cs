@@ -1,6 +1,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.UnitTests.TestSupport;
@@ -32,6 +33,7 @@ public sealed class DemoDataSeederTests
         graph.Events.Should().HaveCount(20);
         graph.Activities.Should().HaveCount(100);
         graph.Assignments.Should().HaveCount(500);
+        graph.Ratings.Should().HaveCount(18);
         graph.Announcements.Should().HaveCount(10);
         graph.Resources.Should().HaveCount(20);
         graph.Partners.Should().HaveCount(10);
@@ -283,6 +285,103 @@ public sealed class DemoDataSeederTests
             {
                 using var doc = JsonDocument.Parse(value);
                 doc.RootElement.GetProperty("type").GetString().Should().Be("doc");
+            });
+    }
+
+    [Fact]
+    public void BuildGraph_Default_RatingsOnlyTargetFinishedEvents()
+    {
+        var eventsById = graph.Events.ToDictionary(e => e.Id);
+
+        graph.Ratings.Should().NotBeEmpty();
+        graph
+            .Ratings.Should()
+            .AllSatisfy(rating =>
+                eventsById[rating.EventId].EventEndsAt.Should().BeBefore(clock.Today)
+            );
+    }
+
+    [Fact]
+    public void BuildGraph_Default_SomeFinishedEventsHaveNoRatings()
+    {
+        var ratedEventIds = graph.Ratings.Select(r => r.EventId).ToHashSet();
+        var finished = graph.Events.Where(e => e.EventEndsAt < clock.Today).ToList();
+
+        finished.Should().Contain(ev => ratedEventIds.Contains(ev.Id));
+        finished.Should().Contain(ev => !ratedEventIds.Contains(ev.Id));
+    }
+
+    [Fact]
+    public void BuildGraph_Default_RatersHaveAConfirmedAssignmentInTheRatedEvent()
+    {
+        var eventIdByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
+        var confirmed = graph
+            .Assignments.Where(x =>
+                x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+            )
+            .Select(x => (eventIdByActivity[x.ActivityId], x.UserId))
+            .ToHashSet();
+
+        graph
+            .Ratings.Should()
+            .AllSatisfy(rating => confirmed.Should().Contain((rating.EventId, rating.UserId)));
+    }
+
+    [Fact]
+    public void BuildGraph_Default_RatersCanSignIn()
+    {
+        var usersById = graph.Users.ToDictionary(u => u.Id);
+
+        graph
+            .Ratings.Should()
+            .AllSatisfy(rating =>
+            {
+                var rater = usersById[rating.UserId];
+                rater.PasswordHash.Should().NotBeNull();
+                rater.ParentId.Should().BeNull();
+            });
+    }
+
+    [Fact]
+    public void BuildGraph_Default_RatingsAreUniquePerEventAndUser()
+    {
+        graph.Ratings.Select(r => (r.EventId, r.UserId)).Should().OnlyHaveUniqueItems();
+        graph.Ratings.Select(r => r.Id).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void BuildGraph_Default_RatingScoresAndAnswersAreWithinContract()
+    {
+        graph.Ratings.Should().OnlyContain(r => r.Score >= 0 && r.Score <= 5);
+        graph
+            .Ratings.Should()
+            .OnlyContain(r =>
+                (r.MostLiked == null || r.MostLiked.Length <= EventRating.MaxAnswerLength)
+                && (r.LeastLiked == null || r.LeastLiked.Length <= EventRating.MaxAnswerLength)
+                && (r.Suggestions == null || r.Suggestions.Length <= EventRating.MaxAnswerLength)
+            );
+        graph.Ratings.Should().Contain(r => r.MostLiked == null);
+        graph.Ratings.Should().Contain(r => r.MostLiked != null);
+    }
+
+    [Fact]
+    public void BuildGraph_Default_RatingTimestampsFallBetweenTheEventAndNow()
+    {
+        var eventsById = graph.Events.ToDictionary(e => e.Id);
+
+        graph
+            .Ratings.Should()
+            .AllSatisfy(rating =>
+            {
+                LocalDate(rating.CreatedAt)
+                    .Should()
+                    .BeOnOrAfter(eventsById[rating.EventId].EventEndsAt);
+                rating.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
+                if (rating.UpdatedAt is { } updatedAt)
+                {
+                    updatedAt.Should().BeOnOrAfter(rating.CreatedAt);
+                    updatedAt.Should().BeOnOrBefore(clock.UtcNow);
+                }
             });
     }
 

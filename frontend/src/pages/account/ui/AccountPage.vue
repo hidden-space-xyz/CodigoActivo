@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MinorsSection, ProfileSection } from '@/features/account'
+import { HistorySection, MinorsSection, ProfileSection } from '@/features/account'
 import { SectionEyebrow } from '@/shared/ui'
 </script>
 
@@ -20,6 +20,7 @@ import { SectionEyebrow } from '@/shared/ui'
       <div class="ca-container--narrow account-body__stack">
         <ProfileSection />
         <MinorsSection />
+        <HistorySection />
       </div>
     </section>
   </div>

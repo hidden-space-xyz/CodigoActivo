@@ -45,6 +45,8 @@ public sealed class EventAttendeeListQuery : PageQuery
     public Guid? StatusId { get; set; }
 }
 
+public sealed class EventRatingListQuery : PageQuery;
+
 public sealed class AnnouncementListQuery : PageQuery
 {
     public string? Title { get; set; }

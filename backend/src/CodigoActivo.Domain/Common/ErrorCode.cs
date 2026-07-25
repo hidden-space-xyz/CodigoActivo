@@ -30,6 +30,8 @@ public enum ErrorCode
     EventCategoriesRequired,
     EventScheduleRequired,
     EventScheduleInvalidRange,
+    EventRatingNotFinished,
+    EventRatingAttendanceRequired,
     ResourceNotFound,
     ResourceThumbnailNotFound,
     ResourceTypeNotFound,

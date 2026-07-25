@@ -21,4 +21,5 @@ public class Event : AuditableEntity, IFeaturable
 
     public ICollection<Activity> Activities { get; set; } = [];
     public ICollection<EventCategory> Categories { get; set; } = [];
+    public ICollection<EventRating> Ratings { get; set; } = [];
 }

@@ -34,6 +34,8 @@ export const ErrorCode = {
   EventCategoriesRequired: 'EventCategoriesRequired',
   EventScheduleRequired: 'EventScheduleRequired',
   EventScheduleInvalidRange: 'EventScheduleInvalidRange',
+  EventRatingNotFinished: 'EventRatingNotFinished',
+  EventRatingAttendanceRequired: 'EventRatingAttendanceRequired',
   ResourceNotFound: 'ResourceNotFound',
   ResourceThumbnailNotFound: 'ResourceThumbnailNotFound',
   ResourceTypeNotFound: 'ResourceTypeNotFound',

@@ -94,6 +94,7 @@ public sealed class DemoDataSeeder(
             await context.SaveChangesAsync(ct);
 
             context.ActivityUserRoleAssignments.AddRange(graph.Assignments);
+            context.EventRatings.AddRange(graph.Ratings);
             await context.SaveChangesAsync(ct);
 
             context.Announcements.AddRange(graph.Announcements);
@@ -113,10 +114,11 @@ public sealed class DemoDataSeeder(
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation(
-                "Demo data seeded: {Users} users, {Events} events, {Activities} activities, {Files} images",
+                "Demo data seeded: {Users} users, {Events} events, {Activities} activities, {Ratings} ratings, {Files} images",
                 graph.Users.Count,
                 graph.Events.Count,
                 graph.Activities.Count,
+                graph.Ratings.Count,
                 graph.Files.Count
             );
         }
@@ -149,6 +151,11 @@ public sealed class DemoDataSeeder(
         await context
             .ActivityUserRoleAssignments.Where(x =>
                 ownedActivityIds.Contains(x.ActivityId) || demoUserIds.Contains(x.UserId)
+            )
+            .ExecuteDeleteAsync(ct);
+        await context
+            .EventRatings.Where(r =>
+                ownedEventIds.Contains(r.EventId) || demoUserIds.Contains(r.UserId)
             )
             .ExecuteDeleteAsync(ct);
         await context
@@ -273,6 +280,7 @@ public sealed class DemoDataSeeder(
         var eventCategories = new List<EventCategory>();
         var activities = new List<Activity>();
         var assignments = new List<ActivityUserRoleAssignment>();
+        var ratings = new List<EventRating>();
 
         for (var e = 0; e < DemoEvents.Length; e++)
         {
@@ -297,6 +305,7 @@ public sealed class DemoDataSeeder(
             var label = (e + 1).ToString("D2", CultureInfo.InvariantCulture);
             var eventCreatedAt = SpreadCreatedAt(now, e, DemoEvents.Length, 210, 12);
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
+            var eventAssignments = new List<ActivityUserRoleAssignment>();
 
             events.Add(
                 new Event
@@ -351,8 +360,19 @@ public sealed class DemoDataSeeder(
                     }
                 );
 
-                assignments.AddRange(BuildAssignments(globalIndex, activityId, signupOpensAt, now));
+                var activityAssignments = BuildAssignments(
+                        globalIndex,
+                        activityId,
+                        signupOpensAt,
+                        now
+                    )
+                    .ToList();
+                assignments.AddRange(activityAssignments);
+                eventAssignments.AddRange(activityAssignments);
             }
+
+            if (end < clock.Today)
+                ratings.AddRange(BuildRatings(e, eventId, eventAssignments, end, clock, now));
         }
 
         var news = new List<Announcement>(DemoNews.Length);
@@ -442,6 +462,7 @@ public sealed class DemoDataSeeder(
             eventCategories,
             activities,
             assignments,
+            ratings,
             news,
             resources,
             partners
@@ -548,6 +569,59 @@ public sealed class DemoDataSeeder(
             };
         }
     }
+
+    private static IEnumerable<EventRating> BuildRatings(
+        int eventIndex,
+        Guid eventId,
+        List<ActivityUserRoleAssignment> eventAssignments,
+        DateOnly eventEndsAt,
+        IClock clock,
+        DateTimeOffset now
+    )
+    {
+        if (eventIndex % 4 == 3)
+            yield break;
+
+        var adultIds = Enumerable.Range(0, AdultCount).Select(UserId).ToHashSet();
+        var raters = eventAssignments
+            .Where(a =>
+                a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                && adultIds.Contains(a.UserId)
+            )
+            .Select(a => a.UserId)
+            .Distinct()
+            .Take(2 + (eventIndex % 4))
+            .ToList();
+
+        for (var slot = 0; slot < raters.Count; slot++)
+        {
+            var seed = DemoRatings[((eventIndex * 3) + slot) % DemoRatings.Length];
+            var ratedAt = ToUtc(
+                clock.TimeZone,
+                eventEndsAt.AddDays(1 + ((eventIndex + slot) % 6)),
+                18 + (slot % 4),
+                30
+            );
+            var createdAt = ratedAt < now ? ratedAt : now;
+            var edited = (eventIndex + slot) % 9 == 0;
+
+            yield return new EventRating
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventId,
+                UserId = raters[slot],
+                Score = seed.Score,
+                MostLiked = seed.MostLiked,
+                LeastLiked = seed.LeastLiked,
+                Suggestions = seed.Suggestions,
+                CreatedAt = createdAt,
+                UpdatedAt = edited ? MinTime(createdAt.AddDays(2), now) : null,
+            };
+        }
+    }
+
+    private static DateTimeOffset MinTime(DateTimeOffset value, DateTimeOffset ceiling) =>
+        value < ceiling ? value : ceiling;
 
     private static List<Guid> ResolveCategoryIds(
         string[] names,
@@ -737,11 +811,101 @@ public sealed class DemoDataSeeder(
         string Modality
     );
 
+    private sealed record RatingSeed(
+        int Score,
+        string? MostLiked,
+        string? LeastLiked,
+        string? Suggestions
+    );
+
     private sealed record ContentSeed(string Title, string Subtitle, string[] Description);
 
     private sealed record ExternalResourceSeed(string Title, string Subtitle, string Url);
 
     private sealed record PartnerSeed(string Name, int Tier, string? Web);
+
+    private static readonly RatingSeed[] DemoRatings =
+    [
+        new(
+            5,
+            "El trato del equipo de voluntariado. Se nota que disfrutan enseñando y que tienen paciencia de sobra.",
+            "El aula se quedó pequeña cuando llegamos todos a la vez.",
+            "Repetirlo un sábado por la mañana, que cuadra mucho mejor con las familias."
+        ),
+        new(
+            4,
+            "Que mi hija saliera con su proyecto terminado y con ganas de seguir en casa.",
+            "La primera media hora se fue en instalar programas en los portátiles.",
+            "Mandar por correo unos días antes lo que hay que traer instalado."
+        ),
+        new(
+            5,
+            "El ritmo. Nadie se quedó atrás y aun así no se hizo lento en ningún momento.",
+            null,
+            "Un segundo nivel para quienes ya vinimos a la primera edición."
+        ),
+        new(
+            3,
+            "Los materiales estaban muy bien preparados y se entendían solos.",
+            "Éramos demasiadas personas por cada persona voluntaria.",
+            "Grupos más pequeños, aunque haya que hacer dos turnos."
+        ),
+        new(
+            5,
+            "Que fuera práctico desde el minuto uno. Nada de teoría interminable.",
+            "La conexión falló un par de veces y perdimos algo de tiempo.",
+            null
+        ),
+        new(
+            4,
+            "El ambiente entre familias. Acabamos ayudándonos unos a otros.",
+            "El local costaba de encontrar, la señalización era escasa.",
+            "Un plano o un cartel a la entrada del edificio."
+        ),
+        new(5, null, null, null),
+        new(
+            4,
+            "Poder venir con mi hijo y trabajar los dos en el mismo proyecto.",
+            "Se nos quedó corto. Justo cuando cogíamos soltura se acabó.",
+            "Una sesión de continuidad a las dos o tres semanas."
+        ),
+        new(
+            2,
+            null,
+            "Vine sin saber nada y di por hecho que era para principiantes. Me perdí bastante.",
+            "Indicar el nivel de partida en la descripción de la actividad."
+        ),
+        new(
+            5,
+            "La forma de explicar sin tecnicismos. Salí entendiendo cosas que llevaba años evitando.",
+            "El horario de tarde se me hacía justo para llegar desde el trabajo.",
+            "Alguna edición en horario de mañana."
+        ),
+        new(
+            4,
+            "Los ejercicios en parejas. Aprendí tanto de mi compañera como de la explicación.",
+            null,
+            "Compartir al final los proyectos de todo el grupo en algún sitio común."
+        ),
+        new(
+            5,
+            "Que se preocuparan de que nadie se quedara atascado sin preguntar.",
+            "Faltaban enchufes para tantos portátiles.",
+            "Avisar de traer la batería cargada o una regleta."
+        ),
+        new(
+            3,
+            "La idea y los contenidos me parecieron muy acertados.",
+            "Empezamos con bastante retraso esperando a que llegara todo el mundo.",
+            null
+        ),
+        new(
+            4,
+            "Que fuera gratuito y abierto a cualquiera. Ojalá haya más cosas así.",
+            "Poco tiempo para las preguntas del final.",
+            "Reservar los últimos quince minutos solo para dudas."
+        ),
+    ];
 
     private static readonly string[] DemoCategories =
     [
@@ -1892,6 +2056,7 @@ internal sealed record DemoGraph(
     List<EventCategory> EventCategories,
     List<Activity> Activities,
     List<ActivityUserRoleAssignment> Assignments,
+    List<EventRating> Ratings,
     List<Announcement> Announcements,
     List<Resource> Resources,
     List<Partner> Partners

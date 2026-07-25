@@ -349,6 +349,27 @@ public interface IReportService
     );
 }
 
+public interface IParticipationService
+{
+    Task<IReadOnlyList<EventHistoryResponse>> GetHistoryAsync(
+        Guid userId,
+        CancellationToken ct = default
+    );
+
+    Task<Result<EventRatingResponse>> SaveRatingAsync(
+        Guid eventId,
+        Guid userId,
+        SaveEventRatingRequest request,
+        CancellationToken ct = default
+    );
+
+    Task<Result<PagedResult<EventRatingListItemResponse>>> ListEventRatingsAsync(
+        Guid eventId,
+        EventRatingListQuery query,
+        CancellationToken ct = default
+    );
+}
+
 public interface ISitemapService
 {
     Task<string> GetSitemapXmlAsync(CancellationToken ct = default);

@@ -247,6 +247,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IEventRatingRepository, EventRatingRepository>();
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
@@ -291,6 +292,7 @@ public static class DependencyInjection
         services.AddScoped<IAnnouncementService, AnnouncementService>();
         services.AddScoped<IPartnerService, PartnerService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISitemapService, SitemapService>();
     }

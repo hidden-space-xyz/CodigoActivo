@@ -9,6 +9,8 @@ public record EventSummaryResponse(
     int ConfirmedAssignments,
     int DeniedAssignments,
     int DistinctVolunteers,
+    int RatingsCount,
+    double? RatingsAverage,
     IReadOnlyList<EventRoleTypeSummaryResponse> RoleTypeBreakdown
 );
 

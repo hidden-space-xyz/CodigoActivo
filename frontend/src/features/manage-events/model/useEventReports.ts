@@ -2,6 +2,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, ref, toValue } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
+import { getApiEventsEventIdRatings } from '@/shared/api/generated/endpoints/events/events'
 import {
   getApiReportsEventsEventIdAttendees,
   getApiReportsEventsEventIdBadges,
@@ -10,6 +11,8 @@ import {
 } from '@/shared/api/generated/endpoints/reports/reports'
 import type {
   EventAttendeeResponse,
+  EventRatingListItemResponse,
+  GetApiEventsEventIdRatingsParams,
   GetApiReportsEventsEventIdAttendeesParams,
 } from '@/shared/api/generated/models'
 import { toPage } from '@/shared/api'
@@ -78,6 +81,21 @@ export function useEventAttendeesTable(
   }
 
   return { table, search, userTypeId, activityId, roleTypeId, statusId, fetchAllAttendees }
+}
+
+export function useEventRatingsTable(
+  eventId: MaybeRefOrGetter<string>,
+  active: MaybeRefOrGetter<boolean>,
+) {
+  const table = useServerTable<EventRatingListItemResponse, GetApiEventsEventIdRatingsParams>({
+    queryKey: ['events', 'ratings'],
+    fetchPage: (params) => getApiEventsEventIdRatings(toValue(eventId), params).then(toPage),
+    defaultSort: { field: 'createdAt', order: -1 },
+    extraParams: () => ({ eventId: toValue(eventId) }),
+    enabled: () => toValue(active),
+  })
+
+  return { table }
 }
 
 export function useEventBadges(eventId: MaybeRefOrGetter<string>) {

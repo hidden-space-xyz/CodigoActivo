@@ -206,6 +206,9 @@ export const es = {
     EventCategoriesRequired: 'Debes seleccionar al menos una categoría para el evento.',
     EventScheduleRequired: 'Debes indicar un horario para el evento.',
     EventScheduleInvalidRange: 'El horario del evento no es válido.',
+    EventRatingNotFinished: 'Solo puedes valorar eventos que ya han terminado.',
+    EventRatingAttendanceRequired:
+      'Solo puedes valorar eventos en los que has participado con una inscripción confirmada.',
 
     ResourceNotFound: 'No se encontró el recurso.',
     ResourceThumbnailNotFound: 'No se encontró la imagen del recurso.',
@@ -309,7 +312,8 @@ export const es = {
     account: {
       eyebrow: '// mi cuenta',
       title: 'Mi área de usuario',
-      intro: 'Gestiona tus datos, tu contraseña y los menores a tu cargo.',
+      intro:
+        'Gestiona tus datos, tu contraseña, los menores a tu cargo y tu historial de eventos.',
     },
     notFound: {
       eyebrow: '// error 404',
@@ -534,6 +538,20 @@ export const es = {
         tabs: {
           activities: 'Actividades',
           attendees: 'Asistentes',
+          opinions: 'Opiniones',
+        },
+        summary: {
+          ratings: 'Sin valoraciones | Media de 1 valoración | Media de {count} valoraciones',
+        },
+        opinions: {
+          empty: 'Este evento todavía no tiene valoraciones.',
+          count: 'Ninguna valoración | 1 valoración | {count} valoraciones',
+          noAnswers: 'Sin comentarios.',
+          questions: {
+            mostLiked: '¿Qué fue lo que MÁS te gustó?',
+            leastLiked: '¿Qué fue lo que MENOS te gustó?',
+            suggestions: '¿Tienes alguna sugerencia para eventos FUTUROS?',
+          },
         },
         empty: {
           error: 'No se pudieron cargar las actividades.',
@@ -1001,6 +1019,26 @@ export const es = {
         updatedSummary: 'Menor actualizado',
         deletedDetail: 'El menor se ha eliminado de tu cuenta.',
         deletedSummary: 'Menor eliminado',
+      },
+      history: {
+        title: 'Historial',
+        empty: 'Todavía no tienes inscripciones en ningún evento.',
+        error: 'No se ha podido cargar tu historial. Inténtalo de nuevo más tarde.',
+        upcoming: 'Próximos eventos',
+        past: 'Eventos anteriores',
+        activityCount: 'ninguna actividad | 1 actividad | {count} actividades',
+        rate: 'Valorar',
+        editRating: 'Editar valoración',
+        savedDetail: 'Gracias por compartir tu opinión.',
+        savedSummary: 'Valoración guardada',
+        dialog: {
+          header: 'Valorar evento',
+          score: 'Tu puntuación',
+          clearScore: 'Quitar puntuación',
+          mostLiked: '¿Qué fue lo que MÁS te gustó?',
+          leastLiked: '¿Qué fue lo que MENOS te gustó?',
+          suggestions: '¿Tienes alguna sugerencia para eventos FUTUROS?',
+        },
       },
     },
     register: {
