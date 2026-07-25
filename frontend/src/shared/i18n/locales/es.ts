@@ -298,6 +298,12 @@ export const es = {
       cta: {
         title: '¿Te sumas al proyecto?',
         text: 'Buscamos voluntariado para dinamizar talleres y empresas que quieran patrocinar la siguiente edición. No hace falta saber programar.',
+        join: 'Únete',
+        dialog: {
+          header: 'Únete a Código Activo',
+          lead: 'Antes de nada nos gusta conocer a quien se suma. Escríbenos un correo o llámanos y hablamos sin compromiso: te contamos cómo trabajamos y vemos juntos en qué te apetece participar.',
+          note: 'Te responderemos lo antes posible.',
+        },
       },
     },
     account: {

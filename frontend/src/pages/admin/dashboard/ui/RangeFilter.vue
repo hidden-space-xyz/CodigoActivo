@@ -112,14 +112,20 @@ function onSelect(): void {
     border-color 0.15s ease;
 }
 
-.range-filter__pill:hover {
+.range-filter__pill:hover:not(.range-filter__pill--active) {
   color: var(--ca-text-bright);
+  border-color: var(--ca-text-muted);
 }
 
 .range-filter__pill--active {
   color: var(--ca-bg);
   background: var(--ca-text);
   border-color: var(--ca-text);
+}
+
+.range-filter__pill--active:hover {
+  background: var(--ca-text-bright);
+  border-color: var(--ca-text-bright);
 }
 
 .range-filter__panel {
