@@ -166,7 +166,7 @@ function distanceOf(offset: number): number {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-decoration: none;
   color: inherit;
   transform: translate(-50%, -50%) translateX(calc(var(--offset) * var(--step))) scale(var(--scale));
@@ -215,11 +215,19 @@ function distanceOf(offset: number): number {
   font-size: 17px;
   color: var(--ca-text);
   white-space: nowrap;
+  transition:
+    font-size 0.6s ease,
+    transform 0.6s ease;
 }
 
 .sponsor--d0 {
   --scale: 1.1;
   z-index: 3;
+}
+
+.sponsor--d0 .sponsor__name {
+  font-size: 20px;
+  transform: translateY(10px);
 }
 
 .sponsor--d1 {
@@ -254,6 +262,10 @@ function distanceOf(offset: number): number {
   }
   .sponsor__name {
     font-size: 15px;
+  }
+  .sponsor--d0 .sponsor__name {
+    font-size: 17px;
+    transform: translateY(7px);
   }
 }
 </style>

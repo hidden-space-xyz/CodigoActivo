@@ -1,4 +1,4 @@
-export const FOUNDING_YEAR = 2018
+export const FOUNDING_YEAR = 2016
 
 export const CONTACT = {
   email: 'contacto@codigoactivo.es',

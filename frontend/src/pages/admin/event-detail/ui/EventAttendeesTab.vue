@@ -26,6 +26,7 @@ import {
   buildCsv,
   downloadCsv,
   formatDateTime,
+  normalizeHexColor,
   todayIso,
   useCrudFeedback,
 } from '@/shared/lib'
@@ -63,11 +64,13 @@ onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer)
 })
 
+const TYPE_SORT = 'type,firstName'
+
 const sortOptions: { label: string; value: string }[] = [
   { label: t('common.name'), value: 'firstName' },
   { label: t('common.lastName'), value: 'lastName' },
   { label: t('common.birthDate'), value: 'birthDate' },
-  { label: t('pages.admin.eventDetail.attendees.type'), value: 'type' },
+  { label: t('pages.admin.eventDetail.attendees.type'), value: TYPE_SORT },
 ]
 
 const sortField = computed({
@@ -186,13 +189,13 @@ function fullName(attendee: EventAttendeeResponse): string {
   return `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim() || '—'
 }
 
-function attendeeStyle(attendee: EventAttendeeResponse): Record<string, string> | undefined {
-  const color = attendee.userTypeColor
-  if (!color) return undefined
-  return {
-    borderLeft: `3px solid ${color}`,
-    background: `linear-gradient(0deg, ${color}14, ${color}14), var(--ca-surface)`,
-  }
+function typeName(attendee: EventAttendeeResponse): string {
+  return attendee.userTypeName || '—'
+}
+
+function attendeeVars(attendee: EventAttendeeResponse): Record<string, string> | undefined {
+  const color = normalizeHexColor(attendee.userTypeColor)
+  return color ? { '--user-type': color } : undefined
 }
 
 function hasConflicts(attendee: EventAttendeeResponse): boolean {
@@ -366,13 +369,21 @@ function submitChangeRole(): void {
           v-for="attendee in attendees.table.items.value"
           :key="attendee.userId"
           class="attendee"
-          :style="attendeeStyle(attendee)"
+          :style="attendeeVars(attendee)"
         >
           <div class="attendee__head">
             <div class="attendee__identity">
               <span class="attendee__name">{{ fullName(attendee) }}</span>
               <span v-if="ageFrom(attendee.birthDate) !== null" class="attendee__age">
                 {{ $t('pages.admin.eventDetail.attendees.age', { age: ageFrom(attendee.birthDate) }) }}
+              </span>
+              <span
+                class="attendee__type"
+                :title="
+                  $t('pages.admin.eventDetail.attendees.typeTitle', { name: typeName(attendee) })
+                "
+              >
+                {{ typeName(attendee) }}
               </span>
               <span
                 v-if="hasConflicts(attendee)"
@@ -609,6 +620,7 @@ function submitChangeRole(): void {
 .attendee {
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
+  border-left: 3px solid var(--user-type, var(--ca-border-strong));
   border-radius: 12px;
   padding: 12px 16px;
 }
@@ -639,6 +651,30 @@ function submitChangeRole(): void {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  row-gap: 6px;
+  flex-wrap: wrap;
+}
+
+.attendee__type {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ca-text);
+  background: color-mix(in srgb, var(--user-type, var(--ca-border-strong)) 16%, var(--ca-surface));
+  border-radius: 6px;
+  padding: 2px 8px 2px 6px;
+  white-space: nowrap;
+}
+
+.attendee__type::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--user-type, var(--ca-border-strong));
+  vertical-align: middle;
 }
 
 .attendee__name {

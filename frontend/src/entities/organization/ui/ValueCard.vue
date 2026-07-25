@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { OrganizationValue } from '../model/content'
 
-withDefaults(defineProps<{ value: OrganizationValue; size?: 'sm' | 'md' }>(), { size: 'md' })
+defineProps<{ value: OrganizationValue }>()
 </script>
 
 <template>
-  <div class="value-card" :class="`value-card--${size}`">
+  <div class="value-card">
     <div class="value-card__icon" :style="{ background: value.soft }">{{ value.icon }}</div>
     <div class="value-card__title">{{ value.title }}</div>
     <div class="value-card__desc">{{ value.description }}</div>
@@ -16,11 +16,6 @@ withDefaults(defineProps<{ value: OrganizationValue; size?: 'sm' | 'md' }>(), { 
 .value-card {
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
-  border-radius: 14px;
-  padding: 20px;
-}
-
-.value-card--md {
   border-radius: 16px;
   padding: 26px;
 }
@@ -29,14 +24,6 @@ withDefaults(defineProps<{ value: OrganizationValue; size?: 'sm' | 'md' }>(), { 
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  font-size: 17px;
-  margin-bottom: 12px;
-}
-
-.value-card--md .value-card__icon {
   width: 42px;
   height: 42px;
   border-radius: 11px;
@@ -47,24 +34,14 @@ withDefaults(defineProps<{ value: OrganizationValue; size?: 'sm' | 'md' }>(), { 
 .value-card__title {
   font-family: var(--ca-font-display);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 19px;
   color: var(--ca-text);
 }
 
-.value-card--md .value-card__title {
-  font-size: 19px;
-}
-
 .value-card__desc {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--ca-text-dim);
-  margin-top: 4px;
-}
-
-.value-card--md .value-card__desc {
   font-size: 15px;
   line-height: 1.55;
+  color: var(--ca-text-dim);
   margin-top: 8px;
 }
 </style>
