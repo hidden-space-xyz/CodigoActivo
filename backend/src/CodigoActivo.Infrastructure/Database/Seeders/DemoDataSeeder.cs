@@ -26,8 +26,10 @@ public sealed class DemoDataSeeder(
     private const int MemberAdultCount = 14;
     private const int ChildCount = 5;
 
-    private const int EventSpacingDays = 22;
-    private const int OngoingEventIndex = 8;
+    private const int EventSpacingDays = 14;
+    private const int FinishedEventCount = 15;
+    private const int FeaturedEventIndex = 17;
+    private const int FeaturedAnnouncementIndex = 0;
 
     private static Guid AdminId => UserId(0);
 
@@ -294,7 +296,7 @@ public sealed class DemoDataSeeder(
             var seed = DemoEvents[e];
             var eventId = Guid.NewGuid();
             var duration = 1 + (e % 3);
-            var start = clock.Today.AddDays((e - OngoingEventIndex) * EventSpacingDays);
+            var start = clock.Today.AddDays((e - FinishedEventCount) * EventSpacingDays);
             var end = start.AddDays(duration - 1);
             var signupWindow = SignupWindows[e % SignupWindows.Length];
             var signupOpensAt = ToUtc(
@@ -310,7 +312,10 @@ public sealed class DemoDataSeeder(
                 59
             );
             var label = (e + 1).ToString("D2", CultureInfo.InvariantCulture);
-            var eventCreatedAt = SpreadCreatedAt(now, e, DemoEvents.Length, 210, 12);
+            var eventCreatedAt = MinTime(
+                signupOpensAt.AddDays(-(7 + (e % 5))).AddHours(e % 12),
+                now.AddDays(-1)
+            );
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
             var eventAssignments = new List<ActivityUserRoleAssignment>();
 
@@ -325,7 +330,7 @@ public sealed class DemoDataSeeder(
                     EventEndsAt = end,
                     SignupStartsAt = signupOpensAt,
                     SignupEndsAt = signupClosesAt,
-                    Featured = e is 2 or 7 or 12 or 17,
+                    Featured = e == FeaturedEventIndex,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
                     CreatedAt = eventCreatedAt,
                     CreatedBy = AdminId,
@@ -371,6 +376,7 @@ public sealed class DemoDataSeeder(
                         globalIndex,
                         activityId,
                         signupOpensAt,
+                        signupClosesAt,
                         now
                     )
                     .ToList();
@@ -394,7 +400,7 @@ public sealed class DemoDataSeeder(
                     Title = seed.Title,
                     Subtitle = seed.Subtitle,
                     Description = BuildRichText(seed.Description, null, null),
-                    Featured = i is 0 or 4,
+                    Featured = i == FeaturedAnnouncementIndex,
                     ThumbnailId = NewFile(files, $"noticia-{label}-portada.jpg", now),
                     CreatedAt = now.AddDays(-(i * 6) - 3),
                     CreatedBy = AdminId,
@@ -516,11 +522,13 @@ public sealed class DemoDataSeeder(
         int globalIndex,
         Guid activityId,
         DateTimeOffset signupOpensAt,
+        DateTimeOffset signupClosesAt,
         DateTimeOffset now
     )
     {
         var leaderAdult = (globalIndex * 3) % MemberAdultCount;
         var baseAdult = (globalIndex * 3) % AdultCount;
+        var windowDays = Math.Max(1, (int)(signupClosesAt - signupOpensAt).TotalDays);
 
         int OtherAdult(int offset)
         {
@@ -539,7 +547,9 @@ public sealed class DemoDataSeeder(
 
         for (var slot = 0; slot < picks.Length; slot++)
         {
-            var signedUpAt = signupOpensAt.AddDays((globalIndex + slot) % 26).AddHours(slot);
+            var signedUpAt = signupOpensAt
+                .AddDays((globalIndex + slot) % windowDays)
+                .AddHours(slot);
             yield return new ActivityUserRoleAssignment
             {
                 UserId = UserId(picks[slot].UserIndex),
