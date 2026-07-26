@@ -1,6 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -124,7 +123,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         Factory.QueryAsync(db =>
             db.ActivityUserRoleAssignments.FirstOrDefaultAsync(
                 a => a.ActivityId == activityId && a.UserId == userId,
-                TestContext.Current.CancellationToken
+                Ct
             )
         );
 
@@ -138,13 +137,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<AssignmentResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<AssignmentResponse>(Ct);
         body!.UserId.Should().Be(TestSeedData.Users.MemberId);
         body.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
@@ -160,14 +157,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{Guid.NewGuid()}/{TestSeedData.Users.MemberId}/assign",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.ActivityNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -180,14 +173,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/assign",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityRoleNotAllowed);
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId)).Should().BeNull();
     }
 
@@ -201,7 +190,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.BlockedId}/assign",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -220,13 +209,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/activities/{activityId}/assign-household",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var created = await response.ReadJsonAsync<IReadOnlyList<AssignmentResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var created = await response.ReadJsonAsync<IReadOnlyList<AssignmentResponse>>(Ct);
         created!.Should().HaveCount(2);
         var member = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
         member!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
@@ -243,7 +230,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/unassign",
-            ct: TestContext.Current.CancellationToken
+            ct: Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -261,13 +248,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/change-status",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<AssignmentResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<AssignmentResponse>(Ct);
         body!.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
         stored!.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
@@ -288,13 +273,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/change-role",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<AssignmentResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<AssignmentResponse>(Ct);
         body!.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
         stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
@@ -315,7 +298,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/change-role",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -339,13 +322,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/activities/{targetId}/overlaps/{TestSeedData.Users.MemberId}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<TimeOverlapResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<TimeOverlapResponse>(Ct);
         body!.HasOverlaps.Should().BeTrue();
         body.Overlaps.Should().ContainSingle(o => o.ActivityId == otherId);
     }
@@ -360,12 +341,12 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/activities/household-assignments/{eventId}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<IReadOnlyList<HouseholdMemberAssignmentResponse>>(
-            TestContext.Current.CancellationToken
+            Ct
         );
         body!
             .Select(a => a.UserId)
@@ -381,7 +362,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/activities/household-assignments/{Guid.NewGuid()}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -397,14 +378,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityRoleNotAllowed);
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
     }
 
@@ -421,14 +398,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/activities/{activityId}/assign-household",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityRoleNotAllowed);
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId)).Should().BeNull();
     }
@@ -438,15 +411,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            "/api/activities/signup-roles",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities/signup-roles", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<IReadOnlyList<HouseholdSignupRolesResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<IReadOnlyList<HouseholdSignupRolesResponse>>(Ct);
         body!.Should().HaveCount(2);
         var self = body.Single(m => m.UserId == TestSeedData.Users.MemberId);
         self.Roles.Select(r => r.Id)
@@ -470,10 +438,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/activities/signup-roles",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities/signup-roles", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

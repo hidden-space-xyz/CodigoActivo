@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -49,14 +49,6 @@ public sealed class EventServiceTests
     private void HasCategoryTypes(params EventCategoryType[] items) =>
         categoryTypes.Query().Returns(items.AsQueryable());
 
-    private void ThumbnailExists(bool exists) =>
-        files
-            .ExistsAsync(
-                Arg.Any<Expression<Func<FileEntity, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(exists);
-
     private void HasCategoryCount(int count) =>
         categoryTypes
             .CountAsync(
@@ -64,6 +56,16 @@ public sealed class EventServiceTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(count);
+
+    private void CategoryTypeNameTaken(bool taken) =>
+        categoryTypes
+            .ExistsAsync(
+                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(taken);
+
+    private void CategoryTypeFound(EventCategoryType? type) => categoryTypes.Finds(type);
 
     private void CaptureCreatedEvents()
     {
@@ -118,21 +120,27 @@ public sealed class EventServiceTests
         };
     }
 
+    private static EventCategory NewCategory(
+        Guid eventId,
+        Guid categoryTypeId,
+        string name,
+        string color = "#112233"
+    ) =>
+        new()
+        {
+            EventId = eventId,
+            EventCategoryTypeId = categoryTypeId,
+            EventCategoryType = new EventCategoryType
+            {
+                Id = categoryTypeId,
+                Name = name,
+                Color = color,
+            },
+        };
+
     private static Event WithCategory(Event ev, Guid categoryTypeId, string name)
     {
-        ev.Categories.Add(
-            new EventCategory
-            {
-                EventId = ev.Id,
-                EventCategoryTypeId = categoryTypeId,
-                EventCategoryType = new EventCategoryType
-                {
-                    Id = categoryTypeId,
-                    Name = name,
-                    Color = "#112233",
-                },
-            }
-        );
+        ev.Categories.Add(NewCategory(ev.Id, categoryTypeId, name));
         return ev;
     }
 
@@ -615,7 +623,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task CreateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
-        ThumbnailExists(false);
+        files.ThumbnailExists(false);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.CreateAsync(
@@ -636,7 +644,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task CreateAsync_NullCategories_ReturnsCategoriesRequired()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         var request = CreateReq(categoryTypeIds: null);
 
         var result = await sut.CreateAsync(
@@ -654,7 +662,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task CreateAsync_EmptyCategories_ReturnsCategoriesRequired()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         var request = CreateReq(categoryTypeIds: Array.Empty<Guid>());
 
         var result = await sut.CreateAsync(
@@ -672,7 +680,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task CreateAsync_UnknownCategoryTypeId_ReturnsCategoryTypeNotFound()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         HasCategoryCount(1);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid(), Guid.NewGuid()]);
 
@@ -689,13 +697,13 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ValidRequest_PersistsTrimmedEventWithAuditAndCategories()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedEventWithAuditAndCategoriesAndInvalidatesCache()
     {
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         HasCategoryCount(1);
         CaptureCreatedEvents();
 
@@ -723,22 +731,6 @@ public sealed class EventServiceTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateAsync_ValidRequest_InvalidatesEventsCache()
-    {
-        ThumbnailExists(true);
-        HasCategoryCount(1);
-        CaptureCreatedEvents();
-
-        var result = await sut.CreateAsync(
-            CreateReq(categoryTypeIds: [Guid.NewGuid()]),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -750,7 +742,7 @@ public sealed class EventServiceTests
     public async Task CreateAsync_DuplicateCategoryTypeIds_PersistsSingleCategory()
     {
         var categoryId = Guid.NewGuid();
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         HasCategoryCount(1);
         CaptureCreatedEvents();
 
@@ -776,7 +768,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task CreateAsync_SignupStartsOnEventEndDate_Succeeds()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         HasCategoryCount(1);
         CaptureCreatedEvents();
 
@@ -902,7 +894,7 @@ public sealed class EventServiceTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(false);
-        ThumbnailExists(false);
+        files.ThumbnailExists(false);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.UpdateAsync(
@@ -918,7 +910,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_ValidRequest_ReplacesCategoriesAndPersists()
+    public async Task UpdateAsync_ValidRequest_ReplacesCategoriesPersistsAndInvalidatesCache()
     {
         var caller = Guid.NewGuid();
         var newCategoryId = Guid.NewGuid();
@@ -952,22 +944,6 @@ public sealed class EventServiceTests
         ev.UpdatedAt.Should().Be(clock.UtcNow);
         ev.Categories.Should().ContainSingle().Which.EventCategoryTypeId.Should().Be(newCategoryId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateAsync_ValidRequest_InvalidatesEventsCache()
-    {
-        var ev = NewEvent();
-        PrepareUpdate(ev);
-
-        var result = await sut.UpdateAsync(
-            ev.Id,
-            UpdateReq(categoryTypeIds: [Guid.NewGuid()], thumbnailId: ev.ThumbnailId),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -1030,28 +1006,8 @@ public sealed class EventServiceTests
         var keptA = Guid.NewGuid();
         var keptB = Guid.NewGuid();
         var ev = NewEvent();
-        var categoryA = new EventCategory
-        {
-            EventId = ev.Id,
-            EventCategoryTypeId = keptA,
-            EventCategoryType = new EventCategoryType
-            {
-                Id = keptA,
-                Name = "Talleres",
-                Color = "#111111",
-            },
-        };
-        var categoryB = new EventCategory
-        {
-            EventId = ev.Id,
-            EventCategoryTypeId = keptB,
-            EventCategoryType = new EventCategoryType
-            {
-                Id = keptB,
-                Name = "Charlas",
-                Color = "#222222",
-            },
-        };
+        var categoryA = NewCategory(ev.Id, keptA, "Talleres", "#111111");
+        var categoryB = NewCategory(ev.Id, keptB, "Charlas", "#222222");
         ev.Categories.Add(categoryA);
         ev.Categories.Add(categoryB);
         PrepareUpdate(ev);
@@ -1108,7 +1064,7 @@ public sealed class EventServiceTests
     {
         HasEvents(ev);
         events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         HasCategoryCount(1);
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns(_ =>
@@ -1130,9 +1086,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task DeleteAsync_EventMissing_ReturnsNotFound()
     {
-        events
-            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((Event?)null);
+        events.Finds(null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
@@ -1149,33 +1103,10 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_EventExists_InvalidatesEventsAndActivitiesCache()
+    public async Task DeleteAsync_ValidEvent_RemovesCleansThumbnailsAndInvalidatesCache()
     {
         var ev = NewEvent();
-        events
-            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(ev);
-        activities.Query().Returns(Array.Empty<Activity>().AsQueryable());
-
-        var result = await sut.DeleteAsync(ev.Id, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags.Contains(CacheTags.Events) && tags.Contains(CacheTags.Activities)
-                )
-            );
-    }
-
-    [Fact]
-    public async Task DeleteAsync_ValidEvent_RemovesAndCleansThumbnailsOnceEach()
-    {
-        var ev = NewEvent();
-        events
-            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(ev);
+        events.Finds(ev);
         var sharedActivityThumbnailId = Guid.NewGuid();
         var foreignActivity = new Activity
         {
@@ -1209,6 +1140,13 @@ public sealed class EventServiceTests
                 ),
                 Arg.Any<CancellationToken>()
             );
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags.Contains(CacheTags.Events) && tags.Contains(CacheTags.Activities)
+                )
+            );
     }
 
     [Fact]
@@ -1217,9 +1155,7 @@ public sealed class EventServiceTests
         var ev = NewEvent();
         var embeddedId = Guid.NewGuid();
         ev.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
-        events
-            .FindAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(ev);
+        events.Finds(ev);
         activities.Query().Returns(Array.Empty<Activity>().AsQueryable());
 
         var result = await sut.DeleteAsync(ev.Id, TestContext.Current.CancellationToken);
@@ -1248,7 +1184,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_EventExists_ReturnsFeaturedEvent()
+    public async Task SetFeaturedAsync_EventExists_ReturnsFeaturedEventAndInvalidatesCache()
     {
         var ev = NewEvent(featured: true);
         HasEvents(ev);
@@ -1259,18 +1195,6 @@ public sealed class EventServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(ev.Id);
         result.Value.Featured.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task SetFeaturedAsync_EventExists_InvalidatesEventsCache()
-    {
-        var ev = NewEvent(featured: true);
-        HasEvents(ev);
-        events.SetFeaturedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        var result = await sut.SetFeaturedAsync(ev.Id, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -1373,12 +1297,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task CreateCategoryTypeAsync_NameExists_ReturnsConflict()
     {
-        categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(true);
+        CategoryTypeNameTaken(true);
 
         var result = await sut.CreateCategoryTypeAsync(
             new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  "),
@@ -1395,14 +1314,9 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task CreateCategoryTypeAsync_ValidRequest_PersistsTrimmedType()
+    public async Task CreateCategoryTypeAsync_ValidRequest_PersistsTrimmedTypeAndInvalidatesCache()
     {
-        categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
+        CategoryTypeNameTaken(false);
 
         var result = await sut.CreateCategoryTypeAsync(
             new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  "),
@@ -1419,24 +1333,6 @@ public sealed class EventServiceTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateCategoryTypeAsync_ValidRequest_InvalidatesEventCategoryTypesCache()
-    {
-        categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-
-        var result = await sut.CreateCategoryTypeAsync(
-            new CreateEventCategoryTypeRequest("Talleres", "#112233"),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -1449,12 +1345,7 @@ public sealed class EventServiceTests
     [Fact]
     public async Task UpdateCategoryTypeAsync_TypeMissing_ReturnsNotFound()
     {
-        categoryTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns((EventCategoryType?)null);
+        CategoryTypeFound(null);
 
         var result = await sut.UpdateCategoryTypeAsync(
             Guid.NewGuid(),
@@ -1478,18 +1369,8 @@ public sealed class EventServiceTests
             Name = "Old",
             Color = "#000000",
         };
-        categoryTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(existing);
-        categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(true);
+        CategoryTypeFound(existing);
+        CategoryTypeNameTaken(true);
 
         var result = await sut.UpdateCategoryTypeAsync(
             id,
@@ -1504,7 +1385,7 @@ public sealed class EventServiceTests
     }
 
     [Fact]
-    public async Task UpdateCategoryTypeAsync_ValidRequest_MutatesAndPersists()
+    public async Task UpdateCategoryTypeAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var existing = new EventCategoryType
@@ -1513,18 +1394,8 @@ public sealed class EventServiceTests
             Name = "Old",
             Color = "#000000",
         };
-        categoryTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(existing);
-        categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
+        CategoryTypeFound(existing);
+        CategoryTypeNameTaken(false);
 
         var result = await sut.UpdateCategoryTypeAsync(
             id,
@@ -1538,39 +1409,6 @@ public sealed class EventServiceTests
         existing.Name.Should().Be("New");
         existing.Color.Should().Be("#abcdef");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateCategoryTypeAsync_ValidRequest_InvalidatesCategoryTypesAndEventsCache()
-    {
-        var id = Guid.NewGuid();
-        categoryTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                new EventCategoryType
-                {
-                    Id = id,
-                    Name = "Old",
-                    Color = "#000000",
-                }
-            );
-        categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-
-        var result = await sut.UpdateCategoryTypeAsync(
-            id,
-            new UpdateEventCategoryTypeRequest("New", "#abcdef"),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(

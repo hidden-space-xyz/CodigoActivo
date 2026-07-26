@@ -62,9 +62,7 @@ public sealed class FileServiceTests
 
     private void FileFound(FileEntity file)
     {
-        files
-            .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(file);
+        files.Finds(file);
         files
             .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns([file]);
@@ -72,9 +70,7 @@ public sealed class FileServiceTests
 
     private void FileMissing()
     {
-        files
-            .FindAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((FileEntity?)null);
+        files.Finds((FileEntity?)null);
         files
             .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
             .Returns([]);
@@ -103,9 +99,7 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
         await storage
             .DidNotReceiveWithAnyArgs()
             .OpenReadAsync(default!, TestContext.Current.CancellationToken);
@@ -152,9 +146,7 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.FileUploadMissing);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadMissing);
         await AssertNothingPersisted();
     }
 
@@ -169,8 +161,7 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.FileUploadEmpty);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadEmpty);
         await AssertNothingPersisted();
     }
 
@@ -186,8 +177,7 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.FileUploadTooLarge);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadTooLarge);
         await AssertNothingPersisted();
     }
 
@@ -223,8 +213,7 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.FileUploadStreamNotSeekable);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadStreamNotSeekable);
         await AssertNothingPersisted();
     }
 
@@ -239,8 +228,7 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.FileUploadUnsupportedFormat);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadUnsupportedFormat);
         await AssertNothingPersisted();
         await storage
             .DidNotReceiveWithAnyArgs()
@@ -338,10 +326,8 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
+        await AssertNotSaved();
         await storage
             .DidNotReceiveWithAnyArgs()
             .SaveAsync(default!, default!, TestContext.Current.CancellationToken);
@@ -358,17 +344,15 @@ public sealed class FileServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.FileUploadMissing);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadMissing);
+        await AssertNotSaved();
         await storage
             .DidNotReceiveWithAnyArgs()
             .SaveAsync(default!, default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task UpdateAsync_ExtensionUnchanged_ReplacesContentWithoutDeleting()
+    public async Task UpdateAsync_ExtensionUnchanged_ReplacesContentWithoutDeletingAndInvalidatesCache()
     {
         var file = NewFile(name: "old.png", extension: "png");
         FileFound(file);
@@ -386,18 +370,6 @@ public sealed class FileServiceTests
             .SaveAsync($"{file.Id}.png", content, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_ValidUpload_InvalidatesFilesCache()
-    {
-        var file = NewFile(name: "old.png", extension: "png");
-        FileFound(file);
-        var upload = new FileUploadRequest(PngStream(), "renamed.png", 32);
-
-        var result = await sut.UpdateAsync(file.Id, upload, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -463,10 +435,8 @@ public sealed class FileServiceTests
 
         var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.FileNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
+        await AssertNotSaved();
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
     }
 
@@ -479,11 +449,9 @@ public sealed class FileServiceTests
 
         var result = await sut.DeleteAsync(file.Id, TestContext.Current.CancellationToken);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.FileInUse);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.FileInUse);
         files.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
         await cacheInvalidator
             .DidNotReceive()
@@ -491,7 +459,7 @@ public sealed class FileServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_NotInUse_RemovesRowSavesAndDeletesStoredContent()
+    public async Task DeleteAsync_NotInUse_RemovesRowSavesDeletesStoredContentAndInvalidatesCache()
     {
         var file = NewFile(name: "gone.png", extension: "png");
         FileFound(file);
@@ -503,18 +471,6 @@ public sealed class FileServiceTests
         files.Received(1).Remove(file);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{file.Id}.png");
-    }
-
-    [Fact]
-    public async Task DeleteAsync_NotInUse_InvalidatesFilesCache()
-    {
-        var file = NewFile(name: "gone.png", extension: "png");
-        FileFound(file);
-        FileReferenced(false);
-
-        var result = await sut.DeleteAsync(file.Id, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -548,8 +504,7 @@ public sealed class FileServiceTests
 
         await act.Should().NotThrowAsync();
         files.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
     }
 
@@ -562,8 +517,7 @@ public sealed class FileServiceTests
             await sut.DeleteIfOrphanedAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
     }
 
@@ -648,8 +602,7 @@ public sealed class FileServiceTests
         await files
             .DidNotReceiveWithAnyArgs()
             .GetInUseAsync(default!, TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
     }
 
@@ -663,8 +616,7 @@ public sealed class FileServiceTests
         await sut.DeleteOrphanedAsync([first.Id, second.Id], TestContext.Current.CancellationToken);
 
         files.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
         storage.DidNotReceiveWithAnyArgs().Delete(default!);
     }
 
@@ -681,8 +633,7 @@ public sealed class FileServiceTests
             await sut.DeleteOrphanedAsync([Guid.NewGuid()], TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -716,11 +667,13 @@ public sealed class FileServiceTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    private Task<int> AssertNotSaved() =>
+        uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
+
     private async Task AssertNothingPersisted()
     {
         await files.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     private sealed class NonSeekableStream(byte[] data) : Stream

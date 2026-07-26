@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Http;
@@ -13,7 +14,14 @@ public sealed class ApiErrorResponseExtensionsTests
 
     private static DefaultHttpContext ContextWithTrace() => new() { TraceIdentifier = TraceId };
 
-    private sealed class TestController : ControllerBase;
+    private sealed class TestController : ApiControllerBase
+    {
+        public new ActionResult<T> ToOk<T>(Result<T> result) => base.ToOk(result);
+
+        public new ActionResult ToNoContent(Result result) => base.ToNoContent(result);
+
+        public new ActionResult ToProblem(Error error) => base.ToProblem(error);
+    }
 
     private static TestController NewController(string traceId = TraceId)
     {
@@ -62,11 +70,11 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_GenericSuccessResult_ReturnsOkWithValue()
+    public void ToOk_SuccessResult_ReturnsOkWithValue()
     {
         var controller = NewController();
 
-        var actionResult = controller.ToActionResult(Result.Success(42));
+        var actionResult = controller.ToOk(Result.Success(42));
 
         var ok = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
         ok.StatusCode.Should().Be(StatusCodes.Status200OK);
@@ -74,12 +82,12 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_GenericFailureResult_ReturnsProblem()
+    public void ToOk_FailureResult_ReturnsProblem()
     {
         var controller = NewController();
         Result<int> result = Error.NotFound(ErrorCode.PartnerNotFound);
 
-        var actionResult = controller.ToActionResult(result);
+        var actionResult = controller.ToOk(result);
 
         var problem = actionResult.Result.Should().BeOfType<ObjectResult>().Subject;
         problem.StatusCode.Should().Be(StatusCodes.Status404NotFound);
@@ -89,11 +97,11 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_SuccessResult_ReturnsNoContent()
+    public void ToNoContent_SuccessResult_ReturnsNoContent()
     {
         var controller = NewController();
 
-        var actionResult = controller.ToActionResult(Result.Success());
+        var actionResult = controller.ToNoContent(Result.Success());
 
         actionResult
             .Should()
@@ -103,12 +111,12 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_FailureResult_ReturnsProblem()
+    public void ToNoContent_FailureResult_ReturnsProblem()
     {
         var controller = NewController();
         Result result = Error.Conflict(ErrorCode.PartnerNotFound);
 
-        var actionResult = controller.ToActionResult(result);
+        var actionResult = controller.ToNoContent(result);
 
         var problem = actionResult.Should().BeOfType<ObjectResult>().Subject;
         problem.StatusCode.Should().Be(StatusCodes.Status409Conflict);
@@ -116,12 +124,12 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToProblemResult_ErrorWithTraceId_BuildsObjectResultWithStatusAndTrace()
+    public void ToProblem_ErrorWithTraceId_BuildsObjectResultWithStatusAndTrace()
     {
         var controller = NewController("trace-problem");
         var error = Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
 
-        var actionResult = controller.ToProblemResult(error);
+        var actionResult = controller.ToProblem(error);
 
         var problem = actionResult.Should().BeOfType<ObjectResult>().Subject;
         problem.StatusCode.Should().Be(StatusCodes.Status400BadRequest);

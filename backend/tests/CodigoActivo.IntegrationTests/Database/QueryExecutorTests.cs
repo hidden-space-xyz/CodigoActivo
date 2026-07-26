@@ -7,6 +7,7 @@ using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
@@ -44,7 +45,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
             })
         );
 
-        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await db.SaveChangesAsync(Ct);
     }
 
     private static IQueryable<User> OrderedUsers(CodigoActivoDbContext db) =>
@@ -56,12 +57,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         await SeedUsersAsync("A", "B", "C", "D", "E");
         await using var db = postgres.CreateContext();
 
-        var result = await sut.ToPagedAsync(
-            OrderedUsers(db),
-            page: 2,
-            pageSize: 2,
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.ToPagedAsync(OrderedUsers(db), page: 2, pageSize: 2, Ct);
 
         result.Total.Should().Be(5);
         result.Page.Should().Be(2);
@@ -75,12 +71,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         await SeedUsersAsync("A", "B", "C", "D", "E");
         await using var db = postgres.CreateContext();
 
-        var result = await sut.ToPagedAsync(
-            OrderedUsers(db),
-            page: 3,
-            pageSize: 2,
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.ToPagedAsync(OrderedUsers(db), page: 3, pageSize: 2, Ct);
 
         result.Total.Should().Be(5);
         result.Items.Select(u => u.FirstName).Should().Equal("E");
@@ -92,12 +83,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         await SeedUsersAsync("A", "B");
         await using var db = postgres.CreateContext();
 
-        var result = await sut.ToPagedAsync(
-            OrderedUsers(db),
-            page: 5,
-            pageSize: 10,
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.ToPagedAsync(OrderedUsers(db), page: 5, pageSize: 10, Ct);
 
         result.Total.Should().Be(2);
         result.Items.Should().BeEmpty();
@@ -108,12 +94,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     {
         await using var db = postgres.CreateContext();
 
-        var result = await sut.ToPagedAsync(
-            OrderedUsers(db),
-            page: 1,
-            pageSize: 10,
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.ToPagedAsync(OrderedUsers(db), page: 1, pageSize: 10, Ct);
 
         result.Total.Should().Be(0);
         result.Items.Should().BeEmpty();
@@ -129,7 +110,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
             OrderedUsers(db),
             page: int.MaxValue,
             pageSize: 100,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         result.Total.Should().Be(1);
@@ -142,7 +123,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         await SeedUsersAsync("A", "B", "C");
         await using var db = postgres.CreateContext();
 
-        var result = await sut.ToListAsync(OrderedUsers(db), TestContext.Current.CancellationToken);
+        var result = await sut.ToListAsync(OrderedUsers(db), Ct);
 
         result.Select(u => u.FirstName).Should().Equal("A", "B", "C");
     }
@@ -153,10 +134,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         await SeedUsersAsync("B", "A", "C");
         await using var db = postgres.CreateContext();
 
-        var result = await sut.FirstOrDefaultAsync(
-            OrderedUsers(db),
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.FirstOrDefaultAsync(OrderedUsers(db), Ct);
 
         result!.FirstName.Should().Be("A");
     }
@@ -166,10 +144,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     {
         await using var db = postgres.CreateContext();
 
-        var result = await sut.FirstOrDefaultAsync(
-            OrderedUsers(db),
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.FirstOrDefaultAsync(OrderedUsers(db), Ct);
 
         result.Should().BeNull();
     }

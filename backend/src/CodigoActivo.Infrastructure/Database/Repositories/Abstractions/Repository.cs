@@ -17,7 +17,7 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         return Set.AsNoTracking();
     }
 
-    public virtual async Task<TEntity?> FindAsync(
+    public async Task<TEntity?> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     )
@@ -25,17 +25,12 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         return await Set.FirstOrDefaultAsync(predicate, ct);
     }
 
-    public virtual async Task<IReadOnlyList<TEntity>> GetAsync(
+    public async Task<IReadOnlyList<TEntity>> GetAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     )
     {
         return await Set.AsNoTracking().Where(predicate).ToListAsync(ct);
-    }
-
-    public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken ct = default)
-    {
-        return await Set.AsNoTracking().ToListAsync(ct);
     }
 
     public Task<int> CountAsync(
@@ -64,7 +59,7 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         Set.Remove(entity);
     }
 
-    public virtual async Task<int> RemoveAsync(
+    public async Task<int> RemoveAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     )

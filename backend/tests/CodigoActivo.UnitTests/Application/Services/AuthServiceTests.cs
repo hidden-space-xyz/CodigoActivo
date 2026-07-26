@@ -96,11 +96,12 @@ public sealed class AuthServiceTests
 
     private User FindReturns(User? user)
     {
-        users
-            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(user);
+        users.Finds(user);
         return user!;
     }
+
+    private Task<int> AssertNotSaved() =>
+        uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
 
     private static User NewPendingWithOtp(
         TestClock clock,
@@ -126,11 +127,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Unauthorized);
-        result.Error.Code.Should().Be(ErrorCode.InvalidCredentials);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        await AssertNotSaved();
     }
 
     [Theory]
@@ -147,10 +145,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Unauthorized);
-        result.Error.Code.Should().Be(ErrorCode.InvalidCredentials);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -165,10 +161,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Unauthorized);
-        result.Error.Code.Should().Be(ErrorCode.InvalidCredentials);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        await AssertNotSaved();
     }
 
     [Theory]
@@ -184,10 +178,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(expected);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Forbidden, expected);
+        await AssertNotSaved();
     }
 
     public static TheoryData<Guid, ErrorCode> BlockedStatuses() =>
@@ -254,8 +246,7 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Unauthorized);
-        result.Error.Code.Should().Be(ErrorCode.CurrentUserNotFound);
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.CurrentUserNotFound);
     }
 
     [Fact]
@@ -266,10 +257,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.RegisterAdultCannotBeMinor);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterAdultCannotBeMinor);
+        await AssertNotSaved();
     }
 
     [Theory]
@@ -289,10 +278,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.RegisterContactInfoRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterContactInfoRequired);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -302,10 +289,8 @@ public sealed class AuthServiceTests
 
         var result = await sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
+        await AssertNotSaved();
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -321,10 +306,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.RegisterMinorBirthDateNotMinor);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterMinorBirthDateNotMinor);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -369,7 +352,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task RegisterAsync_NewAdult_SendsGuidOtpHashedAtRest()
+    public async Task RegisterAsync_NewAdult_SendsGuidOtpHashedAtRestAndInvalidatesCache()
     {
         var added = CaptureAddedUsers();
         ExistsReturns(false, false);
@@ -397,22 +380,6 @@ public sealed class AuthServiceTests
 
         added.Should().ContainSingle();
         added[0].OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
-    }
-
-    [Fact]
-    public async Task RegisterAsync_NewAdult_InvalidatesUsersCache()
-    {
-        ExistsReturns(false, false);
-        users
-            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser());
-        users
-            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-
-        var result = await sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -516,10 +483,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -539,10 +504,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.OtpInvalidOrExpired);
+        await AssertNotSaved();
     }
 
     public static TheoryData<string, bool, int?> InvalidOtpCases() =>
@@ -578,10 +541,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.OtpInvalidOrExpired);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -595,11 +556,9 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.OtpInvalidOrExpired);
         user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -634,8 +593,7 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -649,8 +607,7 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -665,8 +622,7 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -721,11 +677,9 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.OtpResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
         emailSender.Sent.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -764,8 +718,7 @@ public sealed class AuthServiceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         user.OtpCodeHash.Should().Be(previousHash);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     private static User NewUserWithResetCode(
@@ -794,8 +747,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -810,8 +762,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     public static TheoryData<Guid> IneligibleResetStatuses() =>
@@ -832,8 +783,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -849,8 +799,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -907,8 +856,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordResetCodeHash.Should().BeNull();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -922,10 +870,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -939,10 +885,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -956,10 +900,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -974,12 +916,10 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
         user.PasswordHash.Should().Be(previousPasswordHash);
         user.PasswordResetCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSaved();
     }
 
     [Fact]
@@ -994,10 +934,8 @@ public sealed class AuthServiceTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
+        await AssertNotSaved();
     }
 
     [Fact]

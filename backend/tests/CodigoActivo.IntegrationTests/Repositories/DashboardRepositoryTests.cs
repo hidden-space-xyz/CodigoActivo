@@ -5,8 +5,8 @@ using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
+using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
 
@@ -35,7 +35,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         await using var ctx = postgres.CreateContext();
         var repo = new DashboardRepository(ctx);
 
-        var counts = await repo.GetCountsAsync(TestContext.Current.CancellationToken);
+        var counts = await repo.GetCountsAsync(Ct);
 
         counts.Events.Should().Be(0);
         counts.Activities.Should().Be(0);
@@ -50,10 +50,10 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     {
         await using var ctx = postgres.CreateContext();
         SeedDistinctRowCounts(ctx);
-        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await ctx.SaveChangesAsync(Ct);
         var repo = new DashboardRepository(ctx);
 
-        var counts = await repo.GetCountsAsync(TestContext.Current.CancellationToken);
+        var counts = await repo.GetCountsAsync(Ct);
 
         counts.Events.Should().Be(2);
         counts.Activities.Should().Be(3);

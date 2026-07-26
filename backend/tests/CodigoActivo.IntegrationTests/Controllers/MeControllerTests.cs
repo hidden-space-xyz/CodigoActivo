@@ -90,9 +90,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         HttpResponseMessage response
     )
     {
-        return await response.ReadJsonAsync<List<Application.DTOs.AssignedActivityResponse>>(
-                TestContext.Current.CancellationToken
-            ) ?? [];
+        return await response.ReadJsonAsync<List<Application.DTOs.AssignedActivityResponse>>(Ct)
+            ?? [];
     }
 
     [Fact]
@@ -100,10 +99,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/me/assigned-activities",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/me/assigned-activities", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -120,10 +116,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            "/api/me/assigned-activities",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/me/assigned-activities", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = await ReadAssignedAsync(response);
@@ -157,7 +150,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/me/assigned-activities?eventId={targetEventId}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -176,18 +169,13 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         HttpResponseMessage response
     )
     {
-        return await response.ReadJsonAsync<List<EventHistoryResponse>>(
-                TestContext.Current.CancellationToken
-            ) ?? [];
+        return await response.ReadJsonAsync<List<EventHistoryResponse>>(Ct) ?? [];
     }
 
     private async Task<List<EventHistoryResponse>> GetHistoryAsMemberAsync()
     {
         var client = await LoginAsMemberAsync();
-        var response = await client.GetAsync(
-            "/api/me/event-history",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/me/event-history", Ct);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return await ReadHistoryAsync(response);
     }
@@ -197,10 +185,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/me/event-history",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/me/event-history", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

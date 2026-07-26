@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useAccountVerification } from '@/features/register'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BaseButton, PageHead } from '@/shared/ui'
 
 const route = useRoute()
 const { state, errorMessage, verify, resend, canResend, isResending } = useAccountVerification()
@@ -20,13 +20,10 @@ onMounted(() => {
 
 <template>
   <div>
-    <section class="verify-head">
-      <div class="verify-head__glow" aria-hidden="true" />
-      <div class="ca-container--narrow verify-head__inner">
-        <SectionEyebrow :text="$t('pages.verifyAccount.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="verify-head__title">{{ $t('pages.verifyAccount.title') }}</h1>
-      </div>
-    </section>
+    <PageHead
+      :eyebrow="$t('pages.verifyAccount.eyebrow')"
+      :title="$t('pages.verifyAccount.title')"
+    />
 
     <section class="verify-body">
       <div class="ca-container--narrow">
@@ -68,30 +65,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.verify-head {
-  position: relative;
-  overflow: hidden;
-  padding: 64px 24px 16px;
-}
-
-.verify-head__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
-}
-
-.verify-head__inner {
-  position: relative;
-}
-
-.verify-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
 .verify-body {
   padding: 24px 24px 80px;
 }

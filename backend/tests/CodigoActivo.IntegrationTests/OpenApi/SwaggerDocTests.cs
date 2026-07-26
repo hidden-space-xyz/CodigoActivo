@@ -3,6 +3,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
+using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;
 
@@ -26,10 +27,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     {
         var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(
-            SwaggerUrl,
-            TestContext.Current.CancellationToken
-        );
+        using var response = await client.GetAsync(SwaggerUrl, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -37,7 +35,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SwaggerDocument_ListEndpoints_QueryParametersAreCamelCased()
     {
-        using var doc = await FetchSwaggerAsync(TestContext.Current.CancellationToken);
+        using var doc = await FetchSwaggerAsync(Ct);
 
         var queryParamNames = doc
             .RootElement.GetProperty("paths")
@@ -64,7 +62,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SwaggerDocument_OperationResponses_OnlyJsonMediaType()
     {
-        using var doc = await FetchSwaggerAsync(TestContext.Current.CancellationToken);
+        using var doc = await FetchSwaggerAsync(Ct);
 
         var mediaTypes = doc
             .RootElement.GetProperty("paths")
@@ -90,7 +88,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SwaggerDocument_ErrorSchema_IsForcedIntoComponents()
     {
-        using var doc = await FetchSwaggerAsync(TestContext.Current.CancellationToken);
+        using var doc = await FetchSwaggerAsync(Ct);
 
         doc.RootElement.TryGetProperty("components", out var components).Should().BeTrue();
         components.TryGetProperty("schemas", out var schemas).Should().BeTrue();

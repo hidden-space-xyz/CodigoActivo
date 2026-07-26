@@ -3,7 +3,7 @@ import Password from 'primevue/password'
 import { useRoute } from 'vue-router'
 
 import { useResetPassword } from '@/features/auth'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BaseButton, PageHead } from '@/shared/ui'
 
 const route = useRoute()
 
@@ -18,13 +18,10 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
 
 <template>
   <div>
-    <section class="reset-head">
-      <div class="reset-head__glow" aria-hidden="true" />
-      <div class="ca-container--narrow reset-head__inner">
-        <SectionEyebrow :text="$t('pages.resetPassword.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="reset-head__title">{{ $t('pages.resetPassword.title') }}</h1>
-      </div>
-    </section>
+    <PageHead
+      :eyebrow="$t('pages.resetPassword.eyebrow')"
+      :title="$t('pages.resetPassword.title')"
+    />
 
     <section class="reset-body">
       <div class="reset-card">
@@ -98,30 +95,6 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
 </template>
 
 <style scoped>
-.reset-head {
-  position: relative;
-  overflow: hidden;
-  padding: 64px 24px 16px;
-}
-
-.reset-head__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
-}
-
-.reset-head__inner {
-  position: relative;
-}
-
-.reset-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
 .reset-body {
   padding: 24px 24px 80px;
 }

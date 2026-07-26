@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -79,21 +78,10 @@ public class EventService(
 
         if (query.Year is { } year)
         {
-            if (year is < 1 or > 9999)
-            {
-                source = source.Where(e => e.EventStartsAt > DateOnly.MaxValue);
-            }
-            else
-            {
-                var yearStart = new DateOnly(year, 1, 1);
-                source =
-                    year == 9999
-                        ? source.Where(e => e.EventStartsAt >= yearStart)
-                        : source.Where(e =>
-                            e.EventStartsAt >= yearStart
-                            && e.EventStartsAt < new DateOnly(year + 1, 1, 1)
-                        );
-            }
+            var valid = year is >= 1 and <= 9999;
+            var lower = valid ? new DateOnly(year, 1, 1) : DateOnly.MaxValue;
+            var upper = valid ? new DateOnly(year, 12, 31) : DateOnly.MinValue;
+            source = source.Where(e => e.EventStartsAt >= lower && e.EventStartsAt <= upper);
         }
 
         if (query.Featured is { } featured)
@@ -175,13 +163,8 @@ public class EventService(
         if (schedule.IsFailure)
             return schedule.Error!;
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.EventThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
         if (categories.IsFailure)
@@ -240,13 +223,8 @@ public class EventService(
         if (await activities.AnyOutsideRangeAsync(id, lowerInclusive, upperExclusive, ct))
             return Error.BadRequest(ErrorCode.EventActivitiesOutsideNewRange);
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.EventThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
 
         var previousThumbnailId = ev.ThumbnailId;
         var previousDescription = ev.Description;

@@ -189,7 +189,7 @@ public class ReportService(
                     )
                     .OrderBy(a => a.Activity.ActivityStartsAt)
                     .ThenBy(a => a.Activity.Title)
-                    .Select(a => new AttendeeAssignmentRow(
+                    .Select(a => new EventAttendeeAssignmentResponse(
                         a.ActivityId,
                         a.Activity.Title,
                         a.Activity.ActivityStartsAt,
@@ -198,7 +198,8 @@ public class ReportService(
                         a.ActivityRoleType.Name,
                         a.AssignmentStatusId,
                         a.AssignmentStatus.Name,
-                        a.CreatedAt
+                        a.CreatedAt,
+                        false
                     ))
                     .ToList(),
                 u.Assignments.Where(a =>
@@ -220,25 +221,17 @@ public class ReportService(
 
     private static EventAttendeeResponse ToAttendeeResponse(AttendeeRow row)
     {
-        var assignments = row
-            .Assignments.Select(a => new EventAttendeeAssignmentResponse(
-                a.ActivityId,
-                a.ActivityTitle,
-                a.ActivityStartsAt,
-                a.ActivityEndsAt,
-                a.RoleTypeId,
-                a.RoleTypeName,
-                a.StatusId,
-                a.StatusName,
-                a.SignedUpAt,
-                a.StatusId != SeedIds.AssignmentStatusTypes.Denied
+        var assignments = row.Assignments.ConvertAll(a =>
+            a with
+            {
+                HasTimeConflict = a.StatusId != SeedIds.AssignmentStatusTypes.Denied
                     && row.Windows.Exists(w =>
                         w.ActivityId != a.ActivityId
                         && a.ActivityStartsAt < w.EndsAt
                         && w.StartsAt < a.ActivityEndsAt
-                    )
-            ))
-            .ToList();
+                    ),
+            }
+        );
 
         return new EventAttendeeResponse(
             row.UserId,
@@ -264,20 +257,8 @@ public class ReportService(
         string UserTypeName,
         string UserTypeColor,
         EventAttendeeGuardianResponse? Guardian,
-        List<AttendeeAssignmentRow> Assignments,
+        List<EventAttendeeAssignmentResponse> Assignments,
         List<AssignmentWindow> Windows
-    );
-
-    private sealed record AttendeeAssignmentRow(
-        Guid ActivityId,
-        string ActivityTitle,
-        DateTimeOffset ActivityStartsAt,
-        DateTimeOffset ActivityEndsAt,
-        Guid RoleTypeId,
-        string? RoleTypeName,
-        Guid StatusId,
-        string? StatusName,
-        DateTimeOffset SignedUpAt
     );
 
     private sealed record AssignmentWindow(
@@ -673,44 +654,24 @@ public class ReportService(
             ))
             .ToList();
 
+        var usersByGrowthKey = userRows.ToLookup(
+            u => UserTypeKey(u.UserTypeId),
+            u => u.CreatedAt,
+            StringComparer.Ordinal
+        );
         var userGrowth = new DashboardTimeSeriesResponse(
             buckets,
-            UserGrowthKeys
-                .Select(key =>
-                    Cumulative(
-                        key,
-                        userRows
-                            .Where(u =>
-                                string.Equals(
-                                    UserTypeKey(u.UserTypeId),
-                                    key,
-                                    StringComparison.Ordinal
-                                )
-                            )
-                            .Select(u => u.CreatedAt)
-                    )
-                )
-                .ToList()
+            [.. UserGrowthKeys.Select(key => Cumulative(key, usersByGrowthKey[key]))]
         );
 
+        var inscriptionsByStatus = assignmentRows.ToLookup(
+            a => AssignmentStatusKey(a.AssignmentStatusId),
+            a => a.CreatedAt,
+            StringComparer.Ordinal
+        );
         var inscriptions = new DashboardTimeSeriesResponse(
             buckets,
-            InscriptionKeys
-                .Select(key =>
-                    Flow(
-                        key,
-                        assignmentRows
-                            .Where(a =>
-                                string.Equals(
-                                    AssignmentStatusKey(a.AssignmentStatusId),
-                                    key,
-                                    StringComparison.Ordinal
-                                )
-                            )
-                            .Select(a => a.CreatedAt)
-                    )
-                )
-                .ToList()
+            [.. InscriptionKeys.Select(key => Flow(key, inscriptionsByStatus[key]))]
         );
 
         var contentPublished = new DashboardTimeSeriesResponse(
@@ -723,9 +684,7 @@ public class ReportService(
 
         var usersByType = FixedSlices(
             UserGrowthKeys,
-            userRows
-                .GroupBy(u => UserTypeKey(u.UserTypeId), StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
+            usersByGrowthKey.ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
         );
 
         var audience = FixedSlices(

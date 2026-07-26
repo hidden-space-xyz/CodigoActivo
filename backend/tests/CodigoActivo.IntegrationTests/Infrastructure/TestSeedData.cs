@@ -32,6 +32,13 @@ public static class TestSeedData
 
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
+    public static byte[] ValidPng()
+    {
+        return Convert.FromHexString(
+            "89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4"
+        );
+    }
+
     public static async Task SeedUsersAsync(
         CodigoActivoDbContext db,
         CancellationToken ct = default

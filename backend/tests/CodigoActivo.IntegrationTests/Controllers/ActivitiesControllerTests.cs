@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -120,15 +119,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedActivityAsync(eventId, thumb, "Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/activities",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         page.Items.Should().ContainSingle(a => a.Title == "Alpha");
@@ -150,13 +144,11 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/activities?modalityTypeId={SeedIds.ActivityModalityTypes.Online}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         page!.Total.Should().Be(1);
         var item = page.Items.Should().ContainSingle().Subject;
         item.Title.Should().Be("En remoto");
@@ -172,15 +164,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedActivityAsync(eventId, thumb, "Lectura", location: "Biblioteca");
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/activities?location=SALON",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities?location=SALON", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         page!.Total.Should().Be(1);
         page.Items.Should().ContainSingle(a => a.Title == "Ponencia");
     }
@@ -213,26 +200,16 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var fromResponse = await client.GetAsync(
-            "/api/activities?activityDateFrom=2026-07-13",
-            TestContext.Current.CancellationToken
-        );
-        var toResponse = await client.GetAsync(
-            "/api/activities?activityDateTo=2026-07-12",
-            TestContext.Current.CancellationToken
-        );
+        var fromResponse = await client.GetAsync("/api/activities?activityDateFrom=2026-07-13", Ct);
+        var toResponse = await client.GetAsync("/api/activities?activityDateTo=2026-07-12", Ct);
 
         fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         fromPage!.Total.Should().Be(2);
         fromPage.Items.Select(a => a.Title).Should().BeEquivalentTo("Tardia", "Nocturna");
 
         toResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var toPage = await toResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var toPage = await toResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         toPage!.Total.Should().Be(2);
         toPage.Items.Select(a => a.Title).Should().BeEquivalentTo("Temprana", "Nocturna");
     }
@@ -247,25 +224,15 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedActivityAsync(eventId, thumb, "Tres", location: "Biblioteca");
         var client = CreateClient();
 
-        var ascending = await client.GetAsync(
-            "/api/activities?sort=location",
-            TestContext.Current.CancellationToken
-        );
-        var descending = await client.GetAsync(
-            "/api/activities?sort=-location",
-            TestContext.Current.CancellationToken
-        );
+        var ascending = await client.GetAsync("/api/activities?sort=location", Ct);
+        var descending = await client.GetAsync("/api/activities?sort=-location", Ct);
 
         ascending.StatusCode.Should().Be(HttpStatusCode.OK);
-        var ascendingPage = await ascending.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var ascendingPage = await ascending.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         ascendingPage!.Items.Select(a => a.Title).Should().Equal("Uno", "Tres", "Dos");
 
         descending.StatusCode.Should().Be(HttpStatusCode.OK);
-        var descendingPage = await descending.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var descendingPage = await descending.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         descendingPage!.Items.Select(a => a.Title).Should().Equal("Dos", "Tres", "Uno");
     }
 
@@ -274,16 +241,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            $"/api/activities/{Guid.NewGuid()}",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/activities/{Guid.NewGuid()}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.ActivityNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -294,22 +254,14 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = CreateRequest(thumb, title: "Taller");
 
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{eventId}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var created = await response.ReadJsonAsync<ActivityResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var created = await response.ReadJsonAsync<ActivityResponse>(Ct);
         created!.Title.Should().Be("Taller");
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Activities.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<Activity>(created.Id);
         stored!.EventId.Should().Be(eventId);
         stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
     }
@@ -329,16 +281,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             ]
         );
 
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{eventId}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var created = await response.ReadJsonAsync<ActivityResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var created = await response.ReadJsonAsync<ActivityResponse>(Ct);
         created!
             .RoleCapacities.Should()
             .BeEquivalentTo([
@@ -367,17 +313,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             ]
         );
 
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{eventId}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.ActivityRoleCapacityDuplicated);
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityRoleCapacityDuplicated);
     }
 
     [Fact]
@@ -394,17 +332,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             ]
         );
 
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{eventId}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -448,16 +378,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             ]
         );
 
-        var response = await client.PutJsonAsync(
-            $"/api/activities/{id}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PutJsonAsync($"/api/activities/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.ReadJsonAsync<ActivityResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var updated = await response.ReadJsonAsync<ActivityResponse>(Ct);
         updated!
             .RoleCapacities.Should()
             .BeEquivalentTo([
@@ -555,15 +479,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            $"/api/activities?eventId={eventId}",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/activities?eventId={eventId}", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         var crowdedCapacities = page!.Items.Single(a => a.Title == "Llena").RoleCapacities;
         crowdedCapacities
             .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant)
@@ -591,7 +510,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/activities/{eventId}",
             CreateRequest(thumb),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -605,7 +524,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/activities/{Guid.NewGuid()}",
             CreateRequest(Guid.NewGuid()),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -619,17 +538,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         var request = CreateRequest(thumb, title: "   ");
 
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{eventId}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync($"/api/activities/{eventId}", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -643,13 +554,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             Content = JsonContent.Create(CreateRequest(thumb), options: TestJson.Options),
         };
 
-        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.SendAsync(request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
+        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]
@@ -670,16 +577,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             null
         );
 
-        var response = await client.PutJsonAsync(
-            $"/api/activities/{id}",
-            request,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PutJsonAsync($"/api/activities/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db =>
-            db.Activities.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<Activity>(id);
         stored!.Title.Should().Be("Despues");
         stored.ActivityModalityTypeId.Should().Be(SeedIds.ActivityModalityTypes.Online);
         stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
@@ -694,19 +595,12 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var id = await SeedActivityAsync(eventId, activityThumb);
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync(
-            $"/api/activities/{id}",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.DeleteWithCsrfAsync($"/api/activities/{id}", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db =>
-            db.Activities.FindAsync([id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<Activity>(id);
         stored.Should().BeNull();
-        var file = await Factory.QueryAsync(db =>
-            db.Files.FindAsync([activityThumb], TestContext.Current.CancellationToken).AsTask()
-        );
+        var file = await FindAsync<FileEntity>(activityThumb);
         file.Should()
             .BeNull("the deleted activity's thumbnail is orphaned and must be cascade-deleted");
     }
@@ -719,15 +613,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var id = await SeedActivityAsync(eventId, thumb);
         var client = await LoginAsAdminAsync();
 
-        var response = await client.DeleteWithCsrfAsync(
-            $"/api/activities/{id}",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.DeleteWithCsrfAsync($"/api/activities/{id}", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var file = await Factory.QueryAsync(db =>
-            db.Files.FindAsync([thumb], TestContext.Current.CancellationToken).AsTask()
-        );
+        var file = await FindAsync<FileEntity>(thumb);
         file.Should()
             .NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
     }
@@ -737,15 +626,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/activities/roleType",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities/roleType", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var roles = await response.ReadJsonAsync<IReadOnlyList<ActivityRoleTypeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var roles = await response.ReadJsonAsync<IReadOnlyList<ActivityRoleTypeResponse>>(Ct);
         roles!.Should().HaveCount(3);
         roles.Should().Contain(r => r.Id == SeedIds.ActivityRoleTypes.Leader && r.Name == "Líder");
         roles
@@ -763,14 +647,11 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/activities/assignment-status-types",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities/assignment-status-types", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<IReadOnlyList<AssignmentStatusTypeResponse>>(
-            TestContext.Current.CancellationToken
+            Ct
         );
         statuses!.Should().Contain(s => s.Id == SeedIds.AssignmentStatusTypes.Requested);
     }
@@ -780,14 +661,11 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/activities/modality-types",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/activities/modality-types", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var modalities = await response.ReadJsonAsync<IReadOnlyList<ActivityModalityTypeResponse>>(
-            TestContext.Current.CancellationToken
+            Ct
         );
         modalities!.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
     }

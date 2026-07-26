@@ -91,23 +91,7 @@ function confirmDelete(partner: PartnerResponse): void {
       </template>
     </AdminPageHeader>
 
-    <DataTable
-      lazy
-      :value="table.items.value"
-      :total-records="table.total.value"
-      :loading="table.loading.value"
-      data-key="id"
-      striped-rows
-      paginator
-      :rows="table.rows.value"
-      :first="table.first.value"
-      :rows-per-page-options="[25, 50, 100]"
-      :sort-field="table.sortField.value"
-      :sort-order="table.sortOrder.value"
-      removable-sort
-      @page="table.onPage"
-      @sort="table.onSort"
-    >
+    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
       <template #empty>
         <span v-if="table.isError.value">{{ $t('pages.admin.partners.empty.error') }}</span>
         <span v-else>{{ $t('pages.admin.partners.empty.none') }}</span>

@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -473,36 +472,26 @@ public class ActivityService(
         if (role is null)
             return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
 
-        if (assignment.ActivityRoleTypeId == role.Id)
-        {
-            return new AssignmentResponse(
-                userId,
-                activityId,
-                role.Id,
-                role.Name,
-                new AssignmentStatusResponse(
-                    assignment.AssignmentStatusId,
-                    assignment.AssignmentStatus?.Name ?? string.Empty
-                )
-            );
-        }
-
         var statusId = assignment.AssignmentStatusId;
         var statusName = assignment.AssignmentStatus?.Name ?? string.Empty;
-        activities.RemoveAssignment(assignment);
-        await activities.AddAssignmentAsync(
-            new ActivityUserRoleAssignment
-            {
-                UserId = userId,
-                ActivityId = activityId,
-                ActivityRoleTypeId = role.Id,
-                AssignmentStatusId = statusId,
-                CreatedAt = assignment.CreatedAt,
-            },
-            ct
-        );
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
+
+        if (assignment.ActivityRoleTypeId != role.Id)
+        {
+            activities.RemoveAssignment(assignment);
+            await activities.AddAssignmentAsync(
+                new ActivityUserRoleAssignment
+                {
+                    UserId = userId,
+                    ActivityId = activityId,
+                    ActivityRoleTypeId = role.Id,
+                    AssignmentStatusId = statusId,
+                    CreatedAt = assignment.CreatedAt,
+                },
+                ct
+            );
+            await uow.SaveChangesAsync(ct);
+            await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
+        }
 
         return new AssignmentResponse(
             userId,
@@ -741,13 +730,8 @@ public class ActivityService(
         if (schedule.IsFailure)
             return schedule.Error!;
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            thumbnailId,
-            ErrorCode.ActivityThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
+            return Error.BadRequest(ErrorCode.ActivityThumbnailNotFound);
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == modalityTypeId, ct))
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);

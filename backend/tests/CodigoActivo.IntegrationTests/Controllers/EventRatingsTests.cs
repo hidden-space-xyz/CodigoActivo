@@ -1,6 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -96,14 +95,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             UploadedBy = TestSeedData.Users.AdminId,
         };
 
-    private static async Task<ErrorCode?> ReadErrorCodeAsync(HttpResponseMessage response)
-    {
-        var body = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        return body?.Code;
-    }
-
     [Fact]
     public async Task SaveRating_Anonymous_ReturnsUnauthorized()
     {
@@ -113,7 +104,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -127,11 +118,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{Guid.NewGuid()}/rating",
             ValidRating,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await ReadErrorCodeAsync(response)).Should().Be(ErrorCode.EventNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -143,11 +133,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await ReadErrorCodeAsync(response)).Should().Be(ErrorCode.EventRatingNotFinished);
+        await response.ShouldBeConflictAsync(ErrorCode.EventRatingNotFinished);
     }
 
     [Fact]
@@ -159,11 +148,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await ReadErrorCodeAsync(response)).Should().Be(ErrorCode.EventRatingAttendanceRequired);
+        await response.ShouldBeConflictAsync(ErrorCode.EventRatingAttendanceRequired);
     }
 
     [Fact]
@@ -175,7 +163,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(6, null, null, null),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -190,13 +178,11 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var rating = await response.ReadJsonAsync<EventRatingResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var rating = await response.ReadJsonAsync<EventRatingResponse>(Ct);
         rating.Should().NotBeNull();
         rating!.Score.Should().Be(5);
         rating.MostLiked.Should().Be("La organización");
@@ -215,20 +201,18 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var first = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
-            TestContext.Current.CancellationToken
+            Ct
         );
         first.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var second = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(2, "Otra cosa", null, null),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         second.StatusCode.Should().Be(HttpStatusCode.OK);
-        var rating = await second.ReadJsonAsync<EventRatingResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var rating = await second.ReadJsonAsync<EventRatingResponse>(Ct);
         rating.Should().NotBeNull();
         rating!.Score.Should().Be(2);
         rating.MostLiked.Should().Be("Otra cosa");
@@ -236,13 +220,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         rating.UpdatedAt.Should().NotBeNull();
 
         var adminClient = await LoginAsAdminAsync();
-        using var listResponse = await adminClient.GetAsync(
-            $"/api/events/{EventId}/ratings",
-            TestContext.Current.CancellationToken
-        );
-        var page = await listResponse.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        using var listResponse = await adminClient.GetAsync($"/api/events/{EventId}/ratings", Ct);
+        var page = await listResponse.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(Ct);
         page!.Total.Should().Be(1);
     }
 
@@ -255,13 +234,11 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(0, "   ", "", null),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var rating = await response.ReadJsonAsync<EventRatingResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var rating = await response.ReadJsonAsync<EventRatingResponse>(Ct);
         rating!.Score.Should().Be(0);
         rating.MostLiked.Should().BeNull();
         rating.LeastLiked.Should().BeNull();
@@ -273,10 +250,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            $"/api/events/{EventId}/ratings",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/events/{EventId}/ratings", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -286,10 +260,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/events/{Guid.NewGuid()}/ratings",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/events/{Guid.NewGuid()}/ratings", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -314,15 +285,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/events/{EventId}/ratings",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/events/{EventId}/ratings", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(Ct);
         var item = page!.Items.Should().ContainSingle().Subject;
         item.FirstName.Should().Be("Marta");
         item.LastName.Should().Be("Miembro");
@@ -356,15 +322,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/summary",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var summary = await response.ReadJsonAsync<EventSummaryResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
         summary!.RatingsCount.Should().Be(2);
         summary.RatingsAverage.Should().Be(3.5);
     }
@@ -375,15 +336,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/summary",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var summary = await response.ReadJsonAsync<EventSummaryResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
         summary!.RatingsCount.Should().Be(0);
         summary.RatingsAverage.Should().BeNull();
     }

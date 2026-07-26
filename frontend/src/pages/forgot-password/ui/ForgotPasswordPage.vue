@@ -2,23 +2,21 @@
 import InputText from 'primevue/inputtext'
 
 import { useForgotPassword } from '@/features/auth'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BaseButton, PageHead } from '@/shared/ui'
 
 const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 </script>
 
 <template>
   <div>
-    <section class="forgot-head">
-      <div class="forgot-head__glow" aria-hidden="true" />
-      <div class="ca-container--narrow forgot-head__inner">
-        <SectionEyebrow :text="$t('pages.forgotPassword.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="forgot-head__title">{{ $t('pages.forgotPassword.title') }}</h1>
-        <p class="forgot-head__intro">
-          {{ $t('pages.forgotPassword.intro') }}
-        </p>
-      </div>
-    </section>
+    <PageHead
+      :eyebrow="$t('pages.forgotPassword.eyebrow')"
+      :title="$t('pages.forgotPassword.title')"
+    >
+      <p class="forgot-head__intro">
+        {{ $t('pages.forgotPassword.intro') }}
+      </p>
+    </PageHead>
 
     <section class="forgot-body">
       <div class="forgot-card">
@@ -63,30 +61,6 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 </template>
 
 <style scoped>
-.forgot-head {
-  position: relative;
-  overflow: hidden;
-  padding: 64px 24px 16px;
-}
-
-.forgot-head__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
-}
-
-.forgot-head__inner {
-  position: relative;
-}
-
-.forgot-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
 .forgot-head__intro {
   margin-top: 14px;
   font-size: 17px;

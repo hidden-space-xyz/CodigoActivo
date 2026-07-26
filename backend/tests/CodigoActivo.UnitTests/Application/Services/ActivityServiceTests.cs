@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -60,14 +60,6 @@ public sealed class ActivityServiceTests
         modalityTypes
             .ExistsAsync(
                 Arg.Any<Expression<Func<ActivityModalityType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(exists);
-
-    private void ThumbnailExists(bool exists) =>
-        files
-            .ExistsAsync(
-                Arg.Any<Expression<Func<FileEntity, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(exists);
@@ -162,6 +154,31 @@ public sealed class ActivityServiceTests
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
+        };
+
+    private static ActivityRoleCapacity Capacity(
+        Guid activityId,
+        Guid roleTypeId,
+        int desiredCount
+    ) =>
+        new()
+        {
+            ActivityId = activityId,
+            ActivityRoleTypeId = roleTypeId,
+            DesiredCount = desiredCount,
+        };
+
+    private static ActivityUserRoleAssignment RoleAssignment(
+        Guid activityId,
+        Guid roleTypeId,
+        Guid statusId
+    ) =>
+        new()
+        {
+            UserId = Guid.NewGuid(),
+            ActivityId = activityId,
+            ActivityRoleTypeId = roleTypeId,
+            AssignmentStatusId = statusId,
         };
 
     private static CreateActivityRequest CreateRequest(
@@ -511,7 +528,7 @@ public sealed class ActivityServiceTests
     public async Task CreateAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
     {
         var ev = EventExists();
-        ThumbnailExists(false);
+        files.ThumbnailExists(false);
 
         var result = await sut.CreateAsync(
             ev.Id,
@@ -530,7 +547,7 @@ public sealed class ActivityServiceTests
     public async Task CreateAsync_ModalityMissing_ReturnsModalityTypeNotFound()
     {
         var ev = EventExists();
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(false);
 
         var result = await sut.CreateAsync(
@@ -547,13 +564,13 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ValidRequest_PersistsTrimmedActivityAndReturnsProjection()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedActivityReturnsProjectionAndInvalidatesCache()
     {
         var eventId = Guid.NewGuid();
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         HasEvents(NewEvent(id: eventId));
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
 
         var stored = new List<Activity>();
@@ -591,34 +608,6 @@ public sealed class ActivityServiceTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateAsync_ValidRequest_InvalidatesActivitiesCache()
-    {
-        var ev = EventExists();
-        ThumbnailExists(true);
-        ModalityExists(true);
-
-        var stored = new List<Activity>();
-        activities.Query().Returns(_ => stored.AsQueryable());
-        activities
-            .When(a => a.AddAsync(Arg.Any<Activity>(), Arg.Any<CancellationToken>()))
-            .Do(ci =>
-            {
-                var activity = ci.Arg<Activity>();
-                activity.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
-                stored.Add(activity);
-            });
-
-        var result = await sut.CreateAsync(
-            ev.Id,
-            CreateRequest(),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -630,7 +619,7 @@ public sealed class ActivityServiceTests
     public async Task CreateAsync_WithRoleCapacities_PersistsDesiredCounts()
     {
         var ev = EventExists();
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
 
@@ -683,7 +672,7 @@ public sealed class ActivityServiceTests
     public async Task CreateAsync_DuplicatedRoleCapacityRole_ReturnsBadRequest()
     {
         var ev = EventExists();
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
 
@@ -710,7 +699,7 @@ public sealed class ActivityServiceTests
     public async Task CreateAsync_UnknownRoleCapacityRole_ReturnsRoleTypeNotFound()
     {
         var ev = EventExists();
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
 
@@ -802,7 +791,7 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(false);
+        files.ThumbnailExists(false);
 
         var result = await sut.UpdateAsync(
             activity.Id,
@@ -822,7 +811,7 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(false);
 
         var result = await sut.UpdateAsync(
@@ -838,7 +827,7 @@ public sealed class ActivityServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_ValidRequest_MutatesAndPersists()
+    public async Task UpdateAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
     {
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
@@ -850,7 +839,7 @@ public sealed class ActivityServiceTests
         activities.Query().Returns(_ => stored.AsQueryable());
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
 
         var result = await sut.UpdateAsync(
@@ -866,26 +855,6 @@ public sealed class ActivityServiceTests
         activity.UpdatedBy.Should().Be(caller);
         activity.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateAsync_ValidRequest_InvalidatesActivitiesCache()
-    {
-        var activity = NewActivity();
-        HasActivities(activity);
-        ActivityFound(activity);
-        EventExistsFor(activity);
-        ThumbnailExists(true);
-        ModalityExists(true);
-
-        var result = await sut.UpdateAsync(
-            activity.Id,
-            UpdateRequest(thumbnailId: activity.ThumbnailId),
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -899,23 +868,13 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         activity.RoleCapacities =
         [
-            new ActivityRoleCapacity
-            {
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                DesiredCount = 5,
-            },
-            new ActivityRoleCapacity
-            {
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
-                DesiredCount = 1,
-            },
+            Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 5),
+            Capacity(activity.Id, SeedIds.ActivityRoleTypes.Leader, 1),
         ];
         HasActivities(activity);
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
         HasRoleCatalog();
 
@@ -951,19 +910,11 @@ public sealed class ActivityServiceTests
     public async Task UpdateAsync_NullRoleCapacities_ClearsExisting()
     {
         var activity = NewActivity();
-        activity.RoleCapacities =
-        [
-            new ActivityRoleCapacity
-            {
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                DesiredCount = 5,
-            },
-        ];
+        activity.RoleCapacities = [Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 5)];
         HasActivities(activity);
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
 
         var result = await sut.UpdateAsync(
@@ -983,35 +934,21 @@ public sealed class ActivityServiceTests
         var activity = NewActivity();
         activity.RoleCapacities =
         [
-            new ActivityRoleCapacity
-            {
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                DesiredCount = 1,
-            },
-            new ActivityRoleCapacity
-            {
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
-                DesiredCount = 2,
-            },
+            Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 1),
+            Capacity(activity.Id, SeedIds.ActivityRoleTypes.Volunteer, 2),
         ];
         activity.Assignments =
         [
-            new ActivityUserRoleAssignment
-            {
-                UserId = Guid.NewGuid(),
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-            },
-            new ActivityUserRoleAssignment
-            {
-                UserId = Guid.NewGuid(),
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
-            },
+            RoleAssignment(
+                activity.Id,
+                SeedIds.ActivityRoleTypes.Participant,
+                SeedIds.AssignmentStatusTypes.Confirmed
+            ),
+            RoleAssignment(
+                activity.Id,
+                SeedIds.ActivityRoleTypes.Participant,
+                SeedIds.AssignmentStatusTypes.Requested
+            ),
         ];
         HasActivities(activity);
 
@@ -1038,38 +975,24 @@ public sealed class ActivityServiceTests
     public async Task GetByIdAsync_NonDeniedAssignmentsAtDesiredCount_RoleNotHighDemand()
     {
         var activity = NewActivity();
-        activity.RoleCapacities =
-        [
-            new ActivityRoleCapacity
-            {
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                DesiredCount = 1,
-            },
-        ];
+        activity.RoleCapacities = [Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 1)];
         activity.Assignments =
         [
-            new ActivityUserRoleAssignment
-            {
-                UserId = Guid.NewGuid(),
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-            },
-            new ActivityUserRoleAssignment
-            {
-                UserId = Guid.NewGuid(),
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Denied,
-            },
-            new ActivityUserRoleAssignment
-            {
-                UserId = Guid.NewGuid(),
-                ActivityId = activity.Id,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
-                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-            },
+            RoleAssignment(
+                activity.Id,
+                SeedIds.ActivityRoleTypes.Participant,
+                SeedIds.AssignmentStatusTypes.Confirmed
+            ),
+            RoleAssignment(
+                activity.Id,
+                SeedIds.ActivityRoleTypes.Participant,
+                SeedIds.AssignmentStatusTypes.Denied
+            ),
+            RoleAssignment(
+                activity.Id,
+                SeedIds.ActivityRoleTypes.Volunteer,
+                SeedIds.AssignmentStatusTypes.Confirmed
+            ),
         ];
         HasActivities(activity);
 
@@ -1087,7 +1010,7 @@ public sealed class ActivityServiceTests
         HasActivities(activity);
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
 
         var result = await sut.UpdateAsync(
@@ -1110,7 +1033,7 @@ public sealed class ActivityServiceTests
         HasActivities(activity);
         ActivityFound(activity);
         EventExistsFor(activity);
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         ModalityExists(true);
 
         var result = await sut.UpdateAsync(

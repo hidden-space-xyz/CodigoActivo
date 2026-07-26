@@ -18,7 +18,6 @@ public interface IDbRepository<TEntity>
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken ct = default);
     Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
 
     Task<bool> ExistsAsync(

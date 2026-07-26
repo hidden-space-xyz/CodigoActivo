@@ -79,7 +79,7 @@ These rules are enforced by the `ProjectReference` graph and developer disciplin
   - `ListQueries.cs` holds one `...ListQuery : PageQuery` per aggregate (`Event`, `Activity`, `EventCategoryType`, `EventAttendee`, `Announcement`, `Resource`, `Partner`, `User`) carrying that list's typed filters; `DashboardAnalyticsQuery.cs` is separate.
   - `LocalDayRange.LowerUtc`/`UpperExclusiveUtc` convert a `DateOnly` filter to a half-open UTC range in the app timezone — always use it for day-range filters instead of comparing raw timestamps.
   - `TextSearch.Normalize`/`Contains<T>` build the accent- and case-folded free-text predicate (`á→a`, …) as an expression EF can translate.
-- **Repositories**: interfaces all in `Domain/Repositories/IDbRepositories.cs`; implementations derive from `Repository<TEntity>`. `Query()`/`GetAsync()`/`GetAllAsync()` are `AsNoTracking()`, but `FindAsync()` returns a **tracked** entity; use `QueryWithDetails(bool tracked = false)` for includes.
+- **Repositories**: interfaces all in `Domain/Repositories/IDbRepositories.cs`; implementations derive from `Repository<TEntity>`. `Query()`/`GetAsync()` are `AsNoTracking()`, but `FindAsync()` returns a **tracked** entity; use `QueryWithDetails(bool tracked = false)` for includes.
 - **DI lifetimes** (`Composition/DependencyInjection.cs`): DbContext/repositories/services scoped; `IClock`, `IPasswordHasher`, `IEmailSender`, `ILocalFileSystemRepository`, `IQueryExecutor`, and all option objects singleton.
 
 ## Caching (two in-memory, tag-based layers)

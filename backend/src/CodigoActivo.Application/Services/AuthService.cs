@@ -177,11 +177,7 @@ public class AuthService(
 
         if (
             user.UserStatusTypeId != SeedIds.UserStatusTypes.Pending
-            || string.IsNullOrWhiteSpace(otp)
-            || user.OtpCodeHash is null
-            || user.OtpExpiresAt is null
-            || user.OtpExpiresAt < clock.UtcNow
-            || !hasher.Verify(NormalizeOtp(otp), user.OtpCodeHash)
+            || !IsCodeValid(otp, user.OtpCodeHash, user.OtpExpiresAt)
         )
         {
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
@@ -210,13 +206,8 @@ public class AuthService(
         }
 
         var now = clock.UtcNow;
-        if (
-            user.OtpLastSentAt is not null
-            && now < user.OtpLastSentAt + verification.ResendCooldown
-        )
-        {
+        if (now < user.OtpLastSentAt + verification.ResendCooldown)
             return Error.Conflict(ErrorCode.OtpResendCooldownActive);
-        }
 
         var otpCode = Guid.NewGuid().ToString();
         await SendVerificationEmailAsync(user, otpCode, ct);
@@ -248,13 +239,8 @@ public class AuthService(
         }
 
         var now = clock.UtcNow;
-        if (
-            user.PasswordResetLastSentAt is not null
-            && now < user.PasswordResetLastSentAt + passwordReset.ResendCooldown
-        )
-        {
+        if (now < user.PasswordResetLastSentAt + passwordReset.ResendCooldown)
             return Result.Success();
-        }
 
         var code = Guid.NewGuid().ToString();
         try
@@ -290,11 +276,7 @@ public class AuthService(
         if (
             user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked
             || user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-            || string.IsNullOrWhiteSpace(request.Otp)
-            || user.PasswordResetCodeHash is null
-            || user.PasswordResetExpiresAt is null
-            || user.PasswordResetExpiresAt < clock.UtcNow
-            || !hasher.Verify(NormalizeOtp(request.Otp), user.PasswordResetCodeHash)
+            || !IsCodeValid(request.Otp, user.PasswordResetCodeHash, user.PasswordResetExpiresAt)
         )
         {
             return Error.BadRequest(ErrorCode.PasswordResetInvalidOrExpired);
@@ -353,8 +335,11 @@ public class AuthService(
         return $"{application.BaseUrl.TrimEnd('/')}{path}?userId={userId}&code={Uri.EscapeDataString(code)}";
     }
 
-    private static string NormalizeOtp(string otp)
+    private bool IsCodeValid(string code, string? codeHash, DateTimeOffset? expiresAt)
     {
-        return otp.Trim().ToLowerInvariant();
+        return !string.IsNullOrWhiteSpace(code)
+            && codeHash is not null
+            && expiresAt >= clock.UtcNow
+            && hasher.Verify(code.Trim().ToLowerInvariant(), codeHash);
     }
 }
