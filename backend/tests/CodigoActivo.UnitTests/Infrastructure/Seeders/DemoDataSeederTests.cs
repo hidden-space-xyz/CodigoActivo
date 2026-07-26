@@ -33,7 +33,7 @@ public sealed class DemoDataSeederTests
         graph.Events.Should().HaveCount(20);
         graph.Activities.Should().HaveCount(100);
         graph.Assignments.Should().HaveCount(500);
-        graph.Ratings.Should().HaveCount(18);
+        graph.Ratings.Should().HaveCount(36);
         graph.Announcements.Should().HaveCount(10);
         graph.Resources.Should().HaveCount(20);
         graph.Partners.Should().HaveCount(10);
@@ -60,6 +60,62 @@ public sealed class DemoDataSeederTests
                 ev.EventEndsAt.Should().BeOnOrAfter(ev.EventStartsAt);
                 ev.SignupEndsAt.Should().BeAfter(ev.SignupStartsAt);
                 LocalDate(ev.SignupStartsAt).Should().BeOnOrBefore(ev.EventEndsAt);
+                ev.CreatedAt.Should().BeOnOrBefore(ev.SignupStartsAt);
+                ev.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
+            });
+    }
+
+    [Fact]
+    public void BuildGraph_Default_LeavesFiveUpcomingEventsAndFinishesTheRest()
+    {
+        var upcoming = graph.Events.Where(e => e.EventEndsAt >= clock.Today).ToList();
+        var finished = graph.Events.Where(e => e.EventEndsAt < clock.Today).ToList();
+
+        upcoming.Should().HaveCount(5);
+        finished.Should().HaveCount(15);
+    }
+
+    [Fact]
+    public void BuildGraph_Default_FeaturesExactlyOneUpcomingEvent()
+    {
+        var featured = graph.Events.Where(e => e.Featured).ToList();
+
+        featured.Should().ContainSingle();
+        featured[0].EventEndsAt.Should().BeOnOrAfter(clock.Today);
+    }
+
+    [Fact]
+    public void BuildGraph_Default_FeaturesExactlyOneAnnouncement()
+    {
+        graph.Announcements.Should().ContainSingle(a => a.Featured);
+    }
+
+    [Fact]
+    public void BuildGraph_Default_KeepsSomeUpcomingSignupsOpen()
+    {
+        var open = graph.Events.Where(e =>
+            e.EventEndsAt >= clock.Today
+            && e.SignupStartsAt <= clock.UtcNow
+            && e.SignupEndsAt >= clock.UtcNow
+        );
+
+        open.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void BuildGraph_Default_SignupTimestampsAreCoherent()
+    {
+        var eventByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
+        var eventsById = graph.Events.ToDictionary(e => e.Id);
+
+        graph
+            .Assignments.Should()
+            .AllSatisfy(assignment =>
+            {
+                var ev = eventsById[eventByActivity[assignment.ActivityId]];
+                assignment.CreatedAt.Should().BeOnOrAfter(ev.CreatedAt);
+                assignment.CreatedAt.Should().BeOnOrBefore(ev.SignupEndsAt);
+                assignment.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
             });
     }
 
