@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -115,13 +114,8 @@ public class ResourceService(
         if (content.IsFailure)
             return content.Error!;
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.ResourceThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
 
         var resource = new Resource
         {
@@ -160,13 +154,8 @@ public class ResourceService(
         if (content.IsFailure)
             return content.Error!;
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.ResourceThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
 
         var previousThumbnailId = resource.ThumbnailId;
         var previousDescription = resource.Description;

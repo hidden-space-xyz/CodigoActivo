@@ -200,19 +200,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
       <TabPanels>
         <TabPanel value="activities">
           <DataTable
-            lazy
-            :value="activities.table.items.value"
-            :total-records="activities.table.total.value"
-            :loading="activities.table.loading.value"
-            data-key="id"
-            striped-rows
-            paginator
-            :rows="activities.table.rows.value"
-            :first="activities.table.first.value"
-            :rows-per-page-options="[25, 50, 100]"
-            :sort-field="activities.table.sortField.value"
-            :sort-order="activities.table.sortOrder.value"
-            removable-sort
+            v-bind="activities.table.dataTableProps.value"
             @page="activities.table.onPage"
             @sort="activities.table.onSort"
           >

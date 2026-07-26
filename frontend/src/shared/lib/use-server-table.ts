@@ -1,10 +1,16 @@
 import { computed, ref, watch } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
-import type { DataTableFilterMetaData, DataTableSortEvent } from 'primevue/datatable'
+import type {
+  DataTableFilterMetaData,
+  DataTableProps,
+  DataTableSortEvent,
+} from 'primevue/datatable'
 
 import { toDateOnly } from './format'
 
 export type ServerTableFieldType = 'text' | 'number' | 'dateRange'
+
+const ROWS_PER_PAGE_OPTIONS = [25, 50, 100]
 
 export interface ServerTableColumn {
   readonly param?: string
@@ -101,6 +107,25 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     }
   })
 
+  const dataTableProps = computed(
+    () =>
+      ({
+        lazy: true,
+        value: page.value.items,
+        totalRecords: page.value.total,
+        loading: tableQuery.isFetching.value,
+        dataKey: 'id',
+        stripedRows: true,
+        paginator: true,
+        rows: rows.value,
+        first: first.value,
+        rowsPerPageOptions: ROWS_PER_PAGE_OPTIONS,
+        sortField: sortField.value,
+        sortOrder: sortOrder.value,
+        removableSort: true,
+      }) satisfies DataTableProps,
+  )
+
   function onPage(event: { first: number; rows: number }): void {
     first.value = event.first
     rows.value = event.rows
@@ -130,6 +155,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
   }
 
   return {
+    dataTableProps,
     items: computed(() => page.value.items),
     total: computed(() => page.value.total),
     loading: tableQuery.isFetching,

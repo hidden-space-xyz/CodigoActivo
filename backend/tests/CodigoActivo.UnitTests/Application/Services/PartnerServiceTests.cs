@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -41,14 +40,6 @@ public sealed class PartnerServiceTests
 
     private void HasPartners(params Partner[] items) =>
         partners.Query().Returns(items.AsQueryable());
-
-    private void ThumbnailExists(bool exists) =>
-        files
-            .ExistsAsync(
-                Arg.Any<Expression<Func<FileEntity, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(exists);
 
     private static Partner NewPartner(
         string name = "Acme",
@@ -212,7 +203,7 @@ public sealed class PartnerServiceTests
     [Fact]
     public async Task CreateAsync_ThumbnailMissing_ReturnsBadRequestAndDoesNotPersist()
     {
-        ThumbnailExists(false);
+        files.ThumbnailExists(false);
         var request = new CreatePartnerRequest(
             "  Acme  ",
             new DateOnly(2024, 1, 1),
@@ -238,9 +229,9 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ValidRequest_PersistsTrimmedNormalizedPartner()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedNormalizedPartnerAndInvalidatesCache()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
@@ -269,12 +260,17 @@ public sealed class PartnerServiceTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+            );
     }
 
     [Fact]
     public async Task CreateAsync_BlankWebsite_StoresNullWebsite()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         var request = new CreatePartnerRequest(
             "Acme",
             new DateOnly(2024, 1, 1),
@@ -293,37 +289,9 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ValidRequest_InvalidatesPartnersCache()
-    {
-        ThumbnailExists(true);
-        var request = new CreatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            1,
-            "https://acme.test",
-            Guid.NewGuid()
-        );
-
-        var result = await sut.CreateAsync(
-            request,
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
-            );
-    }
-
-    [Fact]
     public async Task UpdateAsync_PartnerMissing_ReturnsNotFound()
     {
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((Partner?)null);
+        partners.Finds(null);
         var request = new UpdatePartnerRequest(
             "Acme",
             new DateOnly(2024, 1, 1),
@@ -348,10 +316,8 @@ public sealed class PartnerServiceTests
     public async Task UpdateAsync_ThumbnailMissing_ReturnsBadRequest()
     {
         var partner = NewPartner();
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
-        ThumbnailExists(false);
+        partners.Finds(partner);
+        files.ThumbnailExists(false);
         var request = new UpdatePartnerRequest(
             "Acme",
             new DateOnly(2024, 1, 1),
@@ -373,13 +339,11 @@ public sealed class PartnerServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_ValidRequest_MutatesAndPersists()
+    public async Task UpdateAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
     {
         var partner = NewPartner("Old", tier: 1);
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
-        ThumbnailExists(true);
+        partners.Finds(partner);
+        files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var request = new UpdatePartnerRequest(
@@ -403,32 +367,6 @@ public sealed class PartnerServiceTests
         partner.UpdatedBy.Should().Be(caller);
         partner.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateAsync_ValidRequest_InvalidatesPartnersCache()
-    {
-        var partner = NewPartner();
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
-        ThumbnailExists(true);
-        var request = new UpdatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            1,
-            null,
-            partner.ThumbnailId
-        );
-
-        var result = await sut.UpdateAsync(
-            partner.Id,
-            request,
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -441,10 +379,8 @@ public sealed class PartnerServiceTests
     {
         var partner = NewPartner();
         var previousThumbnailId = partner.ThumbnailId;
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
-        ThumbnailExists(true);
+        partners.Finds(partner);
+        files.ThumbnailExists(true);
         var request = new UpdatePartnerRequest(
             "Acme",
             new DateOnly(2024, 1, 1),
@@ -470,10 +406,8 @@ public sealed class PartnerServiceTests
     public async Task UpdateAsync_ThumbnailUnchanged_DoesNotCleanUp()
     {
         var partner = NewPartner();
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
-        ThumbnailExists(true);
+        partners.Finds(partner);
+        files.ThumbnailExists(true);
         var request = new UpdatePartnerRequest(
             "Acme",
             new DateOnly(2024, 1, 1),
@@ -498,9 +432,7 @@ public sealed class PartnerServiceTests
     [Fact]
     public async Task DeleteAsync_PartnerMissing_ReturnsNotFound()
     {
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns((Partner?)null);
+        partners.Finds(null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
@@ -519,9 +451,7 @@ public sealed class PartnerServiceTests
     public async Task DeleteAsync_PartnerExists_InvalidatesPartnersCache()
     {
         var partner = NewPartner();
-        partners
-            .FindAsync(Arg.Any<Expression<Func<Partner, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(partner);
+        partners.Finds(partner);
 
         var result = await sut.DeleteAsync(partner.Id, TestContext.Current.CancellationToken);
 

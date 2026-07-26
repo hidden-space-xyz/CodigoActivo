@@ -106,6 +106,25 @@ public sealed class ActivityServiceAssignmentTests
     private void HouseholdUsers(params User[] members) =>
         users.Query().Returns(members.AsQueryable());
 
+    private static User SocioParent(Guid id) =>
+        new()
+        {
+            Id = id,
+            FirstName = "Ada",
+            LastName = "Parent",
+            UserTypeId = SeedIds.UserTypes.Member,
+        };
+
+    private static User ParticipantChild(Guid id, Guid parentId) =>
+        new()
+        {
+            Id = id,
+            FirstName = "Kid",
+            LastName = "One",
+            ParentId = parentId,
+            UserTypeId = SeedIds.UserTypes.Participant,
+        };
+
     private void CatalogRoles() =>
         roleTypes
             .Query()
@@ -396,7 +415,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignAsync_ValidRequestAsAdmin_PersistsAndReturnsRequestedStatus()
+    public async Task AssignAsync_ValidRequestAsAdmin_PersistsReturnsRequestedStatusAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -432,6 +451,11 @@ public sealed class ActivityServiceAssignmentTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+            );
     }
 
     [Fact]
@@ -500,33 +524,6 @@ public sealed class ActivityServiceAssignmentTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task AssignAsync_ValidRequest_InvalidatesActivitiesCache()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        HasActivityWindow(activityId, OpenStart, OpenEnd);
-        TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        RequestedStatusNamed("Solicitado");
-
-        var result = await sut.AssignAsync(
-            activityId,
-            userId,
-            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
-            isAdmin: false,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
-            );
     }
 
     [Fact]
@@ -627,23 +624,7 @@ public sealed class ActivityServiceAssignmentTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Member,
-            },
-            new User
-            {
-                Id = childId,
-                FirstName = "Kid",
-                LastName = "One",
-                ParentId = actingUserId,
-                UserTypeId = SeedIds.UserTypes.Participant,
-            }
-        );
+        HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
 
         var request = new AssignHouseholdRequest([
             new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
@@ -668,30 +649,14 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_MixedValidRoles_CreatesAssignmentsForAll()
+    public async Task AssignHouseholdAsync_MixedValidRoles_CreatesAssignmentsForAllAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         clock.UtcNow = Now;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Member,
-            },
-            new User
-            {
-                Id = childId,
-                FirstName = "Kid",
-                LastName = "One",
-                ParentId = actingUserId,
-                UserTypeId = SeedIds.UserTypes.Participant,
-            }
-        );
+        HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
         activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
         RequestedStatusNamed("Solicitado");
 
@@ -729,6 +694,11 @@ public sealed class ActivityServiceAssignmentTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+            );
     }
 
     [Fact]
@@ -739,23 +709,7 @@ public sealed class ActivityServiceAssignmentTests
         var childId = Guid.NewGuid();
         var roleId = SeedIds.ActivityRoleTypes.Participant;
         HasActivityWindow(activityId, OpenStart, OpenEnd);
-        HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Member,
-            },
-            new User
-            {
-                Id = childId,
-                FirstName = "Kid",
-                LastName = "One",
-                ParentId = actingUserId,
-                UserTypeId = SeedIds.UserTypes.Participant,
-            }
-        );
+        HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
         activities
             .QueryAssignments()
             .Returns(
@@ -801,41 +755,6 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task AssignHouseholdAsync_ValidRequest_InvalidatesActivitiesCache()
-    {
-        var activityId = Guid.NewGuid();
-        var actingUserId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        HasActivityWindow(activityId, OpenStart, OpenEnd);
-        HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Member,
-            }
-        );
-        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
-        RequestedStatusNamed("Solicitado");
-
-        var result = await sut.AssignHouseholdAsync(
-            activityId,
-            actingUserId,
-            new AssignHouseholdRequest([new(actingUserId, SeedIds.ActivityRoleTypes.Leader)]),
-            isAdmin: false,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
-            );
-    }
-
-    [Fact]
     public async Task UnassignAsync_AssignmentMissing_ReturnsNotFound()
     {
         ExistingAssignment(null);
@@ -854,7 +773,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task UnassignAsync_AsAdmin_RemovesWithoutWindowCheck()
+    public async Task UnassignAsync_AsAdmin_RemovesWithoutWindowCheckAndInvalidatesCache()
     {
         var assignment = Assignment(Guid.NewGuid(), Guid.NewGuid());
         ExistingAssignment(assignment);
@@ -869,6 +788,11 @@ public sealed class ActivityServiceAssignmentTests
         result.IsSuccess.Should().BeTrue();
         activities.Received(1).RemoveAssignment(assignment);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await cacheInvalidator
+            .Received(1)
+            .InvalidateAsync(
+                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+            );
     }
 
     [Fact]
@@ -916,27 +840,6 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task UnassignAsync_AsAdmin_InvalidatesActivitiesCache()
-    {
-        var assignment = Assignment(Guid.NewGuid(), Guid.NewGuid());
-        ExistingAssignment(assignment);
-
-        var result = await sut.UnassignAsync(
-            assignment.ActivityId,
-            assignment.UserId,
-            isAdmin: true,
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
-            );
-    }
-
-    [Fact]
     public async Task ChangeStatusAsync_AssignmentMissing_ReturnsNotFound()
     {
         ExistingAssignment(null);
@@ -979,7 +882,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_ValidRequest_UpdatesStatusAndPersists()
+    public async Task ChangeStatusAsync_ValidRequest_UpdatesStatusPersistsAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -1013,37 +916,6 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.Status.Name.Should().Be("Confirmado");
         result.Value.RoleTypeName.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ChangeStatusAsync_ValidRequest_InvalidatesActivitiesCache()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var statusId = Guid.NewGuid();
-        ExistingAssignment(Assignment(userId, activityId));
-        statuses
-            .FindAsync(
-                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                new AssignmentStatusType
-                {
-                    Id = statusId,
-                    Name = "Confirmado",
-                    Color = "#0f0",
-                }
-            );
-
-        var result = await sut.ChangeStatusAsync(
-            activityId,
-            userId,
-            new ChangeAssignmentStatusRequest(statusId),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -1094,7 +966,7 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
-    public async Task ChangeRoleAsync_ValidRequest_UpdatesRoleAndPersists()
+    public async Task ChangeRoleAsync_ValidRequest_UpdatesRolePersistsAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -1139,37 +1011,6 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.RoleTypeName.Should().Be("Líder");
         result.Value.Status.Name.Should().BeEmpty();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ChangeRoleAsync_ValidRequest_InvalidatesActivitiesCache()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var roleId = SeedIds.ActivityRoleTypes.Leader;
-        ExistingAssignment(Assignment(userId, activityId));
-        roleTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                new ActivityRoleType
-                {
-                    Id = roleId,
-                    Name = "Líder",
-                    Description = "d",
-                }
-            );
-
-        var result = await sut.ChangeRoleAsync(
-            activityId,
-            userId,
-            new ChangeAssignmentRoleRequest(roleId),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -1481,21 +1322,8 @@ public sealed class ActivityServiceAssignmentTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Member,
-            },
-            new User
-            {
-                Id = childId,
-                FirstName = "Kid",
-                LastName = "One",
-                ParentId = actingUserId,
-                UserTypeId = SeedIds.UserTypes.Participant,
-            },
+            SocioParent(actingUserId),
+            ParticipantChild(childId, actingUserId),
             new User
             {
                 Id = Guid.NewGuid(),

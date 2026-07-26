@@ -51,6 +51,13 @@ public sealed class DemoDataSeeder(
         "#EC4899",
     ];
 
+    private static readonly (Guid RoleTypeId, int DesiredCount)[][] RoleCapacityPlans =
+    [
+        [(SeedIds.ActivityRoleTypes.Participant, 1), (SeedIds.ActivityRoleTypes.Volunteer, 2)],
+        [(SeedIds.ActivityRoleTypes.Participant, 6), (SeedIds.ActivityRoleTypes.Leader, 1)],
+        [],
+    ];
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         if (!context.Database.IsRelational())
@@ -498,38 +505,12 @@ public sealed class DemoDataSeeder(
         return id;
     }
 
-    private static IEnumerable<ActivityRoleCapacity> BuildRoleCapacities(int globalIndex)
-    {
-        switch (globalIndex % 3)
+    private static IEnumerable<ActivityRoleCapacity> BuildRoleCapacities(int globalIndex) =>
+        RoleCapacityPlans[globalIndex % 3].Select(plan => new ActivityRoleCapacity
         {
-            case 0:
-                yield return new ActivityRoleCapacity
-                {
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    DesiredCount = 1,
-                };
-                yield return new ActivityRoleCapacity
-                {
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
-                    DesiredCount = 2,
-                };
-                break;
-            case 1:
-                yield return new ActivityRoleCapacity
-                {
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    DesiredCount = 6,
-                };
-                yield return new ActivityRoleCapacity
-                {
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
-                    DesiredCount = 1,
-                };
-                break;
-            default:
-                break;
-        }
-    }
+            ActivityRoleTypeId = plan.RoleTypeId,
+            DesiredCount = plan.DesiredCount,
+        });
 
     private static IEnumerable<ActivityUserRoleAssignment> BuildAssignments(
         int globalIndex,

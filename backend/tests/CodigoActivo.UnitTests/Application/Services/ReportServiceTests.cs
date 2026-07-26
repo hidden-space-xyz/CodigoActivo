@@ -44,6 +44,8 @@ public sealed class ReportServiceTests
     private static readonly Guid Requested = SeedIds.AssignmentStatusTypes.Requested;
     private static readonly Guid Denied = SeedIds.AssignmentStatusTypes.Denied;
 
+    private static readonly DateTimeOffset When = new(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
+
     public ReportServiceTests()
     {
         sut = new ReportService(
@@ -256,26 +258,31 @@ public sealed class ReportServiceTests
         return assignment;
     }
 
+    private void HasConfirmedAttendees(params User[] attendees)
+    {
+        foreach (var attendee in attendees)
+            Enroll(attendee, "Taller", When, Confirmed, "Confirmada");
+        HasUsers(attendees);
+    }
+
     [Fact]
     public async Task ListEventAttendeesAsync_AssignmentsAcrossActivities_GroupsPerUserWithOrderedAssignments()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
-
         var ana = NewUser("Ana", NewUser("Tutora"));
         var berto = NewUser("Berto");
         var outsider = NewUser("Zoe");
-        Enroll(ana, "Charla", when.AddHours(2), Denied, "Rechazada");
+        Enroll(ana, "Charla", When.AddHours(2), Denied, "Rechazada");
         var taller = Enroll(
             ana,
             "Taller",
-            when,
+            When,
             Confirmed,
             "Confirmada",
-            signedUpAt: when.AddDays(-3)
+            signedUpAt: When.AddDays(-3)
         );
-        Enroll(ana, "Otro evento", when, Confirmed, "Confirmada", eventId: Guid.NewGuid());
-        Enroll(berto, "Charla", when.AddHours(2), Requested, "Solicitada");
-        Enroll(outsider, "Ajena", when, Confirmed, "Confirmada", eventId: Guid.NewGuid());
+        Enroll(ana, "Otro evento", When, Confirmed, "Confirmada", eventId: Guid.NewGuid());
+        Enroll(berto, "Charla", When.AddHours(2), Requested, "Solicitada");
+        Enroll(outsider, "Ajena", When, Confirmed, "Confirmada", eventId: Guid.NewGuid());
         HasUsers(berto, ana, outsider);
 
         var page = await sut.ListEventAttendeesAsync(
@@ -304,13 +311,13 @@ public sealed class ReportServiceTests
         first.Assignments.Should().HaveCount(2);
         first.Assignments[0].ActivityId.Should().Be(taller.ActivityId);
         first.Assignments[0].ActivityTitle.Should().Be("Taller");
-        first.Assignments[0].ActivityStartsAt.Should().Be(when);
-        first.Assignments[0].ActivityEndsAt.Should().Be(when.AddHours(2));
+        first.Assignments[0].ActivityStartsAt.Should().Be(When);
+        first.Assignments[0].ActivityEndsAt.Should().Be(When.AddHours(2));
         first.Assignments[0].RoleTypeId.Should().Be(AlphaRoleId);
         first.Assignments[0].RoleTypeName.Should().Be("Alpha");
         first.Assignments[0].StatusId.Should().Be(Confirmed);
         first.Assignments[0].StatusName.Should().Be("Confirmada");
-        first.Assignments[0].SignedUpAt.Should().Be(when.AddDays(-3));
+        first.Assignments[0].SignedUpAt.Should().Be(When.AddDays(-3));
         first.Assignments[0].HasTimeConflict.Should().BeFalse();
         first.Assignments[1].ActivityTitle.Should().Be("Charla");
         first.Assignments[1].StatusName.Should().Be("Rechazada");
@@ -328,12 +335,9 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_SearchMatchingGuardianName_FoldsAccentsAndFiltersUsers()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var zoe = NewUser("Zoe", NewUser("María"));
         var berto = NewUser("Berto");
-        Enroll(zoe, "Taller", when, Confirmed, "Confirmada");
-        Enroll(berto, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(zoe, berto);
+        HasConfirmedAttendees(zoe, berto);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -348,12 +352,9 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_SearchMatchingOwnPhone_FiltersUsers()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var zoe = NewUser("Zoe", NewUser("María"));
         var berto = NewUser("Berto");
-        Enroll(zoe, "Taller", when, Confirmed, "Confirmada");
-        Enroll(berto, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(zoe, berto);
+        HasConfirmedAttendees(zoe, berto);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -368,15 +369,14 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_ActivityAndStatusFilters_RequireOneAssignmentMatchingBoth()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var activityA = Guid.NewGuid();
         var activityB = Guid.NewGuid();
         var carla = NewUser("Carla");
         var dani = NewUser("Dani");
-        Enroll(carla, "Taller A", when, Confirmed, "Confirmada", activityId: activityA);
-        Enroll(carla, "Taller B", when.AddHours(1), Confirmed, "Confirmada", activityId: activityB);
-        Enroll(dani, "Taller A", when, Requested, "Solicitada", activityId: activityA);
-        Enroll(dani, "Taller B", when.AddHours(1), Confirmed, "Confirmada", activityId: activityB);
+        Enroll(carla, "Taller A", When, Confirmed, "Confirmada", activityId: activityA);
+        Enroll(carla, "Taller B", When.AddHours(1), Confirmed, "Confirmada", activityId: activityB);
+        Enroll(dani, "Taller A", When, Requested, "Solicitada", activityId: activityA);
+        Enroll(dani, "Taller B", When.AddHours(1), Confirmed, "Confirmada", activityId: activityB);
         HasUsers(carla, dani);
 
         var page = await sut.ListEventAttendeesAsync(
@@ -396,12 +396,9 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_UserTypeFilter_ReturnsOnlyMatchingUsers()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var ana = NewUser("Ana", userTypeId: SeedIds.UserTypes.Participant);
         var berto = NewUser("Berto");
-        Enroll(ana, "Taller", when, Confirmed, "Confirmada");
-        Enroll(berto, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(ana, berto);
+        HasConfirmedAttendees(ana, berto);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -416,21 +413,20 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_OverlappingAssignments_FlagsConflictsExcludingDenied()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var carla = NewUser("Carla");
         var dani = NewUser("Dani");
-        Enroll(carla, "Taller A", when, Confirmed, "Confirmada");
-        Enroll(carla, "Taller B", when.AddHours(1), Requested, "Solicitada");
+        Enroll(carla, "Taller A", When, Confirmed, "Confirmada");
+        Enroll(carla, "Taller B", When.AddHours(1), Requested, "Solicitada");
         Enroll(
             carla,
             "Taller C",
-            when.AddMinutes(90),
+            When.AddMinutes(90),
             Denied,
             "Rechazada",
             duration: TimeSpan.FromHours(1)
         );
-        Enroll(dani, "Taller A", when, Confirmed, "Confirmada");
-        Enroll(dani, "Taller B", when.AddHours(1), Denied, "Rechazada");
+        Enroll(dani, "Taller A", When, Confirmed, "Confirmada");
+        Enroll(dani, "Taller B", When.AddHours(1), Denied, "Rechazada");
         HasUsers(carla, dani);
 
         var page = await sut.ListEventAttendeesAsync(
@@ -453,14 +449,10 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_SortByEmail_OrdersByEmailAscending()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var carla = NewUser("Carla", email: "charlie@test.local");
         var ana = NewUser("Ana", email: "alice@test.local");
         var berto = NewUser("Berto", email: "bob@test.local");
-        Enroll(carla, "Taller", when, Confirmed, "Confirmada");
-        Enroll(ana, "Taller", when, Confirmed, "Confirmada");
-        Enroll(berto, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(carla, ana, berto);
+        HasConfirmedAttendees(carla, ana, berto);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -476,14 +468,10 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_SortByBirthDateDescending_OrdersOldestLast()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var oldest = NewUser("Vieja", birthDate: new DateOnly(1980, 1, 1));
         var youngest = NewUser("Joven", birthDate: new DateOnly(2010, 1, 1));
         var middle = NewUser("Media", birthDate: new DateOnly(1995, 1, 1));
-        Enroll(oldest, "Taller", when, Confirmed, "Confirmada");
-        Enroll(youngest, "Taller", when, Confirmed, "Confirmada");
-        Enroll(middle, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(oldest, youngest, middle);
+        HasConfirmedAttendees(oldest, youngest, middle);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -497,14 +485,10 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_SortByType_OrdersByUserTypeName()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var volunteer = NewUser("Vero", typeName: "Voluntario");
         var member = NewUser("Mario", typeName: "Miembro");
         var sponsor = NewUser("Sonia", typeName: "Patrocinador");
-        Enroll(volunteer, "Taller", when, Confirmed, "Confirmada");
-        Enroll(member, "Taller", when, Confirmed, "Confirmada");
-        Enroll(sponsor, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(volunteer, member, sponsor);
+        HasConfirmedAttendees(volunteer, member, sponsor);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -520,10 +504,8 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_EventMissing_ReturnsEmptyPage()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var ana = NewUser("Ana");
-        Enroll(ana, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(ana);
+        HasConfirmedAttendees(ana);
 
         var page = await sut.ListEventAttendeesAsync(
             Guid.NewGuid(),
@@ -538,14 +520,10 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_SecondPage_ReturnsRemainingUsersWithTotal()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var ana = NewUser("Ana");
         var berto = NewUser("Berto");
         var carla = NewUser("Carla");
-        Enroll(ana, "Taller", when, Confirmed, "Confirmada");
-        Enroll(berto, "Taller", when, Confirmed, "Confirmada");
-        Enroll(carla, "Taller", when, Confirmed, "Confirmada");
-        HasUsers(carla, ana, berto);
+        HasConfirmedAttendees(carla, ana, berto);
 
         var page = await sut.ListEventAttendeesAsync(
             QueriedEventId,
@@ -620,7 +598,6 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventBadgesAsync_ConfirmedAssignmentsWithGuardian_GroupsPerUser()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
         var createdAt = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
 
         var parent = BadgeUser("Marta", "Miembro", "Socio", "#EF4444", createdAt);
@@ -629,13 +606,13 @@ public sealed class ReportServiceTests
 
         HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
-            BadgeAsg(adult, "Charla", when.AddHours(2), Confirmed),
-            BadgeAsg(adult, "Taller", when, Confirmed),
-            BadgeAsg(adult, "Taller", when, Confirmed),
-            BadgeAsg(adult, "Otro evento", when, Confirmed, eventId: Guid.NewGuid()),
-            BadgeAsg(child, "Taller infantil", when, Confirmed),
-            BadgeAsg(child, "Cuentacuentos", when, Requested),
-            BadgeAsg(parent, "Charla", when, Denied)
+            BadgeAsg(adult, "Charla", When.AddHours(2), Confirmed),
+            BadgeAsg(adult, "Taller", When, Confirmed),
+            BadgeAsg(adult, "Taller", When, Confirmed),
+            BadgeAsg(adult, "Otro evento", When, Confirmed, eventId: Guid.NewGuid()),
+            BadgeAsg(child, "Taller infantil", When, Confirmed),
+            BadgeAsg(child, "Cuentacuentos", When, Requested),
+            BadgeAsg(parent, "Charla", When, Denied)
         );
 
         var result = await sut.GetEventBadgesAsync(
@@ -739,10 +716,9 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventRosterAsync_ConfirmedAssignments_GroupsByActivityWithGuardianContact()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
-        var taller = RosterActivity("Taller", when);
-        var charla = RosterActivity("Charla", when.AddHours(2));
-        var foreignActivity = RosterActivity("Ajena", when, eventId: Guid.NewGuid());
+        var taller = RosterActivity("Taller", When);
+        var charla = RosterActivity("Charla", When.AddHours(2));
+        var foreignActivity = RosterActivity("Ajena", When, eventId: Guid.NewGuid());
 
         var parent = NewUser("Marta");
         var child = NewUser("Zoe", parent);
@@ -805,8 +781,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventRosterAsync_MixedRoles_OrdersLeadersFirstAndKeepsHighestRolePerUser()
     {
-        var when = new DateTimeOffset(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
-        var taller = RosterActivity("Taller", when);
+        var taller = RosterActivity("Taller", When);
 
         var bruno = NewUser("Bruno");
         bruno.LastName = "Zeta";

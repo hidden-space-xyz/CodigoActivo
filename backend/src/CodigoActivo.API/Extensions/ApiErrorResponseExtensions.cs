@@ -1,5 +1,4 @@
 using CodigoActivo.Domain.Common;
-using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Extensions;
 
@@ -7,29 +6,6 @@ public sealed record ApiErrorResponse(string Title, int Status, ErrorCode Code, 
 
 public static class ApiErrorResponseExtensions
 {
-    public static ActionResult<T> ToActionResult<T>(
-        this ControllerBase controller,
-        Result<T> result
-    )
-    {
-        return result.IsSuccess
-            ? controller.Ok(result.Value)
-            : controller.ToProblemResult(result.Error!);
-    }
-
-    public static ActionResult ToActionResult(this ControllerBase controller, Result result)
-    {
-        return result.IsSuccess
-            ? controller.NoContent()
-            : controller.ToProblemResult(result.Error!);
-    }
-
-    public static ActionResult ToProblemResult(this ControllerBase controller, Error error)
-    {
-        var (statusCode, body) = Create(error, controller.HttpContext);
-        return controller.StatusCode(statusCode, body);
-    }
-
     public static (int StatusCode, ApiErrorResponse Body) Create(Error error, HttpContext context)
     {
         var (status, title) = MapKind(error.Kind);

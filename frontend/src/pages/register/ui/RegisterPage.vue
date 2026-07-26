@@ -5,7 +5,7 @@ import {
   RegistrationSuccess,
   useRegistration,
 } from '@/features/register'
-import { SectionEyebrow } from '@/shared/ui'
+import { PageHead } from '@/shared/ui'
 
 const {
   step,
@@ -31,16 +31,11 @@ const {
 
 <template>
   <div>
-    <section class="register-head">
-      <div class="register-head__glow" aria-hidden="true" />
-      <div class="ca-container--narrow register-head__inner">
-        <SectionEyebrow :text="$t('pages.register.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="register-head__title">{{ $t('pages.register.title') }}</h1>
-        <p class="register-head__intro">
-          {{ $t('pages.register.intro') }}
-        </p>
-      </div>
-    </section>
+    <PageHead :eyebrow="$t('pages.register.eyebrow')" :title="$t('pages.register.title')">
+      <p class="register-head__intro">
+        {{ $t('pages.register.intro') }}
+      </p>
+    </PageHead>
 
     <section class="register-body">
       <div class="ca-container--narrow">
@@ -75,30 +70,6 @@ const {
 </template>
 
 <style scoped>
-.register-head {
-  position: relative;
-  overflow: hidden;
-  padding: 64px 24px 16px;
-}
-
-.register-head__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
-}
-
-.register-head__inner {
-  position: relative;
-}
-
-.register-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
 .register-head__intro {
   margin-top: 14px;
   font-size: 17px;

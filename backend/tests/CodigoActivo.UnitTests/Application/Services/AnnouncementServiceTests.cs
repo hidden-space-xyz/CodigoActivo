@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -42,14 +41,6 @@ public sealed class AnnouncementServiceTests
 
     private void HasAnnouncements(params Announcement[] items) =>
         announcements.Query().Returns(items.AsQueryable());
-
-    private void ThumbnailExists(bool exists) =>
-        files
-            .ExistsAsync(
-                Arg.Any<Expression<Func<FileEntity, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(exists);
 
     private static Announcement NewAnnouncement(
         string title = "Hello",
@@ -288,7 +279,7 @@ public sealed class AnnouncementServiceTests
     [Fact]
     public async Task CreateAsync_ThumbnailMissing_FailsAndDoesNotPersist()
     {
-        ThumbnailExists(false);
+        files.ThumbnailExists(false);
         var request = new CreateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.CreateAsync(
@@ -308,9 +299,9 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ValidRequest_PersistsTrimmedAnnouncement()
+    public async Task CreateAsync_ValidRequest_PersistsTrimmedAnnouncementAndInvalidatesCache()
     {
-        ThumbnailExists(true);
+        files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
@@ -339,21 +330,6 @@ public sealed class AnnouncementServiceTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateAsync_ValidRequest_InvalidatesAnnouncementsCache()
-    {
-        ThumbnailExists(true);
-        var request = new CreateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
-
-        var result = await sut.CreateAsync(
-            request,
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -364,12 +340,7 @@ public sealed class AnnouncementServiceTests
     [Fact]
     public async Task UpdateAsync_AnnouncementMissing_ReturnsNotFound()
     {
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns((Announcement?)null);
+        announcements.Finds(null);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.UpdateAsync(
@@ -395,13 +366,8 @@ public sealed class AnnouncementServiceTests
     public async Task UpdateAsync_ThumbnailMissing_ReturnsBadRequest()
     {
         var announcement = NewAnnouncement();
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-        ThumbnailExists(false);
+        announcements.Finds(announcement);
+        files.ThumbnailExists(false);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.UpdateAsync(
@@ -418,16 +384,11 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_ValidRequest_MutatesAndPersists()
+    public async Task UpdateAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
     {
         var announcement = NewAnnouncement("Old", "OldSub");
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-        ThumbnailExists(true);
+        announcements.Finds(announcement);
+        files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
@@ -453,34 +414,6 @@ public sealed class AnnouncementServiceTests
         announcement.UpdatedBy.Should().Be(caller);
         announcement.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UpdateAsync_ValidRequest_InvalidatesAnnouncementsCache()
-    {
-        var announcement = NewAnnouncement();
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-        ThumbnailExists(true);
-        var request = new UpdateAnnouncementRequest(
-            "Title",
-            "Subtitle",
-            "{}",
-            announcement.ThumbnailId
-        );
-
-        var result = await sut.UpdateAsync(
-            announcement.Id,
-            request,
-            Guid.NewGuid(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -493,13 +426,8 @@ public sealed class AnnouncementServiceTests
     {
         var announcement = NewAnnouncement();
         var previousThumbnailId = announcement.ThumbnailId;
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-        ThumbnailExists(true);
+        announcements.Finds(announcement);
+        files.ThumbnailExists(true);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.UpdateAsync(
@@ -524,13 +452,8 @@ public sealed class AnnouncementServiceTests
     public async Task UpdateAsync_ThumbnailUnchanged_DoesNotCleanUp()
     {
         var announcement = NewAnnouncement();
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-        ThumbnailExists(true);
+        announcements.Finds(announcement);
+        files.ThumbnailExists(true);
         var request = new UpdateAnnouncementRequest(
             "Title",
             "Subtitle",
@@ -562,13 +485,8 @@ public sealed class AnnouncementServiceTests
         var keptId = Guid.NewGuid();
         announcement.Description =
             $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-        ThumbnailExists(true);
+        announcements.Finds(announcement);
+        files.ThumbnailExists(true);
         var request = new UpdateAnnouncementRequest(
             "Title",
             "Subtitle",
@@ -597,12 +515,7 @@ public sealed class AnnouncementServiceTests
     [Fact]
     public async Task DeleteAsync_AnnouncementMissing_ReturnsNotFound()
     {
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns((Announcement?)null);
+        announcements.Finds(null);
 
         var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
@@ -617,17 +530,12 @@ public sealed class AnnouncementServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_ImagesEmbeddedInDescription_CleansUp()
+    public async Task DeleteAsync_ImagesEmbeddedInDescription_CleansUpAndInvalidatesCache()
     {
         var announcement = NewAnnouncement();
         var embeddedId = Guid.NewGuid();
         announcement.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
+        announcements.Finds(announcement);
 
         var result = await sut.DeleteAsync(announcement.Id, TestContext.Current.CancellationToken);
 
@@ -640,23 +548,6 @@ public sealed class AnnouncementServiceTests
                 ),
                 Arg.Any<CancellationToken>()
             );
-    }
-
-    [Fact]
-    public async Task DeleteAsync_AnnouncementExists_InvalidatesAnnouncementsCache()
-    {
-        var announcement = NewAnnouncement();
-        announcement.Description = "{}";
-        announcements
-            .FindAsync(
-                Arg.Any<Expression<Func<Announcement, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(announcement);
-
-        var result = await sut.DeleteAsync(announcement.Id, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeTrue();
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(

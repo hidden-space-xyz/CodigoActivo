@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -57,22 +56,15 @@ public class AnnouncementService(
 
         if (query.Year is { } year)
         {
-            if (year is < 1 or > 9999)
-            {
-                source = source.Where(a => a.CreatedAt > DateTimeOffset.MaxValue);
-            }
-            else
-            {
-                var yearStart = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
-                source =
-                    year == 9999
-                        ? source.Where(a => a.CreatedAt >= yearStart)
-                        : source.Where(a =>
-                            a.CreatedAt >= yearStart
-                            && a.CreatedAt
-                                < new DateTimeOffset(year + 1, 1, 1, 0, 0, 0, TimeSpan.Zero)
-                        );
-            }
+            var valid = year is >= 1 and <= 9999;
+            var lower = valid
+                ? new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero)
+                : DateTimeOffset.MaxValue;
+            var upper =
+                valid && year < 9999
+                    ? new DateTimeOffset(year + 1, 1, 1, 0, 0, 0, TimeSpan.Zero)
+                    : DateTimeOffset.MaxValue;
+            source = source.Where(a => a.CreatedAt >= lower && a.CreatedAt < upper);
         }
 
         if (query.Featured is { } featured)
@@ -137,13 +129,8 @@ public class AnnouncementService(
         CancellationToken ct = default
     )
     {
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.AnnouncementThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
 
         var announcement = new Announcement
         {
@@ -171,13 +158,8 @@ public class AnnouncementService(
         if (announcement is null)
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.AnnouncementThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
 
         var previousThumbnailId = announcement.ThumbnailId;
         var previousDescription = announcement.Description;

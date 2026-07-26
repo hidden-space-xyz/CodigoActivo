@@ -11,6 +11,8 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
 {
     protected CodigoActivoWebAppFactory Factory { get; } = factory;
 
+    protected static CancellationToken Ct => TestCancellation.Ct;
+
     public async ValueTask InitializeAsync()
     {
         await Factory.ResetDatabaseAsync();
@@ -68,5 +70,11 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
             return Task.CompletedTask;
         });
         return id;
+    }
+
+    protected Task<T?> FindAsync<T>(Guid id)
+        where T : class
+    {
+        return Factory.QueryAsync(db => db.Set<T>().FindAsync([id], Ct).AsTask());
     }
 }

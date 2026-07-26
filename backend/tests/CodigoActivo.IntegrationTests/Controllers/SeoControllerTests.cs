@@ -109,14 +109,11 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
         var content = await SeedContentAsync();
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/sitemap.xml",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/sitemap.xml", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/xml");
-        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(Ct);
         body.Should().StartWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         body.Should().Contain("http://www.sitemaps.org/schemas/sitemap/0.9");
         body.Should().Contain($"<loc>{BaseUrl}/about</loc>");
@@ -134,7 +131,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.SendAsync(
             new HttpRequestMessage(HttpMethod.Head, "/api/sitemap.xml"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -147,7 +144,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.SendAsync(
             new HttpRequestMessage(HttpMethod.Head, "/api/robots.txt"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -158,14 +155,11 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/robots.txt",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/robots.txt", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("text/plain");
-        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(Ct);
         body.Should().Contain("Disallow: /admin");
         body.Should().Contain($"Sitemap: {BaseUrl}/sitemap.xml");
     }

@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -42,12 +42,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(),
-            TestContext.Current.CancellationToken
+            Ct
         );
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
         return (body!.Adult.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
     }
 
@@ -56,15 +54,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/auth/csrf",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/auth/csrf", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<CsrfTokenResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<CsrfTokenResponse>(Ct);
         body!.Token.Should().NotBeNullOrEmpty();
         body.HeaderName.Should().Be("X-CSRF-TOKEN");
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
@@ -76,18 +69,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            NewAdultRequest(),
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest(), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        var raw = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        var body = await response.ReadJsonAsync<RegisterResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var raw = await response.Content.ReadAsStringAsync(Ct);
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
         body!.RequiresVerification.Should().BeTrue();
         body.Minors.Should().BeEmpty();
         body.Adult.Email.Should().Be(NewAdultEmail);
@@ -99,9 +86,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         raw.Should()
             .NotContain($"\"{otp}\"", "the OTP must never be returned in the HTTP response");
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<User>(body.Adult.Id);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
         stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.OtpCodeHash.Should().NotBeNullOrEmpty();
@@ -120,24 +105,18 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             NewAdultRequest(
                 minors: [new RegisterMinorRequest("Leo", "Nueva", new DateOnly(2016, 3, 10))]
             ),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
         body!.Minors.Should().HaveCount(1);
         body.Minors[0].Type.Should().BeNull();
 
-        var storedAdult = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var storedAdult = await FindAsync<User>(body.Adult.Id);
         storedAdult!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
 
-        var storedMinor = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([body.Minors[0].Id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var storedMinor = await FindAsync<User>(body.Minors[0].Id);
         storedMinor!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         storedMinor.ParentId.Should().Be(body.Adult.Id);
     }
@@ -158,14 +137,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(email: email, phone: phone, password: password, firstName: firstName),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Theory]
@@ -183,14 +158,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(birthDate: new DateOnly(year, month, day)),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -201,14 +172,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(birthDate: Factory.Clock.Today),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RegisterAdultCannotBeMinor);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RegisterAdultCannotBeMinor);
     }
 
     [Fact]
@@ -220,18 +187,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(otp),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<UserResponse>(Ct);
         body!.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([userId], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<User>(userId);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
         stored.OtpCodeHash.Should().BeNull();
     }
@@ -245,18 +208,18 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(otp),
-            TestContext.Current.CancellationToken
+            Ct
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(NewAdultEmail, "Str0ngPass!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         login.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await login.ReadJsonAsync<UserResponse>(TestContext.Current.CancellationToken);
+        var body = await login.ReadJsonAsync<UserResponse>(Ct);
         body!.Id.Should().Be(userId);
     }
 
@@ -269,18 +232,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(Guid.NewGuid().ToString()),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        await response.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([userId], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<User>(userId);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
         stored.OtpCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
     }
@@ -295,14 +252,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(otp),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        await response.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
     }
 
     [Fact]
@@ -314,14 +267,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest("   "),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -332,14 +281,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{Guid.NewGuid()}/verify",
             new VerifyRequest("123456"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.UserNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -351,14 +296,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/auth/{userId}/resend-verification",
             body: null,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.OtpResendCooldownActive);
+        await response.ShouldBeConflictAsync(ErrorCode.OtpResendCooldownActive);
     }
 
     [Fact]
@@ -371,7 +312,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var resend = await client.PostJsonAsync(
             $"/api/auth/{userId}/resend-verification",
             body: null,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -381,7 +322,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(newOtp),
-            TestContext.Current.CancellationToken
+            Ct
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -396,7 +337,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var resend = await client.PostJsonAsync(
             $"/api/auth/{userId}/resend-verification",
             body: null,
-            TestContext.Current.CancellationToken
+            Ct
         );
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var secondOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
@@ -405,17 +346,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var stale = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(firstOtp),
-            TestContext.Current.CancellationToken
+            Ct
         );
-        stale.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await stale.ReadJsonAsync<ApiErrorResponse>(TestContext.Current.CancellationToken))!
-            .Code.Should()
-            .Be(ErrorCode.OtpInvalidOrExpired);
+        await stale.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
 
         var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(secondOtp),
-            TestContext.Current.CancellationToken
+            Ct
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -428,14 +366,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/resend-verification",
             body: null,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
+        await response.ShouldBeConflictAsync(ErrorCode.OtpResendNotAllowed);
     }
 
     [Fact]
@@ -446,14 +380,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.UserAccountPendingVerification);
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserAccountPendingVerification);
     }
 
     [Fact]
@@ -464,21 +394,16 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(TestSeedData.AdminEmail, TestSeedData.Password),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
         cookies.Should().Contain(c => c.Contains("CodigoActivo.Session", StringComparison.Ordinal));
-        var body = await response.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<UserResponse>(Ct);
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.AdminId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.AdminId);
         stored!.LastLoginAt.Should().NotBeNull();
     }
 
@@ -490,14 +415,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(TestSeedData.AdminEmail, "WrongPassword!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.InvalidCredentials);
+        await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
     }
 
     [Fact]
@@ -512,13 +433,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             ),
         };
 
-        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        var response = await client.SendAsync(request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.InvalidCsrfToken);
+        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]
@@ -526,12 +443,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/api/auth/me", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<UserResponse>(Ct);
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
         body.Email.Should().Be(TestSeedData.AdminEmail);
         body.IsAdmin.Should().BeTrue();
@@ -542,7 +457,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/api/auth/me", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -552,15 +467,11 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var logout = await client.PostJsonAsync(
-            "/api/auth/logout",
-            body: null,
-            TestContext.Current.CancellationToken
-        );
+        var logout = await client.PostJsonAsync("/api/auth/logout", body: null, Ct);
 
         logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var me = await client.GetAsync("/api/auth/me", TestContext.Current.CancellationToken);
+        var me = await client.GetAsync("/api/auth/me", Ct);
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -569,7 +480,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest(email),
-            TestContext.Current.CancellationToken
+            Ct
         );
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         return Factory.EmailSender.LastOtpSentTo(email);
@@ -588,10 +499,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             .TextBody.Should()
             .Contain($"/reset-password?userId={TestSeedData.Users.MemberId}");
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordResetCodeHash.Should().NotBeNullOrEmpty();
         stored
             .PasswordResetCodeHash.Should()
@@ -608,7 +516,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest("nobody@codigoactivo.test"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -623,7 +531,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest(TestSeedData.BlockedEmail),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -638,14 +546,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest("not-an-email"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -657,7 +561,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest(TestSeedData.MemberEmail),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -679,17 +583,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var stale = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(firstCode, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
-        stale.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await stale.ReadJsonAsync<ApiErrorResponse>(TestContext.Current.CancellationToken))!
-            .Code.Should()
-            .Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await stale.ShouldBeBadRequestAsync(ErrorCode.PasswordResetInvalidOrExpired);
 
         var reset = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(secondCode, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -703,32 +604,27 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var reset = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(code, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using var oldLogin = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(TestSeedData.MemberEmail, TestSeedData.Password),
-            TestContext.Current.CancellationToken
+            Ct
         );
         oldLogin.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var newLogin = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(TestSeedData.MemberEmail, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         newLogin.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await newLogin.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await newLogin.ReadJsonAsync<UserResponse>(Ct);
         body!.Id.Should().Be(TestSeedData.Users.MemberId);
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordResetCodeHash.Should().BeNull();
         stored.PasswordResetExpiresAt.Should().BeNull();
     }
@@ -743,14 +639,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(code, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await response.ShouldBeBadRequestAsync(ErrorCode.PasswordResetInvalidOrExpired);
     }
 
     [Fact]
@@ -762,17 +654,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var wrong = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(Guid.NewGuid().ToString(), "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
-        wrong.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await wrong.ReadJsonAsync<ApiErrorResponse>(TestContext.Current.CancellationToken))!
-            .Code.Should()
-            .Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await wrong.ShouldBeBadRequestAsync(ErrorCode.PasswordResetInvalidOrExpired);
 
         var retry = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(code, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         retry.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -786,21 +675,17 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var first = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(code, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         first.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var replay = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(code, "OtraPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        replay.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await replay.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await replay.ShouldBeBadRequestAsync(ErrorCode.PasswordResetInvalidOrExpired);
     }
 
     [Fact]
@@ -811,14 +696,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(Guid.NewGuid().ToString(), "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await response.ShouldBeBadRequestAsync(ErrorCode.PasswordResetInvalidOrExpired);
     }
 
     [Fact]
@@ -829,14 +710,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{Guid.NewGuid()}/reset-password",
             new ResetPasswordRequest(Guid.NewGuid().ToString(), "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.UserNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -847,7 +724,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest(TestSeedData.MemberEmail.ToUpperInvariant()),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -864,17 +741,11 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var reset = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.PendingId}/reset-password",
             new ResetPasswordRequest(code, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(
-                    [TestSeedData.Users.PendingId],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.PendingId);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
         stored.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NuevaPass123!");
     }
@@ -890,42 +761,30 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         using var verifyWithResetCode = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(resetCode),
-            TestContext.Current.CancellationToken
+            Ct
         );
-        verifyWithResetCode.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (
-            await verifyWithResetCode.ReadJsonAsync<ApiErrorResponse>(
-                TestContext.Current.CancellationToken
-            )
-        )!
-            .Code.Should()
-            .Be(ErrorCode.OtpInvalidOrExpired);
+        await verifyWithResetCode.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
 
         using var resetWithVerificationOtp = await client.PatchJsonAsync(
             $"/api/auth/{userId}/reset-password",
             new ResetPasswordRequest(verificationOtp, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
-        resetWithVerificationOtp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (
-            await resetWithVerificationOtp.ReadJsonAsync<ApiErrorResponse>(
-                TestContext.Current.CancellationToken
-            )
-        )!
-            .Code.Should()
-            .Be(ErrorCode.PasswordResetInvalidOrExpired);
+        await resetWithVerificationOtp.ShouldBeBadRequestAsync(
+            ErrorCode.PasswordResetInvalidOrExpired
+        );
 
         using var verify = await client.PatchJsonAsync(
             $"/api/auth/{userId}/verify",
             new VerifyRequest(verificationOtp),
-            TestContext.Current.CancellationToken
+            Ct
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var reset = await client.PatchJsonAsync(
             $"/api/auth/{userId}/reset-password",
             new ResetPasswordRequest(resetCode, "NuevaPass123!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -939,13 +798,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
             new ResetPasswordRequest(code, "corta"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 }

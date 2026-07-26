@@ -1,12 +1,10 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -45,7 +43,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/users", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/api/users", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -55,12 +53,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/api/users", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(5);
         page.Page.Should().Be(1);
         page.Items.Should().Contain(u => u.Email == TestSeedData.AdminEmail);
@@ -72,12 +68,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/users", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/api/users", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(2);
         page.Items.Select(u => u.Id)
             .Should()
@@ -110,15 +104,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users?name=avila",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users?name=avila", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Items.Should().ContainSingle(u => u.Id == accentedId);
     }
 
@@ -147,15 +136,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users?name=gutierrez",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users?name=gutierrez", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Items.Should().ContainSingle(u => u.Id == accentedId);
     }
 
@@ -166,13 +150,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/users?userStatusTypeId={SeedIds.UserStatusTypes.Pending}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(1);
         page.Items.Should().ContainSingle(u => u.Id == TestSeedData.Users.PendingId);
     }
@@ -182,15 +164,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users?isAdmin=true",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users?isAdmin=true", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(1);
         page.Items.Should().ContainSingle(u => u.Id == TestSeedData.Users.AdminId);
     }
@@ -200,15 +177,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users?page=2&pageSize=2",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users?page=2&pageSize=2", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(5);
         page.Page.Should().Be(2);
         page.PageSize.Should().Be(2);
@@ -222,13 +194,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             "/api/users?birthDateFrom=1988-09-09&birthDateTo=1992-07-30",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(3);
         page.Items.Select(u => u.Id)
             .Should()
@@ -252,15 +222,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users?sort=-dependents",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users?sort=-dependents", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(7);
         page.Items[0].Id.Should().Be(TestSeedData.Users.AdminId);
         page.Items[1].Id.Should().Be(TestSeedData.Users.MemberId);
@@ -277,15 +242,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users?sort=parentName",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users?sort=parentName", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(6);
         page.Items.Select(u => u.ParentName)
             .Should()
@@ -310,15 +270,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users/types",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users/types", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var types = await response.ReadJsonAsync<List<UserTypeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var types = await response.ReadJsonAsync<List<UserTypeResponse>>(Ct);
         types!.Should().HaveCount(3);
         types.Should().Contain(t => t.Id == SeedIds.UserTypes.Member);
     }
@@ -328,10 +283,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            "/api/users/types",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users/types", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -341,10 +293,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/users/types",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users/types", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -354,15 +303,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/users/status-types",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/users/status-types", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var statuses = await response.ReadJsonAsync<List<UserStatusTypeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var statuses = await response.ReadJsonAsync<List<UserStatusTypeResponse>>(Ct);
         statuses!.Should().HaveCount(4);
         statuses.Should().Contain(s => s.Id == SeedIds.UserStatusTypes.Active);
     }
@@ -372,16 +316,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/users/{Guid.NewGuid()}",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/users/{Guid.NewGuid()}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.UserNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -392,7 +329,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             AdultUpdate(),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -406,22 +343,17 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             AdultUpdate(firstName: "Marta Renombrada"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Type.Should().NotBeNull();
         updated.Type!.Id.Should().Be(SeedIds.UserTypes.Member);
         updated.Type.Name.Should().Be("Socio");
         updated.ParentName.Should().BeNull();
         updated.DependentCount.Should().Be(1);
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.FirstName.Should().Be("Marta Renombrada");
     }
 
@@ -433,7 +365,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.PendingId}",
             AdultUpdate(),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -447,17 +379,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
             ChildUpdate(firstName: "Mateo Renombrado", parentId: TestSeedData.Users.MemberId),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(
-                    [TestSeedData.Users.MemberChildId],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
         stored!.FirstName.Should().Be("Mateo Renombrado");
     }
 
@@ -469,14 +395,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             AdultUpdate(firstName: "   "),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.RequestValidationFailed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -486,17 +408,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.DeleteWithCsrfAsync(
             $"/api/users/{TestSeedData.Users.PendingId}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(
-                    [TestSeedData.Users.PendingId],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.PendingId);
         stored.Should().BeNull();
     }
 
@@ -507,19 +423,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={SeedIds.UserTypes.Sponsor}",
-            ct: TestContext.Current.CancellationToken
+            ct: Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Type.Should().NotBeNull();
         updated.Type!.Id.Should().Be(SeedIds.UserTypes.Sponsor);
-        var user = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var user = await FindAsync<User>(TestSeedData.Users.MemberId);
         user!.UserTypeId.Should().Be(SeedIds.UserTypes.Sponsor);
     }
 
@@ -530,17 +441,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?userTypeId={SeedIds.UserTypes.Member}",
-            ct: TestContext.Current.CancellationToken
+            ct: Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var user = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(
-                    [TestSeedData.Users.MemberChildId],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
+        var user = await FindAsync<User>(TestSeedData.Users.MemberChildId);
         user!.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
     }
 
@@ -551,14 +456,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={Guid.NewGuid()}",
-            ct: TestContext.Current.CancellationToken
+            ct: Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.UserTypeNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.UserTypeNotFound);
     }
 
     [Fact]
@@ -570,13 +471,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/children",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var created = await response.ReadJsonAsync<UserResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var created = await response.ReadJsonAsync<UserResponse>(Ct);
         created!.ParentId.Should().Be(TestSeedData.Users.MemberId);
         created.ParentName.Should().Be("Marta Miembro");
         created.DependentCount.Should().Be(0);
@@ -584,9 +483,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         created.Type!.Id.Should().Be(SeedIds.UserTypes.Participant);
         created.Type.Name.Should().Be("Participante");
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([created.Id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<User>(created.Id);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
         stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
@@ -601,14 +498,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/password",
             request,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NewStr0ngPass!");
     }
 
@@ -620,14 +514,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PatchJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/admin",
             new SetAdminRequest(true),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var user = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([TestSeedData.Users.MemberId], TestContext.Current.CancellationToken)
-                .AsTask()
-        );
+        var user = await FindAsync<User>(TestSeedData.Users.MemberId);
         user!.IsAdmin.Should().BeTrue();
     }
 }

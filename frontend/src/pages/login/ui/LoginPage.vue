@@ -3,23 +3,18 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 
 import { useLogin } from '@/features/auth'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BaseButton, PageHead } from '@/shared/ui'
 
 const { form, submit, isSubmitting, isError } = useLogin()
 </script>
 
 <template>
   <div>
-    <section class="login-head">
-      <div class="login-head__glow" aria-hidden="true" />
-      <div class="ca-container--narrow login-head__inner">
-        <SectionEyebrow :text="$t('pages.login.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="login-head__title">{{ $t('pages.login.title') }}</h1>
-        <p class="login-head__intro">
-          {{ $t('pages.login.intro') }}
-        </p>
-      </div>
-    </section>
+    <PageHead :eyebrow="$t('pages.login.eyebrow')" :title="$t('pages.login.title')">
+      <p class="login-head__intro">
+        {{ $t('pages.login.intro') }}
+      </p>
+    </PageHead>
 
     <section class="login-body">
       <div class="login-card">
@@ -63,30 +58,6 @@ const { form, submit, isSubmitting, isError } = useLogin()
 </template>
 
 <style scoped>
-.login-head {
-  position: relative;
-  overflow: hidden;
-  padding: 64px 24px 16px;
-}
-
-.login-head__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
-}
-
-.login-head__inner {
-  position: relative;
-}
-
-.login-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
 .login-head__intro {
   margin-top: 14px;
   font-size: 17px;

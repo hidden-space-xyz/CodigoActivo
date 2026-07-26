@@ -1,6 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -137,15 +136,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/summary",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var summary = await response.ReadJsonAsync<EventSummaryResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
         summary!.EventId.Should().Be(EventId);
         summary.Title.Should().Be("Feria de Voluntariado");
         summary.ActivitiesCount.Should().Be(2);
@@ -182,15 +176,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/summary",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var summary = await response.ReadJsonAsync<EventSummaryResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
         summary!.TotalAssignments.Should().Be(5);
         summary.RequestedAssignments.Should().Be(2);
         summary.ConfirmedAssignments.Should().Be(2);
@@ -203,16 +192,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{Guid.NewGuid()}/summary",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/summary", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -237,15 +219,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/attendees", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Total.Should().Be(4);
         page.Items.Select(a => a.FirstName).Should().Equal("Ada", "Bruno", "Mateo", "Pedro");
 
@@ -308,13 +285,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?statusId={SeedIds.AssignmentStatusTypes.Confirmed}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Total.Should().Be(2);
         page.Items.Select(a => a.FirstName).Should().Equal("Ada", "Mateo");
 
@@ -333,13 +308,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?sort=email",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Items.Select(a => a.FirstName).Should().Equal("Ada", "Bruno", "Pedro", "Mateo");
     }
 
@@ -351,13 +324,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?sort=-birthDate",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Items.Select(a => a.FirstName).Should().Equal("Mateo", "Pedro", "Bruno", "Ada");
     }
 
@@ -369,13 +340,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?sort=type",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!
             .Items.Select(a => a.UserTypeName)
             .Should()
@@ -407,13 +376,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?activityId={ActivityCId}",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Total.Should().Be(1);
         var child = page
             .Items.Should()
@@ -434,13 +401,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?search=marta",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Total.Should().Be(1);
         page.Items.Single().UserId.Should().Be(TestSeedData.Users.MemberChildId);
     }
@@ -453,26 +418,22 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var firstResponse = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?page=1&pageSize=1",
-            TestContext.Current.CancellationToken
+            Ct
         );
         var secondResponse = await client.GetAsync(
             $"/api/reports/events/{EventId}/attendees?page=2&pageSize=1",
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var first = await firstResponse.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var first = await firstResponse.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         first!.Total.Should().Be(4);
         first.Page.Should().Be(1);
         first.PageSize.Should().Be(1);
         first.Items.Should().ContainSingle(a => a.FirstName == "Ada");
 
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var second = await secondResponse.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var second = await secondResponse.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         second!.Total.Should().Be(4);
         second.Page.Should().Be(2);
         second.Items.Should().ContainSingle(a => a.FirstName == "Bruno");
@@ -484,15 +445,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{Guid.NewGuid()}/attendees",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/attendees", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(
-            TestContext.Current.CancellationToken
-        );
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
         page!.Total.Should().Be(0);
         page.Items.Should().BeEmpty();
     }
@@ -502,10 +458,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/attendees", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -528,15 +481,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/badges",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<EventBadgesResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var report = await response.ReadJsonAsync<EventBadgesResponse>(Ct);
         report!.EventId.Should().Be(EventId);
         report.Title.Should().Be("Feria de Voluntariado");
 
@@ -568,16 +516,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{Guid.NewGuid()}/badges",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/badges", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -585,10 +526,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/badges",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -599,15 +537,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/roster",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/roster", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var report = await response.ReadJsonAsync<EventRosterResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var report = await response.ReadJsonAsync<EventRosterResponse>(Ct);
         report!.EventId.Should().Be(EventId);
         report.Title.Should().Be("Feria de Voluntariado");
         report.Activities.Should().HaveCount(2);
@@ -648,16 +581,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{Guid.NewGuid()}/roster",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/roster", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.EventNotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -665,10 +591,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/roster",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync($"/api/reports/events/{EventId}/roster", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -678,15 +601,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(
-            "/api/reports/dashboard",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/reports/dashboard", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var dashboard = await response.ReadJsonAsync<DashboardSummaryResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var dashboard = await response.ReadJsonAsync<DashboardSummaryResponse>(Ct);
         dashboard!.Events.Should().Be(0);
         dashboard.Activities.Should().Be(0);
         dashboard.Resources.Should().Be(0);
@@ -700,10 +618,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(
-            "/api/reports/dashboard",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/reports/dashboard", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -713,10 +628,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync(
-            "/api/reports/dashboard",
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.GetAsync("/api/reports/dashboard", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

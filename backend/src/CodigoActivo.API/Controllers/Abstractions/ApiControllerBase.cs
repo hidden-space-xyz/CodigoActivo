@@ -14,7 +14,7 @@ public abstract class ApiControllerBase : ControllerBase
 
     protected ActionResult<T> ToOk<T>(Result<T> result)
     {
-        return this.ToActionResult(result);
+        return result.IsSuccess ? Ok(result.Value) : ToProblem(result.Error!);
     }
 
     protected ActionResult<T> ToCreated<T>(Result<T> result, Func<T, string> location)
@@ -26,11 +26,12 @@ public abstract class ApiControllerBase : ControllerBase
 
     protected ActionResult ToNoContent(Result result)
     {
-        return this.ToActionResult(result);
+        return result.IsSuccess ? NoContent() : ToProblem(result.Error!);
     }
 
     protected ActionResult ToProblem(Error error)
     {
-        return this.ToProblemResult(error);
+        var (statusCode, body) = ApiErrorResponseExtensions.Create(error, HttpContext);
+        return StatusCode(statusCode, body);
     }
 }

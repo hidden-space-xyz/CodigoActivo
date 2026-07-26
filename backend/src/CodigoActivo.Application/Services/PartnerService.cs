@@ -83,13 +83,8 @@ public class PartnerService(
         CancellationToken ct = default
     )
     {
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.PartnerThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
 
         var partner = new Partner
         {
@@ -118,13 +113,8 @@ public class PartnerService(
         if (partner is null)
             return Error.NotFound(ErrorCode.PartnerNotFound);
 
-        var thumbnail = await files.EnsureThumbnailExistsAsync(
-            request.ThumbnailId,
-            ErrorCode.PartnerThumbnailNotFound,
-            ct
-        );
-        if (thumbnail.IsFailure)
-            return thumbnail.Error!;
+        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+            return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
 
         var previousThumbnailId = partner.ThumbnailId;
 

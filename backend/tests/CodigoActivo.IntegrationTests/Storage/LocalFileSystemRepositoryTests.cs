@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Storage;
 using Xunit;
+using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Storage;
 
@@ -58,52 +59,31 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     {
         var payload = Encoding.UTF8.GetBytes("hello storage");
 
-        await sut.SaveAsync(
-            "greeting.txt",
-            new MemoryStream(payload),
-            TestContext.Current.CancellationToken
-        );
+        await sut.SaveAsync("greeting.txt", new MemoryStream(payload), Ct);
 
-        await using var stream = await sut.OpenReadAsync(
-            "greeting.txt",
-            TestContext.Current.CancellationToken
-        );
+        await using var stream = await sut.OpenReadAsync("greeting.txt", Ct);
         await using var buffer = new MemoryStream();
-        await stream!.CopyToAsync(buffer, TestContext.Current.CancellationToken);
+        await stream!.CopyToAsync(buffer, Ct);
         buffer.ToArray().Should().Equal(payload);
     }
 
     [Fact]
     public async Task SaveAsync_NameAlreadyOnDisk_OverwritesTheWholeFile()
     {
-        await sut.SaveAsync(
-            "dup.bin",
-            new MemoryStream([1, 2, 3, 4, 5, 6]),
-            TestContext.Current.CancellationToken
-        );
+        await sut.SaveAsync("dup.bin", new MemoryStream([1, 2, 3, 4, 5, 6]), Ct);
 
-        await sut.SaveAsync(
-            "dup.bin",
-            new MemoryStream([9, 9]),
-            TestContext.Current.CancellationToken
-        );
+        await sut.SaveAsync("dup.bin", new MemoryStream([9, 9]), Ct);
 
-        await using var stream = await sut.OpenReadAsync(
-            "dup.bin",
-            TestContext.Current.CancellationToken
-        );
+        await using var stream = await sut.OpenReadAsync("dup.bin", Ct);
         await using var buffer = new MemoryStream();
-        await stream!.CopyToAsync(buffer, TestContext.Current.CancellationToken);
+        await stream!.CopyToAsync(buffer, Ct);
         buffer.ToArray().Should().Equal([9, 9]);
     }
 
     [Fact]
     public async Task OpenReadAsync_MissingFile_ReturnsNull()
     {
-        var stream = await sut.OpenReadAsync(
-            "does-not-exist.bin",
-            TestContext.Current.CancellationToken
-        );
+        var stream = await sut.OpenReadAsync("does-not-exist.bin", Ct);
 
         stream.Should().BeNull();
     }
@@ -111,15 +91,11 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [Fact]
     public async Task Delete_ExistingFile_RemovesFile()
     {
-        await sut.SaveAsync(
-            "temp.dat",
-            new MemoryStream([1, 2, 3]),
-            TestContext.Current.CancellationToken
-        );
+        await sut.SaveAsync("temp.dat", new MemoryStream([1, 2, 3]), Ct);
 
         sut.Delete("temp.dat");
 
-        var stream = await sut.OpenReadAsync("temp.dat", TestContext.Current.CancellationToken);
+        var stream = await sut.OpenReadAsync("temp.dat", Ct);
         stream.Should().BeNull();
     }
 
@@ -150,9 +126,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("nested/escape.txt")]
     public async Task SaveAsync_BlankOrPathTraversalName_ThrowsArgumentException(string name)
     {
-        await sut.Invoking(s =>
-                s.SaveAsync(name, new MemoryStream([0]), TestContext.Current.CancellationToken)
-            )
+        await sut.Invoking(s => s.SaveAsync(name, new MemoryStream([0]), Ct))
             .Should()
             .ThrowAsync<ArgumentException>()
             .WithParameterName("storedName");
@@ -164,7 +138,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("../escape.txt")]
     public async Task OpenReadAsync_BlankOrPathTraversalName_ThrowsArgumentException(string name)
     {
-        await sut.Invoking(s => s.OpenReadAsync(name, TestContext.Current.CancellationToken))
+        await sut.Invoking(s => s.OpenReadAsync(name, Ct))
             .Should()
             .ThrowAsync<ArgumentException>()
             .WithParameterName("storedName");

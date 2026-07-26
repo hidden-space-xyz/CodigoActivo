@@ -17,16 +17,13 @@ public sealed class ProjectionsTests
         TSource source
     ) => projection.Compile().Invoke(source);
 
-    [Fact]
-    public void Event_EventWithCategories_MapsScalarsAndCategories()
-    {
-        var categoryTypeId = Guid.NewGuid();
-        var @event = new Event
+    private static Event NewEvent(Guid categoryTypeId, string description) =>
+        new()
         {
             Id = Guid.NewGuid(),
             Title = "Conf",
             Subtitle = "Sub",
-            Description = "{}",
+            Description = description,
             EventStartsAt = new DateOnly(2024, 8, 1),
             EventEndsAt = new DateOnly(2024, 8, 3),
             SignupStartsAt = Created,
@@ -51,6 +48,12 @@ public sealed class ProjectionsTests
                 },
             ],
         };
+
+    [Fact]
+    public void Event_EventWithCategories_MapsScalarsAndCategories()
+    {
+        var categoryTypeId = Guid.NewGuid();
+        var @event = NewEvent(categoryTypeId, "{}");
 
         var response = Project(Projections.Event, @event);
 
@@ -87,36 +90,7 @@ public sealed class ProjectionsTests
     public void EventListItem_EventWithCategories_MapsScalarsAndCategoriesWithoutDescription()
     {
         var categoryTypeId = Guid.NewGuid();
-        var @event = new Event
-        {
-            Id = Guid.NewGuid(),
-            Title = "Conf",
-            Subtitle = "Sub",
-            Description = "{\"heavy\":true}",
-            EventStartsAt = new DateOnly(2024, 8, 1),
-            EventEndsAt = new DateOnly(2024, 8, 3),
-            SignupStartsAt = Created,
-            SignupEndsAt = Updated,
-            CreatedAt = Created,
-            UpdatedAt = Updated,
-            CreatedBy = Guid.NewGuid(),
-            UpdatedBy = Guid.NewGuid(),
-            ThumbnailId = Guid.NewGuid(),
-            Featured = true,
-            Categories =
-            [
-                new EventCategory
-                {
-                    EventCategoryTypeId = categoryTypeId,
-                    EventCategoryType = new EventCategoryType
-                    {
-                        Id = categoryTypeId,
-                        Name = "Tech",
-                        Color = "#111",
-                    },
-                },
-            ],
-        };
+        var @event = NewEvent(categoryTypeId, "{\"heavy\":true}");
 
         var response = Project(Projections.EventListItem, @event);
 
@@ -220,12 +194,8 @@ public sealed class ProjectionsTests
         response.UpdatedBy.Should().Be(activity.UpdatedBy);
     }
 
-    [Fact]
-    public void User_UserWithParentAndChildren_MapsScalarsLeavingTypeParentNameAndDependentCountNull()
+    private static User NewUser(Guid statusId, Guid typeId, Guid? parentId = null, int children = 0)
     {
-        var statusId = Guid.NewGuid();
-        var typeId = Guid.NewGuid();
-        var parentId = Guid.NewGuid();
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -238,13 +208,14 @@ public sealed class ProjectionsTests
             CreatedAt = Created,
             UpdatedAt = Updated,
             ParentId = parentId,
-            Parent = new User
-            {
-                Id = parentId,
-                FirstName = "Grace",
-                LastName = "Hopper",
-            },
-            Children = [new User { FirstName = "Kid", LastName = "One" }],
+            Parent = parentId is null
+                ? null
+                : new User
+                {
+                    Id = parentId.Value,
+                    FirstName = "Grace",
+                    LastName = "Hopper",
+                },
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType
             {
@@ -261,6 +232,18 @@ public sealed class ProjectionsTests
                 Color = "#00f",
             },
         };
+        for (var i = 0; i < children; i++)
+            user.Children.Add(new User { FirstName = "Kid", LastName = "One" });
+        return user;
+    }
+
+    [Fact]
+    public void User_UserWithParentAndChildren_MapsScalarsLeavingTypeParentNameAndDependentCountNull()
+    {
+        var statusId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = NewUser(statusId, typeId, parentId, children: 1);
 
         var response = Project(Projections.User, user);
 
@@ -287,45 +270,7 @@ public sealed class ProjectionsTests
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Ada",
-            LastName = "Lovelace",
-            Email = "ada@test.dev",
-            Phone = "+34",
-            BirthDate = new DateOnly(1990, 3, 4),
-            LastLoginAt = Updated,
-            CreatedAt = Created,
-            UpdatedAt = Updated,
-            ParentId = parentId,
-            Parent = new User
-            {
-                Id = parentId,
-                FirstName = "Grace",
-                LastName = "Hopper",
-            },
-            Children =
-            [
-                new User { FirstName = "Kid", LastName = "One" },
-                new User { FirstName = "Kid", LastName = "Two" },
-            ],
-            UserStatusTypeId = statusId,
-            UserStatusType = new UserStatusType
-            {
-                Id = statusId,
-                Name = "Active",
-                Color = "#0f0",
-            },
-            IsAdmin = true,
-            UserTypeId = typeId,
-            UserType = new UserType
-            {
-                Id = typeId,
-                Name = "Member",
-                Color = "#00f",
-            },
-        };
+        var user = NewUser(statusId, typeId, parentId, children: 2);
 
         var response = Project(Projections.UserWithType, user);
 
@@ -351,28 +296,7 @@ public sealed class ProjectionsTests
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Ada",
-            LastName = "Lovelace",
-            BirthDate = new DateOnly(1990, 3, 4),
-            CreatedAt = Created,
-            UserStatusTypeId = statusId,
-            UserStatusType = new UserStatusType
-            {
-                Id = statusId,
-                Name = "Active",
-                Color = "#0f0",
-            },
-            UserTypeId = typeId,
-            UserType = new UserType
-            {
-                Id = typeId,
-                Name = "Member",
-                Color = "#00f",
-            },
-        };
+        var user = NewUser(statusId, typeId);
 
         var response = Project(Projections.UserWithType, user);
 

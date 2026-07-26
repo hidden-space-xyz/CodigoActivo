@@ -1,9 +1,9 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -34,23 +34,15 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
     {
         var client = CreateDisabledClient();
 
-        var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            NewAdultRequest(),
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest(), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(
-            TestContext.Current.CancellationToken
-        );
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
         body!.RequiresVerification.Should().BeFalse();
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
         Factory.EmailSender.Sent.Should().BeEmpty();
 
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync([body.Adult.Id], TestContext.Current.CancellationToken).AsTask()
-        );
+        var stored = await FindAsync<User>(body.Adult.Id);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
         stored.OtpCodeHash.Should().BeNull();
     }
@@ -62,61 +54,34 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
         using var register = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(),
-            TestContext.Current.CancellationToken
+            Ct
         );
         register.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(NewAdultEmail, "Str0ngPass!"),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         login.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task Login_ExistingPendingUserVerificationDisabled_ActivatesUser()
+    public async Task Login_ExistingPendingUserVerificationDisabled_ActivatesAndStampsClockTimes()
     {
         var client = CreateDisabledClient();
 
         var response = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
-            TestContext.Current.CancellationToken
+            Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(
-                    [TestSeedData.Users.PendingId],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
+        var stored = await FindAsync<User>(TestSeedData.Users.PendingId);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
-    }
-
-    [Fact]
-    public async Task Login_ExistingPendingUserVerificationDisabled_StampsClockTimesOnTheSelfHeal()
-    {
-        var client = CreateDisabledClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/login",
-            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await Factory.QueryAsync(db =>
-            db.Users.FindAsync(
-                    [TestSeedData.Users.PendingId],
-                    TestContext.Current.CancellationToken
-                )
-                .AsTask()
-        );
-        stored!.UpdatedAt.Should().Be(Factory.Clock.UtcNow);
+        stored.UpdatedAt.Should().Be(Factory.Clock.UtcNow);
         stored.LastLoginAt.Should().Be(Factory.Clock.UtcNow);
     }
 
@@ -128,13 +93,9 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
         var response = await client.PostJsonAsync(
             $"/api/auth/{TestSeedData.Users.PendingId}/resend-verification",
             body: null,
-            TestContext.Current.CancellationToken
+            Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var error = await response.ReadJsonAsync<ApiErrorResponse>(
-            TestContext.Current.CancellationToken
-        );
-        error!.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
+        await response.ShouldBeConflictAsync(ErrorCode.OtpResendNotAllowed);
     }
 }
