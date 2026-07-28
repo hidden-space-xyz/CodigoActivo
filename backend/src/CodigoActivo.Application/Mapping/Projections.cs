@@ -315,9 +315,6 @@ public static class Projections
     > EventRatingListItem = rating => new EventRatingListItemResponse
     {
         Id = rating.Id,
-        UserId = rating.UserId,
-        FirstName = rating.User.FirstName,
-        LastName = rating.User.LastName,
         Score = rating.Score,
         MostLiked = rating.MostLiked,
         LeastLiked = rating.LeastLiked,

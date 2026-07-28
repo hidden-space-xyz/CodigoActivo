@@ -7,11 +7,6 @@
 
 export interface EventRatingListItemResponse {
   id?: string;
-  userId?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
   score?: number;
   /** @nullable */
   mostLiked?: string | null;
