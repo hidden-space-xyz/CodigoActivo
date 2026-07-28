@@ -266,7 +266,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Ratings_Admin_ReturnsRaterIdentity()
+    public async Task Ratings_Admin_ReturnsAnonymousOpinions()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
@@ -288,10 +288,11 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         var response = await client.GetAsync($"/api/events/{EventId}/ratings", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync(Ct);
+        body.Should().NotContainAny("Marta", "Miembro", TestSeedData.Users.MemberId.ToString());
+
         var page = await response.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(Ct);
         var item = page!.Items.Should().ContainSingle().Subject;
-        item.FirstName.Should().Be("Marta");
-        item.LastName.Should().Be("Miembro");
         item.Score.Should().Be(3);
         item.MostLiked.Should().Be("El taller");
     }

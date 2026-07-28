@@ -21,9 +21,6 @@ public record EventRatingResponse(
 
 public record EventRatingListItemResponse(
     Guid Id,
-    Guid UserId,
-    string FirstName,
-    string LastName,
     int Score,
     string? MostLiked,
     string? LeastLiked,
@@ -33,18 +30,7 @@ public record EventRatingListItemResponse(
 )
 {
     public EventRatingListItemResponse()
-        : this(
-            Guid.Empty,
-            Guid.Empty,
-            string.Empty,
-            string.Empty,
-            0,
-            null,
-            null,
-            null,
-            default,
-            null
-        ) { }
+        : this(Guid.Empty, 0, null, null, null, default, null) { }
 }
 
 public record SaveEventRatingRequest(

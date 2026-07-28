@@ -546,6 +546,7 @@ export const es = {
         opinions: {
           empty: 'Este evento todavía no tiene valoraciones.',
           count: 'Ninguna valoración | 1 valoración | {count} valoraciones',
+          anonymous: 'Valoración anónima',
           noAnswers: 'Sin comentarios.',
         },
         empty: {

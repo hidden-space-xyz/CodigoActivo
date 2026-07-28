@@ -5,7 +5,7 @@ import Rating from 'primevue/rating'
 import { useEventRatingsTable } from '@/features/manage-events'
 import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
 import { DataState } from '@/shared/ui'
-import { formatDateTime, fullName } from '@/shared/lib'
+import { formatDateTime } from '@/shared/lib'
 
 const props = defineProps<{
   eventId: string
@@ -41,7 +41,9 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
       <ul class="opinions">
         <li v-for="rating in ratings.table.items.value" :key="rating.id" class="opinion">
           <div class="opinion__head">
-            <span class="opinion__name">{{ fullName(rating) }}</span>
+            <span class="opinion__author">{{
+              $t('pages.admin.eventDetail.opinions.anonymous')
+            }}</span>
             <Rating :model-value="rating.score ?? 0" readonly class="opinion__stars" />
             <span class="opinion__score">{{ rating.score ?? 0 }}/5</span>
             <span class="opinion__date">{{ formatDateTime(rating.updatedAt ?? rating.createdAt) }}</span>
@@ -102,9 +104,10 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
   flex-wrap: wrap;
 }
 
-.opinion__name {
+.opinion__author {
   font-weight: 600;
-  color: var(--ca-text-bright);
+  font-size: 13px;
+  color: var(--ca-text-muted);
 }
 
 .opinion__score {

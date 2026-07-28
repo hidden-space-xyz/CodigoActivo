@@ -22,8 +22,6 @@ public class ParticipationService(
         new SortMap<EventRatingListItemResponse>()
             .Add("score", r => r.Score)
             .Add("createdAt", r => r.CreatedAt)
-            .Add("firstName", r => r.FirstName)
-            .Add("lastName", r => r.LastName)
             .Default("-createdAt")
             .Tie(r => r.Id);
 
