@@ -2072,6 +2072,13 @@
             }
           },
           {
+            "name": "gender",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Gender"
+            }
+          },
+          {
             "name": "activityId",
             "in": "query",
             "schema": {
@@ -3593,7 +3600,7 @@
             },
             "nullable": true
           },
-          "usersByGender": {
+          "participantsByGender": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSliceResponse"
@@ -4006,6 +4013,9 @@
           "birthDate": {
             "type": "string",
             "format": "date"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
           },
           "userTypeName": {
             "type": "string",

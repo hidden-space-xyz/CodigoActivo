@@ -617,6 +617,7 @@ export const es = {
               lastName: 'Apellidos',
               email: 'Email',
               phone: 'Numero',
+              gender: 'Genero',
               guardianFirstName: 'NombreDelTutor',
               guardianLastName: 'ApellidosDelTutor',
               guardianEmail: 'EmailDelTutor',
@@ -657,8 +658,8 @@ export const es = {
           audience: {
             title: 'Adultos y menores',
           },
-          usersByGender: {
-            title: 'Usuarios por género',
+          participantsByGender: {
+            title: 'Participantes por género',
           },
           categories: {
             title: 'Eventos por categoría',

@@ -12,6 +12,7 @@ import {
 import type {
   EventAttendeeResponse,
   EventRatingListItemResponse,
+  Gender,
   GetApiEventsEventIdRatingsParams,
   GetApiReportsEventsEventIdAttendeesParams,
 } from '@/shared/api/generated/models'
@@ -35,6 +36,7 @@ export function useEventAttendeesTable(
 ) {
   const search = ref('')
   const userTypeId = ref<string | null>(null)
+  const gender = ref<Gender | null>(null)
   const activityId = ref<string | null>(null)
   const roleTypeId = ref<string | null>(null)
   const statusId = ref<string | null>(null)
@@ -42,6 +44,7 @@ export function useEventAttendeesTable(
   const filterParams = (): Record<string, unknown> => ({
     search: search.value.trim() || undefined,
     userTypeId: userTypeId.value ?? undefined,
+    gender: gender.value ?? undefined,
     activityId: activityId.value ?? undefined,
     roleTypeId: roleTypeId.value ?? undefined,
     statusId: statusId.value ?? undefined,
@@ -81,7 +84,16 @@ export function useEventAttendeesTable(
     return attendees
   }
 
-  return { table, search, userTypeId, activityId, roleTypeId, statusId, fetchAllAttendees }
+  return {
+    table,
+    search,
+    userTypeId,
+    gender,
+    activityId,
+    roleTypeId,
+    statusId,
+    fetchAllAttendees,
+  }
 }
 
 export function useEventRatingsTable(

@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Entities;
+
 namespace CodigoActivo.Application.DTOs;
 
 public record EventSummaryResponse(
@@ -47,6 +49,7 @@ public record EventAttendeeResponse(
     string? Email,
     string? Phone,
     DateOnly BirthDate,
+    Gender Gender,
     string UserTypeName,
     string UserTypeColor,
     EventAttendeeGuardianResponse? Guardian,
@@ -159,7 +162,7 @@ public record DashboardAnalyticsResponse(
     DashboardTimeSeriesResponse ContentPublished,
     IReadOnlyList<DashboardSliceResponse> UsersByType,
     IReadOnlyList<DashboardSliceResponse> AudienceComposition,
-    IReadOnlyList<DashboardSliceResponse> UsersByGender,
+    IReadOnlyList<DashboardSliceResponse> ParticipantsByGender,
     IReadOnlyList<DashboardSliceResponse> EventsByCategory,
     IReadOnlyList<DashboardTopEventResponse> TopEvents,
     DashboardTimeSeriesResponse EventsCalendar,

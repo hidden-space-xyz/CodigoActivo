@@ -203,7 +203,8 @@ public sealed class ReportServiceTests
         Guid? userTypeId = null,
         string? email = null,
         DateOnly? birthDate = null,
-        string typeName = "Socio"
+        string typeName = "Socio",
+        Gender gender = Gender.Female
     ) =>
         new()
         {
@@ -213,6 +214,7 @@ public sealed class ReportServiceTests
             Email = email ?? first + "@test.local",
             Phone = "555-" + first,
             BirthDate = birthDate ?? new DateOnly(1990, 6, 15),
+            Gender = gender,
             Parent = parent,
             ParentId = parent?.Id,
             UserTypeId = userTypeId ?? SeedIds.UserTypes.Member,
@@ -268,7 +270,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task ListEventAttendeesAsync_AssignmentsAcrossActivities_GroupsPerUserWithOrderedAssignments()
     {
-        var ana = NewUser("Ana", NewUser("Tutora"));
+        var ana = NewUser("Ana", NewUser("Tutora"), gender: Gender.Other);
         var berto = NewUser("Berto");
         var outsider = NewUser("Zoe");
         Enroll(ana, "Charla", When.AddHours(2), Denied, "Rechazada");
@@ -301,6 +303,7 @@ public sealed class ReportServiceTests
         first.Email.Should().Be("Ana@test.local");
         first.Phone.Should().Be("555-Ana");
         first.BirthDate.Should().Be(new DateOnly(1990, 6, 15));
+        first.Gender.Should().Be(Gender.Other);
         first.UserTypeName.Should().Be("Socio");
         first.UserTypeColor.Should().Be("#EF4444");
         first.Guardian.Should().NotBeNull();
@@ -955,7 +958,7 @@ public sealed class ReportServiceTests
         var active = SeedIds.UserStatusTypes.Active;
         var dependent = SeedIds.UserStatusTypes.Dependent;
 
-        var parent = AnalyticsUser(participant, active, Utc(2026, 6, 20));
+        var parent = AnalyticsUser(participant, active, Utc(2026, 6, 20), gender: Gender.Other);
         HasUsers(
             AnalyticsUser(member, active, Utc(2025, 12, 1)),
             AnalyticsUser(member, active, Utc(2026, 2, 15)),
@@ -1089,9 +1092,11 @@ public sealed class ReportServiceTests
         Slice(r.UsersByType, "participant").Should().Be(2);
         Slice(r.AudienceComposition, "adults").Should().Be(4);
         Slice(r.AudienceComposition, "minors").Should().Be(1);
-        Slice(r.UsersByGender, "Female").Should().Be(3);
-        Slice(r.UsersByGender, "Male").Should().Be(2);
-        Slice(r.UsersByGender, "Other").Should().Be(0);
+        Slice(r.ParticipantsByGender, "Male").Should().Be(1);
+        Slice(r.ParticipantsByGender, "Other").Should().Be(1);
+        Slice(r.ParticipantsByGender, "Female")
+            .Should()
+            .Be(0, "the two Female users are members, not participants");
 
         r.EventsByCategory.Select(c => c.Label).Should().Equal("Formación", "Robótica");
         r.EventsByCategory[0].Count.Should().Be(2);

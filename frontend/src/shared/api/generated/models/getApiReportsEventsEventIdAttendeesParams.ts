@@ -4,10 +4,12 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { Gender } from './gender';
 
 export type GetApiReportsEventsEventIdAttendeesParams = {
 search?: string;
 userTypeId?: string;
+gender?: Gender;
 activityId?: string;
 roleTypeId?: string;
 statusId?: string;
