@@ -20,6 +20,7 @@ public static class MappingExtensions
             user.Email,
             user.Phone,
             user.BirthDate,
+            user.Gender,
             user.LastLoginAt,
             user.CreatedAt,
             user.UpdatedAt,

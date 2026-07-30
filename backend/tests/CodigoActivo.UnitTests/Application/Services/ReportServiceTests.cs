@@ -871,7 +871,8 @@ public sealed class ReportServiceTests
         Guid typeId,
         Guid statusId,
         DateTimeOffset createdAt,
-        Guid? parentId = null
+        Guid? parentId = null,
+        Gender gender = Gender.Female
     ) =>
         new()
         {
@@ -882,6 +883,7 @@ public sealed class ReportServiceTests
             UserTypeId = typeId,
             UserStatusTypeId = statusId,
             ParentId = parentId,
+            Gender = gender,
         };
 
     private static ActivityUserRoleAssignment Insc(
@@ -957,9 +959,9 @@ public sealed class ReportServiceTests
         HasUsers(
             AnalyticsUser(member, active, Utc(2025, 12, 1)),
             AnalyticsUser(member, active, Utc(2026, 2, 15)),
-            AnalyticsUser(sponsor, active, Utc(2026, 3, 10)),
+            AnalyticsUser(sponsor, active, Utc(2026, 3, 10), gender: Gender.Male),
             parent,
-            AnalyticsUser(participant, dependent, Utc(2026, 6, 25), parent.Id)
+            AnalyticsUser(participant, dependent, Utc(2026, 6, 25), parent.Id, Gender.Male)
         );
 
         HasAssignments(
@@ -1087,8 +1089,9 @@ public sealed class ReportServiceTests
         Slice(r.UsersByType, "participant").Should().Be(2);
         Slice(r.AudienceComposition, "adults").Should().Be(4);
         Slice(r.AudienceComposition, "minors").Should().Be(1);
-        Slice(r.ResourcesByType, "internal").Should().Be(1);
-        Slice(r.ResourcesByType, "external").Should().Be(2);
+        Slice(r.UsersByGender, "Female").Should().Be(3);
+        Slice(r.UsersByGender, "Male").Should().Be(2);
+        Slice(r.UsersByGender, "Other").Should().Be(0);
 
         r.EventsByCategory.Select(c => c.Label).Should().Equal("Formación", "Robótica");
         r.EventsByCategory[0].Count.Should().Be(2);

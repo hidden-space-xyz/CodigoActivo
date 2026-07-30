@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { Gender } from './gender';
 import type { UserStatusResponse } from './userStatusResponse';
 import type { UserTypeSummaryResponse } from './userTypeSummaryResponse';
 
@@ -18,6 +19,7 @@ export interface UserResponse {
   /** @nullable */
   phone?: string | null;
   birthDate?: string;
+  gender?: Gender;
   /** @nullable */
   lastLoginAt?: string | null;
   createdAt?: string;

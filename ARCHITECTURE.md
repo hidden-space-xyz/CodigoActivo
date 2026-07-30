@@ -126,6 +126,9 @@ Services never throw for expected failures. They return `Task<Result<TResponse>>
 
 EF Core + Npgsql with **snake_case** naming (`FirstName` → `first_name`). Ids are client-generated `Guid`s;
 entities extend base classes (`IdentifiableEntity`, `AuditableEntity`, `NamedEntity`, `IFeaturable`).
+Closed value sets that are not admin-managed are domain enums stored as **strings**
+(`HasConversion<string>()`, e.g. `User.Gender`), so the column reads the same as the JSON contract;
+admin-managed lookups stay catalog tables instead.
 On startup the API always applies migrations, then runs the idempotent `DatabaseSeeder` (lookup catalogs
 keyed by fixed GUIDs in `DomainConstants.SeedIds`). Optional demo data is handled by a separate
 `DemoDataSeeder` — see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode).

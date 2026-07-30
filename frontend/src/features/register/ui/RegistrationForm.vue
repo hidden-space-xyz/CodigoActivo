@@ -2,8 +2,10 @@
 import { computed, ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import Select from 'primevue/select'
 
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
+import { genderOptions } from '@/entities/user'
 import { BaseButton } from '@/shared/ui'
 import { todayIso, yearsAgoIso } from '@/shared/lib'
 
@@ -24,11 +26,14 @@ const isValid = computed(() => {
   if (!model.firstName.trim() || !model.lastName.trim()) return false
   if (!emailValid.value || !model.phone.trim()) return false
   if (passwordTooShort.value) return false
-  if (!model.dateOfBirth) return false
+  if (!model.dateOfBirth || !model.gender) return false
   return model.minors.every(
-    (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth,
+    (minor) =>
+      minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.gender,
   )
 })
+
+const genders = genderOptions()
 
 function onSubmit(): void {
   submitted.value = true
@@ -133,6 +138,21 @@ function removeMinor(index: number): void {
             required
           />
         </div>
+        <div class="reg__field">
+          <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
+          <Select
+            input-id="reg-gender"
+            v-model="model.gender"
+            :options="genders"
+            option-label="label"
+            option-value="value"
+            :invalid="submitted && !model.gender"
+            fluid
+          />
+          <small v-if="submitted && !model.gender" class="reg__error">{{
+            $t('validation.genderRequired')
+          }}</small>
+        </div>
       </div>
 
       <div class="reg__minors">
@@ -200,6 +220,23 @@ function removeMinor(index: number): void {
                   :max="maxBirthDateIso"
                   required
                 />
+              </div>
+              <div class="reg__field">
+                <label class="reg__label" :for="`minor-gender-${index}`">{{
+                  $t('common.gender')
+                }}</label>
+                <Select
+                  :input-id="`minor-gender-${index}`"
+                  v-model="minor.gender"
+                  :options="genders"
+                  option-label="label"
+                  option-value="value"
+                  :invalid="submitted && !minor.gender"
+                  fluid
+                />
+                <small v-if="submitted && !minor.gender" class="reg__error">{{
+                  $t('validation.genderRequired')
+                }}</small>
               </div>
             </div>
           </fieldset>

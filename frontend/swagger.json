@@ -3593,7 +3593,7 @@
             },
             "nullable": true
           },
-          "resourcesByType": {
+          "usersByGender": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSliceResponse"
@@ -4784,6 +4784,14 @@
         },
         "additionalProperties": false
       },
+      "Gender": {
+        "enum": [
+          "Male",
+          "Female",
+          "Other"
+        ],
+        "type": "string"
+      },
       "HouseholdAssignmentRequest": {
         "type": "object",
         "properties": {
@@ -4976,6 +4984,9 @@
           "birthDate": {
             "type": "string",
             "format": "date"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
           }
         },
         "additionalProperties": false
@@ -5006,6 +5017,9 @@
           "birthDate": {
             "type": "string",
             "format": "date"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
           },
           "minors": {
             "type": "array",
@@ -5469,6 +5483,9 @@
             "type": "string",
             "format": "date"
           },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
           "parentId": {
             "type": "string",
             "format": "uuid",
@@ -5503,6 +5520,9 @@
           "birthDate": {
             "type": "string",
             "format": "date"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
           },
           "lastLoginAt": {
             "type": "string",

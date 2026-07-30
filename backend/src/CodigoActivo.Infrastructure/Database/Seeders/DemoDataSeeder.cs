@@ -257,6 +257,7 @@ public sealed class DemoDataSeeder(
                     Phone = isChild ? null : BuildPhone(i),
                     PasswordHash = isChild ? null : passwordHash,
                     BirthDate = BuildBirthDate(i, seed.BirthYear),
+                    Gender = seed.Gender,
                     ParentId = seed.ParentIndex is { } parent ? UserId(parent) : null,
                     UserStatusTypeId = isChild
                         ? SeedIds.UserStatusTypes.Dependent
@@ -748,7 +749,7 @@ public sealed class DemoDataSeeder(
 
     private static string BuildEmail(UserSeed seed)
     {
-        var local = Ascii($"{seed.FirstName}.{seed.LastName}").ToLowerInvariant().Replace(' ', '.');
+        var local = AsciiLower($"{seed.FirstName}.{seed.LastName}").Replace(' ', '.');
         return $"{local}@demo.codigoactivo.es";
     }
 
@@ -758,18 +759,31 @@ public sealed class DemoDataSeeder(
     private static DateOnly BuildBirthDate(int index, int year) =>
         new(year, ((index * 7) % 12) + 1, ((index * 5) % 28) + 1);
 
-    private static string Ascii(string value)
+    private static string AsciiLower(string value)
     {
-        var normalized = value.Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(normalized.Length);
-        foreach (var ch in normalized)
+        var builder = new StringBuilder(value.Length);
+        foreach (var ch in value.ToLowerInvariant())
         {
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
-                builder.Append(ch);
+            var folded = FoldAccent(ch);
+            if (char.IsAsciiLetterOrDigit(folded) || folded is ' ' or '.' or '-')
+                builder.Append(folded);
         }
 
-        return builder.ToString().Normalize(NormalizationForm.FormC);
+        return builder.ToString();
     }
+
+    private static char FoldAccent(char value) =>
+        value switch
+        {
+            'á' or 'à' or 'ä' or 'â' => 'a',
+            'é' or 'è' or 'ë' or 'ê' => 'e',
+            'í' or 'ì' or 'ï' or 'î' => 'i',
+            'ó' or 'ò' or 'ö' or 'ô' => 'o',
+            'ú' or 'ù' or 'ü' or 'û' => 'u',
+            'ñ' => 'n',
+            'ç' => 'c',
+            _ => value,
+        };
 
     private enum UserKind
     {
@@ -783,6 +797,7 @@ public sealed class DemoDataSeeder(
         string FirstName,
         string LastName,
         UserKind Kind,
+        Gender Gender,
         int BirthYear,
         int? ParentIndex
     );
@@ -2011,31 +2026,31 @@ public sealed class DemoDataSeeder(
     ];
     private static readonly UserSeed[] UserSeeds =
     [
-        new("Lucía", "Fernández Ruiz", UserKind.Admin, 1986, null),
-        new("Marcos", "Serrano Vidal", UserKind.Member, 1984, null),
-        new("Elena", "Navarro Gil", UserKind.Member, 1990, null),
-        new("Javier", "Molina Castro", UserKind.Member, 1979, null),
-        new("Sara", "Ortega Peña", UserKind.Member, 1993, null),
-        new("Daniel", "Ramos León", UserKind.Member, 1988, null),
-        new("Carmen", "Delgado Soto", UserKind.Member, 1982, null),
-        new("Pablo", "Ibáñez Marín", UserKind.Member, 1995, null),
-        new("Ana", "Herrera Cano", UserKind.Member, 1991, null),
-        new("Sergio", "Vargas Prieto", UserKind.Member, 1987, null),
-        new("Marta", "Reyes Nieto", UserKind.Member, 1996, null),
-        new("David", "Campos Rubio", UserKind.Member, 1983, null),
-        new("Raquel", "Mendoza Flores", UserKind.Member, 1994, null),
-        new("Alberto", "Cortés Lozano", UserKind.Member, 1980, null),
-        new("Nuria", "Gallego Bravo", UserKind.Sponsor, 1992, null),
-        new("Iván", "Santos Crespo", UserKind.Sponsor, 1998, null),
-        new("Cristina", "Vega Aguilar", UserKind.Sponsor, 1989, null),
-        new("Rubén", "Márquez Fuentes", UserKind.Sponsor, 1997, null),
-        new("Laura", "Domínguez Pardo", UserKind.Sponsor, 1985, null),
-        new("Adrián", "Bautista Nogueira", UserKind.Sponsor, 1999, null),
-        new("Mateo", "Serrano Ferrer", UserKind.Child, 2013, 1),
-        new("Valeria", "Navarro Gil", UserKind.Child, 2014, 2),
-        new("Hugo", "Molina Ríos", UserKind.Child, 2012, 3),
-        new("Daniela", "Delgado Soto", UserKind.Child, 2015, 6),
-        new("Leo", "Ortega Peña", UserKind.Child, 2016, 4),
+        new("Lucía", "Fernández Ruiz", UserKind.Admin, Gender.Female, 1986, null),
+        new("Marcos", "Serrano Vidal", UserKind.Member, Gender.Male, 1984, null),
+        new("Elena", "Navarro Gil", UserKind.Member, Gender.Female, 1990, null),
+        new("Javier", "Molina Castro", UserKind.Member, Gender.Male, 1979, null),
+        new("Sara", "Ortega Peña", UserKind.Member, Gender.Female, 1993, null),
+        new("Daniel", "Ramos León", UserKind.Member, Gender.Male, 1988, null),
+        new("Carmen", "Delgado Soto", UserKind.Member, Gender.Female, 1982, null),
+        new("Pablo", "Ibáñez Marín", UserKind.Member, Gender.Male, 1995, null),
+        new("Ana", "Herrera Cano", UserKind.Member, Gender.Female, 1991, null),
+        new("Sergio", "Vargas Prieto", UserKind.Member, Gender.Male, 1987, null),
+        new("Marta", "Reyes Nieto", UserKind.Member, Gender.Female, 1996, null),
+        new("David", "Campos Rubio", UserKind.Member, Gender.Male, 1983, null),
+        new("Raquel", "Mendoza Flores", UserKind.Member, Gender.Female, 1994, null),
+        new("Alberto", "Cortés Lozano", UserKind.Member, Gender.Male, 1980, null),
+        new("Nuria", "Gallego Bravo", UserKind.Sponsor, Gender.Female, 1992, null),
+        new("Iván", "Santos Crespo", UserKind.Sponsor, Gender.Male, 1998, null),
+        new("Cristina", "Vega Aguilar", UserKind.Sponsor, Gender.Female, 1989, null),
+        new("Rubén", "Márquez Fuentes", UserKind.Sponsor, Gender.Male, 1997, null),
+        new("Laura", "Domínguez Pardo", UserKind.Sponsor, Gender.Female, 1985, null),
+        new("Adrián", "Bautista Nogueira", UserKind.Sponsor, Gender.Male, 1999, null),
+        new("Mateo", "Serrano Ferrer", UserKind.Child, Gender.Male, 2013, 1),
+        new("Valeria", "Navarro Gil", UserKind.Child, Gender.Female, 2014, 2),
+        new("Hugo", "Molina Ríos", UserKind.Child, Gender.Male, 2012, 3),
+        new("Daniela", "Delgado Soto", UserKind.Child, Gender.Female, 2015, 6),
+        new("Leo", "Ortega Peña", UserKind.Child, Gender.Other, 2016, 4),
     ];
 }
 

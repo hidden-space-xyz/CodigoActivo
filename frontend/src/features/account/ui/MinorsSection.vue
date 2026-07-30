@@ -3,9 +3,12 @@ import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 
 import { useAccount } from '../model/useAccount'
 import type { AccountChild } from '@/entities/account'
+import { genderLabel, genderOptions } from '@/entities/user'
+import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton } from '@/shared/ui'
 import { formatDate, toDateInput, todayIso, useCrudFeedback, yearsAgoIso } from '@/shared/lib'
 
@@ -18,7 +21,14 @@ const items = computed(() => children.data.value ?? [])
 const dialogVisible = ref(false)
 const mode = ref<'add' | 'edit'>('add')
 const editingId = ref<string | null>(null)
-const form = reactive({ firstName: '', lastName: '', birthDate: '' })
+const form = reactive<{
+  firstName: string
+  lastName: string
+  birthDate: string
+  gender: Gender | null
+}>({ firstName: '', lastName: '', birthDate: '', gender: null })
+const submitted = ref(false)
+const genders = genderOptions()
 
 const maxBirthDateIso = todayIso()
 const adultThresholdIso = yearsAgoIso(18)
@@ -27,19 +37,23 @@ const saving = computed(() => addChild.isPending.value || updateChild.isPending.
 
 function openAdd(): void {
   mode.value = 'add'
+  submitted.value = false
   editingId.value = null
   form.firstName = ''
   form.lastName = ''
   form.birthDate = ''
+  form.gender = null
   dialogVisible.value = true
 }
 
 function openEdit(child: AccountChild): void {
   mode.value = 'edit'
+  submitted.value = false
   editingId.value = child.id ?? null
   form.firstName = child.firstName ?? ''
   form.lastName = child.lastName ?? ''
   form.birthDate = toDateInput(child.birthDate)
+  form.gender = child.gender ?? null
   dialogVisible.value = true
 }
 
@@ -48,12 +62,16 @@ function notifyError(error: unknown): void {
 }
 
 function save(): void {
+  submitted.value = true
+  const gender = form.gender
+  if (!gender) return
   if (mode.value === 'add') {
     addChild.mutate(
       {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         birthDate: form.birthDate,
+        gender,
       },
       {
         onSuccess: () => {
@@ -78,6 +96,7 @@ function save(): void {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         birthDate: form.birthDate,
+        gender,
       },
     },
     {
@@ -131,7 +150,10 @@ function confirmDelete(): void {
       <li v-for="child in items" :key="child.id" class="acc-minor">
         <div class="acc-minor__info">
           <span class="acc-minor__name">{{ child.firstName }} {{ child.lastName }}</span>
-          <span class="acc-minor__meta">{{ formatDate(child.birthDate) }}</span>
+          <span class="acc-minor__meta">
+            {{ formatDate(child.birthDate)
+            }}{{ child.gender ? ` · ${genderLabel(child.gender)}` : '' }}
+          </span>
         </div>
         <div class="acc-minor__actions">
           <BaseButton variant="ghost" @click="openEdit(child)">{{ $t('common.edit') }}</BaseButton>
@@ -173,6 +195,21 @@ function confirmDelete(): void {
               :max="maxBirthDateIso"
               required
             />
+          </div>
+          <div class="acc-form__field">
+            <label for="m-gender">{{ $t('common.gender') }}</label>
+            <Select
+              input-id="m-gender"
+              v-model="form.gender"
+              :options="genders"
+              option-label="label"
+              option-value="value"
+              :invalid="submitted && !form.gender"
+              fluid
+            />
+            <small v-if="submitted && !form.gender" class="acc-form__error">{{
+              $t('validation.genderRequired')
+            }}</small>
           </div>
         </div>
         <div class="acc-form__actions">
@@ -319,6 +356,11 @@ function confirmDelete(): void {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+
+.acc-form__error {
+  color: var(--ca-danger-ink);
+  font-size: 13.5px;
 }
 
 .acc-confirm {

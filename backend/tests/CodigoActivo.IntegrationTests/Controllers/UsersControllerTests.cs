@@ -20,6 +20,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         string lastName = "Member",
         string? email = TestSeedData.MemberEmail,
         string? phone = "+34600000002",
+        Gender gender = Gender.Female,
         Guid? parentId = null
     )
     {
@@ -29,13 +30,26 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             email,
             phone,
             new DateOnly(1992, 7, 30),
+            gender,
             parentId
         );
     }
 
-    private static UpdateUserRequest ChildUpdate(string firstName = "MateoX", Guid? parentId = null)
+    private static UpdateUserRequest ChildUpdate(
+        string firstName = "MateoX",
+        Gender gender = Gender.Male,
+        Guid? parentId = null
+    )
     {
-        return new UpdateUserRequest(firstName, "Miembro", null, null, ChildBirthDate, parentId);
+        return new UpdateUserRequest(
+            firstName,
+            "Miembro",
+            null,
+            null,
+            ChildBirthDate,
+            gender,
+            parentId
+        );
     }
 
     [Fact]
@@ -95,6 +109,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                     Phone = "+34600000099",
                     PasswordHash = TestSeedData.PasswordHash,
                     BirthDate = new DateOnly(1990, 2, 2),
+                    Gender = Gender.Female,
                     UserStatusTypeId = SeedIds.UserStatusTypes.Active,
                     UserTypeId = SeedIds.UserTypes.Member,
                     CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -127,6 +142,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                     Phone = "+34600000098",
                     PasswordHash = TestSeedData.PasswordHash,
                     BirthDate = new DateOnly(1991, 4, 4),
+                    Gender = Gender.Female,
                     UserStatusTypeId = SeedIds.UserStatusTypes.Active,
                     UserTypeId = SeedIds.UserTypes.Member,
                     CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -342,7 +358,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(firstName: "Marta Renombrada"),
+            AdultUpdate(firstName: "Marta Renombrada", gender: Gender.Other),
             Ct
         );
 
@@ -353,8 +369,31 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         updated.Type.Name.Should().Be("Socio");
         updated.ParentName.Should().BeNull();
         updated.DependentCount.Should().Be(1);
+        updated.Gender.Should().Be(Gender.Other);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.FirstName.Should().Be("Marta Renombrada");
+        stored.Gender.Should().Be(Gender.Other);
+    }
+
+    [Fact]
+    public async Task Update_GenderMissing_ReturnsValidationError()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            new
+            {
+                firstName = "Renamed",
+                lastName = "Member",
+                email = TestSeedData.MemberEmail,
+                phone = "+34600000002",
+                birthDate = "1992-07-30",
+            },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -466,7 +505,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     public async Task AddChild_AsMember_CreatesDependent()
     {
         var client = await LoginAsMemberAsync();
-        var request = new RegisterMinorRequest("Nino", "Miembro", MinorBirthDate);
+        var request = new RegisterMinorRequest("Nino", "Miembro", MinorBirthDate, Gender.Male);
 
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/children",

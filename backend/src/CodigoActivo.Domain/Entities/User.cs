@@ -12,6 +12,7 @@ public class User : IdentifiableEntity
     public string? PasswordHash { get; set; }
 
     public DateOnly BirthDate { get; set; }
+    public Gender Gender { get; set; }
 
     public DateTimeOffset? LastLoginAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

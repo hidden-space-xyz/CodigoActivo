@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { Gender } from './gender';
 
 export interface RegisterMinorRequest {
   /** @nullable */
@@ -11,4 +12,5 @@ export interface RegisterMinorRequest {
   /** @nullable */
   lastName?: string | null;
   birthDate?: string;
+  gender?: Gender;
 }

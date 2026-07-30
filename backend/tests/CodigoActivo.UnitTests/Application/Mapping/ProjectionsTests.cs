@@ -204,6 +204,7 @@ public sealed class ProjectionsTests
             Email = "ada@test.dev",
             Phone = "+34",
             BirthDate = new DateOnly(1990, 3, 4),
+            Gender = Gender.Other,
             LastLoginAt = Updated,
             CreatedAt = Created,
             UpdatedAt = Updated,
@@ -253,6 +254,7 @@ public sealed class ProjectionsTests
         response.Email.Should().Be("ada@test.dev");
         response.Phone.Should().Be("+34");
         response.BirthDate.Should().Be(new DateOnly(1990, 3, 4));
+        response.Gender.Should().Be(Gender.Other);
         response.LastLoginAt.Should().Be(Updated);
         response.CreatedAt.Should().Be(Created);
         response.UpdatedAt.Should().Be(Updated);
@@ -280,6 +282,7 @@ public sealed class ProjectionsTests
         response.Email.Should().Be("ada@test.dev");
         response.Phone.Should().Be("+34");
         response.BirthDate.Should().Be(new DateOnly(1990, 3, 4));
+        response.Gender.Should().Be(Gender.Other);
         response.LastLoginAt.Should().Be(Updated);
         response.CreatedAt.Should().Be(Created);
         response.UpdatedAt.Should().Be(Updated);

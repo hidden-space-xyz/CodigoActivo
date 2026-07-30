@@ -1,9 +1,26 @@
-import type { RegisterRequest, RegisterResponse } from '@/shared/api/generated/models'
+import type {
+  RegisterMinorRequest,
+  RegisterRequest,
+  RegisterResponse,
+} from '@/shared/api/generated/models'
 
-import type { RegistrationForm } from '../model/registration-form'
+import type { MinorForm, RegistrationForm } from '../model/registration-form'
 import type { RegistrationResult } from '../model/types'
 
+function toRegisterMinorRequest(minor: MinorForm): RegisterMinorRequest {
+  const { gender } = minor
+  if (!gender) throw new Error('missing minor gender')
+  return {
+    firstName: minor.firstName.trim(),
+    lastName: minor.lastName.trim(),
+    birthDate: minor.dateOfBirth,
+    gender,
+  }
+}
+
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
+  const { gender } = form
+  if (!gender) throw new Error('missing gender')
   return {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
@@ -11,11 +28,8 @@ export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
     phone: form.phone.trim(),
     password: form.password,
     birthDate: form.dateOfBirth,
-    minors: form.minors.map((minor) => ({
-      firstName: minor.firstName.trim(),
-      lastName: minor.lastName.trim(),
-      birthDate: minor.dateOfBirth,
-    })),
+    gender,
+    minors: form.minors.map(toRegisterMinorRequest),
   }
 }
 

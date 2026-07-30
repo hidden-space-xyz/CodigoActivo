@@ -23,6 +23,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         string password = "Str0ngPass!",
         string firstName = "Nadia",
         DateOnly? birthDate = null,
+        Gender gender = Gender.Female,
         IReadOnlyList<RegisterMinorRequest>? minors = null
     )
     {
@@ -33,6 +34,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             phone,
             password,
             birthDate ?? AdultBirthDate,
+            gender,
             minors
         );
     }
@@ -79,6 +81,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         body.Minors.Should().BeEmpty();
         body.Adult.Email.Should().Be(NewAdultEmail);
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Pending);
+        body.Adult.Gender.Should().Be(Gender.Female);
         body.Adult.IsAdmin.Should().BeFalse();
         body.Adult.Type.Should().BeNull();
 
@@ -88,6 +91,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<User>(body.Adult.Id);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored.Gender.Should().Be(Gender.Female);
         stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.OtpCodeHash.Should().NotBeNullOrEmpty();
         stored.OtpCodeHash.Should().NotBe(otp, "the OTP must be stored hashed, not in plaintext");
@@ -103,7 +107,15 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/register",
             NewAdultRequest(
-                minors: [new RegisterMinorRequest("Leo", "Nueva", new DateOnly(2016, 3, 10))]
+                minors:
+                [
+                    new RegisterMinorRequest(
+                        "Leo",
+                        "Nueva",
+                        new DateOnly(2016, 3, 10),
+                        Gender.Other
+                    ),
+                ]
             ),
             Ct
         );
@@ -119,6 +131,61 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var storedMinor = await FindAsync<User>(body.Minors[0].Id);
         storedMinor!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         storedMinor.ParentId.Should().Be(body.Adult.Id);
+        storedMinor.Gender.Should().Be(Gender.Other);
+    }
+
+    [Fact]
+    public async Task Register_GenderMissing_ReturnsValidationError()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                firstName = "Nadia",
+                lastName = "Nueva",
+                email = NewAdultEmail,
+                phone = "+34600000099",
+                password = "Str0ngPass!",
+                birthDate = "1996-01-15",
+            },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
+    public async Task Register_MinorGenderMissing_ReturnsValidationError()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                firstName = "Nadia",
+                lastName = "Nueva",
+                email = NewAdultEmail,
+                phone = "+34600000099",
+                password = "Str0ngPass!",
+                birthDate = "1996-01-15",
+                gender = "Female",
+                minors = new[]
+                {
+                    new
+                    {
+                        firstName = "Leo",
+                        lastName = "Nueva",
+                        birthDate = "2016-03-10",
+                    },
+                },
+            },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Theory]

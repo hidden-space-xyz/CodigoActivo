@@ -18,6 +18,7 @@ export const es = {
     phone: 'Teléfono',
     password: 'Contraseña',
     birthDate: 'Fecha de nacimiento',
+    gender: 'Género',
     image: 'Imagen',
     imageRequired: 'La imagen es obligatoria.',
     status: 'Estado',
@@ -40,6 +41,7 @@ export const es = {
     passwordMin: 'La contraseña debe tener al menos 8 caracteres.',
     newPasswordMin: 'La nueva contraseña debe tener al menos 8 caracteres.',
     passwordsMismatch: 'Las contraseñas no coinciden.',
+    genderRequired: 'Selecciona un género.',
   },
 
   nav: {
@@ -655,8 +657,8 @@ export const es = {
           audience: {
             title: 'Adultos y menores',
           },
-          resources: {
-            title: 'Recursos por tipo',
+          usersByGender: {
+            title: 'Usuarios por género',
           },
           categories: {
             title: 'Eventos por categoría',
@@ -703,8 +705,6 @@ export const es = {
           denied: 'Rechazadas',
           adults: 'Adultos',
           minors: 'Menores',
-          internal: 'Internos',
-          external: 'Externos',
           announcements: 'Anuncios',
           resources: 'Recursos',
           past: 'Pasados',
@@ -1051,7 +1051,7 @@ export const es = {
         minorsTitle: 'Menores a mi cargo',
         addMinor: '+ Añadir menor',
         minorsNote:
-          'Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre y su fecha de nacimiento.',
+          'Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre, su fecha de nacimiento y su género.',
         minorLegend: 'Menor {n}',
         removeMinor: 'Quitar menor',
         submit: 'Completar registro',
@@ -1210,6 +1210,13 @@ export const es = {
       fallback: {
         title: 'Actividad',
         role: 'Rol',
+      },
+    },
+    user: {
+      gender: {
+        Male: 'Hombre',
+        Female: 'Mujer',
+        Other: 'Otro',
       },
     },
   },
