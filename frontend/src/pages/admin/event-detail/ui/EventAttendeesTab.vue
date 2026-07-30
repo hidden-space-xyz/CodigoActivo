@@ -9,6 +9,12 @@ import Select from 'primevue/select'
 import { useAssignments } from '@/features/manage-activities'
 import { useEventAttendeesTable } from '@/features/manage-events'
 import {
+  SendEmailDialog,
+  useSendEmail,
+  useSendEmailFeedback,
+  type SendEmailPayload,
+} from '@/features/send-email'
+import {
   useActivityRoleTypesList,
   useAssignmentStatusTypesList,
   useUserTypesList,
@@ -18,6 +24,8 @@ import type {
   ActivityResponse,
   EventAttendeeAssignmentResponse,
   EventAttendeeResponse,
+  PostApiEmailsEventsEventIdAttendeesParams,
+  SendEmailResultResponse,
 } from '@/shared/api/generated/models'
 import { AppButton as Button, ColorTag, DataState } from '@/shared/ui'
 import type { CsvValue } from '@/shared/lib'
@@ -48,6 +56,8 @@ const attendees = useEventAttendeesTable(
   () => props.active,
 )
 const assignments = useAssignments(() => props.eventId)
+const { sendToUser, sendToEventAttendees } = useSendEmail()
+const { reportSendResult } = useSendEmailFeedback()
 const statusTypes = useAssignmentStatusTypesList()
 const roleTypes = useActivityRoleTypesList()
 const userTypes = useUserTypesList()
@@ -158,6 +168,53 @@ async function exportCsv(): Promise<void> {
   } finally {
     exporting.value = false
   }
+}
+
+const emailDialogVisible = ref(false)
+const emailRecipient = ref<EventAttendeeResponse | null>(null)
+
+const emailTarget = computed(() =>
+  emailRecipient.value
+    ? t('pages.admin.eventDetail.attendees.email.targetOne', {
+        fullName: fullName(emailRecipient.value),
+      })
+    : t('pages.admin.eventDetail.attendees.email.targetFiltered', attendees.table.total.value),
+)
+
+const emailSending = computed(
+  () => sendToUser.isPending.value || sendToEventAttendees.isPending.value,
+)
+
+function openEmail(attendee: EventAttendeeResponse | null): void {
+  emailRecipient.value = attendee
+  emailDialogVisible.value = true
+}
+
+function onEmailSent(result: SendEmailResultResponse): void {
+  emailDialogVisible.value = false
+  reportSendResult(result)
+}
+
+function submitEmail(payload: SendEmailPayload): void {
+  const recipient = emailRecipient.value
+  const handlers = {
+    onSuccess: onEmailSent,
+    onError: (error: unknown) => feedback.error(error),
+  }
+
+  if (recipient?.userId) {
+    sendToUser.mutate({ userId: recipient.userId, payload }, handlers)
+    return
+  }
+
+  sendToEventAttendees.mutate(
+    {
+      eventId: props.eventId,
+      params: attendees.filterParams() as PostApiEmailsEventsEventIdAttendeesParams,
+      payload,
+    },
+    handlers,
+  )
 }
 
 const statusColorById = computed(() => {
@@ -317,6 +374,14 @@ function submitChangeRole(): void {
         :disabled="attendees.table.total.value === 0"
         @click="exportCsv"
       />
+      <Button
+        :label="$t('pages.admin.eventDetail.attendees.email.bulkLabel')"
+        :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"
+        icon="pi pi-envelope"
+        severity="secondary"
+        :disabled="attendees.table.total.value === 0"
+        @click="openEmail(null)"
+      />
       <div class="toolbar__sort">
         <Select
           v-model="sortField"
@@ -414,6 +479,15 @@ function submitChangeRole(): void {
                   ><i class="pi pi-phone" aria-hidden="true" /> {{ attendee.phone || '—' }}</span
                 >
               </template>
+              <Button
+                v-if="attendee.email"
+                icon="pi pi-send"
+                text
+                rounded
+                size="small"
+                :aria-label="$t('pages.admin.eventDetail.attendees.email.rowLabel')"
+                @click="openEmail(attendee)"
+              />
             </div>
           </div>
 
@@ -475,6 +549,13 @@ function submitChangeRole(): void {
         @page="attendees.table.onPage"
       />
     </DataState>
+
+    <SendEmailDialog
+      v-model:visible="emailDialogVisible"
+      :target="emailTarget"
+      :sending="emailSending"
+      @submit="submitEmail"
+    />
 
     <Dialog
       v-model:visible="roleDialogVisible"

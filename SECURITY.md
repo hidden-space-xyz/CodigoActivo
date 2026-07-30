@@ -73,13 +73,32 @@ The production Compose stack (`docker-compose.yml`) runs with:
 ### File uploads
 
 Uploads are size-limited (10 MiB by default, `FileStorage:MaxSizeBytes`) and stored under
-`FILE_STORAGE_ROOT`.
+`FILE_STORAGE_ROOT`. Email attachments are the one multipart path that is **not** stored: they are streamed,
+attached to the outgoing message and discarded — they never get a row, a file on disk or a content URL.
 
 ### Optional email verification
 
 When `ACCOUNT_VERIFICATION_REQUIRED=true`, new accounts must confirm an emailed one-time code (OTP) before
 they can log in; the OTP lifetime and resend cooldown are configurable. Enabling verification requires a
 configured SMTP server (`SMTP_HOST` + `SMTP_FROM_ADDRESS`), or the API refuses to start.
+
+### Admin-sent email
+
+Admins can write a message to a single member or to everyone matching the filters currently applied in the
+users table or an event's attendee list. The endpoints (`POST /api/emails/...`) are `[AllowOnlyAdmin]`, so
+this capability is one more reason to heed the first-user-becomes-admin warning above.
+
+- **Recipients are resolved server-side** from the same filter objects the list endpoints take. The client
+  never supplies addresses, so an admin cannot mail someone the filters do not select.
+- **Nobody sees anybody else.** Each recipient gets their own message with a single `To:` — there is no
+  `Cc`/`Bcc` list. The messages share one SMTP connection, not one envelope.
+- **Dependent minors are skipped**, because they have no address of their own; the response reports how many
+  were left out, and the UI hides the per-row button for them.
+- **The body is plain text**, HTML-encoded into the branded template — an admin cannot inject markup or
+  scripts into the outgoing mail.
+- **Attachments are transient** (see *File uploads*), bounded by `ManualEmail:MaxAttachments` and
+  `ManualEmail:MaxAttachmentsBytes`, and a single send is capped at `ManualEmail:MaxRecipients`.
+- These endpoints fall under nginx's general `/api` rate-limit zone, **not** the strict credential zone.
 
 ### Demo mode
 

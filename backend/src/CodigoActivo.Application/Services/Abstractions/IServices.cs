@@ -376,3 +376,28 @@ public interface ISitemapService
 
     string GetRobotsTxt();
 }
+
+public interface IEmailService
+{
+    Task<Result<SendEmailResultResponse>> SendToUserAsync(
+        Guid userId,
+        SendEmailRequest request,
+        IReadOnlyList<EmailAttachmentUpload> attachments,
+        CancellationToken ct = default
+    );
+
+    Task<Result<SendEmailResultResponse>> SendToUsersAsync(
+        UserListQuery query,
+        SendEmailRequest request,
+        IReadOnlyList<EmailAttachmentUpload> attachments,
+        CancellationToken ct = default
+    );
+
+    Task<Result<SendEmailResultResponse>> SendToEventAttendeesAsync(
+        Guid eventId,
+        EventAttendeeListQuery query,
+        SendEmailRequest request,
+        IReadOnlyList<EmailAttachmentUpload> attachments,
+        CancellationToken ct = default
+    );
+}

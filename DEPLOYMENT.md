@@ -74,25 +74,34 @@ them into the `api` service; the connection string is built from `POSTGRES_*` in
 | `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite` — `Lax` / `Strict` / `None`        | `Lax`                           |
 | `DEMO_MODE`                     | Seed/purge realistic demo data on startup (see below)             | `false`                         |
 | `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login                     | `true` in code; `.env.example` ships `false` |
-| `SMTP_HOST`                     | SMTP server — **required if verification is enabled**             | *(none)*                        |
+| `SMTP_HOST`                     | SMTP server — **required if verification is enabled**, and to send any email at all | *(none)*                        |
 | `SMTP_PORT`                     | SMTP port                                                         | `587`                           |
 | `SMTP_SECURITY`                 | `StartTls` / `SslOnConnect` / `None` / `Auto`                     | `StartTls`                      |
 | `SMTP_USERNAME` · `SMTP_PASSWORD` | SMTP credentials                                                | *(none)*                        |
-| `SMTP_FROM_ADDRESS`             | Sender address — **required if verification is enabled**          | *(none)*                        |
+| `SMTP_FROM_ADDRESS`             | Sender address — **required if verification is enabled**, and to send any email at all | *(none)*                        |
 | `SMTP_FROM_NAME`                | Sender display name                                               | `Código Activo`                 |
 | `FILE_STORAGE_ROOT`             | Directory for uploaded files                                     | `files` (`/app/files` in container) |
 | `HTTP_PORT`                     | Host port the `web` container publishes                          | `8080`                          |
 
 A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsettings.json` (Serilog levels,
 `Auth:CookieName` = `CodigoActivo.Session`, `Auth:ExpireHours` = `8`, `FileStorage:MaxSizeBytes` = 10 MiB,
-`AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`). Override any of them, if
-needed, with the standard .NET `Section__Key` environment-variable convention (e.g. `Auth__ExpireHours`).
+`AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`, `ManualEmail:MaxRecipients`
+= `500`, `ManualEmail:MaxAttachments` = `10`, `ManualEmail:MaxAttachmentsBytes` = 8 MiB). Override any of
+them, if needed, with the standard .NET `Section__Key` environment-variable convention (e.g.
+`Auth__ExpireHours`).
 
 > [!NOTE]
 > `FileStorage:MaxSizeBytes` drives both the HTTP request-size limit on the upload endpoints (+64 KiB of
 > multipart overhead) and the business-rule check. In the Docker stack, nginx additionally caps request
 > bodies at `client_max_body_size 12m` (`frontend/docker/default.conf`) — raising the knob past ~12 MiB
 > requires raising that too.
+
+> [!NOTE]
+> The admin "send email" endpoints are multipart too, and reuse that same transport limit for the whole
+> request (subject + body + **all** attachments), so keep `ManualEmail:MaxAttachmentsBytes` below it. The
+> attachments are never written to `FILE_STORAGE_ROOT`. A bulk send is synchronous — one message per
+> recipient over a single SMTP connection — and nginx allows it up to `proxy_read_timeout 300s`
+> (`frontend/docker/proxy-api.conf`); `ManualEmail:MaxRecipients` is what keeps a single send inside it.
 
 ## Demo mode
 

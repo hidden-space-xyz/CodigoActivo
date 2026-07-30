@@ -113,7 +113,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 
 - **Never** hand-edit `src/shared/api/generated/`.
 - Import across slices only through a slice's `index.ts`; Steiger enforces the FSD layer rules.
-- All UI strings are **Spanish** (no i18n). TypeScript is very strict; Prettier formats the code.
+- The UI is **Spanish**, but **never hardcode a string in a component** — every user-facing string is a Vue
+  I18n key in `src/shared/i18n/locales/es.ts` (`$t` in templates, `useI18n()` in `<script setup>`,
+  `i18n.global.t` outside setup). There is a single `es` locale on purpose; going bilingual must stay a
+  drop-in `en.ts` next to it, which only works if nothing bypasses i18n.
+- TypeScript is very strict; Prettier formats the code.
 - Composable file naming: **features** use camelCase (`useLogin.ts`); **entities and `shared/lib`** use
   kebab-case (`use-theme.ts`).
 

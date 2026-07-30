@@ -176,6 +176,37 @@ public static class DependencyInjection
 
         services.AddSingleton(options);
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddSingleton(
+            new ManualEmailOptions
+            {
+                MaxRecipients = ReadPositiveInt(
+                    configuration["ManualEmail:MaxRecipients"],
+                    ManualEmailOptions.DefaultMaxRecipients
+                ),
+                MaxAttachments = ReadPositiveInt(
+                    configuration["ManualEmail:MaxAttachments"],
+                    ManualEmailOptions.DefaultMaxAttachments
+                ),
+                MaxAttachmentsBytes = ReadPositiveLong(
+                    configuration["ManualEmail:MaxAttachmentsBytes"],
+                    ManualEmailOptions.DefaultMaxAttachmentsBytes
+                ),
+            }
+        );
+    }
+
+    private static int ReadPositiveInt(string? value, int fallback)
+    {
+        return int.TryParse(value, CultureInfo.InvariantCulture, out var parsed) && parsed > 0
+            ? parsed
+            : fallback;
+    }
+
+    private static long ReadPositiveLong(string? value, long fallback)
+    {
+        return long.TryParse(value, CultureInfo.InvariantCulture, out var parsed) && parsed > 0
+            ? parsed
+            : fallback;
     }
 
     private static void AddClock(IServiceCollection services, IConfiguration configuration)
@@ -295,5 +326,6 @@ public static class DependencyInjection
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISitemapService, SitemapService>();
+        services.AddScoped<IEmailService, EmailService>();
     }
 }

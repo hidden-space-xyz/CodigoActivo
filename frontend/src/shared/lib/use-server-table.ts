@@ -62,14 +62,8 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     first.value = 0
   })
 
-  const params = computed<Record<string, unknown>>(() => {
-    const result: Record<string, unknown> = {
-      page: Math.floor(first.value / rows.value) + 1,
-      pageSize: rows.value,
-      ...extra.value,
-    }
-
-    if (sortField.value) result.sort = `${sortOrder.value === -1 ? '-' : ''}${sortField.value}`
+  const filterParams = computed<Record<string, unknown>>(() => {
+    const result: Record<string, unknown> = { ...extra.value }
 
     for (const [key, column] of Object.entries(columns)) {
       const value = filters.value[key]?.value
@@ -88,6 +82,22 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
         result[column.param ?? key] = value
       }
     }
+
+    return result
+  })
+
+  const sortParam = computed(() =>
+    sortField.value ? `${sortOrder.value === -1 ? '-' : ''}${sortField.value}` : undefined,
+  )
+
+  const params = computed<Record<string, unknown>>(() => {
+    const result: Record<string, unknown> = {
+      page: Math.floor(first.value / rows.value) + 1,
+      pageSize: rows.value,
+      ...filterParams.value,
+    }
+
+    if (sortParam.value) result.sort = sortParam.value
 
     return result
   })
@@ -164,6 +174,8 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     rows,
     sortField,
     sortOrder,
+    filterParams,
+    sortParam,
     columnFilter,
     clearFilters,
     onPage,
