@@ -3459,6 +3459,11 @@
             "format": "date",
             "nullable": true
           },
+          "earlySignupStartsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "signupStartsAt": {
             "type": "string",
             "format": "date-time",
@@ -3844,6 +3849,7 @@
           "ActivityNotFound",
           "ActivityModalityTypeNotFound",
           "ActivitySignupClosed",
+          "ActivitySignupEarlyOnly",
           "ActivityRoleNotAllowed",
           "ActivityAssignmentAlreadyExists",
           "ActivityHouseholdAssignmentsRequired",
@@ -3864,6 +3870,7 @@
           "EventCategoriesRequired",
           "EventScheduleRequired",
           "EventScheduleInvalidRange",
+          "EventEarlySignupNotBeforeSignup",
           "EventRatingNotFinished",
           "EventRatingAttendanceRequired",
           "ResourceNotFound",
@@ -4325,6 +4332,11 @@
             "type": "string",
             "format": "date"
           },
+          "earlySignupStartsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "signupStartsAt": {
             "type": "string",
             "format": "date-time"
@@ -4522,6 +4534,11 @@
           "eventEndsAt": {
             "type": "string",
             "format": "date"
+          },
+          "earlySignupStartsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "signupStartsAt": {
             "type": "string",
@@ -5386,6 +5403,11 @@
           "eventEndsAt": {
             "type": "string",
             "format": "date",
+            "nullable": true
+          },
+          "earlySignupStartsAt": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "signupStartsAt": {

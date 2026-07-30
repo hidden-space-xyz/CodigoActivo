@@ -11,6 +11,7 @@ public class Event : AuditableEntity, IFeaturable
 
     public DateOnly EventStartsAt { get; set; }
     public DateOnly EventEndsAt { get; set; }
+    public DateTimeOffset? EarlySignupStartsAt { get; set; }
     public DateTimeOffset SignupStartsAt { get; set; }
     public DateTimeOffset SignupEndsAt { get; set; }
 

@@ -53,6 +53,7 @@ Slices are **kebab-case** and each exposes a public API via `index.ts`. `fsd/ins
 
 - Guards are **per-route `beforeEnter`**, not global — `requireAuth`, `requireAdmin`, `redirectIfAuthenticated` in `src/features/auth/model/guards.ts`. The `adminRoute()` helper in `routes.ts` applies `requireAdmin` + the admin layout; all admin routes are lazy-imported. The two print pages (event badges, event roster) declare `requireAdmin` inline with `layout: 'blank'` instead of going through `adminRoute()`.
 - Session state is a **module-level singleton** (no Pinia): `src/entities/session/model/session.ts`. `useSession().resolve()` lazily calls `GET /api/auth/me` (deduped in-flight); `App.vue` bootstraps it on mount. Auth is a server-set cookie; only the theme is stored in `localStorage`.
+- **`AuthUser.earlySignupEligible` mirrors two backend seed GUIDs.** `EARLY_SIGNUP_USER_TYPE_IDS` in `src/shared/config/app.constants.ts` duplicates `SeedIds.UserTypes.Member`/`.Sponsor` (Socio/Patrocinador) so the event page can enable signup during an event's early window. Nothing checks the two lists agree — the backend gate is authoritative, so a drifted constant only mis-renders the UI (the API still refuses with `ActivitySignupEarlyOnly`). Match on the id, never on the catalog `name`, which admins can edit.
 
 ## Theming & styles
 

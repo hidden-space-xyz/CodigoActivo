@@ -4,7 +4,8 @@ export interface EventCategoryTag {
   readonly color: string
 }
 
-export type EventStatusKind = 'upcoming' | 'signupOpen' | 'signupClosed' | 'finished'
+export type EventStatusKind =
+  'upcoming' | 'earlySignupOpen' | 'signupOpen' | 'signupClosed' | 'finished'
 
 export interface EventStatus {
   readonly kind: EventStatusKind
@@ -40,9 +41,11 @@ export interface EventDetail {
   readonly endsAt: string | null
   readonly dateLabel: string
   readonly signupLabel: string
+  readonly earlySignupLabel: string | null
   readonly status: EventStatus
   readonly thumbnailId: string
   readonly signupOpen: boolean
+  readonly earlySignupOpen: boolean
   readonly categories: readonly EventCategoryTag[]
 }
 

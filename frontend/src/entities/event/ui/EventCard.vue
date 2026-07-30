@@ -98,6 +98,10 @@ defineProps<{ event: UpcomingEvent }>()
   font-weight: 600;
 }
 
+.event-card__status--earlySignupOpen {
+  color: var(--ca-orange);
+}
+
 .event-card__status--signupOpen {
   color: var(--ca-success-ink);
 }

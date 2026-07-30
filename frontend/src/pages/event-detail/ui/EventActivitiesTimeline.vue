@@ -14,7 +14,7 @@ import type { TimelineActivity, TimelineMemberAssignment } from '../model/activi
 import type { ActivityOverlap } from '@/entities/activity'
 import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
 
-const props = defineProps<{ eventId: string; signupOpen: boolean }>()
+const props = defineProps<{ eventId: string; signupOpen: boolean; earlyOnly?: boolean }>()
 
 const router = useRouter()
 const { t } = useI18n()
@@ -290,7 +290,12 @@ function onUnassign(activity: TimelineActivity): void {
 
     <template v-else>
       <p v-if="!signupOpen" class="signup-closed">
-        <i class="pi pi-info-circle" /> {{ $t('pages.eventDetail.activities.signupClosed') }}
+        <i class="pi pi-info-circle" />
+        {{
+          earlyOnly
+            ? $t('pages.eventDetail.activities.earlySignupOnly')
+            : $t('pages.eventDetail.activities.signupClosed')
+        }}
       </p>
       <p v-else-if="isAuthenticated && signupRoles.isError.value" class="signup-closed">
         <i class="pi pi-info-circle" /> {{ $t('pages.eventDetail.activities.rolesLoadError') }}
@@ -325,6 +330,7 @@ function onUnassign(activity: TimelineActivity): void {
                 :reference-date="cluster.start"
                 :authenticated="isAuthenticated"
                 :signup-open="signupOpen"
+                :early-only="earlyOnly"
                 :has-household="hasHousehold"
                 :busy="busyId === act.id"
                 @signup="onSignup(act, $event)"
@@ -349,6 +355,7 @@ function onUnassign(activity: TimelineActivity): void {
             :roles-loading="signupRoles.isLoading.value"
             :authenticated="isAuthenticated"
             :signup-open="signupOpen"
+            :early-only="earlyOnly"
             :has-household="hasHousehold"
             :busy="busyId === act.id"
             @signup="onSignup(act, $event)"

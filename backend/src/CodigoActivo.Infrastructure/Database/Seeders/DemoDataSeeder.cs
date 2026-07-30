@@ -33,12 +33,16 @@ public sealed class DemoDataSeeder(
 
     private static Guid AdminId => UserId(0);
 
-    private static readonly (int OpensDaysBeforeStart, int ClosesDaysBeforeStart)[] SignupWindows =
+    private static readonly (
+        int? EarlyOpensDaysBeforeStart,
+        int OpensDaysBeforeStart,
+        int ClosesDaysBeforeStart
+    )[] SignupWindows =
     [
-        (95, 5),
-        (45, 25),
-        (50, 5),
-        (30, 3),
+        (110, 95, 5),
+        (null, 45, 25),
+        (65, 50, 5),
+        (37, 30, 3),
     ];
 
     private static readonly string[] CategoryColors =
@@ -312,9 +316,12 @@ public sealed class DemoDataSeeder(
                 23,
                 59
             );
+            var earlySignupOpensAt = signupWindow.EarlyOpensDaysBeforeStart is { } earlyDays
+                ? ToUtc(clock.TimeZone, start.AddDays(-earlyDays), 9, 0)
+                : (DateTimeOffset?)null;
             var label = (e + 1).ToString("D2", CultureInfo.InvariantCulture);
             var eventCreatedAt = MinTime(
-                signupOpensAt.AddDays(-(7 + (e % 5))).AddHours(e % 12),
+                (earlySignupOpensAt ?? signupOpensAt).AddDays(-(7 + (e % 5))).AddHours(e % 12),
                 now.AddDays(-1)
             );
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
@@ -329,6 +336,7 @@ public sealed class DemoDataSeeder(
                     Description = BuildRichText(seed.Description, descriptionImageId, seed.Title),
                     EventStartsAt = start,
                     EventEndsAt = end,
+                    EarlySignupStartsAt = earlySignupOpensAt,
                     SignupStartsAt = signupOpensAt,
                     SignupEndsAt = signupClosesAt,
                     Featured = e == FeaturedEventIndex,

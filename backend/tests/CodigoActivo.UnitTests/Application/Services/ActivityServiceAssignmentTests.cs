@@ -37,6 +37,10 @@ public sealed class ActivityServiceAssignmentTests
     private static readonly DateTimeOffset PastStart = new(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset PastEnd = new(2026, 6, 30, 0, 0, 0, TimeSpan.Zero);
 
+    private static readonly DateTimeOffset EarlyStart = new(2026, 6, 20, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset DuringEarly = new(2026, 6, 25, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset BeforeEarly = new(2026, 6, 10, 0, 0, 0, TimeSpan.Zero);
+
     private static readonly DateTimeOffset Now = new(2026, 7, 15, 0, 0, 0, TimeSpan.Zero);
 
     public ActivityServiceAssignmentTests()
@@ -61,7 +65,8 @@ public sealed class ActivityServiceAssignmentTests
     private void HasActivityWindow(
         Guid activityId,
         DateTimeOffset signupStart,
-        DateTimeOffset signupEnd
+        DateTimeOffset signupEnd,
+        DateTimeOffset? earlySignupStart = null
     ) =>
         activities
             .Query()
@@ -75,6 +80,7 @@ public sealed class ActivityServiceAssignmentTests
                         {
                             Title = "e",
                             Subtitle = "s",
+                            EarlySignupStartsAt = earlySignupStart,
                             SignupStartsAt = signupStart,
                             SignupEndsAt = signupEnd,
                         },
@@ -97,6 +103,20 @@ public sealed class ActivityServiceAssignmentTests
                     },
                 }.AsQueryable()
             );
+
+    private void TargetChildOf(Guid childId, Guid parentUserTypeId)
+    {
+        var parentId = Guid.NewGuid();
+        var child = ParticipantChild(childId, parentId);
+        child.Parent = new User
+        {
+            Id = parentId,
+            FirstName = "Ada",
+            LastName = "Parent",
+            UserTypeId = parentUserTypeId,
+        };
+        users.Query().Returns(new List<User> { child }.AsQueryable());
+    }
 
     private void AssignmentExists(bool exists) =>
         activities
@@ -527,6 +547,181 @@ public sealed class ActivityServiceAssignmentTests
     }
 
     [Fact]
+    public async Task AssignAsync_EarlySignupWindowForSocio_IsOpenAndPersists()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        clock.UtcNow = DuringEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        TargetUser(userId, SeedIds.UserTypes.Member);
+        AssignmentExists(false);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignAsync_EarlySignupWindowForSponsor_IsOpenAndPersists()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        clock.UtcNow = DuringEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        TargetUser(userId, SeedIds.UserTypes.Sponsor);
+        AssignmentExists(false);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignAsync_EarlySignupWindowForParticipant_ReturnsSignupEarlyOnly()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        clock.UtcNow = DuringEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivitySignupEarlyOnly);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignAsync_EarlySignupWindowForChildOfSocio_IsOpenAndPersists()
+    {
+        var activityId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+
+        clock.UtcNow = DuringEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        TargetChildOf(childId, SeedIds.UserTypes.Member);
+        AssignmentExists(false);
+        RequestedStatusNamed("Solicitado");
+
+        var result = await sut.AssignAsync(
+            activityId,
+            childId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignAsync_EarlySignupWindowForChildOfParticipant_ReturnsSignupEarlyOnly()
+    {
+        var activityId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+
+        clock.UtcNow = DuringEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        TargetChildOf(childId, SeedIds.UserTypes.Participant);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            childId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivitySignupEarlyOnly);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignAsync_BeforeEarlySignupWindowForSocio_ReturnsSignupClosed()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        clock.UtcNow = BeforeEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        TargetUser(userId, SeedIds.UserTypes.Member);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignAsync_NoEarlySignupWindowForSocio_ReturnsSignupClosed()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        clock.UtcNow = DuringEarly;
+
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Member);
+
+        var result = await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task AssignHouseholdAsync_NoAssignments_ReturnsHouseholdAssignmentsRequired()
     {
         var result = await sut.AssignHouseholdAsync(
@@ -644,6 +839,74 @@ public sealed class ActivityServiceAssignmentTests
         await activities
             .DidNotReceiveWithAnyArgs()
             .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AssignHouseholdAsync_EarlySignupWindowForSocioHousehold_CreatesAssignmentsForAll()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = DuringEarly;
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        RequestedStatusNamed("Solicitado");
+
+        var request = new AssignHouseholdRequest([
+            new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
+            new(childId, SeedIds.ActivityRoleTypes.Participant),
+        ]);
+
+        var result = await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            request,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(2);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignHouseholdAsync_EarlySignupWindowForParticipantHousehold_ReturnsSignupEarlyOnly()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = DuringEarly;
+        HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        HouseholdUsers(
+            new User
+            {
+                Id = actingUserId,
+                FirstName = "Ada",
+                LastName = "Parent",
+                UserTypeId = SeedIds.UserTypes.Participant,
+            },
+            ParticipantChild(childId, actingUserId)
+        );
+
+        var request = new AssignHouseholdRequest([
+            new(actingUserId, SeedIds.ActivityRoleTypes.Participant),
+            new(childId, SeedIds.ActivityRoleTypes.Participant),
+        ]);
+
+        var result = await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            request,
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }

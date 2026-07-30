@@ -332,6 +332,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("description");
 
+                    b.Property<DateTimeOffset?>("EarlySignupStartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("early_signup_starts_at");
+
                     b.Property<DateOnly>("EventEndsAt")
                         .HasColumnType("date")
                         .HasColumnName("event_ends_at");

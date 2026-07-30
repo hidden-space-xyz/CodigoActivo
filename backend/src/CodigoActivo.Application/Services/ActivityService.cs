@@ -272,7 +272,7 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        var signup = await EnsureSignupOpenAsync(activityId, isAdmin, ct);
+        var signup = await EnsureSignupOpenAsync(activityId, [userId], isAdmin, ct);
         if (signup.IsFailure)
             return signup.Error!;
 
@@ -322,7 +322,7 @@ public class ActivityService(
         if (request.Assignments is null || request.Assignments.Count == 0)
             return Error.BadRequest(ErrorCode.ActivityHouseholdAssignmentsRequired);
 
-        var signup = await EnsureSignupOpenAsync(activityId, isAdmin, ct);
+        var signup = await EnsureSignupOpenAsync(activityId, [actingUserId], isAdmin, ct);
         if (signup.IsFailure)
             return signup.Error!;
 
@@ -418,7 +418,7 @@ public class ActivityService(
 
         if (!isAdmin)
         {
-            var signup = await EnsureSignupOpenAsync(activityId, isAdmin, ct);
+            var signup = await EnsureSignupOpenAsync(activityId, [userId], isAdmin, ct);
             if (signup.IsFailure)
                 return signup.Error!;
         }
@@ -670,6 +670,7 @@ public class ActivityService(
 
     private async Task<Result> EnsureSignupOpenAsync(
         Guid activityId,
+        IReadOnlyList<Guid> userIds,
         bool isAdmin,
         CancellationToken ct
     )
@@ -678,16 +679,51 @@ public class ActivityService(
             activities
                 .Query()
                 .Where(a => a.Id == activityId)
-                .Select(a => new SignupWindow(a.Event.SignupStartsAt, a.Event.SignupEndsAt)),
+                .Select(a => new SignupWindow(
+                    a.Event.EarlySignupStartsAt,
+                    a.Event.SignupStartsAt,
+                    a.Event.SignupEndsAt
+                )),
             ct
         );
         if (window is null)
             return Error.NotFound(ErrorCode.ActivityNotFound);
 
+        if (isAdmin)
+            return Result.Success();
+
         var now = clock.UtcNow;
-        return !isAdmin && (now < window.StartsAt || now > window.EndsAt)
-            ? (Result)Error.BadRequest(ErrorCode.ActivitySignupClosed)
-            : Result.Success();
+        if (now > window.EndsAt)
+            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
+        if (now >= window.StartsAt)
+            return Result.Success();
+
+        if (window.EarlyStartsAt is not { } earlyStart || now < earlyStart)
+            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
+
+        return await AllAllowedInEarlySignupAsync(userIds, ct)
+            ? Result.Success()
+            : Error.BadRequest(ErrorCode.ActivitySignupEarlyOnly);
+    }
+
+    private async Task<bool> AllAllowedInEarlySignupAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken ct
+    )
+    {
+        var userTypeIds = await executor.ToListAsync(
+            users
+                .Query()
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => u.Parent == null ? u.UserTypeId : u.Parent.UserTypeId),
+            ct
+        );
+        return userTypeIds.All(IsEarlySignupUserType);
+    }
+
+    private static bool IsEarlySignupUserType(Guid userTypeId)
+    {
+        return userTypeId == SeedIds.UserTypes.Member || userTypeId == SeedIds.UserTypes.Sponsor;
     }
 
     private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
@@ -777,5 +813,9 @@ public class ActivityService(
 
     private readonly record struct RoleCapacityItem(Guid RoleTypeId, int DesiredCount);
 
-    private sealed record SignupWindow(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+    private sealed record SignupWindow(
+        DateTimeOffset? EarlyStartsAt,
+        DateTimeOffset StartsAt,
+        DateTimeOffset EndsAt
+    );
 }

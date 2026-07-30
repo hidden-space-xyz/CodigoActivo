@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { useEventDetail } from '@/entities/event'
+import { useSession } from '@/entities/session'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
 import { BaseButton, ColorTag, RichTextContent } from '@/shared/ui'
 import { i18n } from '@/shared/i18n'
@@ -21,20 +22,35 @@ const props = defineProps<{ eventId: string }>()
 const route = useRoute()
 const { t } = useI18n()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
+const session = useSession()
 
 const tab = ref<'info' | 'activities'>('info')
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
-const infoRows = computed(() =>
-  event.value
-    ? [
-        { label: t('pages.eventDetail.info.date'), value: event.value.dateLabel },
-        { label: t('pages.eventDetail.info.signup'), value: event.value.signupLabel },
-        { label: t('common.status'), value: event.value.status.label },
-      ]
-    : [],
+const signupAllowed = computed(() => {
+  const current = event.value
+  if (!current) return false
+  if (current.signupOpen) return true
+  return current.earlySignupOpen && (session.user?.earlySignupEligible ?? false)
+})
+
+const earlySignupOnly = computed(
+  () => (event.value?.earlySignupOpen ?? false) && !signupAllowed.value,
 )
+
+const infoRows = computed(() => {
+  const current = event.value
+  if (!current) return []
+  return [
+    { label: t('pages.eventDetail.info.date'), value: current.dateLabel },
+    ...(current.earlySignupLabel
+      ? [{ label: t('pages.eventDetail.info.earlySignup'), value: current.earlySignupLabel }]
+      : []),
+    { label: t('pages.eventDetail.info.signup'), value: current.signupLabel },
+    { label: t('common.status'), value: current.status.label },
+  ]
+})
 
 const posterUrl = computed(() => fileContentUrl(event.value?.thumbnailId))
 
@@ -166,7 +182,11 @@ useSeo(seo)
 
       <section v-else class="detail-body">
         <div class="ca-container--narrow">
-          <EventActivitiesTimeline :event-id="eventId" :signup-open="event.signupOpen" />
+          <EventActivitiesTimeline
+            :event-id="eventId"
+            :signup-open="signupAllowed"
+            :early-only="earlySignupOnly"
+          />
         </div>
       </section>
     </template>

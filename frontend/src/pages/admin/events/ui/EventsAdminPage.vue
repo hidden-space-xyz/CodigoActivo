@@ -24,6 +24,7 @@ import type {
 } from '@/shared/api/generated/models'
 import {
   formatDate,
+  formatDateTime,
   formatDateTimeRange,
   toSelectOptions,
   useCrudFeedback,
@@ -210,6 +211,13 @@ function confirmDelete(event: EventListItemResponse): void {
         </template>
         <template #body="{ data }">
           {{ formatDateTimeRange(data.signupStartsAt, data.signupEndsAt) }}
+          <small v-if="data.earlySignupStartsAt" class="signup-early">
+            {{
+              $t('pages.admin.events.earlySignupFrom', {
+                date: formatDateTime(data.earlySignupStartsAt),
+              })
+            }}
+          </small>
         </template>
       </Column>
       <Column :header="$t('common.actions')" style="width: 230px">
@@ -282,5 +290,11 @@ function confirmDelete(event: EventListItemResponse): void {
 
 .is-featured:deep(.p-button-icon) {
   color: var(--ca-orange);
+}
+
+.signup-early {
+  display: block;
+  color: var(--ca-text-muted);
+  font-size: 12px;
 }
 </style>
