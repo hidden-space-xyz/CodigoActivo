@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 
 import App from '@/app/App.vue'
-import { registerProviders } from '@/app/providers'
+import { registerProviders } from '@/app/config'
 
 import '@/assets/styles/main.css'
 

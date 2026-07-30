@@ -140,7 +140,7 @@ other. The rules are enforced by **Steiger** (`npm run lint:fsd`), not ESLint.
 
 | Layer         | Responsibility                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------ |
-| **`app/`**    | Composition root: providers (PrimeVue, TanStack Query), centralized router, layouts         |
+| **`app/`**    | Composition root: `config/` (PrimeVue, TanStack Query), centralized router, layouts         |
 | **`pages/`**  | One slice per route (public pages + admin under `pages/admin/`)                             |
 | **`widgets/`** | Composite cross-page blocks (e.g. `content-entity-page`, the admin CRUD table widget)       |
 | **`features/`** | User interactions: `auth`, `register`, `account`, `send-email`, admin `manage-*`             |
