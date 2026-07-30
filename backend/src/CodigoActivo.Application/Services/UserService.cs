@@ -52,23 +52,7 @@ public class UserService(
         if (!isAdmin)
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
 
-        if (query.Id is { } id)
-            source = source.Where(u => u.Id == id);
-        if (query.ParentId is { } parentId)
-            source = source.Where(u => u.ParentId == parentId);
-        if (query.UserTypeId is { } userTypeId)
-            source = source.Where(u => u.UserTypeId == userTypeId);
-        if (query.UserStatusTypeId is { } userStatusTypeId)
-            source = source.Where(u => u.UserStatusTypeId == userStatusTypeId);
-        if (query.IsAdmin is { } admin)
-            source = source.Where(u => u.IsAdmin == admin);
-        if (query.BirthDateFrom is { } birthDateFrom)
-            source = source.Where(u => u.BirthDate >= birthDateFrom);
-        if (query.BirthDateTo is { } birthDateTo)
-            source = source.Where(u => u.BirthDate <= birthDateTo);
-        source = source.WhereContains(u => u.FirstName + " " + u.LastName, query.Name);
-        source = source.WhereContains(u => u.Email, query.Email);
-        source = source.WhereContains(u => u.Phone, query.Phone);
+        source = UserFilters.Apply(source, query);
 
         source = Sort.Apply(source, query.Sort);
         return executor.ToPagedAsync(
@@ -257,9 +241,7 @@ public class UserService(
         );
     }
 
-    public Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(
-        CancellationToken ct = default
-    )
+    public Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(CancellationToken ct = default)
     {
         return cache.GetCatalogAsync(
             executor,

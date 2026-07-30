@@ -114,6 +114,39 @@ public static class ApiClientExtensions
         return await client.SendAsync(request, TestCancellation.Ct);
     }
 
+    public static async Task<HttpResponseMessage> SendEmailFormAsync(
+        this HttpClient client,
+        string url,
+        string? subject = "Asunto de prueba",
+        string? body = "Cuerpo de prueba",
+        IReadOnlyList<(string FileName, string ContentType, byte[] Bytes)>? attachments = null,
+        bool withCsrf = true
+    )
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        if (withCsrf)
+        {
+            var token = await client.FetchCsrfTokenAsync(TestCancellation.Ct);
+            request.Headers.Add("X-CSRF-TOKEN", token);
+        }
+
+        var form = new MultipartFormDataContent();
+        if (subject is not null)
+            form.Add(new StringContent(subject), "subject");
+        if (body is not null)
+            form.Add(new StringContent(body), "body");
+
+        foreach (var attachment in attachments ?? [])
+        {
+            var part = new ByteArrayContent(attachment.Bytes);
+            part.Headers.ContentType = new MediaTypeHeaderValue(attachment.ContentType);
+            form.Add(part, "attachments", attachment.FileName);
+        }
+
+        request.Content = form;
+        return await client.SendAsync(request, TestCancellation.Ct);
+    }
+
     public static async Task<T?> ReadJsonAsync<T>(
         this HttpResponseMessage response,
         CancellationToken ct = default

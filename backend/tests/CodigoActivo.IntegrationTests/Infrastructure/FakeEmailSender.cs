@@ -6,8 +6,11 @@ namespace CodigoActivo.IntegrationTests.Infrastructure;
 public sealed partial class FakeEmailSender : IEmailSender
 {
     private readonly List<EmailMessage> sent = [];
+    private int batches;
 
     public IReadOnlyList<EmailMessage> Sent => sent;
+
+    public int Batches => batches;
 
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
@@ -19,10 +22,25 @@ public sealed partial class FakeEmailSender : IEmailSender
         return Task.CompletedTask;
     }
 
+    public Task<EmailBatchResult> SendManyAsync(
+        IReadOnlyList<EmailMessage> messages,
+        CancellationToken ct = default
+    )
+    {
+        lock (sent)
+        {
+            batches++;
+            sent.AddRange(messages);
+        }
+
+        return Task.FromResult(new EmailBatchResult(messages.Count, 0));
+    }
+
     public void Clear()
     {
         lock (sent)
         {
+            batches = 0;
             sent.Clear();
         }
     }

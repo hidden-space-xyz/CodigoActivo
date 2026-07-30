@@ -30,6 +30,7 @@ export const es = {
     myAccount: 'Mi cuenta',
     admin: 'Administración',
     done: 'Hecho',
+    warning: 'Aviso',
     error: 'Error',
     yes: 'Sí',
     no: 'No',
@@ -272,6 +273,16 @@ export const es = {
     PasswordResetInvalidOrExpired:
       'El enlace para restablecer la contraseña no es válido o ha caducado. Solicita uno nuevo.',
 
+    EmailNoRecipients: 'Ningún destinatario con correo coincide con los filtros actuales.',
+    EmailRecipientWithoutAddress:
+      'Esta persona no tiene correo electrónico, así que no se le puede escribir.',
+    EmailTooManyRecipients:
+      'Hay demasiados destinatarios para un solo envío. Afina los filtros e inténtalo de nuevo.',
+    EmailTooManyAttachments: 'Has adjuntado demasiados archivos.',
+    EmailAttachmentEmpty: 'Uno de los archivos adjuntos está vacío.',
+    EmailAttachmentsTooLarge: 'Los archivos adjuntos superan el tamaño máximo permitido.',
+    EmailSendFailed: 'No se ha podido enviar el correo. Revisa la configuración del servidor SMTP.',
+
     AuthenticationRequired: 'Debes iniciar sesión para continuar.',
     AccessDenied: 'No tienes permiso para realizar esta acción.',
     InvalidCsrfToken: 'La sesión ha expirado. Recarga la página e inténtalo de nuevo.',
@@ -466,6 +477,25 @@ export const es = {
         aria: {
           admin: 'Administrador',
           changeType: 'Cambiar tipo',
+          sendEmail: 'Escribir un correo',
+        },
+        export: {
+          label: 'Exportar CSV',
+          tooltip: 'Exportar los usuarios filtrados a CSV',
+          filename: 'usuarios-{date}.csv',
+          columns: {
+            guardian: 'Responsable',
+          },
+          toast: {
+            exported: '{n} usuario exportado. | {n} usuarios exportados.',
+          },
+        },
+        email: {
+          bulkLabel: 'Enviar correo',
+          bulkTooltip: 'Escribir un correo a los usuarios filtrados',
+          targetOne: '{fullName}',
+          targetFiltered:
+            'el usuario que coincide con los filtros actuales | los {n} usuarios que coinciden con los filtros actuales',
         },
         dependentsLabel: '1 dependiente | {count} dependientes',
         birthDateWithAge: '{formatted} ({age})',
@@ -631,6 +661,14 @@ export const es = {
             toast: {
               exported: '{n} asistente exportado. | {n} asistentes exportados.',
             },
+          },
+          email: {
+            bulkLabel: 'Enviar correo',
+            bulkTooltip: 'Escribir un correo a los asistentes filtrados',
+            rowLabel: 'Escribir un correo',
+            targetOne: '{fullName}',
+            targetFiltered:
+              'el asistente que coincide con los filtros actuales | los {n} asistentes que coinciden con los filtros actuales',
           },
         },
       },
@@ -980,6 +1018,38 @@ export const es = {
       optionalSuffix: ' (opcional)',
       birthDateInvalid: 'Indica una fecha de nacimiento válida.',
       contactRequired: 'Los usuarios adultos necesitan correo y teléfono.',
+    },
+    sendEmail: {
+      header: 'Enviar correo',
+      target: 'Destinatarios: {target}',
+      subject: 'Asunto',
+      subjectPlaceholder: 'Asunto del correo',
+      subjectRequired: 'Escribe un asunto.',
+      body: 'Mensaje',
+      bodyPlaceholder: 'Escribe aquí el mensaje…',
+      bodyRequired: 'Escribe un mensaje.',
+      bodyHint: 'Texto sin formato. Los saltos de línea se respetan.',
+      send: 'Enviar',
+      attachments: {
+        label: 'Adjuntos',
+        add: 'Adjuntar archivos',
+        remove: 'Quitar adjunto',
+        summary: '1 archivo ({size}) | {count} archivos ({size})',
+        tooMany: 'Puedes adjuntar como máximo {max} archivos.',
+        tooLarge: 'Los adjuntos no pueden superar {max} en total.',
+      },
+      confirm: {
+        header: '¿Enviar el correo?',
+        message:
+          'El correo se enviará a {target}. Esta acción no se puede deshacer. Cada persona recibe su propio mensaje y no ve al resto de destinatarios.',
+      },
+      toast: {
+        sent: 'Correo enviado a 1 persona. | Correo enviado a {count} personas.',
+        failed:
+          'No se ha podido entregar el correo a 1 persona. Revisa el registro del servidor. | No se ha podido entregar el correo a {count} personas. Revisa el registro del servidor.',
+        skipped:
+          '1 persona sin correo electrónico se ha omitido. | {count} personas sin correo electrónico se han omitido.',
+      },
     },
     manageCatalogs: {
       title: 'Categorías de eventos',

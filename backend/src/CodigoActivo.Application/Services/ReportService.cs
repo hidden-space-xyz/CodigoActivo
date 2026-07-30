@@ -126,46 +126,7 @@ public class ReportService(
         var roleTypeId = query.RoleTypeId;
         var statusId = query.StatusId;
 
-        var source = users
-            .Query()
-            .Where(u =>
-                u.Assignments.Any(a =>
-                    a.Activity.EventId == eventId
-                    && (activityId == null || a.ActivityId == activityId)
-                    && (roleTypeId == null || a.ActivityRoleTypeId == roleTypeId)
-                    && (statusId == null || a.AssignmentStatusId == statusId)
-                )
-            );
-
-        if (query.UserTypeId is { } userTypeId)
-            source = source.Where(u => u.UserTypeId == userTypeId);
-
-        if (query.Gender is { } gender)
-            source = source.Where(u => u.Gender == gender);
-
-        source = source.WhereContains(
-            u =>
-                u.FirstName
-                + " "
-                + u.LastName
-                + " "
-                + (u.Email ?? "")
-                + " "
-                + (u.Phone ?? "")
-                + (
-                    u.Parent == null
-                        ? ""
-                        : " "
-                            + u.Parent.FirstName
-                            + " "
-                            + u.Parent.LastName
-                            + " "
-                            + (u.Parent.Email ?? "")
-                            + " "
-                            + (u.Parent.Phone ?? "")
-                ),
-            query.Search
-        );
+        var source = UserFilters.ApplyEventAttendees(users.Query(), eventId, query);
 
         var projected = AttendeeSort
             .Apply(source, query.Sort)

@@ -9,6 +9,10 @@ public sealed partial class RecordingEmailSender : IEmailSender
 
     public Exception? ThrowOnSend { get; set; }
 
+    public HashSet<string> FailingRecipients { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public int Batches { get; private set; }
+
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         if (ThrowOnSend is not null)
@@ -16,6 +20,22 @@ public sealed partial class RecordingEmailSender : IEmailSender
 
         Sent.Add(message);
         return Task.CompletedTask;
+    }
+
+    public Task<EmailBatchResult> SendManyAsync(
+        IReadOnlyList<EmailMessage> messages,
+        CancellationToken ct = default
+    )
+    {
+        if (ThrowOnSend is not null)
+            throw ThrowOnSend;
+
+        Batches++;
+        var delivered = messages.Where(m => !FailingRecipients.Contains(m.ToAddress)).ToList();
+        Sent.AddRange(delivered);
+        return Task.FromResult(
+            new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
+        );
     }
 
     public string LastCode()

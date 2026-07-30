@@ -17,23 +17,42 @@ import ToggleSwitch from 'primevue/toggleswitch'
 
 import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
-import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
+import {
+  SendEmailDialog,
+  useSendEmail,
+  useSendEmailFeedback,
+  type SendEmailPayload,
+} from '@/features/send-email'
+import { genderLabel } from '@/entities/user'
+import type {
+  PostApiEmailsUsersParams,
+  SendEmailResultResponse,
+  UpdateUserRequest,
+  UserResponse,
+} from '@/shared/api/generated/models'
+import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
+  buildCsv,
+  downloadCsv,
   formatDate,
   fullName,
   toSelectOptions,
+  todayIso,
   useCrudFeedback,
   useDeleteConfirm,
 } from '@/shared/lib'
 
 const { t } = useI18n()
 
-const { table, relationFilter, update, remove, changeType, setAdmin, fetchOne } = useUsers()
+const { table, relationFilter, update, remove, changeType, setAdmin, fetchOne, fetchAllUsers } =
+  useUsers()
 const userTypes = useUserTypesList()
 const userStatusTypes = useUserStatusTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
+const { sendToUser, sendToUsers } = useSendEmail()
+const { reportSendResult } = useSendEmailFeedback()
 
 const dialogVisible = ref(false)
 const selected = ref<UserResponse | null>(null)
@@ -143,6 +162,92 @@ function submitChangeType(): void {
   )
 }
 
+const exportHeaders = [
+  t('common.firstName'),
+  t('common.lastName'),
+  t('common.email'),
+  t('common.phone'),
+  t('common.birthDate'),
+  t('common.gender'),
+  t('common.status'),
+  t('pages.admin.users.columns.type'),
+  t('pages.admin.users.columns.admin'),
+  t('pages.admin.users.export.columns.guardian'),
+]
+
+function exportRow(user: UserResponse): CsvValue[] {
+  return [
+    user.firstName,
+    user.lastName,
+    user.email,
+    user.phone,
+    formatDate(user.birthDate),
+    user.gender ? genderLabel(user.gender) : null,
+    user.status?.name,
+    user.type?.name,
+    user.isAdmin ? t('common.yes') : t('common.no'),
+    user.parentName,
+  ]
+}
+
+const exporting = ref(false)
+
+async function exportCsv(): Promise<void> {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const rows = await fetchAllUsers()
+    downloadCsv(
+      t('pages.admin.users.export.filename', { date: todayIso() }),
+      buildCsv(exportHeaders, rows.map(exportRow)),
+    )
+    feedback.success(t('pages.admin.users.export.toast.exported', rows.length))
+  } catch (error) {
+    feedback.error(error)
+  } finally {
+    exporting.value = false
+  }
+}
+
+const emailDialogVisible = ref(false)
+const emailRecipient = ref<UserResponse | null>(null)
+
+const emailTarget = computed(() =>
+  emailRecipient.value
+    ? t('pages.admin.users.email.targetOne', { fullName: fullName(emailRecipient.value) })
+    : t('pages.admin.users.email.targetFiltered', table.total.value),
+)
+
+const emailSending = computed(() => sendToUser.isPending.value || sendToUsers.isPending.value)
+
+function openEmail(user: UserResponse | null): void {
+  emailRecipient.value = user
+  emailDialogVisible.value = true
+}
+
+function onEmailSent(result: SendEmailResultResponse): void {
+  emailDialogVisible.value = false
+  reportSendResult(result)
+}
+
+function submitEmail(payload: SendEmailPayload): void {
+  const recipient = emailRecipient.value
+  const handlers = {
+    onSuccess: onEmailSent,
+    onError: (error: unknown) => feedback.error(error),
+  }
+
+  if (recipient?.id) {
+    sendToUser.mutate({ userId: recipient.id, payload }, handlers)
+    return
+  }
+
+  sendToUsers.mutate(
+    { params: table.filterParams.value as PostApiEmailsUsersParams, payload },
+    handlers,
+  )
+}
+
 function confirmDelete(user: UserResponse): void {
   requireDelete({
     header: t('pages.admin.users.delete.header'),
@@ -163,7 +268,27 @@ function confirmDelete(user: UserResponse): void {
     <AdminPageHeader
       :title="$t('pages.admin.users.header.title')"
       :subtitle="$t('pages.admin.users.header.subtitle')"
-    />
+    >
+      <template #actions>
+        <Button
+          :label="$t('pages.admin.users.export.label')"
+          :tooltip="$t('pages.admin.users.export.tooltip')"
+          icon="pi pi-download"
+          severity="secondary"
+          :loading="exporting"
+          :disabled="table.total.value === 0"
+          @click="exportCsv"
+        />
+        <Button
+          :label="$t('pages.admin.users.email.bulkLabel')"
+          :tooltip="$t('pages.admin.users.email.bulkTooltip')"
+          icon="pi pi-envelope"
+          severity="secondary"
+          :disabled="table.total.value === 0"
+          @click="openEmail(null)"
+        />
+      </template>
+    </AdminPageHeader>
 
     <div v-if="relationFilter" class="relation-filter">
       <i class="pi pi-filter relation-filter__icon" />
@@ -298,7 +423,7 @@ function confirmDelete(user: UserResponse): void {
           />
         </template>
       </Column>
-      <Column :header="$t('common.actions')" style="width: 180px">
+      <Column :header="$t('common.actions')" style="width: 220px">
         <template #body="{ data }">
           <div class="row-actions">
             <Button
@@ -314,6 +439,14 @@ function confirmDelete(user: UserResponse): void {
               rounded
               :aria-label="$t('pages.admin.users.aria.changeType')"
               @click="openChangeType(data)"
+            />
+            <Button
+              v-if="data.email"
+              icon="pi pi-envelope"
+              text
+              rounded
+              :aria-label="$t('pages.admin.users.aria.sendEmail')"
+              @click="openEmail(data)"
             />
             <Button
               icon="pi pi-trash"
@@ -333,6 +466,13 @@ function confirmDelete(user: UserResponse): void {
       :user="selected"
       :saving="update.isPending.value"
       @submit="onSubmit"
+    />
+
+    <SendEmailDialog
+      v-model:visible="emailDialogVisible"
+      :target="emailTarget"
+      :sending="emailSending"
+      @submit="submitEmail"
     />
 
     <Dialog

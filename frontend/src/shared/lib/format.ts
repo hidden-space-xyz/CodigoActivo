@@ -72,6 +72,14 @@ export function formatNumber(value?: number | null): string {
   return numberFormatter.format(value)
 }
 
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024) return `${Math.round(kb)} KB`
+  return `${(kb / 1024).toFixed(1)} MB`
+}
+
 export function formatSignedPercent(value: number): string {
   if (!Number.isFinite(value)) return '—'
   const rounded = Math.round(value)

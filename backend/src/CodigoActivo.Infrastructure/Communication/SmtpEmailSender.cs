@@ -1,13 +1,70 @@
 using CodigoActivo.Domain.Communication;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Logging;
 using MimeKit;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
-public sealed class SmtpEmailSender(SmtpOptions options) : IEmailSender
+public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender> logger)
+    : IEmailSender
 {
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
+    {
+        EnsureConfigured();
+
+        using var client = new SmtpClient();
+        await ConnectAsync(client, ct);
+        await client.SendAsync(BuildMime(message), ct);
+        await client.DisconnectAsync(quit: true, ct);
+    }
+
+    public async Task<EmailBatchResult> SendManyAsync(
+        IReadOnlyList<EmailMessage> messages,
+        CancellationToken ct = default
+    )
+    {
+        if (messages.Count == 0)
+            return new EmailBatchResult(0, 0);
+
+        EnsureConfigured();
+
+        var sent = 0;
+        var failed = 0;
+
+        using var client = new SmtpClient();
+        await ConnectAsync(client, ct);
+        try
+        {
+            foreach (var message in messages)
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    await client.SendAsync(BuildMime(message), ct);
+                    sent++;
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    failed++;
+                    logger.LogError(
+                        ex,
+                        "Failed to send an email to {Recipient}",
+                        message.ToAddress
+                    );
+                }
+            }
+        }
+        finally
+        {
+            if (client.IsConnected)
+                await client.DisconnectAsync(quit: true, CancellationToken.None);
+        }
+
+        return new EmailBatchResult(sent, failed);
+    }
+
+    private void EnsureConfigured()
     {
         if (string.IsNullOrWhiteSpace(options.Host))
             throw new InvalidOperationException("The SMTP host is not configured (SMTP_HOST).");
@@ -17,24 +74,42 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailSender
                 "The SMTP sender address is not configured (SMTP_FROM_ADDRESS)."
             );
         }
+    }
 
+    private async Task ConnectAsync(SmtpClient client, CancellationToken ct)
+    {
+        await client.ConnectAsync(options.Host, options.Port, MapSecurity(options.Security), ct);
+        if (!string.IsNullOrEmpty(options.Username))
+            await client.AuthenticateAsync(options.Username, options.Password, ct);
+    }
+
+    private MimeMessage BuildMime(EmailMessage message)
+    {
         var mime = new MimeMessage();
         mime.From.Add(new MailboxAddress(options.FromName, options.FromAddress));
         mime.To.Add(new MailboxAddress(message.ToName, message.ToAddress));
         mime.Subject = message.Subject;
-        mime.Body = new BodyBuilder
+
+        var builder = new BodyBuilder { HtmlBody = message.HtmlBody, TextBody = message.TextBody };
+
+        foreach (var attachment in message.Attachments ?? [])
         {
-            HtmlBody = message.HtmlBody,
-            TextBody = message.TextBody,
-        }.ToMessageBody();
+            builder.Attachments.Add(
+                attachment.FileName,
+                attachment.Content,
+                ParseContentType(attachment.ContentType)
+            );
+        }
 
-        using var client = new SmtpClient();
-        await client.ConnectAsync(options.Host, options.Port, MapSecurity(options.Security), ct);
-        if (!string.IsNullOrEmpty(options.Username))
-            await client.AuthenticateAsync(options.Username, options.Password, ct);
+        mime.Body = builder.ToMessageBody();
+        return mime;
+    }
 
-        await client.SendAsync(mime, ct);
-        await client.DisconnectAsync(quit: true, ct);
+    private static ContentType ParseContentType(string value)
+    {
+        return ContentType.TryParse(value, out var parsed)
+            ? parsed
+            : new ContentType("application", "octet-stream");
     }
 
     private static SecureSocketOptions MapSecurity(SmtpSecurityMode mode)

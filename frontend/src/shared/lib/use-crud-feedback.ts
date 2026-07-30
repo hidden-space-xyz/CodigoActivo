@@ -17,6 +17,10 @@ export function useCrudFeedback() {
     toast.add({ severity: 'success', summary, detail, life: 3000 })
   }
 
+  function warn(detail: string, summary = t('common.warning')): void {
+    toast.add({ severity: 'warn', summary, detail, life: 6000 })
+  }
+
   function error(err: unknown, summary = t('common.error')): void {
     const message: ErrorToastMessageOptions = {
       severity: 'error',
@@ -28,5 +32,5 @@ export function useCrudFeedback() {
     toast.add(message)
   }
 
-  return { success, error }
+  return { success, warn, error }
 }

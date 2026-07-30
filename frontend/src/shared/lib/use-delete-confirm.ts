@@ -17,3 +17,22 @@ export function useDeleteConfirm() {
 
   return { confirmDelete }
 }
+
+export function useActionConfirm() {
+  const confirm = useConfirm()
+
+  function confirmAction(options: {
+    header: string
+    message: string
+    acceptLabel: string
+    accept: () => void
+  }): void {
+    confirm.require({
+      ...options,
+      icon: 'pi pi-exclamation-triangle',
+      rejectLabel: i18n.global.t('common.cancel'),
+    })
+  }
+
+  return { confirmAction }
+}

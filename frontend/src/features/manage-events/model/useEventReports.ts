@@ -92,6 +92,7 @@ export function useEventAttendeesTable(
     activityId,
     roleTypeId,
     statusId,
+    filterParams,
     fetchAllAttendees,
   }
 }
