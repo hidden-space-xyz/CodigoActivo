@@ -29,6 +29,28 @@ export interface ServerTablePage<T> {
   readonly total: number
 }
 
+const FETCH_ALL_PAGE_SIZE = 100
+const FETCH_ALL_PAGE_LIMIT = 200
+
+export async function fetchAllPages<T>(
+  fetchPage: (params: Record<string, unknown>) => Promise<ServerTablePage<T>>,
+  params: Record<string, unknown>,
+): Promise<T[]> {
+  const collected: T[] = []
+
+  for (let page = 1; page <= FETCH_ALL_PAGE_LIMIT; page += 1) {
+    const { items, total } = await fetchPage({
+      ...params,
+      page,
+      pageSize: FETCH_ALL_PAGE_SIZE,
+    })
+    collected.push(...items)
+    if (items.length === 0 || collected.length >= total) break
+  }
+
+  return collected
+}
+
 interface UseServerTableOptions<T, TParams> {
   readonly queryKey: readonly unknown[]
   readonly fetchPage: (params: TParams) => Promise<ServerTablePage<T>>

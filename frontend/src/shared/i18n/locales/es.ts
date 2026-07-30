@@ -32,6 +32,11 @@ export const es = {
     done: 'Hecho',
     warning: 'Aviso',
     error: 'Error',
+    fileSize: {
+      bytes: '{value} B',
+      kilobytes: '{value} KB',
+      megabytes: '{value} MB',
+    },
     yes: 'Sí',
     no: 'No',
   },

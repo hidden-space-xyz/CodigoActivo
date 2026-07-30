@@ -231,15 +231,19 @@ public sealed class EmailServiceTests
             .OnlyContain(m => m.Attachments!.Count == 1 && m.Attachments![0].Content.Length == 6);
     }
 
-    [Fact]
-    public async Task SendToUsersAsync_AttachmentPathInFileName_KeepsOnlyTheFileName()
+    [Theory]
+    [InlineData("../../etc/passwd")]
+    [InlineData(@"..\..\etc\passwd")]
+    public async Task SendToUsersAsync_AttachmentPathInFileName_KeepsOnlyTheFileName(
+        string fileName
+    )
     {
         HasUsers(NewUser("Ana", "ana@test.local"));
 
         await sut.SendToUsersAsync(
             new UserListQuery(),
             Request(),
-            [Attachment(name: "../../etc/passwd")],
+            [Attachment(name: fileName)],
             TestContext.Current.CancellationToken
         );
 

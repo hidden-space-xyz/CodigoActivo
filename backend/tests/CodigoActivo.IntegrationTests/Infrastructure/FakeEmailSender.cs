@@ -8,12 +8,27 @@ public sealed partial class FakeEmailSender : IEmailSender
     private readonly List<EmailMessage> sent = [];
     private int batches;
 
+    private readonly HashSet<string> failingRecipients = new(StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyList<EmailMessage> Sent => sent;
 
     public int Batches => batches;
 
+    public Exception? ThrowOnSend { get; set; }
+
+    public void FailFor(params string[] addresses)
+    {
+        lock (sent)
+        {
+            failingRecipients.UnionWith(addresses);
+        }
+    }
+
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
+        if (ThrowOnSend is not null)
+            throw ThrowOnSend;
+
         lock (sent)
         {
             sent.Add(message);
@@ -27,13 +42,20 @@ public sealed partial class FakeEmailSender : IEmailSender
         CancellationToken ct = default
     )
     {
+        if (ThrowOnSend is not null)
+            throw ThrowOnSend;
+
         lock (sent)
         {
             batches++;
-            sent.AddRange(messages);
+            var delivered = messages
+                .Where(m => !failingRecipients.Contains(m.ToAddress))
+                .ToList();
+            sent.AddRange(delivered);
+            return Task.FromResult(
+                new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
+            );
         }
-
-        return Task.FromResult(new EmailBatchResult(messages.Count, 0));
     }
 
     public void Clear()
@@ -42,6 +64,8 @@ public sealed partial class FakeEmailSender : IEmailSender
         {
             batches = 0;
             sent.Clear();
+            failingRecipients.Clear();
+            ThrowOnSend = null;
         }
     }
 

@@ -1,3 +1,5 @@
+import { i18n } from '@/shared/i18n'
+
 const dateTimeFormatter = new Intl.DateTimeFormat('es-ES', {
   dateStyle: 'medium',
   timeStyle: 'short',
@@ -12,6 +14,11 @@ const dayMonthFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', mon
 const monthYearFormatter = new Intl.DateTimeFormat('es-ES', { month: 'short', year: '2-digit' })
 
 const numberFormatter = new Intl.NumberFormat('es-ES')
+
+const megabyteFormatter = new Intl.NumberFormat('es-ES', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
 
 const RANGE_SEPARATOR = '–'
 
@@ -74,10 +81,16 @@ export function formatNumber(value?: number | null): string {
 
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  const kb = bytes / 1024
-  if (kb < 1024) return `${Math.round(kb)} KB`
-  return `${(kb / 1024).toFixed(1)} MB`
+  if (bytes < 1024) return i18n.global.t('common.fileSize.bytes', { value: formatNumber(bytes) })
+
+  const kilobytes = Math.round(bytes / 1024)
+  if (kilobytes < 1024) {
+    return i18n.global.t('common.fileSize.kilobytes', { value: formatNumber(kilobytes) })
+  }
+
+  return i18n.global.t('common.fileSize.megabytes', {
+    value: megabyteFormatter.format(bytes / (1024 * 1024)),
+  })
 }
 
 export function formatSignedPercent(value: number): string {

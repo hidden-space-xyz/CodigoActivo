@@ -8,12 +8,7 @@ import Select from 'primevue/select'
 
 import { useAssignments } from '@/features/manage-activities'
 import { useEventAttendeesTable } from '@/features/manage-events'
-import {
-  SendEmailDialog,
-  useSendEmail,
-  useSendEmailFeedback,
-  type SendEmailPayload,
-} from '@/features/send-email'
+import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import {
   useActivityRoleTypesList,
   useAssignmentStatusTypesList,
@@ -25,20 +20,18 @@ import type {
   EventAttendeeAssignmentResponse,
   EventAttendeeResponse,
   PostApiEmailsEventsEventIdAttendeesParams,
-  SendEmailResultResponse,
 } from '@/shared/api/generated/models'
 import { AppButton as Button, ColorTag, DataState } from '@/shared/ui'
 import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
-  buildCsv,
-  downloadCsv,
   formatDateTime,
   fullName,
   normalizeHexColor,
   toSelectOptions,
   todayIso,
   useCrudFeedback,
+  useCsvExport,
 } from '@/shared/lib'
 
 const props = defineProps<{
@@ -56,8 +49,7 @@ const attendees = useEventAttendeesTable(
   () => props.active,
 )
 const assignments = useAssignments(() => props.eventId)
-const { sendToUser, sendToEventAttendees } = useSendEmail()
-const { reportSendResult } = useSendEmailFeedback()
+const { sendToEventAttendees } = useSendEmail()
 const statusTypes = useAssignmentStatusTypesList()
 const roleTypes = useActivityRoleTypesList()
 const userTypes = useUserTypesList()
@@ -151,71 +143,40 @@ function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
   ]
 }
 
-const exporting = ref(false)
+const { exporting, exportCsv } = useCsvExport<EventAttendeeResponse>({
+  fetchRows: attendees.fetchAllAttendees,
+  headers: exportHeaders,
+  toRow: exportRow,
+  filename: () => t('pages.admin.eventDetail.attendees.export.filename', { date: todayIso() }),
+  onExported: (rows) =>
+    feedback.success(t('pages.admin.eventDetail.attendees.export.toast.exported', rows.length)),
+  onError: (error) => feedback.error(error),
+})
 
-async function exportCsv(): Promise<void> {
-  if (exporting.value) return
-  exporting.value = true
-  try {
-    const rows = await attendees.fetchAllAttendees()
-    downloadCsv(
-      t('pages.admin.eventDetail.attendees.export.filename', { date: todayIso() }),
-      buildCsv(exportHeaders, rows.map(exportRow)),
-    )
-    feedback.success(t('pages.admin.eventDetail.attendees.export.toast.exported', rows.length))
-  } catch (error) {
-    feedback.error(error)
-  } finally {
-    exporting.value = false
-  }
-}
-
-const emailDialogVisible = ref(false)
-const emailRecipient = ref<EventAttendeeResponse | null>(null)
-
-const emailTarget = computed(() =>
-  emailRecipient.value
-    ? t('pages.admin.eventDetail.attendees.email.targetOne', {
-        fullName: fullName(emailRecipient.value),
-      })
-    : t('pages.admin.eventDetail.attendees.email.targetFiltered', attendees.table.total.value),
-)
-
-const emailSending = computed(
-  () => sendToUser.isPending.value || sendToEventAttendees.isPending.value,
-)
-
-function openEmail(attendee: EventAttendeeResponse | null): void {
-  emailRecipient.value = attendee
-  emailDialogVisible.value = true
-}
-
-function onEmailSent(result: SendEmailResultResponse): void {
-  emailDialogVisible.value = false
-  reportSendResult(result)
-}
-
-function submitEmail(payload: SendEmailPayload): void {
-  const recipient = emailRecipient.value
-  const handlers = {
-    onSuccess: onEmailSent,
-    onError: (error: unknown) => feedback.error(error),
-  }
-
-  if (recipient?.userId) {
-    sendToUser.mutate({ userId: recipient.userId, payload }, handlers)
-    return
-  }
-
-  sendToEventAttendees.mutate(
-    {
-      eventId: props.eventId,
-      params: attendees.filterParams() as PostApiEmailsEventsEventIdAttendeesParams,
-      payload,
-    },
-    handlers,
-  )
-}
+const {
+  visible: emailDialogVisible,
+  target: emailTarget,
+  sending: emailSending,
+  open: openEmail,
+  submit: submitEmail,
+} = useSendEmailDialog<EventAttendeeResponse>({
+  idOf: (attendee) => attendee.userId,
+  targetOne: (attendee) =>
+    t('pages.admin.eventDetail.attendees.email.targetOne', { fullName: fullName(attendee) }),
+  targetAll: () =>
+    t('pages.admin.eventDetail.attendees.email.targetFiltered', attendees.table.total.value),
+  bulkPending: () => sendToEventAttendees.isPending.value,
+  sendAll: (payload, handlers) =>
+    sendToEventAttendees.mutate(
+      {
+        eventId: props.eventId,
+        params: attendees.filterParams() as PostApiEmailsEventsEventIdAttendeesParams,
+        payload,
+      },
+      handlers,
+    ),
+  onError: (error) => feedback.error(error),
+})
 
 const statusColorById = computed(() => {
   const map = new Map<string, string>()

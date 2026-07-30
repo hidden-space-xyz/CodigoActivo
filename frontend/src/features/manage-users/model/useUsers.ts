@@ -15,10 +15,7 @@ import type {
   UpdateUserRequest,
   UserResponse,
 } from '@/shared/api/generated/models'
-import { useServerTable } from '@/shared/lib'
-
-const USERS_EXPORT_PAGE_SIZE = 100
-const USERS_EXPORT_PAGE_LIMIT = 200
+import { fetchAllPages, useServerTable } from '@/shared/lib'
 
 export interface UserRelationFilter {
   readonly label: string
@@ -74,24 +71,11 @@ export function useUsers() {
     return getUserRequest(id)
   }
 
-  async function fetchAllUsers(): Promise<UserResponse[]> {
-    const filters = table.filterParams.value
-    const sort = table.sortParam.value
-    const collected: UserResponse[] = []
-
-    for (let page = 1; page <= USERS_EXPORT_PAGE_LIMIT; page += 1) {
-      const params = {
-        ...filters,
-        sort,
-        page,
-        pageSize: USERS_EXPORT_PAGE_SIZE,
-      } as GetApiUsersParams
-      const { items, total } = await getUsersPageRequest(params)
-      collected.push(...items)
-      if (items.length === 0 || collected.length >= total) break
-    }
-
-    return collected
+  function fetchAllUsers(): Promise<UserResponse[]> {
+    return fetchAllPages((params) => getUsersPageRequest(params as GetApiUsersParams), {
+      ...table.filterParams.value,
+      sort: table.sortParam.value,
+    })
   }
 
   return {
