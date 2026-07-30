@@ -394,6 +394,25 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EventAttendees_GenderFilter_ReturnsOnlyMatchingAttendees()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            $"/api/reports/events/{EventId}/attendees?gender={Gender.Male}",
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
+        page!.Total.Should().Be(2);
+        page.Items.Select(a => a.UserId)
+            .Should()
+            .BeEquivalentTo([TestSeedData.Users.MemberChildId, TestSeedData.Users.PendingId]);
+    }
+
+    [Fact]
     public async Task EventAttendees_SearchFilter_MatchesGuardianData()
     {
         await SeedEventGraphAsync();

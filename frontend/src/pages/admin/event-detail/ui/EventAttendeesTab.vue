@@ -13,6 +13,7 @@ import {
   useAssignmentStatusTypesList,
   useUserTypesList,
 } from '@/entities/catalog'
+import { genderLabel, genderOptions } from '@/entities/user'
 import type {
   ActivityResponse,
   EventAttendeeAssignmentResponse,
@@ -102,10 +103,13 @@ const roleOptions = computed(() => toSelectOptions(roleTypes.data.value))
 
 const statusOptions = computed(() => toSelectOptions(statusTypes.data.value))
 
+const genders = genderOptions()
+
 const hasActiveFilters = computed(
   () =>
     searchText.value.trim() !== '' ||
     attendees.userTypeId.value !== null ||
+    attendees.gender.value !== null ||
     attendees.activityId.value !== null ||
     attendees.roleTypeId.value !== null ||
     attendees.statusId.value !== null,
@@ -116,6 +120,7 @@ const exportHeaders = [
   t('pages.admin.eventDetail.attendees.export.columns.lastName'),
   t('pages.admin.eventDetail.attendees.export.columns.email'),
   t('pages.admin.eventDetail.attendees.export.columns.phone'),
+  t('pages.admin.eventDetail.attendees.export.columns.gender'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianFirstName'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianLastName'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianEmail'),
@@ -128,6 +133,7 @@ function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
     attendee.lastName,
     attendee.email,
     attendee.phone,
+    attendee.gender ? genderLabel(attendee.gender) : null,
     attendee.guardian?.firstName,
     attendee.guardian?.lastName,
     attendee.guardian?.email,
@@ -263,6 +269,15 @@ function submitChangeRole(): void {
         option-label="label"
         option-value="value"
         :placeholder="$t('pages.admin.eventDetail.attendees.type')"
+        show-clear
+        class="toolbar__filter"
+      />
+      <Select
+        v-model="attendees.gender.value"
+        :options="genders"
+        option-label="label"
+        option-value="value"
+        :placeholder="$t('common.gender')"
         show-clear
         class="toolbar__filter"
       />

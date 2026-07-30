@@ -140,6 +140,9 @@ public class ReportService(
         if (query.UserTypeId is { } userTypeId)
             source = source.Where(u => u.UserTypeId == userTypeId);
 
+        if (query.Gender is { } gender)
+            source = source.Where(u => u.Gender == gender);
+
         source = source.WhereContains(
             u =>
                 u.FirstName
@@ -173,6 +176,7 @@ public class ReportService(
                 u.Email,
                 u.Phone,
                 u.BirthDate,
+                u.Gender,
                 u.UserType.Name,
                 u.UserType.Color,
                 u.Parent == null
@@ -242,6 +246,7 @@ public class ReportService(
             row.Email,
             row.Phone,
             row.BirthDate,
+            row.Gender,
             row.UserTypeName,
             row.UserTypeColor,
             row.Guardian,
@@ -256,6 +261,7 @@ public class ReportService(
         string? Email,
         string? Phone,
         DateOnly BirthDate,
+        Gender Gender,
         string UserTypeName,
         string UserTypeColor,
         EventAttendeeGuardianResponse? Guardian,
@@ -699,9 +705,10 @@ public class ReportService(
             }
         );
 
-        var usersByGender = FixedSlices(
+        var participantsByGender = FixedSlices(
             GenderKeys,
             userRows
+                .Where(u => u.UserTypeId == SeedIds.UserTypes.Participant)
                 .GroupBy(u => u.Gender.ToString(), StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
         );
@@ -803,7 +810,7 @@ public class ReportService(
             contentPublished,
             usersByType,
             audience,
-            usersByGender,
+            participantsByGender,
             eventsByCategory,
             topEvents,
             eventsCalendar,

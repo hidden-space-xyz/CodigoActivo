@@ -27,7 +27,7 @@ const chartOptions = computed(() => {
     calendar: charts.barOptions(p, false),
     usersByType: charts.doughnutOptions(p),
     audience: charts.doughnutOptions(p),
-    usersByGender: charts.doughnutOptions(p),
+    participantsByGender: charts.doughnutOptions(p),
     categories: charts.doughnutOptions(p),
   }
 })
@@ -69,10 +69,10 @@ const view = computed(() => {
       options: o.audience,
       empty: !charts.hasSliceData(d?.audienceComposition),
     },
-    usersByGender: {
-      data: charts.doughnutData(d?.usersByGender, p, charts.GENDER_STYLE),
-      options: o.usersByGender,
-      empty: !charts.hasSliceData(d?.usersByGender),
+    participantsByGender: {
+      data: charts.doughnutData(d?.participantsByGender, p, charts.GENDER_STYLE),
+      options: o.participantsByGender,
+      empty: !charts.hasSliceData(d?.participantsByGender),
     },
     categories: {
       data: charts.doughnutData(d?.eventsByCategory, p),
@@ -192,13 +192,13 @@ const view = computed(() => {
           </div>
           <div class="g-4">
             <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.usersByGender.title')"
+              :title="$t('pages.admin.dashboard.charts.participantsByGender.title')"
               :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
               type="doughnut"
-              :data="view.usersByGender.data"
-              :options="view.usersByGender.options"
+              :data="view.participantsByGender.data"
+              :options="view.participantsByGender.options"
               :height="240"
-              :empty="view.usersByGender.empty"
+              :empty="view.participantsByGender.empty"
             />
           </div>
 

@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Entities;
+
 namespace CodigoActivo.Application.Querying;
 
 public enum EventScope
@@ -40,6 +42,7 @@ public sealed class EventAttendeeListQuery : PageQuery
 {
     public string? Search { get; set; }
     public Guid? UserTypeId { get; set; }
+    public Gender? Gender { get; set; }
     public Guid? ActivityId { get; set; }
     public Guid? RoleTypeId { get; set; }
     public Guid? StatusId { get; set; }

@@ -6,6 +6,7 @@
  */
 import type { EventAttendeeAssignmentResponse } from './eventAttendeeAssignmentResponse';
 import type { EventAttendeeGuardianResponse } from './eventAttendeeGuardianResponse';
+import type { Gender } from './gender';
 
 export interface EventAttendeeResponse {
   userId?: string;
@@ -18,6 +19,7 @@ export interface EventAttendeeResponse {
   /** @nullable */
   phone?: string | null;
   birthDate?: string;
+  gender?: Gender;
   /** @nullable */
   userTypeName?: string | null;
   /** @nullable */
