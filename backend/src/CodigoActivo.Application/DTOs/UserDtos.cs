@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Validation;
+using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -10,6 +11,7 @@ public record UserResponse(
     string? Email,
     string? Phone,
     DateOnly BirthDate,
+    Gender Gender,
     DateTimeOffset? LastLoginAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
@@ -28,6 +30,7 @@ public record UserResponse(
             string.Empty,
             null,
             null,
+            default,
             default,
             null,
             default,
@@ -53,6 +56,7 @@ public record UpdateUserRequest(
     [EmailAddress] [MaxLength(256)] string? Email,
     [Phone] [MaxLength(40)] string? Phone,
     [NotDefaultOrFutureDate] DateOnly BirthDate,
+    [EnumDataType(typeof(Gender))] Gender Gender,
     Guid? ParentId
 );
 

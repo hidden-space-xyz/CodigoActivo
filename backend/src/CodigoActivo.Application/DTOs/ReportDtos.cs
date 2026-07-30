@@ -159,7 +159,7 @@ public record DashboardAnalyticsResponse(
     DashboardTimeSeriesResponse ContentPublished,
     IReadOnlyList<DashboardSliceResponse> UsersByType,
     IReadOnlyList<DashboardSliceResponse> AudienceComposition,
-    IReadOnlyList<DashboardSliceResponse> ResourcesByType,
+    IReadOnlyList<DashboardSliceResponse> UsersByGender,
     IReadOnlyList<DashboardSliceResponse> EventsByCategory,
     IReadOnlyList<DashboardTopEventResponse> TopEvents,
     DashboardTimeSeriesResponse EventsCalendar,

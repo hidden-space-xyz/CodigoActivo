@@ -1,5 +1,6 @@
 import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 
+import { genderLabel } from '@/entities/user'
 import { i18n } from '@/shared/i18n'
 import { formatBucketLabel, formatNumber, type ChartPalette } from '@/shared/lib'
 import type {
@@ -64,14 +65,19 @@ export const AUDIENCE_STYLE: StyleMap = {
   },
 }
 
-export const RESOURCE_TYPE_STYLE: StyleMap = {
-  internal: {
-    label: i18n.global.t('pages.admin.dashboard.series.internal'),
+export const GENDER_STYLE: StyleMap = {
+  Male: {
+    label: genderLabel('Male'),
     color: (p) => p.azure,
     soft: (p) => p.azureSoft,
   },
-  external: {
-    label: i18n.global.t('pages.admin.dashboard.series.external'),
+  Female: {
+    label: genderLabel('Female'),
+    color: (p) => p.lime,
+    soft: (p) => p.limeSoft,
+  },
+  Other: {
+    label: genderLabel('Other'),
     color: (p) => p.orange,
     soft: (p) => p.orangeSoft,
   },

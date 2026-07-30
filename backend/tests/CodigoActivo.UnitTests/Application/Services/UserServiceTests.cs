@@ -120,6 +120,7 @@ public sealed class UserServiceTests
             Email = email,
             Phone = phone,
             BirthDate = dob ?? AdultDob,
+            Gender = Gender.Male,
             ParentId = parentId,
             UserStatusTypeId = statusId ?? Guid.NewGuid(),
             UserStatusType = new UserStatusType
@@ -520,7 +521,15 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_UserMissing_ReturnsNotFound()
     {
         FindReturns(null);
-        var request = new UpdateUserRequest("First", "Last", "a@test.com", "555", AdultDob, null);
+        var request = new UpdateUserRequest(
+            "First",
+            "Last",
+            "a@test.com",
+            "555",
+            AdultDob,
+            Gender.Female,
+            null
+        );
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -542,6 +551,7 @@ public sealed class UserServiceTests
             "a@test.com",
             "555",
             AdultDob,
+            Gender.Female,
             Guid.NewGuid()
         );
 
@@ -564,7 +574,7 @@ public sealed class UserServiceTests
     )
     {
         FindReturns(NewUser());
-        var request = new UpdateUserRequest("F", "L", email, phone, AdultDob, null);
+        var request = new UpdateUserRequest("F", "L", email, phone, AdultDob, Gender.Female, null);
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -583,7 +593,15 @@ public sealed class UserServiceTests
         users
             .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(true);
-        var request = new UpdateUserRequest("F", "L", "dup@test.com", "555", AdultDob, null);
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            "dup@test.com",
+            "555",
+            AdultDob,
+            Gender.Female,
+            null
+        );
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -605,7 +623,15 @@ public sealed class UserServiceTests
         users
             .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(true);
-        var request = new UpdateUserRequest("F", "L", "a@test.com", "555", AdultDob, null);
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            "a@test.com",
+            "555",
+            AdultDob,
+            Gender.Female,
+            null
+        );
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -637,6 +663,7 @@ public sealed class UserServiceTests
             "  NEW@test.com  ",
             "  999  ",
             AdultDob,
+            Gender.Female,
             null
         );
 
@@ -652,6 +679,7 @@ public sealed class UserServiceTests
         user.LastName.Should().Be("Name");
         user.Email.Should().Be("new@test.com");
         user.Phone.Should().Be("999");
+        user.Gender.Should().Be(Gender.Female);
         user.ParentId.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -666,7 +694,7 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_MinorWithoutParentId_ReturnsBadRequest()
     {
         FindReturns(NewUser());
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, null);
+        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Gender.Male, null);
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -683,7 +711,7 @@ public sealed class UserServiceTests
     {
         var id = Guid.NewGuid();
         FindReturns(NewUser(id: id));
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, id);
+        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Gender.Male, id);
 
         var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
@@ -695,7 +723,15 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_MinorParentMissing_ReturnsNotFound()
     {
         FindReturns(NewUser(), null);
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Guid.NewGuid());
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            null,
+            null,
+            MinorDob,
+            Gender.Male,
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -711,7 +747,15 @@ public sealed class UserServiceTests
     public async Task UpdateAsync_MinorParentIsMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(), NewUser(dob: MinorDob));
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Guid.NewGuid());
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            null,
+            null,
+            MinorDob,
+            Gender.Male,
+            Guid.NewGuid()
+        );
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -740,6 +784,7 @@ public sealed class UserServiceTests
             "ignored@test.com",
             "222",
             MinorDob,
+            Gender.Male,
             parentId
         );
 
@@ -763,7 +808,15 @@ public sealed class UserServiceTests
         var currentParentId = Guid.NewGuid();
         var newParentId = Guid.NewGuid();
         FindReturns(NewUser(id: id, parentId: currentParentId), NewUser());
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, newParentId);
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            null,
+            null,
+            MinorDob,
+            Gender.Male,
+            newParentId
+        );
 
         var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
@@ -967,7 +1020,7 @@ public sealed class UserServiceTests
     public async Task AddChildAsync_ParentMissing_ReturnsNotFound()
     {
         FindReturns(null);
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob);
+        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
 
         var result = await sut.AddChildAsync(
             Guid.NewGuid(),
@@ -983,7 +1036,7 @@ public sealed class UserServiceTests
     public async Task AddChildAsync_ParentIsMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: MinorDob));
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob);
+        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
 
         var result = await sut.AddChildAsync(
             Guid.NewGuid(),
@@ -999,7 +1052,7 @@ public sealed class UserServiceTests
     public async Task AddChildAsync_ChildBirthDateNotMinor_ReturnsBadRequest()
     {
         FindReturns(NewUser(dob: AdultDob));
-        var request = new RegisterMinorRequest("Grown", "Up", AdultDob);
+        var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Gender.Male);
 
         var result = await sut.AddChildAsync(
             Guid.NewGuid(),
@@ -1019,7 +1072,7 @@ public sealed class UserServiceTests
         FindReturns(parent);
         CaptureAddedUsers(parent);
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
-        var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob);
+        var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob, Gender.Female);
 
         var result = await sut.AddChildAsync(
             parentId,
@@ -1040,6 +1093,7 @@ public sealed class UserServiceTests
                 Arg.Is<User>(u =>
                     u.FirstName == "Kid"
                     && u.LastName == "Doe"
+                    && u.Gender == Gender.Female
                     && u.ParentId == parentId
                     && u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
                     && u.UserTypeId == SeedIds.UserTypes.Participant

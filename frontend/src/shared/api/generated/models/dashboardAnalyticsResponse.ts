@@ -25,7 +25,7 @@ export interface DashboardAnalyticsResponse {
   /** @nullable */
   audienceComposition?: DashboardSliceResponse[] | null;
   /** @nullable */
-  resourcesByType?: DashboardSliceResponse[] | null;
+  usersByGender?: DashboardSliceResponse[] | null;
   /** @nullable */
   eventsByCategory?: DashboardSliceResponse[] | null;
   /** @nullable */

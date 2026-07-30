@@ -83,11 +83,24 @@ public sealed class AuthServiceTests
         string phone = "+34123456789",
         string password = "password123",
         DateOnly? birthDate = null,
+        Gender gender = Gender.Female,
         IReadOnlyList<RegisterMinorRequest>? minors = null
-    ) => new("  Ana  ", "  Ruiz  ", email, phone, password, birthDate ?? AdultBirthDate, minors);
+    ) =>
+        new(
+            "  Ana  ",
+            "  Ruiz  ",
+            email,
+            phone,
+            password,
+            birthDate ?? AdultBirthDate,
+            gender,
+            minors
+        );
 
-    private static RegisterMinorRequest NewMinor(DateOnly? birthDate = null) =>
-        new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate);
+    private static RegisterMinorRequest NewMinor(
+        DateOnly? birthDate = null,
+        Gender gender = Gender.Other
+    ) => new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate, gender);
 
     private void ExistsReturns(params bool[] seq) =>
         users
@@ -454,6 +467,7 @@ public sealed class AuthServiceTests
                 Arg.Is<User>(u =>
                     u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
                     && !u.IsAdmin
+                    && u.Gender == Gender.Female
                     && u.UserTypeId == SeedIds.UserTypes.Participant
                 ),
                 Arg.Any<CancellationToken>()
@@ -464,6 +478,7 @@ public sealed class AuthServiceTests
                 Arg.Is<User>(u =>
                     u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
                     && u.FirstName == "Leo"
+                    && u.Gender == Gender.Other
                     && u.ParentId != null
                     && u.UserTypeId == SeedIds.UserTypes.Participant
                 ),

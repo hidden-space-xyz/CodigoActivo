@@ -1,8 +1,11 @@
-interface MinorForm {
+import type { Gender } from '@/shared/api/generated/models'
+
+export interface MinorForm {
   key: number
   firstName: string
   lastName: string
   dateOfBirth: string
+  gender: Gender | null
 }
 
 let minorKeySeq = 0
@@ -14,12 +17,13 @@ export interface RegistrationForm {
   phone: string
   password: string
   dateOfBirth: string
+  gender: Gender | null
   minors: MinorForm[]
 }
 
 export function createEmptyMinor(): MinorForm {
   minorKeySeq += 1
-  return { key: minorKeySeq, firstName: '', lastName: '', dateOfBirth: '' }
+  return { key: minorKeySeq, firstName: '', lastName: '', dateOfBirth: '', gender: null }
 }
 
 export function createEmptyRegistrationForm(): RegistrationForm {
@@ -30,6 +34,7 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     phone: '',
     password: '',
     dateOfBirth: '',
+    gender: null,
     minors: [],
   }
 }

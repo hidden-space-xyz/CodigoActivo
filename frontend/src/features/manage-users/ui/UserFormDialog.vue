@@ -4,8 +4,10 @@ import { AppButton as Button } from '@/shared/ui'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 
-import type { UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
+import { genderOptions } from '@/entities/user'
+import type { Gender, UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { ageFrom, parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{ visible: boolean; user: UserResponse | null; saving: boolean }>()
@@ -21,6 +23,7 @@ interface UserForm {
   email: string
   phone: string
   birthDate: Date | null
+  gender: Gender | null
 }
 
 const form = reactive<UserForm>({
@@ -29,8 +32,10 @@ const form = reactive<UserForm>({
   email: '',
   phone: '',
   birthDate: null,
+  gender: null,
 })
 const submitted = ref(false)
+const genders = genderOptions()
 const maxBirthDate = new Date()
 
 const isMinor = computed(() => {
@@ -54,6 +59,7 @@ watch(
     form.email = props.user?.email ?? ''
     form.phone = props.user?.phone ?? ''
     form.birthDate = parseDateOnly(props.user?.birthDate)
+    form.gender = props.user?.gender ?? null
   },
 )
 
@@ -68,18 +74,21 @@ function save(): void {
     !form.lastName.trim() ||
     birthDateInvalid.value ||
     emailInvalid.value ||
-    contactMissing.value
+    contactMissing.value ||
+    !form.gender
   ) {
     return
   }
   const birthDate = form.birthDate
-  if (!birthDate) return
+  const gender = form.gender
+  if (!birthDate || !gender) return
   const body: UpdateUserRequest = {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
     email: form.email.trim() ? form.email.trim() : null,
     phone: form.phone.trim() ? form.phone.trim() : null,
     birthDate: toDateOnly(birthDate),
+    gender,
     parentId: props.user?.parentId ?? null,
   }
   emit('submit', body)
@@ -126,6 +135,20 @@ function save(): void {
         />
         <small v-if="submitted && birthDateInvalid" class="form__error"
           >{{ $t('features.manageUsers.birthDateInvalid') }}</small
+        >
+      </div>
+      <div class="form__field">
+        <label>{{ $t('common.gender') }}</label>
+        <Select
+          v-model="form.gender"
+          :options="genders"
+          option-label="label"
+          option-value="value"
+          :invalid="submitted && !form.gender"
+          fluid
+        />
+        <small v-if="submitted && !form.gender" class="form__error"
+          >{{ $t('validation.genderRequired') }}</small
         >
       </div>
       <div class="form__field">

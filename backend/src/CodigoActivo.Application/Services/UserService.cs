@@ -116,6 +116,7 @@ public class UserService(
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
         user.BirthDate = request.BirthDate;
+        user.Gender = request.Gender;
         user.UpdatedAt = clock.UtcNow;
 
         await uow.SaveChangesAsync(ct);
@@ -205,6 +206,7 @@ public class UserService(
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             BirthDate = request.BirthDate,
+            Gender = request.Gender,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
             UserTypeId = SeedIds.UserTypes.Participant,

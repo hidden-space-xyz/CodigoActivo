@@ -4,10 +4,13 @@ import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import Select from 'primevue/select'
 
 import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
 import { useSession } from '@/entities/session'
+import { genderLabel, genderOptions } from '@/entities/user'
+import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton } from '@/shared/ui'
 import { formatDate, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib'
 
@@ -19,31 +22,41 @@ const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount(
 const maxBirthDateIso = todayIso()
 const user = computed(() => profile.data.value ?? null)
 
+const genders = genderOptions()
+
 const editVisible = ref(false)
+const editSubmitted = ref(false)
 const editForm = reactive<{
   firstName: string
   lastName: string
   email: string
   phone: string
   birthDate: string
-}>({ firstName: '', lastName: '', email: '', phone: '', birthDate: '' })
+  gender: Gender | null
+}>({ firstName: '', lastName: '', email: '', phone: '', birthDate: '', gender: null })
 
 function openEdit(): void {
+  editSubmitted.value = false
   editForm.firstName = user.value?.firstName ?? ''
   editForm.lastName = user.value?.lastName ?? ''
   editForm.email = user.value?.email ?? ''
   editForm.phone = user.value?.phone ?? ''
   editForm.birthDate = toDateInput(user.value?.birthDate)
+  editForm.gender = user.value?.gender ?? null
   editVisible.value = true
 }
 
 function saveEdit(): void {
+  editSubmitted.value = true
+  const gender = editForm.gender
+  if (!gender) return
   const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
     lastName: editForm.lastName.trim(),
     email: editForm.email.trim(),
     phone: editForm.phone.trim(),
     birthDate: editForm.birthDate,
+    gender,
   }
   updateProfile.mutate(request, {
     onSuccess: () => {
@@ -141,6 +154,10 @@ function confirmDeleteAccount(): void {
         <dd>{{ formatDate(user.birthDate) }}</dd>
       </div>
       <div class="acc-info__row">
+        <dt>{{ $t('common.gender') }}</dt>
+        <dd>{{ user.gender ? genderLabel(user.gender) : '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
         <dt>{{ $t('common.status') }}</dt>
         <dd>{{ user.statusName || '—' }}</dd>
       </div>
@@ -206,6 +223,21 @@ function confirmDeleteAccount(): void {
               :max="maxBirthDateIso"
               required
             />
+          </div>
+          <div class="acc-form__field">
+            <label for="p-gender">{{ $t('common.gender') }}</label>
+            <Select
+              input-id="p-gender"
+              v-model="editForm.gender"
+              :options="genders"
+              option-label="label"
+              option-value="value"
+              :invalid="editSubmitted && !editForm.gender"
+              fluid
+            />
+            <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
+              $t('validation.genderRequired')
+            }}</small>
           </div>
         </div>
         <div class="acc-form__actions">

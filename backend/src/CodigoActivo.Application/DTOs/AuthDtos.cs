@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Validation;
+using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.DTOs;
 
@@ -14,13 +15,15 @@ public record RegisterRequest(
     [Required] [Phone] [MaxLength(40)] string Phone,
     [Required] [MinLength(8)] [MaxLength(128)] string Password,
     [NotDefaultOrFutureDate] DateOnly BirthDate,
+    [EnumDataType(typeof(Gender))] Gender Gender,
     IReadOnlyList<RegisterMinorRequest>? Minors
 );
 
 public record RegisterMinorRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
-    [NotDefaultOrFutureDate] DateOnly BirthDate
+    [NotDefaultOrFutureDate] DateOnly BirthDate,
+    [EnumDataType(typeof(Gender))] Gender Gender
 );
 
 public record RegisterResponse(

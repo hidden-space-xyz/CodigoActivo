@@ -40,6 +40,8 @@ public class ReportService(
 
     private static readonly string[] InscriptionKeys = ["requested", "confirmed", "denied"];
 
+    private static readonly string[] GenderKeys = ["Male", "Female", "Other"];
+
     public async Task<Result<EventSummaryResponse>> GetEventSummaryAsync(
         Guid eventId,
         CancellationToken ct = default
@@ -506,6 +508,7 @@ public class ReportService(
                 {
                     u.CreatedAt,
                     u.UserTypeId,
+                    u.Gender,
                     IsMinor = u.ParentId != null,
                 }),
             ct
@@ -549,8 +552,8 @@ public class ReportService(
             ct
         );
 
-        var resourceRows = await executor.ToListAsync(
-            resources.Query().Select(r => new { r.CreatedAt, r.ResourceTypeId }),
+        var resourceDates = await executor.ToListAsync(
+            resources.Query().Select(r => r.CreatedAt),
             ct
         );
 
@@ -641,7 +644,7 @@ public class ReportService(
             ("inscriptions", assignmentRows.Select(a => a.CreatedAt).ToList()),
             ("events", eventRows.Select(e => e.CreatedAt).ToList()),
             ("activities", activityRows.Select(a => a.CreatedAt).ToList()),
-            ("resources", resourceRows.Select(r => r.CreatedAt).ToList()),
+            ("resources", resourceDates.ToList()),
             ("announcements", announcementDates.ToList()),
             ("partners", partnerDates.ToList()),
         };
@@ -678,7 +681,7 @@ public class ReportService(
             buckets,
             [
                 Flow("announcements", announcementDates),
-                Flow("resources", resourceRows.Select(r => r.CreatedAt)),
+                Flow("resources", resourceDates),
             ]
         );
 
@@ -696,10 +699,10 @@ public class ReportService(
             }
         );
 
-        var resourcesByType = FixedSlices(
-            ["internal", "external"],
-            resourceRows
-                .GroupBy(r => ResourceTypeKey(r.ResourceTypeId), StringComparer.Ordinal)
+        var usersByGender = FixedSlices(
+            GenderKeys,
+            userRows
+                .GroupBy(u => u.Gender.ToString(), StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
         );
 
@@ -800,7 +803,7 @@ public class ReportService(
             contentPublished,
             usersByType,
             audience,
-            resourcesByType,
+            usersByGender,
             eventsByCategory,
             topEvents,
             eventsCalendar,
@@ -857,13 +860,6 @@ public class ReportService(
         if (id == SeedIds.AssignmentStatusTypes.Confirmed)
             return "confirmed";
         return id == SeedIds.AssignmentStatusTypes.Denied ? "denied" : "other";
-    }
-
-    private static string ResourceTypeKey(Guid id)
-    {
-        if (id == SeedIds.ResourceTypes.Internal)
-            return "internal";
-        return id == SeedIds.ResourceTypes.External ? "external" : "other";
     }
 
     private Task<EventHeader?> GetEventHeaderAsync(Guid eventId, CancellationToken ct)

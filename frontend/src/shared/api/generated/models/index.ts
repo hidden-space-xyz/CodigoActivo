@@ -71,6 +71,7 @@ export * from './eventScope';
 export * from './eventSummaryResponse';
 export * from './fileResponse';
 export * from './forgotPasswordRequest';
+export * from './gender';
 export * from './getApiActivitiesParams';
 export * from './getApiAnnouncementsParams';
 export * from './getApiEventsCategoryTypeParams';

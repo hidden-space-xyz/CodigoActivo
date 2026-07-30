@@ -25,6 +25,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
             "+34600000099",
             "Str0ngPass!",
             new DateOnly(1996, 1, 15),
+            Gender.Female,
             Minors: null
         );
     }

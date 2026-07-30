@@ -30,6 +30,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 FirstName = "Author",
                 LastName = "Fixture",
                 BirthDate = new DateOnly(1980, 1, 1),
+                Gender = Gender.Other,
                 UserStatusTypeId = SeedIds.UserStatusTypes.Active,
                 UserTypeId = SeedIds.UserTypes.Member,
                 CreatedAt = Fixed,

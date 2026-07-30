@@ -1,3 +1,5 @@
+import type { Gender } from '@/shared/api/generated/models'
+
 export interface AccountProfile {
   readonly id: string
   readonly firstName: string
@@ -5,6 +7,7 @@ export interface AccountProfile {
   readonly email: string
   readonly phone: string
   readonly birthDate: string
+  readonly gender: Gender | null
   readonly statusName: string
   readonly isAdmin: boolean
 }
@@ -14,6 +17,7 @@ export interface AccountChild {
   readonly firstName: string
   readonly lastName: string
   readonly birthDate: string
+  readonly gender: Gender | null
 }
 
 export interface AccountHistoryActivity {

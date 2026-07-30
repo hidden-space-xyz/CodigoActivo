@@ -30,6 +30,7 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
     email: user.email ?? '',
     phone: user.phone ?? '',
     birthDate: user.birthDate ?? '',
+    gender: user.gender ?? null,
     statusName: user.status?.name ?? '',
     isAdmin: user.isAdmin ?? false,
   }
@@ -41,6 +42,7 @@ export function toAccountChild(user: UserResponse): AccountChild {
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
     birthDate: user.birthDate ?? '',
+    gender: user.gender ?? null,
   }
 }
 
@@ -51,6 +53,7 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
     email: input.email,
     phone: input.phone,
     birthDate: input.birthDate,
+    gender: input.gender,
     parentId: null,
   }
 }
@@ -60,6 +63,7 @@ export function toAddMinorRequest(input: AddMinorInput): RegisterMinorRequest {
     firstName: input.firstName,
     lastName: input.lastName,
     birthDate: input.birthDate,
+    gender: input.gender,
   }
 }
 
@@ -68,6 +72,7 @@ export function toUpdateMinorRequest(input: UpdateMinorInput, parentId: string):
     firstName: input.firstName,
     lastName: input.lastName,
     birthDate: input.birthDate,
+    gender: input.gender,
     parentId,
   }
 }
