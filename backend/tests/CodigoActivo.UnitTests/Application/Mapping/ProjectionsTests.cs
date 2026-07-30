@@ -103,6 +103,7 @@ public sealed class ProjectionsTests
                     "Sub",
                     new DateOnly(2024, 8, 1),
                     new DateOnly(2024, 8, 3),
+                    null,
                     Created,
                     Updated,
                     Created,

@@ -18,6 +18,7 @@ const props = defineProps<{
   busy: boolean
   authenticated: boolean
   signupOpen: boolean
+  earlyOnly?: boolean
   hasHousehold: boolean
   referenceDate?: Date | null
 }>()
@@ -39,6 +40,12 @@ watch(
     if (roles.length === 1) selectedRoleId.value = roles[0]?.id ?? ''
   },
   { immediate: true },
+)
+
+const closedMessage = computed(() =>
+  props.earlyOnly
+    ? t('pages.eventDetail.card.earlySignupOnly')
+    : t('pages.eventDetail.card.signupClosed'),
 )
 
 const selectedRoleHighDemand = computed(
@@ -128,7 +135,7 @@ function onSignup(): void {
       <template v-else-if="hasHousehold">
         <template v-if="!signupOpen">
           <span v-if="!activity.household.length" class="act__note">
-            {{ $t('pages.eventDetail.card.signupClosed') }}
+            {{ closedMessage }}
           </span>
         </template>
         <Button
@@ -159,7 +166,7 @@ function onSignup(): void {
         <span v-else class="act__note">{{ $t('pages.eventDetail.card.signupEnded') }}</span>
       </template>
       <template v-else-if="!signupOpen">
-        <span class="act__note">{{ $t('pages.eventDetail.card.signupClosed') }}</span>
+        <span class="act__note">{{ closedMessage }}</span>
       </template>
       <template v-else>
         <span v-if="rolesLoading" class="act__note">{{

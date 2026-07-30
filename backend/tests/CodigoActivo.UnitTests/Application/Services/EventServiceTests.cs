@@ -147,6 +147,7 @@ public sealed class EventServiceTests
     private static CreateEventRequest CreateReq(
         DateOnly? eventStart = null,
         DateOnly? eventEnd = null,
+        DateTimeOffset? earlySignupStart = null,
         DateTimeOffset? signupStart = null,
         DateTimeOffset? signupEnd = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
@@ -158,6 +159,7 @@ public sealed class EventServiceTests
             Description: "{}",
             EventStartsAt: eventStart ?? new DateOnly(2026, 8, 1),
             EventEndsAt: eventEnd ?? new DateOnly(2026, 8, 3),
+            EarlySignupStartsAt: earlySignupStart,
             SignupStartsAt: signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             SignupEndsAt: signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
@@ -167,6 +169,7 @@ public sealed class EventServiceTests
     private static UpdateEventRequest UpdateReq(
         DateOnly? eventStart = null,
         DateOnly? eventEnd = null,
+        DateTimeOffset? earlySignupStart = null,
         DateTimeOffset? signupStart = null,
         DateTimeOffset? signupEnd = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
@@ -180,6 +183,7 @@ public sealed class EventServiceTests
             Description: description,
             EventStartsAt: eventStart ?? new DateOnly(2026, 8, 1),
             EventEndsAt: eventEnd ?? new DateOnly(2026, 8, 3),
+            EarlySignupStartsAt: earlySignupStart,
             SignupStartsAt: signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             SignupEndsAt: signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
@@ -522,6 +526,7 @@ public sealed class EventServiceTests
             Description: "{}",
             EventStartsAt: eventStart,
             EventEndsAt: eventEnd,
+            EarlySignupStartsAt: null,
             SignupStartsAt: signupStart,
             SignupEndsAt: signupEnd,
             ThumbnailId: Guid.NewGuid(),
@@ -618,6 +623,52 @@ public sealed class EventServiceTests
         result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task CreateAsync_EarlySignupNotBeforeSignupStart_ReturnsEarlySignupNotBeforeSignup()
+    {
+        var signupStart = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
+        var request = CreateReq(
+            earlySignupStart: signupStart,
+            signupStart: signupStart,
+            categoryTypeIds: [Guid.NewGuid()]
+        );
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Code.Should().Be(ErrorCode.EventEarlySignupNotBeforeSignup);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task CreateAsync_EarlySignupBeforeSignupStart_PersistsEarlySignupInUtc()
+    {
+        files.ThumbnailExists(true);
+        HasCategoryCount(1);
+        CaptureCreatedEvents();
+
+        var request = CreateReq(
+            earlySignupStart: new DateTimeOffset(2026, 6, 20, 12, 0, 0, TimeSpan.FromHours(2)),
+            signupStart: new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+            categoryTypeIds: [Guid.NewGuid()]
+        );
+
+        var result = await sut.CreateAsync(
+            request,
+            Guid.NewGuid(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result
+            .Value.EarlySignupStartsAt.Should()
+            .Be(new DateTimeOffset(2026, 6, 20, 10, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]

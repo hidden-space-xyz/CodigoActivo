@@ -184,6 +184,8 @@ export const es = {
     ActivityNotFound: 'No se encontró la actividad.',
     ActivityModalityTypeNotFound: 'La modalidad de la actividad no es válida.',
     ActivitySignupClosed: 'La inscripción a esta actividad está cerrada.',
+    ActivitySignupEarlyOnly:
+      'La inscripción general todavía no ha comenzado. En este periodo solo pueden inscribirse socios y patrocinadores.',
     ActivityRoleNotAllowed: 'Este rol no está permitido para este usuario.',
     ActivityAssignmentAlreadyExists: 'Esta persona ya está asignada a la actividad.',
     ActivityHouseholdAssignmentsRequired:
@@ -208,6 +210,8 @@ export const es = {
     EventCategoriesRequired: 'Debes seleccionar al menos una categoría para el evento.',
     EventScheduleRequired: 'Debes indicar un horario para el evento.',
     EventScheduleInvalidRange: 'El horario del evento no es válido.',
+    EventEarlySignupNotBeforeSignup:
+      'La inscripción anticipada debe abrir antes que la inscripción general.',
     EventRatingNotFinished: 'Solo puedes valorar eventos que ya han terminado.',
     EventRatingAttendanceRequired:
       'Solo puedes valorar eventos en los que has participado con una inscripción confirmada.',
@@ -501,6 +505,7 @@ export const es = {
           duration: 'Duración',
           signup: 'Inscripción',
         },
+        earlySignupFrom: 'Anticipada: {date}',
         tag: {
           featured: 'Destacado',
         },
@@ -817,6 +822,7 @@ export const es = {
       notAuthenticated: 'No autenticado',
       info: {
         date: 'Fecha',
+        earlySignup: 'Inscripción anticipada',
         signup: 'Inscripción',
       },
       seo: {
@@ -833,6 +839,8 @@ export const es = {
         loadError: 'No se pudieron cargar las actividades.',
         empty: 'Este evento todavía no tiene actividades.',
         signupClosed: 'La inscripción no está abierta para este evento.',
+        earlySignupOnly:
+          'Este evento está en periodo de inscripción anticipada, reservado a socios y patrocinadores. La inscripción general abrirá más adelante.',
         rolesLoadError: 'No se pudieron cargar los roles de inscripción.',
         noSchedule: 'Sin horario asignado',
       },
@@ -865,6 +873,7 @@ export const es = {
         unassignMember: 'Desapuntar',
         loginToSignup: 'Inicia sesión para apuntarte',
         signupClosed: 'La inscripción no está abierta.',
+        earlySignupOnly: 'Solo socios y patrocinadores por ahora.',
         enrollAnother: 'Apuntar a otro miembro',
         enrollFamily: 'Apuntar a mi familia',
         enrolledAs: 'Inscrito como {role}',
@@ -888,8 +897,13 @@ export const es = {
         description: 'Descripción',
         eventStart: 'Inicio del evento',
         eventEnd: 'Fin del evento',
+        earlySignupStart: 'Apertura de inscripción anticipada (opcional)',
         signupStart: 'Apertura de inscripción',
         signupEnd: 'Cierre de inscripción',
+      },
+      hints: {
+        earlySignupStart:
+          'Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.',
       },
       errors: {
         categoriesRequired: 'Selecciona al menos una categoría.',
@@ -900,6 +914,8 @@ export const es = {
         signupAfterEventEnd: 'La inscripción debe abrir antes de que termine el evento.',
         signupEndRequired: 'El cierre de inscripción es obligatorio.',
         signupOrderInvalid: 'El cierre debe ser posterior a la apertura.',
+        earlySignupOrderInvalid:
+          'La inscripción anticipada debe abrir antes que la inscripción general.',
       },
       categoryDialog: {
         header: 'Nueva categoría',
@@ -1130,6 +1146,7 @@ export const es = {
     event: {
       dateFallback: 'Próximamente',
       status: {
+        earlySignupOpen: 'Inscripción anticipada',
         signupOpen: 'Inscripción abierta',
         signupClosed: 'Inscripción cerrada',
         upcoming: 'Próximamente',

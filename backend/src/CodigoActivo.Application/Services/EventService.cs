@@ -157,6 +157,7 @@ public class EventService(
         var schedule = ValidateSchedule(
             request.EventStartsAt,
             request.EventEndsAt,
+            request.EarlySignupStartsAt,
             request.SignupStartsAt,
             request.SignupEndsAt
         );
@@ -177,6 +178,7 @@ public class EventService(
             Description = request.Description,
             EventStartsAt = schedule.Value.EventStartsAt,
             EventEndsAt = schedule.Value.EventEndsAt,
+            EarlySignupStartsAt = schedule.Value.EarlySignupStartsAt,
             SignupStartsAt = schedule.Value.SignupStartsAt,
             SignupEndsAt = schedule.Value.SignupEndsAt,
             ThumbnailId = request.ThumbnailId,
@@ -202,6 +204,7 @@ public class EventService(
         var schedule = ValidateSchedule(
             request.EventStartsAt,
             request.EventEndsAt,
+            request.EarlySignupStartsAt,
             request.SignupStartsAt,
             request.SignupEndsAt
         );
@@ -234,6 +237,7 @@ public class EventService(
         ev.Description = request.Description;
         ev.EventStartsAt = schedule.Value.EventStartsAt;
         ev.EventEndsAt = schedule.Value.EventEndsAt;
+        ev.EarlySignupStartsAt = schedule.Value.EarlySignupStartsAt;
         ev.SignupStartsAt = schedule.Value.SignupStartsAt;
         ev.SignupEndsAt = schedule.Value.SignupEndsAt;
         ev.ThumbnailId = request.ThumbnailId;
@@ -405,6 +409,7 @@ public class EventService(
     private static Result<EventSchedule> ValidateSchedule(
         DateOnly? eventStartsAt,
         DateOnly? eventEndsAt,
+        DateTimeOffset? earlySignupStartsAt,
         DateTimeOffset? signupStartsAt,
         DateTimeOffset? signupEndsAt
     )
@@ -422,12 +427,16 @@ public class EventService(
         if (eventEnd < eventStart || signupEnd <= signupStart)
             return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
 
+        if (earlySignupStartsAt is { } earlyStart && earlyStart >= signupStart)
+            return Error.BadRequest(ErrorCode.EventEarlySignupNotBeforeSignup);
+
         return DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd
             ? (Result<EventSchedule>)Error.BadRequest(ErrorCode.EventScheduleInvalidRange)
             : (Result<EventSchedule>)
                 new EventSchedule(
                     eventStart,
                     eventEnd,
+                    earlySignupStartsAt?.ToUniversalTime(),
                     signupStart.ToUniversalTime(),
                     signupEnd.ToUniversalTime()
                 );
@@ -447,6 +456,7 @@ public class EventService(
     private readonly record struct EventSchedule(
         DateOnly EventStartsAt,
         DateOnly EventEndsAt,
+        DateTimeOffset? EarlySignupStartsAt,
         DateTimeOffset SignupStartsAt,
         DateTimeOffset SignupEndsAt
     );

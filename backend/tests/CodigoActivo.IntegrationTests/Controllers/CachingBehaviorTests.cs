@@ -266,6 +266,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
             "{}",
             new DateOnly(2026, 8, 1),
             new DateOnly(2026, 8, 10),
+            null,
             new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             thumbnailId,

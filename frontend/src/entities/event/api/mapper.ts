@@ -1,6 +1,6 @@
 import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
 import { i18n } from '@/shared/i18n'
-import { formatDateRange, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
+import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
 
 import type {
   EventCategoryTag,
@@ -33,14 +33,20 @@ function resolveStatusKind(event: EventListItemResponse): EventStatusKind {
   const now = Date.now()
   const start = event.signupStartsAt ? new Date(event.signupStartsAt).getTime() : null
   const end = event.signupEndsAt ? new Date(event.signupEndsAt).getTime() : null
+  const earlyStart = event.earlySignupStartsAt
+    ? new Date(event.earlySignupStartsAt).getTime()
+    : null
   if (start === null && end === null) return 'upcoming'
-  if (start !== null && now < start) return 'upcoming'
+  if (start !== null && now < start) {
+    return earlyStart !== null && now >= earlyStart ? 'earlySignupOpen' : 'upcoming'
+  }
   if (end !== null && now > end) return 'signupClosed'
   return 'signupOpen'
 }
 
 const STATUS_LABEL_KEYS: Record<EventStatusKind, string> = {
   upcoming: 'entities.event.status.upcoming',
+  earlySignupOpen: 'entities.event.status.earlySignupOpen',
   signupOpen: 'entities.event.status.signupOpen',
   signupClosed: 'entities.event.status.signupClosed',
   finished: 'entities.event.status.finished',
@@ -83,9 +89,11 @@ export function toEventDetail(event: EventResponse): EventDetail {
     endsAt: event.eventEndsAt ?? null,
     dateLabel: toEventDate(event),
     signupLabel: formatDateTimeRange(event.signupStartsAt, event.signupEndsAt),
+    earlySignupLabel: event.earlySignupStartsAt ? formatDateTime(event.earlySignupStartsAt) : null,
     status,
     thumbnailId: event.thumbnailId ?? '',
     signupOpen: status.kind === 'signupOpen',
+    earlySignupOpen: status.kind === 'earlySignupOpen',
     categories: toCategoryTags(event),
   }
 }

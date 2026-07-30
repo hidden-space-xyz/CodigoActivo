@@ -17,6 +17,8 @@ export interface CreateEventRequest {
   /** @nullable */
   eventEndsAt?: string | null;
   /** @nullable */
+  earlySignupStartsAt?: string | null;
+  /** @nullable */
   signupStartsAt?: string | null;
   /** @nullable */
   signupEndsAt?: string | null;

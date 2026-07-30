@@ -16,6 +16,8 @@ export interface EventResponse {
   description?: string | null;
   eventStartsAt?: string;
   eventEndsAt?: string;
+  /** @nullable */
+  earlySignupStartsAt?: string | null;
   signupStartsAt?: string;
   signupEndsAt?: string;
   createdAt?: string;

@@ -6,4 +6,6 @@ export interface AuthUser {
   readonly phone: string
   readonly birthDate: string
   readonly isAdmin: boolean
+  readonly userTypeId: string
+  readonly earlySignupEligible: boolean
 }

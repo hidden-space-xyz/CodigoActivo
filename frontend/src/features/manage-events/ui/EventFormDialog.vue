@@ -34,6 +34,7 @@ interface EventForm {
   categoryIds: string[]
   eventStartsAt: Date | null
   eventEndsAt: Date | null
+  earlySignupStartsAt: Date | null
   signupStartsAt: Date | null
   signupEndsAt: Date | null
 }
@@ -45,6 +46,7 @@ const form = reactive<EventForm>({
   categoryIds: [],
   eventStartsAt: null,
   eventEndsAt: null,
+  earlySignupStartsAt: null,
   signupStartsAt: null,
   signupEndsAt: null,
 })
@@ -118,6 +120,12 @@ const signupAfterEventEnd = computed(
     !!form.eventEndsAt &&
     toDateOnly(form.signupStartsAt) > toDateOnly(form.eventEndsAt),
 )
+const earlySignupOrderInvalid = computed(
+  () =>
+    !!form.earlySignupStartsAt &&
+    !!form.signupStartsAt &&
+    form.earlySignupStartsAt >= form.signupStartsAt,
+)
 const datesValid = computed(
   () =>
     !eventStartMissing.value &&
@@ -126,7 +134,8 @@ const datesValid = computed(
     !signupStartMissing.value &&
     !signupEndMissing.value &&
     !signupOrderInvalid.value &&
-    !signupAfterEventEnd.value,
+    !signupAfterEventEnd.value &&
+    !earlySignupOrderInvalid.value,
 )
 
 watch(
@@ -143,6 +152,7 @@ watch(
       .filter((id): id is string => !!id)
     form.eventStartsAt = parseDateOnly(props.event?.eventStartsAt)
     form.eventEndsAt = parseDateOnly(props.event?.eventEndsAt)
+    form.earlySignupStartsAt = parse(props.event?.earlySignupStartsAt)
     form.signupStartsAt = parse(props.event?.signupStartsAt)
     form.signupEndsAt = parse(props.event?.signupEndsAt)
   },
@@ -174,6 +184,7 @@ async function save(): Promise<void> {
     categoryTypeIds: form.categoryIds,
     eventStartsAt: toDateOnly(eventStartsAt),
     eventEndsAt: toDateOnly(eventEndsAt),
+    earlySignupStartsAt: form.earlySignupStartsAt?.toISOString() ?? null,
     signupStartsAt: signupStartsAt.toISOString(),
     signupEndsAt: signupEndsAt.toISOString(),
     thumbnailId,
@@ -265,6 +276,24 @@ async function save(): Promise<void> {
             >{{ $t('features.manageEvents.errors.eventOrderInvalid') }}</small
           >
         </div>
+      </div>
+      <div class="form__field">
+        <label>{{ $t('features.manageEvents.fields.earlySignupStart') }}</label>
+        <DatePicker
+          v-model="form.earlySignupStartsAt"
+          show-time
+          hour-format="24"
+          show-button-bar
+          :max-date="form.signupStartsAt ?? undefined"
+          :invalid="submitted && earlySignupOrderInvalid"
+          fluid
+        />
+        <small v-if="submitted && earlySignupOrderInvalid" class="form__error"
+          >{{ $t('features.manageEvents.errors.earlySignupOrderInvalid') }}</small
+        >
+        <small v-else class="form__hint">{{
+          $t('features.manageEvents.hints.earlySignupStart')
+        }}</small>
       </div>
       <div class="form__row">
         <div class="form__field">
@@ -420,6 +449,11 @@ async function save(): Promise<void> {
 
 .form__error {
   color: var(--ca-danger-ink);
+  font-size: 12.5px;
+}
+
+.form__hint {
+  color: var(--ca-text-muted);
   font-size: 12.5px;
 }
 </style>
