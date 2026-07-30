@@ -17,11 +17,8 @@ import type {
   GetApiReportsEventsEventIdAttendeesParams,
 } from '@/shared/api/generated/models'
 import { toPage } from '@/shared/api'
-import { useServerTable } from '@/shared/lib'
+import { fetchAllPages, useServerTable } from '@/shared/lib'
 import { eventQueryKeys, eventReportQueryKeys } from '@/entities/event'
-
-const ATTENDEE_EXPORT_PAGE_SIZE = 100
-const ATTENDEE_EXPORT_PAGE_LIMIT = 200
 
 export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
@@ -59,29 +56,15 @@ export function useEventAttendeesTable(
     enabled: () => toValue(active),
   })
 
-  async function fetchAllAttendees(): Promise<EventAttendeeResponse[]> {
-    const sort = table.sortField.value
-      ? `${table.sortOrder.value === -1 ? '-' : ''}${table.sortField.value}`
-      : undefined
-    const filters = filterParams()
-    const attendees: EventAttendeeResponse[] = []
-
-    for (let page = 1; page <= ATTENDEE_EXPORT_PAGE_LIMIT; page += 1) {
-      const params = {
-        ...filters,
-        sort,
-        page,
-        pageSize: ATTENDEE_EXPORT_PAGE_SIZE,
-      } as GetApiReportsEventsEventIdAttendeesParams
-      const { items, total } = await getApiReportsEventsEventIdAttendees(
-        toValue(eventId),
-        params,
-      ).then(toPage)
-      attendees.push(...items)
-      if (items.length === 0 || attendees.length >= total) break
-    }
-
-    return attendees
+  function fetchAllAttendees(): Promise<EventAttendeeResponse[]> {
+    return fetchAllPages(
+      (params) =>
+        getApiReportsEventsEventIdAttendees(
+          toValue(eventId),
+          params as GetApiReportsEventsEventIdAttendeesParams,
+        ).then(toPage),
+      { ...filterParams(), sort: table.sortParam.value },
+    )
   }
 
   return {

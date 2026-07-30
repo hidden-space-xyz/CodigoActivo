@@ -130,26 +130,57 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_AsAdmin_NoRecipientSeesAnotherRecipientAddress()
+    public async Task SendToUsers_MarkupInTheAdminsMessage_IsHtmlEncoded()
     {
         var client = await LoginAsAdminAsync();
 
-        using var response = await client.SendEmailFormAsync(UsersUrl);
+        using var response = await client.SendEmailFormAsync(
+            UsersUrl,
+            "<script>alert(1)</script>",
+            "Hola <img src=x onerror=alert(1)> & adiós"
+        );
 
         await ReadResultAsync(response);
-        foreach (var message in Factory.EmailSender.Sent)
-        {
-            var others = Factory
-                .EmailSender.Sent.Select(m => m.ToAddress)
-                .Where(address => address != message.ToAddress);
-            foreach (var other in others)
-            {
-                message
-                    .TextBody.Should()
-                    .NotContain(other, "recipients must not learn about each other");
-                message.HtmlBody.Should().NotContain(other);
-            }
-        }
+        Factory
+            .EmailSender.Sent.Should()
+            .OnlyContain(m =>
+                !m.HtmlBody.Contains("<script>", StringComparison.Ordinal)
+                && !m.HtmlBody.Contains("<img", StringComparison.Ordinal)
+                && m.HtmlBody.Contains("&lt;script&gt;", StringComparison.Ordinal)
+                && m.HtmlBody.Contains("&amp;", StringComparison.Ordinal)
+            );
+    }
+
+    [Fact]
+    public async Task SendToUsers_SomeRecipientsRejected_ReportsThemAsFailed()
+    {
+        var client = await LoginAsAdminAsync();
+        Factory.EmailSender.FailFor(TestSeedData.PendingEmail, TestSeedData.BlockedEmail);
+
+        using var response = await client.SendEmailFormAsync(UsersUrl);
+
+        var result = await ReadResultAsync(response);
+        result.Sent.Should().Be(2);
+        result.Failed.Should().Be(2);
+        result.Skipped.Should().Be(1);
+        Factory
+            .EmailSender.Sent.Select(m => m.ToAddress)
+            .Should()
+            .BeEquivalentTo([TestSeedData.AdminEmail, TestSeedData.MemberEmail]);
+    }
+
+    [Fact]
+    public async Task SendToUsers_SmtpUnavailable_ReturnsBadRequestSendFailed()
+    {
+        var client = await LoginAsAdminAsync();
+        Factory.EmailSender.ThrowOnSend = new InvalidOperationException(
+            "The SMTP host is not configured (SMTP_HOST)."
+        );
+
+        using var response = await client.SendEmailFormAsync(UsersUrl);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EmailSendFailed);
+        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]

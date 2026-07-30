@@ -17,29 +17,22 @@ import ToggleSwitch from 'primevue/toggleswitch'
 
 import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
-import {
-  SendEmailDialog,
-  useSendEmail,
-  useSendEmailFeedback,
-  type SendEmailPayload,
-} from '@/features/send-email'
+import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { genderLabel } from '@/entities/user'
 import type {
   PostApiEmailsUsersParams,
-  SendEmailResultResponse,
   UpdateUserRequest,
   UserResponse,
 } from '@/shared/api/generated/models'
 import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
-  buildCsv,
-  downloadCsv,
   formatDate,
   fullName,
   toSelectOptions,
   todayIso,
   useCrudFeedback,
+  useCsvExport,
   useDeleteConfirm,
 } from '@/shared/lib'
 
@@ -51,8 +44,7 @@ const userTypes = useUserTypesList()
 const userStatusTypes = useUserStatusTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
-const { sendToUser, sendToUsers } = useSendEmail()
-const { reportSendResult } = useSendEmailFeedback()
+const { sendToUsers } = useSendEmail()
 
 const dialogVisible = ref(false)
 const selected = ref<UserResponse | null>(null)
@@ -190,63 +182,33 @@ function exportRow(user: UserResponse): CsvValue[] {
   ]
 }
 
-const exporting = ref(false)
+const { exporting, exportCsv } = useCsvExport<UserResponse>({
+  fetchRows: fetchAllUsers,
+  headers: exportHeaders,
+  toRow: exportRow,
+  filename: () => t('pages.admin.users.export.filename', { date: todayIso() }),
+  onExported: (rows) => feedback.success(t('pages.admin.users.export.toast.exported', rows.length)),
+  onError: (error) => feedback.error(error),
+})
 
-async function exportCsv(): Promise<void> {
-  if (exporting.value) return
-  exporting.value = true
-  try {
-    const rows = await fetchAllUsers()
-    downloadCsv(
-      t('pages.admin.users.export.filename', { date: todayIso() }),
-      buildCsv(exportHeaders, rows.map(exportRow)),
-    )
-    feedback.success(t('pages.admin.users.export.toast.exported', rows.length))
-  } catch (error) {
-    feedback.error(error)
-  } finally {
-    exporting.value = false
-  }
-}
-
-const emailDialogVisible = ref(false)
-const emailRecipient = ref<UserResponse | null>(null)
-
-const emailTarget = computed(() =>
-  emailRecipient.value
-    ? t('pages.admin.users.email.targetOne', { fullName: fullName(emailRecipient.value) })
-    : t('pages.admin.users.email.targetFiltered', table.total.value),
-)
-
-const emailSending = computed(() => sendToUser.isPending.value || sendToUsers.isPending.value)
-
-function openEmail(user: UserResponse | null): void {
-  emailRecipient.value = user
-  emailDialogVisible.value = true
-}
-
-function onEmailSent(result: SendEmailResultResponse): void {
-  emailDialogVisible.value = false
-  reportSendResult(result)
-}
-
-function submitEmail(payload: SendEmailPayload): void {
-  const recipient = emailRecipient.value
-  const handlers = {
-    onSuccess: onEmailSent,
-    onError: (error: unknown) => feedback.error(error),
-  }
-
-  if (recipient?.id) {
-    sendToUser.mutate({ userId: recipient.id, payload }, handlers)
-    return
-  }
-
-  sendToUsers.mutate(
-    { params: table.filterParams.value as PostApiEmailsUsersParams, payload },
-    handlers,
-  )
-}
+const {
+  visible: emailDialogVisible,
+  target: emailTarget,
+  sending: emailSending,
+  open: openEmail,
+  submit: submitEmail,
+} = useSendEmailDialog<UserResponse>({
+  idOf: (user) => user.id,
+  targetOne: (user) => t('pages.admin.users.email.targetOne', { fullName: fullName(user) }),
+  targetAll: () => t('pages.admin.users.email.targetFiltered', table.total.value),
+  bulkPending: () => sendToUsers.isPending.value,
+  sendAll: (payload, handlers) =>
+    sendToUsers.mutate(
+      { params: table.filterParams.value as PostApiEmailsUsersParams, payload },
+      handlers,
+    ),
+  onError: (error) => feedback.error(error),
+})
 
 function confirmDelete(user: UserResponse): void {
   requireDelete({

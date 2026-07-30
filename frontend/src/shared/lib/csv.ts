@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 const DELIMITER = ';'
 const ROW_SEPARATOR = '\r\n'
 const BYTE_ORDER_MARK = '\ufeff'
@@ -17,6 +19,35 @@ function csvCell(value: CsvValue): string {
 export function buildCsv(headers: readonly string[], rows: readonly CsvValue[][]): string {
   const lines = [headers, ...rows].map((row) => row.map(csvCell).join(DELIMITER))
   return `${BYTE_ORDER_MARK}${lines.join(ROW_SEPARATOR)}${ROW_SEPARATOR}`
+}
+
+export interface CsvExportOptions<T> {
+  readonly fetchRows: () => Promise<T[]>
+  readonly headers: readonly string[]
+  readonly toRow: (item: T) => CsvValue[]
+  readonly filename: () => string
+  readonly onExported: (rows: readonly T[]) => void
+  readonly onError: (error: unknown) => void
+}
+
+export function useCsvExport<T>(options: CsvExportOptions<T>) {
+  const exporting = ref(false)
+
+  async function exportCsv(): Promise<void> {
+    if (exporting.value) return
+    exporting.value = true
+    try {
+      const rows = await options.fetchRows()
+      downloadCsv(options.filename(), buildCsv(options.headers, rows.map(options.toRow)))
+      options.onExported(rows)
+    } catch (error) {
+      options.onError(error)
+    } finally {
+      exporting.value = false
+    }
+  }
+
+  return { exporting, exportCsv }
 }
 
 export function downloadCsv(filename: string, content: string): void {

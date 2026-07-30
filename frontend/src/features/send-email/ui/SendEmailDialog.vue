@@ -87,6 +87,7 @@ function removeAttachment(index: number): void {
 }
 
 function close(): void {
+  if (props.sending) return
   emit('update:visible', false)
 }
 
@@ -116,6 +117,8 @@ function send(): void {
     modal
     :header="$t('features.sendEmail.header')"
     :style="{ width: '560px' }"
+    :closable="!sending"
+    :close-on-escape="!sending"
     @update:visible="close"
   >
     <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>

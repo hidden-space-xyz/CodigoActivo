@@ -31,6 +31,7 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
 
         var sent = 0;
         var failed = 0;
+        var completed = false;
 
         using var client = new SmtpClient();
         await ConnectAsync(client, ct);
@@ -52,11 +53,36 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
                         "Failed to send an email to {Recipient}",
                         message.ToAddress
                     );
+
+                    if (!client.IsConnected)
+                    {
+                        var unattempted = messages.Count - sent - failed;
+                        failed += unattempted;
+                        logger.LogError(
+                            "The SMTP connection dropped mid-batch after {Sent} of {Total} messages; {Unattempted} were never attempted",
+                            sent,
+                            messages.Count,
+                            unattempted
+                        );
+                        break;
+                    }
                 }
             }
+
+            completed = true;
         }
         finally
         {
+            if (!completed)
+            {
+                logger.LogWarning(
+                    "A batch send stopped early after {Sent} sent and {Failed} failed of {Total} messages",
+                    sent,
+                    failed,
+                    messages.Count
+                );
+            }
+
             if (client.IsConnected)
                 await client.DisconnectAsync(quit: true, CancellationToken.None);
         }
@@ -107,7 +133,9 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
 
     private static ContentType ParseContentType(string value)
     {
-        return ContentType.TryParse(value, out var parsed)
+        return
+            ContentType.TryParse(value, out var parsed)
+            && !string.Equals(parsed.MediaType, "message", StringComparison.OrdinalIgnoreCase)
             ? parsed
             : new ContentType("application", "octet-stream");
     }

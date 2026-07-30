@@ -22,6 +22,8 @@ public class EmailService(
 {
     private const string FallbackAttachmentName = "adjunto";
 
+    private static readonly char[] PathSeparators = ['/', '\\'];
+
     private static readonly Expression<Func<User, Recipient>> ToRecipient = u => new Recipient(
         u.Email,
         u.FirstName
@@ -121,10 +123,9 @@ public class EmailService(
         if (buffered.IsFailure)
             return buffered.Error!;
 
-        var subject = request.Subject.Trim();
-        var body = request.Body.Trim();
+        var content = ManualEmail.Render(request.Subject.Trim(), request.Body.Trim());
         var messages = recipients
-            .Select(r => ManualEmail.Create(r.Email!, r.FirstName, subject, body, buffered.Value))
+            .Select(r => ManualEmail.Create(content, r.Email!, r.FirstName, buffered.Value))
             .ToList();
 
         try
@@ -163,10 +164,10 @@ public class EmailService(
             if (upload.Length <= 0)
                 return Error.BadRequest(ErrorCode.EmailAttachmentEmpty);
 
-            using var memory = new MemoryStream();
-            await upload.Content.CopyToAsync(memory, ct);
+            var content = new byte[upload.Length];
+            await upload.Content.ReadExactlyAsync(content, ct);
             buffered.Add(
-                new EmailAttachment(SafeName(upload.FileName), upload.ContentType, memory.ToArray())
+                new EmailAttachment(SafeName(upload.FileName), upload.ContentType, content)
             );
         }
 
@@ -175,7 +176,8 @@ public class EmailService(
 
     private static string SafeName(string fileName)
     {
-        var name = Path.GetFileName(fileName);
+        var separator = fileName.LastIndexOfAny(PathSeparators);
+        var name = separator < 0 ? fileName : fileName[(separator + 1)..];
         return string.IsNullOrWhiteSpace(name) ? FallbackAttachmentName : name;
     }
 

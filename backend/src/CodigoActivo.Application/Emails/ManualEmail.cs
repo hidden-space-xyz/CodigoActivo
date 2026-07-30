@@ -3,17 +3,13 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
 
+public sealed record ManualEmailContent(string Subject, string HtmlBody, string TextBody);
+
 public static class ManualEmail
 {
     private const string Signature = "Este mensaje te lo envía el equipo de Código Activo.";
 
-    public static EmailMessage Create(
-        string toAddress,
-        string toName,
-        string subject,
-        string body,
-        IReadOnlyList<EmailAttachment> attachments
-    )
+    public static ManualEmailContent Render(string subject, string body)
     {
         var textBody = $"""
             {body}
@@ -30,7 +26,24 @@ public static class ManualEmail
             </div>
             """;
 
-        return new EmailMessage(toAddress, toName, subject, htmlBody, textBody, attachments);
+        return new ManualEmailContent(subject, htmlBody, textBody);
+    }
+
+    public static EmailMessage Create(
+        ManualEmailContent content,
+        string toAddress,
+        string toName,
+        IReadOnlyList<EmailAttachment> attachments
+    )
+    {
+        return new EmailMessage(
+            toAddress,
+            toName,
+            content.Subject,
+            content.HtmlBody,
+            content.TextBody,
+            attachments
+        );
     }
 
     private static string ToParagraphs(string body)
