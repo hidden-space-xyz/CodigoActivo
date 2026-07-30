@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { logoMark } from '@/shared/assets'
+import { logoMark } from '@/shared/branding'
 
 withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 </script>

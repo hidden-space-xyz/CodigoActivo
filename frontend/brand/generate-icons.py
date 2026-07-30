@@ -15,7 +15,7 @@ from PIL import Image
 BRAND = Path(__file__).resolve().parent
 SRC = BRAND / "codigo-activo-logo.png"
 PUBLIC = BRAND.parent / "public"
-SHARED_ASSETS = BRAND.parent / "src" / "shared" / "assets"
+SHARED_BRANDING = BRAND.parent / "src" / "shared" / "branding"
 
 SS = 8
 
@@ -64,16 +64,16 @@ def main() -> None:
             colors=256, method=Image.FASTOCTREE, dither=Image.NONE
         )
 
-    quantized(192).save(SHARED_ASSETS / "logo-mark.png", optimize=True)
+    quantized(192).save(SHARED_BRANDING / "logo-mark.png", optimize=True)
     # 640px covers the ~330 CSS px hero display at 2x DPR.
-    quantized(640).save(SHARED_ASSETS / "logo-mark-large.png", optimize=True)
+    quantized(640).save(SHARED_BRANDING / "logo-mark-large.png", optimize=True)
     mark.resize((512, 512), Image.LANCZOS).save(BRAND / "logo-mark-512.png", optimize=True)
 
     for name in ("favicon.ico", "favicon-96x96.png", "apple-touch-icon.png"):
         print(f"{name:38} {(PUBLIC / name).stat().st_size:>7} B")
     for label, path in (
-        ("src/shared/assets/logo-mark.png", SHARED_ASSETS / "logo-mark.png"),
-        ("src/shared/assets/logo-mark-large.png", SHARED_ASSETS / "logo-mark-large.png"),
+        ("src/shared/branding/logo-mark.png", SHARED_BRANDING / "logo-mark.png"),
+        ("src/shared/branding/logo-mark-large.png", SHARED_BRANDING / "logo-mark-large.png"),
         ("brand/logo-mark-512.png", BRAND / "logo-mark-512.png"),
     ):
         print(f"{label:38} {path.stat().st_size:>7} B")

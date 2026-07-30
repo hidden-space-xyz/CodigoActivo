@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { logoMarkLarge } from '@/shared/assets'
+import { logoMarkLarge } from '@/shared/branding'
 import { FOUNDING_YEAR } from '@/shared/config'
 import { BaseButton } from '@/shared/ui'
 
