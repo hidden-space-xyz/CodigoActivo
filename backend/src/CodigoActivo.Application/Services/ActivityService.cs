@@ -824,6 +824,10 @@ public class ActivityService(
                 ct
             );
         }
+        catch (EmailRateLimitedException)
+        {
+            return;
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(
@@ -877,6 +881,10 @@ public class ActivityService(
                     );
 
             await emailSender.SendAsync(message, ct);
+        }
+        catch (EmailRateLimitedException)
+        {
+            return;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

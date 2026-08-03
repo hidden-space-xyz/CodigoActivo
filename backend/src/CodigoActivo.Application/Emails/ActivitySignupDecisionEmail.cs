@@ -104,7 +104,14 @@ public static class ActivitySignupDecisionEmail
             </div>
             """;
 
-        return new EmailMessage(toAddress, toName, content.Subject, htmlBody, textBody);
+        return new EmailMessage(
+            EmailKind.ActivityNotification,
+            toAddress,
+            toName,
+            content.Subject,
+            htmlBody,
+            textBody
+        );
     }
 
     private static string ConfirmedIntro(string? participantName)

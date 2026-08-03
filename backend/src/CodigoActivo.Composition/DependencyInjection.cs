@@ -175,7 +175,9 @@ public static class DependencyInjection
         }
 
         services.AddSingleton(options);
-        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddSingleton<IEmailTransport, SmtpEmailSender>();
+        services.AddSingleton<IEmailSender, ThrottledEmailSender>();
+        services.AddSingleton(BuildEmailGuardOptions(configuration));
         services.AddSingleton(
             new ManualEmailOptions
             {
@@ -193,6 +195,51 @@ public static class DependencyInjection
                 ),
             }
         );
+    }
+
+    private static EmailGuardOptions BuildEmailGuardOptions(IConfiguration configuration)
+    {
+        return new EmailGuardOptions
+        {
+            RecipientBurst = ReadPositiveInt(
+                configuration["EmailGuard:RecipientBurst"],
+                EmailGuardOptions.DefaultRecipientBurst
+            ),
+            RecipientPerHour = ReadPositiveInt(
+                configuration["EmailGuard:RecipientPerHour"],
+                EmailGuardOptions.DefaultRecipientPerHour
+            ),
+            RecipientPerDay = ReadPositiveInt(
+                configuration["EmailGuard:RecipientPerDay"],
+                EmailGuardOptions.DefaultRecipientPerDay
+            ),
+            GlobalBurst = ReadPositiveInt(
+                configuration["EmailGuard:GlobalBurst"],
+                EmailGuardOptions.DefaultGlobalBurst
+            ),
+            GlobalPerHour = ReadPositiveInt(
+                configuration["EmailGuard:GlobalPerHour"],
+                EmailGuardOptions.DefaultGlobalPerHour
+            ),
+            GlobalCredentialReserve = ReadPositiveInt(
+                configuration["EmailGuard:GlobalCredentialReserve"],
+                EmailGuardOptions.DefaultGlobalCredentialReserve
+            ),
+            MaxTrackedRecipients = ReadPositiveInt(
+                configuration["EmailGuard:MaxTrackedRecipients"],
+                EmailGuardOptions.DefaultMaxTrackedRecipients
+            ),
+            SweepInterval = ReadTimeSpan(
+                configuration["EmailGuard:SweepIntervalMinutes"],
+                TimeSpan.FromMinutes,
+                EmailGuardOptions.DefaultSweepInterval
+            ),
+            AlertInterval = ReadTimeSpan(
+                configuration["EmailGuard:AlertIntervalMinutes"],
+                TimeSpan.FromMinutes,
+                EmailGuardOptions.DefaultAlertInterval
+            ),
+        };
     }
 
     private static int ReadPositiveInt(string? value, int fallback)

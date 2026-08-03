@@ -1,6 +1,7 @@
 using System.Net;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Entities;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -28,9 +29,17 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         return Factory.CreateClient();
     }
 
-    protected async Task<HttpClient> LoginAsync(TestCredentials credentials)
+    protected Task<HttpClient> LoginAsync(TestCredentials credentials)
     {
-        var client = Factory.CreateClient();
+        return LoginAsync(Factory, credentials);
+    }
+
+    protected static async Task<HttpClient> LoginAsync(
+        WebApplicationFactory<Program> host,
+        TestCredentials credentials
+    )
+    {
+        var client = host.CreateClient();
         using var response = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(credentials.Identifier, credentials.Password)

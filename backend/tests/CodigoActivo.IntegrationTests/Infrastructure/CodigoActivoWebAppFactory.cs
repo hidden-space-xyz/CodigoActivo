@@ -21,6 +21,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     private static readonly DateTimeOffset ClockOrigin = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
     private readonly string fileStorageRoot = CreateFileStorageRoot();
+    private readonly List<WebApplicationFactory<Program>> derived = [];
 
     private WebApplicationFactory<Program>? verificationDisabled;
 
@@ -28,15 +29,50 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
     public FakeEmailSender EmailSender { get; } = new();
 
+    private static EmailGuardOptions UnboundedEmailGuard()
+    {
+        const int Unbounded = 1_000_000;
+        return new EmailGuardOptions
+        {
+            RecipientBurst = Unbounded,
+            RecipientPerHour = Unbounded,
+            RecipientPerDay = Unbounded,
+            GlobalBurst = Unbounded,
+            GlobalPerHour = Unbounded,
+            GlobalCredentialReserve = 0,
+        };
+    }
+
+    public WebApplicationFactory<Program> WithEmailGuard(EmailGuardOptions guard)
+    {
+        return Track(
+            WithWebHostBuilder(builder =>
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<EmailGuardOptions>();
+                    services.AddSingleton(guard);
+                })
+            )
+        );
+    }
+
     public WebApplicationFactory<Program> WithVerificationDisabled()
     {
-        return verificationDisabled ??= WithWebHostBuilder(builder =>
-            builder.ConfigureTestServices(services =>
-            {
-                services.RemoveAll<AccountVerificationOptions>();
-                services.AddSingleton(new AccountVerificationOptions { Required = false });
-            })
+        return verificationDisabled ??= Track(
+            WithWebHostBuilder(builder =>
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<AccountVerificationOptions>();
+                    services.AddSingleton(new AccountVerificationOptions { Required = false });
+                })
+            )
         );
+    }
+
+    private WebApplicationFactory<Program> Track(WebApplicationFactory<Program> factory)
+    {
+        derived.Add(factory);
+        return factory;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -59,8 +95,11 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Clock);
 
-            services.RemoveAll<IEmailSender>();
-            services.AddSingleton<IEmailSender>(EmailSender);
+            services.RemoveAll<IEmailTransport>();
+            services.AddSingleton<IEmailTransport>(EmailSender);
+
+            services.RemoveAll<EmailGuardOptions>();
+            services.AddSingleton(UnboundedEmailGuard());
 
             services.RemoveAll<AccountVerificationOptions>();
             services.AddSingleton(new AccountVerificationOptions { Required = true });
@@ -127,8 +166,8 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     private async Task ResetCachesAsync()
     {
         await PurgeCachesAsync(Services);
-        if (verificationDisabled is not null)
-            await PurgeCachesAsync(verificationDisabled.Services);
+        foreach (var factory in derived)
+            await PurgeCachesAsync(factory.Services);
     }
 
     private static async Task PurgeCachesAsync(IServiceProvider services)

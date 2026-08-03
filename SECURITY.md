@@ -95,15 +95,52 @@ rejecting it emails the outcome. Both are sent by `ActivityService` *after* the 
   still succeeds; only the notification is lost (and logged as an error).
 - **Every interpolated value is HTML-encoded** into the same branded template the other flows use, so a
   member's name or an activity title cannot inject markup into the outgoing mail.
-> [!WARNING]
-> **Send volume is not limited — known gap.** The other two member-triggerable sends are cooldown-gated in
-> code (`AuthService.ResendVerificationAsync`, `ForgotPasswordAsync`); this one is not. `assign` →
-> `unassign` → `assign` recreates the row and notifies again every time, and these routes sit in nginx's
-> general `/api` zone (30 r/s), not the strict credential one. An authenticated member can therefore loop
-> that pair and drive a notification per iteration — each one a full SMTP transaction against the same relay
-> account verification and password reset depend on, so exhausting its quota takes those flows down with it.
-> Closing this needs a per-(user, activity) notification cooldown in the database; a per-user one would
-> wrongly suppress the second of two signups to different activities.
+Send volume is bounded by the outbound email guard described next — `assign` → `unassign` → `assign` still
+recreates the row every time, but it stops producing mail once the recipient's budget is spent.
+
+### The outbound email guard
+
+Every **automatic** send — account verification, password reset and both activity notifications — passes
+through one guard before it reaches the SMTP relay, so a new email flow is rate-limited by construction
+rather than by remembering to add a cooldown. Admin-written email is exempt (see *Admin-sent email*).
+
+`ThrottledEmailSender` (`backend/src/CodigoActivo.Infrastructure/Communication/`) decorates the transport and
+consults `EmailSendLimiter`, two tiers of token bucket held in memory behind one lock:
+
+- **Per destination address** — `EmailGuard:RecipientBurst` (20) immediately, then `RecipientPerHour` (10)
+  and `RecipientPerDay` (50). This is the anti-harassment tier.
+- **Process-wide** — `GlobalBurst`/`GlobalPerHour` (1000) over all automatic mail, protecting the relay
+  account from an address-spray the per-address tier cannot see, with `GlobalCredentialReserve` (200)
+  usable only by verification and password reset. Without that reserve an activity-notification flood would
+  silently take account recovery down with it.
+
+Three properties are deliberate:
+
+- **The key is the destination address, not the user id**, because `PUT /api/users/{userId}` repoints an
+  account's address with no re-verification — a user-id key would be attacker-remappable. The key is
+  lowercased, sub-addressing is folded (`victim+1@`, `victim+2@` … share one budget) and dots are folded for
+  `gmail.com`/`googlemail.com` only, where they are provably insignificant. Dots stay significant elsewhere.
+- **Quota is spent on attempt, not on success.** Both older cooldowns arm only after a send succeeds, so they
+  disarm exactly when the relay degrades — the state a flood induces. This layer must not inherit that.
+- **A denial never fails the write, and never leaks.** `ForgotPasswordAsync` still returns its unconditional
+  success (the anti-enumeration invariant); activity signups still commit; registration still returns 201
+  without disarming the account's resend cooldown. The single flow that reports anything is
+  `POST /api/auth/{userId}/resend-verification`, which answers the existing `409 OtpResendCooldownActive` —
+  indistinguishable from that account's own cooldown, so no new oracle is added and no API contract changes.
+
+**The guard cannot be turned off.** There is no kill switch, no env var and no configuration value that
+bypasses it: `ThrottledEmailSender` consults the limiter on every call, and it is the only implementation of
+the abstraction every automatic flow injects. The `EmailGuard:*` keys tune the numbers, and each one falls
+back to its shipped default when the value is missing, zero, negative or unparseable — so a malformed or
+hostile config cannot neuter the limits either.
+
+Operationally: the guard logs one line at startup naming every cap, a `Warning` the first time a recipient
+starts being held (not once per dropped message), a `Warning` at 20% of the remaining global budget and an
+`Error` when it is exhausted. State is **in-memory and per-process** — a restart refills every bucket, and
+running more than one `api` replica multiplies every cap by the replica count. Compose defines exactly one.
+
+nginx's two `limit_req` zones stay in place. They absorb floods before the API is reached and are the only
+control over requests that never produce an email; the guard counts messages, which is what protects the relay.
 
 ### Admin-sent email
 
@@ -121,6 +158,17 @@ this capability is one more reason to heed the first-user-becomes-admin warning 
   scripts into the outgoing mail.
 - **Attachments are transient** (see *File uploads*), bounded by `ManualEmail:MaxAttachments` and
   `ManualEmail:MaxAttachmentsBytes`, and a single send is capped at `ManualEmail:MaxRecipients`.
+- **They are exempt from the outbound email guard, at any volume**, and consume none of its budget — a
+  500-recipient send cannot starve account verification or password reset, and can be repeated immediately.
+  The exemption is a compile-time property, not a convention: `IEmailSender` (one `SendAsync`) is the guarded
+  abstraction and `ThrottledEmailSender` is its only implementation, while the raw `IEmailTransport` is
+  injected by exactly one type, `EmailService`. `SmtpEmailSender` does not implement `IEmailSender` at all, so
+  registering an unguarded sender does not compile. `EmailSenderWiringTests` fails if a second type ever takes
+  `IEmailTransport`.
+- **The exemption keys on the API surface, never on the caller.** `PATCH /api/activities/{activityId}/{userId}/change-status`
+  is also `[AllowOnlyAdmin]`, yet its decision email is fully guarded, because the recipient is a member the
+  admin picked — alternating *Confirmed*/*Denied* would otherwise be a mailbomb with admin credentials.
+- Each send is logged with its recipient count and delivered/failed/skipped tallies; nothing else records it.
 - These endpoints fall under nginx's general `/api` rate-limit zone, **not** the strict credential zone.
 
 ### Demo mode

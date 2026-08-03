@@ -53,6 +53,13 @@ public static class VerificationEmail
             </div>
             """;
 
-        return new EmailMessage(toAddress, toName, Subject, htmlBody, textBody);
+        return new EmailMessage(
+            EmailKind.AccountVerification,
+            toAddress,
+            toName,
+            Subject,
+            htmlBody,
+            textBody
+        );
     }
 }

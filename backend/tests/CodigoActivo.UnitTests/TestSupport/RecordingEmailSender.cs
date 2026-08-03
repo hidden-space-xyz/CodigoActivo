@@ -3,7 +3,7 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 
-public sealed partial class RecordingEmailSender : IEmailSender
+public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
 {
     public List<EmailMessage> Sent { get; } = [];
 

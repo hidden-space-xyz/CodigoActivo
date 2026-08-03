@@ -4,6 +4,7 @@ using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -733,6 +734,44 @@ public sealed class AuthServiceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         user.OtpCodeHash.Should().Be(previousHash);
+        await AssertNotSaved();
+    }
+
+    [Fact]
+    public async Task ResendVerificationAsync_QuotaDenied_ReturnsConflictAndKeepsTheIssuedCode()
+    {
+        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
+        var user = FindReturns(
+            NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
+        );
+        var previousHash = user.OtpCodeHash;
+        var previousSentAt = user.OtpLastSentAt;
+
+        var result = await sut.ResendVerificationAsync(
+            user.Id,
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
+        user.OtpCodeHash.Should().Be(previousHash);
+        user.OtpLastSentAt.Should().Be(previousSentAt);
+        await AssertNotSaved();
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_QuotaDenied_StillReportsSuccessAndIssuesNoCode()
+    {
+        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Global);
+        var user = FindReturns(NewUser());
+
+        var result = await sut.ForgotPasswordAsync(
+            new ForgotPasswordRequest(user.Email!),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        user.PasswordResetCodeHash.Should().BeNull();
+        user.PasswordResetLastSentAt.Should().BeNull();
         await AssertNotSaved();
     }
 

@@ -77,6 +77,13 @@ public static class ActivitySignupEmail
             </div>
             """;
 
-        return new EmailMessage(toAddress, toName, subject, htmlBody, textBody);
+        return new EmailMessage(
+            EmailKind.ActivityNotification,
+            toAddress,
+            toName,
+            subject,
+            htmlBody,
+            textBody
+        );
     }
 }

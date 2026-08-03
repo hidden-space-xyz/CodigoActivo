@@ -212,7 +212,14 @@ public class AuthService(
             return Error.Conflict(ErrorCode.OtpResendCooldownActive);
 
         var otpCode = Guid.NewGuid().ToString();
-        await SendVerificationEmailAsync(user, otpCode, ct);
+        try
+        {
+            await SendVerificationEmailAsync(user, otpCode, ct);
+        }
+        catch (EmailRateLimitedException)
+        {
+            return Error.Conflict(ErrorCode.OtpResendCooldownActive);
+        }
 
         user.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
         await uow.SaveChangesAsync(ct);
@@ -248,6 +255,10 @@ public class AuthService(
         try
         {
             await SendPasswordResetEmailAsync(user, code, ct);
+        }
+        catch (EmailRateLimitedException)
+        {
+            return Result.Success();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -299,6 +310,10 @@ public class AuthService(
         try
         {
             await SendVerificationEmailAsync(user, otpCode, ct);
+        }
+        catch (EmailRateLimitedException)
+        {
+            return;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
