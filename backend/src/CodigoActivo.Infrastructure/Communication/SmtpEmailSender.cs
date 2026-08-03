@@ -7,7 +7,7 @@ using MimeKit;
 namespace CodigoActivo.Infrastructure.Communication;
 
 public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender> logger)
-    : IEmailSender
+    : IEmailTransport
 {
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {

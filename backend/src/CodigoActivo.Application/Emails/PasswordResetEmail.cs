@@ -46,6 +46,13 @@ public static class PasswordResetEmail
             </div>
             """;
 
-        return new EmailMessage(toAddress, toName, Subject, htmlBody, textBody);
+        return new EmailMessage(
+            EmailKind.PasswordReset,
+            toAddress,
+            toName,
+            Subject,
+            htmlBody,
+            textBody
+        );
     }
 }

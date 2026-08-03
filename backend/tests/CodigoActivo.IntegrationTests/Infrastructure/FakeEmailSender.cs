@@ -3,7 +3,7 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed partial class FakeEmailSender : IEmailSender
+public sealed partial class FakeEmailSender : IEmailTransport
 {
     private readonly List<EmailMessage> sent = [];
     private int batches;

@@ -7,6 +7,7 @@ using CodigoActivo.API.OpenApi;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -142,6 +143,7 @@ try
     var app = builder.Build();
 
     await InitializeDatabaseAsync(app);
+    LogEmailGuardState(app);
 
     app.Use(
         async (httpContext, next) =>
@@ -232,6 +234,25 @@ static async Task InitializeDatabaseAsync(WebApplication app)
     logger.LogInformation("Database seeding complete");
 
     await SyncDemoDataAsync(scope.ServiceProvider, app.Configuration, logger);
+}
+
+static void LogEmailGuardState(WebApplication app)
+{
+    var guard = app.Services.GetRequiredService<EmailGuardOptions>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+    if (!logger.IsEnabled(LogLevel.Information))
+        return;
+
+    logger.LogInformation(
+        "Outbound email guard armed: per recipient {RecipientBurst} burst, {RecipientPerHour}/hour, {RecipientPerDay}/day; overall {GlobalBurst} burst, {GlobalPerHour}/hour with {Reserve} reserved for account email. Admin-written email is exempt",
+        guard.RecipientBurst,
+        guard.RecipientPerHour,
+        guard.RecipientPerDay,
+        guard.GlobalBurst,
+        guard.GlobalPerHour,
+        guard.EffectiveCredentialReserve
+    );
 }
 
 static async Task SyncDemoDataAsync(

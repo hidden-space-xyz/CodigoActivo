@@ -86,9 +86,33 @@ them into the `api` service; the connection string is built from `POSTGRES_*` in
 A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsettings.json` (Serilog levels,
 `Auth:CookieName` = `CodigoActivo.Session`, `Auth:ExpireHours` = `8`, `FileStorage:MaxSizeBytes` = 10 MiB,
 `AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`, `ManualEmail:MaxRecipients`
-= `500`, `ManualEmail:MaxAttachments` = `10`, `ManualEmail:MaxAttachmentsBytes` = 8 MiB). Override any of
-them, if needed, with the standard .NET `Section__Key` environment-variable convention (e.g.
-`Auth__ExpireHours`).
+= `500`, `ManualEmail:MaxAttachments` = `10`, `ManualEmail:MaxAttachmentsBytes` = 8 MiB, plus the
+`EmailGuard` section below). Override any of them, if needed, with the standard .NET `Section__Key`
+environment-variable convention (e.g. `Auth__ExpireHours`).
+
+> [!IMPORTANT]
+> `Section__Key` overrides only reach the API if the variable is actually passed into the container. The
+> `api` service in `docker-compose.yml` declares an **explicit list** of environment variables and has no
+> `env_file:`, so putting `Auth__ExpireHours` or `EmailGuard__RecipientBurst` in the root `.env` has no
+> effect on the Docker stack until you add the name to that list. Only the flat variables in the table
+> above are wired through.
+
+The `EmailGuard` section tunes the outbound email guard, which rate-limits every **automatic** email
+(verification, password reset, activity notifications) and never the manual email admins send. **The guard
+is always on** — there is no switch that disables it, and any key left out, zero, negative or unparseable
+falls back to the default below rather than lifting the limit:
+
+| Key                               | Meaning                                                        | Default |
+| --------------------------------- | -------------------------------------------------------------- | ------- |
+| `EmailGuard:RecipientBurst`       | Messages one address may receive back-to-back                  | `20`    |
+| `EmailGuard:RecipientPerHour`     | Sustained hourly rate per address                              | `10`    |
+| `EmailGuard:RecipientPerDay`      | Sustained daily ceiling per address                            | `50`    |
+| `EmailGuard:GlobalBurst`          | Automatic messages the process may send back-to-back           | `1000`  |
+| `EmailGuard:GlobalPerHour`        | Sustained hourly rate over all automatic mail                  | `1000`  |
+| `EmailGuard:GlobalCredentialReserve` | Slice of the global budget only verification/reset may use  | `200`   |
+| `EmailGuard:MaxTrackedRecipients` | Address budgets held in memory before falling back to global   | `50000` |
+| `EmailGuard:SweepIntervalMinutes` | How often idle address budgets are evicted                     | `5`     |
+| `EmailGuard:AlertIntervalMinutes` | Minimum gap between repeated guard alerts in the log           | `15`    |
 
 > [!NOTE]
 > `FileStorage:MaxSizeBytes` drives both the HTTP request-size limit on the upload endpoints (+64 KiB of
@@ -102,6 +126,15 @@ them, if needed, with the standard .NET `Section__Key` environment-variable conv
 > attachments are never written to `FILE_STORAGE_ROOT`. A bulk send is synchronous — one message per
 > recipient over a single SMTP connection — and nginx allows it up to `proxy_read_timeout 300s`
 > (`frontend/docker/proxy-api.conf`); `ManualEmail:MaxRecipients` is what keeps a single send inside it.
+
+> [!NOTE]
+> **What to watch in the logs.** The API logs one `Information` line at startup naming every guard cap. A
+> burst of `Warning`s naming the same
+> `{Recipient}` means the guard is holding a mailbomb (the address is logged once per throttling episode, not
+> once per dropped message). A single `Error` saying the global budget is exhausted means automatic mail has
+> stopped until it refills; read the `{Kind}` values preceding it to see which flow drained it. Admin-written
+> email keeps working throughout. Budgets are in-memory: a restart refills them, and more than one `api`
+> replica multiplies every cap by the replica count.
 
 ## Demo mode
 

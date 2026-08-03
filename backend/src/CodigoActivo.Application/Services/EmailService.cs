@@ -15,7 +15,7 @@ public class EmailService(
     IUserRepository users,
     IEventRepository events,
     IQueryExecutor executor,
-    IEmailSender emailSender,
+    IEmailTransport emailSender,
     ManualEmailOptions options,
     ILogger<EmailService> logger
 ) : IEmailService
@@ -128,10 +128,10 @@ public class EmailService(
             .Select(r => ManualEmail.Create(content, r.Email!, r.FirstName, buffered.Value))
             .ToList();
 
+        EmailBatchResult batch;
         try
         {
-            var batch = await emailSender.SendManyAsync(messages, ct);
-            return new SendEmailResultResponse(batch.Sent, skipped, batch.Failed);
+            batch = await emailSender.SendManyAsync(messages, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -142,6 +142,19 @@ public class EmailService(
             );
             return Error.BadRequest(ErrorCode.EmailSendFailed);
         }
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "An admin sent a manual email to {Recipients} recipients ({Sent} delivered, {Failed} failed, {Skipped} without an address)",
+                messages.Count,
+                batch.Sent,
+                batch.Failed,
+                skipped
+            );
+        }
+
+        return new SendEmailResultResponse(batch.Sent, skipped, batch.Failed);
     }
 
     private async Task<Result<IReadOnlyList<EmailAttachment>>> BufferAsync(

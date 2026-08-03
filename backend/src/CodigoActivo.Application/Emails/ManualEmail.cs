@@ -37,6 +37,7 @@ public static class ManualEmail
     )
     {
         return new EmailMessage(
+            EmailKind.Manual,
             toAddress,
             toName,
             content.Subject,
