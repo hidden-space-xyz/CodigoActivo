@@ -9,6 +9,7 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -30,6 +31,7 @@ public sealed class ActivityServiceAssignmentTests
     private readonly TestClock clock = new();
     private readonly FakeHybridCache cache = new();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly ActivityService sut;
 
     private static readonly DateTimeOffset OpenStart = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
@@ -42,6 +44,25 @@ public sealed class ActivityServiceAssignmentTests
     private static readonly DateTimeOffset BeforeEarly = new(2026, 6, 10, 0, 0, 0, TimeSpan.Zero);
 
     private static readonly DateTimeOffset Now = new(2026, 7, 15, 0, 0, 0, TimeSpan.Zero);
+
+    private static readonly DateTimeOffset ActivityStartsAt = new(
+        2026,
+        7,
+        20,
+        16,
+        0,
+        0,
+        TimeSpan.Zero
+    );
+    private static readonly DateTimeOffset ActivityEndsAt = new(
+        2026,
+        7,
+        20,
+        18,
+        30,
+        0,
+        TimeSpan.Zero
+    );
 
     public ActivityServiceAssignmentTests()
     {
@@ -58,7 +79,10 @@ public sealed class ActivityServiceAssignmentTests
             clock,
             uow,
             cache,
-            cacheInvalidator
+            cacheInvalidator,
+            emailSender,
+            new ApplicationOptions { BaseUrl = "https://app.test" },
+            NullLogger<ActivityService>.Instance
         );
     }
 
@@ -76,6 +100,10 @@ public sealed class ActivityServiceAssignmentTests
                     new()
                     {
                         Id = activityId,
+                        Title = "Taller de robótica",
+                        Location = "Sala A",
+                        ActivityStartsAt = ActivityStartsAt,
+                        ActivityEndsAt = ActivityEndsAt,
                         Event = new Event
                         {
                             Title = "e",
@@ -99,6 +127,7 @@ public sealed class ActivityServiceAssignmentTests
                         Id = userId,
                         FirstName = "Test",
                         LastName = "User",
+                        Email = "test@user.test",
                         UserTypeId = userTypeId,
                     },
                 }.AsQueryable()
@@ -113,6 +142,7 @@ public sealed class ActivityServiceAssignmentTests
             Id = parentId,
             FirstName = "Ada",
             LastName = "Parent",
+            Email = "ada@parent.test",
             UserTypeId = parentUserTypeId,
         };
         users.Query().Returns(new List<User> { child }.AsQueryable());
@@ -132,6 +162,7 @@ public sealed class ActivityServiceAssignmentTests
             Id = id,
             FirstName = "Ada",
             LastName = "Parent",
+            Email = "ada@parent.test",
             UserTypeId = SeedIds.UserTypes.Member,
         };
 
@@ -199,17 +230,34 @@ public sealed class ActivityServiceAssignmentTests
         Guid userId,
         Guid activityId,
         ActivityRoleType? role = null,
-        AssignmentStatusType? status = null
+        AssignmentStatusType? status = null,
+        Guid? roleTypeId = null,
+        Guid? statusId = null
     ) =>
         new()
         {
             UserId = userId,
             ActivityId = activityId,
-            ActivityRoleTypeId = Guid.NewGuid(),
+            ActivityRoleTypeId = roleTypeId ?? Guid.NewGuid(),
             ActivityRoleType = role!,
-            AssignmentStatusId = Guid.NewGuid(),
+            AssignmentStatusId = statusId ?? Guid.NewGuid(),
             AssignmentStatus = status!,
         };
+
+    private void StatusFound(Guid id, string name) =>
+        statuses
+            .FindAsync(
+                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(
+                new AssignmentStatusType
+                {
+                    Id = id,
+                    Name = name,
+                    Color = "#0f0",
+                }
+            );
 
     [Fact]
     public async Task AssignAsync_ActivityWindowMissing_ReturnsNotFound()
@@ -1648,5 +1696,238 @@ public sealed class ActivityServiceAssignmentTests
                 new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
                 new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario")
             );
+    }
+
+    [Fact]
+    public async Task AssignAsync_ValidRequest_SendsPendingSignupEmailToTheUser()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+        AssignmentExists(false);
+        RequestedStatusNamed("Solicitado");
+        CatalogRoles();
+
+        await sut.AssignAsync(
+            activityId,
+            userId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Volunteer),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be("test@user.test");
+        message.ToName.Should().Be("Test");
+        message.Subject.Should().Be("Inscripción recibida: Taller de robótica");
+        message
+            .TextBody.Should()
+            .Contain("Test User (Voluntario)")
+            .And.Contain("20/07/2026, de 16:00 a 18:30 h")
+            .And.Contain("https://app.test/account");
+    }
+
+    [Fact]
+    public async Task AssignAsync_DependentMinor_SendsPendingSignupEmailToTheGuardian()
+    {
+        var activityId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetChildOf(childId, SeedIds.UserTypes.Member);
+        AssignmentExists(false);
+        RequestedStatusNamed("Solicitado");
+        CatalogRoles();
+
+        await sut.AssignAsync(
+            activityId,
+            childId,
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be("ada@parent.test");
+        message.ToName.Should().Be("Ada");
+        message.TextBody.Should().Contain("Kid One (Participante)");
+    }
+
+    [Fact]
+    public async Task AssignHouseholdAsync_SelfAndChild_SendsOneEmailListingEveryone()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        RequestedStatusNamed("Solicitado");
+        CatalogRoles();
+
+        await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            new AssignHouseholdRequest(
+                [
+                    new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
+                    new(childId, SeedIds.ActivityRoleTypes.Participant),
+                ]
+            ),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be("ada@parent.test");
+        message
+            .TextBody.Should()
+            .Contain("Ada Parent (Líder)")
+            .And.Contain("Kid One (Participante)");
+    }
+
+    [Fact]
+    public async Task AssignHouseholdAsync_EmailDeliveryFails_StillPersistsTheAssignments()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        HouseholdUsers(SocioParent(actingUserId));
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        RequestedStatusNamed("Solicitado");
+        CatalogRoles();
+        emailSender.ThrowOnSend = new InvalidOperationException("smtp is down");
+
+        var result = await sut.AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            new AssignHouseholdRequest([new(actingUserId, SeedIds.ActivityRoleTypes.Leader)]),
+            isAdmin: false,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_Confirmed_SendsDecisionEmailToTheUser()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+        CatalogRoles();
+        ExistingAssignment(
+            Assignment(
+                userId,
+                activityId,
+                roleTypeId: SeedIds.ActivityRoleTypes.Volunteer,
+                statusId: SeedIds.AssignmentStatusTypes.Requested
+            )
+        );
+        StatusFound(SeedIds.AssignmentStatusTypes.Confirmed, "Confirmado");
+
+        await sut.ChangeStatusAsync(
+            activityId,
+            userId,
+            new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed),
+            TestContext.Current.CancellationToken
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be("test@user.test");
+        message.Subject.Should().Be("Inscripción confirmada: Taller de robótica");
+        message
+            .TextBody.Should()
+            .Contain("tu inscripción")
+            .And.Contain("aprobado")
+            .And.Contain("Voluntario");
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_Denied_SendsDecisionEmailNamingTheDependentMinor()
+    {
+        var activityId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetChildOf(childId, SeedIds.UserTypes.Member);
+        CatalogRoles();
+        ExistingAssignment(
+            Assignment(
+                childId,
+                activityId,
+                roleTypeId: SeedIds.ActivityRoleTypes.Participant,
+                statusId: SeedIds.AssignmentStatusTypes.Requested
+            )
+        );
+        StatusFound(SeedIds.AssignmentStatusTypes.Denied, "Denegado");
+
+        await sut.ChangeStatusAsync(
+            activityId,
+            childId,
+            new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Denied),
+            TestContext.Current.CancellationToken
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be("ada@parent.test");
+        message.Subject.Should().Be("Inscripción rechazada: Taller de robótica");
+        message.TextBody.Should().Contain("la inscripción de Kid One").And.Contain("rechazado");
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_SameStatusReapplied_DoesNotSendEmail()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+        CatalogRoles();
+        ExistingAssignment(
+            Assignment(userId, activityId, statusId: SeedIds.AssignmentStatusTypes.Confirmed)
+        );
+        StatusFound(SeedIds.AssignmentStatusTypes.Confirmed, "Confirmado");
+
+        await sut.ChangeStatusAsync(
+            activityId,
+            userId,
+            new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed),
+            TestContext.Current.CancellationToken
+        );
+
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_MovedBackToRequested_DoesNotSendEmail()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        HasActivityWindow(activityId, OpenStart, OpenEnd);
+        TargetUser(userId, SeedIds.UserTypes.Participant);
+        CatalogRoles();
+        ExistingAssignment(
+            Assignment(userId, activityId, statusId: SeedIds.AssignmentStatusTypes.Confirmed)
+        );
+        StatusFound(SeedIds.AssignmentStatusTypes.Requested, "Solicitado");
+
+        await sut.ChangeStatusAsync(
+            activityId,
+            userId,
+            new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Requested),
+            TestContext.Current.CancellationToken
+        );
+
+        emailSender.Sent.Should().BeEmpty();
     }
 }
