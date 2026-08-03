@@ -222,6 +222,61 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AssignHousehold_SelfAndChild_EmailsOneSignupSummaryToTheMember()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new AssignHouseholdRequest([
+            new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant),
+        ]);
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{activityId}/assign-household",
+            request,
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var message = Factory.EmailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        message.Subject.Should().Be("Inscripción recibida: Actividad");
+        message
+            .TextBody.Should()
+            .Contain("Marta Miembro (Líder)")
+            .And.Contain("Mateo Miembro (Participante)")
+            .And.Contain("Evento");
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ConfirmedForDependentMinor_EmailsTheDecisionToTheGuardian()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        await SeedAssignmentAsync(
+            activityId,
+            TestSeedData.Users.MemberChildId,
+            SeedIds.ActivityRoleTypes.Participant
+        );
+        var client = await LoginAsAdminAsync();
+        var request = new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/change-status",
+            request,
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var message = Factory.EmailSender.Sent.Should().ContainSingle().Which;
+        message.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        message.Subject.Should().Be("Inscripción confirmada: Actividad");
+        message
+            .TextBody.Should()
+            .Contain("la inscripción de Mateo Miembro")
+            .And.Contain("Participa como: Participante");
+    }
+
+    [Fact]
     public async Task Unassign_SelfMemberSignupOpen_RemovesAssignment()
     {
         var (_, activityId) = await SeedActivityAsync();

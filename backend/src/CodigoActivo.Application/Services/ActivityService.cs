@@ -1,13 +1,16 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Services;
 
@@ -24,9 +27,15 @@ public class ActivityService(
     IClock clock,
     IUnitOfWork uow,
     HybridCache cache,
-    ICacheInvalidator cacheInvalidator
+    ICacheInvalidator cacheInvalidator,
+    IEmailSender emailSender,
+    ApplicationOptions application,
+    ILogger<ActivityService> logger
 ) : IActivityService
 {
+    private const string EventPath = "/events";
+    private const string AccountPath = "/account";
+
     private static readonly SortMap<ActivityResponse> Sort = new SortMap<ActivityResponse>()
         .Add("activityStartsAt", a => a.ActivityStartsAt)
         .Add("activityEndsAt", a => a.ActivityEndsAt)
@@ -301,6 +310,13 @@ public class ActivityService(
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
+        await NotifySignupAsync(
+            activityId,
+            userId,
+            [new SignupLine(userId, request.ActivityRoleTypeId)],
+            ct
+        );
+
         var requestedStatus = await GetRequestedStatusAsync(ct);
         return new AssignmentResponse(
             userId,
@@ -401,7 +417,16 @@ public class ActivityService(
 
         await uow.SaveChangesAsync(ct);
         if (created.Count > 0)
+        {
             await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
+            await NotifySignupAsync(
+                activityId,
+                actingUserId,
+                created.ConvertAll(item => new SignupLine(item.UserId, item.RoleTypeId)),
+                ct
+            );
+        }
+
         return Result.Success<IReadOnlyList<AssignmentResponse>>(created);
     }
 
@@ -444,9 +469,21 @@ public class ActivityService(
         if (status is null)
             return Error.NotFound(ErrorCode.AssignmentStatusTypeNotFound);
 
+        var previousStatusId = assignment.AssignmentStatusId;
         assignment.AssignmentStatusId = status.Id;
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
+
+        if (previousStatusId != status.Id && IsDecision(status.Id))
+        {
+            await NotifyDecisionAsync(
+                activityId,
+                userId,
+                status.Id,
+                assignment.ActivityRoleTypeId,
+                ct
+            );
+        }
 
         return new AssignmentResponse(
             userId,
@@ -726,6 +763,211 @@ public class ActivityService(
         return userTypeId == SeedIds.UserTypes.Member || userTypeId == SeedIds.UserTypes.Sponsor;
     }
 
+    private static bool IsDecision(Guid statusId)
+    {
+        return statusId == SeedIds.AssignmentStatusTypes.Confirmed
+            || statusId == SeedIds.AssignmentStatusTypes.Denied;
+    }
+
+    private async Task NotifySignupAsync(
+        Guid activityId,
+        Guid recipientUserId,
+        IReadOnlyList<SignupLine> lines,
+        CancellationToken ct
+    )
+    {
+        try
+        {
+            var details = await GetEmailDetailsAsync(activityId, ct);
+            if (details is null)
+                return;
+
+            var contacts = await GetContactsAsync(
+                lines.Select(line => line.UserId).Append(recipientUserId).Distinct().ToList(),
+                ct
+            );
+            if (
+                !contacts.TryGetValue(recipientUserId, out var target)
+                || ResolveRecipient(target) is not { } recipient
+            )
+            {
+                return;
+            }
+
+            var roleNames = await GetRoleNamesAsync(ct);
+            var participants = new List<ActivitySignupParticipant>(lines.Count);
+            foreach (var line in lines)
+            {
+                if (contacts.TryGetValue(line.UserId, out var contact))
+                {
+                    participants.Add(
+                        new ActivitySignupParticipant(
+                            contact.FullName,
+                            roleNames.GetValueOrDefault(line.RoleTypeId, string.Empty)
+                        )
+                    );
+                }
+            }
+
+            if (participants.Count == 0)
+                return;
+
+            await emailSender.SendAsync(
+                ActivitySignupEmail.Create(
+                    recipient.Address,
+                    recipient.Name,
+                    details,
+                    participants,
+                    clock.TimeZone,
+                    BuildUrl(AccountPath)
+                ),
+                ct
+            );
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(
+                ex,
+                "Failed to send the signup confirmation email for activity {ActivityId}",
+                activityId
+            );
+        }
+    }
+
+    private async Task NotifyDecisionAsync(
+        Guid activityId,
+        Guid userId,
+        Guid statusId,
+        Guid roleTypeId,
+        CancellationToken ct
+    )
+    {
+        try
+        {
+            var details = await GetEmailDetailsAsync(activityId, ct);
+            if (details is null)
+                return;
+
+            var contacts = await GetContactsAsync([userId], ct);
+            if (
+                !contacts.TryGetValue(userId, out var contact)
+                || ResolveRecipient(contact) is not { } recipient
+            )
+            {
+                return;
+            }
+
+            var participantName = recipient.IsGuardian ? contact.FullName : null;
+            var message =
+                statusId == SeedIds.AssignmentStatusTypes.Confirmed
+                    ? ActivitySignupDecisionEmail.Confirmed(
+                        recipient.Address,
+                        recipient.Name,
+                        participantName,
+                        (await GetRoleNamesAsync(ct)).GetValueOrDefault(roleTypeId),
+                        details,
+                        clock.TimeZone
+                    )
+                    : ActivitySignupDecisionEmail.Denied(
+                        recipient.Address,
+                        recipient.Name,
+                        participantName,
+                        details,
+                        clock.TimeZone
+                    );
+
+            await emailSender.SendAsync(message, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(
+                ex,
+                "Failed to send the signup decision email for activity {ActivityId}",
+                activityId
+            );
+        }
+    }
+
+    private async Task<ActivityEmailDetails?> GetEmailDetailsAsync(
+        Guid activityId,
+        CancellationToken ct
+    )
+    {
+        var data = await executor.FirstOrDefaultAsync(
+            activities
+                .Query()
+                .Where(a => a.Id == activityId)
+                .Select(a => new ActivityEmailData(
+                    a.Title,
+                    a.Event.Title,
+                    a.EventId,
+                    a.Location,
+                    a.ActivityStartsAt,
+                    a.ActivityEndsAt
+                )),
+            ct
+        );
+
+        return data is null
+            ? null
+            : new ActivityEmailDetails(
+                data.ActivityTitle,
+                data.EventTitle,
+                data.Location,
+                data.StartsAt,
+                data.EndsAt,
+                BuildUrl($"{EventPath}/{data.EventId}")
+            );
+    }
+
+    private async Task<Dictionary<Guid, UserContact>> GetContactsAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken ct
+    )
+    {
+        var contacts = await executor.ToListAsync(
+            users
+                .Query()
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new UserContact(
+                    u.Id,
+                    u.FirstName,
+                    u.LastName,
+                    u.Email,
+                    u.Parent == null ? null : u.Parent.FirstName,
+                    u.Parent == null ? null : u.Parent.Email
+                )),
+            ct
+        );
+
+        return contacts.ToDictionary(contact => contact.Id);
+    }
+
+    private async Task<Dictionary<Guid, string>> GetRoleNamesAsync(CancellationToken ct)
+    {
+        var roles = await ListRoleTypesAsync(ct);
+        return roles.ToDictionary(role => role.Id, role => role.Name);
+    }
+
+    private static NotificationRecipient? ResolveRecipient(UserContact contact)
+    {
+        if (!string.IsNullOrWhiteSpace(contact.Email))
+            return new NotificationRecipient(contact.Email, contact.FirstName, IsGuardian: false);
+
+        return string.IsNullOrWhiteSpace(contact.GuardianEmail)
+            ? null
+            : new NotificationRecipient(
+                contact.GuardianEmail,
+                contact.GuardianFirstName ?? string.Empty,
+                IsGuardian: true
+            );
+    }
+
+    private string BuildUrl(string path)
+    {
+        return $"{application.BaseUrl.TrimEnd('/')}{path}";
+    }
+
     private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
     {
         var status = (await ListAssignmentStatusTypesAsync(ct)).FirstOrDefault(s =>
@@ -818,4 +1060,29 @@ public class ActivityService(
         DateTimeOffset StartsAt,
         DateTimeOffset EndsAt
     );
+
+    private readonly record struct SignupLine(Guid UserId, Guid RoleTypeId);
+
+    private sealed record ActivityEmailData(
+        string ActivityTitle,
+        string EventTitle,
+        Guid EventId,
+        string Location,
+        DateTimeOffset StartsAt,
+        DateTimeOffset EndsAt
+    );
+
+    private sealed record UserContact(
+        Guid Id,
+        string FirstName,
+        string LastName,
+        string? Email,
+        string? GuardianFirstName,
+        string? GuardianEmail
+    )
+    {
+        public string FullName => $"{FirstName} {LastName}".Trim();
+    }
+
+    private sealed record NotificationRecipient(string Address, string Name, bool IsGuardian);
 }

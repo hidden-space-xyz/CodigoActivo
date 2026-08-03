@@ -82,6 +82,29 @@ When `ACCOUNT_VERIFICATION_REQUIRED=true`, new accounts must confirm an emailed 
 they can log in; the OTP lifetime and resend cooldown are configurable. Enabling verification requires a
 configured SMTP server (`SMTP_HOST` + `SMTP_FROM_ADDRESS`), or the API refuses to start.
 
+### Automatic signup notifications
+
+Signing up for an activity emails an acknowledgement that the request is pending, and an admin confirming or
+rejecting it emails the outcome. Both are sent by `ActivityService` *after* the write has been committed.
+
+- **The address never comes from the request.** It is resolved server-side from the enrolled account, and a
+  dependent minor — who has no address of their own — resolves to their guardian. A caller cannot redirect a
+  notification anywhere.
+- **Delivery failures are logged and swallowed.** An SMTP outage must not fail or roll back a signup that is
+  already persisted, and the SMTP error must never reach an API response. With `SMTP_HOST` unset the signup
+  still succeeds; only the notification is lost (and logged as an error).
+- **Every interpolated value is HTML-encoded** into the same branded template the other flows use, so a
+  member's name or an activity title cannot inject markup into the outgoing mail.
+> [!WARNING]
+> **Send volume is not limited — known gap.** The other two member-triggerable sends are cooldown-gated in
+> code (`AuthService.ResendVerificationAsync`, `ForgotPasswordAsync`); this one is not. `assign` →
+> `unassign` → `assign` recreates the row and notifies again every time, and these routes sit in nginx's
+> general `/api` zone (30 r/s), not the strict credential one. An authenticated member can therefore loop
+> that pair and drive a notification per iteration — each one a full SMTP transaction against the same relay
+> account verification and password reset depend on, so exhausting its quota takes those flows down with it.
+> Closing this needs a per-(user, activity) notification cooldown in the database; a per-user one would
+> wrongly suppress the second of two signups to different activities.
+
 ### Admin-sent email
 
 Admins can write a message to a single member or to everyone matching the filters currently applied in the

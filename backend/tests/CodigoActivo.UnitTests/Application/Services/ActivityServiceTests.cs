@@ -10,6 +10,7 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -49,7 +50,10 @@ public sealed class ActivityServiceTests
             clock,
             uow,
             cache,
-            cacheInvalidator
+            cacheInvalidator,
+            new RecordingEmailSender(),
+            new ApplicationOptions { BaseUrl = "https://app.test" },
+            NullLogger<ActivityService>.Instance
         );
     }
 
