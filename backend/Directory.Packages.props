@@ -15,18 +15,13 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.137" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.138" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
-  <!--
-    Test-only packages. AwesomeAssertions is the Apache-2.0/MIT community fork of FluentAssertions
-    (kept free after FluentAssertions 8.0 moved to a commercial Xceed license). It exposes the same
-    assertion API under the `AwesomeAssertions` namespace (`using AwesomeAssertions;`).
-  -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />

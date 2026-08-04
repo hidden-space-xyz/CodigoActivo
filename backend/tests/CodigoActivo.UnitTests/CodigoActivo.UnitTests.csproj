@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!--
-    No database, HTTP or file-system packages belong here: unit tests must stay fast, isolated and
-    deterministic. Anything that needs real infrastructure lives in CodigoActivo.IntegrationTests.
-  -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
     <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />

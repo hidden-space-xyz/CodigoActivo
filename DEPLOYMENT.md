@@ -21,6 +21,11 @@ git-ignored root `.env` file (copy `.env.example`). For local development withou
 capabilities dropped; the `api` container additionally runs with a read-only filesystem and a
 `HEALTHCHECK` against `/api/auth/csrf` (the `web` container checks `/healthz`).
 
+In the `web` image the built SPA and the nginx config stay **root-owned and world-readable** rather
+than being chowned to the runtime user: the unprivileged nginx user (uid 101) has to be able to read
+them and must never be able to modify them. `frontend/Dockerfile` carries no comments, so that is
+recorded here.
+
 ## Production
 
 ```bash
@@ -68,7 +73,7 @@ them into the `api` service; the connection string is built from `POSTGRES_*` in
 | `POSTGRES_PORT`                 | Database port                                                     | `5432`                          |
 | `POSTGRES_DB`                   | Database name                                                     | `codigoactivo`                  |
 | `POSTGRES_USER`                 | Database user                                                     | `codigoactivo`                  |
-| `POSTGRES_PASSWORD`             | Database password — **required**                                  | *(none)*                        |
+| `POSTGRES_PASSWORD`             | Database password — **required** (e.g. `openssl rand -base64 32`) | *(none)*                        |
 | `APP_BASE_URL`                  | Public base URL used in links, outgoing emails and the generated sitemap/robots | `http://localhost:5173`         |
 | `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | host local (image sets `Europe/Madrid`) |
 | `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite` — `Lax` / `Strict` / `None`        | `Lax`                           |
