@@ -188,6 +188,8 @@ dotnet_diagnostic.MA0008.severity = none
 
 dotnet_diagnostic.MA0176.severity = none
 
+dotnet_diagnostic.MA0174.severity = none
+
 [**/Migrations/*.cs]
 generated_code = true
 dotnet_diagnostic.S4581.severity = none
