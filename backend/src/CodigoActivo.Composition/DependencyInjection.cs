@@ -265,9 +265,14 @@ public static class DependencyInjection
     private static TimeZoneInfo ResolveTimeZone(string? id)
     {
         if (string.IsNullOrWhiteSpace(id))
+        {
             return TimeZoneInfo.Local;
+        }
+
         if (TimeZoneInfo.TryFindSystemTimeZoneById(id, out var direct))
+        {
             return direct;
+        }
 
         if (
             TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var windowsId)
@@ -277,11 +282,15 @@ public static class DependencyInjection
             return viaWindows;
         }
 
-        return
+        if (
             TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
             && TimeZoneInfo.TryFindSystemTimeZoneById(ianaId, out var viaIana)
-            ? viaIana
-            : TimeZoneInfo.Local;
+        )
+        {
+            return viaIana;
+        }
+
+        return TimeZoneInfo.Local;
     }
 
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)

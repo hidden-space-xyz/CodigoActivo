@@ -104,8 +104,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         Guid userId,
         Guid? roleId = null,
         Guid? statusId = null
-    ) =>
-        Factory.SeedAsync(db =>
+    )
+    {
+        return Factory.SeedAsync(db =>
         {
             db.ActivityUserRoleAssignments.Add(
                 new ActivityUserRoleAssignment
@@ -118,14 +119,17 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             );
             return Task.CompletedTask;
         });
+    }
 
-    private Task<ActivityUserRoleAssignment?> FindAssignmentAsync(Guid activityId, Guid userId) =>
-        Factory.QueryAsync(db =>
+    private Task<ActivityUserRoleAssignment?> FindAssignmentAsync(Guid activityId, Guid userId)
+    {
+        return Factory.QueryAsync(db =>
             db.ActivityUserRoleAssignments.FirstOrDefaultAsync(
                 a => a.ActivityId == activityId && a.UserId == userId,
                 Ct
             )
         );
+    }
 
     [Fact]
     public async Task Assign_SelfMember_PersistsRequestedAssignment()
@@ -376,7 +380,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
 
         var response = await client.GetAsync(
-            $"/api/activities/{targetId}/overlaps/{TestSeedData.Users.MemberId}",
+            TestUri.Rel($"/api/activities/{targetId}/overlaps/{TestSeedData.Users.MemberId}"),
             Ct
         );
 
@@ -395,7 +399,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
 
         var response = await client.GetAsync(
-            $"/api/activities/household-assignments/{eventId}",
+            TestUri.Rel($"/api/activities/household-assignments/{eventId}"),
             Ct
         );
 
@@ -416,7 +420,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
 
         var response = await client.GetAsync(
-            $"/api/activities/household-assignments/{Guid.NewGuid()}",
+            TestUri.Rel($"/api/activities/household-assignments/{Guid.NewGuid()}"),
             Ct
         );
 
@@ -466,11 +470,11 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/activities/signup-roles", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities/signup-roles"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<IReadOnlyList<HouseholdSignupRolesResponse>>(Ct);
-        body!.Should().HaveCount(2);
+        body.Should().HaveCount(2);
         var self = body.Single(m => m.UserId == TestSeedData.Users.MemberId);
         self.Roles.Select(r => r.Id)
             .Should()
@@ -493,7 +497,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/activities/signup-roles", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities/signup-roles"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

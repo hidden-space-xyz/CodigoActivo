@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
@@ -34,7 +35,7 @@ public class EventService(
             .Add("title", e => e.Title)
             .Add("subtitle", e => e.Subtitle)
             .Add("featured", e => e.Featured)
-            .Add("categories", e => e.Categories.Select(c => c.Name).Min())
+            .Add("categories", e => e.Categories.Min(c => c.Name))
             .Default("eventStartsAt")
             .Tie(e => e.Id);
 
@@ -50,8 +51,9 @@ public class EventService(
         CancellationToken ct = default
     )
     {
+        var dayKey = clock.Today.DayNumber.ToString(CultureInfo.InvariantCulture);
         return await cache.GetOrCreateAsync(
-            CacheKeys.For($"events:list:{clock.Today.DayNumber}", query),
+            CacheKeys.For($"events:list:{dayKey}", query),
             token => new ValueTask<PagedResult<EventListItemResponse>>(
                 FetchListAsync(query, token)
             ),
@@ -85,13 +87,25 @@ public class EventService(
         }
 
         if (query.Featured is { } featured)
+        {
             source = source.Where(e => e.Featured == featured);
+        }
+
         if (query.CategoryTypeId is { } categoryTypeId)
+        {
             source = source.Where(e => e.Categories.Any(c => c.CategoryTypeId == categoryTypeId));
+        }
+
         if (query.EventDateFrom is { } eventDateFrom)
+        {
             source = source.Where(e => e.EventEndsAt >= eventDateFrom);
+        }
+
         if (query.EventDateTo is { } eventDateTo)
+        {
             source = source.Where(e => e.EventStartsAt <= eventDateTo);
+        }
+
         if (query.SignupFrom is { } signupFrom)
         {
             var signupLower = LocalDayRange.LowerUtc(signupFrom, clock.TimeZone);
@@ -125,8 +139,9 @@ public class EventService(
 
     public async Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default)
     {
+        var dayKey = clock.Today.DayNumber.ToString(CultureInfo.InvariantCulture);
         return await cache.GetOrCreateAsync(
-            $"events:past-years:{clock.Today.DayNumber}",
+            $"events:past-years:{dayKey}",
             token => new ValueTask<IReadOnlyList<int>>(FetchPastYearsAsync(token)),
             CachePolicies.PublicContent,
             [CacheTags.Events],
@@ -162,14 +177,20 @@ public class EventService(
             request.SignupEndsAt
         );
         if (schedule.IsFailure)
+        {
             return schedule.Error!;
+        }
 
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
+        }
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
         if (categories.IsFailure)
+        {
             return categories.Error!;
+        }
 
         var ev = new Event
         {
@@ -209,25 +230,35 @@ public class EventService(
             request.SignupEndsAt
         );
         if (schedule.IsFailure)
+        {
             return schedule.Error!;
+        }
 
         var categories = await EnsureCategoriesAsync(request.CategoryTypeIds, ct);
         if (categories.IsFailure)
+        {
             return categories.Error!;
+        }
 
         var ev = await events.GetForEditAsync(id, ct);
         if (ev is null)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var (lowerInclusive, upperExclusive) = DayBounds(
             schedule.Value.EventStartsAt,
             schedule.Value.EventEndsAt
         );
         if (await activities.AnyOutsideRangeAsync(id, lowerInclusive, upperExclusive, ct))
+        {
             return Error.BadRequest(ErrorCode.EventActivitiesOutsideNewRange);
+        }
 
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
+        }
 
         var previousThumbnailId = ev.ThumbnailId;
         var previousDescription = ev.Description;
@@ -253,7 +284,10 @@ public class EventService(
             .ExtractRemoved(previousDescription, ev.Description)
             .ToList();
         if (previousThumbnailId != request.ThumbnailId)
+        {
             orphanCandidates.Add(previousThumbnailId);
+        }
+
         await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return await GetByIdAsync(id, ct);
@@ -263,7 +297,9 @@ public class EventService(
     {
         var ev = await events.FindAsync(e => e.Id == id, ct);
         if (ev is null)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var activityThumbnailIds = await executor.ToListAsync(
             activities.Query().Where(a => a.EventId == id).Select(a => a.ThumbnailId),
@@ -290,7 +326,9 @@ public class EventService(
     )
     {
         if (!await events.SetFeaturedAsync(id, ct))
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Events);
         return await GetByIdAsync(id, ct);
@@ -333,7 +371,9 @@ public class EventService(
     {
         var name = request.Name.Trim();
         if (await categoryTypes.ExistsAsync(x => x.Name == name, ct))
+        {
             return Error.Conflict(ErrorCode.EventCategoryTypeNameAlreadyExists);
+        }
 
         var categoryType = new EventCategoryType { Name = name, Color = request.Color.Trim() };
         await categoryTypes.AddAsync(categoryType, ct);
@@ -350,11 +390,15 @@ public class EventService(
     {
         var categoryType = await categoryTypes.FindAsync(x => x.Id == id, ct);
         if (categoryType is null)
+        {
             return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
+        }
 
         var name = request.Name.Trim();
         if (await categoryTypes.ExistsAsync(x => x.Name == name && x.Id != id, ct))
+        {
             return Error.Conflict(ErrorCode.EventCategoryTypeNameAlreadyExists);
+        }
 
         categoryType.Name = name;
         categoryType.Color = request.Color.Trim();
@@ -365,8 +409,10 @@ public class EventService(
 
     public async Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default)
     {
-        if (await categoryTypes.RemoveAsync(x => x.Id == id, ct) == 0)
+        if (await categoryTypes.RemoveAsync(x => x.Id == id, ct) is 0)
+        {
             return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
+        }
 
         await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes, CacheTags.Events);
         return Result.Success();
@@ -377,8 +423,10 @@ public class EventService(
         CancellationToken ct
     )
     {
-        if (categoryTypeIds is null || categoryTypeIds.Count == 0)
+        if (categoryTypeIds is null || categoryTypeIds.Count is 0)
+        {
             return Error.BadRequest(ErrorCode.EventCategoriesRequired);
+        }
 
         var distinct = categoryTypeIds.Distinct().ToList();
         var existing = await categoryTypes.CountAsync(c => distinct.Contains(c.Id), ct);
@@ -425,21 +473,27 @@ public class EventService(
         }
 
         if (eventEnd < eventStart || signupEnd <= signupStart)
+        {
             return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
+        }
 
         if (earlySignupStartsAt is { } earlyStart && earlyStart >= signupStart)
+        {
             return Error.BadRequest(ErrorCode.EventEarlySignupNotBeforeSignup);
+        }
 
-        return DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd
-            ? (Result<EventSchedule>)Error.BadRequest(ErrorCode.EventScheduleInvalidRange)
-            : (Result<EventSchedule>)
-                new EventSchedule(
-                    eventStart,
-                    eventEnd,
-                    earlySignupStartsAt?.ToUniversalTime(),
-                    signupStart.ToUniversalTime(),
-                    signupEnd.ToUniversalTime()
-                );
+        if (DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd)
+        {
+            return Error.BadRequest(ErrorCode.EventScheduleInvalidRange);
+        }
+
+        return new EventSchedule(
+            eventStart,
+            eventEnd,
+            earlySignupStartsAt?.ToUniversalTime(),
+            signupStart.ToUniversalTime(),
+            signupEnd.ToUniversalTime()
+        );
     }
 
     private (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) DayBounds(

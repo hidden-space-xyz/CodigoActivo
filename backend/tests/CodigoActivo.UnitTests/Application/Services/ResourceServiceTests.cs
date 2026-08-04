@@ -46,11 +46,15 @@ public sealed class ResourceServiceTests
         );
     }
 
-    private void HasResources(params Resource[] items) =>
+    private void HasResources(params Resource[] items)
+    {
         resources.Query().Returns(items.AsQueryable());
+    }
 
-    private void HasTypes(params ResourceType[] items) =>
+    private void HasTypes(params ResourceType[] items)
+    {
         resourceTypes.Query().Returns(items.AsQueryable());
+    }
 
     private ResourceType TypeExists(bool isExternal = false)
     {
@@ -64,16 +68,20 @@ public sealed class ResourceServiceTests
         return type;
     }
 
-    private void TypeMissing() =>
+    private void TypeMissing()
+    {
+        ResourceType? missing = null;
         resourceTypes
             .FindAsync(
                 Arg.Any<Expression<Func<ResourceType, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns((ResourceType?)null);
+            .Returns(missing);
+    }
 
-    private static ResourceType NewResourceType(bool isExternal = false, string? name = null) =>
-        new()
+    private static ResourceType NewResourceType(bool isExternal = false, string? name = null)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name ?? (isExternal ? "Externo" : "Interno"),
@@ -81,6 +89,7 @@ public sealed class ResourceServiceTests
             Color = "#3B82F6",
             IsExternal = isExternal,
         };
+    }
 
     private static Resource NewResource(
         string title = "Guide",
@@ -338,7 +347,7 @@ public sealed class ResourceServiceTests
         result.Error.Code.Should().Be(ErrorCode.ResourceTypeNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<Resource>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -474,7 +483,7 @@ public sealed class ResourceServiceTests
         result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<Resource>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -512,7 +521,10 @@ public sealed class ResourceServiceTests
             .Received(1)
             .AddAsync(
                 Arg.Is<Resource>(r =>
-                    r.Title == "Title" && r.Subtitle == "Subtitle" && r.CreatedBy == caller
+                    r != null
+                    && r.Title == "Title"
+                    && r.Subtitle == "Subtitle"
+                    && r.CreatedBy == caller
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -520,7 +532,9 @@ public sealed class ResourceServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Resources))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Resources)
+                )
             );
     }
 
@@ -551,7 +565,9 @@ public sealed class ResourceServiceTests
         await resources
             .Received(1)
             .AddAsync(
-                Arg.Is<Resource>(r => r.Url == "https://ejemplo.es/curso" && r.Description == "{}"),
+                Arg.Is<Resource>(r =>
+                    r != null && r.Url == "https://ejemplo.es/curso" && r.Description == "{}"
+                ),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -580,7 +596,10 @@ public sealed class ResourceServiceTests
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(
+                Arg.Any<Expression<Func<FileEntity, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -738,7 +757,9 @@ public sealed class ResourceServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Resources))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Resources)
+                )
             );
     }
 
@@ -775,7 +796,7 @@ public sealed class ResourceServiceTests
         await fileService
             .Received(1)
             .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(embeddedId)),
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(embeddedId)),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -839,7 +860,7 @@ public sealed class ResourceServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Count == 1 && ids.Contains(previousThumbnailId)
+                    ids != null && ids.Count == 1 && ids.Contains(previousThumbnailId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -873,7 +894,7 @@ public sealed class ResourceServiceTests
         await fileService
             .Received(1)
             .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 0),
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -910,7 +931,7 @@ public sealed class ResourceServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Contains(removedId) && !ids.Contains(keptId)
+                    ids != null && ids.Contains(removedId) && !ids.Contains(keptId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -930,7 +951,10 @@ public sealed class ResourceServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
+            .DeleteOrphanedAsync(
+                Arg.Any<IReadOnlyCollection<Guid>>(),
+                TestContext.Current.CancellationToken
+            );
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -953,14 +977,16 @@ public sealed class ResourceServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Contains(embeddedId) && ids.Contains(resource.ThumbnailId)
+                    ids != null && ids.Contains(embeddedId) && ids.Contains(resource.ThumbnailId)
                 ),
                 Arg.Any<CancellationToken>()
             );
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Resources))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Resources)
+                )
             );
     }
 }

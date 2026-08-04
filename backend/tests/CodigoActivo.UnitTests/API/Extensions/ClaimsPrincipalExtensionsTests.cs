@@ -7,8 +7,10 @@ namespace CodigoActivo.UnitTests.API.Extensions;
 
 public sealed class ClaimsPrincipalExtensionsTests
 {
-    private static ClaimsPrincipal PrincipalWith(params Claim[] claims) =>
-        new(new ClaimsIdentity(claims, authenticationType: "Test"));
+    private static ClaimsPrincipal PrincipalWith(params Claim[] claims)
+    {
+        return new(new ClaimsIdentity(claims, authenticationType: "Test"));
+    }
 
     [Fact]
     public void GetUserId_ValidNameIdentifierClaim_ReturnsGuid()

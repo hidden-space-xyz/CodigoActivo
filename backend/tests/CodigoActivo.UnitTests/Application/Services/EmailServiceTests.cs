@@ -43,10 +43,14 @@ public sealed class EmailServiceTests
         );
     }
 
-    private void HasUsers(params User[] items) => users.Query().Returns(items.AsQueryable());
+    private void HasUsers(params User[] items)
+    {
+        users.Query().Returns(items.AsQueryable());
+    }
 
-    private static User NewUser(string first, string? email, User? parent = null) =>
-        new()
+    private static User NewUser(string first, string? email, User? parent = null)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = first,
@@ -59,6 +63,7 @@ public sealed class EmailServiceTests
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
             UserTypeId = SeedIds.UserTypes.Member,
         };
+    }
 
     private static User NewAttendee(string first, string? email, params Guid[] statusIds)
     {
@@ -71,22 +76,32 @@ public sealed class EmailServiceTests
                 ActivityId = Guid.NewGuid(),
                 ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
                 AssignmentStatusId = statusId,
-                Activity = new Activity { EventId = EventId },
+                Activity = new Activity
+                {
+                    Title = "Actividad de prueba",
+                    Description = "Descripción de la actividad",
+                    Location = "Sala principal",
+                    EventId = EventId,
+                },
             }),
         ];
         return user;
     }
 
-    private static SendEmailRequest Request(string subject = "Asunto", string body = "Cuerpo") =>
-        new(subject, body);
+    private static SendEmailRequest Request(string subject = "Asunto", string body = "Cuerpo")
+    {
+        return new(subject, body);
+    }
 
-    private static EmailAttachmentUpload Attachment(string name = "acta.pdf", int size = 4) =>
-        new(
+    private static EmailAttachmentUpload Attachment(string name = "acta.pdf", int size = 4)
+    {
+        return new(
             new MemoryStream(Encoding.UTF8.GetBytes(new string('x', size))),
             name,
             "text/plain",
             size
         );
+    }
 
     [Fact]
     public async Task SendToUsersAsync_SeveralRecipients_SendsOneMessagePerRecipientInOneBatch()
@@ -106,7 +121,7 @@ public sealed class EmailServiceTests
         emailSender
             .Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo(["ana@test.local", "berto@test.local"]);
+            .BeEquivalentTo("ana@test.local", "berto@test.local");
         emailSender.Sent.Should().OnlyContain(m => m.Subject == "Asunto");
     }
 
@@ -228,7 +243,7 @@ public sealed class EmailServiceTests
         result.IsSuccess.Should().BeTrue();
         emailSender
             .Sent.Should()
-            .OnlyContain(m => m.Attachments!.Count == 1 && m.Attachments![0].Content.Length == 6);
+            .OnlyContain(m => m.Attachments!.Count == 1 && m.Attachments[0].Content.Length == 6);
     }
 
     [Theory]

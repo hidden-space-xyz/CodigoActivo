@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
@@ -9,7 +10,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -127,7 +127,9 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             )
             .ToList();
         foreach (var descriptor in toRemove)
+        {
             services.Remove(descriptor);
+        }
 
         services.AddDbContext<CodigoActivoDbContext>(options =>
             options
@@ -152,8 +154,8 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
         await TestDatabase.TruncateAllTablesAsync(db);
 
-        await provider.GetRequiredService<DatabaseSeeder>().SeedAsync();
-        await TestSeedData.SeedUsersAsync(db);
+        await provider.GetRequiredService<DatabaseSeeder>().SeedAsync(TestCancellation.Ct);
+        await TestSeedData.SeedUsersAsync(db, TestCancellation.Ct);
     }
 
     private void ResetClock()
@@ -167,7 +169,9 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     {
         await PurgeCachesAsync(Services);
         foreach (var factory in derived)
+        {
             await PurgeCachesAsync(factory.Services);
+        }
     }
 
     private static async Task PurgeCachesAsync(IServiceProvider services)
@@ -180,7 +184,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
         await seed(db);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestCancellation.Ct);
         await ResetCachesAsync();
     }
 
@@ -213,9 +217,17 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         try
         {
             if (Directory.Exists(path))
+            {
                 Directory.Delete(path, recursive: true);
+            }
         }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException ex)
+        {
+            Debug.WriteLine($"Test file storage cleanup failed for '{path}': {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Debug.WriteLine($"Test file storage cleanup failed for '{path}': {ex.Message}");
+        }
     }
 }

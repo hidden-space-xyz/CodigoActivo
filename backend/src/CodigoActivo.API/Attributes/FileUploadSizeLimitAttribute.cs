@@ -28,7 +28,9 @@ internal sealed class FileUploadSizeLimitFilter(FileStorageOptions options) : IA
 
         var bodySizeFeature = features.Get<IHttpMaxRequestBodySizeFeature>();
         if (bodySizeFeature is { IsReadOnly: false })
+        {
             bodySizeFeature.MaxRequestBodySize = limitBytes;
+        }
 
         if (features.Get<IFormFeature>()?.Form is null)
         {

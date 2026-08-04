@@ -2,6 +2,6 @@ namespace CodigoActivo.Domain.Security;
 
 public interface IPasswordHasher
 {
-    string Hash(string password);
-    bool Verify(string password, string hash);
+    public string Hash(string password);
+    public bool Verify(string password, string hash);
 }

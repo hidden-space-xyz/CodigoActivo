@@ -20,7 +20,7 @@ public class SeoController(ISitemapService sitemap) : ApiControllerBase
     [HttpHead("sitemap.xml")]
     [AllowAnonymous]
     [OutputCache(PolicyName = OutputCachePolicies.Seo)]
-    public async Task<IActionResult> Sitemap(CancellationToken ct)
+    public async Task<IActionResult> SitemapAsync(CancellationToken ct)
     {
         SetPublicCacheControl();
         return Content(await sitemap.GetSitemapXmlAsync(ct), "application/xml", Encoding.UTF8);

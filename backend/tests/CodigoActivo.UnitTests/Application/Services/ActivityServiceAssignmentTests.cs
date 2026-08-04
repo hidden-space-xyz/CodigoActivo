@@ -91,7 +91,8 @@ public sealed class ActivityServiceAssignmentTests
         DateTimeOffset signupStart,
         DateTimeOffset signupEnd,
         DateTimeOffset? earlySignupStart = null
-    ) =>
+    )
+    {
         activities
             .Query()
             .Returns(
@@ -99,6 +100,7 @@ public sealed class ActivityServiceAssignmentTests
                 {
                     new()
                     {
+                        Description = "Descripción de la actividad",
                         Id = activityId,
                         Title = "Taller de robótica",
                         Location = "Sala A",
@@ -115,8 +117,10 @@ public sealed class ActivityServiceAssignmentTests
                     },
                 }.AsQueryable()
             );
+    }
 
-    private void TargetUser(Guid userId, Guid userTypeId) =>
+    private void TargetUser(Guid userId, Guid userTypeId)
+    {
         users
             .Query()
             .Returns(
@@ -132,6 +136,7 @@ public sealed class ActivityServiceAssignmentTests
                     },
                 }.AsQueryable()
             );
+    }
 
     private void TargetChildOf(Guid childId, Guid parentUserTypeId)
     {
@@ -148,16 +153,21 @@ public sealed class ActivityServiceAssignmentTests
         users.Query().Returns(new List<User> { child }.AsQueryable());
     }
 
-    private void AssignmentExists(bool exists) =>
+    private void AssignmentExists(bool exists)
+    {
         activities
             .AssignmentExistsAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(exists);
+    }
 
-    private void HouseholdUsers(params User[] members) =>
+    private void HouseholdUsers(params User[] members)
+    {
         users.Query().Returns(members.AsQueryable());
+    }
 
-    private static User SocioParent(Guid id) =>
-        new()
+    private static User SocioParent(Guid id)
+    {
+        return new()
         {
             Id = id,
             FirstName = "Ada",
@@ -165,9 +175,11 @@ public sealed class ActivityServiceAssignmentTests
             Email = "ada@parent.test",
             UserTypeId = SeedIds.UserTypes.Member,
         };
+    }
 
-    private static User ParticipantChild(Guid id, Guid parentId) =>
-        new()
+    private static User ParticipantChild(Guid id, Guid parentId)
+    {
+        return new()
         {
             Id = id,
             FirstName = "Kid",
@@ -175,8 +187,10 @@ public sealed class ActivityServiceAssignmentTests
             ParentId = parentId,
             UserTypeId = SeedIds.UserTypes.Participant,
         };
+    }
 
-    private void CatalogRoles() =>
+    private void CatalogRoles()
+    {
         roleTypes
             .Query()
             .Returns(
@@ -202,13 +216,17 @@ public sealed class ActivityServiceAssignmentTests
                     },
                 }.AsQueryable()
             );
+    }
 
-    private void ExistingAssignment(ActivityUserRoleAssignment? assignment) =>
+    private void ExistingAssignment(ActivityUserRoleAssignment? assignment)
+    {
         activities
             .GetAssignmentAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(assignment);
+    }
 
-    private void RequestedStatusNamed(string name) =>
+    private void RequestedStatusNamed(string name)
+    {
         statuses
             .Query()
             .Returns(
@@ -216,15 +234,19 @@ public sealed class ActivityServiceAssignmentTests
                 {
                     new()
                     {
+                        Description = "Descripción de prueba",
                         Id = SeedIds.AssignmentStatusTypes.Requested,
                         Name = name,
                         Color = "#000",
                     },
                 }.AsQueryable()
             );
+    }
 
-    private void NoStatusCatalog() =>
+    private void NoStatusCatalog()
+    {
         statuses.Query().Returns(new List<AssignmentStatusType>().AsQueryable());
+    }
 
     private static ActivityUserRoleAssignment Assignment(
         Guid userId,
@@ -233,8 +255,9 @@ public sealed class ActivityServiceAssignmentTests
         AssignmentStatusType? status = null,
         Guid? roleTypeId = null,
         Guid? statusId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             UserId = userId,
             ActivityId = activityId,
@@ -243,8 +266,29 @@ public sealed class ActivityServiceAssignmentTests
             AssignmentStatusId = statusId ?? Guid.NewGuid(),
             AssignmentStatus = status!,
         };
+    }
 
-    private void StatusFound(Guid id, string name) =>
+    private static bool MatchesAssignment(
+        ActivityUserRoleAssignment? assignment,
+        Guid userId,
+        Guid activityId,
+        Guid roleTypeId,
+        Guid statusId
+    )
+    {
+        if (assignment is null)
+        {
+            return false;
+        }
+
+        var matchesTarget = assignment.UserId == userId && assignment.ActivityId == activityId;
+        return matchesTarget
+            && assignment.ActivityRoleTypeId == roleTypeId
+            && assignment.AssignmentStatusId == statusId;
+    }
+
+    private void StatusFound(Guid id, string name)
+    {
         statuses
             .FindAsync(
                 Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
@@ -253,11 +297,13 @@ public sealed class ActivityServiceAssignmentTests
             .Returns(
                 new AssignmentStatusType
                 {
+                    Description = "Descripción de prueba",
                     Id = id,
                     Name = name,
                     Color = "#0f0",
                 }
             );
+    }
 
     [Fact]
     public async Task AssignAsync_ActivityWindowMissing_ReturnsNotFound()
@@ -346,7 +392,8 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == userId
+                    a != null
+                    && a.UserId == userId
                     && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
                 ),
                 Arg.Any<CancellationToken>()
@@ -379,7 +426,9 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == userId && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
+                    a != null
+                    && a.UserId == userId
+                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -477,7 +526,10 @@ public sealed class ActivityServiceAssignmentTests
         result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentAlreadyExists);
         await activities
             .DidNotReceiveWithAnyArgs()
-            .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+            .AddAssignmentAsync(
+                new ActivityUserRoleAssignment(),
+                TestContext.Current.CancellationToken
+            );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -511,10 +563,13 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == userId
-                    && a.ActivityId == activityId
-                    && a.ActivityRoleTypeId == roleId
-                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested
+                    MatchesAssignment(
+                        a,
+                        userId,
+                        activityId,
+                        roleId,
+                        SeedIds.AssignmentStatusTypes.Requested
+                    )
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -522,7 +577,9 @@ public sealed class ActivityServiceAssignmentTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -553,7 +610,7 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == userId && a.ActivityId == activityId
+                    a != null && a.UserId == userId && a.ActivityId == activityId
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -587,7 +644,7 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == userId && a.ActivityId == activityId
+                    a != null && a.UserId == userId && a.ActivityId == activityId
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -886,7 +943,10 @@ public sealed class ActivityServiceAssignmentTests
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
         await activities
             .DidNotReceiveWithAnyArgs()
-            .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+            .AddAssignmentAsync(
+                new ActivityUserRoleAssignment(),
+                TestContext.Current.CancellationToken
+            );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -990,7 +1050,8 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == actingUserId
+                    a != null
+                    && a.UserId == actingUserId
                     && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
                 ),
                 Arg.Any<CancellationToken>()
@@ -999,7 +1060,8 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == childId
+                    a != null
+                    && a.UserId == childId
                     && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
                 ),
                 Arg.Any<CancellationToken>()
@@ -1008,7 +1070,9 @@ public sealed class ActivityServiceAssignmentTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -1053,13 +1117,13 @@ public sealed class ActivityServiceAssignmentTests
         await activities
             .Received(1)
             .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a => a.UserId == actingUserId),
+                Arg.Is<ActivityUserRoleAssignment>(a => a != null && a.UserId == actingUserId),
                 Arg.Any<CancellationToken>()
             );
         await activities
             .DidNotReceive()
             .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a => a.UserId == childId),
+                Arg.Is<ActivityUserRoleAssignment>(a => a != null && a.UserId == childId),
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -1102,7 +1166,9 @@ public sealed class ActivityServiceAssignmentTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -1124,7 +1190,7 @@ public sealed class ActivityServiceAssignmentTests
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
-        activities.DidNotReceiveWithAnyArgs().RemoveAssignment(default!);
+        activities.DidNotReceiveWithAnyArgs().RemoveAssignment(new ActivityUserRoleAssignment());
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -1172,12 +1238,13 @@ public sealed class ActivityServiceAssignmentTests
     public async Task ChangeStatusAsync_StatusMissing_ReturnsAssignmentStatusTypeNotFound()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
+        AssignmentStatusType? missingStatus = null;
         statuses
             .FindAsync(
                 Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns((AssignmentStatusType?)null);
+            .Returns(missingStatus);
 
         var result = await sut.ChangeStatusAsync(
             Guid.NewGuid(),
@@ -1208,6 +1275,7 @@ public sealed class ActivityServiceAssignmentTests
             .Returns(
                 new AssignmentStatusType
                 {
+                    Description = "Descripción de prueba",
                     Id = statusId,
                     Name = "Confirmado",
                     Color = "#0f0",
@@ -1230,7 +1298,9 @@ public sealed class ActivityServiceAssignmentTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -1256,12 +1326,13 @@ public sealed class ActivityServiceAssignmentTests
     public async Task ChangeRoleAsync_RoleTypeMissing_ReturnsRoleTypeNotFound()
     {
         ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
+        ActivityRoleType? missingRoleType = null;
         roleTypes
             .FindAsync(
                 Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns((ActivityRoleType?)null);
+            .Returns(missingRoleType);
 
         var result = await sut.ChangeRoleAsync(
             Guid.NewGuid(),
@@ -1311,10 +1382,7 @@ public sealed class ActivityServiceAssignmentTests
             .Received(1)
             .AddAssignmentAsync(
                 Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a.UserId == userId
-                    && a.ActivityId == activityId
-                    && a.ActivityRoleTypeId == roleId
-                    && a.AssignmentStatusId == assignment.AssignmentStatusId
+                    MatchesAssignment(a, userId, activityId, roleId, assignment.AssignmentStatusId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -1325,7 +1393,9 @@ public sealed class ActivityServiceAssignmentTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -1342,7 +1412,7 @@ public sealed class ActivityServiceAssignmentTests
             ActivityId = activityId,
             ActivityRoleTypeId = roleId,
             AssignmentStatusId = statusId,
-            AssignmentStatus = new AssignmentStatusType { Name = "Solicitado", Color = "#000" },
+            AssignmentStatus = new AssignmentStatusType { Description = "Descripción de prueba", Name = "Solicitado", Color = "#000" },
         };
         ExistingAssignment(assignment);
         roleTypes
@@ -1371,10 +1441,13 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.RoleTypeName.Should().Be("Líder");
         result.Value.Status.Id.Should().Be(statusId);
         result.Value.Status.Name.Should().Be("Solicitado");
-        activities.DidNotReceiveWithAnyArgs().RemoveAssignment(default!);
+        activities.DidNotReceiveWithAnyArgs().RemoveAssignment(new ActivityUserRoleAssignment());
         await activities
             .DidNotReceiveWithAnyArgs()
-            .AddAssignmentAsync(default!, TestContext.Current.CancellationToken);
+            .AddAssignmentAsync(
+                new ActivityUserRoleAssignment(),
+                TestContext.Current.CancellationToken
+            );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await cacheInvalidator
@@ -1489,16 +1562,19 @@ public sealed class ActivityServiceAssignmentTests
         result.Value.Overlaps.Should().BeEmpty();
     }
 
-    private void HasAssignments(params ActivityUserRoleAssignment[] assignments) =>
+    private void HasAssignments(params ActivityUserRoleAssignment[] assignments)
+    {
         activities.QueryAssignments().Returns(assignments.AsQueryable());
+    }
 
     private static Activity OverlapActivity(
         Guid id,
         int startHour,
         int endHour,
         string title = "Act"
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id,
             Title = title,
@@ -1507,28 +1583,33 @@ public sealed class ActivityServiceAssignmentTests
             ActivityStartsAt = new DateTimeOffset(2026, 7, 10, startHour, 0, 0, TimeSpan.Zero),
             ActivityEndsAt = new DateTimeOffset(2026, 7, 10, endHour, 0, 0, TimeSpan.Zero),
         };
+    }
 
-    private static ActivityUserRoleAssignment OverlapAssignment(Guid userId, Activity activity) =>
-        new()
+    private static ActivityUserRoleAssignment OverlapAssignment(Guid userId, Activity activity)
+    {
+        return new()
         {
             UserId = userId,
             ActivityId = activity.Id,
             Activity = activity,
         };
+    }
 
     private static User HouseholdUser(
         Guid id,
         string firstName,
         string lastName,
         Guid? parentId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id,
             FirstName = firstName,
             LastName = lastName,
             ParentId = parentId,
         };
+    }
 
     private static ActivityUserRoleAssignment HouseholdAssignment(
         User user,
@@ -1549,7 +1630,7 @@ public sealed class ActivityServiceAssignmentTests
             ActivityRoleTypeId = Guid.NewGuid(),
             ActivityRoleType = new ActivityRoleType { Name = roleName, Description = "d" },
             AssignmentStatusId = Guid.NewGuid(),
-            AssignmentStatus = new AssignmentStatusType { Name = statusName, Color = "#000" },
+            AssignmentStatus = new AssignmentStatusType { Description = "Descripción de prueba", Name = statusName, Color = "#000" },
         };
     }
 

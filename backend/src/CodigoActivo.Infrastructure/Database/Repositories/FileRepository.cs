@@ -46,8 +46,10 @@ public class FileRepository(CodigoActivoDbContext context)
         CancellationToken ct = default
     )
     {
-        if (fileIds.Count == 0)
+        if (fileIds.Count is 0)
+        {
             return [];
+        }
 
         var candidates = fileIds.Distinct().ToList();
 
@@ -92,6 +94,6 @@ public class FileRepository(CodigoActivoDbContext context)
             """;
         var embeddedRefs = await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct);
 
-        return thumbnailRefs.Union(embeddedRefs.Intersect(candidates)).ToList();
+        return [.. thumbnailRefs.Union(embeddedRefs.Intersect(candidates))];
     }
 }

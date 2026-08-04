@@ -68,9 +68,15 @@ public class ActivityService(
         var source = activities.Query().Select(Projections.Activity);
 
         if (query.EventId is { } eventId)
+        {
             source = source.Where(a => a.EventId == eventId);
+        }
+
         if (query.ModalityTypeId is { } modalityTypeId)
+        {
             source = source.Where(a => a.ModalityId == modalityTypeId);
+        }
+
         if (query.ActivityDateFrom is { } activityDateFrom)
         {
             var activityLower = LocalDayRange.LowerUtc(activityDateFrom, clock.TimeZone);
@@ -114,7 +120,9 @@ public class ActivityService(
             .Select(Projections.AssignedActivity);
 
         if (eventId is { } filterEventId)
+        {
             source = source.Where(assignment => assignment.EventId == filterEventId);
+        }
 
         return await executor.ToListAsync(
             source.OrderBy(assignment => assignment.ActivityStartsAt),
@@ -183,7 +191,9 @@ public class ActivityService(
             ct
         );
         if (validated.IsFailure)
+        {
             return validated.Error!;
+        }
 
         var activity = new Activity
         {
@@ -197,13 +207,12 @@ public class ActivityService(
             ThumbnailId = request.ThumbnailId,
             CreatedAt = clock.UtcNow,
             CreatedBy = userId,
-            RoleCapacities = validated
+            RoleCapacities = [.. validated
                 .Value.Capacities.Select(item => new ActivityRoleCapacity
                 {
                     ActivityRoleTypeId = item.RoleTypeId,
                     DesiredCount = item.DesiredCount,
-                })
-                .ToList(),
+                })],
         };
 
         await activities.AddAsync(activity, ct);
@@ -222,7 +231,9 @@ public class ActivityService(
     {
         var activity = await activities.FindWithRoleCapacitiesAsync(activityId, ct);
         if (activity is null)
+        {
             return Error.NotFound(ErrorCode.ActivityNotFound);
+        }
 
         var validated = await ValidateActivityAsync(
             activity.EventId,
@@ -234,7 +245,9 @@ public class ActivityService(
             ct
         );
         if (validated.IsFailure)
+        {
             return validated.Error!;
+        }
 
         var previousThumbnailId = activity.ThumbnailId;
 
@@ -254,7 +267,9 @@ public class ActivityService(
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         if (previousThumbnailId != request.ThumbnailId)
+        {
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+        }
 
         return await GetByIdAsync(activityId, ct);
     }
@@ -263,7 +278,9 @@ public class ActivityService(
     {
         var activity = await activities.FindAsync(a => a.Id == activityId, ct);
         if (activity is null)
+        {
             return Error.NotFound(ErrorCode.ActivityNotFound);
+        }
 
         activities.Remove(activity);
         await uow.SaveChangesAsync(ct);
@@ -283,20 +300,28 @@ public class ActivityService(
     {
         var signup = await EnsureSignupOpenAsync(activityId, [userId], isAdmin, ct);
         if (signup.IsFailure)
+        {
             return signup.Error!;
+        }
 
         var userTypeId = await executor.FirstOrDefaultAsync(
             users.Query().Where(u => u.Id == userId).Select(u => (Guid?)u.UserTypeId),
             ct
         );
         if (userTypeId is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (!IsSignupRoleAllowed(userTypeId.Value, request.ActivityRoleTypeId))
+        {
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
+        }
 
         if (await activities.AssignmentExistsAsync(userId, activityId, ct))
+        {
             return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
+        }
 
         var assignment = new ActivityUserRoleAssignment
         {
@@ -335,12 +360,16 @@ public class ActivityService(
         CancellationToken ct = default
     )
     {
-        if (request.Assignments is null || request.Assignments.Count == 0)
+        if (request.Assignments is null || request.Assignments.Count is 0)
+        {
             return Error.BadRequest(ErrorCode.ActivityHouseholdAssignmentsRequired);
+        }
 
         var signup = await EnsureSignupOpenAsync(activityId, [actingUserId], isAdmin, ct);
         if (signup.IsFailure)
+        {
             return signup.Error!;
+        }
 
         var items = request.Assignments.DistinctBy(a => a.UserId).ToList();
         var userIds = items.ConvertAll(item => item.UserId);
@@ -364,7 +393,9 @@ public class ActivityService(
             && (!memberById.TryGetValue(id, out var member) || member.ParentId != actingUserId)
         );
         if (outsideHousehold)
+        {
             return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
+        }
 
         if (
             items.Exists(item =>
@@ -391,7 +422,9 @@ public class ActivityService(
         foreach (var item in items)
         {
             if (alreadyAssigned.Contains(item.UserId))
+            {
                 continue;
+            }
 
             await activities.AddAssignmentAsync(
                 new ActivityUserRoleAssignment
@@ -439,13 +472,17 @@ public class ActivityService(
     {
         var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
         if (assignment is null)
+        {
             return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
+        }
 
         if (!isAdmin)
         {
             var signup = await EnsureSignupOpenAsync(activityId, [userId], isAdmin, ct);
             if (signup.IsFailure)
+            {
                 return signup.Error!;
+            }
         }
 
         activities.RemoveAssignment(assignment);
@@ -463,11 +500,15 @@ public class ActivityService(
     {
         var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
         if (assignment is null)
+        {
             return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
+        }
 
         var status = await statuses.FindAsync(s => s.Id == request.AssignmentStatusId, ct);
         if (status is null)
+        {
             return Error.NotFound(ErrorCode.AssignmentStatusTypeNotFound);
+        }
 
         var previousStatusId = assignment.AssignmentStatusId;
         assignment.AssignmentStatusId = status.Id;
@@ -503,11 +544,15 @@ public class ActivityService(
     {
         var assignment = await activities.GetAssignmentAsync(userId, activityId, ct);
         if (assignment is null)
+        {
             return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
+        }
 
         var role = await roleTypes.FindAsync(r => r.Id == request.ActivityRoleTypeId, ct);
         if (role is null)
+        {
             return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
+        }
 
         var statusId = assignment.AssignmentStatusId;
         var statusName = assignment.AssignmentStatus?.Name ?? string.Empty;
@@ -553,7 +598,9 @@ public class ActivityService(
             ct
         );
         if (target is null)
+        {
             return Error.NotFound(ErrorCode.ActivityNotFound);
+        }
 
         var overlaps = await executor.ToListAsync(
             activities
@@ -622,17 +669,19 @@ public class ActivityService(
 
         var roleNames = (await ListRoleTypesAsync(ct)).ToDictionary(r => r.Id, r => r.Name);
 
-        return members
-            .Select(member => new HouseholdSignupRolesResponse(
+        return
+        [
+            .. members.Select(member => new HouseholdSignupRolesResponse(
                 member.Id,
-                SignupRoleIdsFor(member.UserTypeId)
-                    .Select(roleId => new SignupRoleResponse(
-                        roleId,
-                        roleNames.GetValueOrDefault(roleId, string.Empty)
-                    ))
-                    .ToList()
-            ))
-            .ToList();
+                [
+                    .. SignupRoleIdsFor(member.UserTypeId)
+                        .Select(roleId => new SignupRoleResponse(
+                            roleId,
+                            roleNames.GetValueOrDefault(roleId, string.Empty)
+                        )),
+                ]
+            )),
+        ];
     }
 
     private async Task<Result<List<RoleCapacityItem>>> ValidateRoleCapacitiesAsync(
@@ -640,18 +689,21 @@ public class ActivityService(
         CancellationToken ct
     )
     {
-        if (requests is null || requests.Count == 0)
+        if (requests is null || requests.Count is 0)
+        {
             return new List<RoleCapacityItem>();
+        }
 
         if (requests.Select(item => item.ActivityRoleTypeId).ToHashSet().Count != requests.Count)
+        {
             return Error.BadRequest(ErrorCode.ActivityRoleCapacityDuplicated);
+        }
 
         var roleIds = requests.Select(item => item.ActivityRoleTypeId).ToList();
         var knownCount = await roleTypes.CountAsync(role => roleIds.Contains(role.Id), ct);
-        if (knownCount != roleIds.Count)
-            return Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound);
-
-        return requests
+        return knownCount != roleIds.Count
+            ? (Result<List<RoleCapacityItem>>)Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound)
+            : (Result<List<RoleCapacityItem>>)requests
             .Select(item => new RoleCapacityItem(item.ActivityRoleTypeId, item.DesiredCount!.Value))
             .ToList();
     }
@@ -667,7 +719,9 @@ public class ActivityService(
             !desiredByRole.ContainsKey(capacity.ActivityRoleTypeId)
         );
         foreach (var existing in removed.ToList())
+        {
             activity.RoleCapacities.Remove(existing);
+        }
 
         foreach (var (roleTypeId, desiredCount) in desiredByRole)
         {
@@ -697,7 +751,9 @@ public class ActivityService(
         yield return SeedIds.ActivityRoleTypes.Participant;
         yield return SeedIds.ActivityRoleTypes.Volunteer;
         if (userTypeId == SeedIds.UserTypes.Member)
+        {
             yield return SeedIds.ActivityRoleTypes.Leader;
+        }
     }
 
     private static bool IsSignupRoleAllowed(Guid userTypeId, Guid roleTypeId)
@@ -724,23 +780,26 @@ public class ActivityService(
             ct
         );
         if (window is null)
+        {
             return Error.NotFound(ErrorCode.ActivityNotFound);
+        }
 
         if (isAdmin)
+        {
             return Result.Success();
+        }
 
         var now = clock.UtcNow;
-        if (now > window.EndsAt)
-            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
-        if (now >= window.StartsAt)
-            return Result.Success();
-
-        if (window.EarlyStartsAt is not { } earlyStart || now < earlyStart)
-            return Error.BadRequest(ErrorCode.ActivitySignupClosed);
-
-        return await AllAllowedInEarlySignupAsync(userIds, ct)
-            ? Result.Success()
-            : Error.BadRequest(ErrorCode.ActivitySignupEarlyOnly);
+        return now switch
+        {
+            _ when now > window.EndsAt => Error.BadRequest(ErrorCode.ActivitySignupClosed),
+            _ when now >= window.StartsAt => Result.Success(),
+            _ when window.EarlyStartsAt is not { } earlyStart || now < earlyStart =>
+                Error.BadRequest(ErrorCode.ActivitySignupClosed),
+            _ => await AllAllowedInEarlySignupAsync(userIds, ct)
+                ? Result.Success()
+                : Error.BadRequest(ErrorCode.ActivitySignupEarlyOnly),
+        };
     }
 
     private async Task<bool> AllAllowedInEarlySignupAsync(
@@ -780,10 +839,12 @@ public class ActivityService(
         {
             var details = await GetEmailDetailsAsync(activityId, ct);
             if (details is null)
+            {
                 return;
+            }
 
             var contacts = await GetContactsAsync(
-                lines.Select(line => line.UserId).Append(recipientUserId).Distinct().ToList(),
+                [.. lines.Select(line => line.UserId).Append(recipientUserId).Distinct()],
                 ct
             );
             if (
@@ -809,8 +870,10 @@ public class ActivityService(
                 }
             }
 
-            if (participants.Count == 0)
+            if (participants.Count is 0)
+            {
                 return;
+            }
 
             await emailSender.SendAsync(
                 ActivitySignupEmail.Create(
@@ -850,7 +913,9 @@ public class ActivityService(
         {
             var details = await GetEmailDetailsAsync(activityId, ct);
             if (details is null)
+            {
                 return;
+            }
 
             var contacts = await GetContactsAsync([userId], ct);
             if (
@@ -959,16 +1024,21 @@ public class ActivityService(
 
     private static NotificationRecipient? ResolveRecipient(UserContact contact)
     {
-        if (!string.IsNullOrWhiteSpace(contact.Email))
-            return new NotificationRecipient(contact.Email, contact.FirstName, IsGuardian: false);
-
-        return string.IsNullOrWhiteSpace(contact.GuardianEmail)
-            ? null
-            : new NotificationRecipient(
-                contact.GuardianEmail,
-                contact.GuardianFirstName ?? string.Empty,
-                IsGuardian: true
-            );
+        return contact switch
+        {
+            { Email: { } email } when !string.IsNullOrWhiteSpace(email) => new NotificationRecipient(
+                email,
+                contact.FirstName,
+                IsGuardian: false
+            ),
+            { GuardianEmail: { } guardianEmail } when !string.IsNullOrWhiteSpace(guardianEmail) =>
+                new NotificationRecipient(
+                    guardianEmail,
+                    contact.GuardianFirstName ?? string.Empty,
+                    IsGuardian: true
+                ),
+            _ => null,
+        };
     }
 
     private string BuildUrl(string path)
@@ -1010,21 +1080,31 @@ public class ActivityService(
     {
         var eventDates = await GetEventDatesAsync(eventId, ct);
         if (eventDates is null)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var schedule = ValidateActivitySchedule(eventDates, startsAt, endsAt);
         if (schedule.IsFailure)
+        {
             return schedule.Error!;
+        }
 
         if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.ActivityThumbnailNotFound);
+        }
 
         if (!await modalityTypes.ExistsAsync(m => m.Id == modalityTypeId, ct))
+        {
             return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
+        }
 
         var capacities = await ValidateRoleCapacitiesAsync(roleCapacities, ct);
-        if (capacities.IsFailure)
-            return capacities.Error!;
+        if (capacities.Error is { } capacityError)
+        {
+            return capacityError;
+        }
 
         return new ValidatedActivity(schedule.Value, capacities.Value);
     }
@@ -1036,10 +1116,14 @@ public class ActivityService(
     )
     {
         if (startsAt is not { } start || endsAt is not { } end)
+        {
             return Error.BadRequest(ErrorCode.ActivityScheduleRequired);
+        }
 
         if (end <= start)
+        {
             return Error.BadRequest(ErrorCode.ActivityScheduleInvalidRange);
+        }
 
         var startDate = DateOnly.FromDateTime(
             TimeZoneInfo.ConvertTime(start, clock.TimeZone).DateTime

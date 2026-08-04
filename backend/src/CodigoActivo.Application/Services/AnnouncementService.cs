@@ -68,7 +68,10 @@ public class AnnouncementService(
         }
 
         if (query.Featured is { } featured)
+        {
             source = source.Where(a => a.Featured == featured);
+        }
+
         if (query.CreatedFrom is { } createdFrom)
         {
             var createdLower = LocalDayRange.LowerUtc(createdFrom, clock.TimeZone);
@@ -130,7 +133,9 @@ public class AnnouncementService(
     )
     {
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
+        }
 
         var announcement = new Announcement
         {
@@ -156,10 +161,14 @@ public class AnnouncementService(
     {
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
         if (announcement is null)
+        {
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
+        }
 
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.AnnouncementThumbnailNotFound);
+        }
 
         var previousThumbnailId = announcement.ThumbnailId;
         var previousDescription = announcement.Description;
@@ -178,7 +187,10 @@ public class AnnouncementService(
             .ExtractRemoved(previousDescription, announcement.Description)
             .ToList();
         if (previousThumbnailId != request.ThumbnailId)
+        {
             orphanCandidates.Add(previousThumbnailId);
+        }
+
         await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return announcement.ToResponse();
@@ -188,7 +200,9 @@ public class AnnouncementService(
     {
         var announcement = await announcements.FindAsync(a => a.Id == id, ct);
         if (announcement is null)
+        {
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
+        }
 
         announcements.Remove(announcement);
         await uow.SaveChangesAsync(ct);
@@ -210,7 +224,9 @@ public class AnnouncementService(
     )
     {
         if (!await announcements.SetFeaturedAsync(id, ct))
+        {
             return Error.NotFound(ErrorCode.AnnouncementNotFound);
+        }
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Announcements);
         return await GetByIdAsync(id, ct);

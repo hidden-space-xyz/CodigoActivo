@@ -18,7 +18,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Activities)]
-    public async Task<ActionResult<PagedResult<ActivityResponse>>> List(
+    public async Task<ActionResult<PagedResult<ActivityResponse>>> ListAsync(
         [FromQuery] ActivityListQuery query,
         CancellationToken ct
     )
@@ -29,14 +29,17 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     [HttpGet("{activityId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Activities)]
-    public async Task<ActionResult<ActivityResponse>> Get(Guid activityId, CancellationToken ct)
+    public async Task<ActionResult<ActivityResponse>> GetAsync(
+        Guid activityId,
+        CancellationToken ct
+    )
     {
         return ToOk(await activities.GetByIdAsync(activityId, ct));
     }
 
     [HttpGet("{activityId:guid}/overlaps/{userId:guid}")]
     [AllowOnlySelf]
-    public async Task<ActionResult<TimeOverlapResponse>> Overlaps(
+    public async Task<ActionResult<TimeOverlapResponse>> OverlapsAsync(
         Guid activityId,
         Guid userId,
         CancellationToken ct
@@ -49,14 +52,14 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     [Authorize]
     public async Task<
         ActionResult<IReadOnlyList<HouseholdMemberAssignmentResponse>>
-    > HouseholdAssignments(Guid eventId, CancellationToken ct)
+    > HouseholdAssignmentsAsync(Guid eventId, CancellationToken ct)
     {
         return Ok(await activities.GetHouseholdAssignmentsAsync(UserId, eventId, ct));
     }
 
     [HttpGet("roleType")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<ActivityRoleTypeResponse>>> RoleTypes(
+    public async Task<ActionResult<IReadOnlyList<ActivityRoleTypeResponse>>> RoleTypesAsync(
         CancellationToken ct
     )
     {
@@ -65,7 +68,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpGet("signup-roles")]
     [Authorize]
-    public async Task<ActionResult<IReadOnlyList<HouseholdSignupRolesResponse>>> SignupRoles(
+    public async Task<ActionResult<IReadOnlyList<HouseholdSignupRolesResponse>>> SignupRolesAsync(
         CancellationToken ct
     )
     {
@@ -76,14 +79,14 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
     [AllowOnlyAdmin]
     public async Task<
         ActionResult<IReadOnlyList<AssignmentStatusTypeResponse>>
-    > AssignmentStatusTypes(CancellationToken ct)
+    > AssignmentStatusTypesAsync(CancellationToken ct)
     {
         return Ok(await activities.ListAssignmentStatusTypesAsync(ct));
     }
 
     [HttpGet("modality-types")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<ActivityModalityTypeResponse>>> ModalityTypes(
+    public async Task<ActionResult<IReadOnlyList<ActivityModalityTypeResponse>>> ModalityTypesAsync(
         CancellationToken ct
     )
     {
@@ -92,7 +95,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpPost("{eventId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<ActivityResponse>> Create(
+    public async Task<ActionResult<ActivityResponse>> CreateAsync(
         Guid eventId,
         [FromBody] CreateActivityRequest request,
         CancellationToken ct
@@ -106,7 +109,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpPut("{activityId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<ActivityResponse>> Update(
+    public async Task<ActionResult<ActivityResponse>> UpdateAsync(
         Guid activityId,
         [FromBody] UpdateActivityRequest request,
         CancellationToken ct
@@ -117,14 +120,14 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpDelete("{activityId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> Delete(Guid activityId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(Guid activityId, CancellationToken ct)
     {
         return ToNoContent(await activities.DeleteAsync(activityId, ct));
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/assign")]
     [AllowOnlySelf]
-    public async Task<ActionResult<AssignmentResponse>> Assign(
+    public async Task<ActionResult<AssignmentResponse>> AssignAsync(
         Guid activityId,
         Guid userId,
         [FromBody] AssignRequest request,
@@ -136,7 +139,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpPost("{activityId:guid}/assign-household")]
     [Authorize]
-    public async Task<ActionResult<IReadOnlyList<AssignmentResponse>>> AssignHousehold(
+    public async Task<ActionResult<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
         Guid activityId,
         [FromBody] AssignHouseholdRequest request,
         CancellationToken ct
@@ -149,14 +152,18 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpPatch("{activityId:guid}/{userId:guid}/unassign")]
     [AllowOnlySelf]
-    public async Task<IActionResult> Unassign(Guid activityId, Guid userId, CancellationToken ct)
+    public async Task<IActionResult> UnassignAsync(
+        Guid activityId,
+        Guid userId,
+        CancellationToken ct
+    )
     {
         return ToNoContent(await activities.UnassignAsync(activityId, userId, IsAdmin, ct));
     }
 
     [HttpPatch("{activityId:guid}/{userId:guid}/change-status")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<AssignmentResponse>> ChangeStatus(
+    public async Task<ActionResult<AssignmentResponse>> ChangeStatusAsync(
         Guid activityId,
         Guid userId,
         [FromBody] ChangeAssignmentStatusRequest request,
@@ -168,7 +175,7 @@ public class ActivitiesController(IActivityService activities) : ApiControllerBa
 
     [HttpPatch("{activityId:guid}/{userId:guid}/change-role")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<AssignmentResponse>> ChangeRole(
+    public async Task<ActionResult<AssignmentResponse>> ChangeRoleAsync(
         Guid activityId,
         Guid userId,
         [FromBody] ChangeAssignmentRoleRequest request,

@@ -6,29 +6,29 @@ namespace CodigoActivo.Domain.Repositories;
 public interface IDbRepository<TEntity>
     where TEntity : IdentifiableEntity
 {
-    IQueryable<TEntity> Query();
+    public IQueryable<TEntity> Query();
 
-    Task<TEntity?> FindAsync(
+    public Task<TEntity?> FindAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<TEntity>> GetAsync(
+    public Task<IReadOnlyList<TEntity>> GetAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );
 
-    Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+    public Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
 
-    Task<bool> ExistsAsync(
+    public Task<bool> ExistsAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );
 
-    Task AddAsync(TEntity entity, CancellationToken ct = default);
-    void Remove(TEntity entity);
+    public Task AddAsync(TEntity entity, CancellationToken ct = default);
+    public void Remove(TEntity entity);
 
-    Task<int> RemoveAsync(
+    public Task<int> RemoveAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     );

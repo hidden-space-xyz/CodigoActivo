@@ -38,16 +38,19 @@ public sealed class PartnerServiceTests
         );
     }
 
-    private void HasPartners(params Partner[] items) =>
+    private void HasPartners(params Partner[] items)
+    {
         partners.Query().Returns(items.AsQueryable());
+    }
 
     private static Partner NewPartner(
         string name = "Acme",
         int tier = 1,
         string? web = "https://acme.test",
         DateOnly? fromDate = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
@@ -58,6 +61,7 @@ public sealed class PartnerServiceTests
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
+    }
 
     [Fact]
     public async Task ListAsync_TierFilter_ReturnsMatchingTier()
@@ -223,7 +227,7 @@ public sealed class PartnerServiceTests
         result.Error.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
         await partners
             .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<Partner>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -255,7 +259,10 @@ public sealed class PartnerServiceTests
             .Received(1)
             .AddAsync(
                 Arg.Is<Partner>(p =>
-                    p.Name == "Acme" && p.Web == "https://acme.test" && p.CreatedBy == caller
+                    p != null
+                    && p.Name == "Acme"
+                    && p.Web == "https://acme.test"
+                    && p.CreatedBy == caller
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -263,7 +270,9 @@ public sealed class PartnerServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Partners)
+                )
             );
     }
 
@@ -370,7 +379,9 @@ public sealed class PartnerServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Partners)
+                )
             );
     }
 
@@ -426,7 +437,7 @@ public sealed class PartnerServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -441,7 +452,7 @@ public sealed class PartnerServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -460,7 +471,9 @@ public sealed class PartnerServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Partners))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Partners)
+                )
             );
     }
 }

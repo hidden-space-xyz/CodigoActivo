@@ -9,8 +9,9 @@ public sealed class UserEntityTests
     private static readonly DateTimeOffset Seeded = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
-    private static User NewPendingUser() =>
-        new()
+    private static User NewPendingUser()
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = "Ada",
@@ -23,6 +24,7 @@ public sealed class UserEntityTests
             OtpLastSentAt = Seeded,
             CreatedAt = Seeded,
         };
+    }
 
     [Fact]
     public void Verify_PendingUser_ActivatesAccountAndClearsOtp()

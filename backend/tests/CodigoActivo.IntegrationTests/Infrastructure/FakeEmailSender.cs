@@ -6,13 +6,11 @@ namespace CodigoActivo.IntegrationTests.Infrastructure;
 public sealed partial class FakeEmailSender : IEmailTransport
 {
     private readonly List<EmailMessage> sent = [];
-    private int batches;
-
     private readonly HashSet<string> failingRecipients = new(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyList<EmailMessage> Sent => sent;
 
-    public int Batches => batches;
+    public int Batches { get; private set; }
 
     public Exception? ThrowOnSend { get; set; }
 
@@ -27,7 +25,9 @@ public sealed partial class FakeEmailSender : IEmailTransport
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         if (ThrowOnSend is not null)
+        {
             throw ThrowOnSend;
+        }
 
         lock (sent)
         {
@@ -43,11 +43,13 @@ public sealed partial class FakeEmailSender : IEmailTransport
     )
     {
         if (ThrowOnSend is not null)
+        {
             throw ThrowOnSend;
+        }
 
         lock (sent)
         {
-            batches++;
+            Batches++;
             var delivered = messages
                 .Where(m => !failingRecipients.Contains(m.ToAddress))
                 .ToList();
@@ -62,7 +64,7 @@ public sealed partial class FakeEmailSender : IEmailTransport
     {
         lock (sent)
         {
-            batches = 0;
+            Batches = 0;
             sent.Clear();
             failingRecipients.Clear();
             ThrowOnSend = null;
@@ -80,16 +82,18 @@ public sealed partial class FakeEmailSender : IEmailTransport
         }
 
         if (message is null)
+        {
             throw new InvalidOperationException($"No email was sent to '{address}'.");
+        }
 
-        var match = OtpPattern().Match(message.TextBody);
+        var match = OtpPattern.Match(message.TextBody);
         return !match.Success
             ? throw new InvalidOperationException(
                 $"The email sent to '{address}' does not contain a verification code."
             )
-            : match.Groups[1].Value;
+            : match.Groups["code"].Value;
     }
 
-    [GeneratedRegex(@"[?&]code=([^\s&]+)")]
-    private static partial Regex OtpPattern();
+    [GeneratedRegex(@"[?&]code=(?<code>[^\s&]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex OtpPattern { get; }
 }

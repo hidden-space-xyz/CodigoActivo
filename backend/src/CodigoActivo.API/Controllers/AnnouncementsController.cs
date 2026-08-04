@@ -18,7 +18,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Announcements)]
-    public async Task<ActionResult<PagedResult<AnnouncementListItemResponse>>> List(
+    public async Task<ActionResult<PagedResult<AnnouncementListItemResponse>>> ListAsync(
         [FromQuery] AnnouncementListQuery query,
         CancellationToken ct
     )
@@ -29,7 +29,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
     [HttpGet("years")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Announcements)]
-    public async Task<ActionResult<IReadOnlyList<int>>> Years(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<int>>> YearsAsync(CancellationToken ct)
     {
         return Ok(await announcements.GetYearsAsync(ct));
     }
@@ -37,7 +37,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
     [HttpGet("{announcementId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Announcements)]
-    public async Task<ActionResult<AnnouncementResponse>> Get(
+    public async Task<ActionResult<AnnouncementResponse>> GetAsync(
         Guid announcementId,
         CancellationToken ct
     )
@@ -47,7 +47,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 
     [HttpPost]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<AnnouncementResponse>> Create(
+    public async Task<ActionResult<AnnouncementResponse>> CreateAsync(
         [FromBody] CreateAnnouncementRequest request,
         CancellationToken ct
     )
@@ -60,7 +60,7 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 
     [HttpPut("{announcementId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<AnnouncementResponse>> Update(
+    public async Task<ActionResult<AnnouncementResponse>> UpdateAsync(
         Guid announcementId,
         [FromBody] UpdateAnnouncementRequest request,
         CancellationToken ct
@@ -71,14 +71,14 @@ public class AnnouncementsController(IAnnouncementService announcements) : ApiCo
 
     [HttpDelete("{announcementId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> Delete(Guid announcementId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(Guid announcementId, CancellationToken ct)
     {
         return ToNoContent(await announcements.DeleteAsync(announcementId, ct));
     }
 
     [HttpPatch("{announcementId:guid}/feature")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<AnnouncementResponse>> Feature(
+    public async Task<ActionResult<AnnouncementResponse>> FeatureAsync(
         Guid announcementId,
         CancellationToken ct
     )

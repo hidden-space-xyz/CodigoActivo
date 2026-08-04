@@ -53,11 +53,20 @@ public class PartnerService(
         var source = partners.Query().Select(Projections.Partner);
 
         if (query.Tier is { } tier)
+        {
             source = source.Where(p => p.Tier == tier);
+        }
+
         if (query.FromDateFrom is { } fromDateFrom)
+        {
             source = source.Where(p => p.FromDate >= fromDateFrom);
+        }
+
         if (query.FromDateTo is { } fromDateTo)
+        {
             source = source.Where(p => p.FromDate <= fromDateTo);
+        }
+
         source = source.WhereContains(p => p.Name, query.Name);
         source = source.WhereContains(p => p.Website, query.Website);
 
@@ -84,7 +93,9 @@ public class PartnerService(
     )
     {
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
+        }
 
         var partner = new Partner
         {
@@ -111,10 +122,14 @@ public class PartnerService(
     {
         var partner = await partners.FindAsync(p => p.Id == id, ct);
         if (partner is null)
+        {
             return Error.NotFound(ErrorCode.PartnerNotFound);
+        }
 
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
+        }
 
         var previousThumbnailId = partner.ThumbnailId;
 
@@ -130,7 +145,9 @@ public class PartnerService(
         await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
 
         if (previousThumbnailId != request.ThumbnailId)
+        {
             await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+        }
 
         return partner.ToResponse();
     }
@@ -139,7 +156,9 @@ public class PartnerService(
     {
         var partner = await partners.FindAsync(p => p.Id == id, ct);
         if (partner is null)
+        {
             return Error.NotFound(ErrorCode.PartnerNotFound);
+        }
 
         partners.Remove(partner);
         await uow.SaveChangesAsync(ct);

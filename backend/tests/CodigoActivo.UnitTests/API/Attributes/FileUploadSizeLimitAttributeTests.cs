@@ -23,7 +23,11 @@ public sealed class FileUploadSizeLimitAttributeTests
         var provider = new ServiceCollection()
             .AddSingleton(new FileStorageOptions { MaxSizeBytes = maxSizeBytes })
             .BuildServiceProvider();
-        return (IAuthorizationFilter)new FileUploadSizeLimitAttribute().CreateInstance(provider);
+        return new FileUploadSizeLimitAttribute()
+            .CreateInstance(provider)
+            .Should()
+            .BeAssignableTo<IAuthorizationFilter>()
+            .Subject;
     }
 
     private static AuthorizationFilterContext BuildContext(HttpContext httpContext)
@@ -112,20 +116,21 @@ public sealed class FileUploadSizeLimitAttributeTests
 
     private sealed class FakeMaxRequestBodySizeFeature : IHttpMaxRequestBodySizeFeature
     {
-        private long? maxRequestBodySize;
-
         public bool IsReadOnly { get; init; }
 
         public long? MaxRequestBodySize
         {
-            get => maxRequestBodySize;
+            get;
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(
                         "MaxRequestBodySize cannot be set after reading has started."
                     );
-                maxRequestBodySize = value;
+                }
+
+                field = value;
             }
         }
     }

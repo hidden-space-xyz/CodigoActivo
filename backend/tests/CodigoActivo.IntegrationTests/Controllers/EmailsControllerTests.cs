@@ -84,8 +84,9 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private static ActivityUserRoleAssignment Assignment(Guid userId, Guid statusId) =>
-        new()
+    private static ActivityUserRoleAssignment Assignment(Guid userId, Guid statusId)
+    {
+        return new()
         {
             ActivityId = ActivityId,
             UserId = userId,
@@ -93,6 +94,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             AssignmentStatusId = statusId,
             CreatedAt = At,
         };
+    }
 
     private static async Task<SendEmailResultResponse> ReadResultAsync(HttpResponseMessage response)
     {
@@ -120,12 +122,12 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo([
+            .BeEquivalentTo(
                 TestSeedData.AdminEmail,
                 TestSeedData.MemberEmail,
                 TestSeedData.PendingEmail,
-                TestSeedData.BlockedEmail,
-            ]);
+                TestSeedData.BlockedEmail
+            );
         Factory.EmailSender.Sent.Should().OnlyContain(m => m.Subject == "Asamblea general");
     }
 
@@ -166,7 +168,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo([TestSeedData.AdminEmail, TestSeedData.MemberEmail]);
+            .BeEquivalentTo(TestSeedData.AdminEmail, TestSeedData.MemberEmail);
     }
 
     [Fact]
@@ -231,7 +233,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Should()
             .OnlyContain(m =>
-                m.Attachments!.Count == 1 && m.Attachments![0].FileName == "acta.pdf"
+                m.Attachments!.Count == 1 && m.Attachments[0].FileName == "acta.pdf"
             );
 
         var filesAfter = await Factory.QueryAsync(db =>
@@ -351,7 +353,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo([TestSeedData.MemberEmail, TestSeedData.PendingEmail]);
+            .BeEquivalentTo(TestSeedData.MemberEmail, TestSeedData.PendingEmail);
     }
 
     [Fact]

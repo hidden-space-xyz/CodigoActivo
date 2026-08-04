@@ -107,7 +107,8 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = SeedIds.ActivityRoleTypes.Leader,
                 Name = "Líder",
                 Description =
-                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas y vela por el cumplimiento de los objetivos.",
+                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas "
+                    + "y vela por el cumplimiento de los objetivos.",
             },
             new ActivityRoleType
             {

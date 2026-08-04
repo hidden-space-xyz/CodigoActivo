@@ -8,9 +8,18 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Validation;
 
-public sealed class ValidationAttributesTests
+public sealed class ValidationAttributesTests : IDisposable
 {
     private static readonly DateOnly Today = new(2026, 7, 4);
+
+    private readonly ServiceProvider services = new ServiceCollection()
+        .AddSingleton<IClock>(new TestClock(today: Today))
+        .BuildServiceProvider();
+
+    public void Dispose()
+    {
+        services.Dispose();
+    }
 
     [Fact]
     public void IsValid_NotBlankNonStringValues_ReturnsTrue()
@@ -112,13 +121,9 @@ public sealed class ValidationAttributesTests
         result!.MemberNames.Should().Equal(nameof(Holder.BirthDate));
     }
 
-    private static ValidationResult? Validate(object? value)
+    private ValidationResult? Validate(object? value)
     {
-        using var services = new ServiceCollection()
-            .AddSingleton<IClock>(new TestClock(today: Today))
-            .BuildServiceProvider();
-
-        var context = new ValidationContext(new Holder(), services, items: null)
+        var context = new ValidationContext(new Holder { BirthDate = Today }, services, items: null)
         {
             MemberName = nameof(Holder.BirthDate),
         };

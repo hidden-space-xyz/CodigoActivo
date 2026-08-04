@@ -46,26 +46,39 @@ public sealed class UserServiceTests
         );
     }
 
-    private Task<PagedResult<UserResponse>> ListAsAdmin(UserListQuery query) =>
-        sut.ListAsync(query, Guid.NewGuid(), isAdmin: true, TestContext.Current.CancellationToken);
+    private Task<PagedResult<UserResponse>> ListAsAdminAsync(UserListQuery query)
+    {
+        return sut.ListAsync(query, Guid.NewGuid(), isAdmin: true, TestContext.Current.CancellationToken);
+    }
 
-    private Task<PagedResult<UserResponse>> ListAsCaller(UserListQuery query, Guid callerId) =>
-        sut.ListAsync(query, callerId, isAdmin: false, TestContext.Current.CancellationToken);
+    private Task<PagedResult<UserResponse>> ListAsCallerAsync(UserListQuery query, Guid callerId)
+    {
+        return sut.ListAsync(query, callerId, isAdmin: false, TestContext.Current.CancellationToken);
+    }
 
-    private Task<int> AssertNotSaved() =>
-        uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
+    private Task<int> AssertNotSavedAsync()
+    {
+        return uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
 
-    private void HasUsers(params User[] items) => users.Query().Returns(items.AsQueryable());
+    private void HasUsers(params User[] items)
+    {
+        users.Query().Returns(items.AsQueryable());
+    }
 
-    private void HasUserTypes(params UserType[] items) =>
+    private void HasUserTypes(params UserType[] items)
+    {
         userTypes.Query().Returns(items.AsQueryable());
+    }
 
-    private void HasStatusTypes(params UserStatusType[] items) =>
+    private void HasStatusTypes(params UserStatusType[] items)
+    {
         userStatusTypes.Query().Returns(items.AsQueryable());
+    }
 
     private void FindReturns(params User?[]? sequence)
     {
-        if (sequence is null || sequence.Length == 0)
+        if (sequence is null || sequence.Length is 0)
         {
             users.Finds(null);
             return;
@@ -73,13 +86,15 @@ public sealed class UserServiceTests
 
         users
             .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(sequence[0], sequence.Skip(1).ToArray());
+            .Returns(sequence[0], [.. sequence.Skip(1)]);
     }
 
-    private void TypeExists(bool exists) =>
+    private void TypeExists(bool exists)
+    {
         userTypes
             .ExistsAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(exists);
+    }
 
     private void CaptureAddedUsers(User? parent = null)
     {
@@ -90,10 +105,14 @@ public sealed class UserServiceTests
             .Do(ci =>
             {
                 var user = ci.Arg<User>();
-                user.UserStatusType = new UserStatusType { Name = "Dependiente", Color = "#111" };
-                user.UserType = new UserType { Name = "Participante", Color = "#111" };
+                Assert.NotNull(user);
+                user.UserStatusType = new UserStatusType { Description = "Descripción de prueba", Name = "Dependiente", Color = "#111" };
+                user.UserType = new UserType { Description = "Descripción de prueba", Name = "Participante", Color = "#111" };
                 if (parent is not null && user.ParentId == parent.Id)
+                {
                     user.Parent = parent;
+                }
+
                 store.Add(user);
             });
     }
@@ -111,8 +130,9 @@ public sealed class UserServiceTests
         Guid? statusId = null,
         string typeName = "Socio",
         string statusName = "Active"
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id ?? Guid.NewGuid(),
             FirstName = first,
@@ -139,24 +159,49 @@ public sealed class UserServiceTests
             },
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
+    }
 
-    private static UserType NewUserType(string name) =>
-        new()
+    private static bool IsAddedChild(User? user, Guid parentId, DateTimeOffset createdAt)
+    {
+        if (user is null)
+        {
+            return false;
+        }
+
+        var isNamedKid = string.Equals(user.FirstName, "Kid", StringComparison.Ordinal)
+            && string.Equals(user.LastName, "Doe", StringComparison.Ordinal);
+        var isDependentParticipant =
+            user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+            && user.UserTypeId == SeedIds.UserTypes.Participant
+            && user.Gender is Gender.Female;
+
+        return isNamedKid
+            && isDependentParticipant
+            && user.ParentId == parentId
+            && user.CreatedAt == createdAt;
+    }
+
+    private static UserType NewUserType(string name)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
             Description = string.Empty,
             Color = "#000",
         };
+    }
 
-    private static UserStatusType NewStatusType(string name) =>
-        new()
+    private static UserStatusType NewStatusType(string name)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
             Description = string.Empty,
             Color = "#000",
         };
+    }
 
     [Fact]
     public async Task ListAsync_CallerIsAdmin_ReturnsAllUsers()
@@ -167,7 +212,7 @@ public sealed class UserServiceTests
             NewUser(id: Guid.NewGuid())
         );
 
-        var result = await ListAsAdmin(new UserListQuery());
+        var result = await ListAsAdminAsync(new UserListQuery());
 
         result.Total.Should().Be(3);
         result.Items.Should().HaveCount(3).And.AllBeOfType<UserResponse>();
@@ -184,7 +229,7 @@ public sealed class UserServiceTests
             NewUser(first: "Stranger")
         );
 
-        var result = await ListAsCaller(new UserListQuery(), caller);
+        var result = await ListAsCallerAsync(new UserListQuery(), caller);
 
         result.Total.Should().Be(2);
         result.Items.Select(u => u.FirstName).Should().BeEquivalentTo("Self", "Child");
@@ -200,7 +245,7 @@ public sealed class UserServiceTests
             NewUser(first: "Other", parentId: Guid.NewGuid())
         );
 
-        var result = await ListAsAdmin(new UserListQuery { ParentId = parent });
+        var result = await ListAsAdminAsync(new UserListQuery { ParentId = parent });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Kid");
     }
@@ -210,7 +255,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(first: "Ávila"), NewUser(first: "Benito"));
 
-        var result = await ListAsAdmin(new UserListQuery { Name = "avila" });
+        var result = await ListAsAdminAsync(new UserListQuery { Name = "avila" });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Ávila");
     }
@@ -220,7 +265,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(last: "Gonzalez"), NewUser(last: "Martinez"));
 
-        var result = await ListAsAdmin(new UserListQuery { Name = "gonz" });
+        var result = await ListAsAdminAsync(new UserListQuery { Name = "gonz" });
 
         result.Items.Should().ContainSingle().Which.LastName.Should().Be("Gonzalez");
     }
@@ -234,7 +279,7 @@ public sealed class UserServiceTests
             NewUser(first: "Gara", last: "Anaya")
         );
 
-        var result = await ListAsAdmin(new UserListQuery { Name = "ana gar" });
+        var result = await ListAsAdminAsync(new UserListQuery { Name = "ana gar" });
 
         result.Items.Should().ContainSingle().Which.LastName.Should().Be("García");
     }
@@ -244,7 +289,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(phone: "600111222"), NewUser(phone: "699888777"));
 
-        var result = await ListAsAdmin(new UserListQuery { Phone = "111" });
+        var result = await ListAsAdminAsync(new UserListQuery { Phone = "111" });
 
         result.Items.Should().ContainSingle().Which.Phone.Should().Be("600111222");
     }
@@ -255,7 +300,7 @@ public sealed class UserServiceTests
         var target = NewUser(first: "Target");
         HasUsers(target, NewUser(first: "Other"), NewUser(first: "Another"));
 
-        var result = await ListAsAdmin(new UserListQuery { Id = target.Id });
+        var result = await ListAsAdminAsync(new UserListQuery { Id = target.Id });
 
         result.Items.Should().ContainSingle().Which.Id.Should().Be(target.Id);
     }
@@ -266,7 +311,7 @@ public sealed class UserServiceTests
         var typeId = Guid.NewGuid();
         HasUsers(NewUser(first: "Match", typeId: typeId), NewUser(first: "Other"));
 
-        var result = await ListAsAdmin(new UserListQuery { UserTypeId = typeId });
+        var result = await ListAsAdminAsync(new UserListQuery { UserTypeId = typeId });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Match");
     }
@@ -277,7 +322,7 @@ public sealed class UserServiceTests
         var statusId = Guid.NewGuid();
         HasUsers(NewUser(first: "Match", statusId: statusId), NewUser(first: "Other"));
 
-        var result = await ListAsAdmin(new UserListQuery { UserStatusTypeId = statusId });
+        var result = await ListAsAdminAsync(new UserListQuery { UserStatusTypeId = statusId });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Match");
     }
@@ -287,7 +332,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(first: "Boss", isAdmin: true), NewUser(first: "Plain"));
 
-        var result = await ListAsAdmin(new UserListQuery { IsAdmin = true });
+        var result = await ListAsAdminAsync(new UserListQuery { IsAdmin = true });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Boss");
     }
@@ -302,7 +347,7 @@ public sealed class UserServiceTests
             NewUser(first: "Despues", dob: new DateOnly(2011, 1, 1))
         );
 
-        var result = await ListAsAdmin(
+        var result = await ListAsAdminAsync(
             new UserListQuery
             {
                 BirthDateFrom = new DateOnly(2005, 6, 15),
@@ -321,7 +366,7 @@ public sealed class UserServiceTests
             NewUser(first: "Joven", dob: new DateOnly(2000, 1, 1))
         );
 
-        var result = await ListAsAdmin(
+        var result = await ListAsAdminAsync(
             new UserListQuery { BirthDateFrom = new DateOnly(1990, 1, 1) }
         );
 
@@ -342,7 +387,7 @@ public sealed class UserServiceTests
         kidOfMario.Parent = mario;
         HasUsers(kidOfZoe, kidOfAna, kidOfMario);
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "parentName" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "parentName" });
 
         result.Items.Select(u => u.FirstName).Should().ContainInOrder("HijoA", "HijoM", "HijoZ");
     }
@@ -358,7 +403,7 @@ public sealed class UserServiceTests
         one.Children.Add(NewUser(first: "Kid3", parentId: one.Id));
         HasUsers(none, two, one);
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "-dependents" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "-dependents" });
 
         result.Items.Select(u => u.FirstName).Should().ContainInOrder("Dos", "Uno", "Cero");
         result.Items.Select(u => u.DependentCount).Should().ContainInOrder(2, 1, 0);
@@ -373,7 +418,7 @@ public sealed class UserServiceTests
             NewUser(email: "bob@test.com")
         );
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "email" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "email" });
 
         result
             .Items.Select(u => u.Email)
@@ -390,7 +435,7 @@ public sealed class UserServiceTests
             NewUser(statusName: "Blocked")
         );
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "status" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "status" });
 
         result
             .Items.Select(u => u.Status.Name)
@@ -407,7 +452,7 @@ public sealed class UserServiceTests
             NewUser(typeName: "Patrocinador")
         );
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "type" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "type" });
 
         result
             .Items.Select(u => u.Type!.Name)
@@ -420,7 +465,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(first: "Plain"), NewUser(first: "Boss", isAdmin: true));
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "-isAdmin" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "-isAdmin" });
 
         result.Items.Select(u => u.FirstName).Should().ContainInOrder("Boss", "Plain");
     }
@@ -434,12 +479,12 @@ public sealed class UserServiceTests
         parent.Children.Add(child);
         HasUsers(parent, child);
 
-        var result = await ListAsAdmin(new UserListQuery());
+        var result = await ListAsAdminAsync(new UserListQuery());
 
-        var kid = result.Items.Single(u => u.FirstName == "Kid");
+        var kid = result.Items.Single(u => string.Equals(u.FirstName, "Kid", StringComparison.Ordinal));
         kid.ParentName.Should().Be("Padre Perez");
         kid.DependentCount.Should().Be(0);
-        var padre = result.Items.Single(u => u.FirstName == "Padre");
+        var padre = result.Items.Single(u => string.Equals(u.FirstName, "Padre", StringComparison.Ordinal));
         padre.ParentName.Should().BeNull();
         padre.DependentCount.Should().Be(1);
     }
@@ -454,7 +499,7 @@ public sealed class UserServiceTests
         caller.Children.Add(child);
         HasUsers(caller, child);
 
-        var result = await ListAsCaller(new UserListQuery(), callerId);
+        var result = await ListAsCallerAsync(new UserListQuery(), callerId);
 
         result.Items.Should().HaveCount(2);
         result.Items.Should().OnlyContain(u => u.ParentName == null && u.DependentCount == null);
@@ -465,7 +510,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(email: "alpha@test.com"), NewUser(email: "beta@test.com"));
 
-        var result = await ListAsAdmin(new UserListQuery { Email = "beta" });
+        var result = await ListAsAdminAsync(new UserListQuery { Email = "beta" });
 
         result.Items.Should().ContainSingle().Which.Email.Should().Be("beta@test.com");
     }
@@ -475,7 +520,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(last: "Aaa"), NewUser(last: "Zzz"), NewUser(last: "Mmm"));
 
-        var result = await ListAsAdmin(new UserListQuery { Sort = "-lastName" });
+        var result = await ListAsAdminAsync(new UserListQuery { Sort = "-lastName" });
 
         result.Items.Select(u => u.LastName).Should().ContainInOrder("Zzz", "Mmm", "Aaa");
     }
@@ -485,7 +530,7 @@ public sealed class UserServiceTests
     {
         HasUsers(NewUser(first: "A"), NewUser(first: "B"), NewUser(first: "C"));
 
-        var result = await ListAsAdmin(new UserListQuery { Page = 2, PageSize = 2 });
+        var result = await ListAsAdminAsync(new UserListQuery { Page = 2, PageSize = 2 });
 
         result.Total.Should().Be(3);
         result.Items.Should().ContainSingle();
@@ -504,7 +549,7 @@ public sealed class UserServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(user.Id);
         result.Value.Type.Should().NotBeNull();
-        result.Value.Type!.Name.Should().Be("Socio");
+        result.Value.Type.Name.Should().Be("Socio");
     }
 
     [Fact]
@@ -538,7 +583,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -562,7 +607,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentNotAllowedForAdult);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Theory]
@@ -583,7 +628,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserContactInfoRequired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -610,7 +655,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -640,7 +685,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserPhoneAlreadyInUse);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -673,7 +718,7 @@ public sealed class UserServiceTests
         result.Value.FirstName.Should().Be("New");
         result.Value.Email.Should().Be("new@test.com");
         result.Value.Type.Should().NotBeNull();
-        result.Value.Type!.Name.Should().Be("Socio");
+        result.Value.Type.Name.Should().Be("Socio");
         result.Value.DependentCount.Should().Be(0);
         user.FirstName.Should().Be("New");
         user.LastName.Should().Be("Name");
@@ -686,7 +731,9 @@ public sealed class UserServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Users)
+                )
             );
     }
 
@@ -703,7 +750,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIdRequired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -716,7 +763,7 @@ public sealed class UserServiceTests
         var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCannotBeOwnParent);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -740,7 +787,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.ParentUserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -764,7 +811,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIsMinor);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -821,7 +868,7 @@ public sealed class UserServiceTests
         var result = await sut.UpdateAsync(id, request, TestContext.Current.CancellationToken);
 
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserParentReassignmentForbidden);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -833,8 +880,8 @@ public sealed class UserServiceTests
         var result = await sut.DeleteAsync(id, TestContext.Current.CancellationToken);
 
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteAdminForbidden);
-        users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await AssertNotSaved();
+        users.DidNotReceiveWithAnyArgs().Remove(Arg.Any<User>());
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -845,7 +892,7 @@ public sealed class UserServiceTests
         var result = await sut.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -866,7 +913,9 @@ public sealed class UserServiceTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags.Contains(CacheTags.Users) && tags.Contains(CacheTags.Activities)
+                    tags != null
+                    && tags.Contains(CacheTags.Users)
+                    && tags.Contains(CacheTags.Activities)
                 )
             );
     }
@@ -883,7 +932,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -908,7 +957,7 @@ public sealed class UserServiceTests
         var result = await sut.SetAdminAsync(user.Id, true, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -940,7 +989,7 @@ public sealed class UserServiceTests
 
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserCannotRemoveLastAdmin);
         user.IsAdmin.Should().BeTrue();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -955,7 +1004,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -971,7 +1020,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserTypeNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -995,7 +1044,9 @@ public sealed class UserServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Users)
+                )
             );
     }
 
@@ -1013,7 +1064,7 @@ public sealed class UserServiceTests
         var result = await sut.ChangeTypeAsync(id, roleId, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -1029,7 +1080,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.ParentUserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -1045,7 +1096,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIsMinor);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -1061,7 +1112,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserChildBirthDateNotMinor);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -1085,27 +1136,21 @@ public sealed class UserServiceTests
         result.Value.ParentId.Should().Be(parentId);
         result.Value.ParentName.Should().Be("Ana Lopez");
         result.Value.Type.Should().NotBeNull();
-        result.Value.Type!.Name.Should().Be("Participante");
+        result.Value.Type.Name.Should().Be("Participante");
         result.Value.DependentCount.Should().Be(0);
         await users
             .Received(1)
             .AddAsync(
-                Arg.Is<User>(u =>
-                    u.FirstName == "Kid"
-                    && u.LastName == "Doe"
-                    && u.Gender == Gender.Female
-                    && u.ParentId == parentId
-                    && u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-                    && u.UserTypeId == SeedIds.UserTypes.Participant
-                    && u.CreatedAt == clock.UtcNow
-                ),
+                Arg.Is<User>(u => IsAddedChild(u, parentId, clock.UtcNow)),
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Users)
+                )
             );
     }
 
@@ -1122,7 +1167,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -1140,7 +1185,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserPasswordNotSet);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -1158,7 +1203,7 @@ public sealed class UserServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]

@@ -102,17 +102,23 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         var trimmed = address.Trim().ToLowerInvariant();
         var at = trimmed.LastIndexOf('@');
         if (at <= 0)
+        {
             return trimmed;
+        }
 
         var local = trimmed[..at];
         var domain = trimmed[(at + 1)..];
 
         var plus = local.IndexOf('+', StringComparison.Ordinal);
         if (plus >= 0)
+        {
             local = local[..plus];
+        }
 
         if (FoldsDots(domain))
+        {
             local = local.Replace(".", string.Empty, StringComparison.Ordinal);
+        }
 
         return string.Concat(local, "@", domain);
     }
@@ -135,7 +141,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 
     private int Remaining()
     {
-        return (int)Math.Floor(global.Tokens);
+        return int.CreateTruncating(global.Tokens);
     }
 
     private EmailGuardAlert GlobalExhaustedAlert(DateTimeOffset now)
@@ -164,7 +170,9 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private bool ShouldAlert(ref DateTimeOffset? lastAt, DateTimeOffset now)
     {
         if (lastAt is not null && now - lastAt.Value < options.AlertInterval)
+        {
             return false;
+        }
 
         lastAt = now;
         return true;
@@ -175,7 +183,9 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         var scheduled = now - lastSweepAt >= options.SweepInterval;
         var saturated = lastSweepFreedRoom && recipients.Count >= options.MaxTrackedRecipients;
         if (!scheduled && !saturated)
+        {
             return;
+        }
 
         lastSweepAt = now;
 
@@ -190,15 +200,21 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
             );
 
             if (hourly.IsFull(options.RecipientBurst) && daily.IsFull(options.RecipientPerDay))
+            {
                 (stale ??= []).Add(key);
+            }
         }
 
         lastSweepFreedRoom = stale is not null;
         if (stale is null)
+        {
             return;
+        }
 
         foreach (var key in stale)
+        {
             recipients.Remove(key);
+        }
     }
 
     private sealed class RecipientState(Bucket hourly, Bucket daily)
@@ -220,10 +236,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         public Bucket Refill(DateTimeOffset now, double capacity, double perHour)
         {
             var elapsed = now - UpdatedAt;
-            if (elapsed <= TimeSpan.Zero)
-                return this;
-
-            return new Bucket(Math.Min(capacity, Tokens + (elapsed.TotalHours * perHour)), now);
+            return elapsed <= TimeSpan.Zero ? this : new Bucket(Math.Min(capacity, Tokens + (elapsed.TotalHours * perHour)), now);
         }
 
         public Bucket Consume()

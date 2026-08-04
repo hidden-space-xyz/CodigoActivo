@@ -20,13 +20,19 @@ public sealed class AllowOnlyAdminAttributeTests
         return new AuthorizationFilterContext(actionContext, []);
     }
 
-    private static ClaimsPrincipal Anonymous() => new(new ClaimsIdentity());
+    private static ClaimsPrincipal Anonymous()
+    {
+        return new(new ClaimsIdentity());
+    }
 
     private static ClaimsPrincipal User(Guid id, bool isAdmin = false)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id.ToString()) };
         if (isAdmin)
+        {
             claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+        }
+
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
     }
 

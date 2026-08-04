@@ -18,10 +18,9 @@ public sealed class ThrottledEmailSender(
         var decision = limiter.TryConsume(message.Kind, message.ToAddress);
         Report(decision, message);
 
-        if (decision.Scope != EmailLimitScope.None)
-            throw new EmailRateLimitedException(decision.Scope);
-
-        return transport.SendAsync(message, ct);
+        return decision.Scope is not EmailLimitScope.None
+            ? throw new EmailRateLimitedException(decision.Scope)
+            : transport.SendAsync(message, ct);
     }
 
     private void Report(EmailSendDecision decision, EmailMessage message)
@@ -43,14 +42,16 @@ public sealed class ThrottledEmailSender(
                 break;
             case EmailGuardAlert.GlobalBudgetExhausted:
                 logger.LogError(
-                    "The global outbound email budget is exhausted and a {Kind} message to {Recipient} was denied; automatic mail is held until the budget refills, admin-written email is unaffected",
+                    "The global outbound email budget is exhausted and a {Kind} message to {Recipient} was denied; automatic mail is held "
+                        + "until the budget refills, admin-written email is unaffected",
                     message.Kind,
                     message.ToAddress
                 );
                 break;
             case EmailGuardAlert.TrackingSaturated:
                 logger.LogWarning(
-                    "The outbound email quota already tracks {Limit} recipients, so new addresses are accounted against the global budget only",
+                    "The outbound email quota already tracks {Limit} recipients, so new addresses are accounted against the global budget "
+                        + "only",
                     options.MaxTrackedRecipients
                 );
                 break;

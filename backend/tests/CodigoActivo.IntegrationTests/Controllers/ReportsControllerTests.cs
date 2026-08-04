@@ -89,8 +89,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         string title,
         Guid thumbnailId,
         DateTimeOffset? startsAt = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id,
             Title = title,
@@ -104,9 +105,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             CreatedAt = At,
             CreatedBy = TestSeedData.Users.AdminId,
         };
+    }
 
-    private static FileEntity Thumbnail(Guid id) =>
-        new()
+    private static FileEntity Thumbnail(Guid id)
+    {
+        return new()
         {
             Id = id,
             Name = "thumb",
@@ -114,14 +117,16 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             UploadedAt = At,
             UploadedBy = TestSeedData.Users.AdminId,
         };
+    }
 
     private static ActivityUserRoleAssignment Assignment(
         Guid activityId,
         Guid userId,
         Guid roleTypeId,
         Guid statusId
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             ActivityId = activityId,
             UserId = userId,
@@ -129,14 +134,18 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             AssignmentStatusId = statusId,
             CreatedAt = At,
         };
+    }
 
     [Fact]
-    public async Task EventSummary_ExistingEvent_ReturnsComputedAggregates()
+    public async Task EventSummaryAsync_ExistingEvent_ReturnsComputedAggregates()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/summary"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
@@ -159,7 +168,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummary_RepeatedUserAcrossActivities_CountsDistinctVolunteersOnce()
+    public async Task EventSummaryAsync_RepeatedUserAcrossActivities_CountsDistinctVolunteersOnce()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -176,7 +185,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/summary"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
@@ -188,17 +200,20 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummary_MissingEvent_ReturnsNotFound()
+    public async Task EventSummaryAsync_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/summary", Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/summary"),
+            Ct
+        );
 
         await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
-    public async Task EventAttendees_ExistingEvent_GroupsAssignmentsPerAttendee()
+    public async Task EventAttendeesAsync_ExistingEvent_GroupsAssignmentsPerAttendee()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -219,7 +234,10 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/attendees", Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
@@ -250,7 +268,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         child.UserTypeName.Should().Be("Participante");
         child.UserTypeColor.Should().Be("#3B82F6");
         child.Guardian.Should().NotBeNull();
-        child.Guardian!.FirstName.Should().Be("Marta");
+        child.Guardian.FirstName.Should().Be("Marta");
         child.Guardian.Email.Should().Be(TestSeedData.MemberEmail);
         child.Guardian.Phone.Should().Be("+34600000002");
         child.Assignments.Should().HaveCount(2);
@@ -262,7 +280,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_StatusFilter_ReturnsUsersAndAssignmentsMatchingStatus()
+    public async Task EventAttendeesAsync_StatusFilter_ReturnsUsersAndAssignmentsMatchingStatus()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -284,7 +302,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?statusId={SeedIds.AssignmentStatusTypes.Confirmed}",
+            TestUri.Rel(
+                $"/api/reports/events/{EventId}/attendees?statusId={SeedIds.AssignmentStatusTypes.Confirmed}"
+            ),
             Ct
         );
 
@@ -301,13 +321,13 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_SortByEmail_OrdersByEmailWithNullsLast()
+    public async Task EventAttendeesAsync_SortByEmail_OrdersByEmailWithNullsLast()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?sort=email",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?sort=email"),
             Ct
         );
 
@@ -317,13 +337,13 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_SortByBirthDateDescending_OrdersYoungestFirst()
+    public async Task EventAttendeesAsync_SortByBirthDateDescending_OrdersYoungestFirst()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?sort=-birthDate",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?sort=-birthDate"),
             Ct
         );
 
@@ -333,13 +353,13 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_SortByType_OrdersByUserTypeName()
+    public async Task EventAttendeesAsync_SortByType_OrdersByUserTypeName()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?sort=type",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?sort=type"),
             Ct
         );
 
@@ -353,7 +373,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_ActivityFilter_ComputesConflictFromHiddenAssignments()
+    public async Task EventAttendeesAsync_ActivityFilter_ComputesConflictFromHiddenAssignments()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -375,7 +395,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?activityId={ActivityCId}",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?activityId={ActivityCId}"),
             Ct
         );
 
@@ -394,13 +414,13 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_GenderFilter_ReturnsOnlyMatchingAttendees()
+    public async Task EventAttendeesAsync_GenderFilter_ReturnsOnlyMatchingAttendees()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?gender={Gender.Male}",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?gender={nameof(Gender.Male)}"),
             Ct
         );
 
@@ -413,13 +433,13 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_SearchFilter_MatchesGuardianData()
+    public async Task EventAttendeesAsync_SearchFilter_MatchesGuardianData()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?search=marta",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?search=marta"),
             Ct
         );
 
@@ -430,17 +450,17 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_PageSizeOne_PagesAttendeesKeepingTotal()
+    public async Task EventAttendeesAsync_PageSizeOne_PagesAttendeesKeepingTotal()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var firstResponse = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?page=1&pageSize=1",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?page=1&pageSize=1"),
             Ct
         );
         var secondResponse = await client.GetAsync(
-            $"/api/reports/events/{EventId}/attendees?page=2&pageSize=1",
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?page=2&pageSize=1"),
             Ct
         );
 
@@ -459,12 +479,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_MissingEvent_ReturnsEmptyPage()
+    public async Task EventAttendeesAsync_MissingEvent_ReturnsEmptyPage()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/attendees", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/attendees"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
@@ -473,17 +493,20 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendees_MemberUser_ReturnsForbidden()
+    public async Task EventAttendeesAsync_MemberUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/attendees", Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task EventBadges_ExistingEvent_ReturnsConfirmedBadgesWithGuardianAndActivities()
+    public async Task EventBadgesAsync_ExistingEvent_ReturnsConfirmedBadgesWithGuardianAndActivities()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -500,7 +523,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/badges"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var report = await response.ReadJsonAsync<EventBadgesResponse>(Ct);
@@ -524,39 +547,39 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         child.LastName.Should().Be("Miembro");
         child.UserTypeName.Should().Be("Participante");
         child.Guardian.Should().NotBeNull();
-        child.Guardian!.FirstName.Should().Be("Marta");
+        child.Guardian.FirstName.Should().Be("Marta");
         child.Guardian.LastName.Should().Be("Miembro");
         child.Guardian.Phone.Should().Be("+34600000002");
         child.Activities.Should().BeEquivalentTo("Taller", "Charla");
     }
 
     [Fact]
-    public async Task EventBadges_MissingEvent_ReturnsNotFound()
+    public async Task EventBadgesAsync_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/badges", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/badges"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
-    public async Task EventBadges_MemberUser_ReturnsForbidden()
+    public async Task EventBadgesAsync_MemberUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/badges", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/badges"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task EventRoster_ExistingEvent_GroupsConfirmedParticipantsByActivity()
+    public async Task EventRosterAsync_ExistingEvent_GroupsConfirmedParticipantsByActivity()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/roster", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/roster"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var report = await response.ReadJsonAsync<EventRosterResponse>(Ct);
@@ -589,38 +612,38 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         child.Phone.Should().BeNull();
         child.RoleName.Should().Be("Voluntario");
         child.Guardian.Should().NotBeNull();
-        child.Guardian!.FirstName.Should().Be("Marta");
+        child.Guardian.FirstName.Should().Be("Marta");
         child.Guardian.LastName.Should().Be("Miembro");
         child.Guardian.Email.Should().Be(TestSeedData.MemberEmail);
         child.Guardian.Phone.Should().Be("+34600000002");
     }
 
     [Fact]
-    public async Task EventRoster_MissingEvent_ReturnsNotFound()
+    public async Task EventRosterAsync_MissingEvent_ReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{Guid.NewGuid()}/roster", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/roster"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
-    public async Task EventRoster_MemberUser_ReturnsForbidden()
+    public async Task EventRosterAsync_MemberUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/roster", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/roster"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task Dashboard_EmptyDatabase_CountsUsersOnly()
+    public async Task DashboardAsync_EmptyDatabase_CountsUsersOnly()
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/reports/dashboard", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dashboard = await response.ReadJsonAsync<DashboardSummaryResponse>(Ct);
@@ -633,21 +656,21 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Dashboard_AnonymousUser_ReturnsUnauthorized()
+    public async Task DashboardAsync_AnonymousUser_ReturnsUnauthorized()
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/reports/dashboard", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task Dashboard_MemberUser_ReturnsForbidden()
+    public async Task DashboardAsync_MemberUser_ReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/reports/dashboard", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

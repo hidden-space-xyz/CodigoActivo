@@ -7,7 +7,9 @@ public static class RichTextDocument
     public static bool IsEmpty(string? richTextJson)
     {
         if (string.IsNullOrWhiteSpace(richTextJson))
+        {
             return true;
+        }
 
         try
         {
@@ -22,30 +24,27 @@ public static class RichTextDocument
 
     private static bool HasContent(JsonElement element)
     {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Object => ObjectHasContent(element),
-            JsonValueKind.Array => element.EnumerateArray().Any(HasContent),
-            _ => false,
-        };
+        return element.ValueKind is JsonValueKind.Object
+            ? ObjectHasContent(element)
+            : element.ValueKind is JsonValueKind.Array && element.EnumerateArray().Any(HasContent);
     }
 
     private static bool ObjectHasContent(JsonElement element)
     {
         if (
             element.TryGetProperty("text", out var text)
-            && text.ValueKind == JsonValueKind.String
+            && text.ValueKind is JsonValueKind.String
             && !string.IsNullOrWhiteSpace(text.GetString())
         )
+        {
             return true;
+        }
 
-        if (
+        var isImage =
             element.TryGetProperty("type", out var type)
-            && type.ValueKind == JsonValueKind.String
-            && string.Equals(type.GetString(), "image", StringComparison.Ordinal)
-        )
-            return true;
+            && type.ValueKind is JsonValueKind.String
+            && string.Equals(type.GetString(), "image", StringComparison.Ordinal);
 
-        return element.EnumerateObject().Any(property => HasContent(property.Value));
+        return isImage || element.EnumerateObject().Any(property => HasContent(property.Value));
     }
 }

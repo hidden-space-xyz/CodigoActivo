@@ -13,7 +13,10 @@ public class CacheControlMiddleware(RequestDelegate next)
                 {
                     var response = ((HttpContext)state).Response;
                     if (StringValues.IsNullOrEmpty(response.Headers.CacheControl))
+                    {
                         response.Headers.CacheControl = "no-store";
+                    }
+
                     return Task.CompletedTask;
                 },
                 context

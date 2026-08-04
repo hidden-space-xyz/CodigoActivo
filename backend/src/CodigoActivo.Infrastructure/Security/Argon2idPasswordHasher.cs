@@ -35,8 +35,10 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     public bool Verify(string password, string hash)
     {
         var parts = hash.Split('$');
-        if (parts.Length != 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal))
+        if (parts.Length is not 6 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal))
+        {
             return false;
+        }
 
         if (
             !int.TryParse(parts[1], CultureInfo.InvariantCulture, out var iterations)

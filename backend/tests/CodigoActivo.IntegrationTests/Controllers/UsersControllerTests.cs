@@ -57,7 +57,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/users", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -67,7 +67,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -82,7 +82,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/users", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -119,7 +119,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users?name=avila", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?name=avila"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -152,7 +152,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users?name=gutierrez", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?name=gutierrez"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -165,7 +165,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            $"/api/users?userStatusTypeId={SeedIds.UserStatusTypes.Pending}",
+            TestUri.Rel($"/api/users?userStatusTypeId={SeedIds.UserStatusTypes.Pending}"),
             Ct
         );
 
@@ -180,7 +180,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users?isAdmin=true", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?isAdmin=true"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -193,7 +193,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users?page=2&pageSize=2", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?page=2&pageSize=2"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -209,7 +209,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            "/api/users?birthDateFrom=1988-09-09&birthDateTo=1992-07-30",
+            TestUri.Rel("/api/users?birthDateFrom=1988-09-09&birthDateTo=1992-07-30"),
             Ct
         );
 
@@ -238,7 +238,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users?sort=-dependents", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?sort=-dependents"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -258,7 +258,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users?sort=parentName", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?sort=parentName"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -268,8 +268,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             .Equal("Ada Admin", "Marta Miembro", null, null, null, null);
     }
 
-    private static User SeedChild(string firstName, Guid parentId) =>
-        new()
+    private static User SeedChild(string firstName, Guid parentId)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = firstName,
@@ -280,17 +281,18 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
         };
+    }
 
     [Fact]
     public async Task Types_AsAdmin_ReturnsAllUserTypes()
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users/types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var types = await response.ReadJsonAsync<List<UserTypeResponse>>(Ct);
-        types!.Should().HaveCount(3);
+        types.Should().HaveCount(3);
         types.Should().Contain(t => t.Id == SeedIds.UserTypes.Member);
     }
 
@@ -299,7 +301,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/users/types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -309,7 +311,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/users/types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -319,11 +321,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/users/status-types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users/status-types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<List<UserStatusTypeResponse>>(Ct);
-        statuses!.Should().HaveCount(4);
+        statuses.Should().HaveCount(4);
         statuses.Should().Contain(s => s.Id == SeedIds.UserStatusTypes.Active);
     }
 
@@ -332,7 +334,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/users/{Guid.NewGuid()}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/users/{Guid.NewGuid()}"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.UserNotFound);
     }
@@ -365,7 +367,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Type.Should().NotBeNull();
-        updated.Type!.Id.Should().Be(SeedIds.UserTypes.Member);
+        updated.Type.Id.Should().Be(SeedIds.UserTypes.Member);
         updated.Type.Name.Should().Be("Socio");
         updated.ParentName.Should().BeNull();
         updated.DependentCount.Should().Be(1);
@@ -468,7 +470,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Type.Should().NotBeNull();
-        updated.Type!.Id.Should().Be(SeedIds.UserTypes.Sponsor);
+        updated.Type.Id.Should().Be(SeedIds.UserTypes.Sponsor);
         var user = await FindAsync<User>(TestSeedData.Users.MemberId);
         user!.UserTypeId.Should().Be(SeedIds.UserTypes.Sponsor);
     }
@@ -519,7 +521,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         created.ParentName.Should().Be("Marta Miembro");
         created.DependentCount.Should().Be(0);
         created.Type.Should().NotBeNull();
-        created.Type!.Id.Should().Be(SeedIds.UserTypes.Participant);
+        created.Type.Id.Should().Be(SeedIds.UserTypes.Participant);
         created.Type.Name.Should().Be("Participante");
 
         var stored = await FindAsync<User>(created.Id);

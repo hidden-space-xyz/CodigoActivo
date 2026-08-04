@@ -21,7 +21,7 @@ public sealed class FakeQueryExecutor : IQueryExecutor
         CancellationToken ct = default
     )
     {
-        return Task.FromResult<IReadOnlyList<T>>(source.ToList());
+        return Task.FromResult<IReadOnlyList<T>>([.. source]);
     }
 
     public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> source, CancellationToken ct = default)

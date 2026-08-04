@@ -15,7 +15,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     private async Task<JsonDocument> FetchSwaggerAsync(CancellationToken ct)
     {
         var client = factory.CreateClient();
-        using var response = await client.GetAsync(SwaggerUrl, ct);
+        using var response = await client.GetAsync(TestUri.Rel(SwaggerUrl), ct);
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadAsStringAsync(ct);
@@ -27,7 +27,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     {
         var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(SwaggerUrl, Ct);
+        using var response = await client.GetAsync(TestUri.Rel(SwaggerUrl), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -42,16 +42,16 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
             .EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject())
             .Where(op =>
-                op.Value.ValueKind == JsonValueKind.Object
+                op.Value.ValueKind is JsonValueKind.Object
                 && op.Value.TryGetProperty("parameters", out _)
             )
             .SelectMany(op => op.Value.GetProperty("parameters").EnumerateArray())
             .Where(param =>
                 param.TryGetProperty("in", out var loc)
-                && loc.GetString() == "query"
+                && string.Equals(loc.GetString(), "query", StringComparison.Ordinal)
                 && param.TryGetProperty("name", out _)
             )
-            .Select(param => param.GetProperty("name").GetString()!)
+            .Select(param => param.GetProperty("name").GetString())
             .ToList();
 
         queryParamNames.Should().NotBeEmpty();
@@ -69,12 +69,12 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
             .EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject())
             .Where(op =>
-                op.Value.ValueKind == JsonValueKind.Object
+                op.Value.ValueKind is JsonValueKind.Object
                 && op.Value.TryGetProperty("responses", out _)
             )
             .SelectMany(op => op.Value.GetProperty("responses").EnumerateObject())
             .Where(resp =>
-                resp.Value.ValueKind == JsonValueKind.Object
+                resp.Value.ValueKind is JsonValueKind.Object
                 && resp.Value.TryGetProperty("content", out _)
             )
             .SelectMany(resp => resp.Value.GetProperty("content").EnumerateObject())

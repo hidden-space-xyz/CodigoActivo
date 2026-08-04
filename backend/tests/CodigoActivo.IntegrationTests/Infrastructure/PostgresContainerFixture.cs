@@ -50,11 +50,13 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
     private async Task<string> StartServerAsync()
     {
         if (container is null)
+        {
             return externalConnectionString!;
+        }
 
         try
         {
-            await container.StartAsync();
+            await container.StartAsync(TestCancellation.Ct);
         }
         catch (Exception ex)
         {
@@ -91,7 +93,7 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
             .Options;
 
         await using var db = new CodigoActivoDbContext(options);
-        await db.Database.MigrateAsync();
+        await db.Database.MigrateAsync(TestCancellation.Ct);
     }
 
     public ValueTask DisposeAsync()

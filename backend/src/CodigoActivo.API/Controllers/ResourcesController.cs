@@ -18,7 +18,7 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Resources)]
-    public async Task<ActionResult<PagedResult<ResourceListItemResponse>>> List(
+    public async Task<ActionResult<PagedResult<ResourceListItemResponse>>> ListAsync(
         [FromQuery] ResourceListQuery query,
         CancellationToken ct
     )
@@ -28,7 +28,9 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
 
     [HttpGet("types")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<ResourceTypeResponse>>> Types(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<ResourceTypeResponse>>> TypesAsync(
+        CancellationToken ct
+    )
     {
         return Ok(await resources.ListTypesAsync(ct));
     }
@@ -36,14 +38,17 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
     [HttpGet("{resourceId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Resources)]
-    public async Task<ActionResult<ResourceResponse>> Get(Guid resourceId, CancellationToken ct)
+    public async Task<ActionResult<ResourceResponse>> GetAsync(
+        Guid resourceId,
+        CancellationToken ct
+    )
     {
         return ToOk(await resources.GetByIdAsync(resourceId, ct));
     }
 
     [HttpPost]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<ResourceResponse>> Create(
+    public async Task<ActionResult<ResourceResponse>> CreateAsync(
         [FromBody] CreateResourceRequest request,
         CancellationToken ct
     )
@@ -56,7 +61,7 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
 
     [HttpPut("{resourceId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<ResourceResponse>> Update(
+    public async Task<ActionResult<ResourceResponse>> UpdateAsync(
         Guid resourceId,
         [FromBody] UpdateResourceRequest request,
         CancellationToken ct
@@ -67,7 +72,7 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
 
     [HttpDelete("{resourceId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> Delete(Guid resourceId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(Guid resourceId, CancellationToken ct)
     {
         return ToNoContent(await resources.DeleteAsync(resourceId, ct));
     }

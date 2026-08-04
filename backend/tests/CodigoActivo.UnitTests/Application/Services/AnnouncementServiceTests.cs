@@ -39,8 +39,10 @@ public sealed class AnnouncementServiceTests
         );
     }
 
-    private void HasAnnouncements(params Announcement[] items) =>
+    private void HasAnnouncements(params Announcement[] items)
+    {
         announcements.Query().Returns(items.AsQueryable());
+    }
 
     private static Announcement NewAnnouncement(
         string title = "Hello",
@@ -48,8 +50,9 @@ public sealed class AnnouncementServiceTests
         bool featured = false,
         int year = 2024,
         DateTimeOffset? createdAt = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -60,6 +63,7 @@ public sealed class AnnouncementServiceTests
             CreatedAt = createdAt ?? new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
+    }
 
     [Fact]
     public async Task ListAsync_YearFilter_ReturnsMatchingYear()
@@ -293,7 +297,7 @@ public sealed class AnnouncementServiceTests
         result.Error.Code.Should().Be(ErrorCode.AnnouncementThumbnailNotFound);
         await announcements
             .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<Announcement>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -325,7 +329,10 @@ public sealed class AnnouncementServiceTests
             .Received(1)
             .AddAsync(
                 Arg.Is<Announcement>(a =>
-                    a.Title == "Title" && a.Subtitle == "Subtitle" && a.CreatedBy == caller
+                    a != null
+                    && a.Title == "Title"
+                    && a.Subtitle == "Subtitle"
+                    && a.CreatedBy == caller
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -333,7 +340,9 @@ public sealed class AnnouncementServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Announcements)
+                )
             );
     }
 
@@ -354,7 +363,7 @@ public sealed class AnnouncementServiceTests
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(_ => true, TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await cacheInvalidator
@@ -417,7 +426,9 @@ public sealed class AnnouncementServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Announcements)
+                )
             );
     }
 
@@ -442,7 +453,7 @@ public sealed class AnnouncementServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Count == 1 && ids.Contains(previousThumbnailId)
+                    ids != null && ids.Count == 1 && ids.Contains(previousThumbnailId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -472,7 +483,7 @@ public sealed class AnnouncementServiceTests
         await fileService
             .Received(1)
             .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 0),
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -506,7 +517,7 @@ public sealed class AnnouncementServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Contains(removedId) && !ids.Contains(keptId)
+                    ids != null && ids.Contains(removedId) && !ids.Contains(keptId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -526,7 +537,10 @@ public sealed class AnnouncementServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
+            .DeleteOrphanedAsync(
+                Arg.Any<IReadOnlyCollection<Guid>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]
@@ -544,14 +558,18 @@ public sealed class AnnouncementServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Contains(embeddedId) && ids.Contains(announcement.ThumbnailId)
+                    ids != null
+                    && ids.Contains(embeddedId)
+                    && ids.Contains(announcement.ThumbnailId)
                 ),
                 Arg.Any<CancellationToken>()
             );
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Announcements)
+                )
             );
     }
 
@@ -605,7 +623,9 @@ public sealed class AnnouncementServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Announcements))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Announcements)
+                )
             );
     }
 }

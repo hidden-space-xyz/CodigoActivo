@@ -34,8 +34,9 @@ public sealed class SitemapServiceTests
         );
     }
 
-    private static Event NewEvent(DateTimeOffset createdAt, DateTimeOffset? updatedAt = null) =>
-        new()
+    private static Event NewEvent(DateTimeOffset createdAt, DateTimeOffset? updatedAt = null)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = "Evento",
@@ -50,9 +51,11 @@ public sealed class SitemapServiceTests
             UpdatedAt = updatedAt,
             CreatedBy = Guid.NewGuid(),
         };
+    }
 
-    private static Announcement NewAnnouncement(DateTimeOffset createdAt) =>
-        new()
+    private static Announcement NewAnnouncement(DateTimeOffset createdAt)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = "Anuncio",
@@ -62,9 +65,11 @@ public sealed class SitemapServiceTests
             CreatedAt = createdAt,
             CreatedBy = Guid.NewGuid(),
         };
+    }
 
-    private static Resource NewResource(string? url) =>
-        new()
+    private static Resource NewResource(string? url)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = "Recurso",
@@ -76,6 +81,7 @@ public sealed class SitemapServiceTests
             CreatedAt = new DateTimeOffset(2026, 4, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
+    }
 
     [Fact]
     public void GetRobotsTxt_TrailingSlashBaseUrl_ReturnsExactRulesWithTrimmedBase()

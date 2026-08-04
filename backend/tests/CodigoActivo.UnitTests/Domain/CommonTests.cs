@@ -31,7 +31,7 @@ public sealed class CommonTests
     [Fact]
     public void Success_NullReferenceValue_PreservesNull()
     {
-        Result<string?> result = Result.Success<string?>(null);
+        var result = Result.Success<string?>(null);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();

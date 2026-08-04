@@ -4,8 +4,8 @@ namespace CodigoActivo.Domain.Entities;
 
 public class EventCategoryType : IdentifiableEntity
 {
-    public string Name { get; set; } = null!;
-    public string Color { get; set; } = null!;
+    public required string Name { get; set; }
+    public required string Color { get; set; }
 
     public ICollection<EventCategory> Events { get; set; } = [];
 }

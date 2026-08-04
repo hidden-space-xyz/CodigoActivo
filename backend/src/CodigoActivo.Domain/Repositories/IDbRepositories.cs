@@ -5,28 +5,28 @@ namespace CodigoActivo.Domain.Repositories;
 
 public interface IDashboardRepository
 {
-    Task<DashboardCounts> GetCountsAsync(CancellationToken ct = default);
+    public Task<DashboardCounts> GetCountsAsync(CancellationToken ct = default);
 }
 
 public interface IUserRepository : IDbRepository<User>
 {
-    Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
+    public Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 
-    Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default);
+    public Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default);
 
-    Task<bool> EmailExistsAsync(
+    public Task<bool> EmailExistsAsync(
         string email,
         Guid? excludeUserId = null,
         CancellationToken ct = default
     );
 
-    Task<bool> PhoneExistsAsync(
+    public Task<bool> PhoneExistsAsync(
         string phone,
         Guid? excludeUserId = null,
         CancellationToken ct = default
     );
 
-    Task<IReadOnlyList<User>> ListChildrenWithDetailsAsync(
+    public Task<IReadOnlyList<User>> ListChildrenWithDetailsAsync(
         Guid parentId,
         CancellationToken ct = default
     );
@@ -34,36 +34,36 @@ public interface IUserRepository : IDbRepository<User>
 
 public interface IEventRepository : IDbRepository<Event>
 {
-    Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default);
+    public Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
-    Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
+    public Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IEventRatingRepository : IDbRepository<EventRating>;
 
 public interface IActivityRepository : IDbRepository<Activity>
 {
-    Task<bool> AnyOutsideRangeAsync(
+    public Task<bool> AnyOutsideRangeAsync(
         Guid eventId,
         DateTimeOffset lowerInclusive,
         DateTimeOffset upperExclusive,
         CancellationToken ct = default
     );
 
-    Task<bool> AssignmentExistsAsync(Guid userId, Guid activityId, CancellationToken ct = default);
+    public Task<bool> AssignmentExistsAsync(Guid userId, Guid activityId, CancellationToken ct = default);
 
-    Task<Activity?> FindWithRoleCapacitiesAsync(Guid activityId, CancellationToken ct = default);
+    public Task<Activity?> FindWithRoleCapacitiesAsync(Guid activityId, CancellationToken ct = default);
 
-    Task<ActivityUserRoleAssignment?> GetAssignmentAsync(
+    public Task<ActivityUserRoleAssignment?> GetAssignmentAsync(
         Guid userId,
         Guid activityId,
         CancellationToken ct = default
     );
 
-    Task AddAssignmentAsync(ActivityUserRoleAssignment assignment, CancellationToken ct = default);
-    void RemoveAssignment(ActivityUserRoleAssignment assignment);
+    public Task AddAssignmentAsync(ActivityUserRoleAssignment assignment, CancellationToken ct = default);
+    public void RemoveAssignment(ActivityUserRoleAssignment assignment);
 
-    IQueryable<ActivityUserRoleAssignment> QueryAssignments();
+    public IQueryable<ActivityUserRoleAssignment> QueryAssignments();
 }
 
 public interface IResourceRepository : IDbRepository<Resource>;
@@ -72,16 +72,16 @@ public interface IResourceTypeRepository : IDbRepository<ResourceType>;
 
 public interface IAnnouncementRepository : IDbRepository<Announcement>
 {
-    Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
+    public Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IPartnerRepository : IDbRepository<Partner>;
 
 public interface IFileRepository : IDbRepository<FileEntity>
 {
-    Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default);
+    public Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default);
 
-    Task<IReadOnlyList<Guid>> GetInUseAsync(
+    public Task<IReadOnlyList<Guid>> GetInUseAsync(
         IReadOnlyCollection<Guid> fileIds,
         CancellationToken ct = default
     );

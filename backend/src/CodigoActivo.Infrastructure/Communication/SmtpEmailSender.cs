@@ -15,7 +15,8 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
 
         using var client = new SmtpClient();
         await ConnectAsync(client, ct);
-        await client.SendAsync(BuildMime(message), ct);
+        using var mime = BuildMime(message);
+        await client.SendAsync(mime, ct);
         await client.DisconnectAsync(quit: true, ct);
     }
 
@@ -24,8 +25,10 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
         CancellationToken ct = default
     )
     {
-        if (messages.Count == 0)
+        if (messages.Count is 0)
+        {
             return new EmailBatchResult(0, 0);
+        }
 
         EnsureConfigured();
 
@@ -40,9 +43,11 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
             foreach (var message in messages)
             {
                 ct.ThrowIfCancellationRequested();
+                var connectionDropped = false;
                 try
                 {
-                    await client.SendAsync(BuildMime(message), ct);
+                    using var mime = BuildMime(message);
+                    await client.SendAsync(mime, ct);
                     sent++;
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -53,19 +58,20 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
                         "Failed to send an email to {Recipient}",
                         message.ToAddress
                     );
+                    connectionDropped = !client.IsConnected;
+                }
 
-                    if (!client.IsConnected)
-                    {
-                        var unattempted = messages.Count - sent - failed;
-                        failed += unattempted;
-                        logger.LogError(
-                            "The SMTP connection dropped mid-batch after {Sent} of {Total} messages; {Unattempted} were never attempted",
-                            sent,
-                            messages.Count,
-                            unattempted
-                        );
-                        break;
-                    }
+                if (connectionDropped)
+                {
+                    var unattempted = messages.Count - sent - failed;
+                    failed += unattempted;
+                    logger.LogError(
+                        "The SMTP connection dropped mid-batch after {Sent} of {Total} messages; {Unattempted} were never attempted",
+                        sent,
+                        messages.Count,
+                        unattempted
+                    );
+                    break;
                 }
             }
 
@@ -84,7 +90,9 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
             }
 
             if (client.IsConnected)
+            {
                 await client.DisconnectAsync(quit: true, CancellationToken.None);
+            }
         }
 
         return new EmailBatchResult(sent, failed);
@@ -93,7 +101,10 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
     private void EnsureConfigured()
     {
         if (string.IsNullOrWhiteSpace(options.Host))
+        {
             throw new InvalidOperationException("The SMTP host is not configured (SMTP_HOST).");
+        }
+
         if (string.IsNullOrWhiteSpace(options.FromAddress))
         {
             throw new InvalidOperationException(
@@ -106,7 +117,9 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
     {
         await client.ConnectAsync(options.Host, options.Port, MapSecurity(options.Security), ct);
         if (!string.IsNullOrEmpty(options.Username))
+        {
             await client.AuthenticateAsync(options.Username, options.Password, ct);
+        }
     }
 
     private MimeMessage BuildMime(EmailMessage message)

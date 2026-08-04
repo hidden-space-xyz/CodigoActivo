@@ -30,7 +30,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<ActionResult<RegisterResponse>> Register(
+    public async Task<ActionResult<RegisterResponse>> RegisterAsync(
         [FromBody] RegisterRequest request,
         CancellationToken ct
     )
@@ -40,7 +40,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPatch("{userId:guid}/verify")]
     [AllowAnonymous]
-    public async Task<ActionResult<UserResponse>> Verify(
+    public async Task<ActionResult<UserResponse>> VerifyAsync(
         Guid userId,
         [FromBody] VerifyRequest request,
         CancellationToken ct
@@ -51,14 +51,14 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPost("{userId:guid}/resend-verification")]
     [AllowAnonymous]
-    public async Task<ActionResult> ResendVerification(Guid userId, CancellationToken ct)
+    public async Task<ActionResult> ResendVerificationAsync(Guid userId, CancellationToken ct)
     {
         return ToNoContent(await auth.ResendVerificationAsync(userId, ct));
     }
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]
-    public async Task<ActionResult> ForgotPassword(
+    public async Task<ActionResult> ForgotPasswordAsync(
         [FromBody] ForgotPasswordRequest request,
         CancellationToken ct
     )
@@ -68,7 +68,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPatch("{userId:guid}/reset-password")]
     [AllowAnonymous]
-    public async Task<ActionResult> ResetPassword(
+    public async Task<ActionResult> ResetPasswordAsync(
         Guid userId,
         [FromBody] ResetPasswordRequest request,
         CancellationToken ct
@@ -79,14 +79,16 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<ActionResult<UserResponse>> Login(
+    public async Task<ActionResult<UserResponse>> LoginAsync(
         [FromBody] LoginRequest request,
         CancellationToken ct
     )
     {
         var result = await auth.LoginAsync(request, ct);
         if (result.IsFailure)
+        {
             return ToProblem(result.Error!);
+        }
 
         var user = result.Value;
         await HttpContext.SignInAsync(
@@ -99,7 +101,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpPost("logout")]
     [Authorize]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> LogoutAsync()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return NoContent();
@@ -107,7 +109,7 @@ public class AuthController(IAuthService auth) : ApiControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<ActionResult<UserResponse>> Me(CancellationToken ct)
+    public async Task<ActionResult<UserResponse>> MeAsync(CancellationToken ct)
     {
         return ToOk(await auth.GetCurrentAsync(UserId, ct));
     }
@@ -120,10 +122,14 @@ public class AuthController(IAuthService auth) : ApiControllerBase
             new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
         };
         if (!string.IsNullOrEmpty(user.Email))
+        {
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
+        }
 
         if (user.IsAdmin)
+        {
             claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+        }
 
         var identity = new ClaimsIdentity(
             claims,

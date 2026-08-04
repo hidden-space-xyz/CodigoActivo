@@ -62,7 +62,9 @@ public class ReportService(
             ct
         );
         if (ev is null)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var stats = await executor.FirstOrDefaultAsync(
             activities
@@ -243,7 +245,9 @@ public class ReportService(
     {
         var ev = await GetEventHeaderAsync(eventId, ct);
         if (ev is null)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var rows = await executor.ToListAsync(
             activities
@@ -286,11 +290,12 @@ public class ReportService(
                     user.UserTypeColor,
                     user.CreatedAt,
                     user.Guardian,
-                    g.OrderBy(r => r.ActivityStartsAt)
-                        .ThenBy(r => r.ActivityTitle, StringComparer.Ordinal)
-                        .DistinctBy(r => r.ActivityId)
-                        .Select(r => r.ActivityTitle)
-                        .ToList()
+                    [
+                        .. g.OrderBy(r => r.ActivityStartsAt)
+                            .ThenBy(r => r.ActivityTitle, StringComparer.Ordinal)
+                            .DistinctBy(r => r.ActivityId)
+                            .Select(r => r.ActivityTitle),
+                    ]
                 );
             })
             .OrderBy(b => TextSearch.Normalize(b.LastName), StringComparer.Ordinal)
@@ -308,7 +313,9 @@ public class ReportService(
     {
         var ev = await GetEventHeaderAsync(eventId, ct);
         if (ev is null)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var rows = await executor.ToListAsync(
             activities
@@ -354,22 +361,23 @@ public class ReportService(
                     activity.Location,
                     activity.ActivityStartsAt,
                     activity.ActivityEndsAt,
-                    g.OrderBy(r => RosterRolePriority(r.ActivityRoleTypeId))
-                        .ThenBy(r => TextSearch.Normalize(r.FirstName), StringComparer.Ordinal)
-                        .ThenBy(r => TextSearch.Normalize(r.LastName), StringComparer.Ordinal)
-                        .ThenBy(r => r.UserId)
-                        .DistinctBy(r => r.UserId)
-                        .Select(r => new EventRosterParticipantResponse(
-                            r.UserId,
-                            r.FirstName,
-                            r.LastName,
-                            r.BirthDate,
-                            r.Email,
-                            r.Phone,
-                            r.RoleName,
-                            r.Guardian
-                        ))
-                        .ToList()
+                    [
+                        .. g.OrderBy(r => RosterRolePriority(r.ActivityRoleTypeId))
+                            .ThenBy(r => TextSearch.Normalize(r.FirstName), StringComparer.Ordinal)
+                            .ThenBy(r => TextSearch.Normalize(r.LastName), StringComparer.Ordinal)
+                            .ThenBy(r => r.UserId)
+                            .DistinctBy(r => r.UserId)
+                            .Select(r => new EventRosterParticipantResponse(
+                                r.UserId,
+                                r.FirstName,
+                                r.LastName,
+                                r.BirthDate,
+                                r.Email,
+                                r.Phone,
+                                r.RoleName,
+                                r.Guardian
+                            )),
+                    ]
                 );
             })
             .OrderBy(a => a.ActivityStartsAt)
@@ -382,11 +390,13 @@ public class ReportService(
 
     private static int RosterRolePriority(Guid roleTypeId)
     {
-        if (roleTypeId == SeedIds.ActivityRoleTypes.Leader)
-            return 0;
-        if (roleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
-            return 1;
-        return roleTypeId == SeedIds.ActivityRoleTypes.Participant ? 2 : 3;
+        return roleTypeId switch
+        {
+            _ when roleTypeId == SeedIds.ActivityRoleTypes.Leader => 0,
+            _ when roleTypeId == SeedIds.ActivityRoleTypes.Volunteer => 1,
+            _ when roleTypeId == SeedIds.ActivityRoleTypes.Participant => 2,
+            _ => 3,
+        };
     }
 
     public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(
@@ -422,7 +432,9 @@ public class ReportService(
         var end = query.To ?? today;
         var start = query.From ?? end.AddMonths(-12);
         if (start > end)
+        {
             (start, end) = (end, start);
+        }
 
         var totalDays = end.DayNumber - start.DayNumber + 1;
         var granularity = totalDays switch
@@ -452,13 +464,17 @@ public class ReportService(
         var today = clock.Today;
         var now = clock.UtcNow;
 
-        DateOnly LocalDate(DateTimeOffset value) =>
-            DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, tz).DateTime);
+        DateOnly LocalDate(DateTimeOffset value)
+        {
+            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, tz).DateTime);
+        }
 
         var buckets = BuildBuckets(start, end, granularity);
         var bucketIndex = new Dictionary<DateOnly, int>(buckets.Count);
         for (var i = 0; i < buckets.Count; i++)
+        {
             bucketIndex[BucketStart(buckets[i], granularity)] = i;
+        }
 
         var rangeLowerUtc = LocalDayRange.LowerUtc(start, tz);
         var rangeUpperUtc = LocalDayRange.UpperExclusiveUtc(end, tz);
@@ -514,7 +530,7 @@ public class ReportService(
                     t.Id,
                     t.Name,
                     t.Color,
-                    Count = t.Events.Count,
+                    t.Events.Count,
                 }),
             ct
         );
@@ -561,12 +577,16 @@ public class ReportService(
             {
                 var day = LocalDate(ts);
                 if (day < start)
+                {
                     before++;
+                }
                 else if (
                     day <= end
                     && bucketIndex.TryGetValue(BucketStart(day, granularity), out var idx)
                 )
+                {
                     perBucket[idx]++;
+                }
             }
 
             return (perBucket, before);
@@ -596,7 +616,10 @@ public class ReportService(
             IEnumerable<DateTimeOffset> dates,
             DateTimeOffset lo,
             DateTimeOffset hi
-        ) => dates.Count(d => d >= lo && d < hi);
+        )
+        {
+            return dates.Count(d => d >= lo && d < hi);
+        }
 
         var kpiSources = new (string Key, List<DateTimeOffset> Dates)[]
         {
@@ -701,7 +724,9 @@ public class ReportService(
         var calendarBuckets = BuildBuckets(calendarStart, calendarStart.AddMonths(12), "month");
         var calendarIndex = new Dictionary<DateOnly, int>(calendarBuckets.Count);
         for (var i = 0; i < calendarBuckets.Count; i++)
+        {
             calendarIndex[calendarBuckets[i]] = i;
+        }
 
         var past = new int[calendarBuckets.Count];
         var upcoming = new int[calendarBuckets.Count];
@@ -709,11 +734,18 @@ public class ReportService(
         {
             var monthStart = new DateOnly(eventStartsAt.Year, eventStartsAt.Month, 1);
             if (!calendarIndex.TryGetValue(monthStart, out var idx))
+            {
                 continue;
+            }
+
             if (eventStartsAt < today)
+            {
                 past[idx]++;
+            }
             else
+            {
                 upcoming[idx]++;
+            }
         }
 
         var eventsCalendar = new DashboardTimeSeriesResponse(
@@ -797,37 +829,44 @@ public class ReportService(
         return buckets;
     }
 
-    private static DateOnly BucketStart(DateOnly date, string granularity) =>
-        granularity switch
+    private static DateOnly BucketStart(DateOnly date, string granularity)
+    {
+        return granularity switch
         {
             "day" => date,
-            "week" => date.AddDays(-(((int)date.DayOfWeek + 6) % 7)),
+            "week" => date.AddDays(-((date.DayOfWeek - DayOfWeek.Monday + 7) % 7)),
             _ => new DateOnly(date.Year, date.Month, 1),
         };
+    }
 
     private static List<DashboardSliceResponse> FixedSlices(
         IReadOnlyList<string> keys,
         IReadOnlyDictionary<string, int> counts
-    ) =>
-        keys.Select(k => new DashboardSliceResponse(k, null, null, counts.GetValueOrDefault(k)))
-            .ToList();
+    )
+    {
+        return [.. keys.Select(k => new DashboardSliceResponse(k, null, null, counts.GetValueOrDefault(k)))];
+    }
 
     private static string UserTypeKey(Guid id)
     {
-        if (id == SeedIds.UserTypes.Member)
-            return "member";
-        if (id == SeedIds.UserTypes.Sponsor)
-            return "sponsor";
-        return id == SeedIds.UserTypes.Participant ? "participant" : "other";
+        return id switch
+        {
+            _ when id == SeedIds.UserTypes.Member => "member",
+            _ when id == SeedIds.UserTypes.Sponsor => "sponsor",
+            _ when id == SeedIds.UserTypes.Participant => "participant",
+            _ => "other",
+        };
     }
 
     private static string AssignmentStatusKey(Guid id)
     {
-        if (id == SeedIds.AssignmentStatusTypes.Requested)
-            return "requested";
-        if (id == SeedIds.AssignmentStatusTypes.Confirmed)
-            return "confirmed";
-        return id == SeedIds.AssignmentStatusTypes.Denied ? "denied" : "other";
+        return id switch
+        {
+            _ when id == SeedIds.AssignmentStatusTypes.Requested => "requested",
+            _ when id == SeedIds.AssignmentStatusTypes.Confirmed => "confirmed",
+            _ when id == SeedIds.AssignmentStatusTypes.Denied => "denied",
+            _ => "other",
+        };
     }
 
     private Task<EventHeader?> GetEventHeaderAsync(Guid eventId, CancellationToken ct)

@@ -8,35 +8,39 @@ namespace CodigoActivo.UnitTests.Application.Extensions;
 
 public sealed class StreamExtensionsTests
 {
-    public static TheoryData<byte[], ImageFormat> ValidHeaders() =>
-        new()
+    public static TheoryData<byte[], string, string> ValidHeaders()
+    {
+        return new()
         {
-            { Jpeg(0xE0), new ImageFormat("jpg", "image/jpeg") },
-            { Jpeg(0xC0), new ImageFormat("jpg", "image/jpeg") },
-            { Png(), new ImageFormat("png", "image/png") },
-            { Gif("GIF87a"), new ImageFormat("gif", "image/gif") },
-            { Gif("GIF89a"), new ImageFormat("gif", "image/gif") },
-            { Webp("VP8 "), new ImageFormat("webp", "image/webp") },
-            { Webp("VP8L"), new ImageFormat("webp", "image/webp") },
-            { Webp("VP8X"), new ImageFormat("webp", "image/webp") },
+            { Jpeg(0xE0), "jpg", "image/jpeg" },
+            { Jpeg(0xC0), "jpg", "image/jpeg" },
+            { Png(), "png", "image/png" },
+            { Gif("GIF87a"), "gif", "image/gif" },
+            { Gif("GIF89a"), "gif", "image/gif" },
+            { Webp("VP8 "), "webp", "image/webp" },
+            { Webp("VP8L"), "webp", "image/webp" },
+            { Webp("VP8X"), "webp", "image/webp" },
         };
+    }
 
     [Theory]
     [MemberData(nameof(ValidHeaders))]
     public async Task DetectImageFormatAsync_ValidHeader_RecognisesFormat(
         byte[] header,
-        ImageFormat expected
+        string expectedExtension,
+        string expectedContentType
     )
     {
         await using var stream = new MemoryStream(header);
 
         var result = await stream.DetectImageFormatAsync(TestContext.Current.CancellationToken);
 
-        result.Should().Be(expected);
+        result.Should().Be(new ImageFormat(expectedExtension, expectedContentType));
     }
 
-    public static TheoryData<byte[]> RejectedHeaders() =>
-        [
+    public static TheoryData<byte[]> RejectedHeaders()
+    {
+        return [
             new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 },
             new byte[] { 0xFF, 0xD8, 0xFF },
             Jpeg(0xBF),
@@ -52,6 +56,7 @@ public sealed class StreamExtensionsTests
             Webp("XXXX"),
             Webp("VP8 ", riffSize: 100),
         ];
+    }
 
     [Theory]
     [MemberData(nameof(RejectedHeaders))]
@@ -140,7 +145,10 @@ public sealed class StreamExtensionsTests
         return b;
     }
 
-    private static byte[] Truncate(byte[] source, int length) => source[..length];
+    private static byte[] Truncate(byte[] source, int length)
+    {
+        return source[..length];
+    }
 
     private sealed class NonSeekableStream(byte[] data) : Stream
     {
@@ -160,28 +168,43 @@ public sealed class StreamExtensionsTests
             set => throw new NotSupportedException();
         }
 
-        public override int Read(byte[] buffer, int offset, int count) =>
-            inner.Read(buffer, offset, count);
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return inner.Read(buffer, offset, count);
+        }
 
         public override ValueTask<int> ReadAsync(
             Memory<byte> buffer,
             CancellationToken cancellationToken = default
-        ) => inner.ReadAsync(buffer, cancellationToken);
+        )
+        {
+            return inner.ReadAsync(buffer, cancellationToken);
+        }
 
         public override void Flush() { }
 
-        public override long Seek(long offset, SeekOrigin origin) =>
+        public override long Seek(long offset, SeekOrigin origin)
+        {
             throw new NotSupportedException();
+        }
 
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) =>
+        public override void SetLength(long value)
+        {
             throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 inner.Dispose();
+            }
+
             base.Dispose(disposing);
         }
     }

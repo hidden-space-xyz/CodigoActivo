@@ -8,7 +8,9 @@ public static class DateAndTimeExtensions
     {
         var age = today.Year - birthDate.Year;
         if (birthDate > today.AddYears(-age))
+        {
             age--;
+        }
 
         return age;
     }

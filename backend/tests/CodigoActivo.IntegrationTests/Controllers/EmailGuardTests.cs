@@ -142,12 +142,12 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo([
+            .BeEquivalentTo(
                 TestSeedData.AdminEmail,
                 TestSeedData.MemberEmail,
                 TestSeedData.PendingEmail,
-                TestSeedData.BlockedEmail,
-            ]);
+                TestSeedData.BlockedEmail
+            );
     }
 
     [Fact]

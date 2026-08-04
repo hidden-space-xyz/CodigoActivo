@@ -14,7 +14,9 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     public void Dispose()
     {
         foreach (var provider in providers)
+        {
             provider.Dispose();
+        }
     }
 
     private ServiceProvider Build(Dictionary<string, string?> settings)
@@ -31,7 +33,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     public void AddCodigoActivo_ValidAccountVerificationSettings_BindsOptionsFromConfiguration()
     {
         var provider = Build(
-            new Dictionary<string, string?>
+            new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
                 ["AccountVerification:OtpLifetimeMinutes"] = "10",
@@ -51,7 +53,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     public void AddCodigoActivo_MissingOrInvalidValues_DefaultsAccountVerificationOptions()
     {
         var provider = Build(
-            new Dictionary<string, string?>
+            new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
                 ["AccountVerification:OtpLifetimeMinutes"] = "Infinity",
@@ -69,7 +71,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     public void AddCodigoActivo_RequiredFlagAbsent_DefaultsRequiredToTrue()
     {
         var provider = Build(
-            new Dictionary<string, string?>
+            new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["SMTP_HOST"] = "smtp.example.test",
                 ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
@@ -87,7 +89,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
         string? from
     )
     {
-        var settings = new Dictionary<string, string?>
+        var settings = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
             ["SMTP_HOST"] = host,
@@ -103,7 +105,12 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     public void AddCodigoActivo_VerificationDisabled_DoesNotRequireSmtp()
     {
         var act = () =>
-            Build(new Dictionary<string, string?> { ["ACCOUNT_VERIFICATION_REQUIRED"] = "false" });
+            Build(
+                new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
+                }
+            );
 
         act.Should().NotThrow();
     }

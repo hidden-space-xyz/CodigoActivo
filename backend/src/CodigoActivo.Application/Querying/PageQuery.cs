@@ -5,28 +5,23 @@ public abstract class PageQuery
     public const int MaxPageSize = 100;
     public const int DefaultPageSize = 25;
 
-    private int page = 1;
-    private int pageSize = DefaultPageSize;
-
     public int Page
     {
-        get => page;
-        set => page = value < 1 ? 1 : value;
-    }
+        get;
+        set => field = value < 1 ? 1 : value;
+    } = 1;
 
     public int PageSize
     {
-        get => pageSize;
-        set
-        {
-            if (value < 1)
-                pageSize = DefaultPageSize;
-            else if (value > MaxPageSize)
-                pageSize = MaxPageSize;
-            else
-                pageSize = value;
-        }
-    }
+        get;
+        set =>
+            field = value switch
+            {
+                < 1 => DefaultPageSize,
+                > MaxPageSize => MaxPageSize,
+                _ => value,
+            };
+    } = DefaultPageSize;
 
     public string? Sort { get; set; }
 }

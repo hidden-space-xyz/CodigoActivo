@@ -4,7 +4,6 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers;
@@ -15,7 +14,7 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 {
     [HttpGet("events/{eventId:guid}/summary")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventSummaryResponse>> EventSummary(
+    public async Task<ActionResult<EventSummaryResponse>> EventSummaryAsync(
         Guid eventId,
         CancellationToken ct
     )
@@ -25,7 +24,7 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 
     [HttpGet("events/{eventId:guid}/attendees")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<PagedResult<EventAttendeeResponse>>> EventAttendees(
+    public async Task<ActionResult<PagedResult<EventAttendeeResponse>>> EventAttendeesAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
         CancellationToken ct
@@ -36,7 +35,7 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 
     [HttpGet("events/{eventId:guid}/badges")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventBadgesResponse>> EventBadges(
+    public async Task<ActionResult<EventBadgesResponse>> EventBadgesAsync(
         Guid eventId,
         CancellationToken ct
     )
@@ -46,7 +45,7 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 
     [HttpGet("events/{eventId:guid}/roster")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventRosterResponse>> EventRoster(
+    public async Task<ActionResult<EventRosterResponse>> EventRosterAsync(
         Guid eventId,
         CancellationToken ct
     )
@@ -56,14 +55,14 @@ public class ReportsController(IReportService reports) : ApiControllerBase
 
     [HttpGet("dashboard")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<DashboardSummaryResponse>> Dashboard(CancellationToken ct)
+    public async Task<ActionResult<DashboardSummaryResponse>> DashboardAsync(CancellationToken ct)
     {
         return Ok(await reports.GetDashboardSummaryAsync(ct));
     }
 
     [HttpGet("dashboard/analytics")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<DashboardAnalyticsResponse>> DashboardAnalytics(
+    public async Task<ActionResult<DashboardAnalyticsResponse>> DashboardAnalyticsAsync(
         [FromQuery] DashboardAnalyticsQuery query,
         CancellationToken ct
     )

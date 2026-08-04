@@ -13,12 +13,16 @@ public static partial class RichTextFileReferences
     {
         var ids = new HashSet<Guid>();
         if (string.IsNullOrEmpty(richTextJson))
+        {
             return ids;
+        }
 
-        foreach (Match match in ContentUrl().Matches(richTextJson))
+        foreach (Match match in ContentUrl.Matches(richTextJson))
         {
             if (Guid.TryParse(match.Groups["id"].Value, out var id))
+            {
                 ids.Add(id);
+            }
         }
 
         return ids;
@@ -36,5 +40,5 @@ public static partial class RichTextFileReferences
         RegexOptions.ExplicitCapture,
         matchTimeoutMilliseconds: 1000
     )]
-    private static partial Regex ContentUrl();
+    private static partial Regex ContentUrl { get; }
 }

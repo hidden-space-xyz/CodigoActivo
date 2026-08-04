@@ -1,3 +1,4 @@
+using System.Globalization;
 using AwesomeAssertions;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
@@ -21,7 +22,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     {
         await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
-        await new DatabaseSeeder(db).SeedAsync();
+        await new DatabaseSeeder(db).SeedAsync(Ct);
     }
 
     public ValueTask DisposeAsync()
@@ -78,13 +79,19 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         );
 
         for (var i = 0; i < 5; i++)
-            ctx.Users.Add(NewUser(Guid.NewGuid(), $"User{i}"));
+        {
+            ctx.Users.Add(NewUser(Guid.NewGuid(), $"User{i.ToString(CultureInfo.InvariantCulture)}"));
+        }
 
         var firstEvent = NewEvent("Evento 1");
         ctx.Events.AddRange(firstEvent, NewEvent("Evento 2"));
 
         for (var i = 0; i < 3; i++)
-            ctx.Activities.Add(NewActivity(firstEvent.Id, $"Actividad {i}"));
+        {
+            ctx.Activities.Add(
+                NewActivity(firstEvent.Id, $"Actividad {i.ToString(CultureInfo.InvariantCulture)}")
+            );
+        }
 
         ctx.Resources.Add(
             new Resource
@@ -106,7 +113,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                 new Announcement
                 {
                     Id = Guid.NewGuid(),
-                    Title = $"Anuncio {i}",
+                    Title = $"Anuncio {i.ToString(CultureInfo.InvariantCulture)}",
                     Subtitle = "Sub",
                     Description = "{}",
                     ThumbnailId = ThumbId,
@@ -122,7 +129,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                 new Partner
                 {
                     Id = Guid.NewGuid(),
-                    Name = $"Socio {i}",
+                    Name = $"Socio {i.ToString(CultureInfo.InvariantCulture)}",
                     Tier = 1,
                     FromDate = new DateOnly(2024, 1, 1),
                     ThumbnailId = ThumbId,
@@ -133,8 +140,9 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         }
     }
 
-    private static User NewUser(Guid id, string firstName) =>
-        new()
+    private static User NewUser(Guid id, string firstName)
+    {
+        return new()
         {
             Id = id,
             FirstName = firstName,
@@ -144,9 +152,11 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
             UserTypeId = SeedIds.UserTypes.Member,
             CreatedAt = Fixed,
         };
+    }
 
-    private static Event NewEvent(string title) =>
-        new()
+    private static Event NewEvent(string title)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -158,9 +168,11 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 
-    private static Activity NewActivity(Guid eventId, string title) =>
-        new()
+    private static Activity NewActivity(Guid eventId, string title)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -174,4 +186,5 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 }

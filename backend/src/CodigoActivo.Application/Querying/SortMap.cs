@@ -18,7 +18,7 @@ public sealed class SortMap<T>
 
     public SortMap<T> Default(params string[] terms)
     {
-        defaults = terms.Select(Parse).Where(term => selectors.ContainsKey(term.Key)).ToList();
+        defaults = [.. terms.Select(Parse).Where(term => selectors.ContainsKey(term.Key))];
         return this;
     }
 
@@ -31,25 +31,31 @@ public sealed class SortMap<T>
     public IQueryable<T> Apply(IQueryable<T> source, string? sort)
     {
         var terms = ParseAll(sort).Where(term => selectors.ContainsKey(term.Key)).ToList();
-        if (terms.Count == 0)
-            terms = defaults.ToList();
+        if (terms.Count is 0)
+        {
+            terms = [.. defaults];
+        }
 
-        IOrderedQueryable<T>? ordered = null;
+        IQueryable<T>? ordered = null;
         foreach (var term in terms)
+        {
             ordered = ApplyOrder(
                 ordered ?? source,
                 selectors[term.Key],
                 term.Descending,
                 ordered is null
             );
+        }
 
         if (tieBreaker is not null)
+        {
             ordered = ApplyOrder(ordered ?? source, tieBreaker, descending: false, ordered is null);
+        }
 
         return ordered ?? source;
     }
 
-    private static IOrderedQueryable<T> ApplyOrder(
+    private static IQueryable<T> ApplyOrder(
         IQueryable<T> source,
         LambdaExpression selector,
         bool descending,
@@ -71,7 +77,7 @@ public sealed class SortMap<T>
             source.Expression,
             Expression.Quote(selector)
         );
-        return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(call);
+        return source.Provider.CreateQuery<T>(call);
     }
 
     private static IEnumerable<SortTerm> ParseAll(string? sort)

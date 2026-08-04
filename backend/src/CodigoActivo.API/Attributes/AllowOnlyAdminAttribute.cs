@@ -18,6 +18,8 @@ public sealed class AllowOnlyAdminAttribute : Attribute, IAuthorizationFilter
         }
 
         if (!user.IsAdmin())
+        {
             context.Result = new ForbidResult();
+        }
     }
 }

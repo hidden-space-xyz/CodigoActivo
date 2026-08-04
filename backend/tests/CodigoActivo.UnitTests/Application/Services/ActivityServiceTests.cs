@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -57,18 +57,25 @@ public sealed class ActivityServiceTests
         );
     }
 
-    private void HasActivities(params Activity[] items) =>
+    private void HasActivities(params Activity[] items)
+    {
         activities.Query().Returns(items.AsQueryable());
+    }
 
-    private void ModalityExists(bool exists) =>
+    private void ModalityExists(bool exists)
+    {
         modalityTypes
             .ExistsAsync(
                 Arg.Any<Expression<Func<ActivityModalityType, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(exists);
+    }
 
-    private void HasEvents(params Event[] items) => events.Query().Returns(items.AsQueryable());
+    private void HasEvents(params Event[] items)
+    {
+        events.Query().Returns(items.AsQueryable());
+    }
 
     private Event EventExists()
     {
@@ -77,7 +84,10 @@ public sealed class ActivityServiceTests
         return ev;
     }
 
-    private void EventExistsFor(Activity activity) => HasEvents(NewEvent(id: activity.EventId));
+    private void EventExistsFor(Activity activity)
+    {
+        HasEvents(NewEvent(id: activity.EventId));
+    }
 
     private void HasRoleCatalog()
     {
@@ -108,8 +118,11 @@ public sealed class ActivityServiceTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(ci =>
-                catalog.Count(ci.Arg<Expression<Func<ActivityRoleType, bool>>>().Compile().Invoke)
-            );
+            {
+                var predicate = ci.Arg<Expression<Func<ActivityRoleType, bool>>>();
+                Assert.NotNull(predicate);
+                return catalog.Count(predicate.Compile().Invoke);
+            });
     }
 
     private void ActivityFound(Activity? activity)
@@ -122,8 +135,9 @@ public sealed class ActivityServiceTests
             .Returns(activity);
     }
 
-    private static Event NewEvent(Guid? id = null) =>
-        new()
+    private static Event NewEvent(Guid? id = null)
+    {
+        return new()
         {
             Id = id ?? Guid.NewGuid(),
             Title = "Feria",
@@ -133,6 +147,7 @@ public sealed class ActivityServiceTests
             SignupStartsAt = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
             SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
         };
+    }
 
     private static Activity NewActivity(
         string title = "Taller",
@@ -143,8 +158,9 @@ public sealed class ActivityServiceTests
         string location = "Sala",
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id ?? Guid.NewGuid(),
             Title = title,
@@ -159,39 +175,65 @@ public sealed class ActivityServiceTests
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
+    }
+
+    private static bool IsCreatedActivity(
+        Activity? activity,
+        Guid eventId,
+        Guid caller,
+        DateTimeOffset createdAt
+    )
+    {
+        if (activity is null)
+        {
+            return false;
+        }
+
+        var isTrimmed = string.Equals(activity.Title, "Taller", StringComparison.Ordinal)
+            && string.Equals(activity.Location, "Sala", StringComparison.Ordinal);
+        return isTrimmed
+            && activity.EventId == eventId
+            && activity.CreatedBy == caller
+            && activity.CreatedAt == createdAt;
+    }
 
     private static ActivityRoleCapacity Capacity(
         Guid activityId,
         Guid roleTypeId,
         int desiredCount
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             ActivityId = activityId,
             ActivityRoleTypeId = roleTypeId,
             DesiredCount = desiredCount,
         };
+    }
 
     private static ActivityUserRoleAssignment RoleAssignment(
         Guid activityId,
         Guid roleTypeId,
         Guid statusId
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             UserId = Guid.NewGuid(),
             ActivityId = activityId,
             ActivityRoleTypeId = roleTypeId,
             AssignmentStatusId = statusId,
         };
+    }
 
     private static CreateActivityRequest CreateRequest(
         string title = "  Taller  ",
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null,
         IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities = null
-    ) =>
-        new(
+    )
+    {
+        return new(
             title,
             "{}",
             "  Sala  ",
@@ -201,6 +243,7 @@ public sealed class ActivityServiceTests
             Guid.NewGuid(),
             roleCapacities
         );
+    }
 
     private static UpdateActivityRequest UpdateRequest(
         string title = "  New  ",
@@ -208,8 +251,9 @@ public sealed class ActivityServiceTests
         DateTimeOffset? endsAt = null,
         Guid? thumbnailId = null,
         IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities = null
-    ) =>
-        new(
+    )
+    {
+        return new(
             title,
             "{}",
             "  Sala  ",
@@ -219,6 +263,7 @@ public sealed class ActivityServiceTests
             thumbnailId ?? Guid.NewGuid(),
             roleCapacities
         );
+    }
 
     [Fact]
     public async Task ListAsync_EventIdFilter_ReturnsMatchingActivity()
@@ -584,6 +629,7 @@ public sealed class ActivityServiceTests
             .Do(ci =>
             {
                 var a = ci.Arg<Activity>();
+                Assert.NotNull(a);
                 a.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
                 stored.Add(a);
             });
@@ -602,20 +648,16 @@ public sealed class ActivityServiceTests
         await activities
             .Received(1)
             .AddAsync(
-                Arg.Is<Activity>(a =>
-                    a.Title == "Taller"
-                    && a.Location == "Sala"
-                    && a.EventId == eventId
-                    && a.CreatedBy == caller
-                    && a.CreatedAt == clock.UtcNow
-                ),
+                Arg.Is<Activity>(a => IsCreatedActivity(a, eventId, caller, clock.UtcNow)),
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -634,6 +676,7 @@ public sealed class ActivityServiceTests
             .Do(ci =>
             {
                 var a = ci.Arg<Activity>();
+                Assert.NotNull(a);
                 a.ActivityModalityType = new ActivityModalityType { Name = "Presencial" };
                 stored.Add(a);
             });
@@ -862,7 +905,9 @@ public sealed class ActivityServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -1050,7 +1095,7 @@ public sealed class ActivityServiceTests
         result.IsSuccess.Should().BeTrue();
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1066,7 +1111,7 @@ public sealed class ActivityServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(default, TestContext.Current.CancellationToken);
+            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -1085,7 +1130,9 @@ public sealed class ActivityServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Activities))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Activities)
+                )
             );
     }
 
@@ -1235,13 +1282,15 @@ public sealed class ActivityServiceTests
         string title,
         DateTimeOffset startsAt,
         Guid? eventId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             UserId = userId,
             ActivityId = Guid.NewGuid(),
             Activity = new Activity
             {
+                Location = "Sala principal",
                 Title = title,
                 Description = "{}",
                 ActivityStartsAt = startsAt,
@@ -1249,8 +1298,9 @@ public sealed class ActivityServiceTests
                 EventId = eventId ?? Guid.NewGuid(),
             },
             ActivityRoleTypeId = Guid.NewGuid(),
-            ActivityRoleType = new ActivityRoleType { Name = "Líder" },
+            ActivityRoleType = new ActivityRoleType { Description = "Descripción de prueba", Name = "Líder" },
             AssignmentStatusId = Guid.NewGuid(),
-            AssignmentStatus = new AssignmentStatusType { Name = "Solicitado", Color = "#000" },
+            AssignmentStatus = new AssignmentStatusType { Description = "Descripción de prueba", Name = "Solicitado", Color = "#000" },
         };
+    }
 }
