@@ -20,20 +20,38 @@
 
 ## 📖 Overview
 
-`<Codigoactivo/>` is a León-based nonprofit that since 2016 has helped children and young people discover programming and computational thinking through free, hands-on learning — from their very first blocks in Scratch to Python and artificial intelligence.
-
+`<Codigoactivo/>` is a León-based nonprofit that since 2016 has helped children and young people (8–18)
+discover programming and computational thinking through free, hands-on learning — from Scratch and
+robotics to Python and artificial intelligence.
 
 This repository is its digital home: a **public site** for events, announcements, resources
 and member sign-up, plus an **admin back-office** where the team runs it all.
 
+## ✨ Features
+
+- **Public site** — home, about, events, announcements, resources and partners, with rich-text content
+  and per-activity signup on each event.
+- **Member accounts** — registration (adults can enroll the minors in their care), OTP email
+  verification, password reset, and a self-service account page with profile, dependent minors, and a
+  participation history from which members rate the events they attended.
+- **Admin back-office** — dashboard with charts, events (detail with activities, attendees and ratings
+  tabs, plus a printable roster and badges), announcements, resources, partners, users and catalogs.
+  Users and event attendees export to CSV.
+- **Email** — admins write plain-text mail with attachments to one member or to everyone matching the
+  current filters; activity signups and the admin's decision on them notify members automatically,
+  always reaching the guardian's address when the enrolled person is a dependent minor.
+- **Spanish UI, fully driven by Vue I18n** — no string is hardcoded, so a second language is a drop-in
+  locale file.
+
 ## 🧰 Tech Stack
 
-| Layer          | Technologies                                                                                   |
-| -------------- | --------------------------------------------------------------------------------------------- |
-| **Backend**    | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · Serilog · Swashbuckle (OpenAPI)     |
-| **Frontend**   | Vue 3 · Vite · TypeScript · PrimeVue · TanStack Query · TipTap · Orval (generated REST client) |
-| **Quality**    | Meziantou.Analyzer · SonarAnalyzer · CSharpier · ESLint · Prettier · `vue-tsc` · Steiger       |
-| **Deployment** | Docker · Docker Compose · nginx                                                                |
+| Layer          | Technologies                                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Backend**    | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · MailKit · Serilog · Swashbuckle (OpenAPI)             |
+| **Frontend**   | Vue 3 · Vite · TypeScript · PrimeVue · TanStack Query · Vue I18n · TipTap · Chart.js · Orval (typed API client)  |
+| **Quality**    | Meziantou.Analyzer · SonarAnalyzer · CSharpier · ESLint · Prettier · `vue-tsc` · Steiger                         |
+| **Testing**    | xUnit v3 · AwesomeAssertions · NSubstitute · Testcontainers (PostgreSQL)                                         |
+| **Deployment** | Docker · Docker Compose · nginx                                                                                  |
 
 ## 🏗️ Repository layout
 
@@ -51,18 +69,27 @@ Two independently developed apps that ship together as a **same-origin** stack. 
 Fastest path — run the whole stack in Docker:
 
 ```bash
-cp .env.example .env         # set at least POSTGRES_PASSWORD
+cp .env.example .env         # set at least POSTGRES_PASSWORD, or the stack refuses to start
 docker compose up --build    # SPA → http://localhost:8080 · API → http://localhost:5150 (Swagger at /swagger)
 ```
+
+> [!IMPORTANT]
+> That command also merges `docker-compose.override.yml`, the **development** overlay: it publishes the
+> database, exposes the API and relaxes the container hardening. Deploy with
+> `docker compose -f docker-compose.yml up -d --build` — see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 Or run the apps directly for development, with hot reload:
 
 ```bash
-# Backend — needs a reachable PostgreSQL; the connection is built from POSTGRES_* env vars
+# Backend — the connection is built from POSTGRES_* env vars, and a bare `dotnet run` does NOT read the root .env
+docker compose up -d db                                    # Postgres on 127.0.0.1:5432
+export POSTGRES_PASSWORD=...                               # PowerShell: $env:POSTGRES_PASSWORD="..."
 cd backend && dotnet run --project src/CodigoActivo.API    # http://localhost:5150
 
 # Frontend
-cd frontend && npm install && npm run dev                  # http://localhost:5173
+cd frontend && npm ci
+cp .env.example .env.local                                 # set VITE_API_PROXY_TARGET=http://localhost:5150
+npm run dev                                                # http://localhost:5173
 ```
 
 > [!TIP]
@@ -71,12 +98,12 @@ cd frontend && npm install && npm run dev                  # http://localhost:51
 
 ## 📚 Documentation
 
-| Document                             | What's inside                                                                        |
-| ------------------------------------ | ----------------------------------------------------------------------------------- |
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Clean-architecture backend, Feature-Sliced frontend, and the API contract linking them |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Local setup, commands, coding conventions, testing, and the API-generation workflow    |
-| **[DEPLOYMENT.md](DEPLOYMENT.md)**     | Docker Compose stack, environment-variable reference, and production run                |
-| **[SECURITY.md](SECURITY.md)**         | Security model, container hardening, and how to report a vulnerability                  |
+| Document                               | What's inside                                                                            |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Clean-architecture backend, Feature-Sliced frontend, and the API contract linking them   |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Local setup, commands, coding conventions, testing, and the API-generation workflow      |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)**     | Docker Compose stack, environment-variable reference, and production run                 |
+| **[SECURITY.md](SECURITY.md)**         | Security model, container hardening, and how to report a vulnerability                   |
 
 > [!NOTE]
 > Per-directory guidance for AI coding agents lives in the `CLAUDE.md` files
@@ -89,6 +116,7 @@ Released under the [GNU General Public License v3.0](LICENSE).
 <p align="center">
   <img
     width="100%"
+    alt=""
     src="https://capsule-render.vercel.app/api?type=waving&section=footer&height=140&color=0:2dd4d9,50:ff6b5e,100:f9a320&animation=twinkling"
   />
 </p>
