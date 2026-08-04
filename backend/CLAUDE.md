@@ -16,8 +16,10 @@ ASP.NET Core Web API (.NET 10). See the repo root `CLAUDE.md` for the overall pi
 Run from `backend/`:
 
 ```bash
-dotnet build CodigoActivo.slnx                 # analyzers run in-build; style violations fail the build
+dotnet build CodigoActivo.slnx                 # analyzers + style rules run in-build and report as WARNINGS, never errors;
+                                               # they are re-reported on every build, even an up-to-date one
                                                # name the .slnx: docker-compose.dcproj makes a bare `dotnet build` ambiguous (MSB1011)
+dotnet build CodigoActivo.slnx -p:AlwaysReportAnalyzerWarnings=false   # skip the forced recompile when you only want a fast build
 dotnet run --project src/CodigoActivo.API      # http://localhost:5150 (add --launch-profile https for :7039)
 
 dotnet test CodigoActivo.slnx                  # unit + integration (integration auto-starts a throwaway Postgres; needs Docker)
@@ -60,7 +62,28 @@ API             controllers, middleware, auth — references Composition ONLY
 
 Web-host-specific wiring stays in `API/Program.cs` because it depends on ASP.NET: `AddControllers` + JSON/model-state, `AddAntiforgery`, `AddAuthentication`/`AddCookie`, `AddAuthorization` (the fallback policy), `AddOutputCache` policies, `ICacheInvalidator`, `AddExceptionHandler`/`AddProblemDetails`, `AddSwaggerGen`. Everything else belongs in `AddCodigoActivo`.
 
-These rules are enforced by the `ProjectReference` graph and developer discipline only — **there is no architecture test**, so a bad reference still compiles; keep the graph clean by hand. `src/Directory.Build.props` enables `EnforceCodeStyleInBuild` + Meziantou.Analyzer + SonarAnalyzer for all src projects; `tests/Directory.Build.props` turns on `EnforceCodeStyleInBuild` too and supplies the shared test packages (xUnit v3, AwesomeAssertions, NSubstitute, coverlet). The handful of rules that categorically don't fit test code — `CA1707` (the snake_case test names), `S2068` (fixture credentials), `CA1816` (xUnit's `DisposeAsync` lifecycle hook) — are scoped off in the `[tests/**/*.cs]` section of `.editorconfig`, each with its reason. Everything else is expected to be fixed, not silenced.
+These rules are enforced by the `ProjectReference` graph and developer discipline only — **there is no architecture test**, so a bad reference still compiles; keep the graph clean by hand. `src/Directory.Build.props` and `tests/Directory.Build.props` both `<Import>` `../Directory.Build.Analyzers.props` explicitly and both reference Meziantou.Analyzer + SonarAnalyzer — the import has to be explicit because MSBuild's implicit `Directory.Build.props` lookup stops at the **first** file it finds walking up, which is one of those two, so a plain `backend/Directory.Build.props` would never be read. The test projects were unanalysed by both packs until this was wired up (`PrivateAssets=all` blocks them across the `ProjectReference` edge), so ~660 MA/S rules had never seen the ~90 test files. Rules that categorically don't fit test code — `CA1707` (the underscore test names), `S2068` (fixture credentials), `CA1816` (xUnit's `DisposeAsync` hook), `S1192`/`S4144`/`CA1861` (table-driven duplication) — are scoped off in the `[tests/**/*.cs]` section of `.editorconfig`, each with its reason. Everything else is expected to be fixed, not silenced.
+
+**Analyzer configuration is shared with the BackupZCrypt repository and must stay byte-identical.** Four artefacts:
+
+| File | What it holds |
+|---|---|
+| `Directory.Build.Analyzers.props` | every analyzer MSBuild property + the `SonarLint.xml` wiring |
+| `Directory.Build.targets` | the sentinel that makes warnings print on **every** build |
+| `SonarLint.xml` | thresholds for Sonar's parameterized rules — **the only place they can be set** |
+| `.editorconfig` **lines 3–176** | severities, style preferences, naming rules |
+
+The shared `.editorconfig` policy is the single `[*.cs]` section at **lines 3–176**, positioned identically in both repos so it can be compared mechanically. **Neither file carries comments** — the rationale for every rule lives here in Markdown instead, never inline. Verify the four artefacts with:
+
+```bash
+cd D:/WorkSpace && B=BackupZCrypt && C=CodigoActivo/backend
+for f in Directory.Build.Analyzers.props Directory.Build.targets SonarLint.xml; do diff "$C/$f" "$B/$f"; done
+diff <(sed -n '3,176p' "$C/.editorconfig") <(sed -n '3,176p' "$B/.editorconfig")
+```
+
+Repo-local deviations live in the sections **after** line 176 and must never be added inside the shared range. Four mechanics are easy to get wrong and are all load-bearing here: `EnforceCodeStyleInBuild=true` alone enforces almost nothing on .NET 10 (the `AnalysisLevel` suffix does not reach IDE rules — `dotnet_analyzer_diagnostic.category-Style.severity = warning` is what does it); `IDE0005` needs `GenerateDocumentationFile=true`; SonarAnalyzer's rule *categories contain spaces*, so `dotnet_analyzer_diagnostic.category-…` lines for `S####` rules are discarded silently and its 139 disabled-by-default rules must be enumerated per ID; and writing `option = value:none` or `:silent` is an **unliftable** kill switch that no later `dotnet_diagnostic` entry can raise.
+
+`CS1591` (missing XML doc) is set to `none` here and left at `warning` in BackupZCrypt: this codebase carries no comments at all, so it produced 3088 of 4914 warnings. `GenerateDocumentationFile` stays **on** regardless, because turning it off would silently kill `IDE0005` too.
 
 ## The Result/Error pattern (core contract)
 

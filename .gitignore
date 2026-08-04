@@ -1,13 +1,7 @@
-# CodigoActivo monorepo
-# Backend: .NET / Visual Studio
-# Frontend: Vue / Vite / TypeScript
-
-# Project-specific local data
 files/
 example/
 .claude/settings.local.json
 
-# Secrets and local configuration
 *.env
 .env
 .env.*
@@ -17,12 +11,10 @@ example/
 *.pfx
 *.publishsettings
 
-# OS files
 .DS_Store
 Thumbs.db
 Desktop.ini
 
-# Editors / IDEs
 .vs/
 .idea/
 .history/
@@ -45,7 +37,6 @@ Desktop.ini
 *.sw?
 *.tss
 
-# .NET / Visual Studio build output
 [Bb]in/
 [Oo]bj/
 [Dd]ebug/
@@ -66,10 +57,8 @@ artifacts/
 publish/
 dist/
 
-# Visual Studio container tooling generated compose files
 **/docker-compose.vs.*.yml
 
-# MSBuild / Visual Studio generated files
 *.rsp
 !Directory.Build.rsp
 *.tlog
@@ -85,7 +74,6 @@ MigrationBackup/
 FodyWeavers.xsd
 mono_crash.*
 
-# .NET binaries and intermediate files
 *.dll
 *.exe
 *.appx
@@ -116,7 +104,6 @@ mono_crash.*
 *_h.h
 *_wpftmp.csproj
 
-# Tests, coverage and reports
 [Tt]est[Rr]esult*/
 *.trx
 *.coverage
@@ -132,7 +119,6 @@ coverage*.info
 coveragereport/
 BenchmarkDotNet.Artifacts/
 
-# NuGet / package managers
 *.nupkg
 *.snupkg
 *.nuget.props
@@ -144,7 +130,6 @@ project.fragment.lock.json
 **/.paket/paket.exe
 paket-files/
 
-# .NET tooling
 _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
@@ -163,7 +148,6 @@ ASALocalRun/
 **/.ionide/
 **/.cr/personal
 
-# Publish / deployment
 *.[Pp]ublish.xml
 *.azurePubxml
 *.pubxml
@@ -171,7 +155,6 @@ ASALocalRun/
 PublishScripts/
 ScaffoldingReadMe.txt
 
-# Databases and local runtime files
 *.mdf
 *.ldf
 *.ndf
@@ -180,25 +163,21 @@ ScaffoldingReadMe.txt
 healthchecksdb
 orleans.codegen.cs
 
-# Node / Vite / TypeScript
 node_modules/
 node_modules/.tmp/
 dist-ssr/
 *.tsbuildinfo
 
-# Node logs
 logs/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Visual Studio Node tooling
 *.njsproj
 *.ntvs*
 .ntvs_analysis.dat
 
-# Miscellaneous generated files
 *.cache
 !?*.cache/
 *.log

@@ -57,7 +57,8 @@ set `http://localhost:5150` to reach a local backend.
 **Backend** (run from `backend/`)
 
 ```bash
-dotnet build                                   # build + analyzers; style violations fail the build
+dotnet build                                   # build + analyzers; violations are WARNINGS, never errors,
+                                               # and are re-reported on every build (even an up-to-date one)
 dotnet run --project src/CodigoActivo.API      # run the API
 dotnet test                                    # unit + integration tests (integration needs Docker, see Testing below)
 
@@ -107,7 +108,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 - The database is **snake_case**; account for it in raw SQL.
 - Type colocation is intentional (all repository interfaces in one file, request+response DTOs per aggregate
   in one `*Dtos.cs`); private fields are `camelCase` with no leading underscore.
-- Formatting is CSharpier; Meziantou.Analyzer + SonarAnalyzer run in-build.
+- Formatting is CSharpier; Meziantou.Analyzer + SonarAnalyzer + the SDK's CA/IDE rules run in-build and report
+  as warnings. The configuration is shared byte-for-byte with the BackupZCrypt repository
+  (`backend/Directory.Build.Analyzers.props`, `backend/Directory.Build.targets`, `backend/SonarLint.xml`, and lines
+  3–176 of `backend/.editorconfig`) — **change one repo and you must change the other**. Repo-local exceptions belong
+  in the `.editorconfig` sections after line 176. None of these files carries comments; document a deviation in
+  `backend/CLAUDE.md` instead of inline.
 
 **Frontend**
 

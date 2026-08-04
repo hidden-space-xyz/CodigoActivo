@@ -1,5 +1,3 @@
-# Keep container/shell assets LF-terminated regardless of the checkout OS,
-# otherwise CRLF breaks shebangs and nginx/entrypoint scripts inside the images.
 *.sh            text eol=lf
 *.conf          text eol=lf
 *.template      text eol=lf
@@ -8,3 +6,7 @@
 Dockerfile      text eol=lf
 .dockerignore   text eol=lf
 .env.example    text eol=lf
+Directory.Build.Analyzers.props text eol=lf
+Directory.Build.targets         text eol=lf
+SonarLint.xml                   text eol=lf
+.editorconfig                   text eol=lf
