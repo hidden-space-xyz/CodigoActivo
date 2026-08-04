@@ -8,7 +8,8 @@ public static class ActivitySignupDecisionEmail
     private const string ConfirmedHeading = "Inscripción confirmada";
 
     private const string ConfirmedNote =
-        "Si finalmente no fuera posible asistir, te agradecemos que la anules con la mayor antelación posible desde tu área personal, para que otra persona pueda ocupar la plaza.";
+        "Si finalmente no fuera posible asistir, te agradecemos que la anules con la mayor antelación posible "
+        + "desde tu área personal, para que otra persona pueda ocupar la plaza.";
 
     private const string DeniedHeading = "Inscripción rechazada";
 
@@ -116,12 +117,14 @@ public static class ActivitySignupDecisionEmail
 
     private static string ConfirmedIntro(string? participantName)
     {
-        return $"Un miembro de la asociación ha revisado {SignupPhrase(participantName)} en esta actividad y la ha aprobado. La plaza queda reservada.";
+        return $"Un miembro de la asociación ha revisado {SignupPhrase(participantName)} en esta actividad "
+            + "y la ha aprobado. La plaza queda reservada.";
     }
 
     private static string DeniedIntro(string? participantName)
     {
-        return $"Un miembro de la asociación ha revisado {SignupPhrase(participantName)} en esta actividad y la ha rechazado. Sentimos no poder confirmar la plaza en esta ocasión.";
+        return $"Un miembro de la asociación ha revisado {SignupPhrase(participantName)} en esta actividad "
+            + "y la ha rechazado. Sentimos no poder confirmar la plaza en esta ocasión.";
     }
 
     private static string SignupPhrase(string? participantName)

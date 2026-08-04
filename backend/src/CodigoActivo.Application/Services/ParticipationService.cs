@@ -62,8 +62,10 @@ public class ParticipationService(
             ct
         );
 
-        if (rows.Count == 0)
+        if (rows.Count is 0)
+        {
             return [];
+        }
 
         var ownRatings = (
             await executor.ToListAsync(
@@ -83,10 +85,12 @@ public class ParticipationService(
                 ? group
                     .Where(row => row.StatusId == SeedIds.AssignmentStatusTypes.Confirmed)
                     .ToList()
-                : group.ToList();
+                : [.. group];
 
-            if (visible.Count == 0)
+            if (visible.Count is 0)
+            {
                 continue;
+            }
 
             var entry = ToHistoryEntry(
                 visible,
@@ -116,10 +120,14 @@ public class ParticipationService(
             ct
         );
         if (ends is not { } eventEndsAt)
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         if (eventEndsAt >= clock.Today)
+        {
             return Error.Conflict(ErrorCode.EventRatingNotFinished);
+        }
 
         var attended = await executor.FirstOrDefaultAsync(
             activities
@@ -133,7 +141,9 @@ public class ParticipationService(
             ct
         );
         if (attended is null)
+        {
             return Error.Conflict(ErrorCode.EventRatingAttendanceRequired);
+        }
 
         var now = clock.UtcNow;
         var rating = await ratings.FindAsync(r => r.EventId == eventId && r.UserId == userId, ct);
@@ -171,7 +181,9 @@ public class ParticipationService(
     )
     {
         if (!await events.ExistsAsync(e => e.Id == eventId, ct))
+        {
             return Error.NotFound(ErrorCode.EventNotFound);
+        }
 
         var source = ratings
             .Query()

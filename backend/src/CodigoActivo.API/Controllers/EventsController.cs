@@ -19,7 +19,7 @@ public class EventsController(IEventService events, IParticipationService partic
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
-    public async Task<ActionResult<PagedResult<EventListItemResponse>>> List(
+    public async Task<ActionResult<PagedResult<EventListItemResponse>>> ListAsync(
         [FromQuery] EventListQuery query,
         CancellationToken ct
     )
@@ -30,7 +30,7 @@ public class EventsController(IEventService events, IParticipationService partic
     [HttpGet("past-years")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
-    public async Task<ActionResult<IReadOnlyList<int>>> PastYears(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<int>>> PastYearsAsync(CancellationToken ct)
     {
         return Ok(await events.GetPastYearsAsync(ct));
     }
@@ -38,14 +38,14 @@ public class EventsController(IEventService events, IParticipationService partic
     [HttpGet("{eventId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
-    public async Task<ActionResult<EventResponse>> Get(Guid eventId, CancellationToken ct)
+    public async Task<ActionResult<EventResponse>> GetAsync(Guid eventId, CancellationToken ct)
     {
         return ToOk(await events.GetByIdAsync(eventId, ct));
     }
 
     [HttpGet("categoryType")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypes(
+    public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypesAsync(
         [FromQuery] EventCategoryTypeListQuery query,
         CancellationToken ct
     )
@@ -55,7 +55,7 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpPost]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventResponse>> Create(
+    public async Task<ActionResult<EventResponse>> CreateAsync(
         [FromBody] CreateEventRequest request,
         CancellationToken ct
     )
@@ -65,7 +65,7 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpPut("{eventId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventResponse>> Update(
+    public async Task<ActionResult<EventResponse>> UpdateAsync(
         Guid eventId,
         [FromBody] UpdateEventRequest request,
         CancellationToken ct
@@ -76,21 +76,21 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpDelete("{eventId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> Delete(Guid eventId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(Guid eventId, CancellationToken ct)
     {
         return ToNoContent(await events.DeleteAsync(eventId, ct));
     }
 
     [HttpPatch("{eventId:guid}/feature")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventResponse>> Feature(Guid eventId, CancellationToken ct)
+    public async Task<ActionResult<EventResponse>> FeatureAsync(Guid eventId, CancellationToken ct)
     {
         return ToOk(await events.SetFeaturedAsync(eventId, ct));
     }
 
     [HttpGet("{eventId:guid}/ratings")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> Ratings(
+    public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> RatingsAsync(
         Guid eventId,
         [FromQuery] EventRatingListQuery query,
         CancellationToken ct
@@ -101,7 +101,7 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpPut("{eventId:guid}/rating")]
     [Authorize]
-    public async Task<ActionResult<EventRatingResponse>> SaveRating(
+    public async Task<ActionResult<EventRatingResponse>> SaveRatingAsync(
         Guid eventId,
         [FromBody] SaveEventRatingRequest request,
         CancellationToken ct
@@ -112,7 +112,7 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpPost("categoryType")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryType(
+    public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         [FromBody] CreateEventCategoryTypeRequest request,
         CancellationToken ct
     )
@@ -122,7 +122,7 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpPut("categoryType/{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryType(
+    public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
         Guid eventCategoryTypeId,
         [FromBody] UpdateEventCategoryTypeRequest request,
         CancellationToken ct
@@ -133,7 +133,7 @@ public class EventsController(IEventService events, IParticipationService partic
 
     [HttpDelete("categoryType/{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> DeleteCategoryType(
+    public async Task<IActionResult> DeleteCategoryTypeAsync(
         Guid eventCategoryTypeId,
         CancellationToken ct
     )

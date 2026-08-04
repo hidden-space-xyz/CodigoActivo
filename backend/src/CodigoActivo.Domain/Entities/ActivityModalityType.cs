@@ -4,7 +4,7 @@ namespace CodigoActivo.Domain.Entities;
 
 public class ActivityModalityType : IdentifiableEntity
 {
-    public string Name { get; set; } = null!;
+    public required string Name { get; set; }
 
     public ICollection<Activity> Activities { get; set; } = [];
 }

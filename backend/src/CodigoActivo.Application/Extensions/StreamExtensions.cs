@@ -19,38 +19,34 @@ public static class StreamExtensions
         var header = buffer.AsSpan(0, read);
         var length = content.CanSeek ? content.Length : read;
 
-        if (IsJpeg(header))
-            return new ImageFormat("jpg", "image/jpeg");
-
-        if (IsPng(header))
-            return new ImageFormat("png", "image/png");
-
-        if (IsGif(header))
-            return new ImageFormat("gif", "image/gif");
-
-        if (IsWebp(header, length))
-            return new ImageFormat("webp", "image/webp");
-
-        return null;
+        return length switch
+        {
+            _ when IsJpeg(header) => new ImageFormat("jpg", "image/jpeg"),
+            _ when IsPng(header) => new ImageFormat("png", "image/png"),
+            _ when IsGif(header) => new ImageFormat("gif", "image/gif"),
+            _ when IsWebp(header, length) => new ImageFormat("webp", "image/webp"),
+            _ => null,
+        };
     }
 
     private static bool IsJpeg(ReadOnlySpan<byte> header)
     {
-        return header.Length >= 4
-            && header[0] == 0xFF
-            && header[1] == 0xD8
-            && header[2] == 0xFF
-            && header[3] >= 0xC0;
+        var hasStartOfImage = header.Length >= 4 && header[0] is 0xFF && header[1] is 0xD8;
+        return hasStartOfImage && header[2] is 0xFF && header[3] >= 0xC0;
     }
 
     private static bool IsPng(ReadOnlySpan<byte> header)
     {
         if (header.Length < 24 || !header[..8].SequenceEqual(PngSignature))
+        {
             return false;
+        }
 
         var ihdrLength = BinaryPrimitives.ReadUInt32BigEndian(header[8..12]);
         if (ihdrLength != 13 || !header[12..16].SequenceEqual("IHDR"u8))
+        {
             return false;
+        }
 
         var width = BinaryPrimitives.ReadUInt32BigEndian(header[16..20]);
         var height = BinaryPrimitives.ReadUInt32BigEndian(header[20..24]);
@@ -89,7 +85,9 @@ public static class StreamExtensions
             || chunk.SequenceEqual("VP8L"u8)
             || chunk.SequenceEqual("VP8X"u8);
         if (!knownChunk)
+        {
             return false;
+        }
 
         var riffSize = BinaryPrimitives.ReadUInt32LittleEndian(header[4..8]);
         return riffSize <= length - 8;

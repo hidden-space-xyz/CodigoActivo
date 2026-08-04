@@ -12,15 +12,27 @@ public sealed class ApiErrorResponseExtensionsTests
 {
     private const string TraceId = "trace-xyz-123";
 
-    private static DefaultHttpContext ContextWithTrace() => new() { TraceIdentifier = TraceId };
+    private static DefaultHttpContext ContextWithTrace()
+    {
+        return new() { TraceIdentifier = TraceId };
+    }
 
     private sealed class TestController : ApiControllerBase
     {
-        public new ActionResult<T> ToOk<T>(Result<T> result) => base.ToOk(result);
+        public new ActionResult<T> ToOk<T>(Result<T> result)
+        {
+            return base.ToOk(result);
+        }
 
-        public new ActionResult ToNoContent(Result result) => base.ToNoContent(result);
+        public new ActionResult ToNoContent(Result result)
+        {
+            return base.ToNoContent(result);
+        }
 
-        public new ActionResult ToProblem(Error error) => base.ToProblem(error);
+        public new ActionResult ToProblem(Error error)
+        {
+            return base.ToProblem(error);
+        }
     }
 
     private static TestController NewController(string traceId = TraceId)
@@ -32,8 +44,9 @@ public sealed class ApiErrorResponseExtensionsTests
         };
     }
 
-    public static TheoryData<ErrorKind, int, string> KindMappings() =>
-        new()
+    public static TheoryData<ErrorKind, int, string> KindMappings()
+    {
+        return new()
         {
             { ErrorKind.BadRequest, StatusCodes.Status400BadRequest, "Bad Request" },
             { ErrorKind.Unauthorized, StatusCodes.Status401Unauthorized, "Unauthorized" },
@@ -41,6 +54,7 @@ public sealed class ApiErrorResponseExtensionsTests
             { ErrorKind.NotFound, StatusCodes.Status404NotFound, "Not Found" },
             { ErrorKind.Conflict, StatusCodes.Status409Conflict, "Conflict" },
         };
+    }
 
     [Theory]
     [MemberData(nameof(KindMappings))]

@@ -18,7 +18,7 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Partners)]
-    public async Task<ActionResult<PagedResult<PartnerResponse>>> List(
+    public async Task<ActionResult<PagedResult<PartnerResponse>>> ListAsync(
         [FromQuery] PartnerListQuery query,
         CancellationToken ct
     )
@@ -29,14 +29,14 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
     [HttpGet("{partnerId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Partners)]
-    public async Task<ActionResult<PartnerResponse>> Get(Guid partnerId, CancellationToken ct)
+    public async Task<ActionResult<PartnerResponse>> GetAsync(Guid partnerId, CancellationToken ct)
     {
         return ToOk(await partners.GetByIdAsync(partnerId, ct));
     }
 
     [HttpPost]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<PartnerResponse>> Create(
+    public async Task<ActionResult<PartnerResponse>> CreateAsync(
         [FromBody] CreatePartnerRequest request,
         CancellationToken ct
     )
@@ -49,7 +49,7 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
 
     [HttpPut("{partnerId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<PartnerResponse>> Update(
+    public async Task<ActionResult<PartnerResponse>> UpdateAsync(
         Guid partnerId,
         [FromBody] UpdatePartnerRequest request,
         CancellationToken ct
@@ -60,7 +60,7 @@ public class PartnersController(IPartnerService partners) : ApiControllerBase
 
     [HttpDelete("{partnerId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> Delete(Guid partnerId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(Guid partnerId, CancellationToken ct)
     {
         return ToNoContent(await partners.DeleteAsync(partnerId, ct));
     }

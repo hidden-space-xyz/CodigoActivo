@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -44,28 +44,40 @@ public sealed class EventServiceTests
         );
     }
 
-    private void HasEvents(params Event[] items) => events.Query().Returns(items.AsQueryable());
+    private void HasEvents(params Event[] items)
+    {
+        events.Query().Returns(items.AsQueryable());
+    }
 
-    private void HasCategoryTypes(params EventCategoryType[] items) =>
+    private void HasCategoryTypes(params EventCategoryType[] items)
+    {
         categoryTypes.Query().Returns(items.AsQueryable());
+    }
 
-    private void HasCategoryCount(int count) =>
+    private void HasCategoryCount(int count)
+    {
         categoryTypes
             .CountAsync(
                 Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(count);
+    }
 
-    private void CategoryTypeNameTaken(bool taken) =>
+    private void CategoryTypeNameTaken(bool taken)
+    {
         categoryTypes
             .ExistsAsync(
                 Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(taken);
+    }
 
-    private void CategoryTypeFound(EventCategoryType? type) => categoryTypes.Finds(type);
+    private void CategoryTypeFound(EventCategoryType? type)
+    {
+        categoryTypes.Finds(type);
+    }
 
     private void CaptureCreatedEvents()
     {
@@ -76,6 +88,7 @@ public sealed class EventServiceTests
             .Do(ci =>
             {
                 var ev = ci.Arg<Event>();
+                Assert.NotNull(ev);
                 foreach (var category in ev.Categories)
                 {
                     category.EventCategoryType = new EventCategoryType
@@ -125,8 +138,9 @@ public sealed class EventServiceTests
         Guid categoryTypeId,
         string name,
         string color = "#112233"
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             EventId = eventId,
             EventCategoryTypeId = categoryTypeId,
@@ -137,6 +151,7 @@ public sealed class EventServiceTests
                 Color = color,
             },
         };
+    }
 
     private static Event WithCategory(Event ev, Guid categoryTypeId, string name)
     {
@@ -152,8 +167,9 @@ public sealed class EventServiceTests
         DateTimeOffset? signupEnd = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
         Guid? thumbnailId = null
-    ) =>
-        new(
+    )
+    {
+        return new(
             Title: "  Hackathon  ",
             Subtitle: "  Innovación  ",
             Description: "{}",
@@ -165,6 +181,7 @@ public sealed class EventServiceTests
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
             CategoryTypeIds: categoryTypeIds
         );
+    }
 
     private static UpdateEventRequest UpdateReq(
         DateOnly? eventStart = null,
@@ -176,8 +193,9 @@ public sealed class EventServiceTests
         Guid? thumbnailId = null,
         string title = "  New title  ",
         string description = "{}"
-    ) =>
-        new(
+    )
+    {
+        return new(
             Title: title,
             Subtitle: "  New subtitle  ",
             Description: description,
@@ -189,6 +207,7 @@ public sealed class EventServiceTests
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
             CategoryTypeIds: categoryTypeIds
         );
+    }
 
     [Fact]
     public async Task ListAsync_NoScope_ProjectsAndPagesAll()
@@ -533,13 +552,13 @@ public sealed class EventServiceTests
             CategoryTypeIds: [Guid.NewGuid()]
         );
 
-        return new TheoryData<CreateEventRequest>
-        {
+        return
+        [
             complete with { EventStartsAt = null },
             complete with { EventEndsAt = null },
             complete with { SignupStartsAt = null },
             complete with { SignupEndsAt = null },
-        };
+        ];
     }
 
     [Theory]
@@ -687,7 +706,7 @@ public sealed class EventServiceTests
         result.Error.Code.Should().Be(ErrorCode.EventThumbnailNotFound);
         await events
             .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<Event>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -714,7 +733,7 @@ public sealed class EventServiceTests
     public async Task CreateAsync_EmptyCategories_ReturnsCategoriesRequired()
     {
         files.ThumbnailExists(true);
-        var request = CreateReq(categoryTypeIds: Array.Empty<Guid>());
+        var request = CreateReq(categoryTypeIds: []);
 
         var result = await sut.CreateAsync(
             request,
@@ -777,7 +796,10 @@ public sealed class EventServiceTests
             .Received(1)
             .AddAsync(
                 Arg.Is<Event>(e =>
-                    e.Title == "Hackathon" && e.Subtitle == "Innovación" && e.CreatedBy == caller
+                    e != null
+                    && e.Title == "Hackathon"
+                    && e.Subtitle == "Innovación"
+                    && e.CreatedBy == caller
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -785,7 +807,9 @@ public sealed class EventServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Events))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Events)
+                )
             );
     }
 
@@ -813,7 +837,10 @@ public sealed class EventServiceTests
             .Be(categoryId);
         await events
             .Received(1)
-            .AddAsync(Arg.Is<Event>(e => e.Categories.Count == 1), Arg.Any<CancellationToken>());
+            .AddAsync(
+                Arg.Is<Event>(e => e != null && e.Categories.Count == 1),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -885,8 +912,9 @@ public sealed class EventServiceTests
     [Fact]
     public async Task UpdateAsync_EventMissing_ReturnsNotFound()
     {
+        Event? missing = null;
         HasCategoryCount(1);
-        events.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Event?)null);
+        events.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(missing);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.UpdateAsync(
@@ -998,7 +1026,9 @@ public sealed class EventServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Events))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Events)
+                )
             );
     }
 
@@ -1020,7 +1050,7 @@ public sealed class EventServiceTests
         await fileService
             .Received(1)
             .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 0),
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -1045,7 +1075,7 @@ public sealed class EventServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Count == 1 && ids.Contains(previousThumbnailId)
+                    ids != null && ids.Count == 1 && ids.Contains(previousThumbnailId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -1105,7 +1135,7 @@ public sealed class EventServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Contains(removedId) && !ids.Contains(keptId)
+                    ids != null && ids.Contains(removedId) && !ids.Contains(keptId)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -1147,7 +1177,10 @@ public sealed class EventServiceTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await fileService
             .DidNotReceiveWithAnyArgs()
-            .DeleteOrphanedAsync(default!, TestContext.Current.CancellationToken);
+            .DeleteOrphanedAsync(
+                Arg.Any<IReadOnlyCollection<Guid>>(),
+                TestContext.Current.CancellationToken
+            );
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -1161,6 +1194,9 @@ public sealed class EventServiceTests
         var sharedActivityThumbnailId = Guid.NewGuid();
         var foreignActivity = new Activity
         {
+            Title = "Actividad de prueba",
+            Location = "Sala principal",
+            Description = "Descripción de la actividad",
             EventId = Guid.NewGuid(),
             ThumbnailId = Guid.NewGuid(),
         };
@@ -1169,8 +1205,22 @@ public sealed class EventServiceTests
             .Returns(
                 new[]
                 {
-                    new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
-                    new Activity { EventId = ev.Id, ThumbnailId = sharedActivityThumbnailId },
+                    new Activity
+                    {
+                        Title = "Actividad de prueba",
+                        Location = "Sala principal",
+                        Description = "Descripción de la actividad",
+                        EventId = ev.Id,
+                        ThumbnailId = sharedActivityThumbnailId,
+                    },
+                    new Activity
+                    {
+                        Title = "Actividad de prueba",
+                        Location = "Sala principal",
+                        Description = "Descripción de la actividad",
+                        EventId = ev.Id,
+                        ThumbnailId = sharedActivityThumbnailId,
+                    },
                     foreignActivity,
                 }.AsQueryable()
             );
@@ -1184,10 +1234,12 @@ public sealed class EventServiceTests
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids.Count == 2
-                    && ids.Contains(ev.ThumbnailId)
-                    && ids.Contains(sharedActivityThumbnailId)
-                    && !ids.Contains(foreignActivity.ThumbnailId)
+                    IsDeletedEventThumbnailBatch(
+                        ids,
+                        ev.ThumbnailId,
+                        sharedActivityThumbnailId,
+                        foreignActivity.ThumbnailId
+                    )
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -1195,9 +1247,28 @@ public sealed class EventServiceTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags.Contains(CacheTags.Events) && tags.Contains(CacheTags.Activities)
+                    tags != null
+                    && tags.Contains(CacheTags.Events)
+                    && tags.Contains(CacheTags.Activities)
                 )
             );
+    }
+
+    private static bool IsDeletedEventThumbnailBatch(
+        IReadOnlyCollection<Guid>? ids,
+        Guid eventThumbnailId,
+        Guid activityThumbnailId,
+        Guid foreignThumbnailId
+    )
+    {
+        if (ids is null || ids.Count != 2)
+        {
+            return false;
+        }
+
+        var hasEventThumbnail = ids.Contains(eventThumbnailId);
+        var hasActivityThumbnail = ids.Contains(activityThumbnailId);
+        return hasEventThumbnail && hasActivityThumbnail && !ids.Contains(foreignThumbnailId);
     }
 
     [Fact]
@@ -1215,7 +1286,7 @@ public sealed class EventServiceTests
         await fileService
             .Received(1)
             .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(embeddedId)),
+                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(embeddedId)),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -1249,17 +1320,21 @@ public sealed class EventServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Events))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Events)
+                )
             );
     }
 
-    private static EventCategoryType NewCategoryType(string name, string color = "#000000") =>
-        new()
+    private static EventCategoryType NewCategoryType(string name, string color = "#000000")
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
             Color = color,
         };
+    }
 
     [Fact]
     public async Task ListCategoryTypesAsync_DefaultSort_OrdersByNameAscending()
@@ -1359,7 +1434,7 @@ public sealed class EventServiceTests
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
         await categoryTypes
             .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<EventCategoryType>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -1380,7 +1455,9 @@ public sealed class EventServiceTests
         await categoryTypes
             .Received(1)
             .AddAsync(
-                Arg.Is<EventCategoryType>(c => c.Name == "Talleres" && c.Color == "#112233"),
+                Arg.Is<EventCategoryType>(c =>
+                    c != null && c.Name == "Talleres" && c.Color == "#112233"
+                ),
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -1388,7 +1465,7 @@ public sealed class EventServiceTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags.Contains(CacheTags.EventCategoryTypes)
+                    tags != null && tags.Contains(CacheTags.EventCategoryTypes)
                 )
             );
     }
@@ -1464,7 +1541,9 @@ public sealed class EventServiceTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags.Contains(CacheTags.EventCategoryTypes) && tags.Contains(CacheTags.Events)
+                    tags != null
+                    && tags.Contains(CacheTags.EventCategoryTypes)
+                    && tags.Contains(CacheTags.Events)
                 )
             );
     }
@@ -1510,7 +1589,9 @@ public sealed class EventServiceTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags.Contains(CacheTags.EventCategoryTypes) && tags.Contains(CacheTags.Events)
+                    tags != null
+                    && tags.Contains(CacheTags.EventCategoryTypes)
+                    && tags.Contains(CacheTags.Events)
                 )
             );
     }

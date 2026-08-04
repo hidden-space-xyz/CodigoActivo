@@ -40,13 +40,15 @@ public class EmailService(
             users.Query().Where(u => u.Id == userId).Select(ToRecipient),
             ct
         );
-        if (recipient is null)
-            return Error.NotFound(ErrorCode.UserNotFound);
 
-        if (string.IsNullOrWhiteSpace(recipient.Email))
-            return Error.BadRequest(ErrorCode.EmailRecipientWithoutAddress);
-
-        return await DispatchAsync([recipient], skipped: 0, request, attachments, ct);
+        return recipient switch
+        {
+            null => Error.NotFound(ErrorCode.UserNotFound),
+            { } found when string.IsNullOrWhiteSpace(found.Email) => Error.BadRequest(
+                ErrorCode.EmailRecipientWithoutAddress
+            ),
+            { } found => await DispatchAsync([found], skipped: 0, request, attachments, ct),
+        };
     }
 
     public Task<Result<SendEmailResultResponse>> SendToUsersAsync(
@@ -72,10 +74,9 @@ public class EmailService(
         CancellationToken ct = default
     )
     {
-        if (!await events.ExistsAsync(e => e.Id == eventId, ct))
-            return Error.NotFound(ErrorCode.EventNotFound);
-
-        return await SendToMatchingAsync(
+        return !await events.ExistsAsync(e => e.Id == eventId, ct)
+            ? (Result<SendEmailResultResponse>)Error.NotFound(ErrorCode.EventNotFound)
+            : await SendToMatchingAsync(
             UserFilters.ApplyEventAttendees(users.Query(), eventId, query),
             request,
             attachments,
@@ -93,22 +94,23 @@ public class EmailService(
         var matched = await executor.ToListAsync(source.Select(ToRecipient), ct);
         var addressable = matched.Where(r => !string.IsNullOrWhiteSpace(r.Email)).ToList();
         var recipients = addressable
-            .DistinctBy(r => r.Email!, StringComparer.OrdinalIgnoreCase)
+            .DistinctBy(r => r.Email, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (recipients.Count == 0)
-            return Error.BadRequest(ErrorCode.EmailNoRecipients);
-
-        if (recipients.Count > options.MaxRecipients)
-            return Error.BadRequest(ErrorCode.EmailTooManyRecipients);
-
-        return await DispatchAsync(
-            recipients,
-            matched.Count - addressable.Count,
-            request,
-            attachments,
-            ct
-        );
+        return recipients.Count switch
+        {
+            0 => Error.BadRequest(ErrorCode.EmailNoRecipients),
+            _ when recipients.Count > options.MaxRecipients => Error.BadRequest(
+                ErrorCode.EmailTooManyRecipients
+            ),
+            _ => await DispatchAsync(
+                recipients,
+                matched.Count - addressable.Count,
+                request,
+                attachments,
+                ct
+            ),
+        };
     }
 
     private async Task<Result<SendEmailResultResponse>> DispatchAsync(
@@ -121,7 +123,9 @@ public class EmailService(
     {
         var buffered = await BufferAsync(attachments, ct);
         if (buffered.IsFailure)
+        {
             return buffered.Error!;
+        }
 
         var content = ManualEmail.Render(request.Subject.Trim(), request.Body.Trim());
         var messages = recipients
@@ -162,20 +166,28 @@ public class EmailService(
         CancellationToken ct
     )
     {
-        if (uploads.Count == 0)
+        if (uploads.Count is 0)
+        {
             return Result.Success<IReadOnlyList<EmailAttachment>>([]);
+        }
 
         if (uploads.Count > options.MaxAttachments)
+        {
             return Error.BadRequest(ErrorCode.EmailTooManyAttachments);
+        }
 
         if (uploads.Sum(u => u.Length) > options.MaxAttachmentsBytes)
+        {
             return Error.BadRequest(ErrorCode.EmailAttachmentsTooLarge);
+        }
 
         var buffered = new List<EmailAttachment>(uploads.Count);
         foreach (var upload in uploads)
         {
             if (upload.Length <= 0)
+            {
                 return Error.BadRequest(ErrorCode.EmailAttachmentEmpty);
+            }
 
             var content = new byte[upload.Length];
             await upload.Content.ReadExactlyAsync(content, ct);

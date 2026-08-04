@@ -7,11 +7,15 @@ namespace CodigoActivo.UnitTests.API.OpenApi;
 
 public sealed class OpenApiFiltersTests
 {
-    private static Dictionary<string, OpenApiMediaType> Content(params string[] mediaTypes) =>
-        mediaTypes.ToDictionary(m => m, _ => new OpenApiMediaType());
+    private static Dictionary<string, OpenApiMediaType> Content(params string[] mediaTypes)
+    {
+        return mediaTypes.ToDictionary(m => m, _ => new OpenApiMediaType(), StringComparer.Ordinal);
+    }
 
-    private static OpenApiParameter QueryParam(string name) =>
-        new() { Name = name, In = ParameterLocation.Query };
+    private static OpenApiParameter QueryParam(string name)
+    {
+        return new() { Name = name, In = ParameterLocation.Query };
+    }
 
     [Fact]
     public void Apply_MultipleMediaTypesInResponses_ReducesToApplicationJson()
@@ -50,7 +54,7 @@ public sealed class OpenApiFiltersTests
 
         new JsonResponseMediaTypeFilter().Apply(operation, null!);
 
-        operation.RequestBody!.Content!.Keys.Should().Equal("application/json");
+        operation.RequestBody.Content!.Keys.Should().Equal("application/json");
     }
 
     [Fact]

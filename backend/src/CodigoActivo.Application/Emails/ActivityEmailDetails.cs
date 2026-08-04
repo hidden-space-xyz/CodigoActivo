@@ -31,7 +31,9 @@ public sealed record ActivityEmailDetails(
         var endTime = end.ToString(TimeFormat, CultureInfo.InvariantCulture);
 
         if (start.Date == end.Date)
+        {
             return $"{startDate}, de {startTime} a {endTime} h";
+        }
 
         var endDate = end.ToString(DateFormat, CultureInfo.InvariantCulture);
         return $"del {startDate} a las {startTime} h al {endDate} a las {endTime} h";
@@ -65,6 +67,8 @@ public sealed record ActivityEmailDetails(
         yield return ("Cuándo", ScheduleText(timeZone));
         yield return ("Dónde", Location);
         if (!string.IsNullOrWhiteSpace(roleName))
+        {
             yield return ("Participa como", roleName);
+        }
     }
 }

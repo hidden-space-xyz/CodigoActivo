@@ -2,5 +2,5 @@ namespace CodigoActivo.Domain.Repositories;
 
 public interface IUnitOfWork
 {
-    Task<int> SaveChangesAsync(CancellationToken ct = default);
+    public Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

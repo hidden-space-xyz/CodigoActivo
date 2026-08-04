@@ -14,16 +14,16 @@ public sealed class LocalDayRangeTests
         "Midnight Gap Daylight",
         [
             TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
-                new DateTime(2000, 1, 1),
-                new DateTime(9999, 12, 31),
+                new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                new DateTime(9999, 12, 31, 0, 0, 0, DateTimeKind.Unspecified),
                 TimeSpan.FromHours(1),
                 TimeZoneInfo.TransitionTime.CreateFixedDateRule(
-                    new DateTime(1, 1, 1, 0, 0, 0),
+                    new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
                     9,
                     6
                 ),
                 TimeZoneInfo.TransitionTime.CreateFixedDateRule(
-                    new DateTime(1, 1, 1, 0, 0, 0),
+                    new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
                     4,
                     5
                 )

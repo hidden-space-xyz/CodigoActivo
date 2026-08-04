@@ -75,7 +75,9 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
         where TFeaturable : IdentifiableEntity, IFeaturable
     {
         if (!await set.AnyAsync(e => e.Id == id, ct))
+        {
             return false;
+        }
 
         await set.Where(e => EF.Property<bool>(e, nameof(IFeaturable.Featured)) || e.Id == id)
             .ExecuteUpdateAsync(

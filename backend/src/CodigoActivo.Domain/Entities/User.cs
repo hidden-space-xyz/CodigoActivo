@@ -4,8 +4,8 @@ namespace CodigoActivo.Domain.Entities;
 
 public class User : IdentifiableEntity
 {
-    public string FirstName { get; set; } = null!;
-    public string LastName { get; set; } = null!;
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
 
     public string? Email { get; set; }
     public string? Phone { get; set; }

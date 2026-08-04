@@ -18,8 +18,9 @@ public sealed class CsrfValidationMiddlewareTests
     private readonly IAntiforgery antiforgery = Substitute.For<IAntiforgery>();
     private bool nextCalled;
 
-    private CsrfValidationMiddleware BuildSut() =>
-        new(
+    private CsrfValidationMiddleware BuildSut()
+    {
+        return new(
             _ =>
             {
                 nextCalled = true;
@@ -28,6 +29,7 @@ public sealed class CsrfValidationMiddlewareTests
             antiforgery,
             NullLogger<CsrfValidationMiddleware>.Instance
         );
+    }
 
     private static DefaultHttpContext NewContext(
         string method,
@@ -37,6 +39,7 @@ public sealed class CsrfValidationMiddlewareTests
         var context = new DefaultHttpContext { Response = { Body = new MemoryStream() } };
         context.Request.Method = method;
         if (metadata is not null)
+        {
             context.SetEndpoint(
                 new Endpoint(
                     _ => Task.CompletedTask,
@@ -44,6 +47,8 @@ public sealed class CsrfValidationMiddlewareTests
                     "test"
                 )
             );
+        }
+
         return context;
     }
 

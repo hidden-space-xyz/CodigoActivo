@@ -77,7 +77,10 @@ public class SitemapService(
 
         var urlSet = new XElement(Xmlns + "urlset");
         foreach (var path in StaticPaths)
+        {
             urlSet.Add(new XElement(Xmlns + "url", new XElement(Xmlns + "loc", baseUrl + path)));
+        }
+
         AddEntityUrls(urlSet, baseUrl, "events", eventEntries);
         AddEntityUrls(urlSet, baseUrl, "announcements", announcementEntries);
         AddEntityUrls(urlSet, baseUrl, "resources", resourceEntries);

@@ -44,10 +44,10 @@ public sealed class AuthServiceTests
         );
     }
 
-    private List<User> CaptureAddedUsers()
+    private async Task<List<User>> CaptureAddedUsersAsync()
     {
         var added = new List<User>();
-        users.AddAsync(Arg.Do<User>(added.Add), Arg.Any<CancellationToken>());
+        await users.AddAsync(Arg.Do<User>(added.Add), Arg.Any<CancellationToken>());
         return added;
     }
 
@@ -62,8 +62,9 @@ public sealed class AuthServiceTests
         string? otpCodeHash = null,
         DateTimeOffset? otpExpiresAt = null,
         DateTimeOffset? otpLastSentAt = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id ?? Guid.NewGuid(),
             FirstName = "Ana",
@@ -78,6 +79,7 @@ public sealed class AuthServiceTests
             OtpLastSentAt = otpLastSentAt,
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
+    }
 
     private static RegisterRequest NewRegister(
         string email = "ana@test.com",
@@ -86,8 +88,9 @@ public sealed class AuthServiceTests
         DateOnly? birthDate = null,
         Gender gender = Gender.Female,
         IReadOnlyList<RegisterMinorRequest>? minors = null
-    ) =>
-        new(
+    )
+    {
+        return new(
             "  Ana  ",
             "  Ruiz  ",
             email,
@@ -97,16 +100,22 @@ public sealed class AuthServiceTests
             gender,
             minors
         );
+    }
 
     private static RegisterMinorRequest NewMinor(
         DateOnly? birthDate = null,
         Gender gender = Gender.Other
-    ) => new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate, gender);
+    )
+    {
+        return new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate, gender);
+    }
 
-    private void ExistsReturns(params bool[] seq) =>
+    private void ExistsReturns(params bool[] seq)
+    {
         users
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(seq[0], seq.Skip(1).ToArray());
+            .Returns(seq[0], [.. seq.Skip(1)]);
+    }
 
     private User FindReturns(User? user)
     {
@@ -114,27 +123,95 @@ public sealed class AuthServiceTests
         return user!;
     }
 
-    private Task<int> AssertNotSaved() =>
-        uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
+    private Task<int> AssertNotSavedAsync()
+    {
+        return uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static bool IsRegisteredFirstAdmin(
+        User? user,
+        DateTimeOffset now,
+        TimeSpan otpLifetime
+    )
+    {
+        if (user is null)
+        {
+            return false;
+        }
+
+        var hasIdentity =
+            string.Equals(user.FirstName, "Ana", StringComparison.Ordinal)
+            && string.Equals(user.LastName, "Ruiz", StringComparison.Ordinal)
+            && string.Equals(user.Email, "ana@test.com", StringComparison.Ordinal)
+            && string.Equals(user.Phone, "+34123456789", StringComparison.Ordinal);
+        var hasCredentials =
+            string.Equals(user.PasswordHash, "fake:password123", StringComparison.Ordinal)
+            && user.OtpCodeHash is not null
+            && user.OtpCodeHash.StartsWith(FakePasswordHasher.Prefix, StringComparison.Ordinal);
+        var hasCatalog =
+            user.IsAdmin
+            && user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
+            && user.UserTypeId == SeedIds.UserTypes.Participant;
+        var hasSchedule =
+            user.OtpExpiresAt == now + otpLifetime
+            && user.OtpLastSentAt == now
+            && user.CreatedAt == now;
+
+        return hasIdentity && hasCredentials && hasCatalog && hasSchedule;
+    }
+
+    private static bool IsPendingParticipantAdult(User? user)
+    {
+        if (user is null)
+        {
+            return false;
+        }
+
+        var isPendingNonAdmin =
+            user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending && !user.IsAdmin;
+
+        return isPendingNonAdmin
+            && user.Gender is Gender.Female
+            && user.UserTypeId == SeedIds.UserTypes.Participant;
+    }
+
+    private static bool IsDependentParticipantMinor(User? user)
+    {
+        if (user is null)
+        {
+            return false;
+        }
+
+        var isDependentLeo =
+            user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent && string.Equals(user.FirstName, "Leo", StringComparison.Ordinal);
+
+        return isDependentLeo
+            && user.Gender is Gender.Other
+            && user.ParentId is not null
+            && user.UserTypeId == SeedIds.UserTypes.Participant;
+    }
 
     private static User NewPendingWithOtp(
         TestClock clock,
         string code = "the-otp-code",
         DateTimeOffset? otpLastSentAt = null
-    ) =>
-        NewUser(
+    )
+    {
+        return NewUser(
             statusId: SeedIds.UserStatusTypes.Pending,
             otpCodeHash: FakePasswordHasher.Prefix + code,
             otpExpiresAt: clock.UtcNow.AddMinutes(5),
             otpLastSentAt: otpLastSentAt ?? clock.UtcNow.AddMinutes(-10)
         );
+    }
 
     [Fact]
     public async Task LoginAsync_UserNotFound_ReturnsUnauthorized()
     {
+        User? missing = null;
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((User?)null);
+            .Returns(missing);
 
         var result = await sut.LoginAsync(
             new LoginRequest("nobody@test.com", "password123"),
@@ -142,7 +219,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Theory]
@@ -160,7 +237,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -176,7 +253,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Theory]
@@ -193,16 +270,18 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.Forbidden, expected);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
-    public static TheoryData<Guid, ErrorCode> BlockedStatuses() =>
-        new()
+    public static TheoryData<Guid, ErrorCode> BlockedStatuses()
+    {
+        return new()
         {
             { SeedIds.UserStatusTypes.Blocked, ErrorCode.UserAccountBlocked },
             { SeedIds.UserStatusTypes.Dependent, ErrorCode.UserAccountIsDependent },
             { SeedIds.UserStatusTypes.Pending, ErrorCode.UserAccountPendingVerification },
         };
+    }
 
     [Fact]
     public async Task LoginAsync_PendingUserVerificationNotRequired_ActivatesUser()
@@ -251,9 +330,10 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task GetCurrentAsync_UserMissing_ReturnsUnauthorized()
     {
+        User? missing = null;
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns((User?)null);
+            .Returns(missing);
 
         var result = await sut.GetCurrentAsync(
             Guid.NewGuid(),
@@ -272,7 +352,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterAdultCannotBeMinor);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Theory]
@@ -293,7 +373,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterContactInfoRequired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -304,7 +384,7 @@ public sealed class AuthServiceTests
         var result = await sut.RegisterAsync(NewRegister(), TestContext.Current.CancellationToken);
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
@@ -321,7 +401,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterMinorBirthDateNotMinor);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -346,19 +426,7 @@ public sealed class AuthServiceTests
             .Received(1)
             .AddAsync(
                 Arg.Is<User>(u =>
-                    u.FirstName == "Ana"
-                    && u.LastName == "Ruiz"
-                    && u.Email == "ana@test.com"
-                    && u.Phone == "+34123456789"
-                    && u.PasswordHash == "fake:password123"
-                    && u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
-                    && u.IsAdmin
-                    && u.UserTypeId == SeedIds.UserTypes.Participant
-                    && u.OtpCodeHash != null
-                    && u.OtpCodeHash.StartsWith(FakePasswordHasher.Prefix, StringComparison.Ordinal)
-                    && u.OtpExpiresAt == clock.UtcNow + verification.OtpLifetime
-                    && u.OtpLastSentAt == clock.UtcNow
-                    && u.CreatedAt == clock.UtcNow
+                    IsRegisteredFirstAdmin(u, clock.UtcNow, verification.OtpLifetime)
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -368,7 +436,7 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task RegisterAsync_NewAdult_SendsGuidOtpHashedAtRestAndInvalidatesCache()
     {
-        var added = CaptureAddedUsers();
+        var added = await CaptureAddedUsersAsync();
         ExistsReturns(false, false);
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
@@ -397,14 +465,16 @@ public sealed class AuthServiceTests
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags => tags.Contains(CacheTags.Users))
+                Arg.Is<IReadOnlyCollection<string>>(tags =>
+                    tags != null && tags.Contains(CacheTags.Users)
+                )
             );
     }
 
     [Fact]
     public async Task RegisterAsync_EmailSendFails_SucceedsAndClearsLastSent()
     {
-        var added = CaptureAddedUsers();
+        var added = await CaptureAddedUsersAsync();
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         ExistsReturns(false, false);
         users
@@ -429,7 +499,7 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task RegisterAsync_EmailSendCancelled_PropagatesOperationCanceledException()
     {
-        var added = CaptureAddedUsers();
+        var added = await CaptureAddedUsersAsync();
         emailSender.ThrowOnSend = new OperationCanceledException("registration cancelled");
         ExistsReturns(false, false);
 
@@ -465,24 +535,13 @@ public sealed class AuthServiceTests
         await users
             .Received(1)
             .AddAsync(
-                Arg.Is<User>(u =>
-                    u.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
-                    && !u.IsAdmin
-                    && u.Gender == Gender.Female
-                    && u.UserTypeId == SeedIds.UserTypes.Participant
-                ),
+                Arg.Is<User>(u => IsPendingParticipantAdult(u)),
                 Arg.Any<CancellationToken>()
             );
         await users
             .Received(1)
             .AddAsync(
-                Arg.Is<User>(u =>
-                    u.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-                    && u.FirstName == "Leo"
-                    && u.Gender == Gender.Other
-                    && u.ParentId != null
-                    && u.UserTypeId == SeedIds.UserTypes.Participant
-                ),
+                Arg.Is<User>(u => IsDependentParticipantMinor(u)),
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -500,7 +559,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -521,17 +580,19 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.OtpInvalidOrExpired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
-    public static TheoryData<string, bool, int?> InvalidOtpCases() =>
-        new()
+    public static TheoryData<string, bool, int?> InvalidOtpCases()
+    {
+        return new()
         {
             { "   ", true, 5 },
             { "123456", false, 5 },
             { "123456", true, null },
             { "123456", true, -5 },
         };
+    }
 
     [Theory]
     [MemberData(nameof(InvalidOtpCases))]
@@ -558,7 +619,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.OtpInvalidOrExpired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -574,7 +635,7 @@ public sealed class AuthServiceTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.OtpInvalidOrExpired);
         user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -695,7 +756,7 @@ public sealed class AuthServiceTests
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -734,7 +795,7 @@ public sealed class AuthServiceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         user.OtpCodeHash.Should().Be(previousHash);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -755,7 +816,7 @@ public sealed class AuthServiceTests
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
         user.OtpCodeHash.Should().Be(previousHash);
         user.OtpLastSentAt.Should().Be(previousSentAt);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -772,7 +833,7 @@ public sealed class AuthServiceTests
         result.IsSuccess.Should().BeTrue();
         user.PasswordResetCodeHash.Should().BeNull();
         user.PasswordResetLastSentAt.Should().BeNull();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     private static User NewUserWithResetCode(
@@ -801,7 +862,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -816,11 +877,13 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
-    public static TheoryData<Guid> IneligibleResetStatuses() =>
-        new() { SeedIds.UserStatusTypes.Blocked, SeedIds.UserStatusTypes.Dependent };
+    public static TheoryData<Guid> IneligibleResetStatuses()
+    {
+        return [SeedIds.UserStatusTypes.Blocked, SeedIds.UserStatusTypes.Dependent];
+    }
 
     [Theory]
     [MemberData(nameof(IneligibleResetStatuses))]
@@ -837,7 +900,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -853,7 +916,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -910,7 +973,7 @@ public sealed class AuthServiceTests
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordResetCodeHash.Should().BeNull();
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -925,7 +988,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -940,7 +1003,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -955,7 +1018,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -973,7 +1036,7 @@ public sealed class AuthServiceTests
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
         user.PasswordHash.Should().Be(previousPasswordHash);
         user.PasswordResetCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -989,7 +1052,7 @@ public sealed class AuthServiceTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.PasswordResetInvalidOrExpired);
-        await AssertNotSaved();
+        await AssertNotSavedAsync();
     }
 
     [Fact]

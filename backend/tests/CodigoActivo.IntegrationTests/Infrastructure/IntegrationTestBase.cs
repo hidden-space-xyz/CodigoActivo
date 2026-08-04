@@ -42,13 +42,18 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         var client = host.CreateClient();
         using var response = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(credentials.Identifier, credentials.Password)
+            new LoginRequest(credentials.Identifier, credentials.Password),
+            Ct
         );
-        return response.StatusCode != HttpStatusCode.OK
-            ? throw new InvalidOperationException(
-                $"Test login failed for '{credentials.Identifier}' with status {(int)response.StatusCode}."
-            )
-            : client;
+        if (response.StatusCode is not HttpStatusCode.OK)
+        {
+            var status = $"{response.StatusCode:D}";
+            throw new InvalidOperationException(
+                $"Test login failed for '{credentials.Identifier}' with status {status}."
+            );
+        }
+
+        return client;
     }
 
     protected Task<HttpClient> LoginAsAdminAsync()

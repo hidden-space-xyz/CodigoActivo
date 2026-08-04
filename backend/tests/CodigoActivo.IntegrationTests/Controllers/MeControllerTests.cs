@@ -13,8 +13,9 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    private static FileEntity Thumbnail(Guid id) =>
-        new()
+    private static FileEntity Thumbnail(Guid id)
+    {
+        return new()
         {
             Id = id,
             Name = "thumb",
@@ -22,6 +23,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             UploadedAt = SeededAt,
             UploadedBy = TestSeedData.Users.AdminId,
         };
+    }
 
     private async Task<Guid> SeedAssignmentAsync(
         Guid userId,
@@ -99,7 +101,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/me/assigned-activities", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/me/assigned-activities"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -116,7 +118,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/me/assigned-activities", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/me/assigned-activities"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = await ReadAssignedAsync(response);
@@ -149,7 +151,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
 
         var response = await client.GetAsync(
-            $"/api/me/assigned-activities?eventId={targetEventId}",
+            TestUri.Rel($"/api/me/assigned-activities?eventId={targetEventId}"),
             Ct
         );
 
@@ -175,7 +177,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     private async Task<List<EventHistoryResponse>> GetHistoryAsMemberAsync()
     {
         var client = await LoginAsMemberAsync();
-        var response = await client.GetAsync("/api/me/event-history", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/me/event-history"), Ct);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return await ReadHistoryAsync(response);
     }
@@ -185,7 +187,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/me/event-history", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/me/event-history"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -354,7 +356,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 
         var entry = history.Should().ContainSingle().Subject;
         entry.MyRating.Should().NotBeNull();
-        entry.MyRating!.Score.Should().Be(4);
+        entry.MyRating.Score.Should().Be(4);
         entry.MyRating.MostLiked.Should().Be("El ambiente");
     }
 }

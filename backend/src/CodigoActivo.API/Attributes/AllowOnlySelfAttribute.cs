@@ -22,7 +22,9 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
         }
 
         if (user.IsAdmin())
+        {
             return;
+        }
 
         if (
             !context.RouteData.Values.TryGetValue(RouteKey, out var raw)
@@ -34,7 +36,9 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
         }
 
         if (targetUserId == currentUserId)
+        {
             return;
+        }
 
         var users = services.GetRequiredService<IUserRepository>();
         var isOwnChild = await users.ExistsAsync(
@@ -42,7 +46,9 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             context.HttpContext.RequestAborted
         );
         if (isOwnChild)
+        {
             return;
+        }
 
         context.Result = new ForbidResult();
     }

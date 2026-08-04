@@ -45,7 +45,7 @@ public sealed class ThrottledEmailSenderTests
         var sender = Create(transport, new EmailGuardOptions { RecipientBurst = 1 });
 
         await sender.SendAsync(Message(), TestContext.Current.CancellationToken);
-        var act = () => sender.SendAsync(Message());
+        var act = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<EmailRateLimitedException>();
         transport.Sent.Should().ContainSingle();
@@ -60,11 +60,11 @@ public sealed class ThrottledEmailSenderTests
         };
         var sender = Create(transport, new EmailGuardOptions { RecipientBurst = 1 });
 
-        var first = () => sender.SendAsync(Message());
+        var first = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
         await first.Should().ThrowAsync<InvalidOperationException>();
 
         transport.ThrowOnSend = null;
-        var second = () => sender.SendAsync(Message());
+        var second = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
         await second.Should().ThrowAsync<EmailRateLimitedException>();
         transport.Sent.Should().BeEmpty();

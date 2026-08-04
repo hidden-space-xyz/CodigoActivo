@@ -109,15 +109,16 @@ try
                 ctx.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
         });
 
-    builder.Services.AddAuthorization(options =>
-        options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()
-    );
+    builder.Services.AddAuthorizationBuilder()
+        .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
     var outputCacheLifetime = TimeSpan.FromMinutes(1);
     builder.Services.AddOutputCache(options =>
     {
         foreach (var tag in CacheTags.OutputCached)
+        {
             options.AddPolicy(tag, policy => policy.Expire(outputCacheLifetime).Tag(tag));
+        }
 
         options.AddPolicy(
             OutputCachePolicies.Seo,
@@ -142,7 +143,7 @@ try
 
     var app = builder.Build();
 
-    await InitializeDatabaseAsync(app);
+    await InitializeDatabaseAsync(app, app.Lifetime.ApplicationStopping);
     LogEmailGuardState(app);
 
     app.Use(
@@ -206,34 +207,45 @@ static SameSiteMode ResolveSameSite(string? value)
 
 static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
 {
-    if (
-        ex is not null
-        || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError
-    )
+    return httpContext.Response.StatusCode switch
     {
-        return LogEventLevel.Error;
-    }
-
-    return httpContext.Response.StatusCode >= StatusCodes.Status400BadRequest
-        ? LogEventLevel.Warning
-        : LogEventLevel.Information;
+        _ when ex is not null => LogEventLevel.Error,
+        >= StatusCodes.Status500InternalServerError => LogEventLevel.Error,
+        >= StatusCodes.Status400BadRequest => LogEventLevel.Warning,
+        _ => LogEventLevel.Information,
+    };
 }
 
-static async Task InitializeDatabaseAsync(WebApplication app)
+static async Task InitializeDatabaseAsync(WebApplication app, CancellationToken ct)
 {
     await using var scope = app.Services.CreateAsyncScope();
-    var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
+    await MigrateDatabaseAsync(scope.ServiceProvider, logger, ct);
+    await SeedDatabaseAsync(scope.ServiceProvider, logger, ct);
+    await SyncDemoDataAsync(scope.ServiceProvider, app.Configuration, logger, ct);
+}
+
+static async Task MigrateDatabaseAsync(
+    IServiceProvider services,
+    ILogger<Program> logger,
+    CancellationToken ct
+)
+{
     logger.LogInformation("Applying database migrations");
-    await db.Database.MigrateAsync();
+    await services.GetRequiredService<CodigoActivoDbContext>().Database.MigrateAsync(ct);
     logger.LogInformation("Database migrations applied");
+}
 
+static async Task SeedDatabaseAsync(
+    IServiceProvider services,
+    ILogger<Program> logger,
+    CancellationToken ct
+)
+{
     logger.LogInformation("Seeding database");
-    await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
+    await services.GetRequiredService<DatabaseSeeder>().SeedAsync(ct);
     logger.LogInformation("Database seeding complete");
-
-    await SyncDemoDataAsync(scope.ServiceProvider, app.Configuration, logger);
 }
 
 static void LogEmailGuardState(WebApplication app)
@@ -242,10 +254,13 @@ static void LogEmailGuardState(WebApplication app)
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
     if (!logger.IsEnabled(LogLevel.Information))
+    {
         return;
+    }
 
     logger.LogInformation(
-        "Outbound email guard armed: per recipient {RecipientBurst} burst, {RecipientPerHour}/hour, {RecipientPerDay}/day; overall {GlobalBurst} burst, {GlobalPerHour}/hour with {Reserve} reserved for account email. Admin-written email is exempt",
+        "Outbound email guard armed: per recipient {RecipientBurst} burst, {RecipientPerHour}/hour, {RecipientPerDay}/day; overall "
+            + "{GlobalBurst} burst, {GlobalPerHour}/hour with {Reserve} reserved for account email. Admin-written email is exempt",
         guard.RecipientBurst,
         guard.RecipientPerHour,
         guard.RecipientPerDay,
@@ -258,7 +273,8 @@ static void LogEmailGuardState(WebApplication app)
 static async Task SyncDemoDataAsync(
     IServiceProvider services,
     IConfiguration config,
-    ILogger<Program> logger
+    ILogger<Program> logger,
+    CancellationToken ct
 )
 {
     var demoSeeder = services.GetRequiredService<DemoDataSeeder>();
@@ -271,7 +287,7 @@ static async Task SyncDemoDataAsync(
         }
         else
         {
-            await demoSeeder.RemoveAsync();
+            await demoSeeder.RemoveAsync(ct);
         }
     }
     catch (Exception ex)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
@@ -131,7 +132,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync(fileName: "avatar.png");
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{created.Id}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/files/{created.Id}"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var meta = await response.ReadJsonAsync<FileResponse>(Ct);
@@ -145,7 +146,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{Guid.NewGuid()}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/files/{Guid.NewGuid()}"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.FileNotFound);
     }
@@ -157,7 +158,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync(bytes, "photo.png");
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{created.Id}/content", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/files/{created.Id}/content"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
@@ -185,7 +186,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/files/{id}/content", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/files/{id}/content"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.FileContentMissingFromStorage);
     }
@@ -196,12 +197,13 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync(TestSeedData.ValidPng(), "cached.png");
         var client = CreateClient();
 
-        using var first = await client.GetAsync($"/api/files/{created.Id}/content", Ct);
+        using var first = await client.GetAsync(TestUri.Rel($"/api/files/{created.Id}/content"), Ct);
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         var etag = first.Headers.ETag;
         etag.Should().NotBeNull();
-        etag!.IsWeak.Should().BeFalse();
-        etag.Tag.Should().Be($"\"{created.Id:N}-{created.UploadedAt.UtcTicks}\"");
+        etag.IsWeak.Should().BeFalse();
+        var ticks = created.UploadedAt.UtcTicks.ToString(CultureInfo.InvariantCulture);
+        etag.Tag.Should().Be($"\"{created.Id:N}-{ticks}\"");
 
         using var conditional = new HttpRequestMessage(
             HttpMethod.Get,
@@ -251,7 +253,8 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await FindAsync<FileEntity>(created.Id);
         stored.Should().BeNull();
 
-        using var followUp = await CreateClient().GetAsync($"/api/files/{created.Id}", Ct);
+        using var followUp = await CreateClient()
+            .GetAsync(TestUri.Rel($"/api/files/{created.Id}"), Ct);
         followUp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 

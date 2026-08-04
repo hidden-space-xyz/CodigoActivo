@@ -64,47 +64,73 @@ public sealed class ReportServiceTests
         );
     }
 
-    private void HasEvents(params Event[] list) => events.Query().Returns(list.AsQueryable());
+    private void HasEvents(params Event[] list)
+    {
+        events.Query().Returns(list.AsQueryable());
+    }
 
-    private void HasRoleTypes(params ActivityRoleType[] list) =>
+    private void HasRoleTypes(params ActivityRoleType[] list)
+    {
         roleTypes.Query().Returns(list.AsQueryable());
+    }
 
-    private void HasAssignments(params ActivityUserRoleAssignment[] assignments) =>
+    private void HasAssignments(params ActivityUserRoleAssignment[] assignments)
+    {
         activities.QueryAssignments().Returns(assignments.AsQueryable());
+    }
 
-    private void HasUsers(params User[] list) => users.Query().Returns(list.AsQueryable());
+    private void HasUsers(params User[] list)
+    {
+        users.Query().Returns(list.AsQueryable());
+    }
 
     private static ActivityUserRoleAssignment SummaryAsg(
         Guid userId,
         Guid roleId,
         Guid statusId,
         Guid? eventId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             UserId = userId,
             ActivityId = Guid.NewGuid(),
-            Activity = new Activity { EventId = eventId ?? QueriedEventId },
+            Activity = SummaryActivity(eventId ?? QueriedEventId),
             ActivityRoleTypeId = roleId,
             AssignmentStatusId = statusId,
         };
+    }
+
+    private static Activity SummaryActivity(Guid? eventId = null)
+    {
+        return new()
+        {
+            Title = "Actividad de prueba",
+            Description = "Descripción de la actividad",
+            Location = "Sala principal",
+            EventId = eventId ?? Guid.Empty,
+        };
+    }
 
     private static ActivityRoleType Role(
         Guid id,
         string name,
         IEnumerable<ActivityUserRoleAssignment> assignments
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
+            Description = "Descripción de prueba",
             Id = id,
             Name = name,
-            Assignments = assignments.Where(a => a.ActivityRoleTypeId == id).ToList(),
+            Assignments = [.. assignments.Where(a => a.ActivityRoleTypeId == id)],
         };
+    }
 
     [Fact]
     public async Task GetEventSummaryAsync_EventMissing_ReturnsNotFound()
     {
-        HasEvents(new Event { Id = Guid.NewGuid(), Title = "Otra" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = Guid.NewGuid(), Title = "Otra" });
 
         var result = await sut.GetEventSummaryAsync(
             QueriedEventId,
@@ -138,9 +164,10 @@ public sealed class ReportServiceTests
         HasEvents(
             new Event
             {
+                Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Feria",
-                Activities = [new Activity(), new Activity()],
+                Activities = [SummaryActivity(), SummaryActivity()],
             }
         );
         HasAssignments(assignments);
@@ -178,7 +205,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventSummaryAsync_NoAssignments_ReturnsZeroCounts()
     {
-        HasEvents(new Event { Id = QueriedEventId, Title = "Vacío" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = QueriedEventId, Title = "Vacío" });
         HasAssignments();
         HasRoleTypes();
 
@@ -205,21 +232,23 @@ public sealed class ReportServiceTests
         DateOnly? birthDate = null,
         string typeName = "Socio",
         Gender gender = Gender.Female
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = first,
             LastName = first + "-last",
-            Email = email ?? first + "@test.local",
+            Email = email ?? (first + "@test.local"),
             Phone = "555-" + first,
             BirthDate = birthDate ?? new DateOnly(1990, 6, 15),
             Gender = gender,
             Parent = parent,
             ParentId = parent?.Id,
             UserTypeId = userTypeId ?? SeedIds.UserTypes.Member,
-            UserType = new UserType { Name = typeName, Color = "#EF4444" },
+            UserType = new UserType { Description = "Descripción de prueba", Name = typeName, Color = "#EF4444" },
         };
+    }
 
     private static ActivityUserRoleAssignment Enroll(
         User user,
@@ -240,16 +269,19 @@ public sealed class ReportServiceTests
             ActivityId = activityId ?? Guid.NewGuid(),
             Activity = new Activity
             {
+                Description = "Descripción de la actividad",
+                Location = "Sala principal",
                 EventId = eventId ?? QueriedEventId,
                 Title = activityTitle,
                 ActivityStartsAt = startsAt,
                 ActivityEndsAt = startsAt + (duration ?? TimeSpan.FromHours(2)),
             },
             ActivityRoleTypeId = AlphaRoleId,
-            ActivityRoleType = new ActivityRoleType { Id = AlphaRoleId, Name = "Alpha" },
+            ActivityRoleType = new ActivityRoleType { Description = "Descripción de prueba", Id = AlphaRoleId, Name = "Alpha" },
             AssignmentStatusId = statusId,
             AssignmentStatus = new AssignmentStatusType
             {
+                Description = "Descripción de prueba",
                 Id = statusId,
                 Name = statusName,
                 Color = "#fff",
@@ -263,7 +295,10 @@ public sealed class ReportServiceTests
     private void HasConfirmedAttendees(params User[] attendees)
     {
         foreach (var attendee in attendees)
+        {
             Enroll(attendee, "Taller", When, Confirmed, "Confirmada");
+        }
+
         HasUsers(attendees);
     }
 
@@ -307,7 +342,7 @@ public sealed class ReportServiceTests
         first.UserTypeName.Should().Be("Socio");
         first.UserTypeColor.Should().Be("#EF4444");
         first.Guardian.Should().NotBeNull();
-        first.Guardian!.FirstName.Should().Be("Tutora");
+        first.Guardian.FirstName.Should().Be("Tutora");
         first.Guardian.LastName.Should().Be("Tutora-last");
         first.Guardian.Email.Should().Be("Tutora@test.local");
         first.Guardian.Phone.Should().Be("555-Tutora");
@@ -547,8 +582,9 @@ public sealed class ReportServiceTests
         string typeColor,
         DateTimeOffset createdAt,
         User? parent = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = first,
@@ -557,8 +593,9 @@ public sealed class ReportServiceTests
             CreatedAt = createdAt,
             Parent = parent,
             ParentId = parent?.Id,
-            UserType = new UserType { Name = typeName, Color = typeColor },
+            UserType = new UserType { Description = "Descripción de prueba", Name = typeName, Color = typeColor },
         };
+    }
 
     private static ActivityUserRoleAssignment BadgeAsg(
         User user,
@@ -566,14 +603,17 @@ public sealed class ReportServiceTests
         DateTimeOffset startsAt,
         Guid statusId,
         Guid? eventId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             UserId = user.Id,
             User = user,
             ActivityId = Guid.NewGuid(),
             Activity = new Activity
             {
+                Description = "Descripción de la actividad",
+                Location = "Sala principal",
                 EventId = eventId ?? QueriedEventId,
                 Title = activityTitle,
                 ActivityStartsAt = startsAt,
@@ -581,6 +621,7 @@ public sealed class ReportServiceTests
             ActivityRoleTypeId = Guid.NewGuid(),
             AssignmentStatusId = statusId,
         };
+    }
 
     [Fact]
     public async Task GetEventBadgesAsync_EventMissing_ReturnsNotFound()
@@ -607,7 +648,7 @@ public sealed class ReportServiceTests
         var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", createdAt, parent);
         var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444", createdAt);
 
-        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             BadgeAsg(adult, "Charla", When.AddHours(2), Confirmed),
             BadgeAsg(adult, "Taller", When, Confirmed),
@@ -643,7 +684,7 @@ public sealed class ReportServiceTests
         childBadge.UserId.Should().Be(child.Id);
         childBadge.UserTypeName.Should().Be("Participante");
         childBadge.Guardian.Should().NotBeNull();
-        childBadge.Guardian!.FirstName.Should().Be("Marta");
+        childBadge.Guardian.FirstName.Should().Be("Marta");
         childBadge.Guardian.LastName.Should().Be("Miembro");
         childBadge.Guardian.Phone.Should().Be("600-Marta");
         childBadge.Activities.Should().Equal("Taller infantil");
@@ -652,7 +693,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventBadgesAsync_NoConfirmedAssignments_ReturnsEmptyBadges()
     {
-        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = QueriedEventId, Title = "Feria" });
         HasAssignments();
 
         var result = await sut.GetEventBadgesAsync(
@@ -668,9 +709,11 @@ public sealed class ReportServiceTests
         string title,
         DateTimeOffset startsAt,
         Guid? eventId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
+            Description = "Descripción de la actividad",
             Id = Guid.NewGuid(),
             EventId = eventId ?? QueriedEventId,
             Title = title,
@@ -678,6 +721,7 @@ public sealed class ReportServiceTests
             ActivityStartsAt = startsAt,
             ActivityEndsAt = startsAt.AddHours(1),
         };
+    }
 
     private static ActivityUserRoleAssignment RosterAsg(
         User user,
@@ -695,7 +739,7 @@ public sealed class ReportServiceTests
             ActivityId = activity.Id,
             Activity = activity,
             ActivityRoleTypeId = roleId,
-            ActivityRoleType = new ActivityRoleType { Id = roleId, Name = roleName },
+            ActivityRoleType = new ActivityRoleType { Description = "Descripción de prueba", Id = roleId, Name = roleName },
             AssignmentStatusId = statusId,
         };
     }
@@ -732,7 +776,7 @@ public sealed class ReportServiceTests
         var requestedUser = NewUser("Rita");
         var deniedUser = NewUser("Dario");
 
-        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             RosterAsg(adult, charla, Confirmed),
             RosterAsg(adult, taller, Confirmed),
@@ -771,7 +815,7 @@ public sealed class ReportServiceTests
         childRow.BirthDate.Should().Be(new DateOnly(2016, 3, 2));
         childRow.Email.Should().BeNull();
         childRow.Guardian.Should().NotBeNull();
-        childRow.Guardian!.FirstName.Should().Be("Marta");
+        childRow.Guardian.FirstName.Should().Be("Marta");
         childRow.Guardian.LastName.Should().Be("Marta-last");
         childRow.Guardian.Email.Should().Be("Marta@test.local");
         childRow.Guardian.Phone.Should().Be("555-Marta");
@@ -795,7 +839,7 @@ public sealed class ReportServiceTests
         var vera = NewUser("Vera");
         vera.LastName = "Alfa";
 
-        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = QueriedEventId, Title = "Feria" });
         HasAssignments(
             RosterAsg(bruno, taller, Confirmed),
             RosterAsg(bruno, taller, Confirmed, SeedIds.ActivityRoleTypes.Leader, "Líder"),
@@ -822,7 +866,7 @@ public sealed class ReportServiceTests
     [Fact]
     public async Task GetEventRosterAsync_NoConfirmedAssignments_ReturnsEmptyActivities()
     {
-        HasEvents(new Event { Id = QueriedEventId, Title = "Feria" });
+        HasEvents(new Event { Subtitle = "Subtítulo del evento", Id = QueriedEventId, Title = "Feria" });
         HasAssignments();
 
         var result = await sut.GetEventRosterAsync(
@@ -856,19 +900,30 @@ public sealed class ReportServiceTests
         result.Should().BeEquivalentTo(new DashboardSummaryResponse(1, 2, 3, 4, 5, 6));
     }
 
-    private void HasActivityRows(params Activity[] list) =>
+    private void HasActivityRows(params Activity[] list)
+    {
         activities.Query().Returns(list.AsQueryable());
+    }
 
-    private void HasResources(params Resource[] list) =>
+    private void HasResources(params Resource[] list)
+    {
         resources.Query().Returns(list.AsQueryable());
+    }
 
-    private void HasAnnouncements(params Announcement[] list) =>
+    private void HasAnnouncements(params Announcement[] list)
+    {
         announcements.Query().Returns(list.AsQueryable());
+    }
 
-    private void HasPartners(params Partner[] list) => partners.Query().Returns(list.AsQueryable());
+    private void HasPartners(params Partner[] list)
+    {
+        partners.Query().Returns(list.AsQueryable());
+    }
 
-    private void HasCategoryTypes(params EventCategoryType[] list) =>
+    private void HasCategoryTypes(params EventCategoryType[] list)
+    {
         eventCategoryTypes.Query().Returns(list.AsQueryable());
+    }
 
     private static User AnalyticsUser(
         Guid typeId,
@@ -876,8 +931,9 @@ public sealed class ReportServiceTests
         DateTimeOffset createdAt,
         Guid? parentId = null,
         Gender gender = Gender.Female
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = "U",
@@ -888,20 +944,29 @@ public sealed class ReportServiceTests
             ParentId = parentId,
             Gender = gender,
         };
+    }
 
     private static ActivityUserRoleAssignment Insc(
         Guid eventId,
         Guid statusId,
         DateTimeOffset createdAt
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             UserId = Guid.NewGuid(),
             ActivityId = Guid.NewGuid(),
-            Activity = new Activity { EventId = eventId },
+            Activity = new Activity
+            {
+                Description = "Descripción de la actividad",
+                Location = "Sala principal",
+                Title = "Actividad de prueba",
+                EventId = eventId,
+            },
             AssignmentStatusId = statusId,
             CreatedAt = createdAt,
         };
+    }
 
     private static Activity AnalyticsActivity(
         DateTimeOffset startsAt,
@@ -915,14 +980,17 @@ public sealed class ReportServiceTests
     {
         var activity = new Activity
         {
+            Description = "Descripción de la actividad",
+            Location = "Sala principal",
             Id = Guid.NewGuid(),
             Title = title,
             ActivityStartsAt = startsAt,
             CreatedAt = createdAt,
             EventId = eventId,
-            Event = new Event { Id = eventId, Title = eventTitle },
+            Event = new Event { Subtitle = "Subtítulo del evento", Id = eventId, Title = eventTitle },
         };
         if (desired > 0)
+        {
             activity.RoleCapacities.Add(
                 new ActivityRoleCapacity
                 {
@@ -930,21 +998,32 @@ public sealed class ReportServiceTests
                     ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
                 }
             );
+        }
+
         for (var i = 0; i < confirmed; i++)
+        {
             activity.Assignments.Add(
                 new ActivityUserRoleAssignment { AssignmentStatusId = Confirmed }
             );
+        }
+
         return activity;
     }
 
-    private static DashboardKpiResponse Kpi(DashboardAnalyticsResponse r, string key) =>
-        r.Kpis.Single(k => k.Key == key);
+    private static DashboardKpiResponse Kpi(DashboardAnalyticsResponse r, string key)
+    {
+        return r.Kpis.Single(k => string.Equals(k.Key, key, StringComparison.Ordinal));
+    }
 
-    private static int Slice(IReadOnlyList<DashboardSliceResponse> slices, string key) =>
-        slices.Single(s => s.Key == key).Count;
+    private static int Slice(IReadOnlyList<DashboardSliceResponse> slices, string key)
+    {
+        return slices.Single(s => string.Equals(s.Key, key, StringComparison.Ordinal)).Count;
+    }
 
-    private static IReadOnlyList<int> Series(DashboardTimeSeriesResponse ts, string key) =>
-        ts.Series.Single(s => s.Key == key).Values;
+    private static IReadOnlyList<int> Series(DashboardTimeSeriesResponse ts, string key)
+    {
+        return ts.Series.Single(s => string.Equals(s.Key, key, StringComparison.Ordinal)).Values;
+    }
 
     [Fact]
     public async Task GetDashboardAnalyticsAsync_MixedData_ProducesExpectedSeriesAndBreakdowns()
@@ -978,6 +1057,7 @@ public sealed class ReportServiceTests
         HasEvents(
             new Event
             {
+                Subtitle = "Subtítulo del evento",
                 Id = e1,
                 Title = "Feria",
                 CreatedAt = Utc(2026, 1, 5),
@@ -985,6 +1065,7 @@ public sealed class ReportServiceTests
             },
             new Event
             {
+                Subtitle = "Subtítulo del evento",
                 Id = e2,
                 Title = "Taller",
                 CreatedAt = Utc(2026, 5, 10),
@@ -1012,27 +1093,33 @@ public sealed class ReportServiceTests
         HasResources(
             new Resource
             {
+                Subtitle = "Subtítulo del recurso",
+                Title = "Recurso de prueba",
                 CreatedAt = Utc(2026, 3, 1),
                 ResourceTypeId = SeedIds.ResourceTypes.Internal,
             },
             new Resource
             {
+                Subtitle = "Subtítulo del recurso",
+                Title = "Recurso de prueba",
                 CreatedAt = Utc(2026, 4, 1),
                 ResourceTypeId = SeedIds.ResourceTypes.External,
             },
             new Resource
             {
+                Subtitle = "Subtítulo del recurso",
+                Title = "Recurso de prueba",
                 CreatedAt = Utc(2025, 12, 15),
                 ResourceTypeId = SeedIds.ResourceTypes.External,
             }
         );
 
         HasAnnouncements(
-            new Announcement { CreatedAt = Utc(2026, 2, 1) },
-            new Announcement { CreatedAt = Utc(2026, 5, 1) }
+            new Announcement { Subtitle = "Subtítulo de la noticia", Title = "Noticia de prueba", CreatedAt = Utc(2026, 2, 1) },
+            new Announcement { Subtitle = "Subtítulo de la noticia", Title = "Noticia de prueba", CreatedAt = Utc(2026, 5, 1) }
         );
 
-        HasPartners(new Partner { CreatedAt = Utc(2026, 1, 10) });
+        HasPartners(new Partner { Name = "Entidad colaboradora", CreatedAt = Utc(2026, 1, 10) });
 
         var occEventId = new Guid("cccccccc-0000-0000-0000-000000000001");
         HasActivityRows(
@@ -1118,6 +1205,8 @@ public sealed class ReportServiceTests
         occEvent.Activities[0].Desired.Should().Be(5);
     }
 
-    private static DateTimeOffset Utc(int year, int month, int day) =>
-        new(year, month, day, 12, 0, 0, TimeSpan.Zero);
+    private static DateTimeOffset Utc(int year, int month, int day)
+    {
+        return new(year, month, day, 12, 0, 0, TimeSpan.Zero);
+    }
 }

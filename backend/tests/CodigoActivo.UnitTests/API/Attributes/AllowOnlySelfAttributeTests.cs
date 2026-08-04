@@ -26,7 +26,10 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         services = new ServiceCollection().AddSingleton(users).BuildServiceProvider();
     }
 
-    public void Dispose() => services.Dispose();
+    public void Dispose()
+    {
+        services.Dispose();
+    }
 
     private AuthorizationFilterContext BuildContext(
         ClaimsPrincipal principal,
@@ -45,13 +48,19 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         return new AuthorizationFilterContext(actionContext, []);
     }
 
-    private static ClaimsPrincipal Anonymous() => new(new ClaimsIdentity());
+    private static ClaimsPrincipal Anonymous()
+    {
+        return new(new ClaimsIdentity());
+    }
 
     private static ClaimsPrincipal User(Guid id, bool isAdmin = false)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id.ToString()) };
         if (isAdmin)
+        {
             claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+        }
+
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
     }
 
@@ -65,7 +74,10 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         context.Result.Should().BeOfType<ChallengeResult>();
         await users
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(
+                Arg.Any<Expression<Func<User, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]
@@ -78,7 +90,10 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         context.Result.Should().BeNull();
         await users
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(
+                Arg.Any<Expression<Func<User, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]
@@ -92,7 +107,10 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         context.Result.Should().BeNull();
         await users
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(
+                Arg.Any<Expression<Func<User, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]
@@ -105,7 +123,10 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         context.Result.Should().BeOfType<ForbidResult>();
         await users
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(
+                Arg.Any<Expression<Func<User, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]
@@ -118,7 +139,10 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         context.Result.Should().BeOfType<ForbidResult>();
         await users
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+            .ExistsAsync(
+                Arg.Any<Expression<Func<User, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]
@@ -172,8 +196,8 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         captured.Should().NotBeNull();
-        var accepts = captured!.Compile();
-        accepts(new User { Id = childId, ParentId = callerId }).Should().BeTrue();
-        accepts(new User { Id = childId, ParentId = Guid.NewGuid() }).Should().BeFalse();
+        var accepts = captured.Compile();
+        accepts(new User { LastName = "Apellido", FirstName = "Nombre", Id = childId, ParentId = callerId }).Should().BeTrue();
+        accepts(new User { LastName = "Apellido", FirstName = "Nombre", Id = childId, ParentId = Guid.NewGuid() }).Should().BeFalse();
     }
 }

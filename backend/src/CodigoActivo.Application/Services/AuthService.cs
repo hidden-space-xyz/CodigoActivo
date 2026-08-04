@@ -48,16 +48,22 @@ public class AuthService(
         }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked)
+        {
             return Error.Forbidden(ErrorCode.UserAccountBlocked);
+        }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent)
+        {
             return Error.Forbidden(ErrorCode.UserAccountIsDependent);
+        }
 
         var selfHealed = false;
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending)
         {
             if (verification.Required)
+            {
                 return Error.Forbidden(ErrorCode.UserAccountPendingVerification);
+            }
 
             user.Verify(SeedIds.UserStatusTypes.Active, clock.UtcNow);
             selfHealed = true;
@@ -90,21 +96,29 @@ public class AuthService(
         var today = clock.Today;
 
         if (request.BirthDate.IsMinor(today))
+        {
             return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
+        }
 
         var isFirstUser = !await users.ExistsAsync(_ => true, ct);
 
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
+        {
             return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
+        }
 
         if (await users.ExistsAsync(u => u.Email == email || u.Phone == phone, ct))
+        {
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
+        }
 
         var minorRequests = request.Minors ?? [];
         if (minorRequests.Any(minor => !minor.BirthDate.IsMinor(today)))
+        {
             return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
+        }
 
         var now = clock.UtcNow;
 
@@ -154,7 +168,9 @@ public class AuthService(
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
         if (otpCode is not null)
+        {
             await TrySendVerificationEmailAsync(adult, otpCode, ct);
+        }
 
         var createdAdult = await users.GetByIdWithDetailsAsync(adult.Id, ct);
         var children = await users.ListChildrenWithDetailsAsync(adult.Id, ct);
@@ -175,7 +191,9 @@ public class AuthService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (
             user.UserStatusTypeId != SeedIds.UserStatusTypes.Pending
@@ -196,7 +214,9 @@ public class AuthService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (
             !verification.Required
@@ -209,7 +229,9 @@ public class AuthService(
 
         var now = clock.UtcNow;
         if (now < user.OtpLastSentAt + verification.ResendCooldown)
+        {
             return Error.Conflict(ErrorCode.OtpResendCooldownActive);
+        }
 
         var otpCode = Guid.NewGuid().ToString();
         try
@@ -234,7 +256,9 @@ public class AuthService(
     {
         var email = request.Email.NormalizeEmailOrNull();
         if (email is null)
+        {
             return Result.Success();
+        }
 
         var user = await users.FindAsync(u => u.Email == email, ct);
         if (
@@ -249,7 +273,9 @@ public class AuthService(
 
         var now = clock.UtcNow;
         if (now < user.PasswordResetLastSentAt + passwordReset.ResendCooldown)
+        {
             return Result.Success();
+        }
 
         var code = Guid.NewGuid().ToString();
         try
@@ -284,7 +310,9 @@ public class AuthService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (
             user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked

@@ -14,7 +14,9 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     public void Dispose()
     {
         foreach (var provider in providers)
+        {
             provider.Dispose();
+        }
     }
 
     private EmailGuardOptions Build(Dictionary<string, string?> settings)
@@ -32,7 +34,7 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     public void AddCodigoActivo_ValidEmailGuardSettings_BindsOptionsFromConfiguration()
     {
         var options = Build(
-            new Dictionary<string, string?>
+            new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["EmailGuard:RecipientBurst"] = "7",
                 ["EmailGuard:RecipientPerHour"] = "4",
@@ -61,7 +63,7 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     public void AddCodigoActivo_MissingOrInvalidValues_FallsBackToTheShippedLimits()
     {
         var options = Build(
-            new Dictionary<string, string?>
+            new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["EmailGuard:RecipientBurst"] = "0",
                 ["EmailGuard:RecipientPerDay"] = "not-a-number",
@@ -80,7 +82,7 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     public void AddCodigoActivo_ReserveNotBelowTheGlobalBurst_ClampsSoAccountEmailCanStillSend()
     {
         var options = Build(
-            new Dictionary<string, string?>
+            new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["EmailGuard:GlobalBurst"] = "50",
                 ["EmailGuard:GlobalCredentialReserve"] = "80",

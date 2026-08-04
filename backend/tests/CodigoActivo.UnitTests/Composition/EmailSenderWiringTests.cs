@@ -59,7 +59,10 @@ public sealed class EmailSenderWiringTests
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(
-                new Dictionary<string, string?> { ["ACCOUNT_VERIFICATION_REQUIRED"] = "false" }
+                new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
+                }
             )
             .Build();
 

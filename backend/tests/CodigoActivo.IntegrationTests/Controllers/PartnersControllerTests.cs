@@ -41,7 +41,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         await SeedPartnerAsync("Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/partners", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/partners"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<PartnerResponse>>(Ct);
@@ -60,7 +60,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
 
         var response = await client.GetAsync(
-            "/api/partners?fromDateFrom=2024-06-15&fromDateTo=2024-12-31",
+            TestUri.Rel("/api/partners?fromDateFrom=2024-06-15&fromDateTo=2024-12-31"),
             Ct
         );
 
@@ -75,7 +75,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/partners/{Guid.NewGuid()}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/partners/{Guid.NewGuid()}"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.PartnerNotFound);
     }

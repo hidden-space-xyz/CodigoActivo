@@ -1,3 +1,4 @@
+using System.Globalization;
 using AwesomeAssertions;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
@@ -35,7 +36,9 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
         for (var i = 0; i < 3; i++)
+        {
             Consume(limiter, Recipient).Should().Be(EmailLimitScope.None);
+        }
 
         Consume(limiter, Recipient).Should().Be(EmailLimitScope.Recipient);
     }
@@ -47,7 +50,9 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), clock);
 
         for (var i = 0; i < 4; i++)
+        {
             Consume(limiter, Recipient);
+        }
 
         clock.UtcNow = clock.UtcNow.AddHours(1);
 
@@ -63,8 +68,10 @@ public sealed class EmailSendLimiterTests
         var delivered = 0;
         for (var hour = 0; hour < 8; hour++)
         {
-            while (Consume(limiter, Recipient) == EmailLimitScope.None)
+            while (Consume(limiter, Recipient) is EmailLimitScope.None)
+            {
                 delivered++;
+            }
 
             clock.UtcNow = clock.UtcNow.AddHours(1);
         }
@@ -114,7 +121,11 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
         for (var i = 0; i < 6; i++)
-            Consume(limiter, $"member{i}@example.test").Should().Be(EmailLimitScope.None);
+        {
+            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test")
+                .Should()
+                .Be(EmailLimitScope.None);
+        }
 
         Consume(limiter, "fresh@example.test").Should().Be(EmailLimitScope.Global);
     }
@@ -125,7 +136,9 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
         for (var i = 0; i < 6; i++)
-            Consume(limiter, $"member{i}@example.test");
+        {
+            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test");
+        }
 
         limiter
             .TryConsume(EmailKind.PasswordReset, "locked-out@example.test")
@@ -154,10 +167,14 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
         for (var i = 0; i < 3; i++)
+        {
             Consume(limiter, Recipient);
+        }
 
         for (var i = 0; i < 30; i++)
+        {
             Consume(limiter, Recipient).Should().Be(EmailLimitScope.Recipient);
+        }
 
         Consume(limiter, "bystander@example.test").Should().Be(EmailLimitScope.None);
     }
@@ -168,11 +185,17 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
         for (var i = 0; i < 6; i++)
-            Consume(limiter, $"member{i}@example.test");
+        {
+            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test");
+        }
 
         var tracked = limiter.TrackedRecipients;
         for (var i = 0; i < 50; i++)
-            Consume(limiter, $"sprayed{i}@example.test").Should().Be(EmailLimitScope.Global);
+        {
+            Consume(limiter, $"sprayed{i.ToString(CultureInfo.InvariantCulture)}@example.test")
+                .Should()
+                .Be(EmailLimitScope.Global);
+        }
 
         limiter.TrackedRecipients.Should().Be(tracked);
     }
@@ -184,7 +207,9 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(Options(), clock);
 
         for (var i = 0; i < 3; i++)
+        {
             Consume(limiter, Recipient);
+        }
 
         clock.UtcNow = clock.UtcNow.AddHours(-5);
 
@@ -216,7 +241,9 @@ public sealed class EmailSendLimiterTests
 
         Consume(limiter, "barely-used@example.test");
         for (var i = 0; i < 3; i++)
+        {
             Consume(limiter, Recipient);
+        }
 
         limiter.TrackedRecipients.Should().Be(2);
 
@@ -232,10 +259,18 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(new EmailGuardOptions(), new TestClock());
 
         for (var i = 0; i < 200; i++)
-            Consume(limiter, $"attendee{i}@example.test").Should().Be(EmailLimitScope.None);
+        {
+            Consume(limiter, $"attendee{i.ToString(CultureInfo.InvariantCulture)}@example.test")
+                .Should()
+                .Be(EmailLimitScope.None);
+        }
 
         for (var i = 0; i < 200; i++)
-            Consume(limiter, $"attendee{i}@example.test").Should().Be(EmailLimitScope.None);
+        {
+            Consume(limiter, $"attendee{i.ToString(CultureInfo.InvariantCulture)}@example.test")
+                .Should()
+                .Be(EmailLimitScope.None);
+        }
 
         limiter
             .TryConsume(EmailKind.PasswordReset, "member@example.test")
@@ -250,12 +285,16 @@ public sealed class EmailSendLimiterTests
         var limiter = new EmailSendLimiter(new EmailGuardOptions(), clock);
 
         for (var i = 0; i < 12; i++)
+        {
             Consume(limiter, "guardian@example.test").Should().Be(EmailLimitScope.None);
+        }
 
         clock.UtcNow = clock.UtcNow.AddHours(1);
 
         for (var i = 0; i < 12; i++)
+        {
             Consume(limiter, "guardian@example.test").Should().Be(EmailLimitScope.None);
+        }
     }
 
     [Fact]
@@ -272,8 +311,10 @@ public sealed class EmailSendLimiterTests
             200,
             _ =>
             {
-                if (Consume(limiter, Recipient) == EmailLimitScope.None)
+                if (Consume(limiter, Recipient) is EmailLimitScope.None)
+                {
                     Interlocked.Increment(ref granted);
+                }
             }
         );
 

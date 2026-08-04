@@ -2,7 +2,6 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
-using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 

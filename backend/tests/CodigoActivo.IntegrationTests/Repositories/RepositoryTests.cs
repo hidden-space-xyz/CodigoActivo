@@ -21,7 +21,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
-        await new DatabaseSeeder(db).SeedAsync();
+        await new DatabaseSeeder(db).SeedAsync(Ct);
 
         db.Users.Add(
             new User
@@ -54,8 +54,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         return ValueTask.CompletedTask;
     }
 
-    private static Partner NewPartner(string name = "Partner", int tier = 1) =>
-        new()
+    private static Partner NewPartner(string name = "Partner", int tier = 1)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
@@ -65,6 +66,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 
     private static User NewUser(
         string firstName = "First",
@@ -74,8 +76,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         Guid? statusId = null,
         Guid? parentId = null,
         Guid? userTypeId = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             FirstName = firstName,
@@ -88,9 +91,11 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             ParentId = parentId,
             CreatedAt = Fixed,
         };
+    }
 
-    private static Event NewEvent(string title = "Event", bool featured = false) =>
-        new()
+    private static Event NewEvent(string title = "Event", bool featured = false)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -103,9 +108,11 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 
-    private static Announcement NewAnnouncement(string title = "Ann", bool featured = false) =>
-        new()
+    private static Announcement NewAnnouncement(string title = "Ann", bool featured = false)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -116,9 +123,11 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 
-    private static Resource NewResource(string title = "Resource") =>
-        new()
+    private static Resource NewResource(string title = "Resource")
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -129,14 +138,16 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 
     private static Activity NewActivity(
         Guid eventId,
         string title = "Activity",
         DateTimeOffset? startsAt = null,
         DateTimeOffset? endsAt = null
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -150,23 +161,28 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             CreatedAt = Fixed,
             CreatedBy = AuthorId,
         };
+    }
 
-    private static ActivityRoleType NewRoleType(string name = "Role") =>
-        new()
+    private static ActivityRoleType NewRoleType(string name = "Role")
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
             Description = "d",
         };
+    }
 
-    private static AssignmentStatusType NewAssignmentStatus(string name = "Confirmed") =>
-        new()
+    private static AssignmentStatusType NewAssignmentStatus(string name = "Confirmed")
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Name = name,
             Description = "d",
             Color = "#0f0",
         };
+    }
 
     [Fact]
     public async Task Query_PartnersExist_ReturnsAllRowsUntracked()
@@ -217,7 +233,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         var found = await repo.FindAsync(p => p.Name == "Target", Ct);
         found.Should().NotBeNull();
-        found!.Id.Should().Be(target.Id);
+        found.Id.Should().Be(target.Id);
         (await repo.FindAsync(p => p.Name == "Missing", Ct)).Should().BeNull();
     }
 
@@ -321,7 +337,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var result = await repo.GetByIdWithDetailsAsync(user.Id, Ct);
 
         result.Should().NotBeNull();
-        result!.UserStatusType.Name.Should().Be("Activo");
+        result.UserStatusType.Name.Should().Be("Activo");
         result.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
     }
 
@@ -502,7 +518,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var loaded = await repo.GetForEditAsync(ev.Id, Ct);
 
         loaded.Should().NotBeNull();
-        loaded!.Categories.Should().ContainSingle();
+        loaded.Categories.Should().ContainSingle();
         (await repo.GetForEditAsync(Guid.NewGuid(), Ct)).Should().BeNull();
     }
 
@@ -580,7 +596,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var found = await repo.GetAssignmentAsync(user.Id, activity.Id, Ct);
 
         found.Should().NotBeNull();
-        found!.ActivityRoleType.Name.Should().Be("Ayudante");
+        found.ActivityRoleType.Name.Should().Be("Ayudante");
         found.AssignmentStatus.Name.Should().Be("Pending");
         (await repo.GetAssignmentAsync(user.Id, Guid.NewGuid(), Ct)).Should().BeNull();
     }

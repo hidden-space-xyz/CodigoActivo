@@ -23,8 +23,10 @@ public sealed class DemoDataSeederTests
         graph = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
     }
 
-    private DateOnly LocalDate(DateTimeOffset value) =>
-        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, clock.TimeZone).DateTime);
+    private DateOnly LocalDate(DateTimeOffset value)
+    {
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, clock.TimeZone).DateTime);
+    }
 
     [Fact]
     public void BuildGraph_Default_ProducesExpectedCounts()
@@ -47,7 +49,7 @@ public sealed class DemoDataSeederTests
         var activitiesPerEvent = graph.Activities.GroupBy(a => a.EventId).ToList();
 
         activitiesPerEvent.Should().HaveSameCount(graph.Events);
-        activitiesPerEvent.Should().OnlyContain(g => g.Count() == 5);
+        activitiesPerEvent.Should().OnlyContain(g => g.Take(6).Count() == 5);
     }
 
     [Fact]
@@ -153,7 +155,9 @@ public sealed class DemoDataSeederTests
         var byActivity = graph.Assignments.GroupBy(x => x.ActivityId).ToList();
 
         byActivity.Should().HaveSameCount(graph.Activities);
-        byActivity.Should().OnlyContain(g => g.Select(x => x.UserId).Distinct().Count() == 5);
+        byActivity
+            .Should()
+            .OnlyContain(g => g.Select(x => x.UserId).Distinct().Take(6).Count() == 5);
     }
 
     [Fact]
@@ -164,7 +168,9 @@ public sealed class DemoDataSeederTests
         byActivity
             .Should()
             .OnlyContain(g =>
-                g.Count(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader) == 1
+                g.Where(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader)
+                    .Take(2)
+                    .Count() == 1
             );
     }
 
@@ -238,11 +244,14 @@ public sealed class DemoDataSeederTests
     {
         var overSubscribed = graph.Activities.Where(activity =>
             activity.RoleCapacities.Any(capacity =>
-                graph.Assignments.Count(x =>
-                    x.ActivityId == activity.Id
-                    && x.ActivityRoleTypeId == capacity.ActivityRoleTypeId
-                    && x.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
-                ) > capacity.DesiredCount
+                graph
+                    .Assignments.Where(x =>
+                        x.ActivityId == activity.Id
+                        && x.ActivityRoleTypeId == capacity.ActivityRoleTypeId
+                        && x.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                    )
+                    .Skip(capacity.DesiredCount)
+                    .Any()
             )
         );
 
@@ -412,9 +421,17 @@ public sealed class DemoDataSeederTests
         graph
             .Ratings.Should()
             .OnlyContain(r =>
-                (r.MostLiked == null || r.MostLiked.Length <= EventRating.MaxAnswerLength)
-                && (r.LeastLiked == null || r.LeastLiked.Length <= EventRating.MaxAnswerLength)
-                && (r.Suggestions == null || r.Suggestions.Length <= EventRating.MaxAnswerLength)
+                r.MostLiked == null || r.MostLiked.Length <= EventRating.MaxAnswerLength
+            );
+        graph
+            .Ratings.Should()
+            .OnlyContain(r =>
+                r.LeastLiked == null || r.LeastLiked.Length <= EventRating.MaxAnswerLength
+            );
+        graph
+            .Ratings.Should()
+            .OnlyContain(r =>
+                r.Suggestions == null || r.Suggestions.Length <= EventRating.MaxAnswerLength
             );
         graph.Ratings.Should().Contain(r => r.MostLiked == null);
         graph.Ratings.Should().Contain(r => r.MostLiked != null);

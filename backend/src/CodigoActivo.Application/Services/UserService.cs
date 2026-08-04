@@ -50,7 +50,9 @@ public class UserService(
         var source = users.Query();
 
         if (!isAdmin)
+        {
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
+        }
 
         source = UserFilters.Apply(source, query);
 
@@ -82,7 +84,9 @@ public class UserService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         var rules = request.BirthDate.IsMinor(clock.Today)
             ? await ApplyMinorContactRulesAsync(user, request.ParentId, id, ct)
@@ -95,7 +99,9 @@ public class UserService(
                 ct
             );
         if (rules.IsFailure)
+        {
             return rules.Error!;
+        }
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
@@ -113,10 +119,14 @@ public class UserService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (user.IsAdmin)
+        {
             return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
+        }
 
         users.Remove(user);
         await uow.SaveChangesAsync(ct);
@@ -128,13 +138,19 @@ public class UserService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (user.IsAdmin == isAdmin)
+        {
             return Result.Success();
+        }
 
         if (!isAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
+        {
             return Error.Forbidden(ErrorCode.UserCannotRemoveLastAdmin);
+        }
 
         user.IsAdmin = isAdmin;
         user.UpdatedAt = clock.UtcNow;
@@ -150,10 +166,14 @@ public class UserService(
     {
         var user = await users.FindAsync(u => u.Id == id, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (!await userTypes.ExistsAsync(ut => ut.Id == userTypeId, ct))
+        {
             return Error.NotFound(ErrorCode.UserTypeNotFound);
+        }
 
         if (user.UserTypeId != userTypeId)
         {
@@ -174,15 +194,21 @@ public class UserService(
     {
         var parent = await users.FindAsync(u => u.Id == parentId, ct);
         if (parent is null)
+        {
             return Error.NotFound(ErrorCode.ParentUserNotFound);
+        }
 
         var today = clock.Today;
 
         if (parent.BirthDate.IsMinor(today))
+        {
             return Error.BadRequest(ErrorCode.UserParentIsMinor);
+        }
 
         if (!request.BirthDate.IsMinor(today))
+        {
             return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
+        }
 
         var now = clock.UtcNow;
         var child = new User
@@ -211,13 +237,19 @@ public class UserService(
     {
         var user = await users.FindAsync(u => u.Id == userId, ct);
         if (user is null)
+        {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
 
         if (string.IsNullOrEmpty(user.PasswordHash))
+        {
             return Error.BadRequest(ErrorCode.UserPasswordNotSet);
+        }
 
         if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
+        {
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+        }
 
         user.PasswordHash = hasher.Hash(request.NewPassword);
         user.UpdatedAt = clock.UtcNow;
@@ -259,20 +291,30 @@ public class UserService(
     )
     {
         if (parentId is not { } parent)
+        {
             return Error.BadRequest(ErrorCode.UserParentIdRequired);
+        }
 
         if (parent == excludeUserId)
+        {
             return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
+        }
 
         var parentUser = await users.FindAsync(u => u.Id == parent, ct);
         if (parentUser is null)
+        {
             return Error.NotFound(ErrorCode.ParentUserNotFound);
+        }
 
         if (parentUser.BirthDate.IsMinor(clock.Today))
+        {
             return Error.BadRequest(ErrorCode.UserParentIsMinor);
+        }
 
         if (user.ParentId is { } currentParent && currentParent != parent)
+        {
             return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
+        }
 
         user.ParentId = parent;
         user.Email = null;
@@ -292,18 +334,26 @@ public class UserService(
     )
     {
         if (parentId is not null)
+        {
             return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
+        }
 
         var email = rawEmail.NormalizeEmailOrNull();
         var phone = rawPhone.NormalizeOrNull();
         if (email is null || phone is null)
+        {
             return Error.BadRequest(ErrorCode.UserContactInfoRequired);
+        }
 
         if (await users.EmailExistsAsync(email, excludeUserId, ct))
+        {
             return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
+        }
 
         if (await users.PhoneExistsAsync(phone, excludeUserId, ct))
+        {
             return Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
+        }
 
         user.ParentId = null;
         user.Email = email;

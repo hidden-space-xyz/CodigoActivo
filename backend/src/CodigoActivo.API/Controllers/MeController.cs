@@ -13,16 +13,15 @@ public class MeController(IActivityService activities, IParticipationService par
     : ApiControllerBase
 {
     [HttpGet("assigned-activities")]
-    public async Task<ActionResult<IReadOnlyList<AssignedActivityResponse>>> AssignedActivities(
-        [FromQuery] Guid? eventId,
-        CancellationToken ct
-    )
+    public async Task<
+        ActionResult<IReadOnlyList<AssignedActivityResponse>>
+    > AssignedActivitiesAsync([FromQuery] Guid? eventId, CancellationToken ct)
     {
         return Ok(await activities.ListAssignedAsync(UserId, eventId, ct));
     }
 
     [HttpGet("event-history")]
-    public async Task<ActionResult<IReadOnlyList<EventHistoryResponse>>> EventHistory(
+    public async Task<ActionResult<IReadOnlyList<EventHistoryResponse>>> EventHistoryAsync(
         CancellationToken ct
     )
     {

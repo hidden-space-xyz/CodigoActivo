@@ -33,6 +33,7 @@ public sealed class MappingExtensionsTests
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType
             {
+                Description = "Descripción de prueba",
                 Id = statusId,
                 Name = "Active",
                 Color = "#00ff00",
@@ -41,6 +42,7 @@ public sealed class MappingExtensionsTests
             UserTypeId = typeId,
             UserType = new UserType
             {
+                Description = "Descripción de prueba",
                 Id = typeId,
                 Name = "Member",
                 Color = "#123456",
@@ -74,7 +76,6 @@ public sealed class MappingExtensionsTests
             FirstName = "N",
             LastName = "N",
             UserStatusTypeId = statusId,
-            UserStatusType = null!,
         };
 
         var response = user.ToResponse();

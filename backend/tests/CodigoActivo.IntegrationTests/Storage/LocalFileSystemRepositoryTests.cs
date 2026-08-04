@@ -31,13 +31,17 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
         DeleteDirectory(rootPath);
 
         if (!fallbackExistedBeforeTest)
+        {
             DeleteDirectory(FallbackRoot);
+        }
     }
 
     private static void DeleteDirectory(string path)
     {
         if (Directory.Exists(path))
+        {
             Directory.Delete(path, recursive: true);
+        }
     }
 
     [Fact]
@@ -62,8 +66,9 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
         await sut.SaveAsync("greeting.txt", new MemoryStream(payload), Ct);
 
         await using var stream = await sut.OpenReadAsync("greeting.txt", Ct);
+        Assert.NotNull(stream);
         await using var buffer = new MemoryStream();
-        await stream!.CopyToAsync(buffer, Ct);
+        await stream.CopyToAsync(buffer, Ct);
         buffer.ToArray().Should().Equal(payload);
     }
 
@@ -75,8 +80,9 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
         await sut.SaveAsync("dup.bin", new MemoryStream([9, 9]), Ct);
 
         await using var stream = await sut.OpenReadAsync("dup.bin", Ct);
+        Assert.NotNull(stream);
         await using var buffer = new MemoryStream();
-        await stream!.CopyToAsync(buffer, Ct);
+        await stream.CopyToAsync(buffer, Ct);
         buffer.ToArray().Should().Equal([9, 9]);
     }
 

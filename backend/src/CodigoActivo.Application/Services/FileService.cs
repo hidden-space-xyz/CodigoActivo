@@ -27,7 +27,7 @@ public class FileService(
     public async Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var matches = await files.GetAsync(f => f.Id == id, ct);
-        var response = matches.Count == 0 ? null : matches[0].ToResponse();
+        var response = matches.Count is 0 ? null : matches[0].ToResponse();
 
         return response is null ? Error.NotFound(ErrorCode.FileNotFound) : Result.Success(response);
     }
@@ -39,14 +39,18 @@ public class FileService(
     {
         var meta = await GetByIdAsync(id, ct);
         if (meta.IsFailure)
+        {
             return meta.Error!;
+        }
 
         var stream = await storage.OpenReadAsync(
             StoredName(meta.Value.Id, meta.Value.Extension),
             ct
         );
         if (stream is null)
+        {
             return Error.NotFound(ErrorCode.FileContentMissingFromStorage);
+        }
 
         var format = await stream.DetectImageFormatAsync(ct);
         stream.Position = 0;
@@ -67,7 +71,9 @@ public class FileService(
     {
         var detection = await ValidateAndDetectAsync(upload, ct);
         if (detection.IsFailure)
+        {
             return detection.Error!;
+        }
 
         var format = detection.Value;
         var file = new FileEntity
@@ -103,11 +109,15 @@ public class FileService(
     {
         var file = await files.FindAsync(f => f.Id == id, ct);
         if (file is null)
+        {
             return Error.NotFound(ErrorCode.FileNotFound);
+        }
 
         var detection = await ValidateAndDetectAsync(upload, ct);
         if (detection.IsFailure)
+        {
             return detection.Error!;
+        }
 
         var format = detection.Value;
         var oldStoredName = StoredName(file.Id, file.Extension);
@@ -131,12 +141,17 @@ public class FileService(
         catch
         {
             if (extensionChanged)
+            {
                 storage.Delete(newStoredName);
+            }
+
             throw;
         }
 
         if (extensionChanged)
+        {
             storage.Delete(oldStoredName);
+        }
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         return file.ToResponse();
@@ -146,10 +161,14 @@ public class FileService(
     {
         var file = await files.FindAsync(f => f.Id == id, ct);
         if (file is null)
+        {
             return Error.NotFound(ErrorCode.FileNotFound);
+        }
 
         if (await files.IsInUseAsync(id, ct))
+        {
             return Error.Conflict(ErrorCode.FileInUse);
+        }
 
         var storedName = StoredName(file.Id, file.Extension);
 
@@ -170,7 +189,9 @@ public class FileService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (logger.IsEnabled(LogLevel.Debug))
+            {
                 logger.LogDebug(ex, "Best-effort orphan cleanup failed for file {FileId}", fileId);
+            }
         }
     }
 
@@ -182,37 +203,34 @@ public class FileService(
         try
         {
             var candidates = fileIds.Distinct().ToList();
-            if (candidates.Count == 0)
+            if (candidates.Count is 0)
+            {
                 return;
+            }
 
             var inUse = await files.GetInUseAsync(candidates, ct);
             var orphanIds = candidates.Except(inUse).ToList();
-            if (orphanIds.Count == 0)
+            if (orphanIds.Count is 0)
+            {
                 return;
+            }
 
             var orphans = await files.GetAsync(f => orphanIds.Contains(f.Id), ct);
-            if (orphans.Count == 0)
+            if (orphans.Count is 0)
+            {
                 return;
+            }
 
             foreach (var file in orphans)
+            {
                 files.Remove(file);
+            }
+
             await uow.SaveChangesAsync(ct);
 
             foreach (var file in orphans)
             {
-                try
-                {
-                    storage.Delete(StoredName(file.Id, file.Extension));
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    if (logger.IsEnabled(LogLevel.Debug))
-                        logger.LogDebug(
-                            ex,
-                            "Best-effort stored content deletion failed for file {FileId}",
-                            file.Id
-                        );
-                }
+                DeleteStoredContent(file.Id, file.Extension);
             }
 
             await cacheInvalidator.InvalidateAsync(CacheTags.Files);
@@ -220,11 +238,32 @@ public class FileService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (logger.IsEnabled(LogLevel.Debug))
+            {
                 logger.LogDebug(
                     ex,
                     "Best-effort orphan cleanup failed for files {FileIds}",
                     fileIds
                 );
+            }
+        }
+    }
+
+    private void DeleteStoredContent(Guid fileId, string extension)
+    {
+        try
+        {
+            storage.Delete(StoredName(fileId, extension));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    ex,
+                    "Best-effort stored content deletion failed for file {FileId}",
+                    fileId
+                );
+            }
         }
     }
 
@@ -234,21 +273,31 @@ public class FileService(
     )
     {
         if (upload is null)
+        {
             return Error.BadRequest(ErrorCode.FileUploadMissing);
+        }
 
         if (upload.Length <= 0)
+        {
             return Error.BadRequest(ErrorCode.FileUploadEmpty);
+        }
 
         if (upload.Length > options.MaxSizeBytes)
+        {
             return Error.BadRequest(ErrorCode.FileUploadTooLarge);
+        }
 
         if (!upload.Content.CanSeek)
+        {
             return Error.BadRequest(ErrorCode.FileUploadStreamNotSeekable);
+        }
 
         upload.Content.Position = 0;
         var format = await upload.Content.DetectImageFormatAsync(ct);
         if (format is null)
+        {
             return Error.BadRequest(ErrorCode.FileUploadUnsupportedFormat);
+        }
 
         upload.Content.Position = 0;
         return format;
@@ -263,7 +312,9 @@ public class FileService(
     {
         var name = Path.GetFileName(fileName ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(name))
+        {
             name = "file";
+        }
 
         return name.Length > MaxNameLength ? name[..MaxNameLength] : name;
     }

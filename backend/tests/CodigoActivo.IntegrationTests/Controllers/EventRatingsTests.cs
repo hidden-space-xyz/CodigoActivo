@@ -85,8 +85,9 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private static FileEntity Thumbnail(Guid id) =>
-        new()
+    private static FileEntity Thumbnail(Guid id)
+    {
+        return new()
         {
             Id = id,
             Name = "thumb",
@@ -94,6 +95,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             UploadedAt = At,
             UploadedBy = TestSeedData.Users.AdminId,
         };
+    }
 
     [Fact]
     public async Task SaveRating_Anonymous_ReturnsUnauthorized()
@@ -184,7 +186,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var rating = await response.ReadJsonAsync<EventRatingResponse>(Ct);
         rating.Should().NotBeNull();
-        rating!.Score.Should().Be(5);
+        rating.Score.Should().Be(5);
         rating.MostLiked.Should().Be("La organización");
         rating.LeastLiked.Should().Be("La cola de la comida");
         rating.Suggestions.Should().Be("Más talleres de robótica");
@@ -214,13 +216,13 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         var rating = await second.ReadJsonAsync<EventRatingResponse>(Ct);
         rating.Should().NotBeNull();
-        rating!.Score.Should().Be(2);
+        rating.Score.Should().Be(2);
         rating.MostLiked.Should().Be("Otra cosa");
         rating.LeastLiked.Should().BeNull();
         rating.UpdatedAt.Should().NotBeNull();
 
         var adminClient = await LoginAsAdminAsync();
-        using var listResponse = await adminClient.GetAsync($"/api/events/{EventId}/ratings", Ct);
+        using var listResponse = await adminClient.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
         var page = await listResponse.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(Ct);
         page!.Total.Should().Be(1);
     }
@@ -250,7 +252,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync($"/api/events/{EventId}/ratings", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -260,7 +262,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/events/{Guid.NewGuid()}/ratings", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/events/{Guid.NewGuid()}/ratings"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -285,7 +287,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/events/{EventId}/ratings", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync(Ct);
@@ -323,7 +325,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/summary"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
@@ -337,7 +339,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync($"/api/reports/events/{EventId}/summary", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/summary"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);

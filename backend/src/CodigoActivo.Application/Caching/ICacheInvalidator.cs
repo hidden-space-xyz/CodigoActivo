@@ -2,5 +2,5 @@ namespace CodigoActivo.Application.Caching;
 
 public interface ICacheInvalidator
 {
-    ValueTask InvalidateAsync(params IReadOnlyCollection<string> tags);
+    public ValueTask InvalidateAsync(params IReadOnlyCollection<string> tags);
 }

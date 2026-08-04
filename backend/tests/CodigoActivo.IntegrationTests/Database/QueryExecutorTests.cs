@@ -21,7 +21,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     {
         await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
-        await new DatabaseSeeder(db).SeedAsync();
+        await new DatabaseSeeder(db).SeedAsync(Ct);
     }
 
     public ValueTask DisposeAsync()
@@ -49,8 +49,10 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
         await db.SaveChangesAsync(Ct);
     }
 
-    private static IQueryable<User> OrderedUsers(CodigoActivoDbContext db) =>
-        db.Users.AsNoTracking().OrderBy(u => u.FirstName);
+    private static IQueryable<User> OrderedUsers(CodigoActivoDbContext db)
+    {
+        return db.Users.AsNoTracking().OrderBy(u => u.FirstName);
+    }
 
     [Fact]
     public async Task ToPagedAsync_MiddlePage_ReturnsTotalAndPageSlice()

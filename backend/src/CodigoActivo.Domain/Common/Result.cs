@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CodigoActivo.Domain.Common;
 
 public class Result
@@ -32,23 +34,22 @@ public class Result
 
 public sealed class Result<T> : Result
 {
-    private readonly T? value;
-
     internal Result(T value)
         : base(true, null)
     {
-        this.value = value;
+        Value = value;
     }
 
     internal Result(Error error)
         : base(false, error)
     {
-        value = default;
+        Value = default;
     }
 
+    [AllowNull]
     public T Value =>
         IsSuccess
-            ? value!
+            ? field!
             : throw new InvalidOperationException("Cannot access the value of a failed result.");
 
     public static implicit operator Result<T>(T value)

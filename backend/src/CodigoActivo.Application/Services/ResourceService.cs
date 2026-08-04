@@ -57,7 +57,10 @@ public class ResourceService(
         var source = resources.Query().Select(Projections.ResourceListItem);
 
         if (query.ResourceTypeId is { } resourceTypeId)
+        {
             source = source.Where(r => r.Type.Id == resourceTypeId);
+        }
+
         if (query.CreatedFrom is { } createdFrom)
         {
             var createdLower = LocalDayRange.LowerUtc(createdFrom, clock.TimeZone);
@@ -108,14 +111,20 @@ public class ResourceService(
     {
         var type = await resourceTypes.FindAsync(t => t.Id == request.ResourceTypeId, ct);
         if (type is null)
+        {
             return Error.BadRequest(ErrorCode.ResourceTypeNotFound);
+        }
 
         var content = ResolveContent(type, request.Description, request.Url);
         if (content.IsFailure)
+        {
             return content.Error!;
+        }
 
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
+        }
 
         var resource = new Resource
         {
@@ -144,18 +153,26 @@ public class ResourceService(
     {
         var resource = await resources.FindAsync(r => r.Id == id, ct);
         if (resource is null)
+        {
             return Error.NotFound(ErrorCode.ResourceNotFound);
+        }
 
         var type = await resourceTypes.FindAsync(t => t.Id == request.ResourceTypeId, ct);
         if (type is null)
+        {
             return Error.BadRequest(ErrorCode.ResourceTypeNotFound);
+        }
 
         var content = ResolveContent(type, request.Description, request.Url);
         if (content.IsFailure)
+        {
             return content.Error!;
+        }
 
         if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        {
             return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
+        }
 
         var previousThumbnailId = resource.ThumbnailId;
         var previousDescription = resource.Description;
@@ -177,7 +194,10 @@ public class ResourceService(
             .ExtractRemoved(previousDescription, resource.Description)
             .ToList();
         if (previousThumbnailId != request.ThumbnailId)
+        {
             orphanCandidates.Add(previousThumbnailId);
+        }
+
         await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return resource.ToResponse();
@@ -187,7 +207,9 @@ public class ResourceService(
     {
         var resource = await resources.FindAsync(r => r.Id == id, ct);
         if (resource is null)
+        {
             return Error.NotFound(ErrorCode.ResourceNotFound);
+        }
 
         resources.Remove(resource);
         await uow.SaveChangesAsync(ct);
@@ -212,16 +234,28 @@ public class ResourceService(
         if (type.IsExternal)
         {
             if (!RichTextDocument.IsEmpty(description))
+            {
                 return Error.BadRequest(ErrorCode.ResourceDescriptionNotAllowed);
+            }
+
             if (string.IsNullOrWhiteSpace(url))
+            {
                 return Error.BadRequest(ErrorCode.ResourceUrlRequired);
+            }
+
             return ("{}", url.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(url))
+        {
             return Error.BadRequest(ErrorCode.ResourceUrlNotAllowed);
+        }
+
         if (RichTextDocument.IsEmpty(description))
+        {
             return Error.BadRequest(ErrorCode.ResourceDescriptionRequired);
+        }
+
         return (description!, null);
     }
 }

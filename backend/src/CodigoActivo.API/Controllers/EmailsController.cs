@@ -17,7 +17,7 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
-    public async Task<ActionResult<SendEmailResultResponse>> SendToUser(
+    public async Task<ActionResult<SendEmailResultResponse>> SendToUserAsync(
         Guid userId,
         [FromForm]
         [Required]
@@ -43,7 +43,7 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
-    public async Task<ActionResult<SendEmailResultResponse>> SendToUsers(
+    public async Task<ActionResult<SendEmailResultResponse>> SendToUsersAsync(
         [FromQuery] UserListQuery query,
         [FromForm]
         [Required]
@@ -69,7 +69,7 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
-    public async Task<ActionResult<SendEmailResultResponse>> SendToEventAttendees(
+    public async Task<ActionResult<SendEmailResultResponse>> SendToEventAttendeesAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
         [FromForm]
@@ -97,13 +97,12 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
     {
         return files is null
             ? []
-            : files
+            : [.. files
                 .Select(file => new EmailAttachmentUpload(
                     file.OpenReadStream(),
                     file.FileName,
                     file.ContentType,
                     file.Length
-                ))
-                .ToList();
+                ))];
     }
 }

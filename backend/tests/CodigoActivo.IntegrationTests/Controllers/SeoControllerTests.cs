@@ -109,7 +109,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
         var content = await SeedContentAsync();
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/sitemap.xml", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/sitemap.xml"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/xml");
@@ -129,10 +129,9 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Head, "/api/sitemap.xml"),
-            Ct
-        );
+        using var request = new HttpRequestMessage(HttpMethod.Head, "/api/sitemap.xml");
+
+        var response = await client.SendAsync(request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -142,10 +141,9 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Head, "/api/robots.txt"),
-            Ct
-        );
+        using var request = new HttpRequestMessage(HttpMethod.Head, "/api/robots.txt");
+
+        var response = await client.SendAsync(request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -155,7 +153,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/robots.txt", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/robots.txt"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("text/plain");

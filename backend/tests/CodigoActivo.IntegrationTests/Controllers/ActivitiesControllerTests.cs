@@ -99,8 +99,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         DateTimeOffset? endsAt = null,
         string title = "Nueva",
         IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities = null
-    ) =>
-        new(
+    )
+    {
+        return new(
             title,
             "Descripcion",
             "Sala",
@@ -110,16 +111,17 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             thumbnailId,
             roleCapacities
         );
+    }
 
     [Fact]
-    public async Task List_Anonymous_ReturnsPagedEnvelope()
+    public async Task ListAsync_Anonymous_ReturnsPagedEnvelope()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
         await SeedActivityAsync(eventId, thumb, "Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/activities", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
@@ -143,7 +145,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
 
         var response = await client.GetAsync(
-            $"/api/activities?modalityTypeId={SeedIds.ActivityModalityTypes.Online}",
+            TestUri.Rel($"/api/activities?modalityTypeId={SeedIds.ActivityModalityTypes.Online}"),
             Ct
         );
 
@@ -164,7 +166,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedActivityAsync(eventId, thumb, "Lectura", location: "Biblioteca");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/activities?location=SALON", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities?location=SALON"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
@@ -200,8 +202,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var fromResponse = await client.GetAsync("/api/activities?activityDateFrom=2026-07-13", Ct);
-        var toResponse = await client.GetAsync("/api/activities?activityDateTo=2026-07-12", Ct);
+        var fromResponse = await client.GetAsync(TestUri.Rel("/api/activities?activityDateFrom=2026-07-13"), Ct);
+        var toResponse = await client.GetAsync(TestUri.Rel("/api/activities?activityDateTo=2026-07-12"), Ct);
 
         fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
@@ -224,8 +226,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedActivityAsync(eventId, thumb, "Tres", location: "Biblioteca");
         var client = CreateClient();
 
-        var ascending = await client.GetAsync("/api/activities?sort=location", Ct);
-        var descending = await client.GetAsync("/api/activities?sort=-location", Ct);
+        var ascending = await client.GetAsync(TestUri.Rel("/api/activities?sort=location"), Ct);
+        var descending = await client.GetAsync(TestUri.Rel("/api/activities?sort=-location"), Ct);
 
         ascending.StatusCode.Should().Be(HttpStatusCode.OK);
         var ascendingPage = await ascending.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
@@ -241,7 +243,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/activities/{Guid.NewGuid()}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/activities/{Guid.NewGuid()}"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.ActivityNotFound);
     }
@@ -479,11 +481,13 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         });
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/activities?eventId={eventId}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/activities?eventId={eventId}"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
-        var crowdedCapacities = page!.Items.Single(a => a.Title == "Llena").RoleCapacities;
+        var crowdedCapacities = page!
+            .Items.Single(a => string.Equals(a.Title, "Llena", StringComparison.Ordinal))
+            .RoleCapacities;
         crowdedCapacities
             .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant)
             .IsHighDemand.Should()
@@ -492,7 +496,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
             .IsHighDemand.Should()
             .BeFalse();
-        page.Items.Single(a => a.Title == "Con hueco")
+        page.Items.Single(a => string.Equals(a.Title, "Con hueco", StringComparison.Ordinal))
             .RoleCapacities.Single(c =>
                 c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
             )
@@ -626,11 +630,11 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/activities/roleType", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities/roleType"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var roles = await response.ReadJsonAsync<IReadOnlyList<ActivityRoleTypeResponse>>(Ct);
-        roles!.Should().HaveCount(3);
+        roles.Should().HaveCount(3);
         roles.Should().Contain(r => r.Id == SeedIds.ActivityRoleTypes.Leader && r.Name == "Líder");
         roles
             .Should()
@@ -647,13 +651,13 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/activities/assignment-status-types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities/assignment-status-types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<IReadOnlyList<AssignmentStatusTypeResponse>>(
             Ct
         );
-        statuses!.Should().Contain(s => s.Id == SeedIds.AssignmentStatusTypes.Requested);
+        statuses.Should().Contain(s => s.Id == SeedIds.AssignmentStatusTypes.Requested);
     }
 
     [Fact]
@@ -661,12 +665,12 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/activities/modality-types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/activities/modality-types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var modalities = await response.ReadJsonAsync<IReadOnlyList<ActivityModalityTypeResponse>>(
             Ct
         );
-        modalities!.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
+        modalities.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
     }
 }

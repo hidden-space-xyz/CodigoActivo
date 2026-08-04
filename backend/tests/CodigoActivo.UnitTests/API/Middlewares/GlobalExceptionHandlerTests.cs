@@ -17,8 +17,10 @@ public sealed class GlobalExceptionHandlerTests
         NullLogger<GlobalExceptionHandler>.Instance
     );
 
-    private static DefaultHttpContext NewContext(string traceId = "trace-123") =>
-        new() { Response = { Body = new MemoryStream() }, TraceIdentifier = traceId };
+    private static DefaultHttpContext NewContext(string traceId = "trace-123")
+    {
+        return new() { Response = { Body = new MemoryStream() }, TraceIdentifier = traceId };
+    }
 
     private static async Task<ApiErrorResponse> ReadBodyAsync(HttpContext context)
     {

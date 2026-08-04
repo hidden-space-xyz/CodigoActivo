@@ -15,7 +15,7 @@ public static class ApiClientExtensions
         CancellationToken ct = default
     )
     {
-        using var response = await client.GetAsync("/api/auth/csrf", ct);
+        using var response = await client.GetAsync(TestUri.Rel("/api/auth/csrf"), ct);
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadFromJsonAsync<CsrfTokenResponse>(
             TestJson.Options,
@@ -36,12 +36,14 @@ public static class ApiClientExtensions
         using var request = new HttpRequestMessage(method, url);
         request.Headers.Add("X-CSRF-TOKEN", token);
         if (body is not null)
+        {
             request.Content = JsonContent.Create(
                 body,
                 body.GetType(),
                 mediaType: null,
                 TestJson.Options
             );
+        }
 
         return await client.SendAsync(request, ct);
     }
@@ -102,12 +104,12 @@ public static class ApiClientExtensions
             request.Headers.Add("X-CSRF-TOKEN", token);
         }
 
-        var form = new MultipartFormDataContent();
-        if (fileBytes is not null)
+        using var form = new MultipartFormDataContent();
+        using var filePart =
+            fileBytes is null ? null : CreateBinaryPart(fileBytes, partContentType);
+        if (filePart is not null)
         {
-            var part = new ByteArrayContent(fileBytes);
-            part.Headers.ContentType = new MediaTypeHeaderValue(partContentType);
-            form.Add(part, "file", fileName);
+            form.Add(filePart, "file", fileName);
         }
 
         request.Content = form;
@@ -130,21 +132,40 @@ public static class ApiClientExtensions
             request.Headers.Add("X-CSRF-TOKEN", token);
         }
 
-        var form = new MultipartFormDataContent();
-        if (subject is not null)
-            form.Add(new StringContent(subject), "subject");
-        if (body is not null)
-            form.Add(new StringContent(body), "body");
-
-        foreach (var attachment in attachments ?? [])
+        using var form = new MultipartFormDataContent();
+        using var subjectPart = subject is null ? null : new StringContent(subject);
+        if (subjectPart is not null)
         {
-            var part = new ByteArrayContent(attachment.Bytes);
-            part.Headers.ContentType = new MediaTypeHeaderValue(attachment.ContentType);
-            form.Add(part, "attachments", attachment.FileName);
+            form.Add(subjectPart, "subject");
         }
 
-        request.Content = form;
-        return await client.SendAsync(request, TestCancellation.Ct);
+        using var bodyPart = body is null ? null : new StringContent(body);
+        if (bodyPart is not null)
+        {
+            form.Add(bodyPart, "body");
+        }
+
+        return await AddAttachmentThenSendAsync(client, request, form, attachments ?? [], 0);
+    }
+
+    private static async Task<HttpResponseMessage> AddAttachmentThenSendAsync(
+        HttpClient client,
+        HttpRequestMessage request,
+        MultipartFormDataContent form,
+        IReadOnlyList<(string FileName, string ContentType, byte[] Bytes)> attachments,
+        int index
+    )
+    {
+        if (index >= attachments.Count)
+        {
+            request.Content = form;
+            return await client.SendAsync(request, TestCancellation.Ct);
+        }
+
+        var (fileName, contentType, bytes) = attachments[index];
+        using var part = CreateBinaryPart(bytes, contentType);
+        form.Add(part, "attachments", fileName);
+        return await AddAttachmentThenSendAsync(client, request, form, attachments, index + 1);
     }
 
     public static async Task<T?> ReadJsonAsync<T>(
@@ -189,5 +210,12 @@ public static class ApiClientExtensions
         response.StatusCode.Should().Be(status);
         var error = await response.ReadJsonAsync<ApiErrorResponse>(TestCancellation.Ct);
         error!.Code.Should().Be(code);
+    }
+
+    private static ByteArrayContent CreateBinaryPart(byte[] bytes, string contentType)
+    {
+        var part = new ByteArrayContent(bytes);
+        part.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        return part;
     }
 }

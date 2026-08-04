@@ -16,13 +16,15 @@ internal static class TestDatabase
                     ? $"\"{entity.Table}\""
                     : $"\"{entity.Schema}\".\"{entity.Table}\""
             )
-            .Distinct()
+            .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        if (tables.Count == 0)
+        if (tables.Count is 0)
+        {
             return;
+        }
 
         var sql = $"TRUNCATE TABLE {string.Join(", ", tables)} RESTART IDENTITY CASCADE";
-        await db.Database.ExecuteSqlRawAsync(sql);
+        await db.Database.ExecuteSqlRawAsync(sql, TestCancellation.Ct);
     }
 }

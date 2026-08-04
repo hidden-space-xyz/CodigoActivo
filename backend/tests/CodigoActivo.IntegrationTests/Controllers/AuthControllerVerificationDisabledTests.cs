@@ -14,7 +14,10 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
 {
     private const string NewAdultEmail = "new.adult@codigoactivo.test";
 
-    private HttpClient CreateDisabledClient() => Factory.WithVerificationDisabled().CreateClient();
+    private HttpClient CreateDisabledClient()
+    {
+        return Factory.WithVerificationDisabled().CreateClient();
+    }
 
     private static RegisterRequest NewAdultRequest()
     {

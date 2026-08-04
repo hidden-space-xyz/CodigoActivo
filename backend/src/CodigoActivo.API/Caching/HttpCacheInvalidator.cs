@@ -11,6 +11,8 @@ public sealed class HttpCacheInvalidator(HybridCache cache, IOutputCacheStore ou
     {
         await cache.RemoveByTagAsync(tags, CancellationToken.None);
         foreach (var tag in tags)
+        {
             await outputCache.EvictByTagAsync(tag, CancellationToken.None);
+        }
     }
 }

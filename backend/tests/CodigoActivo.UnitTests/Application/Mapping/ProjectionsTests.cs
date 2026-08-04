@@ -15,10 +15,14 @@ public sealed class ProjectionsTests
     private static TResult Project<TSource, TResult>(
         Expression<Func<TSource, TResult>> projection,
         TSource source
-    ) => projection.Compile().Invoke(source);
+    )
+    {
+        return projection.Compile().Invoke(source);
+    }
 
-    private static Event NewEvent(Guid categoryTypeId, string description) =>
-        new()
+    private static Event NewEvent(Guid categoryTypeId, string description)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Title = "Conf",
@@ -48,6 +52,7 @@ public sealed class ProjectionsTests
                 },
             ],
         };
+    }
 
     [Fact]
     public void Event_EventWithCategories_MapsScalarsAndCategories()
@@ -221,6 +226,7 @@ public sealed class ProjectionsTests
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusType
             {
+                Description = "Descripción de prueba",
                 Id = statusId,
                 Name = "Active",
                 Color = "#0f0",
@@ -229,13 +235,17 @@ public sealed class ProjectionsTests
             UserTypeId = typeId,
             UserType = new UserType
             {
+                Description = "Descripción de prueba",
                 Id = typeId,
                 Name = "Member",
                 Color = "#00f",
             },
         };
         for (var i = 0; i < children; i++)
+        {
             user.Children.Add(new User { FirstName = "Kid", LastName = "One" });
+        }
+
         return user;
     }
 
@@ -321,6 +331,7 @@ public sealed class ProjectionsTests
             ActivityId = activityId,
             Activity = new Activity
             {
+                Location = "Sala principal",
                 Id = activityId,
                 Title = "Talk",
                 Description = "Desc",
@@ -329,9 +340,15 @@ public sealed class ProjectionsTests
                 EventId = eventId,
             },
             ActivityRoleTypeId = roleTypeId,
-            ActivityRoleType = new ActivityRoleType { Id = roleTypeId, Name = "Speaker" },
+            ActivityRoleType = new ActivityRoleType { Description = "Descripción de prueba", Id = roleTypeId, Name = "Speaker" },
             AssignmentStatusId = statusId,
-            AssignmentStatus = new AssignmentStatusType { Id = statusId, Name = "Confirmed" },
+            AssignmentStatus = new AssignmentStatusType
+            {
+                Description = "Descripción de prueba",
+                Color = "#0EA5E9",
+                Id = statusId,
+                Name = "Confirmed",
+            },
         };
 
         var response = Project(Projections.AssignedActivity, assignment);

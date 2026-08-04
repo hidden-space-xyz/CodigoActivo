@@ -20,7 +20,9 @@ public sealed class JsonStringAttribute : ValidationAttribute
     public override bool IsValid(object? value)
     {
         if (value is not string text)
+        {
             return true;
+        }
 
         try
         {
@@ -40,15 +42,15 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is not DateOnly date)
+        {
             return ValidationResult.Success;
+        }
 
         var today = validationContext.GetRequiredService<IClock>().Today;
-        if (date != default && date <= today)
-            return ValidationResult.Success;
-
-        return new ValidationResult(
-            FormatErrorMessage(validationContext.DisplayName),
-            validationContext.MemberName is { } memberName ? [memberName] : null
-        );
+        string[]? memberNames =
+            validationContext.MemberName is { } memberName ? [memberName] : null;
+        return date != default && date <= today
+            ? ValidationResult.Success
+            : new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
     }
 }

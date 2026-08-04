@@ -49,7 +49,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         await SeedAnnouncementAsync("Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/announcements", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/announcements"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<AnnouncementListItemResponse>>(Ct);
@@ -66,7 +66,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         await SeedAnnouncementAsync("C", year: 2021);
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/announcements/years", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/announcements/years"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var years = await response.ReadJsonAsync<IReadOnlyList<int>>(Ct);
@@ -79,7 +79,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         var id = await SeedAnnouncementAsync("Beta");
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/announcements/{id}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/announcements/{id}"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var announcement = await response.ReadJsonAsync<AnnouncementResponse>(Ct);
@@ -295,8 +295,9 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
         Guid id,
         string title,
         Guid thumbnailId
-    ) =>
-        new()
+    )
+    {
+        return new()
         {
             Id = id,
             Title = title,
@@ -306,4 +307,5 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = TestSeedData.Users.AdminId,
         };
+    }
 }

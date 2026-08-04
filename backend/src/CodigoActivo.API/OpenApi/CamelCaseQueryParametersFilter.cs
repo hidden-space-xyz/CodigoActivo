@@ -8,7 +8,9 @@ public sealed class CamelCaseQueryParametersFilter : IOperationFilter
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         if (operation.Parameters is null)
+        {
             return;
+        }
 
         foreach (var parameter in operation.Parameters)
         {
@@ -17,7 +19,9 @@ public sealed class CamelCaseQueryParametersFilter : IOperationFilter
                 && !string.IsNullOrEmpty(concrete.Name)
                 && char.IsUpper(concrete.Name[0])
             )
+            {
                 concrete.Name = char.ToLowerInvariant(concrete.Name[0]) + concrete.Name[1..];
+            }
         }
     }
 }

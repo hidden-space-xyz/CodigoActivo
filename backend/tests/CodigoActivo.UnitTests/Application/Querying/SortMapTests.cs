@@ -8,10 +8,15 @@ public sealed class SortMapTests
 {
     private sealed record Row(int A, int B, int Id, string Name);
 
-    private static SortMap<Row> FullMap() =>
-        new SortMap<Row>().Add("a", r => r.A).Add("b", r => r.B).Default("a").Tie(r => r.Id);
+    private static SortMap<Row> FullMap()
+    {
+        return new SortMap<Row>().Add("a", r => r.A).Add("b", r => r.B).Default("a").Tie(r => r.Id);
+    }
 
-    private static List<Row> Rows(params Row[] rows) => rows.ToList();
+    private static List<Row> Rows(params Row[] rows)
+    {
+        return [.. rows];
+    }
 
     [Theory]
     [InlineData(null)]

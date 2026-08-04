@@ -56,7 +56,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/auth/csrf", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/auth/csrf"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<CsrfTokenResponse>(Ct);
@@ -510,7 +510,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/auth/me", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<UserResponse>(Ct);
@@ -524,7 +524,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/auth/me", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -538,7 +538,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var me = await client.GetAsync("/api/auth/me", Ct);
+        var me = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 

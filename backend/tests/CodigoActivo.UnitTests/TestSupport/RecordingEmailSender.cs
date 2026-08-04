@@ -5,20 +5,25 @@ namespace CodigoActivo.UnitTests.TestSupport;
 
 public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
 {
-    public List<EmailMessage> Sent { get; } = [];
+    private readonly List<EmailMessage> sent = [];
+
+    public IReadOnlyList<EmailMessage> Sent => sent;
 
     public Exception? ThrowOnSend { get; set; }
 
-    public HashSet<string> FailingRecipients { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public ISet<string> FailingRecipients { get; } =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     public int Batches { get; private set; }
 
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         if (ThrowOnSend is not null)
+        {
             throw ThrowOnSend;
+        }
 
-        Sent.Add(message);
+        sent.Add(message);
         return Task.CompletedTask;
     }
 
@@ -28,11 +33,13 @@ public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
     )
     {
         if (ThrowOnSend is not null)
+        {
             throw ThrowOnSend;
+        }
 
         Batches++;
         var delivered = messages.Where(m => !FailingRecipients.Contains(m.ToAddress)).ToList();
-        Sent.AddRange(delivered);
+        sent.AddRange(delivered);
         return Task.FromResult(
             new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
         );
@@ -40,14 +47,14 @@ public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
 
     public string LastCode()
     {
-        var match = CodePattern().Match(Sent[^1].TextBody);
+        var match = CodePattern.Match(sent[^1].TextBody);
         return !match.Success
             ? throw new InvalidOperationException(
                 "The last email does not contain a verification code."
             )
-            : match.Groups[1].Value;
+            : match.Groups["code"].Value;
     }
 
-    [GeneratedRegex(@"[?&]code=([^\s&]+)")]
-    private static partial Regex CodePattern();
+    [GeneratedRegex(@"[?&]code=(?<code>[^\s&]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex CodePattern { get; }
 }

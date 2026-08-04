@@ -4,7 +4,7 @@ namespace CodigoActivo.Domain.Entities;
 
 public class Partner : AuditableEntity
 {
-    public string Name { get; set; } = null!;
+    public required string Name { get; set; }
     public DateOnly FromDate { get; set; }
     public int Tier { get; set; }
     public string? Web { get; set; }

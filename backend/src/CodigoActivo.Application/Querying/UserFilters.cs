@@ -7,19 +7,39 @@ public static class UserFilters
     public static IQueryable<User> Apply(IQueryable<User> source, UserListQuery query)
     {
         if (query.Id is { } id)
+        {
             source = source.Where(u => u.Id == id);
+        }
+
         if (query.ParentId is { } parentId)
+        {
             source = source.Where(u => u.ParentId == parentId);
+        }
+
         if (query.UserTypeId is { } userTypeId)
+        {
             source = source.Where(u => u.UserTypeId == userTypeId);
+        }
+
         if (query.UserStatusTypeId is { } userStatusTypeId)
+        {
             source = source.Where(u => u.UserStatusTypeId == userStatusTypeId);
+        }
+
         if (query.IsAdmin is { } admin)
+        {
             source = source.Where(u => u.IsAdmin == admin);
+        }
+
         if (query.BirthDateFrom is { } birthDateFrom)
+        {
             source = source.Where(u => u.BirthDate >= birthDateFrom);
+        }
+
         if (query.BirthDateTo is { } birthDateTo)
+        {
             source = source.Where(u => u.BirthDate <= birthDateTo);
+        }
 
         source = source.WhereContains(u => u.FirstName + " " + u.LastName, query.Name);
         source = source.WhereContains(u => u.Email, query.Email);
@@ -46,10 +66,14 @@ public static class UserFilters
         );
 
         if (query.UserTypeId is { } userTypeId)
+        {
             source = source.Where(u => u.UserTypeId == userTypeId);
+        }
 
         if (query.Gender is { } gender)
+        {
             source = source.Where(u => u.Gender == gender);
+        }
 
         return source.WhereContains(
             u =>

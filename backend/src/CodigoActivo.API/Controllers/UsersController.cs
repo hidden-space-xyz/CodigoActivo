@@ -15,7 +15,7 @@ namespace CodigoActivo.API.Controllers;
 public class UsersController(IUserService users) : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PagedResult<UserResponse>>> List(
+    public async Task<ActionResult<PagedResult<UserResponse>>> ListAsync(
         [FromQuery] UserListQuery query,
         CancellationToken ct
     )
@@ -25,14 +25,16 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpGet("types")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> Types(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> TypesAsync(
+        CancellationToken ct
+    )
     {
         return Ok(await users.ListUserTypesAsync(ct));
     }
 
     [HttpGet("status-types")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> StatusTypes(
+    public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> StatusTypesAsync(
         CancellationToken ct
     )
     {
@@ -41,14 +43,14 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpGet("{userId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<UserResponse>> Get(Guid userId, CancellationToken ct)
+    public async Task<ActionResult<UserResponse>> GetAsync(Guid userId, CancellationToken ct)
     {
         return ToOk(await users.GetByIdAsync(userId, ct));
     }
 
     [HttpPut("{userId:guid}")]
     [AllowOnlySelf]
-    public async Task<ActionResult<UserResponse>> Update(
+    public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid userId,
         [FromBody] UpdateUserRequest request,
         CancellationToken ct
@@ -59,14 +61,14 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpDelete("{userId:guid}")]
     [AllowOnlySelf]
-    public async Task<IActionResult> Delete(Guid userId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(Guid userId, CancellationToken ct)
     {
         return ToNoContent(await users.DeleteAsync(userId, ct));
     }
 
     [HttpPatch("{userId:guid}/admin")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> SetAdmin(
+    public async Task<IActionResult> SetAdminAsync(
         Guid userId,
         [FromBody] SetAdminRequest request,
         CancellationToken ct
@@ -77,7 +79,7 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpPost("{userId:guid}/children")]
     [AllowOnlySelf]
-    public async Task<ActionResult<UserResponse>> AddChild(
+    public async Task<ActionResult<UserResponse>> AddChildAsync(
         Guid userId,
         [FromBody] RegisterMinorRequest request,
         CancellationToken ct
@@ -88,7 +90,7 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpPatch("{userId:guid}/password")]
     [AllowOnlySelf]
-    public async Task<IActionResult> ChangePassword(
+    public async Task<IActionResult> ChangePasswordAsync(
         Guid userId,
         [FromBody] ChangePasswordRequest request,
         CancellationToken ct
@@ -99,7 +101,7 @@ public class UsersController(IUserService users) : ApiControllerBase
 
     [HttpPatch("{userId:guid}/change-type")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<UserResponse>> ChangeType(
+    public async Task<ActionResult<UserResponse>> ChangeTypeAsync(
         Guid userId,
         [FromQuery] Guid userTypeId,
         CancellationToken ct

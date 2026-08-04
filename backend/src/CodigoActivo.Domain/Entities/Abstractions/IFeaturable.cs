@@ -2,5 +2,5 @@ namespace CodigoActivo.Domain.Entities.Abstractions;
 
 public interface IFeaturable
 {
-    bool Featured { get; set; }
+    public bool Featured { get; set; }
 }

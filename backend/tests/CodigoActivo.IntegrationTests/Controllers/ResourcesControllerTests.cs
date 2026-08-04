@@ -55,7 +55,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedResourceAsync("Alpha");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/resources", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/resources"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(Ct);
@@ -76,7 +76,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
 
         var response = await client.GetAsync(
-            $"/api/resources?resourceTypeId={SeedIds.ResourceTypes.External}",
+            TestUri.Rel($"/api/resources?resourceTypeId={SeedIds.ResourceTypes.External}"),
             Ct
         );
 
@@ -95,7 +95,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedResourceAsync("Ajedrez", url: "https://ejemplo.es/ajedrez");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/resources?url=ROBOTICA", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/resources?url=ROBOTICA"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(Ct);
@@ -122,8 +122,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var fromResponse = await client.GetAsync("/api/resources?createdFrom=2026-03-10", Ct);
-        var toResponse = await client.GetAsync("/api/resources?createdTo=2026-03-09", Ct);
+        var fromResponse = await client.GetAsync(TestUri.Rel("/api/resources?createdFrom=2026-03-10"), Ct);
+        var toResponse = await client.GetAsync(TestUri.Rel("/api/resources?createdTo=2026-03-09"), Ct);
 
         fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(Ct);
@@ -150,7 +150,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/resources?sort=type", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/resources?sort=type"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(Ct);
@@ -165,7 +165,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         await SeedResourceAsync("UrlA", url: "https://alfa.test/recurso");
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/resources?sort=url", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/resources?sort=url"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(Ct);
@@ -177,14 +177,20 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync("/api/resources/types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/resources/types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var types = await response.ReadJsonAsync<List<ResourceTypeResponse>>(Ct);
         types.Should().NotBeNull();
-        types!.Select(t => t.Name).Should().ContainInOrder("Externo", "Interno");
-        types.Single(t => t.Name == "Externo").IsExternal.Should().BeTrue();
-        types.Single(t => t.Name == "Interno").IsExternal.Should().BeFalse();
+        types.Select(t => t.Name).Should().ContainInOrder("Externo", "Interno");
+        types
+            .Single(t => string.Equals(t.Name, "Externo", StringComparison.Ordinal))
+            .IsExternal.Should()
+            .BeTrue();
+        types
+            .Single(t => string.Equals(t.Name, "Interno", StringComparison.Ordinal))
+            .IsExternal.Should()
+            .BeFalse();
         types.Should().OnlyContain(t => !string.IsNullOrWhiteSpace(t.Color));
     }
 
@@ -193,7 +199,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        var response = await client.GetAsync("/api/resources/types", Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/resources/types"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -203,7 +209,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/resources/{Guid.NewGuid()}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/resources/{Guid.NewGuid()}"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.ResourceNotFound);
     }
@@ -214,7 +220,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var id = await SeedResourceAsync("Enlace", url: ExternalUrl);
         var client = CreateClient();
 
-        var response = await client.GetAsync($"/api/resources/{id}", Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/resources/{id}"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var resource = await response.ReadJsonAsync<ResourceResponse>(Ct);

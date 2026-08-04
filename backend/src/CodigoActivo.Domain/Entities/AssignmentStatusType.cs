@@ -4,7 +4,7 @@ namespace CodigoActivo.Domain.Entities;
 
 public class AssignmentStatusType : NamedEntity
 {
-    public string Color { get; set; } = null!;
+    public required string Color { get; set; }
 
     public ICollection<ActivityUserRoleAssignment> Assignments { get; set; } = [];
 }

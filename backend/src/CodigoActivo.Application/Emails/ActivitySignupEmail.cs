@@ -11,7 +11,8 @@ public static class ActivitySignupEmail
         "Hemos recibido tu solicitud de inscripción y ya ha quedado registrada.";
 
     private const string Pending =
-        "La organización la revisará y te avisaremos por correo en cuanto la plaza quede confirmada. Por ahora no necesitas hacer nada más.";
+        "La organización la revisará y te avisaremos por correo en cuanto la plaza quede confirmada. "
+        + "Por ahora no necesitas hacer nada más.";
 
     public static EmailMessage Create(
         string toAddress,

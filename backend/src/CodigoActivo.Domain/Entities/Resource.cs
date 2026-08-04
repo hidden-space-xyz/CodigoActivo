@@ -4,8 +4,8 @@ namespace CodigoActivo.Domain.Entities;
 
 public class Resource : AuditableEntity
 {
-    public string Title { get; set; } = null!;
-    public string Subtitle { get; set; } = null!;
+    public required string Title { get; set; }
+    public required string Subtitle { get; set; }
 
     public string Description { get; set; } = "{}";
     public string? Url { get; set; }

@@ -33,7 +33,10 @@ public static class TextSearch
     {
         var normalized = value.Trim().ToLowerInvariant();
         foreach (var (accented, plain) in Folds)
+        {
             normalized = normalized.Replace(accented, plain, StringComparison.Ordinal);
+        }
+
         return normalized;
     }
 

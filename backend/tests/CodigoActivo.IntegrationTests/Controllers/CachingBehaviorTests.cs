@@ -23,8 +23,8 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync();
         var client = CreateClient();
 
-        using var first = await client.GetAsync("/api/events", Ct);
-        using var second = await client.GetAsync("/api/events", Ct);
+        using var first = await client.GetAsync(TestUri.Rel("/api/events"), Ct);
+        using var second = await client.GetAsync(TestUri.Rel("/api/events"), Ct);
 
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         first.Headers.Age.Should().BeNull();
@@ -39,7 +39,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var categoryId = await SeedCategoryTypeAsync();
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync("/api/events", Ct);
+        using var warm = await anonymous.GetAsync(TestUri.Rel("/api/events"), Ct);
         warm.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var admin = await LoginAsAdminAsync();
@@ -50,7 +50,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         created.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        using var after = await anonymous.GetAsync("/api/events", Ct);
+        using var after = await anonymous.GetAsync(TestUri.Rel("/api/events"), Ct);
         var page = await after.ReadJsonAsync<PagedResult<EventListItemResponse>>(Ct);
         page!.Items.Should().Contain(e => e.Title == "Evento tras caché");
     }
@@ -62,7 +62,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var secondId = await SeedEventAsync(title: "Segundo");
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync("/api/events", Ct);
+        using var warm = await anonymous.GetAsync(TestUri.Rel("/api/events"), Ct);
         warm.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var admin = await LoginAsAdminAsync();
@@ -73,7 +73,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         featured.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync("/api/events", Ct);
+        using var after = await anonymous.GetAsync(TestUri.Rel("/api/events"), Ct);
         var page = await after.ReadJsonAsync<PagedResult<EventListItemResponse>>(Ct);
         page!.Items.Single(e => e.Id == firstId).Featured.Should().BeFalse();
         page.Items.Single(e => e.Id == secondId).Featured.Should().BeTrue();
@@ -86,7 +86,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var categoryId = await SeedCategoryTypeAsync();
         var admin = await LoginAsAdminAsync();
 
-        using var before = await admin.GetAsync("/api/reports/dashboard", Ct);
+        using var before = await admin.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
         var beforeCounts = await before.ReadJsonAsync<DashboardSummaryResponse>(Ct);
 
         using var created = await admin.PostJsonAsync(
@@ -96,7 +96,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         created.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        using var after = await admin.GetAsync("/api/reports/dashboard", Ct);
+        using var after = await admin.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
         var afterCounts = await after.ReadJsonAsync<DashboardSummaryResponse>(Ct);
         afterCounts!.Events.Should().Be(beforeCounts!.Events + 1);
     }
@@ -108,7 +108,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(categoryTypeId: categoryId);
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync("/api/events", Ct);
+        using var warm = await anonymous.GetAsync(TestUri.Rel("/api/events"), Ct);
         warm.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var admin = await LoginAsAdminAsync();
@@ -119,7 +119,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         renamed.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync("/api/events", Ct);
+        using var after = await anonymous.GetAsync(TestUri.Rel("/api/events"), Ct);
         var page = await after.ReadJsonAsync<PagedResult<EventListItemResponse>>(Ct);
         page!
             .Items.Single()
@@ -135,7 +135,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var announcementId = await SeedAnnouncementAsync(thumbnailId, "Título original");
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync($"/api/announcements/{announcementId}", Ct);
+        using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/announcements/{announcementId}"), Ct);
         var before = await warm.ReadJsonAsync<AnnouncementResponse>(Ct);
         before!.Title.Should().Be("Título original");
 
@@ -147,7 +147,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync($"/api/announcements/{announcementId}", Ct);
+        using var after = await anonymous.GetAsync(TestUri.Rel($"/api/announcements/{announcementId}"), Ct);
         var body = await after.ReadJsonAsync<AnnouncementResponse>(Ct);
         body!.Title.Should().Be("Título corregido");
     }
@@ -158,7 +158,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var activityId = await SeedActivityWithParticipantCapacityAsync();
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync($"/api/activities/{activityId}", Ct);
+        using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/activities/{activityId}"), Ct);
         var before = await warm.ReadJsonAsync<ActivityResponse>(Ct);
         before!.RoleCapacities.Single().IsHighDemand.Should().BeFalse();
 
@@ -173,7 +173,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         assigned.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync($"/api/activities/{activityId}", Ct);
+        using var after = await anonymous.GetAsync(TestUri.Rel($"/api/activities/{activityId}"), Ct);
         var body = await after.ReadJsonAsync<ActivityResponse>(Ct);
         body!.RoleCapacities.Single().IsHighDemand.Should().BeTrue();
     }
@@ -191,7 +191,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var file = await uploaded.ReadJsonAsync<FileResponse>(Ct);
 
         var anonymous = CreateClient();
-        using var first = await anonymous.GetAsync($"/api/files/{file!.Id}/content", Ct);
+        using var first = await anonymous.GetAsync(TestUri.Rel($"/api/files/{file!.Id}/content"), Ct);
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         var firstEtag = first.Headers.ETag!.Tag;
 
@@ -207,7 +207,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var second = await anonymous.GetAsync($"/api/files/{file.Id}/content", Ct);
+        using var second = await anonymous.GetAsync(TestUri.Rel($"/api/files/{file.Id}/content"), Ct);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         (await second.Content.ReadAsByteArrayAsync(Ct)).Should().Equal(updatedBytes);
         second.Headers.ETag!.Tag.Should().NotBe(firstEtag);
@@ -218,14 +218,18 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     public async Task List_Anonymous_CachesIntoTheSizeLimitedLocalCache()
     {
         await SeedEventAsync();
-        var localCache = (MemoryCache)Factory.Services.GetRequiredService<IMemoryCache>();
+        var localCache = Factory
+            .Services.GetRequiredService<IMemoryCache>()
+            .Should()
+            .BeOfType<MemoryCache>()
+            .Subject;
         var localCacheOptions = Factory
             .Services.GetRequiredService<IOptions<MemoryCacheOptions>>()
             .Value;
         var before = localCache.Count;
 
         using var response = await CreateClient()
-            .GetAsync($"/api/events?title={Guid.NewGuid():N}", Ct);
+            .GetAsync(TestUri.Rel($"/api/events?title={Guid.NewGuid():N}"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         localCacheOptions.SizeLimit.Should().NotBeNull();
@@ -237,7 +241,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        using var response = await client.GetAsync("/api/events", Ct);
+        using var response = await client.GetAsync(TestUri.Rel("/api/events"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
@@ -248,7 +252,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        using var response = await client.GetAsync("/api/auth/csrf", Ct);
+        using var response = await client.GetAsync(TestUri.Rel("/api/auth/csrf"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
