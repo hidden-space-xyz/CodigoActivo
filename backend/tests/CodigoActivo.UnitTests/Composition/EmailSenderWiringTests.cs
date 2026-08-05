@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Composition;
@@ -41,7 +42,7 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void ProductionCode_OnlyTheDecoratorAndTheAdminEmailService_DependOnIEmailTransport()
+    public void ProductionCode_OnlyTheQueueDrainAndTheAdminEmailService_DependOnIEmailTransport()
     {
         var consumers = ProductionTypes()
             .Where(type =>
@@ -51,7 +52,23 @@ public sealed class EmailSenderWiringTests
             )
             .ToList();
 
-        consumers.Should().BeEquivalentTo([typeof(ThrottledEmailSender), typeof(EmailService)]);
+        consumers
+            .Should()
+            .BeEquivalentTo([typeof(ChannelEmailDispatcher), typeof(EmailService)]);
+    }
+
+    [Fact]
+    public void ProductionCode_OnlyTheThrottlingDecorator_DependsOnIEmailDispatcher()
+    {
+        var consumers = ProductionTypes()
+            .Where(type =>
+                type.GetConstructors()
+                    .SelectMany(constructor => constructor.GetParameters())
+                    .Any(parameter => parameter.ParameterType == typeof(IEmailDispatcher))
+            )
+            .ToList();
+
+        consumers.Should().BeEquivalentTo([typeof(ThrottledEmailSender)]);
     }
 
     [Fact]
@@ -73,5 +90,13 @@ public sealed class EmailSenderWiringTests
 
         provider.GetRequiredService<IEmailSender>().Should().BeOfType<ThrottledEmailSender>();
         provider.GetRequiredService<IEmailTransport>().Should().BeOfType<SmtpEmailSender>();
+        provider
+            .GetRequiredService<IEmailDispatcher>()
+            .Should()
+            .BeSameAs(provider.GetRequiredService<ChannelEmailDispatcher>());
+        provider
+            .GetServices<IHostedService>()
+            .Should()
+            .Contain(provider.GetRequiredService<ChannelEmailDispatcher>());
     }
 }

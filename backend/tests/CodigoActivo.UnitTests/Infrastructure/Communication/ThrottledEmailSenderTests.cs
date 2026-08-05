@@ -15,58 +15,56 @@ public sealed class ThrottledEmailSenderTests
     }
 
     private static ThrottledEmailSender Create(
-        RecordingEmailSender transport,
+        RecordingEmailDispatcher dispatcher,
         EmailGuardOptions options
     )
     {
         return new ThrottledEmailSender(
-            transport,
+            dispatcher,
             options,
+            new EmailQueueOptions(),
             new TestClock(),
             NullLogger<ThrottledEmailSender>.Instance
         );
     }
 
     [Fact]
-    public async Task SendAsync_WithinTheQuota_ForwardsToTheTransport()
+    public async Task SendAsync_WithinTheQuota_EnqueuesTheMessage()
     {
-        var transport = new RecordingEmailSender();
-        var sender = Create(transport, new EmailGuardOptions());
+        var queue = new RecordingEmailDispatcher();
+        var sender = Create(queue, new EmailGuardOptions());
 
         await sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
-        transport.Sent.Should().ContainSingle();
+        queue.Enqueued.Should().ContainSingle();
     }
 
     [Fact]
-    public async Task SendAsync_QuotaExceeded_ThrowsWithoutReachingTheTransport()
+    public async Task SendAsync_QuotaExceeded_ThrowsWithoutEnqueuing()
     {
-        var transport = new RecordingEmailSender();
-        var sender = Create(transport, new EmailGuardOptions { RecipientBurst = 1 });
+        var queue = new RecordingEmailDispatcher();
+        var sender = Create(queue, new EmailGuardOptions { RecipientBurst = 1 });
 
         await sender.SendAsync(Message(), TestContext.Current.CancellationToken);
         var act = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<EmailRateLimitedException>();
-        transport.Sent.Should().ContainSingle();
+        queue.Enqueued.Should().ContainSingle();
     }
 
     [Fact]
-    public async Task SendAsync_TransportFails_StillSpendsTheQuota()
+    public async Task SendAsync_QueueFull_ThrowsAndStillSpendsTheQuota()
     {
-        var transport = new RecordingEmailSender
-        {
-            ThrowOnSend = new InvalidOperationException("relay down"),
-        };
-        var sender = Create(transport, new EmailGuardOptions { RecipientBurst = 1 });
+        var queue = new RecordingEmailDispatcher { RejectAll = true };
+        var sender = Create(queue, new EmailGuardOptions { RecipientBurst = 1 });
 
         var first = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
-        await first.Should().ThrowAsync<InvalidOperationException>();
+        await first.Should().ThrowAsync<EmailRateLimitedException>();
 
-        transport.ThrowOnSend = null;
+        queue.RejectAll = false;
         var second = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
         await second.Should().ThrowAsync<EmailRateLimitedException>();
-        transport.Sent.Should().BeEmpty();
+        queue.Enqueued.Should().BeEmpty();
     }
 }

@@ -54,10 +54,13 @@ Five projects with strict, one-directional dependencies:
   `IUnitOfWork` exposes the single `SaveChangesAsync` that commits a use case's staged changes
   (root + children) atomically — it resolves to the same scoped `DbContext` the repositories share.
 - **Ports live in Domain**, implemented in Infrastructure: `IClock`, `IQueryExecutor`,
-  `IEmailSender`, `IEmailTransport`, `IPasswordHasher`, `ILocalFileSystemRepository`. Email is two
-  ports on purpose: `IEmailSender` is the rate-limited one every automatic flow injects (its only
-  implementation is the `ThrottledEmailSender` decorator), and `IEmailTransport` is the raw relay,
-  injected solely by the admin-written email service so that bulk send stays exempt. See
+  `IEmailSender`, `IEmailDispatcher`, `IEmailTransport`, `IPasswordHasher`,
+  `ILocalFileSystemRepository`. Email is three ports on purpose: `IEmailSender` is the rate-limited
+  one every automatic flow injects (its only implementation is the `ThrottledEmailSender`
+  decorator, which spends the quota on the request thread and then hands the message off);
+  `IEmailDispatcher` is the in-process background queue it hands off to, so no request ever waits
+  on SMTP; and `IEmailTransport` is the raw relay, injected only by the queue's drain loop and by
+  the admin-written email service, whose bulk send stays synchronous and exempt. See
   [SECURITY.md](SECURITY.md).
 - **Ubiquitous language**: the `ErrorCode` enum names every business invariant
   (`UserCannotRemoveLastAdmin`, `ActivityScheduleOutsideEventRange`, …), and seeded catalog rows

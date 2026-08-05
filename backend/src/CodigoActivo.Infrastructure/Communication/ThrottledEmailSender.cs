@@ -5,8 +5,9 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Infrastructure.Communication;
 
 public sealed class ThrottledEmailSender(
-    IEmailTransport transport,
+    IEmailDispatcher dispatcher,
     EmailGuardOptions options,
+    EmailQueueOptions queueOptions,
     IClock clock,
     ILogger<ThrottledEmailSender> logger
 ) : IEmailSender
@@ -18,9 +19,23 @@ public sealed class ThrottledEmailSender(
         var decision = limiter.TryConsume(message.Kind, message.ToAddress);
         Report(decision, message);
 
-        return decision.Scope is not EmailLimitScope.None
-            ? throw new EmailRateLimitedException(decision.Scope)
-            : transport.SendAsync(message, ct);
+        if (decision.Scope is not EmailLimitScope.None)
+        {
+            throw new EmailRateLimitedException(decision.Scope);
+        }
+
+        if (!dispatcher.TryEnqueue(message))
+        {
+            logger.LogError(
+                "The outbound email queue is full at {Capacity} messages; a {Kind} message to {Recipient} was held back",
+                queueOptions.Capacity,
+                message.Kind,
+                message.ToAddress
+            );
+            throw new EmailRateLimitedException(EmailLimitScope.Global);
+        }
+
+        return Task.CompletedTask;
     }
 
     private void Report(EmailSendDecision decision, EmailMessage message)

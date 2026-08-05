@@ -3,12 +3,21 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed partial class FakeEmailSender : IEmailTransport
+public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
 {
     private readonly List<EmailMessage> sent = [];
     private readonly HashSet<string> failingRecipients = new(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyList<EmailMessage> Sent => sent;
+    public IReadOnlyList<EmailMessage> Sent
+    {
+        get
+        {
+            lock (sent)
+            {
+                return [.. sent];
+            }
+        }
+    }
 
     public int Batches { get; private set; }
 
@@ -22,7 +31,19 @@ public sealed partial class FakeEmailSender : IEmailTransport
         }
     }
 
+    public bool TryEnqueue(EmailMessage message)
+    {
+        Record(message);
+        return true;
+    }
+
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
+    {
+        Record(message);
+        return Task.CompletedTask;
+    }
+
+    private void Record(EmailMessage message)
     {
         if (ThrowOnSend is not null)
         {
@@ -33,8 +54,6 @@ public sealed partial class FakeEmailSender : IEmailTransport
         {
             sent.Add(message);
         }
-
-        return Task.CompletedTask;
     }
 
     public Task<EmailBatchResult> SendManyAsync(

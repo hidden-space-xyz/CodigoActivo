@@ -25,6 +25,7 @@ services:
       context: ./backend
       dockerfile: src/CodigoActivo.API/Dockerfile
     restart: unless-stopped
+    stop_grace_period: 30s
     depends_on:
       db:
         condition: service_healthy

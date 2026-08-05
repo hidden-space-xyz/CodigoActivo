@@ -176,6 +176,12 @@ public static class DependencyInjection
 
         services.AddSingleton(options);
         services.AddSingleton<IEmailTransport, SmtpEmailSender>();
+        services.AddSingleton(BuildEmailQueueOptions(configuration));
+        services.AddSingleton<ChannelEmailDispatcher>();
+        services.AddSingleton<IEmailDispatcher>(sp =>
+            sp.GetRequiredService<ChannelEmailDispatcher>()
+        );
+        services.AddHostedService(sp => sp.GetRequiredService<ChannelEmailDispatcher>());
         services.AddSingleton<IEmailSender, ThrottledEmailSender>();
         services.AddSingleton(BuildEmailGuardOptions(configuration));
         services.AddSingleton(
@@ -240,6 +246,40 @@ public static class DependencyInjection
                 EmailGuardOptions.DefaultAlertInterval
             ),
         };
+    }
+
+    private static EmailQueueOptions BuildEmailQueueOptions(IConfiguration configuration)
+    {
+        return new EmailQueueOptions
+        {
+            Capacity = ReadPositiveInt(
+                configuration["EmailQueue:Capacity"],
+                EmailQueueOptions.DefaultCapacity
+            ),
+            Workers = Math.Min(
+                ReadPositiveInt(
+                    configuration["EmailQueue:Workers"],
+                    EmailQueueOptions.DefaultWorkers
+                ),
+                EmailQueueOptions.MaxWorkers
+            ),
+            ShutdownDrain = ReadBoundedTimeSpan(
+                configuration["EmailQueue:ShutdownDrainSeconds"],
+                EmailQueueOptions.DefaultShutdownDrain,
+                EmailQueueOptions.MaxShutdownDrain
+            ),
+            SendTimeout = ReadBoundedTimeSpan(
+                configuration["EmailQueue:SendTimeoutSeconds"],
+                EmailQueueOptions.DefaultSendTimeout,
+                EmailQueueOptions.MaxSendTimeout
+            ),
+        };
+    }
+
+    private static TimeSpan ReadBoundedTimeSpan(string? value, TimeSpan fallback, TimeSpan max)
+    {
+        var parsed = ReadTimeSpan(value, TimeSpan.FromSeconds, fallback);
+        return parsed > max ? max : parsed;
     }
 
     private static int ReadPositiveInt(string? value, int fallback)
