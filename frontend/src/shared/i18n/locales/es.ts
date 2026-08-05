@@ -17,6 +17,7 @@ export const es = {
     emailLong: 'Correo electrónico',
     phone: 'Teléfono',
     password: 'Contraseña',
+    confirmPassword: 'Repite la contraseña',
     birthDate: 'Fecha de nacimiento',
     gender: 'Género',
     image: 'Imagen',

@@ -19,13 +19,18 @@ const emit = defineEmits<{ submit: []; back: [] }>()
 const model = props.form
 
 const submitted = ref(false)
+const confirmTouched = ref(false)
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(model.email.trim()))
 const passwordTooShort = computed(() => model.password.length < 8)
+const passwordsMismatch = computed(() => model.confirmPassword !== model.password)
+const showMismatch = computed(
+  () => (submitted.value || confirmTouched.value) && passwordsMismatch.value,
+)
 
 const isValid = computed(() => {
   if (!model.firstName.trim() || !model.lastName.trim()) return false
   if (!emailValid.value || !model.phone.trim()) return false
-  if (passwordTooShort.value) return false
+  if (passwordTooShort.value || passwordsMismatch.value) return false
   if (!model.dateOfBirth || !model.gender) return false
   return model.minors.every(
     (minor) =>
@@ -125,6 +130,25 @@ function removeMinor(index: number): void {
           />
           <small v-if="submitted && passwordTooShort" class="reg__error">{{
             $t('validation.passwordMin')
+          }}</small>
+        </div>
+        <div class="reg__field">
+          <label class="reg__label" for="reg-password-confirm">{{
+            $t('common.confirmPassword')
+          }}</label>
+          <Password
+            input-id="reg-password-confirm"
+            v-model="model.confirmPassword"
+            :feedback="false"
+            :maxlength="128"
+            :invalid="showMismatch"
+            toggle-mask
+            required
+            fluid
+            @blur="confirmTouched = true"
+          />
+          <small v-if="showMismatch" class="reg__error">{{
+            $t('validation.passwordsMismatch')
           }}</small>
         </div>
         <div class="reg__field">
