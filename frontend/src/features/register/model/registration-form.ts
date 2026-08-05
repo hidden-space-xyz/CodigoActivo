@@ -16,6 +16,7 @@ export interface RegistrationForm {
   email: string
   phone: string
   password: string
+  confirmPassword: string
   dateOfBirth: string
   gender: Gender | null
   minors: MinorForm[]
@@ -33,6 +34,7 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     email: '',
     phone: '',
     password: '',
+    confirmPassword: '',
     dateOfBirth: '',
     gender: null,
     minors: [],
