@@ -1,4 +1,5 @@
 using System.Net;
+using CodigoActivo.Application.Localization;
 using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
@@ -7,22 +8,20 @@ public sealed record ManualEmailContent(string Subject, string HtmlBody, string 
 
 public static class ManualEmail
 {
-    private const string Signature = "Este mensaje te lo envía el equipo de Código Activo.";
-
     public static ManualEmailContent Render(string subject, string body)
     {
         var textBody = $"""
             {body}
 
             --
-            {Signature}
+            {AppStrings.EmailsManualSignature}
             """;
 
         var htmlBody = $"""
             <div style="font-family: Arial, Helvetica, sans-serif; max-width: 520px; margin: 0 auto; color: #1f2937;">
               <h2 style="color: #111827;">{WebUtility.HtmlEncode(subject)}</h2>
               {ToParagraphs(body)}
-              <p style="color: #6b7280; font-size: 13px;">{Signature}</p>
+              <p style="color: #6b7280; font-size: 13px;">{AppStrings.EmailsManualSignature}</p>
             </div>
             """;
 

@@ -1,4 +1,5 @@
 using System.Net;
+using CodigoActivo.Application.Localization;
 using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
@@ -7,13 +8,6 @@ public sealed record ActivitySignupParticipant(string FullName, string RoleName)
 
 public static class ActivitySignupEmail
 {
-    private const string Intro =
-        "Hemos recibido tu solicitud de inscripción y ya ha quedado registrada.";
-
-    private const string Pending =
-        "La organización la revisará y te avisaremos por correo en cuanto la plaza quede confirmada. "
-        + "Por ahora no necesitas hacer nada más.";
-
     public static EmailMessage Create(
         string toAddress,
         string toName,
@@ -23,58 +17,63 @@ public static class ActivitySignupEmail
         string accountUrl
     )
     {
-        var subject = $"Inscripción recibida: {details.ActivityTitle}";
         var encodedName = WebUtility.HtmlEncode(toName);
         var encodedUrl = WebUtility.HtmlEncode(accountUrl);
 
         var participantsText = string.Join(
             "\n",
             participants.Select(participant =>
-                $"- {participant.FullName} ({participant.RoleName})"
+                AppStrings.EmailsActivitySignupParticipantText(
+                    participant.FullName,
+                    participant.RoleName
+                )
             )
         );
 
         var participantsHtml = string.Concat(
             participants.Select(participant =>
-                $"<li style=\"margin-bottom: 4px;\">{WebUtility.HtmlEncode(participant.FullName)}"
-                + $" — <b>{WebUtility.HtmlEncode(participant.RoleName)}</b></li>"
+                "<li style=\"margin-bottom: 4px;\">"
+                + AppStrings.EmailsActivitySignupParticipantHtml(
+                    WebUtility.HtmlEncode(participant.FullName),
+                    WebUtility.HtmlEncode(participant.RoleName)
+                )
+                + "</li>"
             )
         );
 
         var textBody = $"""
-            Hola {toName}:
+            {AppStrings.EmailsSharedGreeting(toName)}
 
-            {Intro}
+            {AppStrings.EmailsActivitySignupIntro}
 
             {details.ToTextBlock(timeZone)}
 
-            Personas inscritas:
+            {AppStrings.EmailsActivitySignupParticipantsLabel}
             {participantsText}
 
-            {Pending}
+            {AppStrings.EmailsActivitySignupPending}
 
-            Puedes consultar el estado de tus inscripciones cuando quieras desde tu área personal:
+            {AppStrings.EmailsActivitySignupAccountPrompt}
 
             {accountUrl}
 
-            Un saludo,
-            Equipo de Código Activo
+            {AppStrings.EmailsSharedSignoffText}
             """;
 
         var htmlBody = $"""
             <div style="font-family: Arial, Helvetica, sans-serif; max-width: 520px; margin: 0 auto; color: #1f2937;">
-              <h2 style="color: #111827;">Inscripción recibida</h2>
-              <p>Hola {encodedName}:</p>
-              <p>{Intro}</p>
+              <h2 style="color: #111827;">{AppStrings.EmailsActivitySignupHeading}</h2>
+              <p>{AppStrings.EmailsSharedGreeting(encodedName)}</p>
+              <p>{AppStrings.EmailsActivitySignupIntro}</p>
               {details.ToHtmlBlock(timeZone)}
-              <p style="margin-bottom: 4px;">Personas inscritas:</p>
+              <p style="margin-bottom: 4px;">{AppStrings.EmailsActivitySignupParticipantsLabel}</p>
               <ul style="margin-top: 0; padding-left: 20px;">{participantsHtml}</ul>
-              <p>{Pending}</p>
+              <p>{AppStrings.EmailsActivitySignupPending}</p>
               <p style="text-align: center; margin: 24px 0;">
-                <a href="{encodedUrl}" style="display: inline-block; padding: 12px 28px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold;">Ver mis inscripciones</a>
+                <a href="{encodedUrl}" style="display: inline-block; padding: 12px 28px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold;">{AppStrings.EmailsActivitySignupButtonLabel}</a>
               </p>
-              <p style="color: #6b7280; font-size: 13px;">Si el botón no funciona, copia esta dirección en tu navegador:<br>{encodedUrl}</p>
-              <p style="color: #6b7280; font-size: 13px;">Un saludo,<br>Equipo de Código Activo</p>
+              <p style="color: #6b7280; font-size: 13px;">{AppStrings.EmailsSharedFallbackLinkNote}<br>{encodedUrl}</p>
+              <p style="color: #6b7280; font-size: 13px;">{AppStrings.EmailsSharedSignoffHtml}</p>
             </div>
             """;
 
@@ -82,7 +81,7 @@ public static class ActivitySignupEmail
             EmailKind.ActivityNotification,
             toAddress,
             toName,
-            subject,
+            AppStrings.EmailsActivitySignupSubject(details.ActivityTitle),
             htmlBody,
             textBody
         );

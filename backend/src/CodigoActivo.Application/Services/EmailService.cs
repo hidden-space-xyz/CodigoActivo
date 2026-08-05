@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Localization;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -20,8 +21,6 @@ public class EmailService(
     ILogger<EmailService> logger
 ) : IEmailService
 {
-    private const string FallbackAttachmentName = "adjunto";
-
     private static readonly char[] PathSeparators = ['/', '\\'];
 
     private static readonly Expression<Func<User, Recipient>> ToRecipient = u => new Recipient(
@@ -203,7 +202,7 @@ public class EmailService(
     {
         var separator = fileName.LastIndexOfAny(PathSeparators);
         var name = separator < 0 ? fileName : fileName[(separator + 1)..];
-        return string.IsNullOrWhiteSpace(name) ? FallbackAttachmentName : name;
+        return string.IsNullOrWhiteSpace(name) ? AppStrings.FilesFallbackAttachmentName : name;
     }
 
     private sealed record Recipient(string? Email, string FirstName);

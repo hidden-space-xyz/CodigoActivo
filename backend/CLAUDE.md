@@ -9,6 +9,7 @@ ASP.NET Core Web API (.NET 10). See the repo root `CLAUDE.md` for the overall pi
 - **Never put `Version=` on a `PackageReference`** — versions are central in `Directory.Packages.props`.
 - **Authorization is deny-by-default**: `Program.cs` uses `AddAuthorizationBuilder().SetFallbackPolicy(…)` with a `RequireAuthenticatedUser()` policy, so **every new public endpoint MUST carry `[AllowAnonymous]`** or it answers 401 to anonymous callers.
 - **Adding a failure mode** = a new `ErrorCode` member + `return Error.<Kind>(ErrorCode.X)` + a Spanish message under the `errors.<ErrorCode>` key in `frontend/src/shared/i18n/locales/es.ts`.
+- **Adding user-facing prose** = a `<data>` entry in `Application/Localization/AppStrings.resx` + a matching `AppStrings` member, **never a string literal**. See Localization below.
 - The DB is **snake_case** (`UseSnakeCaseNamingConvention`): `FirstName` → `first_name`. Account for this in raw SQL.
 
 ## Commands
@@ -150,6 +151,48 @@ Group 2 — the analyzer's fix is technically wrong or impossible here:
 - `ErrorCode` (`Domain/Common/ErrorCode.cs`) is one enum serialized **as a string** — the stable contract the frontend switches on.
 - Controllers derive from `ApiControllerBase` and translate with `ToOk`/`ToCreated`/`ToNoContent`; `API/Extensions/ApiErrorResponseExtensions.cs` maps `ErrorKind` → HTTP status (400/401/403/404/409) and emits `ApiErrorResponse(Title, Status, Code, TraceId)`. Middleware failures (auth, CSRF, model validation, unhandled exceptions) emit the same shape.
 
+## Localization
+
+All backend user-facing prose lives in **`Application/Localization/AppStrings.resx`** (52 keys) and is read through the hand-written strongly-typed accessor **`AppStrings.cs`** beside it. Today that is the six email templates plus two filename fallbacks — every Spanish sentence the backend can send.
+
+- **A resx lives in the project that renders the string, never in Domain.** Domain carries no user-facing text by design: `Error` is `record Error(ErrorKind, ErrorCode)` with no message field precisely so copy stays at the presentation edge. If Infrastructure ever needs one it gets its own; it must not reach into Application's.
+- **Keys mirror `es.ts` paths**, dotted and camelCase after the first segment: `emails.verification.subject`, `emails.activityDecision.confirmedIntro`, `files.fallbackAttachmentName`. Accessor members are the key with dots stripped and each segment PascalCased (`emails.shared.greeting` → `EmailsSharedGreeting`) — mechanical, so the guard test can enforce 1:1.
+- **Composites are exposed only as methods with named, typed parameters**; `Get` is private and `string.Format` never appears at a call site. Changing a call site's argument list is then a compile error — but **the resx side is not**, because the compiler never reads it: editing a `{0}` hole there is a runtime `FormatException` (or, when a hole is *deleted*, a silently truncated string). `AppStringsTests` is what closes that gap; it invokes every accessor and asserts each value uses exactly one hole per parameter. Values use .NET's numbered `{0}` holes, **not** the `{name}` holes `es.ts` uses — the parameter name carries the meaning instead.
+- **`...Text` / `...Html` suffixes** appear only where the two bodies genuinely differ. An `...Html` value may contain **only** `<b>`, `</b>` and `<br>`; every other value must contain no `<` at all, and **no value may contain a bare `&`** — every one of them is interpolated into the HTML body unencoded, so an ampersand starts an entity reference. HTML scaffolding and inline CSS stay in the `.cs` templates, because encoding happens at the interpolation hole (`WebUtility.HtmlEncode`) and resource text is emitted raw.
+- **The four `emails.activityDecision.*` intro/phrase keys must be translated as a unit** — the intros' trailing clause (`…y la ha aprobado`) is gender-agreed with the feminine *la inscripción* that `SignupPhrase` produces. Editing one key in isolation yields grammatical garbage, and that is invisible from the resx alone.
+- `AppStrings.Get` **throws** on a missing or empty key. `ResourceManager.GetString` returns `null` silently, which would ship an empty paragraph; failing loud is the point. Its own exception message stays English (it is a developer assertion).
+- The `.resx` is **comment-free** like every other file here. The four standard `<resheader>` elements are kept — they are markup, not comments, and they stop Visual Studio "repairing" the file and re-inserting its XML preamble.
+- `CodigoActivo.Application.csproj` sets `<NeutralLanguage>es</NeutralLanguage>`. That emits `[assembly: NeutralResourcesLanguage("es")]`, which silences CA1824 under `AnalysisMode=All` and tells the runtime the embedded neutral set *is* Spanish. There is no `.Designer.cs`: SDK builds never generate one, and the MSBuild strongly-typed generator emits a 26-line comment header and properties only (no parameterised methods), so it is not used.
+
+### The ceiling: a second language does not work in the container as shipped
+
+**Verified empirically, in `mcr.microsoft.com/dotnet/aspnet:10.0-alpine`.** The base image sets `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true` in its own `ENV` (the Dockerfile's line 5 is redundant) and ships no ICU. Under that mode `CultureInfo.CurrentUICulture` **is** `CultureInfo.InvariantCulture`, `GetCultures()` returns 1, and `new CultureInfo("en")` **throws** `CultureNotFoundException` — so does `Assembly.Load("…resources, Culture=en")`. An `AppStrings.en.resx` would build an `en/CodigoActivo.Application.resources.dll` that is unreachable dead weight.
+
+The **neutral** resources embedded in the main assembly always resolve, which is why the Spanish copy works today (the unit tests pass with `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true` set).
+
+Three rules follow, and they are not optional:
+
+- `AppStrings` must **never** read `CultureInfo.CurrentUICulture`, construct a `CultureInfo` from input, or assign `CurrentUICulture`. All three throw in production. **Never add `RequestLocalizationMiddleware`** — that is exactly what it does.
+- Every lookup funnels through the one private `Culture` seam, so switching later is a one-line change.
+- The neutral resx **is** the Spanish one. A second language is `AppStrings.en.resx`, never `AppStrings.es.resx`.
+
+**Mitigation, when a second language is actually wanted** (not done in this pass):
+
+- Cheap and verified: add `DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY=false` to the Dockerfile `ENV`. Satellites then load on Alpine with **zero ICU**. Two traps — the parent-culture chain is dead, so `en-US`/`en-GB` silently fall through to the neutral Spanish resource (the resolver **must normalize to the exact satellite name**), and comparison/casing/date/number formatting stay invariant, so this buys resource lookup only. It would add that variable to `DEPLOYMENT.md`.
+- Proper: `apk add --no-cache icu-libs icu-data-full` **plus** `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false`. **Never set that to false without installing ICU** — the process FailFasts at startup from inside `ResourceManager`'s static init. This also reverses the invariant-ordering posture that report-name sorting currently relies on, so it is a deliberate change with a re-verification cost.
+
+### Deliberately not localized
+
+- **Seed catalog `Name`/`Description` in `DatabaseSeeder.cs` (30 literals).** They persist as **database rows**, and `AddMissingAsync` only ever inserts — it never updates — so a resource lookup at seed time would freeze one language into the row permanently. They are also sorted and free-text-filtered **in SQL** (`SortMap` over `name`, `TextSearch.Contains`), denormalized into DTOs, the CSV export, the printable roster and outbound mail, and **admins edit them through the API**. The seeded text is a default, not a constant. Treat catalog text as **content, not UI strings**; the coherent multilingual answer is a data-model change (per-locale column or translation table), with every sort/filter moving to the resolved-locale column. `DemoDataSeeder.cs` is the same category.
+- **Exception messages** (`Result.cs`, `EmailRateLimitedException`, `ApiControllerBase`, `ApiErrorResponseExtensions`) — developer assertions signalling programming errors. None is mapped to an `ApiErrorResponse`; `GlobalExceptionHandler` replaces them with the fixed 500 body, so none reaches a user. English on purpose, and greppable in stack traces.
+- **Serilog message templates** — the template *is* the event's identity in the log store and aggregation keys off its hash. Localizing one fragments every dashboard built on it.
+- **HTTP reason phrases** (`"Bad Request"`, `"Not Found"`, …) — RFC 9110 protocol text. They are serialized into `ApiErrorResponse.Title`, but `getErrorMessage()` short-circuits on `error.code` and never reads it, so nothing renders them. The user-visible copy already lives in `errors.*` of `es.ts`.
+- **`dd/MM/yyyy` / `HH:mm`** — format patterns, not prose, rendered with `CultureInfo.InvariantCulture` deliberately. In a translator-editable file someone would write `MMMM`, which under invariant globalization renders month names **in English**.
+- **robots.txt directives, sitemap XML names, `StaticPaths`, cache tags, sort keys, claim/cookie/header names** — machine-consumed grammar.
+- **The brand name "Código Activo"** is not its own key: it appears spliced mid-sentence, which is the classic fragment trap. It stays inline inside the Spanish values.
+
+`TextSearch`'s accent-folding table (`á→a`, …) would need `ü`/`ç` extended for a second locale — a data change, not a resource.
+
 ## Layer conventions
 
 - **Services** (`Application/Services/`; interfaces colocated in `Services/Abstractions/IServices.cs`): primary-constructor DI on repository interfaces — plus `IUnitOfWork`/`IClock` for mutations, `IQueryExecutor` for paged reads, `IPasswordHasher` where needed. **Never inject `DbContext`.**
@@ -182,6 +225,8 @@ Group 2 — the analyzer's fix is technically wrong or impossible here:
 - **Event signup windows are two-tier.** `Event` carries `SignupStartsAt`/`SignupEndsAt` plus an optional `EarlySignupStartsAt`. `ActivityService.EnsureSignupOpenAsync` is the single gate for every assignment write: admins bypass it entirely, everyone else is refused with `ActivitySignupClosed` outside `[EarlySignupStartsAt ?? SignupStartsAt, SignupEndsAt]`, and inside the early window only `Socio`/`Patrocinador` pass — others get `ActivitySignupEarlyOnly`. **A dependent minor inherits their guardian's eligibility** (the gate resolves `u.Parent == null ? u.UserTypeId : u.Parent.UserTypeId`), so a socio's children enter early too. `EarlySignupStartsAt` is nullable — when unset the event behaves as a single-tier window — and `EventService.ValidateSchedule` requires it to be strictly before `SignupStartsAt` (`EventEarlySignupNotBeforeSignup`).
 
 ### The four email flows
+
+All four render their prose from `AppStrings` (see Localization); only HTML scaffolding and inline CSS remain in the `Emails/*.cs` templates. Key prefixes: `emails.verification.*`, `emails.passwordReset.*`, `emails.activitySignup.*` + `emails.activityDecision.*`, `emails.manual.*`, with `emails.shared.*` (greeting, fallback-link note, sign-off) and `emails.details.*` (the activity/event/schedule block) shared across them.
 
 1. **Account verification** — `[AllowAnonymous]`: `POST /api/auth/register`, `PATCH /api/auth/{userId}/verify`, `POST /api/auth/{userId}/resend-verification`; `Application/Emails/VerificationEmail.cs`, `AccountVerification` settings.
 2. **Password reset** — `[AllowAnonymous]`: `POST /api/auth/forgot-password`, `PATCH /api/auth/{userId}/reset-password`; `Application/Emails/PasswordResetEmail.cs`, `PasswordReset` settings.

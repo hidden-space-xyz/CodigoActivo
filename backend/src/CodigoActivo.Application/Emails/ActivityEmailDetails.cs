@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using CodigoActivo.Application.Localization;
 
 namespace CodigoActivo.Application.Emails;
 
@@ -32,18 +33,19 @@ public sealed record ActivityEmailDetails(
 
         if (start.Date == end.Date)
         {
-            return $"{startDate}, de {startTime} a {endTime} h";
+            return AppStrings.EmailsDetailsScheduleSameDay(startDate, startTime, endTime);
         }
 
         var endDate = end.ToString(DateFormat, CultureInfo.InvariantCulture);
-        return $"del {startDate} a las {startTime} h al {endDate} a las {endTime} h";
+        return AppStrings.EmailsDetailsScheduleMultiDay(startDate, startTime, endDate, endTime);
     }
 
     public string ToTextBlock(TimeZoneInfo timeZone, string? roleName = null)
     {
         return string.Join(
             "\n",
-            Rows(timeZone, roleName).Select(row => $"{row.Label}: {row.Value}")
+            Rows(timeZone, roleName)
+                .Select(row => AppStrings.EmailsDetailsRowText(row.Label, row.Value))
         );
     }
 
@@ -62,13 +64,13 @@ public sealed record ActivityEmailDetails(
 
     private IEnumerable<(string Label, string Value)> Rows(TimeZoneInfo timeZone, string? roleName)
     {
-        yield return ("Actividad", ActivityTitle);
-        yield return ("Evento", EventTitle);
-        yield return ("Cuándo", ScheduleText(timeZone));
-        yield return ("Dónde", Location);
+        yield return (AppStrings.EmailsDetailsActivityLabel, ActivityTitle);
+        yield return (AppStrings.EmailsDetailsEventLabel, EventTitle);
+        yield return (AppStrings.EmailsDetailsScheduleLabel, ScheduleText(timeZone));
+        yield return (AppStrings.EmailsDetailsLocationLabel, Location);
         if (!string.IsNullOrWhiteSpace(roleName))
         {
-            yield return ("Participa como", roleName);
+            yield return (AppStrings.EmailsDetailsRoleLabel, roleName);
         }
     }
 }
