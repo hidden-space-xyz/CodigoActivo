@@ -102,24 +102,18 @@ onBeforeUnmount(revokeObjectUrl)
 
     <div class="thumb__controls">
       <Button
-        type="button"
         :label="
-          previewUrl
-            ? $t('entities.file.thumbnail.change')
-            : $t('entities.file.thumbnail.select')
+          previewUrl ? $t('entities.file.thumbnail.change') : $t('entities.file.thumbnail.select')
         "
-        icon="pi pi-image"
+        icon="image"
         size="small"
-        severity="secondary"
         @click="pick"
       />
       <Button
         v-if="pickedFile"
-        type="button"
         :label="$t('entities.file.thumbnail.remove')"
         text
         size="small"
-        severity="secondary"
         @click="clearSelection"
       />
       <span v-if="fileName" class="thumb__name">{{ fileName }}</span>

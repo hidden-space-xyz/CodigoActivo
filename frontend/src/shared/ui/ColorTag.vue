@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import Tag from 'primevue/tag'
 
 import { normalizeHexColor } from '@/shared/lib'
 
@@ -17,14 +16,14 @@ const tagStyle = computed(() => {
   const b = parseInt(hex.slice(5, 7), 16)
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
   return {
-    backgroundColor: hex,
-    color: luminance > 0.6 ? '#1f2937' : '#ffffff',
-    border: luminance > 0.85 ? '1px solid rgba(0, 0, 0, 0.15)' : '1px solid transparent',
+    '--el-tag-bg-color': hex,
+    '--el-tag-text-color': luminance > 0.6 ? '#1f2937' : '#ffffff',
+    '--el-tag-border-color': luminance > 0.85 ? 'rgba(0, 0, 0, 0.15)' : 'transparent',
   }
 })
 </script>
 
 <template>
-  <Tag v-if="tagStyle" :value="value" :style="tagStyle" />
-  <Tag v-else :value="value" severity="secondary" />
+  <el-tag v-if="tagStyle" :style="tagStyle">{{ value }}</el-tag>
+  <el-tag v-else type="info">{{ value }}</el-tag>
 </template>

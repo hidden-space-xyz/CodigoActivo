@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { AppIcon } from '@/shared/ui'
 
 import { formatNumber, formatSignedPercent } from '@/shared/lib'
 import type { DashboardKpiResponse } from '@/shared/api/generated/models'
@@ -16,41 +17,47 @@ interface TileMeta {
   color: string
 }
 
+const TREND_ICONS: Record<string, string> = {
+  up: 'arrow-up-right',
+  down: 'arrow-down-right',
+  flat: 'minus',
+}
+
 const TILES: readonly TileMeta[] = [
   {
     key: 'users',
     label: t('pages.admin.dashboard.kpi.users'),
-    icon: 'pi pi-users',
+    icon: 'users',
     color: 'var(--ca-azure)',
   },
   {
     key: 'members',
     label: t('pages.admin.dashboard.kpi.members'),
-    icon: 'pi pi-id-card',
+    icon: 'id-card',
     color: 'var(--ca-orange)',
   },
   {
     key: 'inscriptions',
     label: t('pages.admin.dashboard.kpi.inscriptions'),
-    icon: 'pi pi-check-square',
+    icon: 'check-square',
     color: 'var(--ca-lime)',
   },
   {
     key: 'events',
     label: t('pages.admin.dashboard.kpi.events'),
-    icon: 'pi pi-calendar',
+    icon: 'calendar',
     color: 'var(--ca-orange)',
   },
   {
     key: 'resources',
     label: t('pages.admin.dashboard.kpi.resources'),
-    icon: 'pi pi-book',
+    icon: 'book',
     color: 'var(--ca-azure)',
   },
   {
     key: 'announcements',
     label: t('pages.admin.dashboard.kpi.announcements'),
-    icon: 'pi pi-megaphone',
+    icon: 'megaphone',
     color: 'var(--ca-lime)',
   },
 ]
@@ -64,7 +71,7 @@ const tiles = computed(() => {
     const previous = kpi?.previousRange ?? 0
     const trend = inRange === previous ? 'flat' : inRange > previous ? 'up' : 'down'
     const percent = previous > 0 ? ((inRange - previous) / previous) * 100 : null
-    return { ...meta, total, inRange, trend, percent }
+    return { ...meta, total, inRange, trend, trendIcon: TREND_ICONS[trend] ?? 'minus', percent }
   })
 })
 </script>
@@ -78,21 +85,13 @@ const tiles = computed(() => {
       :style="{ '--accent': tile.color }"
     >
       <div class="kpi-card__top">
-        <span class="kpi-card__icon"><i :class="tile.icon" /></span>
+        <span class="kpi-card__icon"><AppIcon :name="tile.icon" /></span>
         <span
           v-if="tile.percent !== null"
           class="kpi-card__delta"
           :class="`kpi-card__delta--${tile.trend}`"
         >
-          <i
-            :class="
-              tile.trend === 'up'
-                ? 'pi pi-arrow-up-right'
-                : tile.trend === 'down'
-                  ? 'pi pi-arrow-down-right'
-                  : 'pi pi-minus'
-            "
-          />
+          <AppIcon :name="tile.trendIcon" />
           {{ formatSignedPercent(tile.percent) }}
         </span>
       </div>
@@ -131,6 +130,8 @@ const tiles = computed(() => {
 }
 
 .kpi-card__icon {
+  display: inline-flex;
+  align-items: center;
   color: var(--accent);
   font-size: 20px;
 }

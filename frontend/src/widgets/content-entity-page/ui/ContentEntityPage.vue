@@ -9,11 +9,6 @@ import {
   ListThumbnail,
   RichTextEditor,
 } from '@/shared/ui'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Tag from 'primevue/tag'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type { ContentController, ContentItem, ContentRequest } from '../model/use-content-entity'
@@ -150,14 +145,24 @@ function confirmDelete(item: ContentItem): void {
 </script>
 
 <template>
-  <div>
+  <div class="content-entity">
     <AdminPageHeader :title="title" :subtitle="subtitle">
       <template #actions>
-        <Button :label="newLabel" icon="pi pi-plus" :disabled="loadingDetail" @click="openCreate" />
+        <Button
+          :label="newLabel"
+          icon="plus"
+          type="primary"
+          :disabled="loadingDetail"
+          @click="openCreate"
+        />
       </template>
     </AdminPageHeader>
 
-    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
+    <el-table
+      v-bind="table.tableProps.value"
+      v-loading="table.loading.value"
+      @sort-change="table.onSortChange"
+    >
       <template #empty>
         <span v-if="table.isError.value">{{
           $t('widgets.contentEntityPage.table.loadError')
@@ -165,12 +170,12 @@ function confirmDelete(item: ContentItem): void {
         <span v-else>{{ $t('widgets.contentEntityPage.table.empty') }}</span>
       </template>
 
-      <Column :header="$t('common.image')" style="width: 110px">
-        <template #body="{ data }">
-          <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
+      <el-table-column :label="$t('common.image')" width="110">
+        <template #default="{ row }">
+          <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
         </template>
-      </Column>
-      <Column field="title" sortable>
+      </el-table-column>
+      <el-table-column prop="title" min-width="220" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('title').value"
@@ -179,18 +184,16 @@ function confirmDelete(item: ContentItem): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
+        <template #default="{ row }">
           <span class="title-cell">
-            {{ data.title }}
-            <Tag
-              v-if="controller.canFeature && data.featured"
-              :value="$t('widgets.contentEntityPage.featured')"
-              severity="warn"
-            />
+            {{ row.title }}
+            <el-tag v-if="controller.canFeature && row.featured" type="warning">
+              {{ $t('widgets.contentEntityPage.featured') }}
+            </el-tag>
           </span>
         </template>
-      </Column>
-      <Column field="subtitle" sortable>
+      </el-table-column>
+      <el-table-column prop="subtitle" min-width="240" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('subtitle').value"
@@ -199,8 +202,8 @@ function confirmDelete(item: ContentItem): void {
             @apply="table.onFilter"
           />
         </template>
-      </Column>
-      <Column field="createdAt" sortable style="width: 200px">
+      </el-table-column>
+      <el-table-column prop="createdAt" sortable="custom" width="200">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('created').value"
@@ -208,70 +211,80 @@ function confirmDelete(item: ContentItem): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
-      </Column>
-      <Column :header="$t('common.actions')" style="width: 170px">
-        <template #body="{ data }">
+        <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      </el-table-column>
+      <el-table-column :label="$t('common.actions')" width="170">
+        <template #default="{ row }">
           <div class="row-actions">
             <Button
               v-if="controller.canFeature"
-              :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
+              :icon="row.featured ? 'star-fill' : 'star'"
+              type="primary"
               text
-              rounded
+              circle
               :aria-label="
-                data.featured
+                row.featured
                   ? $t('widgets.contentEntityPage.featured')
                   : $t('widgets.contentEntityPage.feature')
               "
-              :disabled="data.featured || controller.feature.isPending.value"
-              :class="{ 'is-featured': data.featured }"
-              @click="onFeature(data)"
+              :disabled="row.featured || controller.feature.isPending.value"
+              :class="{ 'is-featured': row.featured }"
+              @click="onFeature(row)"
             />
             <Button
-              icon="pi pi-pencil"
+              icon="pencil"
+              type="primary"
               text
-              rounded
+              circle
               :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
-              @click="openEdit(data)"
+              @click="openEdit(row)"
             />
             <Button
-              icon="pi pi-trash"
+              icon="trash"
+              type="danger"
               text
-              rounded
-              severity="danger"
+              circle
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(data)"
+              @click="confirmDelete(row)"
             />
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </el-table-column>
+    </el-table>
 
-    <Dialog
-      v-model:visible="dialogVisible"
-      modal
-      :header="editing ? $t('widgets.contentEntityPage.dialog.editHeader', { label: entityLabel }) : newLabel"
-      :style="{ width: '94vw', maxWidth: '920px' }"
-      :content-style="{ maxHeight: '78vh' }"
+    <el-pagination
+      v-bind="table.paginationProps.value"
+      class="table-pagination"
+      @current-change="table.onCurrentPageChange"
+      @size-change="table.onPageSizeChange"
+    />
+
+    <el-dialog
+      v-model="dialogVisible"
+      :title="
+        editing
+          ? $t('widgets.contentEntityPage.dialog.editHeader', { label: entityLabel })
+          : newLabel
+      "
+      width="94vw"
+      class="entity-dialog"
     >
       <form class="form" @submit.prevent="save">
         <div class="form__field">
           <label>{{ $t('widgets.contentEntityPage.form.title') }}</label>
-          <InputText
+          <el-input
             v-model="form.title"
             :maxlength="200"
-            :invalid="submitted && !form.title.trim()"
-            fluid
+            :class="{ 'form__input--invalid': submitted && !form.title.trim() }"
           />
         </div>
         <div class="form__field">
           <label>{{ $t('widgets.contentEntityPage.form.subtitle') }}</label>
-          <InputText
+          <el-input
             v-model="form.subtitle"
             :maxlength="300"
-            :invalid="submitted && !form.subtitle.trim()"
-            fluid
+            :class="{ 'form__input--invalid': submitted && !form.subtitle.trim() }"
           />
         </div>
         <div class="form__field">
@@ -295,17 +308,17 @@ function confirmDelete(item: ContentItem): void {
         <Button
           :label="$t('common.cancel')"
           text
-          severity="secondary"
           :disabled="saving || uploading"
           @click="dialogVisible = false"
         />
         <Button
           :label="$t('common.save')"
+          type="primary"
           :loading="saving || uploading || loadingDetail"
           @click="save"
         />
       </template>
-    </Dialog>
+    </el-dialog>
   </div>
 </template>
 
@@ -321,8 +334,18 @@ function confirmDelete(item: ContentItem): void {
   gap: 8px;
 }
 
-.is-featured:deep(.p-button-icon) {
+.row-actions :deep(.is-featured) {
   color: var(--ca-orange);
+}
+
+.table-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.content-entity :deep(.entity-dialog) {
+  max-width: 920px;
 }
 
 .form {
@@ -330,6 +353,12 @@ function confirmDelete(item: ContentItem): void {
   flex-direction: column;
   gap: 16px;
   padding-top: 6px;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+.form__input--invalid :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 
 .form__field {

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import DatePicker from 'primevue/datepicker'
-import Popover from 'primevue/popover'
+import { AppIcon } from '@/shared/ui'
 
 import { formatDate } from '@/shared/lib'
 import { RANGE_OPTIONS, type RangePreset } from '../model/useDashboardRange'
@@ -19,7 +18,8 @@ const emit = defineEmits<{
   range: [(Date | null)[] | null]
 }>()
 
-const panel = ref<InstanceType<typeof Popover>>()
+const visible = ref(false)
+const panelEl = ref<HTMLElement>()
 const draft = ref<(Date | null)[] | null>(props.customRange)
 
 const customLabel = computed(() => {
@@ -30,16 +30,22 @@ const customLabel = computed(() => {
   return `${formatDate(range[0].toISOString())} – ${formatDate(end.toISOString())}`
 })
 
-function toggle(event: MouseEvent): void {
+const pickerValue = computed<Date[]>(() =>
+  (draft.value ?? []).filter((date): date is Date => date instanceof Date),
+)
+
+function syncDraft(): void {
   draft.value = props.customRange
-  panel.value?.toggle(event)
 }
 
-function onSelect(): void {
-  const range = draft.value
-  if (range?.[0] instanceof Date && range[1] instanceof Date) {
+function onSelect(value: unknown): void {
+  const range = Array.isArray(value)
+    ? value.filter((item): item is Date => item instanceof Date)
+    : []
+  draft.value = range.length > 0 ? range : null
+  if (range.length === 2) {
     emit('range', range)
-    panel.value?.hide()
+    visible.value = false
   }
 }
 </script>
@@ -58,29 +64,39 @@ function onSelect(): void {
       {{ option.label }}
     </button>
 
-    <button
-      type="button"
-      class="range-filter__pill range-filter__pill--custom"
-      :class="{ 'range-filter__pill--active': preset === 'custom' }"
-      :aria-pressed="preset === 'custom'"
-      @click="toggle"
+    <el-popover
+      v-model:visible="visible"
+      trigger="click"
+      placement="bottom"
+      width="auto"
+      @before-enter="syncDraft"
     >
-      <i class="pi pi-calendar" aria-hidden="true" />
-      {{ customLabel }}
-    </button>
+      <template #reference>
+        <button
+          type="button"
+          class="range-filter__pill range-filter__pill--custom"
+          :class="{ 'range-filter__pill--active': preset === 'custom' }"
+          :aria-pressed="preset === 'custom'"
+        >
+          <AppIcon name="calendar" />
+          {{ customLabel }}
+        </button>
+      </template>
 
-    <Popover ref="panel">
-      <div class="range-filter__panel" @click.stop>
-        <DatePicker
-          v-model="draft"
-          selection-mode="range"
-          :manual-input="false"
-          :placeholder="$t('table.rangePlaceholder')"
-          inline
+      <div ref="panelEl" class="range-filter__panel" @click.stop @keydown.stop>
+        <el-date-picker
+          :model-value="pickerValue"
+          type="daterange"
+          unlink-panels
+          :editable="false"
+          :start-placeholder="$t('table.rangeFrom')"
+          :end-placeholder="$t('table.rangeTo')"
+          :append-to="panelEl"
+          class="range-filter__picker"
           @update:model-value="onSelect"
         />
       </div>
-    </Popover>
+    </el-popover>
   </div>
 </template>
 
@@ -129,5 +145,10 @@ function onSelect(): void {
 
 .range-filter__panel {
   padding: 4px;
+  min-width: 280px;
+}
+
+.range-filter__picker {
+  width: 100%;
 }
 </style>

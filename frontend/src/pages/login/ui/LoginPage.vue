@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-
 import { useLogin } from '@/features/auth'
 import { BaseButton, PageHead } from '@/shared/ui'
 
@@ -20,18 +17,19 @@ const { form, submit, isSubmitting, isError } = useLogin()
       <div class="login-card">
         <form class="login-form" @submit.prevent="submit">
           <div class="login-field">
-            <label class="login-label" for="login-identifier">{{ $t('pages.login.identifierLabel') }}</label>
-            <InputText id="login-identifier" v-model="form.identifier" required fluid />
+            <label class="login-label" for="login-identifier">{{
+              $t('pages.login.identifierLabel')
+            }}</label>
+            <el-input id="login-identifier" v-model="form.identifier" required />
           </div>
           <div class="login-field">
             <label class="login-label" for="login-password">{{ $t('common.password') }}</label>
-            <Password
-              input-id="login-password"
+            <el-input
+              id="login-password"
               v-model="form.password"
-              :feedback="false"
-              toggle-mask
+              type="password"
+              show-password
               required
-              fluid
             />
           </div>
 
@@ -50,7 +48,9 @@ const { form, submit, isSubmitting, isError } = useLogin()
 
         <p class="login-alt">
           {{ $t('pages.login.noAccount') }}
-          <RouterLink :to="{ name: 'register' }" class="login-alt__link"> {{ $t('common.register') }} </RouterLink>
+          <RouterLink :to="{ name: 'register' }" class="login-alt__link">
+            {{ $t('common.register') }}
+          </RouterLink>
         </p>
       </div>
     </section>

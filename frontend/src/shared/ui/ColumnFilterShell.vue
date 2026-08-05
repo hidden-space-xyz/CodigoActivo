@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Popover from 'primevue/popover'
+
+import AppIcon from './AppIcon.vue'
 
 defineProps<{
   label: string
@@ -16,14 +17,11 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const panel = ref<InstanceType<typeof Popover>>()
-
-function toggle(event: MouseEvent): void {
-  panel.value?.toggle(event)
-}
+const visible = ref(false)
+const panelEl = ref<HTMLElement>()
 
 function hide(): void {
-  panel.value?.hide()
+  visible.value = false
 }
 
 defineExpose({ hide })
@@ -32,25 +30,34 @@ defineExpose({ hide })
 <template>
   <span class="column-filter">
     <span>{{ label }}</span>
-    <button
-      type="button"
-      class="column-filter__toggle"
-      :class="{ 'column-filter__toggle--active': active }"
-      :aria-label="toggleLabel"
-      :title="toggleLabel"
-      @click.stop="toggle"
+    <el-popover
+      v-model:visible="visible"
+      trigger="click"
+      placement="bottom"
+      width="auto"
+      @after-enter="emit('show')"
     >
-      <i :class="active ? 'pi pi-filter-fill' : 'pi pi-search'" aria-hidden="true" />
-    </button>
+      <template #reference>
+        <button
+          type="button"
+          class="column-filter__toggle"
+          :class="{ 'column-filter__toggle--active': active }"
+          :aria-label="toggleLabel"
+          :title="toggleLabel"
+          @click.stop
+        >
+          <AppIcon :name="active ? 'filter-fill' : 'search'" />
+        </button>
+      </template>
 
-    <Popover ref="panel" @show="emit('show')">
       <div
+        ref="panelEl"
         class="column-filter__panel"
         :class="{ 'column-filter__panel--wide': wide }"
         @click.stop
         @keydown.stop
       >
-        <slot />
+        <slot :panel="panelEl ?? ''" />
         <button
           v-if="showClear"
           type="button"
@@ -59,10 +66,10 @@ defineExpose({ hide })
           :title="$t('table.clear')"
           @click="emit('clear')"
         >
-          <i class="pi pi-times" aria-hidden="true" />
+          <AppIcon name="times" />
         </button>
       </div>
-    </Popover>
+    </el-popover>
   </span>
 </template>
 
@@ -83,6 +90,7 @@ defineExpose({ hide })
   border-radius: 6px;
   background: transparent;
   color: var(--ca-text-muted);
+  font-size: 13px;
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -96,10 +104,6 @@ defineExpose({ hide })
 
 .column-filter__toggle--active {
   color: var(--ca-orange);
-}
-
-.column-filter__toggle i {
-  font-size: 13px;
 }
 
 .column-filter__panel {
@@ -124,6 +128,7 @@ defineExpose({ hide })
   border-radius: 6px;
   background: transparent;
   color: var(--ca-text-muted);
+  font-size: 15px;
   cursor: pointer;
 }
 

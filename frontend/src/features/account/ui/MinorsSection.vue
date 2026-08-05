@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 import { useAccount } from '../model/useAccount'
 import type { AccountChild } from '@/entities/account'
@@ -164,25 +161,25 @@ function confirmDelete(): void {
       </li>
     </ul>
 
-    <Dialog
-      v-model:visible="dialogVisible"
-      modal
-      :header="
+    <el-dialog
+      v-model="dialogVisible"
+      :title="
         mode === 'add'
           ? $t('features.account.minors.addHeader')
           : $t('features.account.minors.editHeader')
       "
-      :style="{ width: '90vw', maxWidth: '520px' }"
+      width="min(90vw, 520px)"
+      :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="save">
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="m-firstname">{{ $t('common.firstName') }}</label>
-            <InputText id="m-firstname" v-model="form.firstName" :maxlength="120" required fluid />
+            <el-input id="m-firstname" v-model="form.firstName" :maxlength="120" required />
           </div>
           <div class="acc-form__field">
             <label for="m-lastname">{{ $t('common.lastName') }}</label>
-            <InputText id="m-lastname" v-model="form.lastName" :maxlength="120" required fluid />
+            <el-input id="m-lastname" v-model="form.lastName" :maxlength="120" required />
           </div>
           <div class="acc-form__field">
             <label for="m-dob">{{ $t('common.birthDate') }}</label>
@@ -198,15 +195,18 @@ function confirmDelete(): void {
           </div>
           <div class="acc-form__field">
             <label for="m-gender">{{ $t('common.gender') }}</label>
-            <Select
-              input-id="m-gender"
+            <el-select
+              id="m-gender"
               v-model="form.gender"
-              :options="genders"
-              option-label="label"
-              option-value="value"
-              :invalid="submitted && !form.gender"
-              fluid
-            />
+              :class="{ 'ca-invalid': submitted && !form.gender }"
+            >
+              <el-option
+                v-for="option in genders"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
             <small v-if="submitted && !form.gender" class="acc-form__error">{{
               $t('validation.genderRequired')
             }}</small>
@@ -221,14 +221,14 @@ function confirmDelete(): void {
           }}</BaseButton>
         </div>
       </form>
-    </Dialog>
+    </el-dialog>
 
-    <Dialog
-      :visible="deleteTarget !== null"
-      modal
-      :header="$t('features.account.minors.deleteHeader')"
-      :style="{ width: '90vw', maxWidth: '420px' }"
-      @update:visible="(value) => !value && (deleteTarget = null)"
+    <el-dialog
+      :model-value="deleteTarget !== null"
+      :title="$t('features.account.minors.deleteHeader')"
+      width="min(90vw, 420px)"
+      :close-on-click-modal="false"
+      @update:model-value="(value: boolean) => !value && (deleteTarget = null)"
     >
       <i18n-t keypath="features.account.minors.deleteConfirm" tag="p" class="acc-confirm">
         <template #name
@@ -243,7 +243,7 @@ function confirmDelete(): void {
           {{ $t('common.delete') }}
         </BaseButton>
       </div>
-    </Dialog>
+    </el-dialog>
   </section>
 </template>
 
@@ -361,6 +361,10 @@ function confirmDelete(): void {
 .acc-form__error {
   color: var(--ca-danger-ink);
   font-size: 13.5px;
+}
+
+.ca-invalid :deep(.el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 
 .acc-confirm {

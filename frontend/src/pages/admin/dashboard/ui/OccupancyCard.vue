@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { AppIcon } from '@/shared/ui'
 
 import { formatDateTime, formatNumber } from '@/shared/lib'
 import type { DashboardOccupancyResponse } from '@/shared/api/generated/models'
@@ -52,11 +53,9 @@ function percent(confirmed?: number, desired?: number): number | null {
     <ul v-else class="occupancy__list">
       <li v-for="event in events" :key="event.eventId" class="occupancy__event">
         <button type="button" class="occupancy__row" @click="toggle(event.eventId)">
-          <i
-            class="occupancy__chevron pi"
-            :class="expanded[event.eventId ?? ''] ? 'pi-chevron-down' : 'pi-chevron-right'"
-            aria-hidden="true"
-          />
+          <span class="occupancy__chevron">
+            <AppIcon :name="expanded[event.eventId ?? ''] ? 'chevron-down' : 'chevron-right'" />
+          </span>
           <span class="occupancy__name" :title="event.title ?? ''">{{ event.title }}</span>
           <span class="occupancy__meter">
             <span
@@ -160,6 +159,8 @@ function percent(confirmed?: number, desired?: number): number | null {
 }
 
 .occupancy__chevron {
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   color: var(--ca-text-dim);
 }

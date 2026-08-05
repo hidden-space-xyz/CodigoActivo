@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import ConfirmDialog from 'primevue/confirmdialog'
-
 import { useAuth } from '@/features/auth'
-import { AppToast, ThemeToggle } from '@/shared/ui'
+import { AppIcon, ThemeToggle } from '@/shared/ui'
 import { ADMIN_NAV } from '@/shared/config'
 
 const { displayName, logout } = useAuth()
@@ -11,7 +9,9 @@ const { displayName, logout } = useAuth()
 <template>
   <div class="admin">
     <aside class="admin__sidebar">
-      <RouterLink :to="{ name: 'home' }" class="admin__brand">{{ $t('layout.brandAria') }}</RouterLink>
+      <RouterLink :to="{ name: 'home' }" class="admin__brand">{{
+        $t('layout.brandAria')
+      }}</RouterLink>
       <nav class="admin__nav">
         <RouterLink
           v-for="item in ADMIN_NAV"
@@ -20,7 +20,7 @@ const { displayName, logout } = useAuth()
           class="admin__link"
           active-class="admin__link--active"
         >
-          <i :class="item.icon" />
+          <AppIcon :name="item.icon" />
           <span>{{ $t(item.labelKey) }}</span>
         </RouterLink>
       </nav>
@@ -28,7 +28,9 @@ const { displayName, logout } = useAuth()
 
     <div class="admin__body">
       <header class="admin__topbar">
-        <RouterLink :to="{ name: 'home' }" class="admin__home">{{ $t('layout.adminGoToSite') }}</RouterLink>
+        <RouterLink :to="{ name: 'home' }" class="admin__home">{{
+          $t('layout.adminGoToSite')
+        }}</RouterLink>
         <div class="admin__user">
           <ThemeToggle />
           <span class="admin__username">{{ displayName }}</span>
@@ -47,9 +49,6 @@ const { displayName, logout } = useAuth()
         <slot />
       </main>
     </div>
-
-    <AppToast position="top-right" />
-    <ConfirmDialog />
   </div>
 </template>
 
@@ -103,6 +102,10 @@ const { displayName, logout } = useAuth()
   transition:
     background 0.15s ease,
     color 0.15s ease;
+}
+
+.admin__link .app-icon {
+  font-size: 16px;
 }
 
 .admin__link:hover {

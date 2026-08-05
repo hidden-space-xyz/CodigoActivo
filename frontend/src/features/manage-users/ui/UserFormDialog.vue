@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
-import DatePicker from 'primevue/datepicker'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 import { genderOptions } from '@/entities/user'
 import type { Gender, UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
 import { ageFrom, parseDateOnly, toDateOnly } from '@/shared/lib'
+
+const DATE_FORMAT = 'DD/MM/YYYY'
 
 const props = defineProps<{ visible: boolean; user: UserResponse | null; saving: boolean }>()
 
@@ -36,7 +34,10 @@ const form = reactive<UserForm>({
 })
 const submitted = ref(false)
 const genders = genderOptions()
-const maxBirthDate = new Date()
+
+function disabledBirthDate(date: Date): boolean {
+  return date > new Date()
+}
 
 const isMinor = computed(() => {
   const age = ageFrom(form.birthDate)
@@ -96,94 +97,99 @@ function save(): void {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :header="$t('features.manageUsers.editHeader')"
-    :style="{ width: '480px' }"
-    @update:visible="close"
+  <el-dialog
+    :model-value="visible"
+    :title="$t('features.manageUsers.editHeader')"
+    width="min(480px, 92vw)"
+    @update:model-value="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__row">
         <div class="form__field">
           <label>{{ $t('common.firstName') }}</label>
-          <InputText
+          <el-input
             v-model="form.firstName"
             :maxlength="120"
-            :invalid="submitted && !form.firstName.trim()"
-            fluid
+            :class="{ 'ca-invalid': submitted && !form.firstName.trim() }"
           />
         </div>
         <div class="form__field">
           <label>{{ $t('common.lastName') }}</label>
-          <InputText
+          <el-input
             v-model="form.lastName"
             :maxlength="120"
-            :invalid="submitted && !form.lastName.trim()"
-            fluid
+            :class="{ 'ca-invalid': submitted && !form.lastName.trim() }"
           />
         </div>
       </div>
       <div class="form__field">
         <label>{{ $t('common.birthDate') }}</label>
-        <DatePicker
+        <el-date-picker
           v-model="form.birthDate"
-          show-icon
-          :max-date="maxBirthDate"
-          :invalid="submitted && birthDateInvalid"
-          fluid
+          type="date"
+          :format="DATE_FORMAT"
+          :disabled-date="disabledBirthDate"
+          :class="{ 'ca-invalid': submitted && birthDateInvalid }"
         />
-        <small v-if="submitted && birthDateInvalid" class="form__error"
-          >{{ $t('features.manageUsers.birthDateInvalid') }}</small
-        >
+        <small v-if="submitted && birthDateInvalid" class="form__error">{{
+          $t('features.manageUsers.birthDateInvalid')
+        }}</small>
       </div>
       <div class="form__field">
         <label>{{ $t('common.gender') }}</label>
-        <Select
-          v-model="form.gender"
-          :options="genders"
-          option-label="label"
-          option-value="value"
-          :invalid="submitted && !form.gender"
-          fluid
-        />
-        <small v-if="submitted && !form.gender" class="form__error"
-          >{{ $t('validation.genderRequired') }}</small
-        >
+        <el-select v-model="form.gender" :class="{ 'ca-invalid': submitted && !form.gender }">
+          <el-option
+            v-for="option in genders"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+        <small v-if="submitted && !form.gender" class="form__error">{{
+          $t('validation.genderRequired')
+        }}</small>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.email') }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label>
-        <InputText
+        <label
+          >{{ $t('common.email')
+          }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label
+        >
+        <el-input
           v-model="form.email"
           type="email"
           :maxlength="256"
-          :invalid="submitted && (emailInvalid || (contactMissing && !form.email.trim()))"
-          fluid
+          :class="{
+            'ca-invalid': submitted && (emailInvalid || (contactMissing && !form.email.trim())),
+          }"
         />
-        <small v-if="submitted && emailInvalid" class="form__error"
-          >{{ $t('validation.emailFormat') }}</small
-        >
+        <small v-if="submitted && emailInvalid" class="form__error">{{
+          $t('validation.emailFormat')
+        }}</small>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.phone') }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label>
-        <InputText
+        <label
+          >{{ $t('common.phone')
+          }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label
+        >
+        <el-input
           v-model="form.phone"
           type="tel"
           :maxlength="40"
-          :invalid="submitted && contactMissing && !form.phone.trim()"
-          fluid
+          :class="{
+            'ca-invalid': submitted && contactMissing && !form.phone.trim(),
+          }"
         />
-        <small v-if="submitted && contactMissing" class="form__error"
-          >{{ $t('features.manageUsers.contactRequired') }}</small
-        >
+        <small v-if="submitted && contactMissing" class="form__error">{{
+          $t('features.manageUsers.contactRequired')
+        }}</small>
       </div>
     </form>
 
     <template #footer>
-      <Button :label="$t('common.cancel')" text severity="secondary" :disabled="saving" @click="close" />
-      <Button :label="$t('common.save')" :loading="saving" @click="save" />
+      <Button :label="$t('common.cancel')" text :disabled="saving" @click="close" />
+      <Button :label="$t('common.save')" type="primary" :loading="saving" @click="save" />
     </template>
-  </Dialog>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -215,5 +221,20 @@ function save(): void {
 .form__error {
   color: var(--ca-danger-ink);
   font-size: 12.5px;
+}
+
+.form :deep(.el-select),
+.form :deep(.el-date-editor) {
+  width: 100%;
+}
+
+.form :deep(.ca-invalid) {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
+.form :deep(.ca-invalid .el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 </style>

@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useTheme } from '@/shared/lib'
 
+import AppIcon from './AppIcon.vue'
+
 const { t } = useI18n()
 const { theme, toggleTheme } = useTheme()
 
@@ -22,8 +24,8 @@ const label = computed(() => (isDark.value ? t('theme.toLight') : t('theme.toDar
     @click="toggleTheme"
   >
     <span class="theme-toggle__track">
-      <i class="pi pi-sun theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true" />
-      <i class="pi pi-moon theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" />
+      <AppIcon name="sun" class="theme-toggle__icon theme-toggle__icon--sun" />
+      <AppIcon name="moon" class="theme-toggle__icon theme-toggle__icon--moon" />
       <span class="theme-toggle__thumb" />
     </span>
   </button>
@@ -60,7 +62,7 @@ const label = computed(() => (isDark.value ? t('theme.toLight') : t('theme.toDar
   border-color: var(--ca-orange);
 }
 
-.theme-toggle__icon {
+.theme-toggle__track .theme-toggle__icon {
   position: relative;
   z-index: 1;
   font-size: 12px;
@@ -69,11 +71,11 @@ const label = computed(() => (isDark.value ? t('theme.toLight') : t('theme.toDar
     opacity 0.25s ease;
 }
 
-.theme-toggle__icon--sun {
+.theme-toggle__track .theme-toggle__icon--sun {
   color: var(--ca-orange);
 }
 
-.theme-toggle__icon--moon {
+.theme-toggle__track .theme-toggle__icon--moon {
   color: var(--ca-text-faint);
 }
 

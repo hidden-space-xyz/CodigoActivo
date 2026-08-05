@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import InputText from 'primevue/inputtext'
 
 import { BaseButton } from '@/shared/ui'
 
@@ -68,12 +67,11 @@ function submitVerify(): void {
         $t('features.register.success.otpLabel')
       }}</label>
       <div class="reg-success__verify-row">
-        <InputText
+        <el-input
           id="reg-otp"
           v-model="otp"
           :placeholder="$t('features.register.success.otpPlaceholder')"
-          :invalid="verifyError !== null"
-          fluid
+          :class="{ 'ca-invalid': verifyError !== null }"
         />
         <BaseButton type="submit" variant="primary" :loading="isVerifying" :disabled="!otp.trim()">
           {{ $t('features.register.success.verify') }}
@@ -101,8 +99,12 @@ function submitVerify(): void {
     </form>
 
     <div class="reg-success__actions">
-      <BaseButton :to="{ name: 'home' }" variant="primary"> {{ $t('common.backToHome') }} </BaseButton>
-      <BaseButton :to="{ name: 'events' }" variant="ghost"> {{ $t('features.register.success.viewEvents') }} </BaseButton>
+      <BaseButton :to="{ name: 'home' }" variant="primary">
+        {{ $t('common.backToHome') }}
+      </BaseButton>
+      <BaseButton :to="{ name: 'events' }" variant="ghost">
+        {{ $t('features.register.success.viewEvents') }}
+      </BaseButton>
     </div>
 
     <BaseButton variant="link" class="reg-success__again" @click="emit('reset')">
@@ -220,6 +222,12 @@ function submitVerify(): void {
   margin-top: 8px;
   color: var(--ca-danger);
   font-size: 13px;
+}
+
+.ca-invalid {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
 }
 
 .reg-success__resend {

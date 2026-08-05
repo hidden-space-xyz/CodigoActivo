@@ -153,7 +153,7 @@ other. The rules are enforced by **Steiger** (`npm run lint:fsd`), not ESLint.
 
 | Layer         | Responsibility                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------ |
-| **`app/`**    | Composition root: `config/` (PrimeVue, TanStack Query), centralized router, layouts         |
+| **`app/`**    | Composition root: `config/` (Element Plus, TanStack Query), centralized router, layouts     |
 | **`pages/`**  | One slice per route (public pages + admin under `pages/admin/`)                             |
 | **`widgets/`** | Composite cross-page blocks (e.g. `content-entity-page`, the admin CRUD table widget)       |
 | **`features/`** | User interactions: `auth`, `register`, `account`, `send-email`, admin `manage-*`             |
@@ -184,7 +184,7 @@ which looks the code up under the `errors.*` namespace of `src/shared/i18n/local
 - **Session**: a module-level reactive singleton (no Pinia) that lazily resolves `GET /api/auth/me`.
   Auth is a server-set cookie; only the theme is stored in `localStorage`.
 - **Theming**: custom light/dark via CSS variables (`:root` + `.ca-dark` on `<html>`, all `--ca-*` tokens),
-  with PrimeVue's Aura preset re-skinned by mapping `--p-*` tokens to `--ca-*`.
+  with Element Plus re-skinned by mapping `--el-*` tokens to `--ca-*`.
 
 ## How the two apps stay in sync (the API contract)
 

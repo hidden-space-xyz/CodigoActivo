@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { DataState } from '@/shared/ui'
+import { AppIcon, DataState } from '@/shared/ui'
 
 import { fullName, normalizeHexColor } from '@/shared/lib'
 import { useEventBadges } from '@/features/manage-events'
@@ -60,11 +60,7 @@ function fitBadge(el: HTMLElement): void {
       Number.parseFloat(style.paddingRight)
     nameFit = Math.min(NAME_MAX_FIT, (available / name.scrollWidth) * 0.97)
     setNameFit(nameFit)
-    for (
-      let attempt = 0;
-      attempt < 5 && name.scrollWidth > available;
-      attempt += 1
-    ) {
+    for (let attempt = 0; attempt < 5 && name.scrollWidth > available; attempt += 1) {
       nameFit *= Math.min((available / name.scrollWidth) * 0.97, 0.97)
       setNameFit(nameFit)
     }
@@ -179,10 +175,16 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
         <footer class="badge__footer">
           <span class="badge__type">{{ badge.userTypeName || '—' }}</span>
           <span v-if="badge.guardian" class="badge__guardian">
-            <i class="pi pi-user badge__guardian-icon" :aria-label="$t('pages.admin.eventBadges.guardianAria')" />
+            <span
+              class="badge__guardian-icon"
+              :aria-label="$t('pages.admin.eventBadges.guardianAria')"
+            >
+              <AppIcon name="user" />
+            </span>
             <span class="badge__guardian-name">{{ guardianName(badge) || '—' }}</span>
             <span v-if="badge.guardian.phone" class="badge__guardian-phone">
-              <i class="pi pi-phone badge__phone-icon" /> {{ badge.guardian.phone }}
+              <span class="badge__phone-icon"><AppIcon name="phone" /></span>
+              {{ badge.guardian.phone }}
             </span>
           </span>
         </footer>
@@ -393,6 +395,8 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
 }
 
 .badge__guardian-icon {
+  display: inline-flex;
+  align-items: center;
   font-size: 7pt;
   align-self: center;
   color: var(--accent-ink);
@@ -408,6 +412,8 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
 }
 
 .badge__phone-icon {
+  display: inline-flex;
+  align-items: center;
   font-size: 6.5pt;
   color: var(--accent-ink);
 }

@@ -3,6 +3,8 @@ import { computed } from 'vue'
 
 import { fileContentUrl } from '@/shared/lib'
 
+import AppIcon from './AppIcon.vue'
+
 const props = defineProps<{ thumbnailId?: string | null; alt?: string }>()
 
 const url = computed(() => fileContentUrl(props.thumbnailId))
@@ -12,7 +14,7 @@ const url = computed(() => fileContentUrl(props.thumbnailId))
   <div class="list-thumb">
     <img v-if="url" :src="url" :alt="alt ?? ''" class="list-thumb__img" loading="lazy" />
     <div v-else class="list-thumb__placeholder" aria-hidden="true">
-      <i class="pi pi-image" />
+      <AppIcon name="image" />
     </div>
   </div>
 </template>

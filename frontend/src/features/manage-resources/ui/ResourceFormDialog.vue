@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button, RichTextEditor } from '@/shared/ui'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import { useResourceTypesList } from '@/entities/catalog'
@@ -125,74 +122,76 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :header="resource ? $t('features.manageResources.editHeader') : $t('features.manageResources.newHeader')"
-    :style="{ width: '94vw', maxWidth: '920px' }"
-    :content-style="{ maxHeight: '78vh' }"
-    @update:visible="close"
+  <el-dialog
+    :model-value="visible"
+    :title="
+      resource
+        ? $t('features.manageResources.editHeader')
+        : $t('features.manageResources.newHeader')
+    "
+    width="min(920px, 94vw)"
+    @update:model-value="close"
   >
-    <form class="form" @submit.prevent="save">
+    <form class="form form--scroll" @submit.prevent="save">
       <div class="form__field">
         <label>{{ $t('features.manageResources.title') }}</label>
-        <InputText
+        <el-input
           v-model="form.title"
           :maxlength="200"
-          :invalid="submitted && !form.title.trim()"
-          fluid
+          :class="{ 'ca-invalid': submitted && !form.title.trim() }"
         />
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageResources.subtitle') }}</label>
-        <InputText
+        <el-input
           v-model="form.subtitle"
           :maxlength="300"
-          :invalid="submitted && !form.subtitle.trim()"
-          fluid
+          :class="{ 'ca-invalid': submitted && !form.subtitle.trim() }"
         />
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageResources.type') }}</label>
-        <Select
+        <el-select
           v-model="form.resourceTypeId"
-          :options="typeOptions"
-          option-label="name"
-          option-value="id"
           :placeholder="$t('features.manageResources.typePlaceholder')"
           :loading="typesQuery.isLoading.value"
-          :invalid="submitted && typeMissing"
-          fluid
-        />
+          :class="{ 'ca-invalid': submitted && typeMissing }"
+        >
+          <el-option
+            v-for="type in typeOptions"
+            :key="type.id ?? ''"
+            :label="type.name ?? ''"
+            :value="type.id ?? ''"
+          />
+        </el-select>
         <small v-if="typesQuery.isError.value" class="form__error">{{
           $t('features.manageResources.typesLoadError')
         }}</small>
-        <small v-else-if="submitted && typeMissing" class="form__error"
-          >{{ $t('features.manageResources.typeRequired') }}</small
-        >
+        <small v-else-if="submitted && typeMissing" class="form__error">{{
+          $t('features.manageResources.typeRequired')
+        }}</small>
       </div>
       <div v-if="selectedType && !isExternal" class="form__field">
         <label>{{ $t('features.manageResources.description') }}</label>
         <RichTextEditor v-model="form.description" />
-        <small v-if="submitted && descriptionMissing" class="form__error"
-          >{{ $t('features.manageResources.descriptionRequired') }}</small
-        >
+        <small v-if="submitted && descriptionMissing" class="form__error">{{
+          $t('features.manageResources.descriptionRequired')
+        }}</small>
       </div>
       <div v-if="isExternal" class="form__field">
         <label>{{ $t('features.manageResources.url') }}</label>
-        <InputText
+        <el-input
           v-model="form.url"
           :maxlength="500"
           :placeholder="$t('features.manageResources.urlPlaceholder')"
-          :invalid="submitted && (urlMissing || urlInvalid)"
-          fluid
+          :class="{ 'ca-invalid': submitted && (urlMissing || urlInvalid) }"
         />
-        <small v-if="submitted && urlMissing" class="form__error"
-          >{{ $t('features.manageResources.urlRequired') }}</small
-        >
-        <small v-else-if="submitted && urlInvalid" class="form__error"
-          >{{ $t('features.manageResources.urlInvalid') }}</small
-        >
+        <small v-if="submitted && urlMissing" class="form__error">{{
+          $t('features.manageResources.urlRequired')
+        }}</small>
+        <small v-else-if="submitted && urlInvalid" class="form__error">{{
+          $t('features.manageResources.urlInvalid')
+        }}</small>
       </div>
       <div class="form__field">
         <label>{{ $t('common.image') }}</label>
@@ -201,24 +200,23 @@ async function save(): Promise<void> {
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
-        <small v-if="submitted && missingThumbnail" class="form__error"
-          >{{ $t('common.imageRequired') }}</small
-        >
+        <small v-if="submitted && missingThumbnail" class="form__error">{{
+          $t('common.imageRequired')
+        }}</small>
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
     </form>
 
     <template #footer>
+      <Button :label="$t('common.cancel')" text :disabled="saving || uploading" @click="close" />
       <Button
-        :label="$t('common.cancel')"
-        text
-        severity="secondary"
-        :disabled="saving || uploading"
-        @click="close"
+        :label="$t('common.save')"
+        type="primary"
+        :loading="saving || uploading"
+        @click="save"
       />
-      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
-  </Dialog>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -227,6 +225,11 @@ async function save(): Promise<void> {
   flex-direction: column;
   gap: 16px;
   padding-top: 6px;
+}
+
+.form--scroll {
+  max-height: 68vh;
+  overflow-y: auto;
 }
 
 .form__field {
@@ -244,5 +247,19 @@ async function save(): Promise<void> {
 .form__error {
   color: var(--ca-danger-ink);
   font-size: 12.5px;
+}
+
+.form :deep(.el-select) {
+  width: 100%;
+}
+
+.form :deep(.ca-invalid) {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
+.form :deep(.ca-invalid .el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 </style>

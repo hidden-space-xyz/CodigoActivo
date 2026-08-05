@@ -2,15 +2,12 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, ColumnSearch } from '@/shared/ui'
-import ColorPicker from 'primevue/colorpicker'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
 
 import { useEventCategories } from '../model/categories'
 import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+
+const DEFAULT_CATEGORY_COLOR = '#6366F1'
 
 const { t } = useI18n()
 const { table, create, update, remove } = useEventCategories()
@@ -20,16 +17,23 @@ const { confirmDelete: requireDelete } = useDeleteConfirm()
 const dialogVisible = ref(false)
 const selected = ref<EventCategoryTypeResponse | null>(null)
 const submitted = ref(false)
-const form = reactive<{ name: string; color: string }>({ name: '', color: '6366F1' })
+const form = reactive<{ name: string; color: string }>({
+  name: '',
+  color: DEFAULT_CATEGORY_COLOR,
+})
 
 const saving = computed(() => create.isPending.value || update.isPending.value)
 const colorHex = computed(() => `#${form.color.replace(/^#/, '')}`)
+
+function setFormColor(value: string | null): void {
+  form.color = value ?? DEFAULT_CATEGORY_COLOR
+}
 
 watch(dialogVisible, (open) => {
   if (!open) return
   submitted.value = false
   form.name = selected.value?.name ?? ''
-  form.color = (selected.value?.color ?? '#6366F1').replace(/^#/, '')
+  form.color = selected.value?.color ?? DEFAULT_CATEGORY_COLOR
 })
 
 function openCreate(): void {
@@ -89,19 +93,24 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
       <h2 class="catalog__title">{{ $t('features.manageCatalogs.title') }}</h2>
       <Button
         :label="$t('features.manageCatalogs.newButton')"
-        icon="pi pi-plus"
+        icon="plus"
+        type="primary"
         size="small"
         @click="openCreate"
       />
     </div>
 
-    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
+    <el-table
+      v-bind="table.tableProps.value"
+      v-loading="table.loading.value"
+      @sort-change="table.onSortChange"
+    >
       <template #empty>
         <span v-if="table.isError.value">{{ $t('features.manageCatalogs.loadError') }}</span>
         <span v-else>{{ $t('features.manageCatalogs.empty') }}</span>
       </template>
 
-      <Column field="name" sortable>
+      <el-table-column prop="name" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
@@ -110,8 +119,8 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
             @apply="table.onFilter"
           />
         </template>
-      </Column>
-      <Column sortable sort-field="color" style="width: 160px">
+      </el-table-column>
+      <el-table-column prop="color" sortable="custom" width="160">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('color').value"
@@ -120,54 +129,71 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          <ColorTag :value="data.name ?? ''" :color="data.color" />
+        <template #default="{ row }">
+          <ColorTag :value="row.name ?? ''" :color="row.color" />
         </template>
-      </Column>
-      <Column :header="$t('common.actions')" style="width: 120px">
-        <template #body="{ data }">
+      </el-table-column>
+      <el-table-column :label="$t('common.actions')" width="120">
+        <template #default="{ row }">
           <div class="catalog__actions">
             <Button
-              icon="pi pi-pencil"
+              icon="pencil"
               text
-              rounded
+              circle
               :aria-label="$t('common.edit')"
-              @click="openEdit(data)"
+              @click="openEdit(row)"
             />
             <Button
-              icon="pi pi-trash"
+              icon="trash"
               text
-              rounded
-              severity="danger"
+              circle
+              type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(data)"
+              @click="confirmDelete(row)"
             />
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </el-table-column>
+    </el-table>
 
-    <Dialog
-      v-model:visible="dialogVisible"
-      modal
-      :header="selected ? $t('features.manageCatalogs.editHeader') : $t('features.manageCatalogs.newHeader')"
-      :style="{ width: '440px' }"
+    <el-pagination
+      v-bind="table.paginationProps.value"
+      class="table-pagination"
+      @current-change="table.onCurrentPageChange"
+      @size-change="table.onPageSizeChange"
+    />
+
+    <el-dialog
+      v-model="dialogVisible"
+      :title="
+        selected
+          ? $t('features.manageCatalogs.editHeader')
+          : $t('features.manageCatalogs.newHeader')
+      "
+      width="min(440px, 92vw)"
+      append-to-body
     >
       <form class="catalog__form" @submit.prevent="save">
         <div class="catalog__field">
           <label>{{ $t('common.name') }}</label>
-          <InputText
+          <el-input
             v-model="form.name"
             :maxlength="120"
-            :invalid="submitted && !form.name.trim()"
-            fluid
+            :class="{ 'ca-invalid': submitted && !form.name.trim() }"
           />
         </div>
         <div class="catalog__field">
           <label>{{ $t('features.manageCatalogs.color') }}</label>
           <div class="catalog__color">
-            <ColorPicker v-model="form.color" />
-            <ColorTag :value="form.name.trim() || $t('features.manageCatalogs.example')" :color="colorHex" />
+            <el-color-picker
+              :model-value="colorHex"
+              color-format="hex"
+              @update:model-value="setFormColor"
+            />
+            <ColorTag
+              :value="form.name.trim() || $t('features.manageCatalogs.example')"
+              :color="colorHex"
+            />
             <span class="catalog__hex">{{ colorHex }}</span>
           </div>
         </div>
@@ -176,13 +202,12 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
         <Button
           :label="$t('common.cancel')"
           text
-          severity="secondary"
           :disabled="saving"
           @click="dialogVisible = false"
         />
-        <Button :label="$t('common.save')" :loading="saving" @click="save" />
+        <Button :label="$t('common.save')" type="primary" :loading="saving" @click="save" />
       </template>
-    </Dialog>
+    </el-dialog>
   </section>
 </template>
 
@@ -211,6 +236,11 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
 .catalog__actions {
   display: flex;
   gap: 2px;
+}
+
+.table-pagination {
+  margin-top: 14px;
+  justify-content: flex-end;
 }
 
 .catalog__form {
@@ -242,5 +272,11 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
   font-family: var(--ca-font-mono);
   font-size: 13px;
   color: var(--ca-text-muted);
+}
+
+.catalog__form :deep(.ca-invalid) {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
 }
 </style>

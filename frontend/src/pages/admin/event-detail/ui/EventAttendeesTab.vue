@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Paginator from 'primevue/paginator'
-import Select from 'primevue/select'
 
 import { useAssignments } from '@/features/manage-activities'
 import { useEventAttendeesTable } from '@/features/manage-events'
@@ -21,7 +17,7 @@ import type {
   EventAttendeeResponse,
   PostApiEmailsEventsEventIdAttendeesParams,
 } from '@/shared/api/generated/models'
-import { AppButton as Button, ColorTag, DataState } from '@/shared/ui'
+import { AppButton as Button, AppIcon, ColorTag, DataState } from '@/shared/ui'
 import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
@@ -106,6 +102,21 @@ const roleOptions = computed(() => toSelectOptions(roleTypes.data.value))
 const statusOptions = computed(() => toSelectOptions(statusTypes.data.value))
 
 const genders = genderOptions()
+
+function filterModel<T extends string>(source: Ref<T | null>) {
+  return computed<T | null>({
+    get: () => source.value,
+    set: (value) => {
+      source.value = value == null || (value as string) === '' ? null : value
+    },
+  })
+}
+
+const userTypeFilter = filterModel(attendees.userTypeId)
+const genderFilter = filterModel(attendees.gender)
+const activityFilter = filterModel(attendees.activityId)
+const roleFilter = filterModel(attendees.roleTypeId)
+const statusFilter = filterModel(attendees.statusId)
 
 const hasActiveFilters = computed(
   () =>
@@ -276,61 +287,80 @@ function submitChangeRole(): void {
 <template>
   <div>
     <div class="toolbar">
-      <InputText
+      <el-input
         v-model="searchText"
         :placeholder="$t('pages.admin.eventDetail.attendees.search.placeholder')"
         class="toolbar__search"
       />
-      <Select
-        v-model="attendees.userTypeId.value"
-        :options="typeOptions"
-        option-label="label"
-        option-value="value"
+      <el-select
+        v-model="userTypeFilter"
         :placeholder="$t('pages.admin.eventDetail.attendees.type')"
-        show-clear
+        clearable
         class="toolbar__filter"
-      />
-      <Select
-        v-model="attendees.gender.value"
-        :options="genders"
-        option-label="label"
-        option-value="value"
+      >
+        <el-option
+          v-for="option in typeOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
+      </el-select>
+      <el-select
+        v-model="genderFilter"
         :placeholder="$t('common.gender')"
-        show-clear
+        clearable
         class="toolbar__filter"
-      />
-      <Select
-        v-model="attendees.activityId.value"
-        :options="activityOptions"
-        option-label="label"
-        option-value="value"
+      >
+        <el-option
+          v-for="option in genders"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
+      </el-select>
+      <el-select
+        v-model="activityFilter"
         :placeholder="$t('pages.admin.eventDetail.attendees.filters.activity')"
-        show-clear
+        clearable
         class="toolbar__filter"
-      />
-      <Select
-        v-model="attendees.roleTypeId.value"
-        :options="roleOptions"
-        option-label="label"
-        option-value="value"
+      >
+        <el-option
+          v-for="option in activityOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
+      </el-select>
+      <el-select
+        v-model="roleFilter"
         :placeholder="$t('pages.admin.eventDetail.attendees.role')"
-        show-clear
+        clearable
         class="toolbar__filter"
-      />
-      <Select
-        v-model="attendees.statusId.value"
-        :options="statusOptions"
-        option-label="label"
-        option-value="value"
+      >
+        <el-option
+          v-for="option in roleOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
+      </el-select>
+      <el-select
+        v-model="statusFilter"
         :placeholder="$t('common.status')"
-        show-clear
+        clearable
         class="toolbar__filter"
-      />
+      >
+        <el-option
+          v-for="option in statusOptions"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value"
+        />
+      </el-select>
       <Button
         :label="$t('pages.admin.eventDetail.attendees.export.label')"
         :tooltip="$t('pages.admin.eventDetail.attendees.export.tooltip')"
-        icon="pi pi-download"
-        severity="secondary"
+        icon="download"
         :loading="exporting"
         :disabled="attendees.table.total.value === 0"
         @click="exportCsv"
@@ -338,23 +368,27 @@ function submitChangeRole(): void {
       <Button
         :label="$t('pages.admin.eventDetail.attendees.email.bulkLabel')"
         :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"
-        icon="pi pi-envelope"
-        severity="secondary"
+        icon="envelope"
         :disabled="attendees.table.total.value === 0"
         @click="openEmail(null)"
       />
       <div class="toolbar__sort">
-        <Select
+        <el-select
           v-model="sortField"
-          :options="sortOptions"
-          option-label="label"
-          option-value="value"
           :aria-label="$t('pages.admin.eventDetail.attendees.sort.ariaSortBy')"
-        />
+          class="toolbar__sort-select"
+        >
+          <el-option
+            v-for="option in sortOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
         <Button
-          :icon="sortAsc ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down'"
+          :icon="sortAsc ? 'sort-amount-up-alt' : 'sort-amount-down'"
           text
-          rounded
+          circle
           :aria-label="
             sortAsc
               ? $t('pages.admin.eventDetail.attendees.sort.ascending')
@@ -393,7 +427,9 @@ function submitChangeRole(): void {
             <div class="attendee__identity">
               <span class="attendee__name">{{ fullName(attendee) }}</span>
               <span v-if="ageFrom(attendee.birthDate) !== null" class="attendee__age">
-                {{ $t('pages.admin.eventDetail.attendees.age', { age: ageFrom(attendee.birthDate) }) }}
+                {{
+                  $t('pages.admin.eventDetail.attendees.age', { age: ageFrom(attendee.birthDate) })
+                }}
               </span>
               <span
                 class="attendee__type"
@@ -408,14 +444,14 @@ function submitChangeRole(): void {
                 class="attendee__conflict"
                 :title="$t('pages.admin.eventDetail.attendees.conflict.attendeeTitle')"
               >
-                <i class="pi pi-exclamation-triangle" aria-hidden="true" />
+                <AppIcon name="exclamation-triangle" />
                 {{ $t('pages.admin.eventDetail.attendees.conflict.badge') }}
               </span>
             </div>
             <div class="attendee__contact">
               <template v-if="attendee.guardian">
                 <span>
-                  <i class="pi pi-user" aria-hidden="true" />
+                  <AppIcon name="user" />
                   {{
                     $t('pages.admin.eventDetail.attendees.guardian', {
                       firstName: attendee.guardian.firstName,
@@ -424,27 +460,23 @@ function submitChangeRole(): void {
                   }}
                 </span>
                 <span>
-                  <i class="pi pi-envelope" aria-hidden="true" />
+                  <AppIcon name="envelope" />
                   {{ attendee.guardian.email || '—' }}
                 </span>
                 <span>
-                  <i class="pi pi-phone" aria-hidden="true" />
+                  <AppIcon name="phone" />
                   {{ attendee.guardian.phone || '—' }}
                 </span>
               </template>
               <template v-else>
-                <span
-                  ><i class="pi pi-envelope" aria-hidden="true" /> {{ attendee.email || '—' }}</span
-                >
-                <span
-                  ><i class="pi pi-phone" aria-hidden="true" /> {{ attendee.phone || '—' }}</span
-                >
+                <span><AppIcon name="envelope" /> {{ attendee.email || '—' }}</span>
+                <span><AppIcon name="phone" /> {{ attendee.phone || '—' }}</span>
               </template>
               <Button
                 v-if="attendee.email"
-                icon="pi pi-send"
+                icon="send"
                 text
-                rounded
+                circle
                 size="small"
                 :aria-label="$t('pages.admin.eventDetail.attendees.email.rowLabel')"
                 @click="openEmail(attendee)"
@@ -464,7 +496,7 @@ function submitChangeRole(): void {
                 class="assignment__signed"
                 :title="$t('pages.admin.eventDetail.attendees.signedUpTitle')"
               >
-                <i class="pi pi-calendar-plus" aria-hidden="true" />
+                <AppIcon name="calendar-plus" />
                 {{ formatDateTime(assignment.signedUpAt) }}
               </span>
               <span class="assignment__status">
@@ -474,22 +506,22 @@ function submitChangeRole(): void {
                   class="assignment__warning"
                   :title="$t('pages.admin.eventDetail.attendees.conflict.assignmentTitle')"
                 >
-                  <i class="pi pi-exclamation-triangle" aria-hidden="true" />
+                  <AppIcon name="exclamation-triangle" />
                 </span>
               </span>
               <div class="assignment__actions">
                 <Button
-                  icon="pi pi-tag"
+                  icon="tag"
                   text
-                  rounded
+                  circle
                   size="small"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeRole')"
                   @click="openChangeRole(attendee, assignment)"
                 />
                 <Button
-                  icon="pi pi-sync"
+                  icon="sync"
                   text
-                  rounded
+                  circle
                   size="small"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeStatus')"
                   @click="openChangeStatus(attendee, assignment)"
@@ -500,14 +532,12 @@ function submitChangeRole(): void {
         </li>
       </ul>
 
-      <Paginator
+      <el-pagination
         v-if="attendees.table.total.value > 25 || attendees.table.first.value > 0"
-        :first="attendees.table.first.value"
-        :rows="attendees.table.rows.value"
-        :total-records="attendees.table.total.value"
-        :rows-per-page-options="[25, 50, 100]"
+        v-bind="attendees.table.paginationProps.value"
         class="paginator"
-        @page="attendees.table.onPage"
+        @update:current-page="attendees.table.onCurrentPageChange"
+        @update:page-size="attendees.table.onPageSizeChange"
       />
     </DataState>
 
@@ -518,11 +548,11 @@ function submitChangeRole(): void {
       @submit="submitEmail"
     />
 
-    <Dialog
-      v-model:visible="roleDialogVisible"
-      modal
-      :header="$t('pages.admin.eventDetail.attendees.changeRole')"
-      :style="{ width: '400px' }"
+    <el-dialog
+      v-model="roleDialogVisible"
+      :title="$t('pages.admin.eventDetail.attendees.changeRole')"
+      width="400px"
+      append-to-body
     >
       <p class="dialog-context">
         {{
@@ -534,14 +564,17 @@ function submitChangeRole(): void {
       </p>
       <div class="form__field">
         <label>{{ $t('pages.admin.eventDetail.attendees.role') }}</label>
-        <Select
+        <el-select
           v-model="selectedRoleId"
-          :options="roleOptions"
-          option-label="label"
-          option-value="value"
           :placeholder="$t('pages.admin.eventDetail.attendees.selectRole')"
-          fluid
-        />
+        >
+          <el-option
+            v-for="option in roleOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
         <small v-if="roleOptions.length === 0" class="form__warning">
           {{ $t('pages.admin.eventDetail.attendees.rolesLoadError') }}
         </small>
@@ -550,24 +583,24 @@ function submitChangeRole(): void {
         <Button
           :label="$t('common.cancel')"
           text
-          severity="secondary"
           :disabled="assignments.changeRole.isPending.value"
           @click="roleDialogVisible = false"
         />
         <Button
           :label="$t('common.apply')"
+          type="primary"
           :loading="assignments.changeRole.isPending.value"
           :disabled="!selectedRoleId || roleOptions.length === 0"
           @click="submitChangeRole"
         />
       </template>
-    </Dialog>
+    </el-dialog>
 
-    <Dialog
-      v-model:visible="statusDialogVisible"
-      modal
-      :header="$t('pages.admin.eventDetail.attendees.changeStatus')"
-      :style="{ width: '400px' }"
+    <el-dialog
+      v-model="statusDialogVisible"
+      :title="$t('pages.admin.eventDetail.attendees.changeStatus')"
+      width="400px"
+      append-to-body
     >
       <p class="dialog-context">
         {{
@@ -579,31 +612,34 @@ function submitChangeRole(): void {
       </p>
       <div class="form__field">
         <label>{{ $t('common.status') }}</label>
-        <Select
+        <el-select
           v-model="selectedStatusId"
-          :options="statusOptions"
-          option-label="label"
-          option-value="value"
           :placeholder="$t('pages.admin.eventDetail.attendees.selectStatus')"
-          fluid
-        />
+        >
+          <el-option
+            v-for="option in statusOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
       </div>
       <template #footer>
         <Button
           :label="$t('common.cancel')"
           text
-          severity="secondary"
           :disabled="assignments.changeStatus.isPending.value"
           @click="statusDialogVisible = false"
         />
         <Button
           :label="$t('common.apply')"
+          type="primary"
           :loading="assignments.changeStatus.isPending.value"
           :disabled="!selectedStatusId"
           @click="submitChangeStatus"
         />
       </template>
-    </Dialog>
+    </el-dialog>
   </div>
 </template>
 
@@ -622,6 +658,7 @@ function submitChangeRole(): void {
 }
 
 .toolbar__filter {
+  flex: 0 1 160px;
   min-width: 160px;
 }
 
@@ -630,6 +667,10 @@ function submitChangeRole(): void {
   align-items: center;
   gap: 4px;
   margin-left: auto;
+}
+
+.toolbar__sort-select {
+  width: 180px;
 }
 
 .count {
@@ -649,6 +690,7 @@ function submitChangeRole(): void {
 
 .paginator {
   margin-top: 16px;
+  justify-content: flex-end;
 }
 
 .attendee {

@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useAccountVerification } from '@/features/register'
-import { BaseButton, PageHead } from '@/shared/ui'
+import { AppIcon, BaseButton, PageHead } from '@/shared/ui'
 
 const route = useRoute()
 const { state, errorMessage, verify, resend, canResend, isResending } = useAccountVerification()
@@ -29,8 +29,12 @@ onMounted(() => {
       <div class="ca-container--narrow">
         <div class="verify-card" :class="`verify-card--${state}`">
           <template v-if="state === 'verifying'">
-            <i class="pi pi-spin pi-spinner verify-card__icon" aria-hidden="true" />
-            <p class="verify-card__text" aria-live="polite">{{ $t('pages.verifyAccount.verifying') }}</p>
+            <span class="verify-card__icon" aria-hidden="true">
+              <AppIcon name="spinner" spin />
+            </span>
+            <p class="verify-card__text" aria-live="polite">
+              {{ $t('pages.verifyAccount.verifying') }}
+            </p>
           </template>
 
           <template v-else-if="state === 'success'">
@@ -39,7 +43,9 @@ onMounted(() => {
             <p class="verify-card__text">
               {{ $t('pages.verifyAccount.successText') }}
             </p>
-            <BaseButton :to="{ name: 'login' }" variant="primary">{{ $t('common.login') }}</BaseButton>
+            <BaseButton :to="{ name: 'login' }" variant="primary">{{
+              $t('common.login')
+            }}</BaseButton>
           </template>
 
           <template v-else>
@@ -55,7 +61,9 @@ onMounted(() => {
               <BaseButton v-if="canResend" variant="primary" :loading="isResending" @click="resend">
                 {{ $t('pages.verifyAccount.resend') }}
               </BaseButton>
-              <BaseButton :to="{ name: 'home' }" variant="ghost">{{ $t('common.backToHome') }}</BaseButton>
+              <BaseButton :to="{ name: 'home' }" variant="ghost">{{
+                $t('common.backToHome')
+              }}</BaseButton>
             </div>
           </template>
         </div>

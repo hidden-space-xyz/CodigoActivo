@@ -41,7 +41,9 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
         />
 
         <p v-if="isLoading" class="announcements-loading">{{ $t('common.loading') }}</p>
-        <p v-else-if="isEmpty" class="announcements-loading">{{ $t('pages.announcements.empty') }}</p>
+        <p v-else-if="isEmpty" class="announcements-loading">
+          {{ $t('pages.announcements.empty') }}
+        </p>
         <div v-else class="announcements-list">
           <AnnouncementCard
             v-for="announcement in announcements"
@@ -50,7 +52,12 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
           />
         </div>
         <div v-if="hasMore" class="announcements-more">
-          <AppButton :label="$t('common.loadMore')" outlined :loading="isFetchingMore" @click="loadMore" />
+          <AppButton
+            :label="$t('common.loadMore')"
+            plain
+            :loading="isFetchingMore"
+            @click="loadMore"
+          />
         </div>
       </div>
     </section>

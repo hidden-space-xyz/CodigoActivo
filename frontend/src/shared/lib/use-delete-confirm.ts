@@ -1,37 +1,40 @@
-import { useConfirm } from 'primevue/useconfirm'
+import { ElMessageBox } from 'element-plus'
 
 import { i18n } from '@/shared/i18n'
 
 export function useDeleteConfirm() {
-  const confirm = useConfirm()
-
   function confirmDelete(options: { header: string; message: string; accept: () => void }): void {
-    confirm.require({
-      ...options,
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: i18n.global.t('common.delete'),
-      rejectLabel: i18n.global.t('common.cancel'),
-      acceptClass: 'p-button-danger',
+    void ElMessageBox.confirm(options.message, options.header, {
+      confirmButtonText: i18n.global.t('common.delete'),
+      cancelButtonText: i18n.global.t('common.cancel'),
+      confirmButtonClass: 'el-button--danger',
+      type: 'warning',
     })
+      .then(() => {
+        options.accept()
+      })
+      .catch(() => undefined)
   }
 
   return { confirmDelete }
 }
 
 export function useActionConfirm() {
-  const confirm = useConfirm()
-
   function confirmAction(options: {
     header: string
     message: string
     acceptLabel: string
     accept: () => void
   }): void {
-    confirm.require({
-      ...options,
-      icon: 'pi pi-exclamation-triangle',
-      rejectLabel: i18n.global.t('common.cancel'),
+    void ElMessageBox.confirm(options.message, options.header, {
+      confirmButtonText: options.acceptLabel,
+      cancelButtonText: i18n.global.t('common.cancel'),
+      type: 'warning',
     })
+      .then(() => {
+        options.accept()
+      })
+      .catch(() => undefined)
   }
 
   return { confirmAction }

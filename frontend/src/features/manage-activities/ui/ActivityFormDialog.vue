@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
-import DatePicker from 'primevue/datepicker'
-import Dialog from 'primevue/dialog'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
-import Textarea from 'primevue/textarea'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type {
@@ -19,7 +13,9 @@ import type {
   ActivityModalityTypeResponse,
   ActivityRoleTypeResponse,
 } from '@/shared/api/generated/models'
-import { parseDateOnly, toDateOnly } from '@/shared/lib'
+import { toDateOnly } from '@/shared/lib'
+
+const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
 
 const props = defineProps<{
   visible: boolean
@@ -53,7 +49,7 @@ const form = reactive<ActivityForm>({
   activityStartsAt: null,
   activityEndsAt: null,
 })
-const desiredCounts = ref<Record<string, number | null>>({})
+const desiredCounts = ref<Record<string, number | undefined>>({})
 const submitted = ref(false)
 const {
   pickedFile,
@@ -64,15 +60,21 @@ const {
   resolveThumbnailId,
 } = useThumbnailUpload(() => props.activity?.thumbnailId)
 
-const eventStartDate = computed(() => parseDateOnly(props.eventStart))
-const eventEndDate = computed(() => parseDateOnly(props.eventEnd))
-const minDate = computed(() => eventStartDate.value ?? undefined)
-const maxDate = computed(() => {
-  const end = eventEndDate.value
-  return end
-    ? new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999)
-    : undefined
-})
+const eventStartDay = computed(() => props.eventStart?.slice(0, 10) ?? '')
+const eventEndDay = computed(() => props.eventEnd?.slice(0, 10) ?? '')
+
+function outsideEventDay(date: Date): boolean {
+  const day = toDateOnly(date)
+  if (eventStartDay.value && day < eventStartDay.value) return true
+  if (eventEndDay.value && day > eventEndDay.value) return true
+  return false
+}
+
+function disabledEndDate(date: Date): boolean {
+  if (outsideEventDay(date)) return true
+  const start = form.activityStartsAt
+  return !!start && toDateOnly(date) < toDateOnly(start)
+}
 
 const startMissing = computed(() => !form.activityStartsAt)
 const endMissing = computed(() => !form.activityEndsAt)
@@ -86,10 +88,8 @@ const outsideEvent = computed(() => {
   const start = form.activityStartsAt
   const end = form.activityEndsAt
   if (!start || !end) return false
-  const eventStart = props.eventStart?.slice(0, 10)
-  const eventEnd = props.eventEnd?.slice(0, 10)
-  if (eventStart && toDateOnly(start) < eventStart) return true
-  if (eventEnd && toDateOnly(end) > eventEnd) return true
+  if (eventStartDay.value && toDateOnly(start) < eventStartDay.value) return true
+  if (eventEndDay.value && toDateOnly(end) > eventEndDay.value) return true
   return false
 })
 const datesValid = computed(
@@ -118,12 +118,12 @@ function populateDesiredCounts(): void {
   const saved = new Map(
     (props.activity?.roleCapacities ?? []).map((item) => [
       item.activityRoleTypeId ?? '',
-      item.desiredCount ?? null,
+      item.desiredCount ?? undefined,
     ]),
   )
-  const next: Record<string, number | null> = {}
+  const next: Record<string, number | undefined> = {}
   for (const role of props.roleTypes) {
-    if (role.id) next[role.id] = saved.get(role.id) ?? null
+    if (role.id) next[role.id] = saved.get(role.id)
   }
   desiredCounts.value = next
 }
@@ -180,114 +180,113 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :header="
-      activity ? $t('features.manageActivities.editHeader') : $t('features.manageActivities.newHeader')
+  <el-dialog
+    :model-value="visible"
+    :title="
+      activity
+        ? $t('features.manageActivities.editHeader')
+        : $t('features.manageActivities.newHeader')
     "
-    :style="{ width: '560px' }"
-    @update:visible="close"
+    width="min(560px, 92vw)"
+    @update:model-value="close"
   >
     <form class="form" @submit.prevent="save">
       <div class="form__field">
         <label>{{ $t('features.manageActivities.fields.title') }}</label>
-        <InputText
+        <el-input
           v-model="form.title"
           :maxlength="200"
-          :invalid="submitted && !form.title.trim()"
-          fluid
+          :class="{ 'ca-invalid': submitted && !form.title.trim() }"
         />
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageActivities.fields.description') }}</label>
-        <Textarea
+        <el-input
           v-model="form.description"
+          type="textarea"
           :maxlength="4000"
-          :invalid="submitted && !form.description.trim()"
-          rows="3"
-          auto-resize
-          fluid
+          :autosize="{ minRows: 3 }"
+          :class="{ 'ca-invalid': submitted && !form.description.trim() }"
         />
       </div>
       <div class="form__row">
         <div class="form__field">
           <label>{{ $t('features.manageActivities.fields.modality') }}</label>
-          <Select
+          <el-select
             v-model="form.modalityId"
-            :options="modalityTypes"
-            option-label="name"
-            option-value="id"
             :placeholder="$t('features.manageActivities.modalityPlaceholder')"
-            :invalid="submitted && modalityMissing"
-            fluid
-          />
-          <small v-if="submitted && modalityMissing" class="form__error"
-            >{{ $t('features.manageActivities.errors.modalityRequired') }}</small
+            :class="{ 'ca-invalid': submitted && modalityMissing }"
           >
+            <el-option
+              v-for="modality in modalityTypes"
+              :key="modality.id ?? ''"
+              :label="modality.name ?? ''"
+              :value="modality.id ?? ''"
+            />
+          </el-select>
+          <small v-if="submitted && modalityMissing" class="form__error">{{
+            $t('features.manageActivities.errors.modalityRequired')
+          }}</small>
         </div>
         <div class="form__field">
           <label>{{ $t('features.manageActivities.fields.location') }}</label>
-          <InputText
+          <el-input
             v-model="form.location"
             :maxlength="200"
-            :invalid="submitted && locationMissing"
-            fluid
+            :class="{ 'ca-invalid': submitted && locationMissing }"
           />
-          <small v-if="submitted && locationMissing" class="form__error"
-            >{{ $t('features.manageActivities.errors.locationRequired') }}</small
-          >
+          <small v-if="submitted && locationMissing" class="form__error">{{
+            $t('features.manageActivities.errors.locationRequired')
+          }}</small>
         </div>
       </div>
       <div class="form__row">
         <div class="form__field">
           <label>{{ $t('features.manageActivities.fields.start') }}</label>
-          <DatePicker
+          <el-date-picker
             v-model="form.activityStartsAt"
-            show-time
-            hour-format="24"
-            :min-date="minDate"
-            :max-date="maxDate"
-            :invalid="submitted && (startMissing || outsideEvent)"
-            fluid
+            type="datetime"
+            :format="DATE_TIME_FORMAT"
+            :disabled-date="outsideEventDay"
+            :class="{ 'ca-invalid': submitted && (startMissing || outsideEvent) }"
           />
-          <small v-if="submitted && startMissing" class="form__error"
-            >{{ $t('features.manageActivities.errors.startRequired') }}</small
-          >
+          <small v-if="submitted && startMissing" class="form__error">{{
+            $t('features.manageActivities.errors.startRequired')
+          }}</small>
         </div>
         <div class="form__field">
           <label>{{ $t('features.manageActivities.fields.end') }}</label>
-          <DatePicker
+          <el-date-picker
             v-model="form.activityEndsAt"
-            show-time
-            hour-format="24"
-            :min-date="form.activityStartsAt ?? minDate"
-            :max-date="maxDate"
-            :invalid="submitted && (endMissing || orderInvalid || outsideEvent)"
-            fluid
+            type="datetime"
+            :format="DATE_TIME_FORMAT"
+            :disabled-date="disabledEndDate"
+            :class="{
+              'ca-invalid': submitted && (endMissing || orderInvalid || outsideEvent),
+            }"
           />
-          <small v-if="submitted && endMissing" class="form__error"
-            >{{ $t('features.manageActivities.errors.endRequired') }}</small
-          >
-          <small v-else-if="submitted && orderInvalid" class="form__error"
-            >{{ $t('features.manageActivities.errors.orderInvalid') }}</small
-          >
+          <small v-if="submitted && endMissing" class="form__error">{{
+            $t('features.manageActivities.errors.endRequired')
+          }}</small>
+          <small v-else-if="submitted && orderInvalid" class="form__error">{{
+            $t('features.manageActivities.errors.orderInvalid')
+          }}</small>
         </div>
       </div>
-      <small v-if="submitted && outsideEvent" class="form__error"
-        >{{ $t('features.manageActivities.errors.outsideEvent') }}</small
-      >
+      <small v-if="submitted && outsideEvent" class="form__error">{{
+        $t('features.manageActivities.errors.outsideEvent')
+      }}</small>
       <div v-if="roleTypes.length" class="form__field">
         <label>{{ $t('features.manageActivities.fields.desiredCounts') }}</label>
         <div class="form__capacities">
           <div v-for="role in roleTypes" :key="role.id ?? ''" class="form__capacity">
             <span class="form__capacity-name">{{ role.name }}</span>
-            <InputNumber
+            <el-input-number
               v-model="desiredCounts[role.id ?? '']"
               :min="1"
               :max="10000"
+              controls-position="right"
               :placeholder="$t('features.manageActivities.noTargetPlaceholder')"
-              fluid
             />
           </div>
         </div>
@@ -302,24 +301,23 @@ async function save(): Promise<void> {
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
-        <small v-if="submitted && missingThumbnail" class="form__error"
-          >{{ $t('common.imageRequired') }}</small
-        >
+        <small v-if="submitted && missingThumbnail" class="form__error">{{
+          $t('common.imageRequired')
+        }}</small>
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
     </form>
 
     <template #footer>
+      <Button :label="$t('common.cancel')" text :disabled="saving || uploading" @click="close" />
       <Button
-        :label="$t('common.cancel')"
-        text
-        severity="secondary"
-        :disabled="saving || uploading"
-        @click="close"
+        :label="$t('common.save')"
+        type="primary"
+        :loading="saving || uploading"
+        @click="save"
       />
-      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
-  </Dialog>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -373,5 +371,21 @@ async function save(): Promise<void> {
 .form__hint {
   color: var(--ca-text-muted);
   font-size: 12px;
+}
+
+.form :deep(.el-select),
+.form :deep(.el-date-editor),
+.form :deep(.el-input-number) {
+  width: 100%;
+}
+
+.form :deep(.ca-invalid) {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
+.form :deep(.ca-invalid .el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 </style>

@@ -2,11 +2,6 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
-import ColorPicker from 'primevue/colorpicker'
-import DatePicker from 'primevue/datepicker'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import { useCreateEventCategoryType, useEventCategoryTypesList } from '@/entities/catalog'
@@ -17,6 +12,10 @@ import type {
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
 import { EMPTY_DOC_JSON, getErrorMessage, parseDateOnly, toDateOnly } from '@/shared/lib'
+
+const DATE_FORMAT = 'DD/MM/YYYY'
+const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
+const DEFAULT_CATEGORY_COLOR = '#6366F1'
 
 const props = defineProps<{ visible: boolean; event: EventResponse | null; saving: boolean }>()
 
@@ -71,12 +70,19 @@ const catDialogVisible = ref(false)
 const catSubmitted = ref(false)
 const creatingCat = createCategory.isPending
 const catError = ref('')
-const newCat = reactive<{ name: string; color: string }>({ name: '', color: '6366F1' })
+const newCat = reactive<{ name: string; color: string }>({
+  name: '',
+  color: DEFAULT_CATEGORY_COLOR,
+})
 const newCatHex = computed(() => `#${newCat.color.replace(/^#/, '')}`)
+
+function setNewCatColor(value: string | null): void {
+  newCat.color = value ?? DEFAULT_CATEGORY_COLOR
+}
 
 function openNewCategory(): void {
   newCat.name = ''
-  newCat.color = '6366F1'
+  newCat.color = DEFAULT_CATEGORY_COLOR
   catSubmitted.value = false
   catError.value = ''
   catDialogVisible.value = true
@@ -94,7 +100,10 @@ function submitNewCategory(): void {
         catDialogVisible.value = false
       },
       onError: (error) => {
-        catError.value = getErrorMessage(error, t('features.manageEvents.categoryDialog.createError'))
+        catError.value = getErrorMessage(
+          error,
+          t('features.manageEvents.categoryDialog.createError'),
+        )
       },
     },
   )
@@ -102,6 +111,21 @@ function submitNewCategory(): void {
 
 function parse(value?: string | null): Date | null {
   return value ? new Date(value) : null
+}
+
+function disabledEventEndDate(date: Date): boolean {
+  const start = form.eventStartsAt
+  return !!start && toDateOnly(date) < toDateOnly(start)
+}
+
+function disabledEarlySignupDate(date: Date): boolean {
+  const max = form.signupStartsAt
+  return !!max && toDateOnly(date) > toDateOnly(max)
+}
+
+function disabledSignupEndDate(date: Date): boolean {
+  const start = form.signupStartsAt
+  return !!start && toDateOnly(date) < toDateOnly(start)
 }
 
 const eventStartMissing = computed(() => !form.eventStartsAt)
@@ -193,57 +217,62 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :header="event ? $t('features.manageEvents.editHeader') : $t('features.manageEvents.newHeader')"
-    :style="{ width: '94vw', maxWidth: '920px' }"
-    :content-style="{ maxHeight: '78vh' }"
-    @update:visible="close"
+  <el-dialog
+    :model-value="visible"
+    :title="event ? $t('features.manageEvents.editHeader') : $t('features.manageEvents.newHeader')"
+    width="min(920px, 94vw)"
+    append-to-body
+    @update:model-value="close"
   >
-    <form class="form" @submit.prevent="save">
+    <form class="form form--scroll" @submit.prevent="save">
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.title') }}</label>
-        <InputText
+        <el-input
           v-model="form.title"
           :maxlength="200"
-          :invalid="submitted && !form.title.trim()"
-          fluid
+          :class="{ 'ca-invalid': submitted && !form.title.trim() }"
         />
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.subtitle') }}</label>
-        <InputText
+        <el-input
           v-model="form.subtitle"
           :maxlength="300"
-          :invalid="submitted && !form.subtitle.trim()"
-          fluid
+          :class="{ 'ca-invalid': submitted && !form.subtitle.trim() }"
         />
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.categories') }}</label>
         <div class="form__cats">
-          <MultiSelect
+          <el-select
             v-model="form.categoryIds"
-            :options="categoryOptions"
-            option-label="name"
-            option-value="id"
+            multiple
+            filterable
+            collapse-tags
+            collapse-tags-tooltip
             :placeholder="$t('features.manageEvents.categoriesPlaceholder')"
-            :invalid="submitted && categoriesMissing"
-            filter
             class="form__cats-select"
-          />
+            :class="{ 'ca-invalid': submitted && categoriesMissing }"
+          >
+            <el-option
+              v-for="category in categoryOptions"
+              :key="category.id ?? ''"
+              :label="category.name ?? ''"
+              :value="category.id ?? ''"
+            />
+          </el-select>
           <Button
             :label="$t('features.manageEvents.newCategory')"
-            icon="pi pi-plus"
+            icon="plus"
+            type="primary"
             text
             size="small"
             @click="openNewCategory"
           />
         </div>
-        <small v-if="submitted && categoriesMissing" class="form__error"
-          >{{ $t('features.manageEvents.errors.categoriesRequired') }}</small
-        >
+        <small v-if="submitted && categoriesMissing" class="form__error">{{
+          $t('features.manageEvents.errors.categoriesRequired')
+        }}</small>
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.description') }}</label>
@@ -252,45 +281,48 @@ async function save(): Promise<void> {
       <div class="form__row">
         <div class="form__field">
           <label>{{ $t('features.manageEvents.fields.eventStart') }}</label>
-          <DatePicker
+          <el-date-picker
             v-model="form.eventStartsAt"
-            :invalid="submitted && eventStartMissing"
-            fluid
+            type="date"
+            :format="DATE_FORMAT"
+            :class="{ 'ca-invalid': submitted && eventStartMissing }"
           />
-          <small v-if="submitted && eventStartMissing" class="form__error"
-            >{{ $t('features.manageEvents.errors.eventStartRequired') }}</small
-          >
+          <small v-if="submitted && eventStartMissing" class="form__error">{{
+            $t('features.manageEvents.errors.eventStartRequired')
+          }}</small>
         </div>
         <div class="form__field">
           <label>{{ $t('features.manageEvents.fields.eventEnd') }}</label>
-          <DatePicker
+          <el-date-picker
             v-model="form.eventEndsAt"
-            :min-date="form.eventStartsAt ?? undefined"
-            :invalid="submitted && (eventEndMissing || eventOrderInvalid)"
-            fluid
+            type="date"
+            :format="DATE_FORMAT"
+            :disabled-date="disabledEventEndDate"
+            :class="{
+              'ca-invalid': submitted && (eventEndMissing || eventOrderInvalid),
+            }"
           />
-          <small v-if="submitted && eventEndMissing" class="form__error"
-            >{{ $t('features.manageEvents.errors.eventEndRequired') }}</small
-          >
-          <small v-else-if="submitted && eventOrderInvalid" class="form__error"
-            >{{ $t('features.manageEvents.errors.eventOrderInvalid') }}</small
-          >
+          <small v-if="submitted && eventEndMissing" class="form__error">{{
+            $t('features.manageEvents.errors.eventEndRequired')
+          }}</small>
+          <small v-else-if="submitted && eventOrderInvalid" class="form__error">{{
+            $t('features.manageEvents.errors.eventOrderInvalid')
+          }}</small>
         </div>
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.earlySignupStart') }}</label>
-        <DatePicker
+        <el-date-picker
           v-model="form.earlySignupStartsAt"
-          show-time
-          hour-format="24"
-          show-button-bar
-          :max-date="form.signupStartsAt ?? undefined"
-          :invalid="submitted && earlySignupOrderInvalid"
-          fluid
+          type="datetime"
+          clearable
+          :format="DATE_TIME_FORMAT"
+          :disabled-date="disabledEarlySignupDate"
+          :class="{ 'ca-invalid': submitted && earlySignupOrderInvalid }"
         />
-        <small v-if="submitted && earlySignupOrderInvalid" class="form__error"
-          >{{ $t('features.manageEvents.errors.earlySignupOrderInvalid') }}</small
-        >
+        <small v-if="submitted && earlySignupOrderInvalid" class="form__error">{{
+          $t('features.manageEvents.errors.earlySignupOrderInvalid')
+        }}</small>
         <small v-else class="form__hint">{{
           $t('features.manageEvents.hints.earlySignupStart')
         }}</small>
@@ -298,36 +330,38 @@ async function save(): Promise<void> {
       <div class="form__row">
         <div class="form__field">
           <label>{{ $t('features.manageEvents.fields.signupStart') }}</label>
-          <DatePicker
+          <el-date-picker
             v-model="form.signupStartsAt"
-            show-time
-            hour-format="24"
-            :invalid="submitted && (signupStartMissing || signupAfterEventEnd)"
-            fluid
+            type="datetime"
+            :format="DATE_TIME_FORMAT"
+            :class="{
+              'ca-invalid': submitted && (signupStartMissing || signupAfterEventEnd),
+            }"
           />
-          <small v-if="submitted && signupStartMissing" class="form__error"
-            >{{ $t('features.manageEvents.errors.signupStartRequired') }}</small
-          >
-          <small v-else-if="submitted && signupAfterEventEnd" class="form__error"
-            >{{ $t('features.manageEvents.errors.signupAfterEventEnd') }}</small
-          >
+          <small v-if="submitted && signupStartMissing" class="form__error">{{
+            $t('features.manageEvents.errors.signupStartRequired')
+          }}</small>
+          <small v-else-if="submitted && signupAfterEventEnd" class="form__error">{{
+            $t('features.manageEvents.errors.signupAfterEventEnd')
+          }}</small>
         </div>
         <div class="form__field">
           <label>{{ $t('features.manageEvents.fields.signupEnd') }}</label>
-          <DatePicker
+          <el-date-picker
             v-model="form.signupEndsAt"
-            show-time
-            hour-format="24"
-            :min-date="form.signupStartsAt ?? undefined"
-            :invalid="submitted && (signupEndMissing || signupOrderInvalid)"
-            fluid
+            type="datetime"
+            :format="DATE_TIME_FORMAT"
+            :disabled-date="disabledSignupEndDate"
+            :class="{
+              'ca-invalid': submitted && (signupEndMissing || signupOrderInvalid),
+            }"
           />
-          <small v-if="submitted && signupEndMissing" class="form__error"
-            >{{ $t('features.manageEvents.errors.signupEndRequired') }}</small
-          >
-          <small v-else-if="submitted && signupOrderInvalid" class="form__error"
-            >{{ $t('features.manageEvents.errors.signupOrderInvalid') }}</small
-          >
+          <small v-if="submitted && signupEndMissing" class="form__error">{{
+            $t('features.manageEvents.errors.signupEndRequired')
+          }}</small>
+          <small v-else-if="submitted && signupOrderInvalid" class="form__error">{{
+            $t('features.manageEvents.errors.signupOrderInvalid')
+          }}</small>
         </div>
       </div>
       <div class="form__field">
@@ -337,45 +371,47 @@ async function save(): Promise<void> {
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
         />
-        <small v-if="submitted && missingThumbnail" class="form__error"
-          >{{ $t('common.imageRequired') }}</small
-        >
+        <small v-if="submitted && missingThumbnail" class="form__error">{{
+          $t('common.imageRequired')
+        }}</small>
         <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
     </form>
 
     <template #footer>
+      <Button :label="$t('common.cancel')" text :disabled="saving || uploading" @click="close" />
       <Button
-        :label="$t('common.cancel')"
-        text
-        severity="secondary"
-        :disabled="saving || uploading"
-        @click="close"
+        :label="$t('common.save')"
+        type="primary"
+        :loading="saving || uploading"
+        @click="save"
       />
-      <Button :label="$t('common.save')" :loading="saving || uploading" @click="save" />
     </template>
-  </Dialog>
+  </el-dialog>
 
-  <Dialog
-    v-model:visible="catDialogVisible"
-    modal
-    :header="$t('features.manageEvents.categoryDialog.header')"
-    :style="{ width: '380px' }"
+  <el-dialog
+    v-model="catDialogVisible"
+    :title="$t('features.manageEvents.categoryDialog.header')"
+    width="min(380px, 92vw)"
+    append-to-body
   >
     <form class="form" @submit.prevent="submitNewCategory">
       <div class="form__field">
         <label>{{ $t('common.name') }}</label>
-        <InputText
+        <el-input
           v-model="newCat.name"
           :maxlength="120"
-          :invalid="catSubmitted && !newCat.name.trim()"
-          fluid
+          :class="{ 'ca-invalid': catSubmitted && !newCat.name.trim() }"
         />
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.categoryDialog.colorLabel') }}</label>
         <div class="form__cat-color">
-          <ColorPicker v-model="newCat.color" />
+          <el-color-picker
+            :model-value="newCatHex"
+            color-format="hex"
+            @update:model-value="setNewCatColor"
+          />
           <ColorTag
             :value="newCat.name.trim() || $t('features.manageEvents.categoryDialog.example')"
             :color="newCatHex"
@@ -389,13 +425,17 @@ async function save(): Promise<void> {
       <Button
         :label="$t('common.cancel')"
         text
-        severity="secondary"
         :disabled="creatingCat"
         @click="catDialogVisible = false"
       />
-      <Button :label="$t('common.create')" :loading="creatingCat" @click="submitNewCategory" />
+      <Button
+        :label="$t('common.create')"
+        type="primary"
+        :loading="creatingCat"
+        @click="submitNewCategory"
+      />
     </template>
-  </Dialog>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -404,6 +444,11 @@ async function save(): Promise<void> {
   flex-direction: column;
   gap: 16px;
   padding-top: 6px;
+}
+
+.form--scroll {
+  max-height: 68vh;
+  overflow-y: auto;
 }
 
 .form__row {
@@ -455,5 +500,19 @@ async function save(): Promise<void> {
 .form__hint {
   color: var(--ca-text-muted);
   font-size: 12.5px;
+}
+
+.form :deep(.el-date-editor) {
+  width: 100%;
+}
+
+.form :deep(.ca-invalid) {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
+.form :deep(.ca-invalid .el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 </style>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Password from 'primevue/password'
 import { useRoute } from 'vue-router'
 
 import { useResetPassword } from '@/features/auth'
@@ -35,7 +34,9 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             <BaseButton :to="{ name: 'forgot-password' }" variant="primary">
               {{ $t('pages.resetPassword.requestNewLink') }}
             </BaseButton>
-            <BaseButton :to="{ name: 'home' }" variant="ghost">{{ $t('common.backToHome') }}</BaseButton>
+            <BaseButton :to="{ name: 'home' }" variant="ghost">{{
+              $t('common.backToHome')
+            }}</BaseButton>
           </div>
         </div>
 
@@ -46,33 +47,37 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             {{ $t('pages.resetPassword.successText') }}
           </p>
           <div class="reset-panel__actions">
-            <BaseButton :to="{ name: 'login' }" variant="primary">{{ $t('common.login') }}</BaseButton>
+            <BaseButton :to="{ name: 'login' }" variant="primary">{{
+              $t('common.login')
+            }}</BaseButton>
           </div>
         </div>
 
         <form v-else class="reset-form" @submit.prevent="submit">
           <div class="reset-field">
-            <label class="reset-label" for="reset-password">{{ $t('pages.resetPassword.newPasswordLabel') }}</label>
-            <Password
-              input-id="reset-password"
+            <label class="reset-label" for="reset-password">{{
+              $t('pages.resetPassword.newPasswordLabel')
+            }}</label>
+            <el-input
+              id="reset-password"
               v-model="form.password"
-              :feedback="false"
-              toggle-mask
+              type="password"
+              show-password
               :maxlength="128"
               required
-              fluid
             />
           </div>
           <div class="reset-field">
-            <label class="reset-label" for="reset-password-confirm">{{ $t('pages.resetPassword.confirmPasswordLabel') }}</label>
-            <Password
-              input-id="reset-password-confirm"
+            <label class="reset-label" for="reset-password-confirm">{{
+              $t('pages.resetPassword.confirmPasswordLabel')
+            }}</label>
+            <el-input
+              id="reset-password-confirm"
               v-model="form.confirmPassword"
-              :feedback="false"
-              toggle-mask
+              type="password"
+              show-password
               :maxlength="128"
               required
-              fluid
             />
           </div>
 

@@ -1,16 +1,14 @@
 import { computed, ref, watch } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
-import type {
-  DataTableFilterMetaData,
-  DataTableProps,
-  DataTableSortEvent,
-} from 'primevue/datatable'
 
 import { toDateOnly } from './format'
 
 export type ServerTableFieldType = 'text' | 'number' | 'dateRange'
+export type ServerTableSortOrder = 'ascending' | 'descending'
 
 const ROWS_PER_PAGE_OPTIONS = [25, 50, 100]
+const PAGINATION_LAYOUT = 'total, sizes, prev, pager, next'
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 export interface ServerTableColumn {
   readonly param?: string
@@ -19,9 +17,40 @@ export interface ServerTableColumn {
   readonly toParam?: string
 }
 
+export type ServerTableFilterValue =
+  string | number | boolean | Date | readonly (Date | string | null)[] | null | undefined
+
+export interface ServerTableFilter {
+  get value(): never
+  set value(next: ServerTableFilterValue)
+}
+
+export interface ServerTableSortChange {
+  readonly prop: string | null
+  readonly order: ServerTableSortOrder | null
+}
+
+export interface ServerTableDefaultSort {
+  readonly prop: string
+  readonly order: ServerTableSortOrder
+}
+
+interface ServerTableFilterState {
+  value: ServerTableFilterValue
+}
+
 function toDateParam(value: unknown): string | undefined {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return undefined
-  return toDateOnly(value)
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : toDateOnly(value)
+  }
+
+  if (typeof value === 'string' && value !== '') {
+    if (DATE_ONLY_PATTERN.test(value)) return value
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? undefined : toDateOnly(parsed)
+  }
+
+  return undefined
 }
 
 export interface ServerTablePage<T> {
@@ -63,9 +92,9 @@ interface UseServerTableOptions<T, TParams> {
 
 function initialFilters(
   columns: Record<string, ServerTableColumn>,
-): Record<string, DataTableFilterMetaData> {
-  const filters: Record<string, DataTableFilterMetaData> = {}
-  for (const key of Object.keys(columns)) filters[key] = { value: null, matchMode: undefined }
+): Record<string, ServerTableFilterState> {
+  const filters: Record<string, ServerTableFilterState> = {}
+  for (const key of Object.keys(columns)) filters[key] = { value: null }
   return filters
 }
 
@@ -77,7 +106,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
   const rows = ref(options.rows ?? 25)
   const sortField = ref<string | undefined>(options.defaultSort?.field)
   const sortOrder = ref<number>(options.defaultSort?.order ?? 1)
-  const filters = ref<Record<string, DataTableFilterMetaData>>(initialFilters(columns))
+  const filters = ref<Record<string, ServerTableFilterState>>(initialFilters(columns))
   const extra = computed<Record<string, unknown>>(() => options.extraParams?.() ?? {})
 
   watch(extra, () => {
@@ -91,7 +120,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
       const value = filters.value[key]?.value
       if (value === null || value === undefined || value === '') continue
       if (column.type === 'dateRange') {
-        const range: unknown[] = Array.isArray(value) ? value : []
+        const range: readonly unknown[] = Array.isArray(value) ? value : []
         const from = toDateParam(range[0])
         const to = toDateParam(range[1])
         if (from) result[column.fromParam ?? `${key}From`] = from
@@ -139,33 +168,45 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     }
   })
 
-  const dataTableProps = computed(
-    () =>
-      ({
-        lazy: true,
-        value: page.value.items,
-        totalRecords: page.value.total,
-        loading: tableQuery.isFetching.value,
-        dataKey: 'id',
-        stripedRows: true,
-        paginator: true,
-        rows: rows.value,
-        first: first.value,
-        rowsPerPageOptions: ROWS_PER_PAGE_OPTIONS,
-        sortField: sortField.value,
-        sortOrder: sortOrder.value,
-        removableSort: true,
-      }) satisfies DataTableProps,
+  const defaultSortProp = computed(() => sortField.value ?? '')
+  const defaultSortOrder = computed<ServerTableSortOrder>(() =>
+    sortOrder.value === -1 ? 'descending' : 'ascending',
   )
 
-  function onPage(event: { first: number; rows: number }): void {
-    first.value = event.first
-    rows.value = event.rows
+  const defaultSort = computed<ServerTableDefaultSort>(() => ({
+    prop: defaultSortProp.value,
+    order: defaultSortOrder.value,
+  }))
+
+  const tableProps = computed(() => ({
+    data: page.value.items,
+    rowKey: 'id',
+    stripe: true,
+    defaultSort: defaultSort.value,
+  }))
+
+  const paginationProps = computed(() => ({
+    currentPage: Math.floor(first.value / rows.value) + 1,
+    pageSize: rows.value,
+    total: page.value.total,
+    pageSizes: ROWS_PER_PAGE_OPTIONS,
+    layout: PAGINATION_LAYOUT,
+    background: true,
+  }))
+
+  function onSortChange(event: ServerTableSortChange): void {
+    const order = event.order
+    sortField.value = order === null || typeof event.prop !== 'string' ? undefined : event.prop
+    sortOrder.value = order === 'descending' ? -1 : 1
+    first.value = 0
   }
 
-  function onSort(event: DataTableSortEvent): void {
-    sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
-    sortOrder.value = event.sortOrder ?? 1
+  function onCurrentPageChange(nextPage: number): void {
+    first.value = Math.max(0, nextPage - 1) * rows.value
+  }
+
+  function onPageSizeChange(size: number): void {
+    rows.value = size
     first.value = 0
   }
 
@@ -178,16 +219,20 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     onFilter()
   }
 
-  function columnFilter(key: string): DataTableFilterMetaData {
+  function columnFilter(key: string): ServerTableFilter {
     const existing = filters.value[key]
-    if (existing) return existing
-    const meta: DataTableFilterMetaData = { value: null, matchMode: undefined }
-    filters.value[key] = meta
-    return meta
+    if (existing) return existing as ServerTableFilter
+    const created: ServerTableFilterState = { value: null }
+    filters.value[key] = created
+    return (filters.value[key] ?? created) as ServerTableFilter
   }
 
   return {
-    dataTableProps,
+    tableProps,
+    paginationProps,
+    defaultSort,
+    defaultSortProp,
+    defaultSortOrder,
     items: computed(() => page.value.items),
     total: computed(() => page.value.total),
     loading: tableQuery.isFetching,
@@ -200,8 +245,9 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     sortParam,
     columnFilter,
     clearFilters,
-    onPage,
-    onSort,
+    onSortChange,
+    onCurrentPageChange,
+    onPageSizeChange,
     onFilter,
   }
 }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import Select from 'primevue/select'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
 
@@ -32,7 +31,8 @@ function commit(): void {
   emit('apply')
 }
 
-function onChange(): void {
+function onChange(value: unknown): void {
+  draft.value = value === undefined || value === '' ? null : (value as string | boolean)
   commit()
   shell.value?.hide()
 }
@@ -54,15 +54,28 @@ function clear(): void {
     :show-clear="draft != null"
     @clear="clear"
   >
-    <Select
-      v-model="draft"
-      :options="options"
-      option-label="label"
-      option-value="value"
-      :placeholder="$t('table.filterBy', { label })"
-      show-clear
-      fluid
-      @change="onChange"
-    />
+    <template #default="{ panel }">
+      <el-select
+        :model-value="draft"
+        :placeholder="$t('table.filterBy', { label })"
+        clearable
+        :append-to="panel"
+        class="column-filter-select"
+        @change="onChange"
+      >
+        <el-option
+          v-for="option in options"
+          :key="String(option.value)"
+          :label="option.label"
+          :value="option.value"
+        />
+      </el-select>
+    </template>
   </ColumnFilterShell>
 </template>
+
+<style scoped>
+.column-filter-select {
+  width: 100%;
+}
+</style>

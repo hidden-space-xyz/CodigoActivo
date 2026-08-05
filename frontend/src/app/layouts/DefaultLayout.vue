@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AppBackground, AppToast } from '@/shared/ui'
+import { AppBackground } from '@/shared/ui'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 </script>
@@ -12,7 +12,6 @@ import AppHeader from './AppHeader.vue'
       <slot />
     </main>
     <AppFooter />
-    <AppToast position="top-right" />
   </div>
 </template>
 

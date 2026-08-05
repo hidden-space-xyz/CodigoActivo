@@ -10,8 +10,6 @@ import {
   ColumnSearch,
   ListThumbnail,
 } from '@/shared/ui'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
 
 import { useResourceTypesList } from '@/entities/catalog'
 import { ResourceFormDialog, useResourcesAdmin } from '@/features/manage-resources'
@@ -107,25 +105,30 @@ function confirmDelete(resource: ResourceListItemResponse): void {
       <template #actions>
         <Button
           :label="$t('pages.admin.resources.newResource')"
-          icon="pi pi-plus"
+          icon="plus"
+          type="primary"
           :disabled="loadingDetail"
           @click="openCreate"
         />
       </template>
     </AdminPageHeader>
 
-    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
+    <el-table
+      v-bind="table.tableProps.value"
+      v-loading="table.loading.value"
+      @sort-change="table.onSortChange"
+    >
       <template #empty>
         <span v-if="table.isError.value">{{ $t('pages.admin.resources.empty.error') }}</span>
         <span v-else>{{ $t('pages.admin.resources.empty.none') }}</span>
       </template>
 
-      <Column :header="$t('common.image')" style="width: 110px">
-        <template #body="{ data }">
-          <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
+      <el-table-column :label="$t('common.image')" width="110">
+        <template #default="{ row }">
+          <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
         </template>
-      </Column>
-      <Column field="title" sortable>
+      </el-table-column>
+      <el-table-column prop="title" min-width="180" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('title').value"
@@ -134,8 +137,8 @@ function confirmDelete(resource: ResourceListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-      </Column>
-      <Column field="subtitle" sortable>
+      </el-table-column>
+      <el-table-column prop="subtitle" min-width="160" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('subtitle').value"
@@ -144,9 +147,9 @@ function confirmDelete(resource: ResourceListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ data.subtitle || '—' }}</template>
-      </Column>
-      <Column sort-field="type" sortable style="width: 120px">
+        <template #default="{ row }">{{ row.subtitle || '—' }}</template>
+      </el-table-column>
+      <el-table-column prop="type" sortable="custom" width="120">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
@@ -155,12 +158,12 @@ function confirmDelete(resource: ResourceListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          <ColorTag v-if="data.type?.name" :value="data.type.name" :color="data.type.color" />
+        <template #default="{ row }">
+          <ColorTag v-if="row.type?.name" :value="row.type.name" :color="row.type.color" />
           <span v-else>—</span>
         </template>
-      </Column>
-      <Column sort-field="url" sortable>
+      </el-table-column>
+      <el-table-column prop="url" min-width="190" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('url').value"
@@ -169,20 +172,20 @@ function confirmDelete(resource: ResourceListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
+        <template #default="{ row }">
           <a
-            v-if="data.url"
-            :href="data.url"
+            v-if="row.url"
+            :href="row.url"
             target="_blank"
             rel="noopener"
             class="url-cell"
-            :title="data.url"
-            >{{ data.url }}</a
+            :title="row.url"
+            >{{ row.url }}</a
           >
           <span v-else>—</span>
         </template>
-      </Column>
-      <Column field="createdAt" sortable style="width: 200px">
+      </el-table-column>
+      <el-table-column prop="createdAt" sortable="custom" width="200">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('created').value"
@@ -190,31 +193,38 @@ function confirmDelete(resource: ResourceListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
-      </Column>
-      <Column :header="$t('common.actions')" style="width: 170px">
-        <template #body="{ data }">
+        <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      </el-table-column>
+      <el-table-column :label="$t('common.actions')" width="170" fixed="right">
+        <template #default="{ row }">
           <div class="row-actions">
             <Button
-              icon="pi pi-pencil"
+              icon="pencil"
               text
-              rounded
+              circle
               :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
-              @click="openEdit(data)"
+              @click="openEdit(row)"
             />
             <Button
-              icon="pi pi-trash"
+              icon="trash"
               text
-              rounded
-              severity="danger"
+              circle
+              type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(data)"
+              @click="confirmDelete(row)"
             />
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </el-table-column>
+    </el-table>
+
+    <el-pagination
+      v-bind="table.paginationProps.value"
+      class="table-pagination"
+      @current-change="table.onCurrentPageChange"
+      @size-change="table.onPageSizeChange"
+    />
 
     <ResourceFormDialog
       v-model:visible="dialogVisible"
@@ -230,6 +240,11 @@ function confirmDelete(resource: ResourceListItemResponse): void {
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.table-pagination {
+  margin-top: 14px;
+  justify-content: flex-end;
 }
 
 .url-cell {

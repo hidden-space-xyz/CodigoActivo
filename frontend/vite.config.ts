@@ -20,9 +20,20 @@ export default defineConfig(({ mode }) => {
         output: {
           codeSplitting: {
             groups: [
-              { name: 'datatable', test: /node_modules[\\/]primevue[\\/]datatable[\\/]/ },
-              { name: 'primetheme', test: /node_modules[\\/]@primeuix[\\/]themes[\\/]/ },
-              { name: 'primevue', test: /node_modules[\\/](primevue|@primeuix)[\\/]/ },
+              { name: 'element-icons', test: /node_modules[\\/]@element-plus[\\/]icons-vue[\\/]/ },
+              {
+                name: 'element-base',
+                test: /node_modules[\\/]element-plus[\\/]es[\\/](utils|constants|hooks|directives|locale|_virtual)[\\/]/,
+              },
+              {
+                name: 'element-table',
+                test: /node_modules[\\/]element-plus[\\/]es[\\/]components[\\/](table|table-v2)[\\/]/,
+              },
+              {
+                name: 'element-components',
+                test: /node_modules[\\/]element-plus[\\/]es[\\/]components[\\/][^\\/]+[\\/]/,
+              },
+              { name: 'element-plus', test: /node_modules[\\/]element-plus[\\/]/ },
               { name: 'editor', test: /node_modules[\\/](@tiptap|prosemirror-)/ },
               { name: 'charts', test: /node_modules[\\/](chart\.js|@kurkle)[\\/]/ },
             ],

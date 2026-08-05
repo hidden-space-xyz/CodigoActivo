@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Select from 'primevue/select'
 
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
 import { genderOptions } from '@/entities/user'
@@ -33,8 +30,7 @@ const isValid = computed(() => {
   if (passwordTooShort.value || passwordsMismatch.value) return false
   if (!model.dateOfBirth || !model.gender) return false
   return model.minors.every(
-    (minor) =>
-      minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.gender,
+    (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.gender,
   )
 })
 
@@ -61,7 +57,9 @@ function removeMinor(index: number): void {
 <template>
   <div class="reg">
     <div class="reg__head">
-      <BaseButton variant="link" @click="emit('back')">{{ $t('features.register.back') }}</BaseButton>
+      <BaseButton variant="link" @click="emit('back')">{{
+        $t('features.register.back')
+      }}</BaseButton>
     </div>
 
     <form class="reg__form" @submit.prevent="onSubmit">
@@ -69,36 +67,33 @@ function removeMinor(index: number): void {
       <div class="reg__grid">
         <div class="reg__field">
           <label class="reg__label" for="reg-firstname">{{ $t('common.firstName') }}</label>
-          <InputText
+          <el-input
             id="reg-firstname"
             v-model="model.firstName"
             :maxlength="120"
-            :invalid="submitted && !model.firstName.trim()"
+            :class="{ 'ca-invalid': submitted && !model.firstName.trim() }"
             required
-            fluid
           />
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-lastname">{{ $t('common.lastName') }}</label>
-          <InputText
+          <el-input
             id="reg-lastname"
             v-model="model.lastName"
             :maxlength="120"
-            :invalid="submitted && !model.lastName.trim()"
+            :class="{ 'ca-invalid': submitted && !model.lastName.trim() }"
             required
-            fluid
           />
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-email">{{ $t('common.email') }}</label>
-          <InputText
+          <el-input
             id="reg-email"
             v-model="model.email"
             type="email"
             :maxlength="256"
-            :invalid="submitted && !emailValid"
+            :class="{ 'ca-invalid': submitted && !emailValid }"
             required
-            fluid
           />
           <small v-if="submitted && !emailValid" class="reg__error">{{
             $t('validation.emailInvalid')
@@ -106,27 +101,25 @@ function removeMinor(index: number): void {
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-phone">{{ $t('common.phone') }}</label>
-          <InputText
+          <el-input
             id="reg-phone"
             v-model="model.phone"
             type="tel"
             :maxlength="40"
-            :invalid="submitted && !model.phone.trim()"
+            :class="{ 'ca-invalid': submitted && !model.phone.trim() }"
             required
-            fluid
           />
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-password">{{ $t('common.password') }}</label>
-          <Password
-            input-id="reg-password"
+          <el-input
+            id="reg-password"
             v-model="model.password"
-            :feedback="false"
+            type="password"
+            show-password
             :maxlength="128"
-            :invalid="submitted && passwordTooShort"
-            toggle-mask
+            :class="{ 'ca-invalid': submitted && passwordTooShort }"
             required
-            fluid
           />
           <small v-if="submitted && passwordTooShort" class="reg__error">{{
             $t('validation.passwordMin')
@@ -136,15 +129,14 @@ function removeMinor(index: number): void {
           <label class="reg__label" for="reg-password-confirm">{{
             $t('common.confirmPassword')
           }}</label>
-          <Password
-            input-id="reg-password-confirm"
+          <el-input
+            id="reg-password-confirm"
             v-model="model.confirmPassword"
-            :feedback="false"
+            type="password"
+            show-password
             :maxlength="128"
-            :invalid="showMismatch"
-            toggle-mask
+            :class="{ 'ca-invalid': showMismatch }"
             required
-            fluid
             @blur="confirmTouched = true"
           />
           <small v-if="showMismatch" class="reg__error">{{
@@ -164,15 +156,18 @@ function removeMinor(index: number): void {
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
-          <Select
-            input-id="reg-gender"
+          <el-select
+            id="reg-gender"
             v-model="model.gender"
-            :options="genders"
-            option-label="label"
-            option-value="value"
-            :invalid="submitted && !model.gender"
-            fluid
-          />
+            :class="{ 'ca-invalid': submitted && !model.gender }"
+          >
+            <el-option
+              v-for="option in genders"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
           <small v-if="submitted && !model.gender" class="reg__error">{{
             $t('validation.genderRequired')
           }}</small>
@@ -192,9 +187,9 @@ function removeMinor(index: number): void {
 
         <transition-group name="reg-fade" tag="div">
           <fieldset v-for="(minor, index) in model.minors" :key="minor.key" class="reg__minor">
-            <legend class="reg__minor-legend">{{
-              $t('features.register.form.minorLegend', { n: index + 1 })
-            }}</legend>
+            <legend class="reg__minor-legend">
+              {{ $t('features.register.form.minorLegend', { n: index + 1 }) }}
+            </legend>
             <button
               type="button"
               class="reg__minor-remove"
@@ -209,26 +204,24 @@ function removeMinor(index: number): void {
                 <label class="reg__label" :for="`minor-firstname-${index}`">{{
                   $t('common.firstName')
                 }}</label>
-                <InputText
+                <el-input
                   :id="`minor-firstname-${index}`"
                   v-model="minor.firstName"
                   :maxlength="120"
-                  :invalid="submitted && !minor.firstName.trim()"
+                  :class="{ 'ca-invalid': submitted && !minor.firstName.trim() }"
                   required
-                  fluid
                 />
               </div>
               <div class="reg__field">
                 <label class="reg__label" :for="`minor-lastname-${index}`">{{
                   $t('common.lastName')
                 }}</label>
-                <InputText
+                <el-input
                   :id="`minor-lastname-${index}`"
                   v-model="minor.lastName"
                   :maxlength="120"
-                  :invalid="submitted && !minor.lastName.trim()"
+                  :class="{ 'ca-invalid': submitted && !minor.lastName.trim() }"
                   required
-                  fluid
                 />
               </div>
               <div class="reg__field">
@@ -249,15 +242,18 @@ function removeMinor(index: number): void {
                 <label class="reg__label" :for="`minor-gender-${index}`">{{
                   $t('common.gender')
                 }}</label>
-                <Select
-                  :input-id="`minor-gender-${index}`"
+                <el-select
+                  :id="`minor-gender-${index}`"
                   v-model="minor.gender"
-                  :options="genders"
-                  option-label="label"
-                  option-value="value"
-                  :invalid="submitted && !minor.gender"
-                  fluid
-                />
+                  :class="{ 'ca-invalid': submitted && !minor.gender }"
+                >
+                  <el-option
+                    v-for="option in genders"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
                 <small v-if="submitted && !minor.gender" class="reg__error">{{
                   $t('validation.genderRequired')
                 }}</small>
@@ -333,6 +329,16 @@ function removeMinor(index: number): void {
   margin-top: 6px;
   font-size: 12.5px;
   color: var(--ca-danger-ink);
+}
+
+.ca-invalid {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
+.ca-invalid :deep(.el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 
 .reg__minors {

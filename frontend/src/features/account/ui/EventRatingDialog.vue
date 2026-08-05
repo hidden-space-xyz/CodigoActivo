@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import Dialog from 'primevue/dialog'
-import Rating from 'primevue/rating'
-import Textarea from 'primevue/textarea'
 
 import type { AccountEventRating, EventRatingInput } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
@@ -51,13 +48,12 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :draggable="false"
-    :header="$t('features.account.history.dialog.header')"
-    :style="{ width: '90vw', maxWidth: '560px' }"
-    @update:visible="(value) => !value && emit('close')"
+  <el-dialog
+    :model-value="visible"
+    :title="$t('features.account.history.dialog.header')"
+    width="min(90vw, 560px)"
+    :close-on-click-modal="false"
+    @update:model-value="(value: boolean) => !value && emit('close')"
   >
     <p class="acc-rating__event">{{ eventTitle }}</p>
 
@@ -65,38 +61,34 @@ function onSubmit(): void {
       <div class="acc-form__field">
         <label for="rating-score">{{ $t('features.account.history.dialog.score') }}</label>
         <div class="acc-rating__stars">
-          <Rating v-model="form.score" input-id="rating-score" />
-          <BaseButton
-            v-if="form.score > 0"
-            variant="link"
-            type="button"
-            @click="form.score = 0"
-            >{{ $t('features.account.history.dialog.clearScore') }}</BaseButton
-          >
+          <el-rate id="rating-score" v-model="form.score" />
+          <BaseButton v-if="form.score > 0" variant="link" type="button" @click="form.score = 0">{{
+            $t('features.account.history.dialog.clearScore')
+          }}</BaseButton>
         </div>
       </div>
 
       <div class="acc-form__field">
         <label for="rating-most">{{ $t('entities.event.ratingQuestions.mostLiked') }}</label>
-        <Textarea
+        <el-input
           id="rating-most"
           v-model="form.mostLiked"
+          type="textarea"
           :maxlength="MAX_ANSWER_LENGTH"
-          rows="3"
-          auto-resize
-          fluid
+          :rows="3"
+          :autosize="{ minRows: 3 }"
         />
       </div>
 
       <div class="acc-form__field">
         <label for="rating-least">{{ $t('entities.event.ratingQuestions.leastLiked') }}</label>
-        <Textarea
+        <el-input
           id="rating-least"
           v-model="form.leastLiked"
+          type="textarea"
           :maxlength="MAX_ANSWER_LENGTH"
-          rows="3"
-          auto-resize
-          fluid
+          :rows="3"
+          :autosize="{ minRows: 3 }"
         />
       </div>
 
@@ -104,13 +96,13 @@ function onSubmit(): void {
         <label for="rating-suggestions">{{
           $t('entities.event.ratingQuestions.suggestions')
         }}</label>
-        <Textarea
+        <el-input
           id="rating-suggestions"
           v-model="form.suggestions"
+          type="textarea"
           :maxlength="MAX_ANSWER_LENGTH"
-          rows="3"
-          auto-resize
-          fluid
+          :rows="3"
+          :autosize="{ minRows: 3 }"
         />
       </div>
 
@@ -123,7 +115,7 @@ function onSubmit(): void {
         </BaseButton>
       </div>
     </form>
-  </Dialog>
+  </el-dialog>
 </template>
 
 <style scoped>

@@ -68,7 +68,7 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
         <div v-if="hasMoreUpcoming" class="events-more">
           <AppButton
             :label="$t('common.loadMore')"
-            outlined
+            plain
             :loading="isFetchingMoreUpcoming"
             @click="loadMoreUpcoming"
           />
@@ -95,7 +95,7 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
         <div v-if="hasMorePast" class="events-more">
           <AppButton
             :label="$t('common.loadMore')"
-            outlined
+            plain
             :loading="isFetchingMorePast"
             @click="loadMorePast"
           />
