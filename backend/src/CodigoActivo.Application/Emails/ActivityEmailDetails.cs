@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Net;
-using CodigoActivo.Application.Localization;
+using CodigoActivo.Application.Resources.Localization;
 
 namespace CodigoActivo.Application.Emails;
 
@@ -15,12 +15,6 @@ public sealed record ActivityEmailDetails(
 {
     private const string DateFormat = "dd/MM/yyyy";
     private const string TimeFormat = "HH:mm";
-
-    private const string LabelStyle =
-        "padding: 6px 16px 6px 0; color: #6b7280; vertical-align: top; white-space: nowrap;";
-    private const string ValueStyle = "padding: 6px 0; color: #1f2937;";
-    private const string TableStyle =
-        "width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px;";
 
     public string ScheduleText(TimeZoneInfo timeZone)
     {
@@ -40,26 +34,33 @@ public sealed record ActivityEmailDetails(
         return AppStrings.EmailsDetailsScheduleMultiDay(startDate, startTime, endDate, endTime);
     }
 
-    public string ToTextBlock(TimeZoneInfo timeZone, string? roleName = null)
+    public EmailBlock ToBlock(TimeZoneInfo timeZone, string? roleName = null)
     {
-        return string.Join(
+        var rows = Rows(timeZone, roleName).ToList();
+
+        var html = string.Concat(
+            rows.Select(
+                (row, index) =>
+                {
+                    var edge = index is 0 ? string.Empty : EmailStyles.DetailsRowBorder;
+                    var label = WebUtility.HtmlEncode(row.Label);
+                    var value = WebUtility.HtmlEncode(row.Value);
+                    return $"""
+                        <tr>
+                        <td class="ca-label ca-row" style="{EmailStyles.DetailsLabel}{edge}">{label}</td>
+                        <td class="ca-value ca-row" style="{EmailStyles.DetailsValue}{edge}">{value}</td>
+                        </tr>
+                        """;
+                }
+            )
+        );
+
+        var text = string.Join(
             "\n",
-            Rows(timeZone, roleName)
-                .Select(row => AppStrings.EmailsDetailsRowText(row.Label, row.Value))
-        );
-    }
-
-    public string ToHtmlBlock(TimeZoneInfo timeZone, string? roleName = null)
-    {
-        var rows = string.Concat(
-            Rows(timeZone, roleName)
-                .Select(row =>
-                    $"<tr><td style=\"{LabelStyle}\">{WebUtility.HtmlEncode(row.Label)}</td>"
-                    + $"<td style=\"{ValueStyle}\"><b>{WebUtility.HtmlEncode(row.Value)}</b></td></tr>"
-                )
+            rows.Select(row => AppStrings.EmailsDetailsRowText(row.Label, row.Value))
         );
 
-        return $"<table style=\"{TableStyle}\">{rows}</table>";
+        return EmailBlocks.Panel(html, text);
     }
 
     private IEnumerable<(string Label, string Value)> Rows(TimeZoneInfo timeZone, string? roleName)

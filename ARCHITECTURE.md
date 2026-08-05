@@ -121,7 +121,7 @@ Services never throw for expected failures. They return `Task<Result<TResponse>>
   `ApiErrorResponse` with `ErrorCode.RequestValidationFailed`.
 - **Mapping** is hand-written (`ToResponse()` extensions + `Expression` projections for DB-side `Select`).
   No AutoMapper.
-- **Localization** (`Application/Localization/`): every user-facing backend string is a key in
+- **Localization** (`Application/Resources/Localization/`): every user-facing backend string is a key in
   `AppStrings.resx`, read through the strongly-typed `AppStrings` accessor — the backend's counterpart to the
   frontend's `es.ts`. It lives in Application because that is the layer that *renders* text: **Domain
   deliberately carries no user-facing prose**, which is why `Error` holds only an `ErrorCode` and its Spanish

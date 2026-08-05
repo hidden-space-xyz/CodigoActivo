@@ -145,11 +145,14 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         await ReadResultAsync(response);
         Factory
             .EmailSender.Sent.Should()
-            .OnlyContain(m =>
-                !m.HtmlBody.Contains("<script>", StringComparison.Ordinal)
-                && !m.HtmlBody.Contains("<img", StringComparison.Ordinal)
-                && m.HtmlBody.Contains("&lt;script&gt;", StringComparison.Ordinal)
-                && m.HtmlBody.Contains("&amp;", StringComparison.Ordinal)
+            .NotBeEmpty()
+            .And.AllSatisfy(m =>
+                m.HtmlBody.Should()
+                    .NotContain("<script>")
+                    .And.NotContain("<img src=x")
+                    .And.Contain("&lt;script&gt;")
+                    .And.Contain("&lt;img src=x")
+                    .And.Contain("&amp;")
             );
     }
 

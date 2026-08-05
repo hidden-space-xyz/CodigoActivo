@@ -7,6 +7,7 @@ namespace CodigoActivo.UnitTests.Application.Emails;
 public sealed class VerificationEmailTests
 {
     private const string VerifyUrl = "https://app.test/verify-account?userId=abc&code=123456";
+    private const string SiteUrl = "https://app.test";
 
     [Fact]
     public void Create_ValidRequest_AddressesRecipientWithCodeLinkAndLifetime()
@@ -16,6 +17,7 @@ public sealed class VerificationEmailTests
             "Ana",
             "123456",
             VerifyUrl,
+            SiteUrl,
             TimeSpan.FromMinutes(15)
         );
 
@@ -47,6 +49,7 @@ public sealed class VerificationEmailTests
             "<script>alert(1)</script>",
             "123456",
             VerifyUrl,
+            SiteUrl,
             TimeSpan.FromMinutes(15)
         );
 

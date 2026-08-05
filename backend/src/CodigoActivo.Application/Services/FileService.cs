@@ -1,8 +1,8 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
-using CodigoActivo.Application.Localization;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Resources.Localization;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;

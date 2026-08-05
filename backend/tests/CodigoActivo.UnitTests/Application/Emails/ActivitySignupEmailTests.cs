@@ -24,7 +24,8 @@ public sealed class ActivitySignupEmailTests
             Details,
             [new ActivitySignupParticipant("<script>alert(1)</script>", "Voluntario")],
             TimeZoneInfo.Utc,
-            "https://app.test/account"
+            "https://app.test/account",
+            "https://app.test"
         );
 
         message.HtmlBody.Should().NotContain("<script>").And.Contain("&lt;script&gt;");

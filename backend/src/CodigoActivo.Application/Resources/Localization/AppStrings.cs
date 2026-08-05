@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.Resources;
 
-namespace CodigoActivo.Application.Localization;
+namespace CodigoActivo.Application.Resources.Localization;
 
 public static class AppStrings
 {
-    public const string BaseName = "CodigoActivo.Application.Localization.AppStrings";
+    public const string BaseName =
+        "CodigoActivo.Application.Resources.Localization.AppStrings";
     private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
     private static readonly ResourceManager Manager = new(BaseName, typeof(AppStrings).Assembly);
 
@@ -43,6 +44,12 @@ public static class AppStrings
 
     public static string EmailsDetailsScheduleLabel => Get("emails.details.scheduleLabel");
 
+    public static string EmailsFooterAutomaticNote => Get("emails.footer.automaticNote");
+
+    public static string EmailsFooterTagline => Get("emails.footer.tagline");
+
+    public static string EmailsFooterWebsiteLabel => Get("emails.footer.websiteLabel");
+
     public static string EmailsManualSignature => Get("emails.manual.signature");
 
     public static string EmailsPasswordResetButtonLabel => Get("emails.passwordReset.buttonLabel");
@@ -57,7 +64,11 @@ public static class AppStrings
 
     public static string EmailsPasswordResetSubject => Get("emails.passwordReset.subject");
 
+    public static string EmailsSharedBrandName => Get("emails.shared.brandName");
+
     public static string EmailsSharedFallbackLinkNote => Get("emails.shared.fallbackLinkNote");
+
+    public static string EmailsSharedLogoAlt => Get("emails.shared.logoAlt");
 
     public static string EmailsSharedSignoffHtml => Get("emails.shared.signoffHtml");
 

@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
-using CodigoActivo.Application.Localization;
 using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Resources.Localization;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
@@ -18,6 +18,7 @@ public class EmailService(
     IQueryExecutor executor,
     IEmailTransport emailSender,
     ManualEmailOptions options,
+    ApplicationOptions application,
     ILogger<EmailService> logger
 ) : IEmailService
 {
@@ -126,7 +127,11 @@ public class EmailService(
             return buffered.Error!;
         }
 
-        var content = ManualEmail.Render(request.Subject.Trim(), request.Body.Trim());
+        var content = ManualEmail.Render(
+            request.Subject.Trim(),
+            request.Body.Trim(),
+            application.BaseUrl.TrimEnd('/')
+        );
         var messages = recipients
             .Select(r => ManualEmail.Create(content, r.Email!, r.FirstName, buffered.Value))
             .ToList();

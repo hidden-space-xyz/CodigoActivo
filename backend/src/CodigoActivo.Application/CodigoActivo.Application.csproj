@@ -10,4 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CodigoActivo.Domain\CodigoActivo.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Images\logo-mark.png" LogicalName="CodigoActivo.Application.Resources.Images.logo-mark.png" />
+  </ItemGroup>
 </Project>
