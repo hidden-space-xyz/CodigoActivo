@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Dialog from 'primevue/dialog'
 
 import { ActivityStep, useOrganizationContent, ValueCard } from '@/entities/organization'
 import { CONTACT } from '@/shared/config'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { AppIcon, BaseButton, SectionEyebrow } from '@/shared/ui'
 
 const { values, activities } = useOrganizationContent()
 
@@ -62,30 +61,29 @@ const joinVisible = ref(false)
       </div>
     </section>
 
-    <Dialog
-      v-model:visible="joinVisible"
-      modal
-      :draggable="false"
-      :header="$t('pages.about.cta.dialog.header')"
-      :style="{ width: '90vw', maxWidth: '480px' }"
+    <el-dialog
+      v-model="joinVisible"
+      :title="$t('pages.about.cta.dialog.header')"
+      width="90vw"
+      :style="{ maxWidth: '480px' }"
     >
       <p class="join__lead">{{ $t('pages.about.cta.dialog.lead') }}</p>
 
       <ul class="join__contact">
         <li class="join__item">
-          <i class="pi pi-envelope" aria-hidden="true" />
+          <AppIcon name="envelope" />
           <span class="join__label">{{ $t('common.emailLong') }}</span>
           <a :href="`mailto:${CONTACT.email}`" class="join__value">{{ CONTACT.email }}</a>
         </li>
         <li class="join__item">
-          <i class="pi pi-phone" aria-hidden="true" />
+          <AppIcon name="phone" />
           <span class="join__label">{{ $t('common.phone') }}</span>
           <a :href="`tel:${CONTACT.phoneHref}`" class="join__value">{{ CONTACT.phone }}</a>
         </li>
       </ul>
 
       <p class="join__note">{{ $t('pages.about.cta.dialog.note') }}</p>
-    </Dialog>
+    </el-dialog>
   </div>
 </template>
 
@@ -244,7 +242,7 @@ const joinVisible = ref(false)
   background: var(--ca-surface-2);
 }
 
-.join__item .pi {
+.join__item .app-icon {
   font-size: 15px;
   color: var(--ca-orange-ink);
 }

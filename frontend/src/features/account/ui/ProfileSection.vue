@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Select from 'primevue/select'
 
 import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
@@ -163,55 +159,35 @@ function confirmDeleteAccount(): void {
       </div>
     </dl>
 
-    <Dialog
-      v-model:visible="editVisible"
-      modal
-      :header="$t('features.account.profile.editDialogHeader')"
-      :style="{ width: '90vw', maxWidth: '520px' }"
+    <el-dialog
+      v-model="editVisible"
+      :title="$t('features.account.profile.editDialogHeader')"
+      width="min(90vw, 520px)"
+      :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="saveEdit">
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="p-firstname">{{ $t('common.firstName') }}</label>
-            <InputText
-              id="p-firstname"
-              v-model="editForm.firstName"
-              :maxlength="120"
-              required
-              fluid
-            />
+            <el-input id="p-firstname" v-model="editForm.firstName" :maxlength="120" required />
           </div>
           <div class="acc-form__field">
             <label for="p-lastname">{{ $t('common.lastName') }}</label>
-            <InputText
-              id="p-lastname"
-              v-model="editForm.lastName"
-              :maxlength="120"
-              required
-              fluid
-            />
+            <el-input id="p-lastname" v-model="editForm.lastName" :maxlength="120" required />
           </div>
           <div class="acc-form__field">
             <label for="p-email">{{ $t('common.email') }}</label>
-            <InputText
+            <el-input
               id="p-email"
               v-model="editForm.email"
               type="email"
               :maxlength="256"
               required
-              fluid
             />
           </div>
           <div class="acc-form__field">
             <label for="p-phone">{{ $t('common.phone') }}</label>
-            <InputText
-              id="p-phone"
-              v-model="editForm.phone"
-              type="tel"
-              :maxlength="40"
-              required
-              fluid
-            />
+            <el-input id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required />
           </div>
           <div class="acc-form__field">
             <label for="p-dob">{{ $t('common.birthDate') }}</label>
@@ -226,15 +202,18 @@ function confirmDeleteAccount(): void {
           </div>
           <div class="acc-form__field">
             <label for="p-gender">{{ $t('common.gender') }}</label>
-            <Select
-              input-id="p-gender"
+            <el-select
+              id="p-gender"
               v-model="editForm.gender"
-              :options="genders"
-              option-label="label"
-              option-value="value"
-              :invalid="editSubmitted && !editForm.gender"
-              fluid
-            />
+              :class="{ 'ca-invalid': editSubmitted && !editForm.gender }"
+            >
+              <el-option
+                v-for="option in genders"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
             <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
               $t('validation.genderRequired')
             }}</small>
@@ -249,46 +228,37 @@ function confirmDeleteAccount(): void {
           </BaseButton>
         </div>
       </form>
-    </Dialog>
+    </el-dialog>
 
-    <Dialog
-      v-model:visible="passwordVisible"
-      modal
-      :header="$t('features.account.profile.changePassword')"
-      :style="{ width: '90vw', maxWidth: '460px' }"
+    <el-dialog
+      v-model="passwordVisible"
+      :title="$t('features.account.profile.changePassword')"
+      width="min(90vw, 460px)"
+      :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="savePassword">
         <div class="acc-form__field">
           <label for="p-cur">{{ $t('features.account.profile.currentPassword') }}</label>
-          <Password
-            input-id="p-cur"
+          <el-input
+            id="p-cur"
             v-model="passwordForm.current"
-            :feedback="false"
-            toggle-mask
+            type="password"
+            show-password
             required
-            fluid
           />
         </div>
         <div class="acc-form__field">
           <label for="p-new">{{ $t('features.account.profile.newPassword') }}</label>
-          <Password
-            input-id="p-new"
-            v-model="passwordForm.next"
-            :feedback="false"
-            toggle-mask
-            required
-            fluid
-          />
+          <el-input id="p-new" v-model="passwordForm.next" type="password" show-password required />
         </div>
         <div class="acc-form__field">
           <label for="p-conf">{{ $t('features.account.profile.confirmNewPassword') }}</label>
-          <Password
-            input-id="p-conf"
+          <el-input
+            id="p-conf"
             v-model="passwordForm.confirm"
-            :feedback="false"
-            toggle-mask
+            type="password"
+            show-password
             required
-            fluid
           />
         </div>
         <p v-if="passwordError" class="acc-form__error">{{ passwordError }}</p>
@@ -301,13 +271,13 @@ function confirmDeleteAccount(): void {
           </BaseButton>
         </div>
       </form>
-    </Dialog>
+    </el-dialog>
 
-    <Dialog
-      v-model:visible="deleteVisible"
-      modal
-      :header="$t('features.account.profile.deleteAccount')"
-      :style="{ width: '90vw', maxWidth: '460px' }"
+    <el-dialog
+      v-model="deleteVisible"
+      :title="$t('features.account.profile.deleteAccount')"
+      width="min(90vw, 460px)"
+      :close-on-click-modal="false"
     >
       <p class="acc-confirm">
         {{ $t('features.account.profile.deleteConfirm') }}
@@ -324,7 +294,7 @@ function confirmDeleteAccount(): void {
           {{ $t('common.delete') }}
         </BaseButton>
       </div>
-    </Dialog>
+    </el-dialog>
   </section>
 </template>
 
@@ -429,6 +399,10 @@ function confirmDeleteAccount(): void {
   color: var(--ca-danger-ink);
   font-size: 13.5px;
   margin: 0 0 10px;
+}
+
+.ca-invalid :deep(.el-select__wrapper) {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 
 .acc-confirm {

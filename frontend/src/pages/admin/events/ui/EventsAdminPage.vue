@@ -3,16 +3,13 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
-  AppButton as Button,
+  AppIcon,
   ColorTag,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
   ListThumbnail,
 } from '@/shared/ui'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Tag from 'primevue/tag'
 
 import { useEventCategoryTypesList } from '@/entities/catalog'
 import { EventFormDialog, useEventsAdmin } from '@/features/manage-events'
@@ -121,27 +118,30 @@ function confirmDelete(event: EventListItemResponse): void {
       :subtitle="$t('pages.admin.events.header.subtitle')"
     >
       <template #actions>
-        <Button
-          :label="$t('pages.admin.events.newEvent')"
-          icon="pi pi-plus"
-          :disabled="loadingDetail"
-          @click="openCreate"
-        />
+        <el-button type="primary" :disabled="loadingDetail" @click="openCreate">
+          <template #icon><AppIcon name="plus" /></template>
+          {{ $t('pages.admin.events.newEvent') }}
+        </el-button>
       </template>
     </AdminPageHeader>
 
-    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
+    <el-table
+      v-bind="table.tableProps.value"
+      v-loading="table.loading.value"
+      @sort-change="table.onSortChange"
+    >
       <template #empty>
         <span v-if="table.isError.value">{{ $t('pages.admin.events.empty.error') }}</span>
         <span v-else>{{ $t('pages.admin.events.empty.none') }}</span>
       </template>
 
-      <Column :header="$t('common.image')" style="width: 110px">
-        <template #body="{ data }">
-          <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.title" style="width: 88px" />
+      <el-table-column :label="$t('common.image')" width="110">
+        <template #default="{ row }">
+          <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
         </template>
-      </Column>
-      <Column field="title" sortable>
+      </el-table-column>
+
+      <el-table-column prop="title" sortable="custom" min-width="190">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('title').value"
@@ -150,14 +150,17 @@ function confirmDelete(event: EventListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
+        <template #default="{ row }">
           <span class="title-cell">
-            {{ data.title }}
-            <Tag v-if="data.featured" :value="$t('pages.admin.events.tag.featured')" severity="warn" />
+            {{ row.title }}
+            <el-tag v-if="row.featured" type="warning">
+              {{ $t('pages.admin.events.tag.featured') }}
+            </el-tag>
           </span>
         </template>
-      </Column>
-      <Column field="subtitle" sortable>
+      </el-table-column>
+
+      <el-table-column prop="subtitle" sortable="custom" min-width="160">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('subtitle').value"
@@ -166,9 +169,10 @@ function confirmDelete(event: EventListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ data.subtitle || '—' }}</template>
-      </Column>
-      <Column sort-field="categories" sortable>
+        <template #default="{ row }">{{ row.subtitle || '—' }}</template>
+      </el-table-column>
+
+      <el-table-column prop="categories" sortable="custom" min-width="160">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('category').value"
@@ -177,19 +181,20 @@ function confirmDelete(event: EventListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
+        <template #default="{ row }">
           <div class="cats-cell">
             <ColorTag
-              v-for="cat in data.categories ?? []"
+              v-for="cat in row.categories ?? []"
               :key="cat.categoryTypeId"
               :value="cat.name ?? ''"
               :color="cat.color"
             />
-            <span v-if="!data.categories?.length">—</span>
+            <span v-if="!row.categories?.length">—</span>
           </div>
         </template>
-      </Column>
-      <Column field="eventStartsAt" sortable>
+      </el-table-column>
+
+      <el-table-column prop="eventStartsAt" sortable="custom" min-width="175">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('eventDate').value"
@@ -197,11 +202,12 @@ function confirmDelete(event: EventListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          {{ formatDate(data.eventStartsAt) }} – {{ formatDate(data.eventEndsAt) }}
+        <template #default="{ row }">
+          {{ formatDate(row.eventStartsAt) }} – {{ formatDate(row.eventEndsAt) }}
         </template>
-      </Column>
-      <Column sort-field="signupStartsAt" sortable>
+      </el-table-column>
+
+      <el-table-column prop="signupStartsAt" sortable="custom" min-width="190">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('signup').value"
@@ -209,56 +215,77 @@ function confirmDelete(event: EventListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          {{ formatDateTimeRange(data.signupStartsAt, data.signupEndsAt) }}
-          <small v-if="data.earlySignupStartsAt" class="signup-early">
+        <template #default="{ row }">
+          {{ formatDateTimeRange(row.signupStartsAt, row.signupEndsAt) }}
+          <small v-if="row.earlySignupStartsAt" class="signup-early">
             {{
               $t('pages.admin.events.earlySignupFrom', {
-                date: formatDateTime(data.earlySignupStartsAt),
+                date: formatDateTime(row.earlySignupStartsAt),
               })
             }}
           </small>
         </template>
-      </Column>
-      <Column :header="$t('common.actions')" style="width: 230px">
-        <template #body="{ data }">
+      </el-table-column>
+
+      <el-table-column :label="$t('common.actions')" width="150" fixed="right">
+        <template #default="{ row }">
           <div class="row-actions">
-            <Button
-              :icon="data.featured ? 'pi pi-star-fill' : 'pi pi-star'"
+            <el-button
               text
-              rounded
+              circle
+              type="primary"
               :aria-label="
-                data.featured
+                row.featured
                   ? $t('pages.admin.events.aria.featured')
                   : $t('pages.admin.events.aria.feature')
               "
-              :disabled="data.featured || feature.isPending.value"
-              :class="{ 'is-featured': data.featured }"
-              @click="onFeature(data)"
-            />
-            <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: data.id } }">
-              <Button icon="pi pi-cog" text rounded :aria-label="$t('pages.admin.events.aria.manage')" />
+              :disabled="row.featured || feature.isPending.value"
+              :class="{ 'is-featured': row.featured }"
+              @click="onFeature(row)"
+            >
+              <template #icon><AppIcon :name="row.featured ? 'star-fill' : 'star'" /></template>
+            </el-button>
+            <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: row.id } }">
+              <el-button
+                text
+                circle
+                type="primary"
+                :aria-label="$t('pages.admin.events.aria.manage')"
+              >
+                <template #icon><AppIcon name="cog" /></template>
+              </el-button>
             </RouterLink>
-            <Button
-              icon="pi pi-pencil"
+            <el-button
               text
-              rounded
+              circle
+              type="primary"
               :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
-              @click="openEdit(data)"
-            />
-            <Button
-              icon="pi pi-trash"
+              @click="openEdit(row)"
+            >
+              <template #icon><AppIcon name="pencil" /></template>
+            </el-button>
+            <el-button
               text
-              rounded
-              severity="danger"
+              circle
+              type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(data)"
-            />
+              @click="confirmDelete(row)"
+            >
+              <template #icon><AppIcon name="trash" /></template>
+            </el-button>
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </el-table-column>
+    </el-table>
+
+    <div class="table-footer">
+      <el-pagination
+        v-bind="table.paginationProps.value"
+        @current-change="table.onCurrentPageChange"
+        @size-change="table.onPageSizeChange"
+      />
+    </div>
 
     <EventFormDialog
       v-model:visible="dialogVisible"
@@ -270,10 +297,20 @@ function confirmDelete(event: EventListItemResponse): void {
 </template>
 
 <style scoped>
+.table-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 4px 0;
+}
+
 .row-actions {
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.row-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .title-cell {
@@ -288,7 +325,7 @@ function confirmDelete(event: EventListItemResponse): void {
   gap: 4px;
 }
 
-.is-featured:deep(.p-button-icon) {
+.is-featured :deep(.el-icon) {
   color: var(--ca-orange);
 }
 

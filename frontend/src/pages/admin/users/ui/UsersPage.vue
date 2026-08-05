@@ -4,16 +4,12 @@ import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
+  AppIcon,
   ColorTag,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
 } from '@/shared/ui'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Select from 'primevue/select'
-import ToggleSwitch from 'primevue/toggleswitch'
 
 import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
@@ -235,8 +231,7 @@ function confirmDelete(user: UserResponse): void {
         <Button
           :label="$t('pages.admin.users.export.label')"
           :tooltip="$t('pages.admin.users.export.tooltip')"
-          icon="pi pi-download"
-          severity="secondary"
+          icon="download"
           :loading="exporting"
           :disabled="table.total.value === 0"
           @click="exportCsv"
@@ -244,8 +239,7 @@ function confirmDelete(user: UserResponse): void {
         <Button
           :label="$t('pages.admin.users.email.bulkLabel')"
           :tooltip="$t('pages.admin.users.email.bulkTooltip')"
-          icon="pi pi-envelope"
-          severity="secondary"
+          icon="envelope"
           :disabled="table.total.value === 0"
           @click="openEmail(null)"
         />
@@ -253,25 +247,29 @@ function confirmDelete(user: UserResponse): void {
     </AdminPageHeader>
 
     <div v-if="relationFilter" class="relation-filter">
-      <i class="pi pi-filter relation-filter__icon" />
+      <span class="relation-filter__icon"><AppIcon name="filter" /></span>
       <span class="relation-filter__label">{{ relationFilter.label }}</span>
       <Button
-        icon="pi pi-times"
+        icon="times"
         text
-        rounded
+        circle
         size="small"
         :aria-label="$t('pages.admin.users.relation.clear')"
         @click="clearRelationFilter"
       />
     </div>
 
-    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
+    <el-table
+      v-bind="table.tableProps.value"
+      v-loading="table.loading.value"
+      @sort-change="table.onSortChange"
+    >
       <template #empty>
         <span v-if="table.isError.value">{{ $t('pages.admin.users.empty.error') }}</span>
         <span v-else>{{ $t('pages.admin.users.empty.none') }}</span>
       </template>
 
-      <Column field="firstName" sortable>
+      <el-table-column prop="firstName" sortable="custom" min-width="170">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
@@ -280,9 +278,9 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ fullName(data) }}</template>
-      </Column>
-      <Column field="email" sortable>
+        <template #default="{ row }">{{ fullName(row) }}</template>
+      </el-table-column>
+      <el-table-column prop="email" sortable="custom" min-width="290">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('email').value"
@@ -291,9 +289,9 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ data.email || '—' }}</template>
-      </Column>
-      <Column field="phone" sortable>
+        <template #default="{ row }">{{ row.email || '—' }}</template>
+      </el-table-column>
+      <el-table-column prop="phone" sortable="custom" min-width="165">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('phone').value"
@@ -302,9 +300,9 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ data.phone || '—' }}</template>
-      </Column>
-      <Column field="birthDate" sortable>
+        <template #default="{ row }">{{ row.phone || '—' }}</template>
+      </el-table-column>
+      <el-table-column prop="birthDate" sortable="custom" min-width="185">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('birthDate').value"
@@ -312,9 +310,9 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ birthDateWithAge(data) }}</template>
-      </Column>
-      <Column field="status" sortable>
+        <template #default="{ row }">{{ birthDateWithAge(row) }}</template>
+      </el-table-column>
+      <el-table-column prop="status" sortable="custom" min-width="145">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('status').value"
@@ -323,12 +321,12 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          <ColorTag v-if="data.status?.name" :value="data.status.name" :color="data.status.color" />
+        <template #default="{ row }">
+          <ColorTag v-if="row.status?.name" :value="row.status.name" :color="row.status.color" />
           <span v-else>—</span>
         </template>
-      </Column>
-      <Column field="type" sortable>
+      </el-table-column>
+      <el-table-column prop="type" sortable="custom" min-width="150">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
@@ -337,37 +335,42 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          <ColorTag v-if="data.type" :value="data.type.name ?? ''" :color="data.type.color" />
+        <template #default="{ row }">
+          <ColorTag v-if="row.type" :value="row.type.name ?? ''" :color="row.type.color" />
           <span v-else>—</span>
         </template>
-      </Column>
-      <Column :header="$t('pages.admin.users.columns.family')" sortable sort-field="dependents">
-        <template #body="{ data }">
+      </el-table-column>
+      <el-table-column
+        prop="dependents"
+        :label="$t('pages.admin.users.columns.family')"
+        sortable="custom"
+        min-width="175"
+      >
+        <template #default="{ row }">
           <div class="family-cell">
             <Button
-              v-if="data.parentId"
-              :label="data.parentName ?? '—'"
-              icon="pi pi-user"
+              v-if="row.parentId"
+              :label="row.parentName ?? '—'"
+              icon="user"
               text
               size="small"
               :tooltip="$t('pages.admin.users.tooltips.showTutor')"
-              @click="showTutorOf(data)"
+              @click="showTutorOf(row)"
             />
             <Button
-              v-if="(data.dependentCount ?? 0) > 0"
-              :label="dependentsLabel(data.dependentCount ?? 0)"
-              icon="pi pi-users"
+              v-if="(row.dependentCount ?? 0) > 0"
+              :label="dependentsLabel(row.dependentCount ?? 0)"
+              icon="users"
               text
               size="small"
               :tooltip="$t('pages.admin.users.tooltips.showDependents')"
-              @click="showDependentsOf(data)"
+              @click="showDependentsOf(row)"
             />
-            <span v-if="!data.parentId && (data.dependentCount ?? 0) === 0">—</span>
+            <span v-if="!row.parentId && (row.dependentCount ?? 0) === 0">—</span>
           </div>
         </template>
-      </Column>
-      <Column field="isAdmin" sortable style="width: 130px">
+      </el-table-column>
+      <el-table-column prop="isAdmin" sortable="custom" width="130">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('isAdmin').value"
@@ -376,52 +379,61 @@ function confirmDelete(user: UserResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          <ToggleSwitch
-            :model-value="!!data.isAdmin"
+        <template #default="{ row }">
+          <el-switch
+            :model-value="!!row.isAdmin"
             :disabled="setAdmin.isPending.value"
             :aria-label="$t('pages.admin.users.aria.admin')"
-            @update:model-value="(value: boolean) => toggleAdmin(data, value)"
+            @update:model-value="
+              (value: string | number | boolean) => toggleAdmin(row, value === true)
+            "
           />
         </template>
-      </Column>
-      <Column :header="$t('common.actions')" style="width: 220px">
-        <template #body="{ data }">
+      </el-table-column>
+      <el-table-column :label="$t('common.actions')" width="220" fixed="right">
+        <template #default="{ row }">
           <div class="row-actions">
             <Button
-              icon="pi pi-pencil"
+              icon="pencil"
               text
-              rounded
+              circle
               :aria-label="$t('common.edit')"
-              @click="openEdit(data)"
+              @click="openEdit(row)"
             />
             <Button
-              icon="pi pi-sync"
+              icon="sync"
               text
-              rounded
+              circle
               :aria-label="$t('pages.admin.users.aria.changeType')"
-              @click="openChangeType(data)"
+              @click="openChangeType(row)"
             />
             <Button
-              v-if="data.email"
-              icon="pi pi-envelope"
+              v-if="row.email"
+              icon="envelope"
               text
-              rounded
+              circle
               :aria-label="$t('pages.admin.users.aria.sendEmail')"
-              @click="openEmail(data)"
+              @click="openEmail(row)"
             />
             <Button
-              icon="pi pi-trash"
+              icon="trash"
               text
-              rounded
-              severity="danger"
+              circle
+              type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(data)"
+              @click="confirmDelete(row)"
             />
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </el-table-column>
+    </el-table>
+
+    <el-pagination
+      v-bind="table.paginationProps.value"
+      class="table-pagination"
+      @current-change="table.onCurrentPageChange"
+      @size-change="table.onPageSizeChange"
+    />
 
     <UserFormDialog
       v-model:visible="dialogVisible"
@@ -437,39 +449,42 @@ function confirmDelete(user: UserResponse): void {
       @submit="submitEmail"
     />
 
-    <Dialog
-      v-model:visible="typeDialogVisible"
-      modal
-      :header="$t('pages.admin.users.typeDialog.header')"
-      :style="{ width: '420px' }"
+    <el-dialog
+      v-model="typeDialogVisible"
+      :title="$t('pages.admin.users.typeDialog.header')"
+      width="420px"
     >
       <div class="form__field">
         <label>{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
-        <Select
+        <el-select
           v-model="selectedUserTypeId"
-          :options="userTypes.data.value ?? []"
-          option-label="name"
-          option-value="id"
           :placeholder="$t('pages.admin.users.typeDialog.placeholder')"
-          fluid
-        />
+          class="form__select"
+        >
+          <el-option
+            v-for="option in typeOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
       </div>
       <template #footer>
         <Button
           :label="$t('common.cancel')"
           text
-          severity="secondary"
           :disabled="changeType.isPending.value"
           @click="typeDialogVisible = false"
         />
         <Button
           :label="$t('common.apply')"
+          type="primary"
           :loading="changeType.isPending.value"
           :disabled="!selectedUserTypeId"
           @click="submitChangeType"
         />
       </template>
-    </Dialog>
+    </el-dialog>
   </div>
 </template>
 
@@ -477,6 +492,11 @@ function confirmDelete(user: UserResponse): void {
 .row-actions {
   display: flex;
   gap: 2px;
+}
+
+.table-pagination {
+  margin-top: 14px;
+  justify-content: flex-end;
 }
 
 .relation-filter {
@@ -491,6 +511,7 @@ function confirmDelete(user: UserResponse): void {
 }
 
 .relation-filter__icon {
+  display: inline-flex;
   font-size: 12px;
   color: var(--ca-text-muted);
 }
@@ -517,5 +538,9 @@ function confirmDelete(user: UserResponse): void {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);
+}
+
+.form__select {
+  width: 100%;
 }
 </style>

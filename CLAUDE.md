@@ -3,7 +3,7 @@
 Guidance for Claude Code in this repository. **Each app has its own `CLAUDE.md` — read the one for the folder you are editing.**
 
 - **[backend/CLAUDE.md](backend/CLAUDE.md)** — ASP.NET Core Web API (.NET 10, EF Core + PostgreSQL, 5-project clean architecture).
-- **[frontend/CLAUDE.md](frontend/CLAUDE.md)** — Vue 3 + Vite SPA (TypeScript, Feature-Sliced Design, PrimeVue, TanStack Query).
+- **[frontend/CLAUDE.md](frontend/CLAUDE.md)** — Vue 3 + Vite SPA (TypeScript, Feature-Sliced Design, Element Plus, TanStack Query).
 
 Five human-facing docs at the root are kept in sync with the code: [README.md](README.md) (overview + doc index), [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [DEPLOYMENT.md](DEPLOYMENT.md) (env-var reference table), [SECURITY.md](SECURITY.md).
 
@@ -17,7 +17,7 @@ Five human-facing docs at the root are kept in sync with the code: [README.md](R
 
 ## Hard rules
 
-- **All user-facing text goes through a resource file — never a hardcoded literal.** Frontend: every UI string is a key in `frontend/src/shared/i18n/locales/es.ts` (PrimeVue's own built-ins live in `frontend/src/shared/i18n/primevue-locale.ts`). Backend: every user-facing string is a key in `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`, read through the `AppStrings` accessor. Both apps are **Spanish-only** for now, but the two halves are *not* equally ready for a second language: the frontend is a genuine drop-in `en.ts`, while the backend is key-organised but **not runtime-switchable** until the container's globalization mode changes — see `backend/CLAUDE.md`. Backend seed catalog text (`DatabaseSeeder`) is deliberately **not** localized: it persists as database rows.
+- **All user-facing text goes through a resource file — never a hardcoded literal.** Frontend: every UI string is a key in `frontend/src/shared/i18n/locales/es.ts` (Element Plus's own built-ins come from its bundled `es` locale, registered in `frontend/src/app/config/element-plus.ts`). Backend: every user-facing string is a key in `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`, read through the `AppStrings` accessor. Both apps are **Spanish-only** for now, but the two halves are *not* equally ready for a second language: the frontend is a genuine drop-in `en.ts`, while the backend is key-organised but **not runtime-switchable** until the container's globalization mode changes — see `backend/CLAUDE.md`. Backend seed catalog text (`DatabaseSeeder`) is deliberately **not** localized: it persists as database rows.
 - **Never commit secrets.** Runtime config is flat env vars: the git-ignored root `.env` (backend, consumed by Docker Compose) and `frontend/.env.local`; templates are the `.env.example` files. There are **no** `dotnet user-secrets` and **no** `ConnectionStrings` section.
 - **A change that crosses the API boundary must be made on both sides in the same pass** — see the pipeline below.
 - **Keep the checks green — but nothing enforces them for you.** There is no CI (`.github/workflows` is empty and untracked) and no git hooks, so every gate is manual: `dotnet build CodigoActivo.slnx` from `backend/` (analyzers report **warnings, never errors**, and re-run on every build — see `backend/CLAUDE.md`), and `npm run lint`, `npm run lint:fsd`, `npm run build` from `frontend/` (three independent checks; only the last is genuinely build-blocking). **Fix the code, never disable the rule.**

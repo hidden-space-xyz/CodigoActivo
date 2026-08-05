@@ -8,8 +8,6 @@ import {
   ColumnSearch,
   ListThumbnail,
 } from '@/shared/ui'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
 
 import { PartnerFormDialog, usePartners } from '@/features/manage-partners'
 import type {
@@ -85,24 +83,29 @@ function confirmDelete(partner: PartnerResponse): void {
       <template #actions>
         <Button
           :label="$t('pages.admin.partners.newPartner')"
-          icon="pi pi-plus"
+          icon="plus"
+          type="primary"
           @click="openCreate"
         />
       </template>
     </AdminPageHeader>
 
-    <DataTable v-bind="table.dataTableProps.value" @page="table.onPage" @sort="table.onSort">
+    <el-table
+      v-bind="table.tableProps.value"
+      v-loading="table.loading.value"
+      @sort-change="table.onSortChange"
+    >
       <template #empty>
         <span v-if="table.isError.value">{{ $t('pages.admin.partners.empty.error') }}</span>
         <span v-else>{{ $t('pages.admin.partners.empty.none') }}</span>
       </template>
 
-      <Column :header="$t('pages.admin.partners.columns.logo')" style="width: 110px">
-        <template #body="{ data }">
-          <ListThumbnail :thumbnail-id="data.thumbnailId" :alt="data.name" style="width: 88px" />
+      <el-table-column :label="$t('pages.admin.partners.columns.logo')" width="110">
+        <template #default="{ row }">
+          <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.name" style="width: 88px" />
         </template>
-      </Column>
-      <Column field="name" sortable>
+      </el-table-column>
+      <el-table-column prop="name" min-width="200" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
@@ -111,8 +114,8 @@ function confirmDelete(partner: PartnerResponse): void {
             @apply="table.onFilter"
           />
         </template>
-      </Column>
-      <Column field="tier" sortable style="width: 130px">
+      </el-table-column>
+      <el-table-column prop="tier" sortable="custom" width="130">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('tier').value"
@@ -122,8 +125,8 @@ function confirmDelete(partner: PartnerResponse): void {
             @apply="table.onFilter"
           />
         </template>
-      </Column>
-      <Column field="website" sortable>
+      </el-table-column>
+      <el-table-column prop="website" min-width="220" sortable="custom">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('website').value"
@@ -132,14 +135,14 @@ function confirmDelete(partner: PartnerResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">
-          <a v-if="data.website" :href="data.website" target="_blank" rel="noopener" class="link">{{
-            data.website
+        <template #default="{ row }">
+          <a v-if="row.website" :href="row.website" target="_blank" rel="noopener" class="link">{{
+            row.website
           }}</a>
           <span v-else>—</span>
         </template>
-      </Column>
-      <Column field="fromDate" sortable style="width: 190px">
+      </el-table-column>
+      <el-table-column prop="fromDate" sortable="custom" width="190">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('fromDate').value"
@@ -147,30 +150,37 @@ function confirmDelete(partner: PartnerResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #body="{ data }">{{ formatDate(data.fromDate) }}</template>
-      </Column>
-      <Column :header="$t('common.actions')" style="width: 130px">
-        <template #body="{ data }">
+        <template #default="{ row }">{{ formatDate(row.fromDate) }}</template>
+      </el-table-column>
+      <el-table-column :label="$t('common.actions')" width="130">
+        <template #default="{ row }">
           <div class="row-actions">
             <Button
-              icon="pi pi-pencil"
+              icon="pencil"
               text
-              rounded
+              circle
               :aria-label="$t('common.edit')"
-              @click="openEdit(data)"
+              @click="openEdit(row)"
             />
             <Button
-              icon="pi pi-trash"
+              icon="trash"
               text
-              rounded
-              severity="danger"
+              circle
+              type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(data)"
+              @click="confirmDelete(row)"
             />
           </div>
         </template>
-      </Column>
-    </DataTable>
+      </el-table-column>
+    </el-table>
+
+    <el-pagination
+      v-bind="table.paginationProps.value"
+      class="table-pagination"
+      @current-change="table.onCurrentPageChange"
+      @size-change="table.onPageSizeChange"
+    />
 
     <PartnerFormDialog
       v-model:visible="dialogVisible"
@@ -185,6 +195,11 @@ function confirmDelete(partner: PartnerResponse): void {
 .row-actions {
   display: flex;
   gap: 2px;
+}
+
+.table-pagination {
+  margin-top: 14px;
+  justify-content: flex-end;
 }
 
 .link {

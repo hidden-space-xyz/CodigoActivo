@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import InputText from 'primevue/inputtext'
+import type { InputInstance } from 'element-plus'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
 
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const shell = ref<InstanceType<typeof ColumnFilterShell>>()
-const input = ref<InstanceType<typeof InputText>>()
+const input = ref<InputInstance>()
 const draft = ref(props.modelValue == null ? '' : String(props.modelValue))
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -68,8 +68,7 @@ function clear(): void {
 
 async function focusInput(): Promise<void> {
   await nextTick()
-  const el = (input.value as unknown as { $el?: HTMLElement } | undefined)?.$el
-  el?.focus()
+  input.value?.focus()
 }
 
 onBeforeUnmount(() => {
@@ -88,12 +87,11 @@ onBeforeUnmount(() => {
     @show="focusInput"
     @clear="clear"
   >
-    <InputText
+    <el-input
       ref="input"
       v-model="draft"
       :type="inputType"
       :placeholder="placeholder || $t('table.searchBy', { label })"
-      fluid
       @input="onInput"
       @keydown.enter="applyNow"
       @keydown.esc="cancel"

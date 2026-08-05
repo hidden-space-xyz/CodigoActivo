@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n'
 import { postApiFiles } from '@/shared/api/generated/endpoints/files/files'
 import { fileContentUrl, parseRichText, richTextExtensions, serializeRichText } from '@/shared/lib'
 
+import AppIcon from './AppIcon.vue'
+
 const { t } = useI18n()
 
 const props = defineProps<{ modelValue?: string | null; invalid?: boolean }>()
@@ -92,7 +94,11 @@ onBeforeUnmount(() => editor.value?.destroy())
 </script>
 
 <template>
-  <div class="rt" :class="{ 'rt--invalid': invalid }" :style="{ '--rt-placeholder': placeholderVar }">
+  <div
+    class="rt"
+    :class="{ 'rt--invalid': invalid }"
+    :style="{ '--rt-placeholder': placeholderVar }"
+  >
     <div v-if="editor" class="rt__toolbar">
       <button
         type="button"
@@ -172,7 +178,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         />
       </label>
       <label class="rt__btn rt__color" :title="$t('editor.highlight')">
-        <i class="pi pi-palette" />
+        <AppIcon name="palette" />
         <input
           type="color"
           class="rt__color-input"
@@ -185,7 +191,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.clearFormatting')"
         @click="clearColors"
       >
-        <i class="pi pi-ban" />
+        <AppIcon name="ban" />
       </button>
 
       <span class="rt__sep" />
@@ -197,7 +203,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.alignLeft')"
         @click="setAlign('left')"
       >
-        <i class="pi pi-align-left" />
+        <AppIcon name="align-left" />
       </button>
       <button
         type="button"
@@ -206,7 +212,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.alignCenter')"
         @click="setAlign('center')"
       >
-        <i class="pi pi-align-center" />
+        <AppIcon name="align-center" />
       </button>
       <button
         type="button"
@@ -215,7 +221,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.alignRight')"
         @click="setAlign('right')"
       >
-        <i class="pi pi-align-right" />
+        <AppIcon name="align-right" />
       </button>
 
       <span class="rt__sep" />
@@ -227,7 +233,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.bulletList')"
         @click="editor.chain().focus().toggleBulletList().run()"
       >
-        <i class="pi pi-list" />
+        <AppIcon name="list" />
       </button>
       <button
         type="button"
@@ -245,7 +251,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.blockquote')"
         @click="editor.chain().focus().toggleBlockquote().run()"
       >
-        <i class="pi pi-comment" />
+        <AppIcon name="comment" />
       </button>
 
       <span class="rt__sep" />
@@ -257,7 +263,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.link')"
         @click="toggleLink"
       >
-        <i class="pi pi-link" />
+        <AppIcon name="link" />
       </button>
       <button
         type="button"
@@ -266,10 +272,11 @@ onBeforeUnmount(() => editor.value?.destroy())
         :disabled="uploading"
         @click="pickImage"
       >
-        <i :class="uploading ? 'pi pi-spin pi-spinner' : 'pi pi-image'" />
+        <AppIcon v-if="uploading" name="spinner" spin />
+        <AppIcon v-else name="image" />
       </button>
       <button type="button" class="rt__btn" :title="$t('editor.insertTable')" @click="insertTable">
-        <i class="pi pi-table" />
+        <AppIcon name="table" />
       </button>
 
       <span class="rt__spacer" />
@@ -281,7 +288,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :disabled="!editor.can().undo()"
         @click="editor.chain().focus().undo().run()"
       >
-        <i class="pi pi-undo" />
+        <AppIcon name="undo" />
       </button>
       <button
         type="button"
@@ -290,7 +297,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :disabled="!editor.can().redo()"
         @click="editor.chain().focus().redo().run()"
       >
-        <i class="pi pi-refresh" />
+        <AppIcon name="refresh" />
       </button>
     </div>
 
@@ -342,7 +349,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         :title="$t('editor.deleteTable')"
         @click="editor.chain().focus().deleteTable().run()"
       >
-        <i class="pi pi-trash" />
+        <AppIcon name="trash" />
       </button>
     </div>
 

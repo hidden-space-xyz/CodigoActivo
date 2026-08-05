@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CONTACT } from '@/shared/config'
-import { BrandLogo } from '@/shared/ui'
+import { AppIcon, BrandLogo } from '@/shared/ui'
 
 const currentYear = new Date().getFullYear()
 </script>
@@ -19,11 +19,11 @@ const currentYear = new Date().getFullYear()
         <div class="footer__heading">{{ $t('layout.footerContact') }}</div>
         <div class="footer__links">
           <a :href="`mailto:${CONTACT.email}`" class="footer__link footer__link--icon">
-            <i class="pi pi-envelope" aria-hidden="true"></i>
+            <AppIcon name="envelope" />
             {{ CONTACT.email }}
           </a>
           <span class="footer__link footer__link--static footer__link--icon">
-            <i class="pi pi-phone" aria-hidden="true"></i>
+            <AppIcon name="phone" />
             {{ CONTACT.phone }}
           </span>
           <div class="footer__social">
@@ -33,7 +33,7 @@ const currentYear = new Date().getFullYear()
               rel="noopener"
               class="footer__social-link"
             >
-              <i class="pi pi-instagram" aria-hidden="true"></i>
+              <AppIcon name="instagram" />
               Instagram
             </a>
             <a
@@ -42,7 +42,7 @@ const currentYear = new Date().getFullYear()
               rel="noopener"
               class="footer__social-link"
             >
-              <i class="pi pi-facebook" aria-hidden="true"></i>
+              <AppIcon name="facebook" />
               Facebook
             </a>
             <a
@@ -51,7 +51,7 @@ const currentYear = new Date().getFullYear()
               rel="noopener"
               class="footer__social-link"
             >
-              <i class="pi pi-linkedin" aria-hidden="true"></i>
+              <AppIcon name="linkedin" />
               LinkedIn
             </a>
           </div>
@@ -122,13 +122,13 @@ const currentYear = new Date().getFullYear()
   gap: 8px;
 }
 
-.footer__link--icon .pi {
+.footer__link--icon .app-icon {
   font-size: 13px;
   color: var(--ca-text-ghost);
   transition: color 0.15s ease;
 }
 
-a.footer__link--icon:hover .pi {
+a.footer__link--icon:hover .app-icon {
   color: var(--ca-text-bright);
 }
 
@@ -148,7 +148,7 @@ a.footer__link--icon:hover .pi {
   text-decoration: none;
 }
 
-.footer__social-link .pi {
+.footer__social-link .app-icon {
   font-size: 13px;
 }
 

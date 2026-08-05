@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 
-import { AppButton as Button } from '@/shared/ui'
+import { AppButton as Button, AppIcon } from '@/shared/ui'
 import { formatFileSize, useActionConfirm } from '@/shared/lib'
 import type { SendEmailPayload } from '../model/useSendEmail'
 import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES } from '../model/useSendEmail'
@@ -112,26 +109,25 @@ function send(): void {
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :header="$t('features.sendEmail.header')"
-    :style="{ width: '560px' }"
-    :closable="!sending"
-    :close-on-escape="!sending"
-    @update:visible="close"
+  <el-dialog
+    :model-value="visible"
+    :title="$t('features.sendEmail.header')"
+    width="560px"
+    :show-close="!sending"
+    :close-on-press-escape="!sending"
+    :close-on-click-modal="false"
+    @update:model-value="close"
   >
     <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>
 
     <form class="form" @submit.prevent="send">
       <div class="form__field">
         <label>{{ $t('features.sendEmail.subject') }}</label>
-        <InputText
+        <el-input
           v-model="subject"
           :maxlength="SUBJECT_MAX_LENGTH"
-          :invalid="submitted && subjectInvalid"
+          :class="{ 'ca-invalid': submitted && subjectInvalid }"
           :placeholder="$t('features.sendEmail.subjectPlaceholder')"
-          fluid
         />
         <small v-if="submitted && subjectInvalid" class="form__error">
           {{ $t('features.sendEmail.subjectRequired') }}
@@ -140,14 +136,14 @@ function send(): void {
 
       <div class="form__field">
         <label>{{ $t('features.sendEmail.body') }}</label>
-        <Textarea
+        <el-input
           v-model="body"
+          type="textarea"
           :maxlength="BODY_MAX_LENGTH"
-          :invalid="submitted && bodyInvalid"
+          :class="{ 'ca-invalid': submitted && bodyInvalid }"
           :placeholder="$t('features.sendEmail.bodyPlaceholder')"
-          rows="9"
-          auto-resize
-          fluid
+          :rows="9"
+          :autosize="{ minRows: 9 }"
         />
         <small v-if="submitted && bodyInvalid" class="form__error">
           {{ $t('features.sendEmail.bodyRequired') }}
@@ -160,11 +156,9 @@ function send(): void {
         <div class="attachments">
           <Button
             :label="$t('features.sendEmail.attachments.add')"
-            icon="pi pi-paperclip"
-            severity="secondary"
-            outlined
+            icon="paperclip"
+            plain
             size="small"
-            type="button"
             :disabled="sending || attachments.length >= MAX_ATTACHMENTS"
             @click="pick"
           />
@@ -187,15 +181,14 @@ function send(): void {
         />
         <ul v-if="attachments.length > 0" class="attachments__list">
           <li v-for="(file, index) in attachments" :key="`${file.name}-${index}`">
-            <i class="pi pi-file" aria-hidden="true" />
+            <AppIcon name="file" />
             <span class="attachments__name">{{ file.name }}</span>
             <span class="attachments__size">{{ formatFileSize(file.size) }}</span>
             <Button
-              icon="pi pi-times"
+              icon="times"
               text
-              rounded
+              circle
               size="small"
-              type="button"
               :disabled="sending"
               :aria-label="$t('features.sendEmail.attachments.remove')"
               @click="removeAttachment(index)"
@@ -207,21 +200,16 @@ function send(): void {
     </form>
 
     <template #footer>
-      <Button
-        :label="$t('common.cancel')"
-        text
-        severity="secondary"
-        :disabled="sending"
-        @click="close"
-      />
+      <Button :label="$t('common.cancel')" text :disabled="sending" @click="close" />
       <Button
         :label="$t('features.sendEmail.send')"
-        icon="pi pi-send"
+        icon="send"
+        type="primary"
         :loading="sending"
         @click="send"
       />
     </template>
-  </Dialog>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -260,6 +248,12 @@ function send(): void {
   font-size: 12.5px;
 }
 
+.ca-invalid {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
 .attachments {
   display: flex;
   align-items: center;
@@ -296,7 +290,7 @@ function send(): void {
   background: var(--ca-surface);
 }
 
-.attachments__list i {
+.attachments__list li i {
   font-size: 12px;
   color: var(--ca-text-muted);
 }

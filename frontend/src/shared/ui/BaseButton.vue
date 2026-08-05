@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 
+import AppIcon from './AppIcon.vue'
+
 type Variant = 'primary' | 'ghost' | 'light' | 'link'
 
 const props = withDefaults(
@@ -49,7 +51,7 @@ const bindings = computed(() => {
     ]"
     :aria-busy="loading ? 'true' : undefined"
   >
-    <i v-if="loading" class="pi pi-spin pi-spinner base-button__spinner" aria-hidden="true" />
+    <AppIcon v-if="loading" name="spinner" spin class="base-button__spinner" />
     <slot />
   </component>
 </template>

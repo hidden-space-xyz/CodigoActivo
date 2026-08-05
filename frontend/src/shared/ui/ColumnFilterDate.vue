@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import DatePicker from 'primevue/datepicker'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
 
@@ -19,6 +18,10 @@ const draft = ref<(Date | null)[] | null>(props.modelValue)
 
 const active = computed(() => (props.modelValue ?? []).some((date) => date instanceof Date))
 
+const pickerValue = computed<Date[]>(() =>
+  (draft.value ?? []).filter((date): date is Date => date instanceof Date),
+)
+
 watch(
   () => props.modelValue,
   (value) => {
@@ -32,9 +35,13 @@ function commit(): void {
   emit('apply')
 }
 
-function onSelect(): void {
+function onSelect(value: unknown): void {
+  const range = Array.isArray(value)
+    ? value.filter((item): item is Date => item instanceof Date)
+    : []
+  draft.value = range.length > 0 ? range : null
   commit()
-  if (draft.value?.[0] instanceof Date && draft.value[1] instanceof Date) shell.value?.hide()
+  if (range.length === 2) shell.value?.hide()
 }
 
 function clear(): void {
@@ -55,14 +62,24 @@ function clear(): void {
     wide
     @clear="clear"
   >
-    <DatePicker
-      v-model="draft"
-      selection-mode="range"
-      :manual-input="false"
-      :placeholder="$t('table.rangePlaceholder')"
-      show-icon
-      fluid
-      @update:model-value="onSelect"
-    />
+    <template #default="{ panel }">
+      <el-date-picker
+        :model-value="pickerValue"
+        type="daterange"
+        unlink-panels
+        :editable="false"
+        :start-placeholder="$t('table.rangeFrom')"
+        :end-placeholder="$t('table.rangeTo')"
+        :append-to="panel"
+        class="column-filter-date"
+        @update:model-value="onSelect"
+      />
+    </template>
   </ColumnFilterShell>
 </template>
+
+<style scoped>
+.column-filter-date {
+  width: 100%;
+}
+</style>

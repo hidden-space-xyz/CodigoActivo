@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import Paginator from 'primevue/paginator'
-import Rating from 'primevue/rating'
-
 import { useEventRatingsTable } from '@/features/manage-events'
 import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
 import { DataState } from '@/shared/ui'
@@ -44,9 +41,11 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
             <span class="opinion__author">{{
               $t('pages.admin.eventDetail.opinions.anonymous')
             }}</span>
-            <Rating :model-value="rating.score ?? 0" readonly class="opinion__stars" />
+            <el-rate :model-value="rating.score ?? 0" disabled :max="5" class="opinion__stars" />
             <span class="opinion__score">{{ rating.score ?? 0 }}/5</span>
-            <span class="opinion__date">{{ formatDateTime(rating.updatedAt ?? rating.createdAt) }}</span>
+            <span class="opinion__date">{{
+              formatDateTime(rating.updatedAt ?? rating.createdAt)
+            }}</span>
           </div>
 
           <dl v-if="answers(rating).length > 0" class="opinion__answers">
@@ -61,14 +60,12 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
         </li>
       </ul>
 
-      <Paginator
+      <el-pagination
         v-if="ratings.table.total.value > 25 || ratings.table.first.value > 0"
-        :first="ratings.table.first.value"
-        :rows="ratings.table.rows.value"
-        :total-records="ratings.table.total.value"
-        :rows-per-page-options="[25, 50, 100]"
+        v-bind="ratings.table.paginationProps.value"
         class="paginator"
-        @page="ratings.table.onPage"
+        @update:current-page="ratings.table.onCurrentPageChange"
+        @update:page-size="ratings.table.onPageSizeChange"
       />
     </DataState>
   </div>
@@ -150,5 +147,6 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
 
 .paginator {
   margin-top: 14px;
+  justify-content: flex-end;
 }
 </style>

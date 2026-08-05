@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Chart from 'primevue/chart'
-
+import BaseChart from './BaseChart.vue'
 import ChartCard from './ChartCard.vue'
 
 withDefaults(
@@ -23,7 +22,7 @@ withDefaults(
       {{ $t('pages.admin.dashboard.chart.empty') }}
     </div>
     <div v-else class="analytics-chart__canvas" :style="{ height: `${height}px` }">
-      <Chart :type="type" :data="data" :options="options" />
+      <BaseChart :type="type" :data="data" :options="options" />
     </div>
   </ChartCard>
 </template>
@@ -31,14 +30,6 @@ withDefaults(
 <style scoped>
 .analytics-chart__canvas {
   position: relative;
-}
-
-.analytics-chart__canvas :deep(.p-chart) {
-  height: 100%;
-}
-
-.analytics-chart__canvas :deep(canvas) {
-  height: 100% !important;
 }
 
 .analytics-chart__empty {

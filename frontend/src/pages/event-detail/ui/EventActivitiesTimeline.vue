@@ -2,11 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
-import { AppButton as Button } from '@/shared/ui'
-import Checkbox from 'primevue/checkbox'
-import Dialog from 'primevue/dialog'
-import Select from 'primevue/select'
+import { AppButton as Button, AppIcon } from '@/shared/ui'
 
 import { useEventActivities } from '../model/useEventActivities'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
@@ -18,7 +14,6 @@ const props = defineProps<{ eventId: string; signupOpen: boolean; earlyOnly?: bo
 
 const router = useRouter()
 const { t } = useI18n()
-const toast = useToast()
 const feedback = useCrudFeedback()
 const {
   activities,
@@ -216,12 +211,10 @@ function confirmHousehold(): void {
   const includedRows = householdDialog.rows.filter((row) => row.include && !row.alreadyAssigned)
   const missingRole = includedRows.some((row) => !row.roleId)
   if (missingRole) {
-    toast.add({
-      severity: 'warn',
-      summary: t('pages.eventDetail.toast.missingRole'),
-      detail: t('pages.eventDetail.toast.missingRoleDetail'),
-      life: 3500,
-    })
+    feedback.warn(
+      t('pages.eventDetail.toast.missingRoleDetail'),
+      t('pages.eventDetail.toast.missingRole'),
+    )
     return
   }
 
@@ -290,7 +283,7 @@ function onUnassign(activity: TimelineActivity): void {
 
     <template v-else>
       <p v-if="!signupOpen" class="signup-closed">
-        <i class="pi pi-info-circle" />
+        <AppIcon name="info-circle" />
         {{
           earlyOnly
             ? $t('pages.eventDetail.activities.earlySignupOnly')
@@ -298,9 +291,10 @@ function onUnassign(activity: TimelineActivity): void {
         }}
       </p>
       <p v-else-if="isAuthenticated && signupRoles.isError.value" class="signup-closed">
-        <i class="pi pi-info-circle" /> {{ $t('pages.eventDetail.activities.rolesLoadError') }}
+        <AppIcon name="info-circle" /> {{ $t('pages.eventDetail.activities.rolesLoadError') }}
         <Button
           :label="$t('common.retry')"
+          type="primary"
           size="small"
           text
           :loading="signupRoles.isFetching.value"
@@ -368,11 +362,11 @@ function onUnassign(activity: TimelineActivity): void {
       </section>
     </template>
 
-    <Dialog
-      v-model:visible="householdDialog.visible"
-      modal
-      :header="$t('pages.eventDetail.household.header')"
-      :style="{ width: '90vw', maxWidth: '560px' }"
+    <el-dialog
+      v-model="householdDialog.visible"
+      :title="$t('pages.eventDetail.household.header')"
+      width="90vw"
+      class="household-dialog"
     >
       <p class="household__lead">
         {{ $t('pages.eventDetail.household.leadBefore') }}
@@ -382,56 +376,55 @@ function onUnassign(activity: TimelineActivity): void {
       <ul class="household__list">
         <li v-for="row in householdDialog.rows" :key="row.userId" class="household__row">
           <div class="household__member">
-            <Checkbox
+            <el-checkbox
               v-if="!row.alreadyAssigned"
+              :id="`hh-${row.userId}`"
               v-model="row.include"
-              binary
-              :input-id="`hh-${row.userId}`"
             />
             <label :for="`hh-${row.userId}`" class="household__name">{{ row.name }}</label>
           </div>
           <span v-if="row.alreadyAssigned" class="household__already">
             {{ $t('pages.eventDetail.household.alreadyAs', { role: row.assignedRole || '—' }) }}
           </span>
-          <Select
+          <el-select
             v-else
             v-model="row.roleId"
-            :options="[...rolesFor(row.userId)]"
-            option-label="name"
-            option-value="id"
             :placeholder="$t('pages.eventDetail.chooseRole')"
             :disabled="!row.include"
             class="household__role"
-          />
+          >
+            <el-option
+              v-for="role in rolesFor(row.userId)"
+              :key="role.id"
+              :label="role.name"
+              :value="role.id"
+            />
+          </el-select>
         </li>
       </ul>
       <p v-if="householdSelectable.length === 0" class="household__note">
         {{ $t('pages.eventDetail.household.allInscribed') }}
       </p>
       <p v-if="householdHighDemand" class="household__demand">
-        <i class="pi pi-exclamation-triangle" />
+        <AppIcon name="exclamation-triangle" />
         <span>{{ $t('pages.eventDetail.highDemandWarning') }}</span>
       </p>
       <template #footer>
-        <Button
-          :label="$t('common.cancel')"
-          text
-          severity="secondary"
-          @click="householdDialog.visible = false"
-        />
+        <Button :label="$t('common.cancel')" text @click="householdDialog.visible = false" />
         <Button
           :label="$t('pages.eventDetail.household.enroll')"
+          type="primary"
           :disabled="householdSelectable.length === 0"
           @click="confirmHousehold"
         />
       </template>
-    </Dialog>
+    </el-dialog>
 
-    <Dialog
-      v-model:visible="overlapDialog.visible"
-      modal
-      :header="$t('pages.eventDetail.overlap.header')"
-      :style="{ width: '90vw', maxWidth: '480px' }"
+    <el-dialog
+      v-model="overlapDialog.visible"
+      :title="$t('pages.eventDetail.overlap.header')"
+      width="90vw"
+      class="overlap-dialog"
     >
       <p class="overlap__lead">
         {{ $t('pages.eventDetail.overlap.lead') }}
@@ -446,15 +439,14 @@ function onUnassign(activity: TimelineActivity): void {
       </ul>
       <p class="overlap__q">{{ $t('pages.eventDetail.overlap.question') }}</p>
       <template #footer>
+        <Button :label="$t('common.cancel')" text @click="overlapDialog.visible = false" />
         <Button
-          :label="$t('common.cancel')"
-          text
-          severity="secondary"
-          @click="overlapDialog.visible = false"
+          :label="$t('pages.eventDetail.overlap.enrollAnyway')"
+          type="primary"
+          @click="confirmOverlapSignup"
         />
-        <Button :label="$t('pages.eventDetail.overlap.enrollAnyway')" @click="confirmOverlapSignup" />
       </template>
-    </Dialog>
+    </el-dialog>
   </div>
 </template>
 
@@ -478,8 +470,16 @@ function onUnassign(activity: TimelineActivity): void {
   font-size: 14.5px;
 }
 
-.signup-closed .pi {
+.signup-closed .app-icon {
   color: var(--ca-warning);
+}
+
+.activities :deep(.household-dialog) {
+  max-width: 560px;
+}
+
+.activities :deep(.overlap-dialog) {
+  max-width: 480px;
 }
 
 .timeline {
@@ -604,6 +604,8 @@ function onUnassign(activity: TimelineActivity): void {
 
 .household__role {
   min-width: 170px;
+  width: auto;
+  max-width: 100%;
 }
 
 .household__note {
@@ -625,7 +627,7 @@ function onUnassign(activity: TimelineActivity): void {
   line-height: 1.45;
 }
 
-.household__demand .pi {
+.household__demand .app-icon {
   margin-top: 2px;
   font-size: 13px;
 }

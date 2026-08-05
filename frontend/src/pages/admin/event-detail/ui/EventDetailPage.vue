@@ -10,13 +10,6 @@ import {
   ColumnSearch,
   ListThumbnail,
 } from '@/shared/ui'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import TabPanel from 'primevue/tabpanel'
-import TabPanels from 'primevue/tabpanels'
-import Tabs from 'primevue/tabs'
 
 import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
 import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
@@ -156,20 +149,17 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
       <template #actions>
         <Button
           :label="$t('pages.admin.eventDetail.newActivity')"
-          icon="pi pi-plus"
-          severity="secondary"
+          icon="plus"
           @click="openCreateActivity"
         />
         <Button
           :label="$t('pages.admin.eventDetail.printBadges')"
-          icon="pi pi-print"
-          severity="secondary"
+          icon="print"
           @click="openBadges"
         />
         <Button
           :label="$t('pages.admin.eventDetail.printRoster')"
-          icon="pi pi-list"
-          severity="secondary"
+          icon="list"
           @click="openRoster"
         />
       </template>
@@ -191,110 +181,106 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
       </div>
     </div>
 
-    <Tabs v-model:value="activeTab" class="tabs">
-      <TabList>
-        <Tab value="activities">{{ $t('pages.admin.eventDetail.tabs.activities') }}</Tab>
-        <Tab value="attendees">{{ $t('pages.admin.eventDetail.tabs.attendees') }}</Tab>
-        <Tab value="opinions">{{ $t('pages.admin.eventDetail.tabs.opinions') }}</Tab>
-      </TabList>
-      <TabPanels>
-        <TabPanel value="activities">
-          <DataTable
-            v-bind="activities.table.dataTableProps.value"
-            @page="activities.table.onPage"
-            @sort="activities.table.onSort"
-          >
-            <template #empty>
-              <span v-if="activities.table.isError.value">
-                {{ $t('pages.admin.eventDetail.empty.error') }}
-              </span>
-              <span v-else>{{ $t('pages.admin.eventDetail.empty.none') }}</span>
-            </template>
+    <el-tabs v-model="activeTab" class="tabs">
+      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.activities')" name="activities">
+        <el-table
+          v-bind="activities.table.tableProps.value"
+          v-loading="activities.table.loading.value"
+          @sort-change="activities.table.onSortChange"
+        >
+          <template #empty>
+            <span v-if="activities.table.isError.value">
+              {{ $t('pages.admin.eventDetail.empty.error') }}
+            </span>
+            <span v-else>{{ $t('pages.admin.eventDetail.empty.none') }}</span>
+          </template>
 
-            <Column :header="$t('common.image')" style="width: 110px">
-              <template #body="{ data }">
-                <ListThumbnail
-                  :thumbnail-id="data.thumbnailId"
-                  :alt="data.title"
-                  style="width: 88px"
+          <el-table-column :label="$t('common.image')" width="110">
+            <template #default="{ row }">
+              <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="title" sortable="custom">
+            <template #header>
+              <ColumnSearch
+                v-model="activities.table.columnFilter('title').value"
+                :label="$t('pages.admin.eventDetail.columns.title')"
+                :placeholder="$t('pages.admin.eventDetail.columns.searchTitle')"
+                @apply="activities.table.onFilter"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column prop="activityStartsAt" sortable="custom">
+            <template #header>
+              <ColumnFilterDate
+                v-model="activities.table.columnFilter('activityDate').value"
+                :label="$t('pages.admin.eventDetail.columns.schedule')"
+                @apply="activities.table.onFilter"
+              />
+            </template>
+            <template #default="{ row }">
+              {{ formatDateTimeRange(row.activityStartsAt, row.activityEndsAt) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="modalityName" sortable="custom">
+            <template #header>
+              <ColumnFilterSelect
+                :model-value="activities.modalityTypeId.value"
+                :label="$t('pages.admin.eventDetail.columns.modality')"
+                :options="modalityOptions"
+                @update:model-value="onModalityFilter"
+              />
+            </template>
+            <template #default="{ row }">
+              <div class="modality-cell">
+                <span class="modality-cell__type">{{ row.modalityName || '—' }}</span>
+                <span v-if="row.location" class="modality-cell__loc">{{ row.location }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.actions')" width="120">
+            <template #default="{ row }">
+              <div class="row-actions">
+                <Button
+                  icon="pencil"
+                  text
+                  circle
+                  :aria-label="$t('common.edit')"
+                  @click="openEditActivity(row)"
                 />
-              </template>
-            </Column>
-            <Column field="title" sortable>
-              <template #header>
-                <ColumnSearch
-                  v-model="activities.table.columnFilter('title').value"
-                  :label="$t('pages.admin.eventDetail.columns.title')"
-                  :placeholder="$t('pages.admin.eventDetail.columns.searchTitle')"
-                  @apply="activities.table.onFilter"
+                <Button
+                  icon="trash"
+                  text
+                  circle
+                  type="danger"
+                  :aria-label="$t('common.delete')"
+                  @click="confirmDeleteActivity(row)"
                 />
-              </template>
-            </Column>
-            <Column field="activityStartsAt" sortable>
-              <template #header>
-                <ColumnFilterDate
-                  v-model="activities.table.columnFilter('activityDate').value"
-                  :label="$t('pages.admin.eventDetail.columns.schedule')"
-                  @apply="activities.table.onFilter"
-                />
-              </template>
-              <template #body="{ data }">
-                {{ formatDateTimeRange(data.activityStartsAt, data.activityEndsAt) }}
-              </template>
-            </Column>
-            <Column field="modalityName" sortable>
-              <template #header>
-                <ColumnFilterSelect
-                  :model-value="activities.modalityTypeId.value"
-                  :label="$t('pages.admin.eventDetail.columns.modality')"
-                  :options="modalityOptions"
-                  @update:model-value="onModalityFilter"
-                />
-              </template>
-              <template #body="{ data }">
-                <div class="modality-cell">
-                  <span class="modality-cell__type">{{ data.modalityName || '—' }}</span>
-                  <span v-if="data.location" class="modality-cell__loc">{{ data.location }}</span>
-                </div>
-              </template>
-            </Column>
-            <Column :header="$t('common.actions')" style="width: 120px">
-              <template #body="{ data }">
-                <div class="row-actions">
-                  <Button
-                    icon="pi pi-pencil"
-                    text
-                    rounded
-                    :aria-label="$t('common.edit')"
-                    @click="openEditActivity(data)"
-                  />
-                  <Button
-                    icon="pi pi-trash"
-                    text
-                    rounded
-                    severity="danger"
-                    :aria-label="$t('common.delete')"
-                    @click="confirmDeleteActivity(data)"
-                  />
-                </div>
-              </template>
-            </Column>
-          </DataTable>
-        </TabPanel>
-        <TabPanel value="attendees">
-          <EventAttendeesTab
-            :event-id="eventId"
-            :active="activeTab === 'attendees'"
-            :activities="activities.options.data.value ?? []"
-            :activities-loading="activities.options.isLoading.value"
-            :activities-error="activities.options.isError.value"
-          />
-        </TabPanel>
-        <TabPanel value="opinions">
-          <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-pagination
+          v-bind="activities.table.paginationProps.value"
+          class="paginator"
+          @update:current-page="activities.table.onCurrentPageChange"
+          @update:page-size="activities.table.onPageSizeChange"
+        />
+      </el-tab-pane>
+      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.attendees')" name="attendees">
+        <EventAttendeesTab
+          :event-id="eventId"
+          :active="activeTab === 'attendees'"
+          :activities="activities.options.data.value ?? []"
+          :activities-loading="activities.options.isLoading.value"
+          :activities-error="activities.options.isError.value"
+        />
+      </el-tab-pane>
+      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.opinions')" name="opinions">
+        <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
+      </el-tab-pane>
+    </el-tabs>
 
     <ActivityFormDialog
       v-model:visible="activityDialogVisible"
@@ -356,6 +342,11 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 .tabs {
   margin-bottom: 30px;
+}
+
+.paginator {
+  margin-top: 14px;
+  justify-content: flex-end;
 }
 
 .row-actions {

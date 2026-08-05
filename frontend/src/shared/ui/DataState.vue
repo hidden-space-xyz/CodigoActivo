@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
+import AppIcon from './AppIcon.vue'
 
 defineProps<{
   loading: boolean
@@ -12,7 +12,7 @@ defineProps<{
 
 <template>
   <div v-if="loading" class="data-state">
-    <ProgressSpinner style="width: 36px; height: 36px" stroke-width="4" />
+    <span class="data-state__spinner"><AppIcon name="spinner" spin /></span>
     <span>{{ $t('common.loading') }}</span>
   </div>
   <div v-else-if="error" class="data-state data-state--error">
@@ -32,6 +32,11 @@ defineProps<{
   padding: 48px 24px;
   color: var(--ca-text-muted);
   font-size: 15px;
+}
+
+.data-state__spinner {
+  display: inline-flex;
+  font-size: 36px;
 }
 
 .data-state--error {

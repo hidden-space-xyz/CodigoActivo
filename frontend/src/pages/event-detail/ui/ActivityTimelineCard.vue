@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppButton as Button, BaseButton } from '@/shared/ui'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
+import { AppButton as Button, AppIcon, BaseButton } from '@/shared/ui'
 
 import { formatTimeRange } from '@/shared/lib'
 
@@ -80,17 +78,18 @@ function onSignup(): void {
   <article class="act" :class="{ 'act--mine': activity.assignment || activity.household.length }">
     <div class="act__head">
       <h4 class="act__title">{{ activity.title }}</h4>
-      <Tag
+      <el-tag
         v-if="!hasHousehold && activity.assignment"
-        :value="activity.assignment.status"
-        :severity="statusSeverity(activity.assignment.status)"
-      />
+        :type="statusSeverity(activity.assignment.status)"
+      >
+        {{ activity.assignment.status }}
+      </el-tag>
     </div>
 
-    <div class="act__time"><i class="pi pi-clock" /> {{ scheduleLabel() }}</div>
+    <div class="act__time"><AppIcon name="clock" /> {{ scheduleLabel() }}</div>
 
     <div v-if="activity.modality || activity.location" class="act__meta">
-      <i class="pi pi-map-marker" />
+      <AppIcon name="map-marker" />
       <span>{{ [activity.modality, activity.location].filter(Boolean).join(' · ') }}</span>
     </div>
 
@@ -100,11 +99,9 @@ function onSignup(): void {
       <li v-for="member in activity.household" :key="member.userId" class="act__member">
         <span class="act__member-info">
           <b>{{ member.name }}</b> · {{ member.roleName || '—' }}
-          <Tag
-            :value="member.status"
-            :severity="statusSeverity(member.status)"
-            class="act__member-tag"
-          />
+          <el-tag :type="statusSeverity(member.status)" class="act__member-tag">
+            {{ member.status }}
+          </el-tag>
         </span>
         <button
           v-if="signupOpen"
@@ -121,7 +118,7 @@ function onSignup(): void {
     </ul>
 
     <p v-if="selectedRoleHighDemand" class="act__demand">
-      <i class="pi pi-exclamation-triangle" />
+      <AppIcon name="exclamation-triangle" />
       <span>{{ $t('pages.eventDetail.highDemandWarning') }}</span>
     </p>
 
@@ -145,6 +142,7 @@ function onSignup(): void {
               ? $t('pages.eventDetail.card.enrollAnother')
               : $t('pages.eventDetail.card.enrollFamily')
           "
+          type="primary"
           size="small"
           :loading="busy || rolesLoading"
           @click="emit('household')"
@@ -153,12 +151,13 @@ function onSignup(): void {
 
       <template v-else-if="activity.assignment">
         <span class="act__note">
-          {{ $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName || '—' }) }}
+          {{
+            $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName || '—' })
+          }}
         </span>
         <Button
           v-if="signupOpen"
           :label="$t('pages.eventDetail.card.unassignSelf')"
-          severity="secondary"
           size="small"
           :loading="busy"
           @click="emit('unassign')"
@@ -176,17 +175,17 @@ function onSignup(): void {
           {{ $t('pages.eventDetail.activities.rolesLoadError') }}
         </span>
         <template v-else>
-          <Select
+          <el-select
             v-if="roles.length > 1"
             v-model="selectedRoleId"
-            :options="[...roles]"
-            option-label="name"
-            option-value="id"
             :placeholder="$t('pages.eventDetail.chooseRole')"
             class="act__role-select"
-          />
+          >
+            <el-option v-for="role in roles" :key="role.id" :label="role.name" :value="role.id" />
+          </el-select>
           <Button
             :label="$t('pages.eventDetail.card.enrollSelf')"
+            type="primary"
             size="small"
             :loading="busy"
             :disabled="!selectedRoleId"
@@ -267,7 +266,7 @@ function onSignup(): void {
   line-height: 1.45;
 }
 
-.act__demand .pi {
+.act__demand .app-icon {
   margin-top: 2px;
   font-size: 13px;
 }
@@ -340,6 +339,8 @@ function onSignup(): void {
 
 .act__role-select {
   min-width: 150px;
+  width: auto;
+  max-width: 100%;
 }
 
 .act__note {

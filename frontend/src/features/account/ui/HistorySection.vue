@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Tag from 'primevue/tag'
 
 import { useAccountHistory } from '../model/useAccountHistory'
 import EventRatingDialog from './EventRatingDialog.vue'
 import type { AccountHistoryEntry, EventRatingInput } from '@/entities/account'
-import { BaseButton } from '@/shared/ui'
+import { AppIcon, BaseButton } from '@/shared/ui'
 import { formatDateRange, useCrudFeedback } from '@/shared/lib'
 
 const { t } = useI18n()
@@ -90,10 +89,9 @@ const groups = computed(() => [
                   :aria-expanded="isExpanded(entry.eventId)"
                   @click="toggle(entry.eventId)"
                 >
-                  <i
-                    class="acc-history__chevron pi"
-                    :class="isExpanded(entry.eventId) ? 'pi-chevron-down' : 'pi-chevron-right'"
-                    aria-hidden="true"
+                  <AppIcon
+                    class="acc-history__chevron"
+                    :name="isExpanded(entry.eventId) ? 'chevron-down' : 'chevron-right'"
                   />
                   <span class="acc-history__info">
                     <span class="acc-history__name">{{ entry.title }}</span>
@@ -106,7 +104,7 @@ const groups = computed(() => [
 
                 <div v-if="entry.canRate" class="acc-history__actions">
                   <span v-if="entry.rating" class="acc-history__score">
-                    <i class="pi pi-star-fill" aria-hidden="true" />
+                    <AppIcon name="star-fill" />
                     {{ entry.rating.score }}/5
                   </span>
                   <BaseButton variant="ghost" @click="openRating(entry)">
@@ -132,11 +130,12 @@ const groups = computed(() => [
                     </span>
                     <span v-if="activity.roleName">{{ activity.roleName }}</span>
                   </span>
-                  <Tag
+                  <el-tag
                     v-if="!entry.isPast && activity.statusName"
-                    :value="activity.statusName"
-                    :severity="statusSeverity(activity.statusName)"
-                  />
+                    :type="statusSeverity(activity.statusName)"
+                  >
+                    {{ activity.statusName }}
+                  </el-tag>
                 </li>
               </ul>
             </li>
@@ -238,7 +237,7 @@ const groups = computed(() => [
   font: inherit;
 }
 
-.acc-history__chevron {
+.acc-history__toggle .acc-history__chevron {
   font-size: 12px;
   color: var(--ca-text-muted);
   flex-shrink: 0;

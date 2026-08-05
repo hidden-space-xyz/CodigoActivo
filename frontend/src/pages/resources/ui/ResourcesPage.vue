@@ -22,7 +22,12 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
           <ResourceCard v-for="resource in resources" :key="resource.id" :resource="resource" />
         </div>
         <div v-if="hasMore" class="resources-more">
-          <AppButton :label="$t('common.loadMore')" outlined :loading="isFetchingMore" @click="loadMore" />
+          <AppButton
+            :label="$t('common.loadMore')"
+            plain
+            :loading="isFetchingMore"
+            @click="loadMore"
+          />
         </div>
       </div>
     </section>

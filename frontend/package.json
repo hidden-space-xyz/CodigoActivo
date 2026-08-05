@@ -19,7 +19,7 @@
     "api:generate": "orval --config ./orval.config.ts"
   },
   "dependencies": {
-    "@primeuix/themes": "^2.0.3",
+    "@element-plus/icons-vue": "^2.3.2",
     "@tanstack/vue-query": "^5.101.4",
     "@tiptap/core": "^3.29.2",
     "@tiptap/extension-color": "^3.29.2",
@@ -37,8 +37,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/vue-3": "^3.29.2",
     "chart.js": "^4.5.1",
-    "primeicons": "^7.0.0",
-    "primevue": "^4.5.5",
+    "element-plus": "^2.14.3",
     "vue": "^3.5.40",
     "vue-i18n": "^11.4.8",
     "vue-router": "^5.2.0"

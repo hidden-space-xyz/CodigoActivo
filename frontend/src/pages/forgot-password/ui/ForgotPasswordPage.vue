@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
-
 import { useForgotPassword } from '@/features/auth'
 import { BaseButton, PageHead } from '@/shared/ui'
 
@@ -23,13 +21,12 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
         <form v-if="!sent" class="forgot-form" @submit.prevent="submit">
           <div class="forgot-field">
             <label class="forgot-label" for="forgot-email">{{ $t('common.emailLong') }}</label>
-            <InputText
+            <el-input
               id="forgot-email"
               v-model="form.email"
               type="email"
               :maxlength="256"
               required
-              fluid
             />
           </div>
 
@@ -53,7 +50,9 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 
         <p class="forgot-alt">
           {{ $t('pages.forgotPassword.rememberedAlt') }}
-          <RouterLink :to="{ name: 'login' }" class="forgot-alt__link"> {{ $t('common.login') }} </RouterLink>
+          <RouterLink :to="{ name: 'login' }" class="forgot-alt__link">
+            {{ $t('common.login') }}
+          </RouterLink>
         </p>
       </div>
     </section>
