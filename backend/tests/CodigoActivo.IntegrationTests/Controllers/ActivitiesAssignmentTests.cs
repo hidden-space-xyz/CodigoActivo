@@ -277,7 +277,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         message
             .TextBody.Should()
             .Contain("la inscripción de Mateo Miembro")
-            .And.Contain("Participa como: Participante");
+            .And.Contain("Rol: Participante");
     }
 
     [Fact]

@@ -131,6 +131,20 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
 
         var builder = new BodyBuilder { HtmlBody = message.HtmlBody, TextBody = message.TextBody };
 
+        foreach (var image in message.InlineImages ?? [])
+        {
+            var resource = builder.LinkedResources.Add(
+                image.FileName,
+                image.Content,
+                ParseContentType(image.ContentType)
+            );
+            resource.ContentId = image.ContentId;
+            resource.ContentDisposition = new ContentDisposition(ContentDisposition.Inline)
+            {
+                FileName = image.FileName,
+            };
+        }
+
         foreach (var attachment in message.Attachments ?? [])
         {
             builder.Attachments.Add(

@@ -359,6 +359,7 @@ public class AuthService(
             user.FirstName,
             otpCode,
             BuildAccountUrl(VerificationPath, user.Id, otpCode),
+            BuildSiteUrl(),
             verification.OtpLifetime
         );
         return emailSender.SendAsync(message, ct);
@@ -370,14 +371,20 @@ public class AuthService(
             user.Email!,
             user.FirstName,
             BuildAccountUrl(PasswordResetPath, user.Id, code),
+            BuildSiteUrl(),
             passwordReset.CodeLifetime
         );
         return emailSender.SendAsync(message, ct);
     }
 
+    private string BuildSiteUrl()
+    {
+        return application.BaseUrl.TrimEnd('/');
+    }
+
     private string BuildAccountUrl(string path, Guid userId, string code)
     {
-        return $"{application.BaseUrl.TrimEnd('/')}{path}?userId={userId}&code={Uri.EscapeDataString(code)}";
+        return $"{BuildSiteUrl()}{path}?userId={userId}&code={Uri.EscapeDataString(code)}";
     }
 
     private bool IsCodeValid(string code, string? codeHash, DateTimeOffset? expiresAt)

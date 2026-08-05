@@ -39,6 +39,7 @@ public sealed class EmailServiceTests
             new FakeQueryExecutor(),
             emailSender,
             options,
+            new ApplicationOptions(),
             NullLogger<EmailService>.Instance
         );
     }

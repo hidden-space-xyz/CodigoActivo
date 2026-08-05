@@ -882,7 +882,8 @@ public class ActivityService(
                     details,
                     participants,
                     clock.TimeZone,
-                    BuildUrl(AccountPath)
+                    BuildUrl(AccountPath),
+                    BuildSiteUrl()
                 ),
                 ct
             );
@@ -935,14 +936,16 @@ public class ActivityService(
                         participantName,
                         (await GetRoleNamesAsync(ct)).GetValueOrDefault(roleTypeId),
                         details,
-                        clock.TimeZone
+                        clock.TimeZone,
+                        BuildSiteUrl()
                     )
                     : ActivitySignupDecisionEmail.Denied(
                         recipient.Address,
                         recipient.Name,
                         participantName,
                         details,
-                        clock.TimeZone
+                        clock.TimeZone,
+                        BuildSiteUrl()
                     );
 
             await emailSender.SendAsync(message, ct);
@@ -1041,9 +1044,14 @@ public class ActivityService(
         };
     }
 
+    private string BuildSiteUrl()
+    {
+        return application.BaseUrl.TrimEnd('/');
+    }
+
     private string BuildUrl(string path)
     {
-        return $"{application.BaseUrl.TrimEnd('/')}{path}";
+        return $"{BuildSiteUrl()}{path}";
     }
 
     private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)

@@ -55,7 +55,7 @@ public sealed class ActivityEmailDetailsTests
     }
 
     [Fact]
-    public void ToTextBlock_RoleProvided_AppendsTheRoleRow()
+    public void ToBlock_RoleProvided_AppendsTheRoleRow()
     {
         var details = Details(
             new DateTimeOffset(2026, 7, 20, 16, 0, 0, TimeSpan.Zero),
@@ -63,14 +63,14 @@ public sealed class ActivityEmailDetailsTests
         );
 
         details
-            .ToTextBlock(TimeZoneInfo.Utc, "Voluntario")
-            .Should()
-            .Contain("Participa como: Voluntario");
-        details.ToTextBlock(TimeZoneInfo.Utc).Should().NotContain("Participa como");
+            .ToBlock(TimeZoneInfo.Utc, "Voluntario")
+            .Text.Should()
+            .Contain("Rol: Voluntario");
+        details.ToBlock(TimeZoneInfo.Utc).Text.Should().NotContain("Rol:");
     }
 
     [Fact]
-    public void ToHtmlBlock_MarkupInAValue_IsHtmlEncoded()
+    public void ToBlock_MarkupInAValue_IsHtmlEncoded()
     {
         var details = Details(
             new DateTimeOffset(2026, 7, 20, 16, 0, 0, TimeSpan.Zero),
@@ -79,8 +79,8 @@ public sealed class ActivityEmailDetailsTests
         );
 
         details
-            .ToHtmlBlock(TimeZoneInfo.Utc)
-            .Should()
+            .ToBlock(TimeZoneInfo.Utc)
+            .Html.Should()
             .NotContain("<script>")
             .And.Contain("&lt;script&gt;");
     }

@@ -12,6 +12,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="emails.shared.brandName" xml:space="preserve">
+    <value>Código Activo</value>
+  </data>
+  <data name="emails.shared.logoAlt" xml:space="preserve">
+    <value>Logotipo de Código Activo</value>
+  </data>
   <data name="emails.shared.greeting" xml:space="preserve">
     <value>Hola {0}:</value>
   </data>
@@ -24,6 +30,15 @@ Equipo de Código Activo</value>
   </data>
   <data name="emails.shared.signoffHtml" xml:space="preserve">
     <value>Un saludo,&lt;br&gt;Equipo de Código Activo</value>
+  </data>
+  <data name="emails.footer.tagline" xml:space="preserve">
+    <value>Programación para tod@s. Asociación sin ánimo de lucro · León, desde 2016.</value>
+  </data>
+  <data name="emails.footer.websiteLabel" xml:space="preserve">
+    <value>Visitar nuestra web</value>
+  </data>
+  <data name="emails.footer.automaticNote" xml:space="preserve">
+    <value>Este es un mensaje automático enviado desde nuestra web. Por favor, no respondas a este correo.</value>
   </data>
   <data name="emails.details.activityLabel" xml:space="preserve">
     <value>Actividad</value>
@@ -38,7 +53,7 @@ Equipo de Código Activo</value>
     <value>Dónde</value>
   </data>
   <data name="emails.details.roleLabel" xml:space="preserve">
-    <value>Participa como</value>
+    <value>Rol</value>
   </data>
   <data name="emails.details.rowText" xml:space="preserve">
     <value>{0}: {1}</value>

@@ -3,10 +3,10 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using AwesomeAssertions;
-using CodigoActivo.Application.Localization;
+using CodigoActivo.Application.Resources.Localization;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Application.Localization;
+namespace CodigoActivo.UnitTests.Application.Resources.Localization;
 
 public sealed class AppStringsTests
 {

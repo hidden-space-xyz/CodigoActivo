@@ -24,7 +24,8 @@ public sealed class ActivitySignupDecisionEmailTests
             "<script>alert(1)</script>",
             "Participante",
             Details,
-            TimeZoneInfo.Utc
+            TimeZoneInfo.Utc,
+            "https://app.test"
         );
 
         message.HtmlBody.Should().NotContain("<script>").And.Contain("&lt;script&gt;");
@@ -39,14 +40,15 @@ public sealed class ActivitySignupDecisionEmailTests
             "Ada",
             null,
             Details,
-            TimeZoneInfo.Utc
+            TimeZoneInfo.Utc,
+            "https://app.test"
         );
 
         message.Subject.Should().Be("Inscripción rechazada: Taller de robótica");
         message
             .TextBody.Should()
             .Contain("tu inscripción")
-            .And.NotContain("Participa como")
+            .And.NotContain("Rol:")
             .And.NotContain("\n\n\n");
         message.HtmlBody.Should().NotContain("<p></p>");
     }
