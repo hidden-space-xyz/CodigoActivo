@@ -98,6 +98,9 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             services.RemoveAll<IEmailTransport>();
             services.AddSingleton<IEmailTransport>(EmailSender);
 
+            services.RemoveAll<IEmailDispatcher>();
+            services.AddSingleton<IEmailDispatcher>(EmailSender);
+
             services.RemoveAll<EmailGuardOptions>();
             services.AddSingleton(UnboundedEmailGuard());
 

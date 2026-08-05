@@ -92,8 +92,8 @@ A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsetting
 `Auth:CookieName` = `CodigoActivo.Session`, `Auth:ExpireHours` = `8`, `FileStorage:MaxSizeBytes` = 10 MiB,
 `AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`, `ManualEmail:MaxRecipients`
 = `500`, `ManualEmail:MaxAttachments` = `10`, `ManualEmail:MaxAttachmentsBytes` = 8 MiB, plus the
-`EmailGuard` section below). Override any of them, if needed, with the standard .NET `Section__Key`
-environment-variable convention (e.g. `Auth__ExpireHours`).
+`EmailGuard` and `EmailQueue` sections below). Override any of them, if needed, with the standard .NET
+`Section__Key` environment-variable convention (e.g. `Auth__ExpireHours`).
 
 > [!IMPORTANT]
 > `Section__Key` overrides only reach the API if the variable is actually passed into the container. The
@@ -119,6 +119,29 @@ falls back to the default below rather than lifting the limit:
 | `EmailGuard:SweepIntervalMinutes` | How often idle address budgets are evicted                     | `5`     |
 | `EmailGuard:AlertIntervalMinutes` | Minimum gap between repeated guard alerts in the log           | `15`    |
 
+The `EmailQueue` section tunes the in-process queue that delivers every automatic email in the background, so
+no user request ever waits on the SMTP relay. It holds messages in memory only — nothing is persisted, and
+nothing is retried. Same posture as `EmailGuard`: a missing, zero, negative or unparseable value falls back
+to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped** rather than accepted
+(`Workers` ≤ 16, `ShutdownDrainSeconds` ≤ 300, `SendTimeoutSeconds` ≤ 600).
+
+| Key                              | Meaning                                                           | Default |
+| -------------------------------- | ----------------------------------------------------------------- | ------- |
+| `EmailQueue:Capacity`            | Messages held before new ones are refused as a guard denial       | `1000`  |
+| `EmailQueue:Workers`             | Concurrent SMTP connections the queue may use to drain            | `4`     |
+| `EmailQueue:ShutdownDrainSeconds`| How long shutdown waits for the queue to empty                    | `20`    |
+| `EmailQueue:SendTimeoutSeconds`  | Ceiling on one delivery, so a hung relay cannot wedge a worker    | `60`    |
+
+> [!NOTE]
+> `Workers` trades relay pressure against queue latency. Verification and password-reset codes expire 15
+> minutes after the **request**, not after delivery, so a backlog that drains more slowly than that mails out
+> codes that are already dead. Lower it only if your relay rejects concurrent connections; raise it only if
+> you have measured a backlog.
+
+> [!IMPORTANT]
+> `EmailQueue:ShutdownDrainSeconds` must stay **below** the `api` service's `stop_grace_period` (30 s in
+> `docker-compose.yml`), or Docker kills the container mid-drain and the pending messages are lost silently.
+
 > [!NOTE]
 > `FileStorage:MaxSizeBytes` drives both the HTTP request-size limit on the upload endpoints (+64 KiB of
 > multipart overhead) and the business-rule check. In the Docker stack, nginx additionally caps request
@@ -140,6 +163,12 @@ falls back to the default below rather than lifting the limit:
 > stopped until it refills; read the `{Kind}` values preceding it to see which flow drained it. Admin-written
 > email keeps working throughout. Budgets are in-memory: a restart refills them, and more than one `api`
 > replica multiplies every cap by the replica count.
+>
+> Because automatic mail is now delivered in the background, a broken `SMTP_*` configuration no longer shows
+> up as a failing request — the signup or registration succeeds and the failure surfaces later as repeated
+> `Error`s from the dispatcher naming the `{Kind}` and `{Recipient}` it could not deliver. Two more lines are
+> worth alerting on: an `Error` saying the queue "is full" (the relay has been down long enough to back up
+> 1000 messages) and a `Warning` at shutdown saying messages "were left undelivered".
 
 ## Demo mode
 
@@ -155,4 +184,7 @@ default and backend-only.
 
 > [!IMPORTANT]
 > The named volumes hold all state. Back up `db-data` (database) and `api-files` (uploads) regularly, and
-> keep `api-dataprotection` stable across restarts so existing session/antiforgery cookies stay valid.
+> keep `api-dataprotection` stable across restarts so existing session/antiforgery cookies stay valid. The
+> one exception is outbound email still sitting in the in-memory queue: it is deliberately not persisted, so
+> a restart that outlasts the drain window drops it. Nothing user-visible depends on it — the write that
+> triggered the mail is already committed, and members can always request a new verification code.

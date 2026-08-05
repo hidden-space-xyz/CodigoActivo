@@ -14,3 +14,8 @@ public interface IEmailTransport
         CancellationToken ct = default
     );
 }
+
+public interface IEmailDispatcher
+{
+    public bool TryEnqueue(EmailMessage message);
+}

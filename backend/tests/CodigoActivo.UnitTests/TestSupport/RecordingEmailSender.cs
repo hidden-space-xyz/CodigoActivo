@@ -7,7 +7,16 @@ public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
 {
     private readonly List<EmailMessage> sent = [];
 
-    public IReadOnlyList<EmailMessage> Sent => sent;
+    public IReadOnlyList<EmailMessage> Sent
+    {
+        get
+        {
+            lock (sent)
+            {
+                return [.. sent];
+            }
+        }
+    }
 
     public Exception? ThrowOnSend { get; set; }
 
@@ -23,7 +32,16 @@ public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
             throw ThrowOnSend;
         }
 
-        sent.Add(message);
+        if (FailingRecipients.Contains(message.ToAddress))
+        {
+            throw new InvalidOperationException($"Delivery to '{message.ToAddress}' failed.");
+        }
+
+        lock (sent)
+        {
+            sent.Add(message);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -37,17 +55,26 @@ public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
             throw ThrowOnSend;
         }
 
-        Batches++;
-        var delivered = messages.Where(m => !FailingRecipients.Contains(m.ToAddress)).ToList();
-        sent.AddRange(delivered);
-        return Task.FromResult(
-            new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
-        );
+        lock (sent)
+        {
+            Batches++;
+            var delivered = messages.Where(m => !FailingRecipients.Contains(m.ToAddress)).ToList();
+            sent.AddRange(delivered);
+            return Task.FromResult(
+                new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
+            );
+        }
     }
 
     public string LastCode()
     {
-        var match = CodePattern.Match(sent[^1].TextBody);
+        EmailMessage last;
+        lock (sent)
+        {
+            last = sent[^1];
+        }
+
+        var match = CodePattern.Match(last.TextBody);
         return !match.Success
             ? throw new InvalidOperationException(
                 "The last email does not contain a verification code."
