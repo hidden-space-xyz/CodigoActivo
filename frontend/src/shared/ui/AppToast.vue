@@ -4,26 +4,28 @@ import Toast from 'primevue/toast'
 import type { ErrorToastMessageOptions } from '@/shared/lib'
 
 const SEVERITY_ICON: Record<string, string> = {
-  success: 'pi-check',
+  success: 'pi-check-circle',
   info: 'pi-info-circle',
   warn: 'pi-exclamation-triangle',
   error: 'pi-times-circle',
   secondary: 'pi-info-circle',
   contrast: 'pi-info-circle',
 }
+
+const TOAST_PT = { closeButton: { autofocus: null } }
 </script>
 
 <template>
-  <Toast>
+  <Toast :pt="TOAST_PT">
     <template #message="slotProps">
       <div class="app-toast">
         <i
-          class="pi app-toast__icon"
+          class="pi p-toast-message-icon app-toast__icon"
           :class="SEVERITY_ICON[slotProps.message.severity ?? 'info']"
         />
-        <div class="app-toast__text">
-          <span class="app-toast__summary">{{ slotProps.message.summary }}</span>
-          <div v-if="slotProps.message.detail" class="app-toast__detail">
+        <div class="p-toast-message-text">
+          <span class="p-toast-summary">{{ slotProps.message.summary }}</span>
+          <div v-if="slotProps.message.detail" class="p-toast-detail">
             {{ slotProps.message.detail }}
           </div>
           <div
@@ -40,34 +42,23 @@ const SEVERITY_ICON: Record<string, string> = {
 
 <style scoped>
 .app-toast {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
 }
 
 .app-toast__icon {
-  margin-top: 2px;
-  font-size: 1.2rem;
+  margin-top: 3px;
   flex-shrink: 0;
-}
-
-.app-toast__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.app-toast__summary {
-  font-weight: 600;
-}
-
-.app-toast__detail {
-  margin-top: 2px;
 }
 
 .app-toast__trace {
   margin-top: 4px;
+  font-family: var(--ca-font-mono);
   font-size: 11px;
-  opacity: 0.7;
+  color: var(--ca-text-faint);
+  overflow-wrap: anywhere;
 }
 </style>

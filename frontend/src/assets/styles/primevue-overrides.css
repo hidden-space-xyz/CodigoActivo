@@ -86,6 +86,21 @@
 
   --p-mask-background: var(--ca-mask);
 
+  --p-toast-width: min(25rem, calc(100% - 2.5rem));
+  --p-toast-border-radius: 14px;
+  --p-toast-content-padding: 14px 16px;
+  --p-toast-content-gap: 12px;
+  --p-toast-text-gap: 3px;
+  --p-toast-icon-size: 1.25rem;
+  --p-toast-summary-font-size: 1rem;
+  --p-toast-summary-font-weight: 700;
+  --p-toast-detail-font-size: 0.9rem;
+  --p-toast-detail-font-weight: 400;
+  --p-toast-close-button-width: 1.75rem;
+  --p-toast-close-button-height: 1.75rem;
+  --p-toast-close-button-border-radius: 9px;
+  --p-toast-close-icon-size: 0.875rem;
+
   --p-list-option-color: var(--ca-text);
   --p-list-option-focus-background: var(--ca-surface-2);
   --p-list-option-focus-color: var(--ca-text-bright);
@@ -207,4 +222,63 @@
 .p-dialog-title {
   font-family: var(--ca-font-display);
   color: var(--ca-text-bright);
+}
+
+.p-toast-message {
+  --ca-toast-accent: var(--ca-text-muted);
+
+  background: var(--ca-bg-elevated);
+  border-color: var(--ca-border-strong);
+  border-inline-start: 4px solid var(--ca-toast-accent);
+  color: var(--ca-text);
+  box-shadow: var(--ca-shadow-lg);
+  backdrop-filter: none;
+}
+
+.p-toast-message-success {
+  --ca-toast-accent: var(--ca-success);
+}
+
+.p-toast-message-info {
+  --ca-toast-accent: var(--ca-info);
+}
+
+.p-toast-message-warn {
+  --ca-toast-accent: var(--ca-warning);
+}
+
+.p-toast-message-error {
+  --ca-toast-accent: var(--ca-danger);
+}
+
+.p-toast-message-contrast {
+  --ca-toast-accent: var(--ca-text-bright);
+}
+
+.p-toast-message-icon {
+  color: var(--ca-toast-accent);
+}
+
+.p-toast-summary {
+  font-family: var(--ca-font-display);
+  color: var(--ca-text-bright);
+}
+
+.p-toast-detail {
+  color: var(--ca-text-muted);
+}
+
+.p-toast-close-button {
+  margin: 0;
+  right: 0;
+  color: var(--ca-text-faint);
+}
+
+.p-toast-close-button:hover {
+  background: var(--ca-surface-2);
+  color: var(--ca-text);
+}
+
+.p-toast-close-button:focus-visible {
+  outline-color: var(--ca-toast-accent);
 }
