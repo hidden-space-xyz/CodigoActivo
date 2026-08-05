@@ -106,6 +106,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 - **Never** use `DateTime.Now` / `DateTime.UtcNow`; inject `IClock`.
 - **Never** put `Version=` on a `PackageReference` — versions are central in `Directory.Packages.props`.
 - The database is **snake_case**; account for it in raw SQL.
+- **Never hardcode user-facing prose** — every string a member or admin reads is a key in
+  `backend/src/CodigoActivo.Application/Localization/AppStrings.resx`, reached through the `AppStrings` accessor
+  (composites are methods with typed parameters; `string.Format` never appears at a call site). Exception
+  messages, Serilog templates, HTTP reason phrases and seeded catalog text are deliberately **excluded** — see
+  the Localization section of `backend/CLAUDE.md`, which also explains why a second backend language does not
+  work in the production container as it ships. `AppStringsTests` must stay green.
 - Type colocation is intentional (all repository interfaces in one file, request+response DTOs per aggregate
   in one `*Dtos.cs`); private fields are `camelCase` with no leading underscore.
 - Formatting is CSharpier; Meziantou.Analyzer + SonarAnalyzer + the SDK's CA/IDE rules run in-build and report

@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
+using CodigoActivo.Application.Localization;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -313,7 +314,7 @@ public class FileService(
         var name = Path.GetFileName(fileName ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(name))
         {
-            name = "file";
+            name = AppStrings.FilesFallbackFileName;
         }
 
         return name.Length > MaxNameLength ? name[..MaxNameLength] : name;

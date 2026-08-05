@@ -121,6 +121,12 @@ Services never throw for expected failures. They return `Task<Result<TResponse>>
   `ApiErrorResponse` with `ErrorCode.RequestValidationFailed`.
 - **Mapping** is hand-written (`ToResponse()` extensions + `Expression` projections for DB-side `Select`).
   No AutoMapper.
+- **Localization** (`Application/Localization/`): every user-facing backend string is a key in
+  `AppStrings.resx`, read through the strongly-typed `AppStrings` accessor — the backend's counterpart to the
+  frontend's `es.ts`. It lives in Application because that is the layer that *renders* text: **Domain
+  deliberately carries no user-facing prose**, which is why `Error` holds only an `ErrorCode` and its Spanish
+  copy lives in the frontend's `errors.*`. Seeded catalog text is content, not UI strings, and stays in the
+  database. A second backend language is not a drop-in — see `backend/CLAUDE.md`.
 - **Pagination**: list queries derive from `PageQuery` (page size clamped to 100) and return
   `PagedResult<T>` (no `Result` wrapper on lists).
 - **Repositories** derive from `Repository<TEntity>`; reads are `AsNoTracking()` except `FindAsync`,
