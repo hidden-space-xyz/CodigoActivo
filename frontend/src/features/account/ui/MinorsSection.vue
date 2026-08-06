@@ -348,7 +348,6 @@ function confirmDelete(): void {
   font-family: inherit;
   font-size: 15px;
   outline: none;
-  color-scheme: dark;
 }
 
 .acc-form__actions {
@@ -373,9 +372,19 @@ function confirmDelete(): void {
   margin: 0 0 16px;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .acc-form__grid {
     grid-template-columns: 1fr;
+  }
+
+  .acc-minor {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .acc-minor__actions {
+    justify-content: flex-end;
   }
 }
 </style>

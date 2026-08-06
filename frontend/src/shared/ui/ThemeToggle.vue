@@ -35,7 +35,8 @@ const label = computed(() => (isDark.value ? t('theme.toLight') : t('theme.toDar
 .theme-toggle {
   display: inline-flex;
   align-items: center;
-  padding: 0;
+  padding: 8px;
+  margin: -8px;
   border: none;
   background: transparent;
   cursor: pointer;

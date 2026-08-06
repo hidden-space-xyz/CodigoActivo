@@ -237,4 +237,10 @@ function save(): void {
 .form :deep(.ca-invalid .el-select__wrapper) {
   box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
+
+@media (max-width: 640px) {
+  .form__row {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

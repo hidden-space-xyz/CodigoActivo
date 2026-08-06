@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { useMediaQuery } from '@/shared/lib'
+
 import ColumnFilterShell from './ColumnFilterShell.vue'
 
 const props = defineProps<{
@@ -15,6 +17,7 @@ const emit = defineEmits<{
 
 const shell = ref<InstanceType<typeof ColumnFilterShell>>()
 const draft = ref<(Date | null)[] | null>(props.modelValue)
+const narrow = useMediaQuery('(max-width: 640px)')
 
 const active = computed(() => (props.modelValue ?? []).some((date) => date instanceof Date))
 
@@ -66,8 +69,9 @@ function clear(): void {
       <el-date-picker
         :model-value="pickerValue"
         type="daterange"
-        unlink-panels
-        :editable="false"
+        :single-panel="narrow"
+        :unlink-panels="!narrow"
+        :editable="narrow"
         :start-placeholder="$t('table.rangeFrom')"
         :end-placeholder="$t('table.rangeTo')"
         :append-to="panel"

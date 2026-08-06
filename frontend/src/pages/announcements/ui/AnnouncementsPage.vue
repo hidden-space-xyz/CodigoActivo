@@ -66,7 +66,7 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
 
 <style scoped>
 .announcements-head {
-  padding: 64px 24px 24px;
+  padding: 64px var(--ca-gutter) 24px;
 }
 
 .announcements-head__title {
@@ -86,7 +86,7 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
 }
 
 .announcements-list-section {
-  padding: 30px 24px 80px;
+  padding: 30px var(--ca-gutter) 80px;
 }
 
 .announcements-years {
@@ -95,7 +95,7 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
 
 .announcements-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 18px;
 }
 

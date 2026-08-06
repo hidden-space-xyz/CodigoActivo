@@ -343,6 +343,7 @@ function confirmDeleteAccount(): void {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .acc-info__row dt {
@@ -354,6 +355,7 @@ function confirmDeleteAccount(): void {
   margin: 0;
   font-weight: 600;
   color: var(--ca-text);
+  overflow-wrap: anywhere;
 }
 
 .acc-form__grid {
@@ -385,7 +387,6 @@ function confirmDeleteAccount(): void {
   font-family: inherit;
   font-size: 15px;
   outline: none;
-  color-scheme: dark;
 }
 
 .acc-form__actions {
@@ -411,7 +412,7 @@ function confirmDeleteAccount(): void {
   margin: 0 0 16px;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .acc-info,
   .acc-form__grid {
     grid-template-columns: 1fr;

@@ -26,7 +26,7 @@ import { BaseButton, SectionEyebrow } from '@/shared/ui'
 .not-found {
   position: relative;
   overflow: hidden;
-  padding: 64px 24px 80px;
+  padding: 64px var(--ca-gutter) 80px;
 }
 
 .not-found__glow {
@@ -42,7 +42,7 @@ import { BaseButton, SectionEyebrow } from '@/shared/ui'
 .not-found__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 46px;
+  font-size: clamp(28px, 6vw, 46px);
   letter-spacing: -0.03em;
   color: var(--ca-text-bright);
 }

@@ -70,6 +70,7 @@ function removeMinor(index: number): void {
           <el-input
             id="reg-firstname"
             v-model="model.firstName"
+            autocomplete="given-name"
             :maxlength="120"
             :class="{ 'ca-invalid': submitted && !model.firstName.trim() }"
             required
@@ -80,6 +81,7 @@ function removeMinor(index: number): void {
           <el-input
             id="reg-lastname"
             v-model="model.lastName"
+            autocomplete="family-name"
             :maxlength="120"
             :class="{ 'ca-invalid': submitted && !model.lastName.trim() }"
             required
@@ -91,6 +93,11 @@ function removeMinor(index: number): void {
             id="reg-email"
             v-model="model.email"
             type="email"
+            inputmode="email"
+            autocomplete="email"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
             :maxlength="256"
             :class="{ 'ca-invalid': submitted && !emailValid }"
             required
@@ -105,6 +112,8 @@ function removeMinor(index: number): void {
             id="reg-phone"
             v-model="model.phone"
             type="tel"
+            inputmode="tel"
+            autocomplete="tel"
             :maxlength="40"
             :class="{ 'ca-invalid': submitted && !model.phone.trim() }"
             required
@@ -117,6 +126,7 @@ function removeMinor(index: number): void {
             v-model="model.password"
             type="password"
             show-password
+            autocomplete="new-password"
             :maxlength="128"
             :class="{ 'ca-invalid': submitted && passwordTooShort }"
             required
@@ -134,6 +144,7 @@ function removeMinor(index: number): void {
             v-model="model.confirmPassword"
             type="password"
             show-password
+            autocomplete="new-password"
             :maxlength="128"
             :class="{ 'ca-invalid': showMismatch }"
             required
@@ -416,7 +427,7 @@ function removeMinor(index: number): void {
   transform: translateY(-6px);
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .reg__grid {
     grid-template-columns: 1fr;
   }

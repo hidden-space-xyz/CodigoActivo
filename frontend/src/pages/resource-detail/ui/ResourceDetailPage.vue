@@ -85,23 +85,23 @@ watchEffect(() => {
 
 <style scoped>
 .detail-back {
-  padding: 36px 24px 0;
+  padding: 36px var(--ca-gutter) 0;
 }
 
 .detail-state {
-  padding: 40px 24px;
+  padding: 40px var(--ca-gutter);
   color: var(--ca-text-dim);
   font-family: var(--ca-font-mono);
 }
 
 .detail {
-  padding: 24px 24px 80px;
+  padding: 24px var(--ca-gutter) 80px;
 }
 
 .detail__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 42px;
+  font-size: clamp(26px, 5.6vw, 42px);
   line-height: 1.08;
   letter-spacing: -0.03em;
   color: var(--ca-text-bright);

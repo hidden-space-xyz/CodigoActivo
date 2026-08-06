@@ -19,6 +19,7 @@ import AppHeader from './AppHeader.vue'
 .layout {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   color: var(--ca-text);

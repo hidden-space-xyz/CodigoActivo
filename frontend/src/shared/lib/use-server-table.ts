@@ -2,12 +2,15 @@ import { computed, ref, watch } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 
 import { toDateOnly } from './format'
+import { useMediaQuery } from './use-theme'
 
 export type ServerTableFieldType = 'text' | 'number' | 'dateRange'
 export type ServerTableSortOrder = 'ascending' | 'descending'
 
 const ROWS_PER_PAGE_OPTIONS = [25, 50, 100]
 const PAGINATION_LAYOUT = 'total, sizes, prev, pager, next'
+const PAGINATION_LAYOUT_NARROW = 'prev, pager, next'
+const NARROW_QUERY = '(max-width: 640px)'
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 export interface ServerTableColumn {
@@ -108,6 +111,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
   const sortOrder = ref<number>(options.defaultSort?.order ?? 1)
   const filters = ref<Record<string, ServerTableFilterState>>(initialFilters(columns))
   const extra = computed<Record<string, unknown>>(() => options.extraParams?.() ?? {})
+  const narrow = useMediaQuery(NARROW_QUERY)
 
   watch(extra, () => {
     first.value = 0
@@ -183,6 +187,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     rowKey: 'id',
     stripe: true,
     defaultSort: defaultSort.value,
+    scrollbarAlwaysOn: narrow.value,
   }))
 
   const paginationProps = computed(() => ({
@@ -190,7 +195,8 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     pageSize: rows.value,
     total: page.value.total,
     pageSizes: ROWS_PER_PAGE_OPTIONS,
-    layout: PAGINATION_LAYOUT,
+    layout: narrow.value ? PAGINATION_LAYOUT_NARROW : PAGINATION_LAYOUT,
+    pagerCount: narrow.value ? 5 : 7,
     background: true,
   }))
 
@@ -237,6 +243,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     total: computed(() => page.value.total),
     loading: tableQuery.isFetching,
     isError: tableQuery.isError,
+    isNarrow: narrow,
     first,
     rows,
     sortField,

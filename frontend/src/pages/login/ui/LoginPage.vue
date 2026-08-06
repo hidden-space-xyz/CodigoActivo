@@ -20,7 +20,15 @@ const { form, submit, isSubmitting, isError } = useLogin()
             <label class="login-label" for="login-identifier">{{
               $t('pages.login.identifierLabel')
             }}</label>
-            <el-input id="login-identifier" v-model="form.identifier" required />
+            <el-input
+              id="login-identifier"
+              v-model="form.identifier"
+              autocomplete="username"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              required
+            />
           </div>
           <div class="login-field">
             <label class="login-label" for="login-password">{{ $t('common.password') }}</label>
@@ -29,6 +37,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
               v-model="form.password"
               type="password"
               show-password
+              autocomplete="current-password"
               required
             />
           </div>
@@ -67,7 +76,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
 }
 
 .login-body {
-  padding: 24px 24px 80px;
+  padding: 24px var(--ca-gutter) 80px;
 }
 
 .login-card {

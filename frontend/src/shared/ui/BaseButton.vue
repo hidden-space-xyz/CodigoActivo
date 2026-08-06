@@ -108,7 +108,9 @@ const bindings = computed(() => {
 }
 
 .base-button--link {
-  padding: 0;
+  min-height: var(--ca-tap);
+  padding: 12px 6px;
+  margin: -12px -6px;
   border: none;
   background: transparent;
   color: var(--ca-text-muted);

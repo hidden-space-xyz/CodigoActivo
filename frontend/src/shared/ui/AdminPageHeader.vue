@@ -40,6 +40,7 @@ defineProps<{ title: string; subtitle?: string }>()
 
 .page-header__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 </style>

@@ -152,7 +152,7 @@ function confirmDelete(partner: PartnerResponse): void {
         </template>
         <template #default="{ row }">{{ formatDate(row.fromDate) }}</template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="130">
+      <el-table-column :label="$t('common.actions')" width="130" fixed="right">
         <template #default="{ row }">
           <div class="row-actions">
             <Button

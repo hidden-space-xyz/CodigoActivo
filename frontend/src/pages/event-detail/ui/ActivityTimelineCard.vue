@@ -347,4 +347,22 @@ function onSignup(): void {
   font-size: 13px;
   color: var(--ca-text-muted);
 }
+@media (pointer: coarse) {
+  .act__member-remove {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .act__actions :deep(.el-button) {
+    flex: 1 1 auto;
+  }
+
+  .act__role-select {
+    min-width: 0;
+    width: 100%;
+  }
+}
 </style>

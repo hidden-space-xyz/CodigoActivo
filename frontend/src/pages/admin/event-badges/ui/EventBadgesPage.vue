@@ -120,6 +120,9 @@ function visibleActivities(badge: EventBadgeResponse): string[] {
 function hiddenActivityCount(badge: EventBadgeResponse): number {
   return Math.max(0, (badge.activities?.length ?? 0) - MAX_ACTIVITY_CHIPS)
 }
+function printSheets(): void {
+  window.print()
+}
 </script>
 
 <template>
@@ -128,6 +131,10 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
       <RouterLink :to="{ name: 'admin-event-detail', params: { eventId } }" class="back">
         {{ $t('pages.admin.eventBadges.back') }}
       </RouterLink>
+      <button type="button" class="print-btn" @click="printSheets">
+        <AppIcon name="print" />
+        <span>{{ $t('pages.admin.eventBadges.print') }}</span>
+      </button>
     </div>
 
     <DataState
@@ -478,6 +485,46 @@ function hiddenActivityCount(badge: EventBadgeResponse): number {
   .sheet:last-child {
     break-after: auto;
     page-break-after: auto;
+  }
+}
+
+.back-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ca-tap);
+  margin-bottom: 14px;
+  padding: 0 16px;
+  border: 1px solid var(--ca-border-strong);
+  border-radius: 10px;
+  background: var(--ca-surface);
+  color: var(--ca-text);
+  font-family: var(--ca-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.print-btn:hover {
+  border-color: var(--ca-orange);
+}
+
+@media screen and (max-width: 1024px) {
+  .badges {
+    padding: 16px var(--ca-gutter) 40px;
+    overflow-x: auto;
+  }
+
+  .back-row {
+    max-width: none;
   }
 }
 </style>

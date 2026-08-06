@@ -75,8 +75,7 @@ function onSubmit(): void {
           v-model="form.mostLiked"
           type="textarea"
           :maxlength="MAX_ANSWER_LENGTH"
-          :rows="3"
-          :autosize="{ minRows: 3 }"
+          :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </div>
 
@@ -87,8 +86,7 @@ function onSubmit(): void {
           v-model="form.leastLiked"
           type="textarea"
           :maxlength="MAX_ANSWER_LENGTH"
-          :rows="3"
-          :autosize="{ minRows: 3 }"
+          :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </div>
 
@@ -101,8 +99,7 @@ function onSubmit(): void {
           v-model="form.suggestions"
           type="textarea"
           :maxlength="MAX_ANSWER_LENGTH"
-          :rows="3"
-          :autosize="{ minRows: 3 }"
+          :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </div>
 
@@ -128,8 +125,18 @@ function onSubmit(): void {
 .acc-rating__stars {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
+}
+
+.acc-rating__stars :deep(.el-rate) {
+  --el-rate-icon-size: 28px;
+  --el-rate-icon-margin: 10px;
+  height: var(--ca-tap);
+}
+
+.acc-rating__stars :deep(.base-button--link) {
+  min-height: var(--ca-tap);
 }
 
 .acc-form__field {

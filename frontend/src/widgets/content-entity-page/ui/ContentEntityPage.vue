@@ -213,7 +213,7 @@ function confirmDelete(item: ContentItem): void {
         </template>
         <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="170">
+      <el-table-column :label="$t('common.actions')" width="170" fixed="right">
         <template #default="{ row }">
           <div class="row-actions">
             <Button
@@ -376,5 +376,12 @@ function confirmDelete(item: ContentItem): void {
 .form__error {
   color: var(--ca-danger-ink);
   font-size: 12.5px;
+}
+
+@media (max-width: 640px) {
+  .form {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 </style>

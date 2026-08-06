@@ -1,9 +1,22 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+
 import { useAuth } from '@/features/auth'
 import { AppIcon, ThemeToggle } from '@/shared/ui'
 import { ADMIN_NAV } from '@/shared/config'
 
+const route = useRoute()
 const { displayName, logout } = useAuth()
+
+const menuOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    menuOpen.value = false
+  },
+)
 </script>
 
 <template>
@@ -28,6 +41,15 @@ const { displayName, logout } = useAuth()
 
     <div class="admin__body">
       <header class="admin__topbar">
+        <button
+          type="button"
+          class="admin__burger"
+          :aria-label="$t('layout.openMenu')"
+          :aria-expanded="menuOpen"
+          @click="menuOpen = true"
+        >
+          <AppIcon name="bars" />
+        </button>
         <RouterLink :to="{ name: 'home' }" class="admin__home">{{
           $t('layout.adminGoToSite')
         }}</RouterLink>
@@ -49,6 +71,37 @@ const { displayName, logout } = useAuth()
         <slot />
       </main>
     </div>
+
+    <el-drawer
+      v-model="menuOpen"
+      append-to-body
+      direction="ltr"
+      size="min(288px, 84vw)"
+      :title="$t('layout.adminMenuTitle')"
+      :aria-label="$t('layout.adminMenuTitle')"
+    >
+      <nav class="admin__nav">
+        <RouterLink
+          v-for="item in ADMIN_NAV"
+          :key="item.routeName"
+          :to="{ name: item.routeName }"
+          class="admin__link admin__link--drawer"
+          active-class="admin__link--active"
+          @click="menuOpen = false"
+        >
+          <AppIcon :name="item.icon" />
+          <span>{{ $t(item.labelKey) }}</span>
+        </RouterLink>
+        <RouterLink
+          :to="{ name: 'home' }"
+          class="admin__link admin__link--drawer"
+          @click="menuOpen = false"
+        >
+          <AppIcon name="home" />
+          <span>{{ $t('layout.adminGoToSite') }}</span>
+        </RouterLink>
+      </nav>
+    </el-drawer>
   </div>
 </template>
 
@@ -57,6 +110,7 @@ const { displayName, logout } = useAuth()
   display: grid;
   grid-template-columns: 248px 1fr;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--ca-bg);
   color: var(--ca-text);
 }
@@ -71,6 +125,7 @@ const { displayName, logout } = useAuth()
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
 }
 
 .admin__brand {
@@ -104,6 +159,11 @@ const { displayName, logout } = useAuth()
     color 0.15s ease;
 }
 
+.admin__link--drawer {
+  min-height: var(--ca-tap);
+  font-size: 16px;
+}
+
 .admin__link .app-icon {
   font-size: 16px;
 }
@@ -129,6 +189,7 @@ const { displayName, logout } = useAuth()
 .admin__topbar {
   display: flex;
   align-items: center;
+  gap: 12px;
   justify-content: space-between;
   padding: 14px 28px;
   border-bottom: 1px solid var(--ca-border);
@@ -138,6 +199,23 @@ const { displayName, logout } = useAuth()
   position: sticky;
   top: 0;
   z-index: 20;
+}
+
+.admin__burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--ca-tap);
+  height: var(--ca-tap);
+  margin-left: -10px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ca-text);
+  font-size: 22px;
+  cursor: pointer;
 }
 
 .admin__home {
@@ -154,14 +232,19 @@ const { displayName, logout } = useAuth()
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
 }
 
 .admin__username {
   font-weight: 600;
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin__logout {
+  flex: none;
   background: transparent;
   border: 1px solid var(--ca-border-strong);
   color: var(--ca-text-muted);
@@ -182,13 +265,41 @@ const { displayName, logout } = useAuth()
   min-width: 0;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
   .admin {
     grid-template-columns: 1fr;
   }
+
   .admin__sidebar {
-    position: static;
-    height: auto;
+    display: none;
+  }
+
+  .admin__burger {
+    display: inline-flex;
+  }
+
+  .admin__topbar {
+    padding: 10px var(--ca-gutter);
+    gap: 8px;
+  }
+
+  .admin__home {
+    display: none;
+  }
+
+  .admin__user {
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  .admin__main {
+    padding: 20px var(--ca-gutter);
+  }
+}
+
+@media (max-width: 640px) {
+  .admin__username {
+    display: none;
   }
 }
 </style>

@@ -18,12 +18,24 @@ body {
   height: 100%;
 }
 
+html {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--ca-bg);
   color: var(--ca-text);
   font-family: var(--ca-font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
 }
 
 #app {
@@ -67,6 +79,14 @@ a {
   }
   50% {
     transform: translateY(-9px);
+  }
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 

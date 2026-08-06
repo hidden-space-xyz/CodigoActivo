@@ -89,7 +89,7 @@ const joinVisible = ref(false)
 
 <style scoped>
 .about-hero {
-  padding: 72px 24px 40px;
+  padding: 72px var(--ca-gutter) 40px;
   position: relative;
   overflow: hidden;
 }
@@ -110,7 +110,7 @@ const joinVisible = ref(false)
 .about-hero__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 48px;
+  font-size: clamp(30px, 6.4vw, 48px);
   line-height: 1.05;
   letter-spacing: -0.03em;
   color: var(--ca-text-bright);
@@ -125,17 +125,17 @@ const joinVisible = ref(false)
 }
 
 .about-values {
-  padding: 32px 24px;
+  padding: 32px var(--ca-gutter);
 }
 
 .about-values__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 18px;
 }
 
 .about-what {
-  padding: 48px 24px;
+  padding: 48px var(--ca-gutter);
 }
 
 .about-what__grid {
@@ -181,7 +181,7 @@ const joinVisible = ref(false)
 }
 
 .about-cta {
-  padding: 32px 24px 72px;
+  padding: 32px var(--ca-gutter) 72px;
 }
 
 .about-cta__card {
@@ -283,7 +283,7 @@ const joinVisible = ref(false)
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
   .about-what__grid {
     grid-template-columns: 1fr;
     gap: 28px;

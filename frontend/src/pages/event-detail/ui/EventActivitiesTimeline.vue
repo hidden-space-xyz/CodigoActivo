@@ -543,7 +543,7 @@ function onUnassign(activity: TimelineActivity): void {
 }
 
 .tl-cards--multi {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 }
 
 .unscheduled {
@@ -665,5 +665,17 @@ function onUnassign(activity: TimelineActivity): void {
 .overlap__q {
   color: var(--ca-text);
   font-weight: 600;
+}
+@media (max-width: 640px) {
+  .household__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .household__role {
+    min-width: 0;
+    width: 100%;
+  }
 }
 </style>

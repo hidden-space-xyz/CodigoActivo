@@ -313,7 +313,7 @@ const groups = computed(() => [
   font-weight: 600;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .acc-history__actions {
     width: 100%;
     justify-content: flex-end;

@@ -67,7 +67,7 @@ const currentYear = new Date().getFullYear()
 .footer {
   border-top: 1px solid var(--ca-border);
   background: var(--ca-bg-deep);
-  padding: 48px 24px 30px;
+  padding: 48px var(--ca-gutter) 30px;
 }
 
 .footer__inner {
@@ -166,10 +166,32 @@ a.footer__link--icon:hover .app-icon {
   font-family: var(--ca-font-mono);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .footer__inner {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+}
+@media (pointer: coarse) {
+  .footer__links {
+    gap: 2px;
+  }
+
+  .footer__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--ca-tap);
+  }
+
+  .footer__social {
+    gap: 6px;
+    margin-top: 0;
+    flex-wrap: wrap;
+  }
+
+  .footer__social-link {
+    min-height: var(--ca-tap);
+    padding-right: 10px;
   }
 }
 </style>
