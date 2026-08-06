@@ -551,7 +551,7 @@ function submitChangeRole(): void {
     <el-dialog
       v-model="roleDialogVisible"
       :title="$t('pages.admin.eventDetail.attendees.changeRole')"
-      width="400px"
+      width="min(92vw, 400px)"
       append-to-body
     >
       <p class="dialog-context">
@@ -599,7 +599,7 @@ function submitChangeRole(): void {
     <el-dialog
       v-model="statusDialogVisible"
       :title="$t('pages.admin.eventDetail.attendees.changeStatus')"
-      width="400px"
+      width="min(92vw, 400px)"
       append-to-body
     >
       <p class="dialog-context">
@@ -770,6 +770,8 @@ function submitChangeRole(): void {
   flex-wrap: wrap;
   font-size: 13.5px;
   color: var(--ca-text-muted);
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .attendee__contact i {
@@ -856,7 +858,7 @@ function submitChangeRole(): void {
   color: var(--ca-danger-ink);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .assignment {
     grid-template-columns: 1fr auto;
     grid-template-rows: auto auto auto;

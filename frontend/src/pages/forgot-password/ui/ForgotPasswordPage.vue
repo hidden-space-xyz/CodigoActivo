@@ -25,6 +25,11 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
               id="forgot-email"
               v-model="form.email"
               type="email"
+              inputmode="email"
+              autocomplete="email"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
               :maxlength="256"
               required
             />
@@ -69,7 +74,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 }
 
 .forgot-body {
-  padding: 24px 24px 80px;
+  padding: 24px var(--ca-gutter) 80px;
 }
 
 .forgot-card {

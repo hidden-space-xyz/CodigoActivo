@@ -81,6 +81,7 @@ defineExpose({ hide })
 }
 
 .column-filter__toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -110,14 +111,16 @@ defineExpose({ hide })
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 240px;
+  min-width: min(240px, calc(100vw - 56px));
+  max-width: calc(100vw - 32px);
 }
 
 .column-filter__panel--wide {
-  min-width: 280px;
+  min-width: min(280px, calc(100vw - 56px));
 }
 
 .column-filter__clear {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -134,5 +137,18 @@ defineExpose({ hide })
 
 .column-filter__clear:hover {
   color: var(--ca-danger-ink);
+}
+
+@media (pointer: coarse) {
+  .column-filter__toggle::after,
+  .column-filter__clear::after {
+    content: '';
+    position: absolute;
+    inset: -9px -3px;
+  }
+
+  .column-filter__panel {
+    gap: 10px;
+  }
 }
 </style>

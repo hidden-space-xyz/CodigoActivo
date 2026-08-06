@@ -491,4 +491,11 @@ onBeforeUnmount(() => editor.value?.destroy())
   color: var(--ca-danger-ink);
   font-size: 12.5px;
 }
+
+@media (pointer: coarse) {
+  .rt__btn {
+    min-width: 38px;
+    height: 38px;
+  }
+}
 </style>

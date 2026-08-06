@@ -15,7 +15,7 @@ defineProps<{ events: readonly UpcomingEvent[] }>()
 <style scoped>
 .board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
   gap: 22px;
 }
 </style>

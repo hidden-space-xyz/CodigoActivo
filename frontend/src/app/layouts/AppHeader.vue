@@ -1,12 +1,22 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useAuth } from '@/features/auth'
 import { PRIMARY_NAV } from '@/shared/config'
-import { BaseButton, BrandLogo, ThemeToggle } from '@/shared/ui'
+import { AppIcon, BaseButton, BrandLogo, ThemeToggle } from '@/shared/ui'
 
 const route = useRoute()
 const { isAuthenticated, isAdmin, displayName, logout } = useAuth()
+
+const menuOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    menuOpen.value = false
+  },
+)
 
 function isActive(routeName: string): boolean {
   if (route.name === routeName) return true
@@ -61,7 +71,79 @@ function isActive(routeName: string): boolean {
           </BaseButton>
         </template>
       </nav>
+
+      <button
+        type="button"
+        class="header__burger"
+        :aria-label="$t('layout.openMenu')"
+        :aria-expanded="menuOpen"
+        @click="menuOpen = true"
+      >
+        <AppIcon name="bars" />
+      </button>
     </div>
+
+    <el-drawer
+      v-model="menuOpen"
+      append-to-body
+      direction="rtl"
+      size="min(320px, 86vw)"
+      class="header__drawer"
+      :title="$t('layout.menuTitle')"
+      :aria-label="$t('layout.menuTitle')"
+    >
+      <nav class="menu" :aria-label="$t('layout.navAria')">
+        <p v-if="isAuthenticated" class="menu__greeting">
+          {{ $t('common.greeting', { name: displayName }) }}
+        </p>
+
+        <RouterLink
+          v-for="item in PRIMARY_NAV"
+          :key="item.routeName"
+          :to="{ name: item.routeName }"
+          class="menu__link"
+          :class="{ 'menu__link--active': isActive(item.routeName) }"
+          @click="menuOpen = false"
+        >
+          {{ $t(item.labelKey) }}
+        </RouterLink>
+
+        <template v-if="isAuthenticated">
+          <RouterLink
+            v-if="isAdmin"
+            :to="{ name: 'admin-dashboard' }"
+            class="menu__link"
+            @click="menuOpen = false"
+          >
+            {{ $t('common.admin') }}
+          </RouterLink>
+          <RouterLink
+            :to="{ name: 'account' }"
+            class="menu__link"
+            :class="{ 'menu__link--active': isActive('account') }"
+            @click="menuOpen = false"
+          >
+            {{ $t('common.myAccount') }}
+          </RouterLink>
+        </template>
+
+        <div class="menu__actions">
+          <template v-if="isAuthenticated">
+            <BaseButton variant="ghost" block @click="logout()">
+              {{ $t('common.logout') }}
+            </BaseButton>
+          </template>
+          <template v-else>
+            <BaseButton :to="{ name: 'register' }" variant="primary" block>
+              {{ $t('common.register') }}
+            </BaseButton>
+            <BaseButton :to="{ name: 'login' }" variant="ghost" block>
+              {{ $t('common.login') }}
+            </BaseButton>
+          </template>
+        </div>
+      </nav>
+    </el-drawer>
   </header>
 </template>
 
@@ -80,13 +162,14 @@ function isActive(routeName: string): boolean {
 .header__inner {
   max-width: var(--ca-container);
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 14px var(--ca-gutter);
   display: flex;
   align-items: center;
   gap: 24px;
 }
 
 .header__brand {
+  min-width: 0;
   text-decoration: none;
   transition: transform 0.2s ease;
 }
@@ -103,6 +186,27 @@ function isActive(routeName: string): boolean {
   display: flex;
   align-items: center;
   gap: 22px;
+}
+
+.header__burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--ca-tap);
+  height: var(--ca-tap);
+  margin-right: -10px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ca-text);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.header__burger:hover {
+  color: var(--ca-text-bright);
 }
 
 .header__link {
@@ -165,6 +269,46 @@ function isActive(routeName: string): boolean {
   white-space: nowrap;
 }
 
+.menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu__greeting {
+  margin-bottom: 6px;
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--ca-border);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ca-text-muted);
+}
+
+.menu__link {
+  display: flex;
+  align-items: center;
+  min-height: var(--ca-tap);
+  padding: 10px 4px;
+  border-radius: 10px;
+  color: var(--ca-text);
+  text-decoration: none;
+  font-family: var(--ca-font-display);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.menu__link--active {
+  color: var(--ca-orange-ink);
+}
+
+.menu__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ca-border);
+}
+
 @keyframes ca-header-in {
   from {
     opacity: 0;
@@ -187,14 +331,19 @@ function isActive(routeName: string): boolean {
   }
 }
 
-@media (max-width: 720px) {
-  .header__nav {
-    gap: 14px;
+@media (max-width: 1024px) {
+  .header__inner {
+    gap: 12px;
   }
-  .header__link {
-    display: none;
+
+  .header__burger {
+    display: inline-flex;
   }
-  .header__greeting {
+
+  .header__link,
+  .header__greeting,
+  .header__login,
+  .header__cta {
     display: none;
   }
 }

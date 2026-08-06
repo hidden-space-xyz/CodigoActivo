@@ -19,7 +19,7 @@ defineProps<{ eyebrow: string; title: string }>()
 .page-head {
   position: relative;
   overflow: hidden;
-  padding: 64px 24px 16px;
+  padding: 64px var(--ca-gutter) 16px;
 }
 
 .page-head__glow {
@@ -35,7 +35,7 @@ defineProps<{ eyebrow: string; title: string }>()
 .page-head__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 46px;
+  font-size: clamp(28px, 6vw, 46px);
   letter-spacing: -0.03em;
   color: var(--ca-text-bright);
 }

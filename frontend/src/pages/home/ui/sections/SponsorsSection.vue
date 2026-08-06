@@ -43,7 +43,14 @@ function distanceOf(offset: number): number {
     <div class="ca-container">
       <div class="sponsors__heading">{{ $t('pages.home.sponsors.heading') }}</div>
 
-      <div class="sponsors__carousel" @mouseenter="pause" @mouseleave="resume">
+      <div
+        class="sponsors__carousel"
+        @mouseenter="pause"
+        @mouseleave="resume"
+        @touchstart.passive="pause"
+        @touchend.passive="resume"
+        @touchcancel.passive="resume"
+      >
         <button
           type="button"
           class="sponsors__arrow"
@@ -103,7 +110,7 @@ function distanceOf(offset: number): number {
 
 <style scoped>
 .sponsors {
-  padding: 24px 24px 72px;
+  padding: 24px var(--ca-gutter) 72px;
 }
 
 .sponsors__heading {
@@ -263,10 +270,19 @@ function distanceOf(offset: number): number {
   }
   .sponsor__name {
     font-size: 15px;
+    white-space: normal;
+    text-align: center;
   }
   .sponsor--d0 .sponsor__name {
     font-size: 17px;
     transform: translateY(7px);
+  }
+}
+
+@media (pointer: coarse) {
+  .sponsors__arrow {
+    width: var(--ca-tap);
+    height: var(--ca-tap);
   }
 }
 </style>

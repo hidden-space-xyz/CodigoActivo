@@ -52,7 +52,7 @@ const stats = [
 .hero {
   position: relative;
   overflow: hidden;
-  padding: 84px 24px 64px;
+  padding: 84px var(--ca-gutter) 64px;
 }
 
 .hero__grid {
@@ -103,7 +103,7 @@ const stats = [
 .hero__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 60px;
+  font-size: clamp(30px, 7.2vw, 60px);
   line-height: 1.02;
   letter-spacing: -0.03em;
   color: var(--ca-text-bright);
@@ -141,13 +141,10 @@ const stats = [
   color: var(--ca-text-faint);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
   .hero__grid {
     grid-template-columns: 1fr;
     gap: 36px;
-  }
-  .hero__title {
-    font-size: 44px;
   }
   .hero__brand {
     min-height: 0;

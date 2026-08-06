@@ -268,7 +268,7 @@ const view = computed(() => {
   grid-column: span 12;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .g-4 {
     grid-column: span 6;
   }
@@ -279,7 +279,7 @@ const view = computed(() => {
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 640px) {
   .g-4 {
     grid-column: span 12;
   }

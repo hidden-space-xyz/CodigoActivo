@@ -107,7 +107,7 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
 
 <style scoped>
 .events-head {
-  padding: 64px 24px 16px;
+  padding: 64px var(--ca-gutter) 16px;
 }
 
 .events-head__title {
@@ -127,7 +127,7 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
 }
 
 .events-section {
-  padding: 32px 24px;
+  padding: 32px var(--ca-gutter);
 }
 
 .events-section--past {
@@ -152,7 +152,7 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
 
 .events-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
   gap: 22px;
 }
 

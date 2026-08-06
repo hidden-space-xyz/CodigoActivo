@@ -200,7 +200,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
             </template>
           </el-table-column>
-          <el-table-column prop="title" sortable="custom">
+          <el-table-column prop="title" min-width="200" sortable="custom">
             <template #header>
               <ColumnSearch
                 v-model="activities.table.columnFilter('title').value"
@@ -210,7 +210,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               />
             </template>
           </el-table-column>
-          <el-table-column prop="activityStartsAt" sortable="custom">
+          <el-table-column prop="activityStartsAt" min-width="210" sortable="custom">
             <template #header>
               <ColumnFilterDate
                 v-model="activities.table.columnFilter('activityDate').value"
@@ -222,7 +222,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               {{ formatDateTimeRange(row.activityStartsAt, row.activityEndsAt) }}
             </template>
           </el-table-column>
-          <el-table-column prop="modalityName" sortable="custom">
+          <el-table-column prop="modalityName" min-width="180" sortable="custom">
             <template #header>
               <ColumnFilterSelect
                 :model-value="activities.modalityTypeId.value"
@@ -238,7 +238,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               </div>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('common.actions')" width="120">
+          <el-table-column :label="$t('common.actions')" width="120" fixed="right">
             <template #default="{ row }">
               <div class="row-actions">
                 <Button
@@ -297,8 +297,10 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 <style scoped>
 .back {
-  display: inline-block;
-  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ca-tap);
+  margin-bottom: 4px;
   color: var(--ca-text-muted);
   text-decoration: none;
   font-size: 14px;
@@ -310,7 +312,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 12px;
   margin-bottom: 26px;
 }

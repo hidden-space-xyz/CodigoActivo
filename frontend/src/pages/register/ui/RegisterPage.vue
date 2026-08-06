@@ -79,6 +79,6 @@ const {
 }
 
 .register-body {
-  padding: 24px 24px 80px;
+  padding: 24px var(--ca-gutter) 80px;
 }
 </style>

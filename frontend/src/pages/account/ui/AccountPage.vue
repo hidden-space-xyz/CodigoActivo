@@ -30,7 +30,7 @@ import { SectionEyebrow } from '@/shared/ui'
 .account-head {
   position: relative;
   overflow: hidden;
-  padding: 64px 24px 16px;
+  padding: 64px var(--ca-gutter) 16px;
 }
 
 .account-head__glow {
@@ -60,7 +60,7 @@ import { SectionEyebrow } from '@/shared/ui'
 }
 
 .account-body {
-  padding: 24px 24px 80px;
+  padding: 24px var(--ca-gutter) 80px;
 }
 
 .account-body__stack {

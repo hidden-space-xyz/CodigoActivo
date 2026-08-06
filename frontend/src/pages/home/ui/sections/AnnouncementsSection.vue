@@ -39,7 +39,7 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
 
 <style scoped>
 .home-section {
-  padding: 40px 24px 8px;
+  padding: 40px var(--ca-gutter) 8px;
 }
 
 .home-section__head {
@@ -71,7 +71,13 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
   font-family: var(--ca-font-mono);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
+  .home-section__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
   .home-section__grid {
     grid-template-columns: 1fr;
   }

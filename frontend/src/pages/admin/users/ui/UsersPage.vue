@@ -452,7 +452,7 @@ function confirmDelete(user: UserResponse): void {
     <el-dialog
       v-model="typeDialogVisible"
       :title="$t('pages.admin.users.typeDialog.header')"
-      width="420px"
+      width="min(92vw, 420px)"
     >
       <div class="form__field">
         <label>{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>

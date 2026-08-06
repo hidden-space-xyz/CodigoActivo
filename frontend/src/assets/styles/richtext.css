@@ -2,6 +2,11 @@
   color: var(--ca-text);
   font-size: 16px;
   line-height: 1.7;
+  overflow-wrap: break-word;
+}
+
+.rich-text :where(a, code) {
+  overflow-wrap: anywhere;
 }
 
 .rich-text :where(p) {
@@ -178,4 +183,25 @@
 
 .rich-text > :where(:last-child) {
   margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .rich-text:not(.rt__content) :where(table) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .rich-text :where(h1) {
+    font-size: 26px;
+  }
+
+  .rich-text :where(h2) {
+    font-size: 22px;
+  }
+
+  .rich-text :where(h3) {
+    font-size: 18px;
+  }
 }

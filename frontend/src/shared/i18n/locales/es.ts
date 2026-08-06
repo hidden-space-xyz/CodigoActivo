@@ -77,6 +77,10 @@ export const es = {
     footerContact: 'Contacto',
     footerLegal: "© {year} Código Activo — programación para tod{'@'}s",
     adminGoToSite: '← Ir al sitio',
+    openMenu: 'Abrir menú',
+    closeMenu: 'Cerrar menú',
+    menuTitle: 'Menú',
+    adminMenuTitle: 'Administración',
   },
 
   seo: {
@@ -433,6 +437,7 @@ export const es = {
         back: '← Volver al evento',
         emptyText:
           'Este evento no tiene asignaciones confirmadas, así que no hay etiquetas que imprimir.',
+        print: 'Imprimir',
         moreActivities: '+{n} más',
         guardianAria: 'Responsable',
       },
@@ -440,6 +445,7 @@ export const es = {
         back: '← Volver al evento',
         emptyText:
           'Este evento no tiene asignaciones confirmadas, así que no hay listados que imprimir.',
+        print: 'Imprimir',
         sheetHeader: '{title} · Listado de asistencia',
         continued: ' (continuación)',
         colAttends: 'Asiste',

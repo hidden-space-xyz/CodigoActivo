@@ -70,6 +70,10 @@ function submitVerify(): void {
         <el-input
           id="reg-otp"
           v-model="otp"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
           :placeholder="$t('features.register.success.otpPlaceholder')"
           :class="{ 'ca-invalid': verifyError !== null }"
         />

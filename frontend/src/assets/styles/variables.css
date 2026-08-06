@@ -71,6 +71,8 @@
 
   --ca-container: 1200px;
   --ca-container-narrow: 1100px;
+  --ca-gutter: 24px;
+  --ca-tap: 44px;
 }
 
 .ca-dark {
@@ -131,4 +133,10 @@
   --ca-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ca-shadow-md: 0 8px 28px rgba(0, 0, 0, 0.42);
   --ca-shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --ca-gutter: 16px;
+  }
 }

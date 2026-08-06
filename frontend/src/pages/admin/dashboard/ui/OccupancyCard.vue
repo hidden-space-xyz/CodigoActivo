@@ -246,4 +246,16 @@ function percent(confirmed?: number, desired?: number): number | null {
 .occupancy__activity-plazas {
   color: var(--ca-text-dim);
 }
+
+@media (max-width: 640px) {
+  .occupancy__name {
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .occupancy__activity-name {
+    white-space: normal;
+    overflow: visible;
+  }
+}
 </style>

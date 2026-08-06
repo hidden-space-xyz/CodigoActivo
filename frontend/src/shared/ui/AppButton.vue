@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, h, useAttrs, type Component } from 'vue'
 
+import { useMediaQuery } from '@/shared/lib'
+
 import AppIcon from './AppIcon.vue'
 
 defineOptions({ inheritAttrs: false })
@@ -29,13 +31,20 @@ const buttonAttrs = computed<Record<string, unknown>>(() => {
 const tooltipText = computed(
   () => props.tooltip ?? (attrs['aria-label'] as string | undefined) ?? label.value,
 )
+
+const coarsePointer = useMediaQuery('(pointer: coarse)')
 </script>
 
 <template>
-  <el-tooltip placement="top" :content="tooltipText" :disabled="!tooltipText">
+  <el-tooltip placement="top" :content="tooltipText" :disabled="!tooltipText || coarsePointer">
     <el-button v-if="$slots.default || label" v-bind="buttonAttrs" :icon="buttonIcon">
       <slot>{{ label }}</slot>
     </el-button>
-    <el-button v-else v-bind="buttonAttrs" :icon="buttonIcon" />
+    <el-button
+      v-else
+      v-bind="buttonAttrs"
+      :icon="buttonIcon"
+      :aria-label="tooltipText || undefined"
+    />
   </el-tooltip>
 </template>

@@ -98,7 +98,7 @@ const posterUrl = computed(() => fileContentUrl(props.thumbnailId))
 .featured__title {
   font-family: var(--ca-font-display);
   font-weight: 700;
-  font-size: 40px;
+  font-size: clamp(24px, 5.2vw, 40px);
   line-height: 1.05;
   letter-spacing: -0.02em;
   color: var(--ca-text-bright);
@@ -163,7 +163,7 @@ const posterUrl = computed(() => fileContentUrl(props.thumbnailId))
   display: block;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
   .featured__grid {
     grid-template-columns: 1fr;
   }

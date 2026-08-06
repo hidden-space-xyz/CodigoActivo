@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AppIcon } from '@/shared/ui'
 
-import { formatDate } from '@/shared/lib'
+import { formatDate, useMediaQuery } from '@/shared/lib'
 import { RANGE_OPTIONS, type RangePreset } from '../model/useDashboardRange'
 
 const { t } = useI18n()
@@ -21,6 +21,7 @@ const emit = defineEmits<{
 const visible = ref(false)
 const panelEl = ref<HTMLElement>()
 const draft = ref<(Date | null)[] | null>(props.customRange)
+const narrow = useMediaQuery('(max-width: 640px)')
 
 const customLabel = computed(() => {
   const range = props.customRange
@@ -87,8 +88,9 @@ function onSelect(value: unknown): void {
         <el-date-picker
           :model-value="pickerValue"
           type="daterange"
-          unlink-panels
-          :editable="false"
+          :single-panel="narrow"
+          :unlink-panels="!narrow"
+          :editable="narrow"
           :start-placeholder="$t('table.rangeFrom')"
           :end-placeholder="$t('table.rangeTo')"
           :append-to="panelEl"

@@ -63,6 +63,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               v-model="form.password"
               type="password"
               show-password
+              autocomplete="new-password"
               :maxlength="128"
               required
             />
@@ -76,6 +77,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               v-model="form.confirmPassword"
               type="password"
               show-password
+              autocomplete="new-password"
               :maxlength="128"
               required
             />
@@ -101,7 +103,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
 
 <style scoped>
 .reset-body {
-  padding: 24px 24px 80px;
+  padding: 24px var(--ca-gutter) 80px;
 }
 
 .reset-card {

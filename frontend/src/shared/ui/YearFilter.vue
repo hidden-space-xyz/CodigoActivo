@@ -62,4 +62,11 @@ const emit = defineEmits<{ select: [year: string] }>()
   background: var(--ca-text-bright);
   border-color: var(--ca-text-bright);
 }
+
+@media (pointer: coarse) {
+  .year-filter__pill {
+    min-height: var(--ca-tap);
+    padding: 8px 18px;
+  }
+}
 </style>

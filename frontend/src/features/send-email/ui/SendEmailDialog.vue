@@ -112,7 +112,7 @@ function send(): void {
   <el-dialog
     :model-value="visible"
     :title="$t('features.sendEmail.header')"
-    width="560px"
+    width="min(92vw, 560px)"
     :show-close="!sending"
     :close-on-press-escape="!sending"
     :close-on-click-modal="false"
@@ -142,8 +142,7 @@ function send(): void {
           :maxlength="BODY_MAX_LENGTH"
           :class="{ 'ca-invalid': submitted && bodyInvalid }"
           :placeholder="$t('features.sendEmail.bodyPlaceholder')"
-          :rows="9"
-          :autosize="{ minRows: 9 }"
+          :autosize="{ minRows: 6, maxRows: 12 }"
         />
         <small v-if="submitted && bodyInvalid" class="form__error">
           {{ $t('features.sendEmail.bodyRequired') }}

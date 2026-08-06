@@ -24,6 +24,16 @@ const tagStyle = computed(() => {
 </script>
 
 <template>
-  <el-tag v-if="tagStyle" :style="tagStyle">{{ value }}</el-tag>
-  <el-tag v-else type="info">{{ value }}</el-tag>
+  <el-tag v-if="tagStyle" class="color-tag" :style="tagStyle">{{ value }}</el-tag>
+  <el-tag v-else class="color-tag" type="info">{{ value }}</el-tag>
 </template>
+
+<style scoped>
+.color-tag {
+  max-width: 100%;
+  height: auto;
+  min-height: 24px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+</style>

@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { DataState } from '@/shared/ui'
+import { AppIcon, DataState } from '@/shared/ui'
 
 import { useEventRoster } from '@/features/manage-events'
 import type {
@@ -165,6 +165,9 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
   const name = [guardian.firstName, guardian.lastName].filter(Boolean).join(' ')
   return [name, guardian.phone ?? '', guardian.email ?? ''].filter(Boolean)
 }
+function printSheets(): void {
+  window.print()
+}
 </script>
 
 <template>
@@ -173,6 +176,10 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
       <RouterLink :to="{ name: 'admin-event-detail', params: { eventId } }" class="back">
         {{ $t('pages.admin.eventRoster.back') }}
       </RouterLink>
+      <button type="button" class="print-btn" @click="printSheets">
+        <AppIcon name="print" />
+        <span>{{ $t('pages.admin.eventRoster.print') }}</span>
+      </button>
     </div>
 
     <DataState
@@ -494,6 +501,46 @@ function guardianContactLines(participant: EventRosterParticipantResponse): stri
   .sheet:last-child {
     break-after: auto;
     page-break-after: auto;
+  }
+}
+
+.back-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ca-tap);
+  margin-bottom: 14px;
+  padding: 0 16px;
+  border: 1px solid var(--ca-border-strong);
+  border-radius: 10px;
+  background: var(--ca-surface);
+  color: var(--ca-text);
+  font-family: var(--ca-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.print-btn:hover {
+  border-color: var(--ca-orange);
+}
+
+@media screen and (max-width: 1024px) {
+  .roster {
+    padding: 16px var(--ca-gutter) 40px;
+    overflow-x: auto;
+  }
+
+  .back-row {
+    max-width: none;
   }
 }
 </style>
