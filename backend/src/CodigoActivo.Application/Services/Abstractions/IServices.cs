@@ -271,31 +271,6 @@ public interface IAnnouncementService
     public Task<Result<AnnouncementResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 }
 
-public interface IPartnerService
-{
-    public Task<PagedResult<PartnerResponse>> ListAsync(
-        PartnerListQuery query,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<PartnerResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
-
-    public Task<Result<PartnerResponse>> CreateAsync(
-        CreatePartnerRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<PartnerResponse>> UpdateAsync(
-        Guid id,
-        UpdatePartnerRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
-}
-
 public interface IFileService
 {
     public Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);

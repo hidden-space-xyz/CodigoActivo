@@ -1,6 +1,8 @@
 using System.Globalization;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Partners.Commands;
+using CodigoActivo.Application.Partners.Queries;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -43,6 +45,7 @@ public static class DependencyInjection
         AddEmail(services, configuration);
         AddCaching(services);
         AddApplicationServices(services);
+        AddApplicationHandlers(services);
         return services;
     }
 
@@ -425,11 +428,24 @@ public static class DependencyInjection
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IAnnouncementService, AnnouncementService>();
-        services.AddScoped<IPartnerService, PartnerService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISitemapService, SitemapService>();
         services.AddScoped<IEmailService, EmailService>();
+    }
+
+    private static void AddApplicationHandlers(IServiceCollection services)
+    {
+        AddPartnerHandlers(services);
+    }
+
+    private static void AddPartnerHandlers(IServiceCollection services)
+    {
+        services.AddScoped<ListPartnersQueryHandler>();
+        services.AddScoped<GetPartnerByIdQueryHandler>();
+        services.AddScoped<CreatePartnerCommandHandler>();
+        services.AddScoped<UpdatePartnerCommandHandler>();
+        services.AddScoped<DeletePartnerCommandHandler>();
     }
 }
