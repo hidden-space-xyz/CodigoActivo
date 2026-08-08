@@ -113,7 +113,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
   the Localization section of `backend/CLAUDE.md`, which also explains why a second backend language does not
   work in the production container as it ships. `AppStringsTests` must stay green.
 - Type colocation is intentional (all repository interfaces in one file, request+response DTOs per aggregate
-  in one `*Dtos.cs`); private fields are `camelCase` with no leading underscore.
+  in one `*Dtos.cs`, and one use case per file: the `Command`/`Query` record colocated with its sealed
+  `Handler`); private fields are `camelCase` with no leading underscore.
 - Formatting is CSharpier; Meziantou.Analyzer + SonarAnalyzer + the SDK's CA/IDE rules run in-build and report
   as warnings. The configuration is shared byte-for-byte with the BackupZCrypt repository
   (`backend/Directory.Build.Analyzers.props`, `backend/Directory.Build.targets`, `backend/SonarLint.xml`, and lines
@@ -141,7 +142,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
   database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
   `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse
   that instead of spawning a container. Test method names follow `MethodUnderTest_Scenario_ExpectedBehavior`
-  (PascalCase segments), e.g. `RegisterAsync_NewAdult_ReturnsCreatedAndSendsOtp`.
+  (PascalCase segments), e.g. `RegisterAsync_NewAdult_ReturnsCreatedAndSendsOtp`; in unit tests of CQRS
+  handlers the first segment is always `HandleAsync` — the test class name carries the use case.
 - **Frontend**: there is no automated test suite; rely on `npm run typecheck` and `npm run lint`.
 
 ## Commits & pull requests

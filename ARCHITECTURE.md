@@ -25,17 +25,19 @@ The backend combines three complementary patterns, each in a deliberately pragma
   catalogs referenced through named constants, and error codes that spell out the business
   invariants. Tactical and lightweight: no domain events, no value objects (see
   [the domain model](#the-domain-model-ddd-pragmatic)).
-- **CQRS** — a model-level read/write split over the single PostgreSQL database: untracked,
-  DB-side-projected queries vs tracked-entity commands committed through the unit of work. No
-  handler classes, no bus, no separate read store (see
-  [the read/write split](#the-readwrite-split-cqrs-lightweight)).
+- **CQRS** — every use case is an explicit message plus a handcrafted handler class
+  (`XCommand`/`XQuery` records handled by sealed `ICommandHandler`/`IQueryHandler`
+  implementations) over the single PostgreSQL database: untracked, DB-side-projected queries vs
+  tracked-entity commands committed through the unit of work. No MediatR, no dispatcher, no bus,
+  no separate read store — controllers inject each handler directly (see
+  [the read/write split](#the-readwrite-split-cqrs-handcrafted-handlers)).
 
 Five projects with strict, one-directional dependencies:
 
 | Project            | Responsibility                                                                          | Depends on                        |
 | ------------------ | -------------------------------------------------------------------------------------- | --------------------------------- |
 | **Domain**         | Entities, repository interfaces, `Result`/`Error`, domain constants                     | *(nothing)*                       |
-| **Application**    | Services (business logic), DTOs, validation, entity→DTO mapping, pagination             | Domain                            |
+| **Application**    | Command/query handlers (business logic), DTOs, validation, entity→DTO mapping, pagination | Domain                            |
 | **Infrastructure** | EF Core `DbContext` + repositories, Argon2id hashing, local file storage, MailKit email | Domain                            |
 | **Composition**    | The single place dependency injection is wired (`AddCodigoActivo`)                       | Domain, Application, Infrastructure |
 | **API**            | Controllers, middleware, auth attributes, `Program` startup                             | Composition                       |
@@ -66,17 +68,25 @@ Five projects with strict, one-directional dependencies:
   (`UserCannotRemoveLastAdmin`, `ActivityScheduleOutsideEventRange`, …), and seeded catalog rows
   are referenced via `SeedIds` constants — never looked up by name.
 - **Deliberate limits**: entities are mostly data holders — business invariants are guard chains
-  in Application services returning `Result`/`Error`. `User` is the one entity with behavior
+  in Application handlers returning `Result`/`Error`. `User` is the one entity with behavior
   (OTP, password-reset, verification and login transitions); pure domain rules with no
   dependencies live as static helpers in Domain (`RichTextDocument`, `RichTextFileReferences`).
   There are no domain value objects (email, phone, color and rich-text are raw strings) and no
   domain events. This is a trade-off, not an accident — new invariants follow the existing
-  service-guard style.
+  handler-guard style.
 
-### The read/write split (CQRS, lightweight)
+### The read/write split (CQRS, handcrafted handlers)
 
-Every service method is either a query or a command; the two sides use different mechanisms and
-never mix:
+Every use case is one file under `Application/<Aggregate>/Commands|Queries/` holding a sealed
+positional record (the message, verb-first: `CreateEventCommand`, `ListEventsQuery`) and its
+sealed `<Message>Handler` implementing `ICommandHandler<,>` or `IQueryHandler<,>`
+(`Application/Abstractions/Messaging/`). Controllers inject the concrete handler per action via
+`[FromServices]` — there is no dispatcher and no MediatR. Binding DTOs (`*ListQuery`, `*Request`)
+never implement the message interfaces; the controller wraps them, together with the caller's
+identity, into the message. Cross-handler logic lives in per-aggregate collaborators
+(`SignupGate`, `ActivityValidator`, `ActivitySignupNotifier`, `AccountEmails`, `OtpValidator`,
+`EventCategoryChecker`, `FileUploadValidator`, `OrphanFileCleaner`, `ManualEmailDispatcher`).
+The two sides use different mechanisms and never mix:
 
 - **Queries** compose untracked `IQueryable`s (`Repository.Query()` is `AsNoTracking`) projected
   DB-side into response DTOs — shared `Expression` projections in `Application/Mapping/Projections.cs`
@@ -90,12 +100,15 @@ never mix:
   `RemoveAsync` (`ExecuteDelete`, catalog deletes) and `SetFeaturedAsync` (`ExecuteUpdate`,
   exclusive featuring). They are only ever used in isolation — never combine them with staged
   changes that expect a single transaction.
-- What this CQRS is **not**: no MediatR or command/query handler classes, no bus, no separate
-  read database, no event sourcing. The split is per-method inside each aggregate's service.
+- What this CQRS is **not**: no MediatR, no dispatcher or bus (controllers inject handlers
+  directly), no separate read database, no event sourcing. Architecture tests
+  (`UnitTests/Architecture/`) enforce the conventions by reflection: handler naming and
+  namespaces, one handler per message, and the guarantee that query handlers never depend on
+  `IUnitOfWork`, `ICacheInvalidator` or any email port.
 
 ### The Result / Error contract
 
-Services never throw for expected failures. They return `Task<Result<TResponse>>` (or
+Handlers never throw for expected failures. They return `Task<Result<TResponse>>` (or
 `Task<Result>` for body-less mutations). `Result` has implicit conversions, so success is
 `return dto;` and failure is `return Error.NotFound(ErrorCode.UserNotFound);`.
 
@@ -116,9 +129,12 @@ Services never throw for expected failures. They return `Task<Result<TResponse>>
 
 ### Layer conventions
 
-- **Services** (`Application/Services/`, interfaces colocated in `Services/Abstractions/IServices.cs`)
-  use primary-constructor DI on repository interfaces — plus `IUnitOfWork`/`IClock` for mutations,
-  `IQueryExecutor` for paged reads, and `IPasswordHasher` where needed. They **never** touch `DbContext`.
+- **Handlers** (`Application/<Aggregate>/Commands|Queries/`, one use case per file) use
+  primary-constructor DI on repository interfaces — plus `IUnitOfWork`/`IClock` for mutations,
+  `IQueryExecutor` for paged reads, and `IPasswordHasher` where needed; a command handler may
+  inject a concrete query handler of its own aggregate for read-your-write responses, never the
+  reverse. They **never** touch `DbContext`. Registration is explicit (`Add<Aggregate>Handlers`
+  in `Composition/DependencyInjection.cs`); a wiring test fails if a handler is not registered.
 - **DTOs** (`Application/DTOs/*Dtos.cs`) are records suffixed `...Request` / `...Response`, validated with
   DataAnnotations plus custom attributes (`NotBlank`, `JsonString`, …). Validation failures become an
   `ApiErrorResponse` with `ErrorCode.RequestValidationFailed`.
@@ -134,6 +150,26 @@ Services never throw for expected failures. They return `Task<Result<TResponse>>
   `PagedResult<T>` (no `Result` wrapper on lists).
 - **Repositories** derive from `Repository<TEntity>`; reads are `AsNoTracking()` except `FindAsync`,
   which returns a tracked entity. Options are plain singletons built from configuration — **not** `IOptions<T>`.
+
+### Data-carrier taxonomy
+
+Every data-holding type has one home, so categories never mix:
+
+| Category | Home |
+| --- | --- |
+| Persistent entities | `Domain/Entities/` |
+| The `Result`/`Error` contract (`Result`, `Error`, `ErrorCode`, `PagedResult<T>`) | `Domain/Common/` — `ErrorCode` and `PagedResult` are also wire types on purpose: `Error` carries the code and `PagedResult` is the `IQueryExecutor` port's return type |
+| Port contract types (`EmailMessage` and friends, `DashboardCounts`) | Domain, next to their port — `DashboardCounts`' shape is dictated by `DashboardRepository`'s raw SQL |
+| Configuration options | **Never Domain.** `Application/Options/` when Application or API consumes them; Infrastructure (`Communication/`, `Storage/`) when only Infrastructure does. `FileStorageOptions` (storage root) and `FileUploadOptions` (upload limit) are split precisely along that line |
+| Wire DTOs | `Application/DTOs/` — **only** `*Request`/`*Response` records, no `Stream` properties |
+| Binding queries | `Application/Querying/` (`PageQuery`, the `*ListQuery` family, `DashboardAnalyticsQuery`) |
+| CQRS messages | `Application/<Aggregate>/Commands\|Queries/`, colocated with their handler |
+| Aggregate models that cross classes (`FileUpload`, `FileContent`, `EmailAttachmentUpload`) | The aggregate's folder |
+| Projection rows / local read models | `private sealed record` with `{ get; init; }` nested in their handler — member-init only, never positional (a positional ctor stops EF translating) |
+| Single-consumer carriers | Private nested types in their only consumer |
+
+`UnitTests/Architecture/DataShapeTests.cs` pins the two rules that regress silently: the DTOs
+namespace stays wire-only, and Domain never grows an `*Options` type again.
 
 ### Persistence
 
