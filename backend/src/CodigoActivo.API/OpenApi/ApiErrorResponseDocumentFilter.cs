@@ -1,4 +1,4 @@
-using CodigoActivo.API.Extensions;
+using CodigoActivo.API.Contracts;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 

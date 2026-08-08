@@ -1,6 +1,6 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
+using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;

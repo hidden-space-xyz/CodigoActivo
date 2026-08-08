@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Common;
+namespace CodigoActivo.Application.Options;
 
 public sealed class ApplicationOptions
 {

@@ -1,5 +1,6 @@
 using System.Globalization;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -393,9 +394,8 @@ public static class DependencyInjection
 
     private static void AddFileStorage(IServiceCollection services, IConfiguration configuration)
     {
-        var storageOptions = new FileStorageOptions
+        var uploadOptions = new FileUploadOptions
         {
-            RootPath = configuration["FILE_STORAGE_ROOT"] ?? "files",
             MaxSizeBytes =
                 long.TryParse(
                     configuration["FileStorage:MaxSizeBytes"],
@@ -404,7 +404,13 @@ public static class DependencyInjection
                 )
                 && maxSize > 0
                     ? maxSize
-                    : FileStorageOptions.DefaultMaxSizeBytes,
+                    : FileUploadOptions.DefaultMaxSizeBytes,
+        };
+        services.AddSingleton(uploadOptions);
+
+        var storageOptions = new FileStorageOptions
+        {
+            RootPath = configuration["FILE_STORAGE_ROOT"] ?? "files",
         };
         services.AddSingleton(storageOptions);
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();

@@ -3,6 +3,7 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;

@@ -1,11 +1,13 @@
 using System.Diagnostics;
 using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Security;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -108,13 +110,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             services.AddSingleton(new AccountVerificationOptions { Required = true });
 
             services.RemoveAll<FileStorageOptions>();
-            services.AddSingleton(
-                new FileStorageOptions
-                {
-                    RootPath = fileStorageRoot,
-                    MaxSizeBytes = FileStorageOptions.DefaultMaxSizeBytes,
-                }
-            );
+            services.AddSingleton(new FileStorageOptions { RootPath = fileStorageRoot });
         });
     }
 

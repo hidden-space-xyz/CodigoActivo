@@ -7,7 +7,7 @@ using CodigoActivo.API.OpenApi;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.AspNetCore.Authentication.Cookies;

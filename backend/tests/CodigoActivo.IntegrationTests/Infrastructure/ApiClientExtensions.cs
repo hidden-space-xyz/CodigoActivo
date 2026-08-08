@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
+using CodigoActivo.API.Contracts;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 

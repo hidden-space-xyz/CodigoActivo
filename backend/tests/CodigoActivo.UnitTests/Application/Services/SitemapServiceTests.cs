@@ -1,6 +1,6 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Services;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;

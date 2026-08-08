@@ -7,10 +7,3 @@ public record SendEmailRequest(string Subject, string Body)
 }
 
 public record SendEmailResultResponse(int Sent, int Skipped, int Failed);
-
-public sealed record EmailAttachmentUpload(
-    Stream Content,
-    string FileName,
-    string ContentType,
-    long Length
-);

@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Security;
+namespace CodigoActivo.Application.Options;
 
 public sealed class PasswordResetOptions
 {

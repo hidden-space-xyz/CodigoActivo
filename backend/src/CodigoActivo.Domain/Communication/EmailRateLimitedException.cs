@@ -16,12 +16,6 @@ public enum EmailGuardAlert
     TrackingSaturated,
 }
 
-public readonly record struct EmailSendDecision(
-    EmailLimitScope Scope,
-    EmailGuardAlert Alert,
-    int GlobalRemaining
-);
-
 public sealed class EmailRateLimitedException : Exception
 {
     private const string DefaultMessage = "The outbound email quota denied this message.";
