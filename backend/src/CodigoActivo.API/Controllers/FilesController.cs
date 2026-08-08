@@ -4,7 +4,8 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Application.Files.Commands;
+using CodigoActivo.Application.Files.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -14,22 +15,30 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/files")]
-public class FilesController(IFileService files) : ApiControllerBase
+public class FilesController : ApiControllerBase
 {
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
-    public async Task<ActionResult<FileResponse>> GetAsync(Guid fileId, CancellationToken ct)
+    public async Task<ActionResult<FileResponse>> GetAsync(
+        Guid fileId,
+        [FromServices] GetFileByIdQueryHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToOk(await files.GetByIdAsync(fileId, ct));
+        return ToOk(await handler.HandleAsync(new GetFileByIdQuery(fileId), ct));
     }
 
     [HttpGet("{fileId:guid}/content")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
-    public async Task<IActionResult> GetContentAsync(Guid fileId, CancellationToken ct)
+    public async Task<IActionResult> GetContentAsync(
+        Guid fileId,
+        [FromServices] GetFileContentQueryHandler handler,
+        CancellationToken ct
+    )
     {
-        var result = await files.GetContentAsync(fileId, ct);
+        var result = await handler.HandleAsync(new GetFileContentQuery(fileId), ct);
         if (result.IsFailure)
         {
             return ToProblem(result.Error!);
@@ -52,10 +61,14 @@ public class FilesController(IFileService files) : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
-    public async Task<ActionResult<FileResponse>> CreateAsync(IFormFile? file, CancellationToken ct)
+    public async Task<ActionResult<FileResponse>> CreateAsync(
+        IFormFile? file,
+        [FromServices] CreateFileCommandHandler handler,
+        CancellationToken ct
+    )
     {
         return ToCreated(
-            await files.CreateAsync(ToUploadRequest(file), UserId, ct),
+            await handler.HandleAsync(new CreateFileCommand(ToUploadRequest(file), UserId), ct),
             f => $"/api/files/{f.Id}"
         );
     }
@@ -67,17 +80,24 @@ public class FilesController(IFileService files) : ApiControllerBase
     public async Task<ActionResult<FileResponse>> UpdateAsync(
         Guid fileId,
         IFormFile? file,
+        [FromServices] UpdateFileCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await files.UpdateAsync(fileId, ToUploadRequest(file), ct));
+        return ToOk(
+            await handler.HandleAsync(new UpdateFileCommand(fileId, ToUploadRequest(file)), ct)
+        );
     }
 
     [HttpDelete("{fileId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> DeleteAsync(Guid fileId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(
+        Guid fileId,
+        [FromServices] DeleteFileCommandHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToNoContent(await files.DeleteAsync(fileId, ct));
+        return ToNoContent(await handler.HandleAsync(new DeleteFileCommand(fileId), ct));
     }
 
     private static FileUpload? ToUploadRequest(IFormFile? file)
