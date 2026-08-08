@@ -193,7 +193,7 @@ this capability is one more reason to heed the first-user-becomes-admin warning 
   500-recipient send cannot starve account verification or password reset, and can be repeated immediately.
   The exemption is a compile-time property, not a convention: `IEmailSender` (one `SendAsync`) is the guarded
   abstraction and `ThrottledEmailSender` is its only implementation, while the raw `IEmailTransport` is
-  injected by exactly two types — `EmailService` and the dispatcher's own drain loop. `SmtpEmailSender` does
+  injected by exactly two types — `ManualEmailDispatcher` and the dispatcher's own drain loop. `SmtpEmailSender` does
   not implement `IEmailSender` at all, so registering an unguarded sender does not compile.
   `EmailSenderWiringTests` fails if a third type ever takes `IEmailTransport`, and a second assertion pins the
   link below it: `ThrottledEmailSender` is the only type allowed to inject `IEmailDispatcher`, so nothing can

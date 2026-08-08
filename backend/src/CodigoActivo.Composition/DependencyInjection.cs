@@ -4,6 +4,8 @@ using CodigoActivo.Application.Announcements.Queries;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.Auth.Queries;
+using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
@@ -441,7 +443,6 @@ public static class DependencyInjection
     {
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddScoped<IActivityService, ActivityService>();
-        services.AddScoped<IEmailService, EmailService>();
     }
 
     private static void AddApplicationHandlers(IServiceCollection services)
@@ -456,6 +457,7 @@ public static class DependencyInjection
         AddUserHandlers(services);
         AddAuthHandlers(services);
         AddReportHandlers(services);
+        AddEmailHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -563,5 +565,13 @@ public static class DependencyInjection
         services.AddScoped<GetEventRosterQueryHandler>();
         services.AddScoped<GetDashboardSummaryQueryHandler>();
         services.AddScoped<GetDashboardAnalyticsQueryHandler>();
+    }
+
+    private static void AddEmailHandlers(IServiceCollection services)
+    {
+        services.AddScoped<SendEmailToUserCommandHandler>();
+        services.AddScoped<SendEmailToUsersCommandHandler>();
+        services.AddScoped<SendEmailToEventAttendeesCommandHandler>();
+        services.AddScoped<ManualEmailDispatcher>();
     }
 }
