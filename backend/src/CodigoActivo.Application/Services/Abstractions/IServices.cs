@@ -28,51 +28,6 @@ public interface IAuthService
     );
 }
 
-public interface IUserService
-{
-    public Task<PagedResult<UserResponse>> ListAsync(
-        UserListQuery query,
-        Guid callerId,
-        bool isAdmin,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<UserResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
-
-    public Task<Result<UserResponse>> UpdateAsync(
-        Guid id,
-        UpdateUserRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
-
-    public Task<Result> SetAdminAsync(Guid id, bool isAdmin, CancellationToken ct = default);
-
-    public Task<Result<UserResponse>> ChangeTypeAsync(
-        Guid id,
-        Guid userTypeId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<UserResponse>> AddChildAsync(
-        Guid parentId,
-        RegisterMinorRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> ChangePasswordAsync(
-        Guid userId,
-        ChangePasswordRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<IReadOnlyList<UserStatusTypeResponse>> ListStatusTypesAsync(
-        CancellationToken ct = default
-    );
-    public Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(CancellationToken ct = default);
-}
-
 public interface IActivityService
 {
     public Task<PagedResult<ActivityResponse>> ListAsync(

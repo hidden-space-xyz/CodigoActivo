@@ -2,7 +2,8 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
-using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,40 +13,47 @@ namespace CodigoActivo.API.Controllers;
 [ApiController]
 [Route("api/users")]
 [Authorize]
-public class UsersController(IUserService users) : ApiControllerBase
+public class UsersController : ApiControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<UserResponse>>> ListAsync(
         [FromQuery] UserListQuery query,
+        [FromServices] ListUsersQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await users.ListAsync(query, UserId, IsAdmin, ct));
+        return Ok(await handler.HandleAsync(new ListUsersQuery(query, UserId, IsAdmin), ct));
     }
 
     [HttpGet("types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> TypesAsync(
+        [FromServices] ListUserTypesQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await users.ListUserTypesAsync(ct));
+        return Ok(await handler.HandleAsync(new ListUserTypesQuery(), ct));
     }
 
     [HttpGet("status-types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> StatusTypesAsync(
+        [FromServices] ListUserStatusTypesQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await users.ListStatusTypesAsync(ct));
+        return Ok(await handler.HandleAsync(new ListUserStatusTypesQuery(), ct));
     }
 
     [HttpGet("{userId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<UserResponse>> GetAsync(Guid userId, CancellationToken ct)
+    public async Task<ActionResult<UserResponse>> GetAsync(
+        Guid userId,
+        [FromServices] GetUserByIdQueryHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToOk(await users.GetByIdAsync(userId, ct));
+        return ToOk(await handler.HandleAsync(new GetUserByIdQuery(userId), ct));
     }
 
     [HttpPut("{userId:guid}")]
@@ -53,17 +61,22 @@ public class UsersController(IUserService users) : ApiControllerBase
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid userId,
         [FromBody] UpdateUserRequest request,
+        [FromServices] UpdateUserCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await users.UpdateAsync(userId, request, ct));
+        return ToOk(await handler.HandleAsync(new UpdateUserCommand(userId, request), ct));
     }
 
     [HttpDelete("{userId:guid}")]
     [AllowOnlySelf]
-    public async Task<IActionResult> DeleteAsync(Guid userId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(
+        Guid userId,
+        [FromServices] DeleteUserCommandHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToNoContent(await users.DeleteAsync(userId, ct));
+        return ToNoContent(await handler.HandleAsync(new DeleteUserCommand(userId), ct));
     }
 
     [HttpPatch("{userId:guid}/admin")]
@@ -71,10 +84,13 @@ public class UsersController(IUserService users) : ApiControllerBase
     public async Task<IActionResult> SetAdminAsync(
         Guid userId,
         [FromBody] SetAdminRequest request,
+        [FromServices] SetAdminCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await users.SetAdminAsync(userId, request.IsAdmin, ct));
+        return ToNoContent(
+            await handler.HandleAsync(new SetAdminCommand(userId, request.IsAdmin), ct)
+        );
     }
 
     [HttpPost("{userId:guid}/children")]
@@ -82,10 +98,11 @@ public class UsersController(IUserService users) : ApiControllerBase
     public async Task<ActionResult<UserResponse>> AddChildAsync(
         Guid userId,
         [FromBody] RegisterMinorRequest request,
+        [FromServices] AddChildCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await users.AddChildAsync(userId, request, ct));
+        return ToOk(await handler.HandleAsync(new AddChildCommand(userId, request), ct));
     }
 
     [HttpPatch("{userId:guid}/password")]
@@ -93,10 +110,13 @@ public class UsersController(IUserService users) : ApiControllerBase
     public async Task<IActionResult> ChangePasswordAsync(
         Guid userId,
         [FromBody] ChangePasswordRequest request,
+        [FromServices] ChangePasswordCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await users.ChangePasswordAsync(userId, request, ct));
+        return ToNoContent(
+            await handler.HandleAsync(new ChangePasswordCommand(userId, request), ct)
+        );
     }
 
     [HttpPatch("{userId:guid}/change-type")]
@@ -104,9 +124,10 @@ public class UsersController(IUserService users) : ApiControllerBase
     public async Task<ActionResult<UserResponse>> ChangeTypeAsync(
         Guid userId,
         [FromQuery] Guid userTypeId,
+        [FromServices] ChangeUserTypeCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await users.ChangeTypeAsync(userId, userTypeId, ct));
+        return ToOk(await handler.HandleAsync(new ChangeUserTypeCommand(userId, userTypeId), ct));
     }
 }
