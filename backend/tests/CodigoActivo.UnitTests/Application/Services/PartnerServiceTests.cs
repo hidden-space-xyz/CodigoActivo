@@ -1,9 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -17,7 +17,7 @@ public sealed class PartnerServiceTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly IFileService fileService = Substitute.For<IFileService>();
+    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly FakeHybridCache cache = new();
@@ -29,7 +29,7 @@ public sealed class PartnerServiceTests
         sut = new PartnerService(
             partners,
             files,
-            fileService,
+            orphanCleaner,
             new FakeQueryExecutor(),
             clock,
             uow,
@@ -408,7 +408,7 @@ public sealed class PartnerServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
     }
@@ -435,7 +435,7 @@ public sealed class PartnerServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .DidNotReceiveWithAnyArgs()
             .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
     }
@@ -450,7 +450,7 @@ public sealed class PartnerServiceTests
         result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await fileService
+        await orphanCleaner
             .DidNotReceiveWithAnyArgs()
             .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
         await cacheInvalidator

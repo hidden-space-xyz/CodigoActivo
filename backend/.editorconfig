@@ -203,6 +203,10 @@ dotnet_diagnostic.S2139.severity = none
 [**/Seeders/DemoDataSeeder.cs]
 dotnet_diagnostic.S2068.severity = none
 
+[**/Abstractions/Messaging/IMessaging.cs]
+dotnet_diagnostic.CA1040.severity = none
+dotnet_diagnostic.S2326.severity = none
+
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.S2068.severity = none

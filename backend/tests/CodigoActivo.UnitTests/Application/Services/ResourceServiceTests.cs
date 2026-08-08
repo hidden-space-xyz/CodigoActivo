@@ -2,9 +2,9 @@ using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -24,7 +24,7 @@ public sealed class ResourceServiceTests
     private readonly IResourceTypeRepository resourceTypes =
         Substitute.For<IResourceTypeRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly IFileService fileService = Substitute.For<IFileService>();
+    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly FakeHybridCache cache = new();
@@ -37,7 +37,7 @@ public sealed class ResourceServiceTests
             resources,
             resourceTypes,
             files,
-            fileService,
+            orphanCleaner,
             new FakeQueryExecutor(),
             clock,
             uow,
@@ -793,7 +793,7 @@ public sealed class ResourceServiceTests
         resource.Description.Should().Be("{}");
         resource.Url.Should().Be("https://ejemplo.es/curso");
         resource.ResourceTypeId.Should().Be(type.Id);
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(embeddedId)),
@@ -856,7 +856,7 @@ public sealed class ResourceServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -891,7 +891,7 @@ public sealed class ResourceServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
@@ -927,7 +927,7 @@ public sealed class ResourceServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -949,7 +949,7 @@ public sealed class ResourceServiceTests
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await fileService
+        await orphanCleaner
             .DidNotReceiveWithAnyArgs()
             .DeleteOrphanedAsync(
                 Arg.Any<IReadOnlyCollection<Guid>>(),
@@ -973,7 +973,7 @@ public sealed class ResourceServiceTests
         result.IsSuccess.Should().BeTrue();
         resources.Received(1).Remove(resource);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>

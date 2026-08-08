@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -15,7 +16,7 @@ public class ResourceService(
     IResourceRepository resources,
     IResourceTypeRepository resourceTypes,
     IFileRepository files,
-    IFileService fileService,
+    IOrphanFileCleaner orphanCleaner,
     IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow,
@@ -198,7 +199,7 @@ public class ResourceService(
             orphanCandidates.Add(previousThumbnailId);
         }
 
-        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
+        await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return resource.ToResponse();
     }
@@ -220,7 +221,7 @@ public class ResourceService(
             .Append(resource.ThumbnailId)
             .Distinct()
             .ToList();
-        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
+        await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return Result.Success();
     }

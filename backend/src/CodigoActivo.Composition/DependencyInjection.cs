@@ -1,4 +1,5 @@
 using System.Globalization;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -411,6 +412,7 @@ public static class DependencyInjection
 
     private static void AddApplicationServices(IServiceCollection services)
     {
+        services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEventService, EventService>();

@@ -1,9 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -18,7 +18,7 @@ public sealed class AnnouncementServiceTests
     private readonly IAnnouncementRepository announcements =
         Substitute.For<IAnnouncementRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly IFileService fileService = Substitute.For<IFileService>();
+    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly FakeHybridCache cache = new();
@@ -30,7 +30,7 @@ public sealed class AnnouncementServiceTests
         sut = new AnnouncementService(
             announcements,
             files,
-            fileService,
+            orphanCleaner,
             new FakeQueryExecutor(),
             clock,
             uow,
@@ -449,7 +449,7 @@ public sealed class AnnouncementServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -480,7 +480,7 @@ public sealed class AnnouncementServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
@@ -513,7 +513,7 @@ public sealed class AnnouncementServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -535,7 +535,7 @@ public sealed class AnnouncementServiceTests
         result.Error.Code.Should().Be(ErrorCode.AnnouncementNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await fileService
+        await orphanCleaner
             .DidNotReceiveWithAnyArgs()
             .DeleteOrphanedAsync(
                 Arg.Any<IReadOnlyCollection<Guid>>(),
@@ -554,7 +554,7 @@ public sealed class AnnouncementServiceTests
         var result = await sut.DeleteAsync(announcement.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>

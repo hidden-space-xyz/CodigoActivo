@@ -312,10 +312,6 @@ public interface IFileService
     );
 
     public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
-
-    public Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default);
-
-    public Task DeleteOrphanedAsync(IReadOnlyCollection<Guid> fileIds, CancellationToken ct = default);
 }
 
 public interface IReportService
