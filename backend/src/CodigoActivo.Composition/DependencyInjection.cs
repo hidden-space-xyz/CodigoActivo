@@ -8,6 +8,8 @@ using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Participation.Commands;
+using CodigoActivo.Application.Participation.Queries;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Queries;
 using CodigoActivo.Application.Resources.Commands;
@@ -435,7 +437,6 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IActivityService, ActivityService>();
-        services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IEmailService, EmailService>();
     }
@@ -448,6 +449,7 @@ public static class DependencyInjection
         AddResourceHandlers(services);
         AddFileHandlers(services);
         AddEventHandlers(services);
+        AddParticipationHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -510,5 +512,13 @@ public static class DependencyInjection
         services.AddScoped<UpdateEventCategoryTypeCommandHandler>();
         services.AddScoped<DeleteEventCategoryTypeCommandHandler>();
         services.AddScoped<EventCategoryChecker>();
+    }
+
+    private static void AddParticipationHandlers(IServiceCollection services)
+    {
+        services.AddScoped<GetEventHistoryQueryHandler>();
+        services.AddScoped<GetEventCertificatesQueryHandler>();
+        services.AddScoped<ListEventRatingsQueryHandler>();
+        services.AddScoped<SaveEventRatingCommandHandler>();
     }
 }

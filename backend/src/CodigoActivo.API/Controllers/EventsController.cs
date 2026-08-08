@@ -4,8 +4,9 @@ using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Application.Participation.Commands;
+using CodigoActivo.Application.Participation.Queries;
 using CodigoActivo.Application.Querying;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class EventsController(IParticipationService participation) : ApiControllerBase
+public class EventsController : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -118,10 +119,11 @@ public class EventsController(IParticipationService participation) : ApiControll
     public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> RatingsAsync(
         Guid eventId,
         [FromQuery] EventRatingListQuery query,
+        [FromServices] ListEventRatingsQueryHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await participation.ListEventRatingsAsync(eventId, query, ct));
+        return ToOk(await handler.HandleAsync(new ListEventRatingsQuery(eventId, query), ct));
     }
 
     [HttpPut("{eventId:guid}/rating")]
@@ -129,10 +131,13 @@ public class EventsController(IParticipationService participation) : ApiControll
     public async Task<ActionResult<EventRatingResponse>> SaveRatingAsync(
         Guid eventId,
         [FromBody] SaveEventRatingRequest request,
+        [FromServices] SaveEventRatingCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await participation.SaveRatingAsync(eventId, UserId, request, ct));
+        return ToOk(
+            await handler.HandleAsync(new SaveEventRatingCommand(eventId, UserId, request), ct)
+        );
     }
 
     [HttpPost("categoryType")]

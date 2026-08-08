@@ -200,32 +200,6 @@ public interface IReportService
     );
 }
 
-public interface IParticipationService
-{
-    public Task<IReadOnlyList<EventHistoryResponse>> GetHistoryAsync(
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<IReadOnlyList<EventCertificateResponse>> GetCertificatesAsync(
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventRatingResponse>> SaveRatingAsync(
-        Guid eventId,
-        Guid userId,
-        SaveEventRatingRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<PagedResult<EventRatingListItemResponse>>> ListEventRatingsAsync(
-        Guid eventId,
-        EventRatingListQuery query,
-        CancellationToken ct = default
-    );
-}
-
 public interface IEmailService
 {
     public Task<Result<SendEmailResultResponse>> SendToUserAsync(
