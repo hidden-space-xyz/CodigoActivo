@@ -2,6 +2,8 @@ using System.Globalization;
 using CodigoActivo.Application.Announcements.Commands;
 using CodigoActivo.Application.Announcements.Queries;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Files.Commands;
+using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Queries;
@@ -431,7 +433,6 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IActivityService, ActivityService>();
-        services.AddScoped<IFileService, FileService>();
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -443,6 +444,7 @@ public static class DependencyInjection
         AddSeoHandlers(services);
         AddAnnouncementHandlers(services);
         AddResourceHandlers(services);
+        AddFileHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -479,5 +481,15 @@ public static class DependencyInjection
         services.AddScoped<CreateResourceCommandHandler>();
         services.AddScoped<UpdateResourceCommandHandler>();
         services.AddScoped<DeleteResourceCommandHandler>();
+    }
+
+    private static void AddFileHandlers(IServiceCollection services)
+    {
+        services.AddScoped<GetFileByIdQueryHandler>();
+        services.AddScoped<GetFileContentQueryHandler>();
+        services.AddScoped<CreateFileCommandHandler>();
+        services.AddScoped<UpdateFileCommandHandler>();
+        services.AddScoped<DeleteFileCommandHandler>();
+        services.AddScoped<FileUploadValidator>();
     }
 }

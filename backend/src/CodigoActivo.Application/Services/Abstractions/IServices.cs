@@ -1,6 +1,5 @@
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
-using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 
@@ -214,26 +213,6 @@ public interface IActivityService
         Guid actingUserId,
         CancellationToken ct = default
     );
-}
-
-public interface IFileService
-{
-    public Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
-    public Task<Result<FileContent>> GetContentAsync(Guid id, CancellationToken ct = default);
-
-    public Task<Result<FileResponse>> CreateAsync(
-        FileUpload? upload,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<FileResponse>> UpdateAsync(
-        Guid id,
-        FileUpload? upload,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IReportService
