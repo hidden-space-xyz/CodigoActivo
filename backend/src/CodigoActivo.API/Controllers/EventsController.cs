@@ -2,6 +2,8 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Events.Commands;
+using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -13,54 +15,66 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class EventsController(IEventService events, IParticipationService participation)
-    : ApiControllerBase
+public class EventsController(IParticipationService participation) : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
     public async Task<ActionResult<PagedResult<EventListItemResponse>>> ListAsync(
         [FromQuery] EventListQuery query,
+        [FromServices] ListEventsQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await events.ListAsync(query, ct));
+        return Ok(await handler.HandleAsync(new ListEventsQuery(query), ct));
     }
 
     [HttpGet("past-years")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
-    public async Task<ActionResult<IReadOnlyList<int>>> PastYearsAsync(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<int>>> PastYearsAsync(
+        [FromServices] GetPastEventYearsQueryHandler handler,
+        CancellationToken ct
+    )
     {
-        return Ok(await events.GetPastYearsAsync(ct));
+        return Ok(await handler.HandleAsync(new GetPastEventYearsQuery(), ct));
     }
 
     [HttpGet("{eventId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
-    public async Task<ActionResult<EventResponse>> GetAsync(Guid eventId, CancellationToken ct)
+    public async Task<ActionResult<EventResponse>> GetAsync(
+        Guid eventId,
+        [FromServices] GetEventByIdQueryHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToOk(await events.GetByIdAsync(eventId, ct));
+        return ToOk(await handler.HandleAsync(new GetEventByIdQuery(eventId), ct));
     }
 
     [HttpGet("categoryType")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypesAsync(
         [FromQuery] EventCategoryTypeListQuery query,
+        [FromServices] ListEventCategoryTypesQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await events.ListCategoryTypesAsync(query, ct));
+        return Ok(await handler.HandleAsync(new ListEventCategoryTypesQuery(query), ct));
     }
 
     [HttpPost]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventResponse>> CreateAsync(
         [FromBody] CreateEventRequest request,
+        [FromServices] CreateEventCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToCreated(await events.CreateAsync(request, UserId, ct), e => $"/api/events/{e.Id}");
+        return ToCreated(
+            await handler.HandleAsync(new CreateEventCommand(request, UserId), ct),
+            e => $"/api/events/{e.Id}"
+        );
     }
 
     [HttpPut("{eventId:guid}")]
@@ -68,24 +82,35 @@ public class EventsController(IEventService events, IParticipationService partic
     public async Task<ActionResult<EventResponse>> UpdateAsync(
         Guid eventId,
         [FromBody] UpdateEventRequest request,
+        [FromServices] UpdateEventCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await events.UpdateAsync(eventId, request, UserId, ct));
+        return ToOk(
+            await handler.HandleAsync(new UpdateEventCommand(eventId, request, UserId), ct)
+        );
     }
 
     [HttpDelete("{eventId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> DeleteAsync(Guid eventId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(
+        Guid eventId,
+        [FromServices] DeleteEventCommandHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToNoContent(await events.DeleteAsync(eventId, ct));
+        return ToNoContent(await handler.HandleAsync(new DeleteEventCommand(eventId), ct));
     }
 
     [HttpPatch("{eventId:guid}/feature")]
     [AllowOnlyAdmin]
-    public async Task<ActionResult<EventResponse>> FeatureAsync(Guid eventId, CancellationToken ct)
+    public async Task<ActionResult<EventResponse>> FeatureAsync(
+        Guid eventId,
+        [FromServices] SetEventFeaturedCommandHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToOk(await events.SetFeaturedAsync(eventId, ct));
+        return ToOk(await handler.HandleAsync(new SetEventFeaturedCommand(eventId), ct));
     }
 
     [HttpGet("{eventId:guid}/ratings")]
@@ -114,10 +139,11 @@ public class EventsController(IEventService events, IParticipationService partic
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         [FromBody] CreateEventCategoryTypeRequest request,
+        [FromServices] CreateEventCategoryTypeCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await events.CreateCategoryTypeAsync(request, ct));
+        return ToOk(await handler.HandleAsync(new CreateEventCategoryTypeCommand(request), ct));
     }
 
     [HttpPut("categoryType/{eventCategoryTypeId:guid}")]
@@ -125,19 +151,28 @@ public class EventsController(IEventService events, IParticipationService partic
     public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
         Guid eventCategoryTypeId,
         [FromBody] UpdateEventCategoryTypeRequest request,
+        [FromServices] UpdateEventCategoryTypeCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await events.UpdateCategoryTypeAsync(eventCategoryTypeId, request, ct));
+        return ToOk(
+            await handler.HandleAsync(
+                new UpdateEventCategoryTypeCommand(eventCategoryTypeId, request),
+                ct
+            )
+        );
     }
 
     [HttpDelete("categoryType/{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteCategoryTypeAsync(
         Guid eventCategoryTypeId,
+        [FromServices] DeleteEventCategoryTypeCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await events.DeleteCategoryTypeAsync(eventCategoryTypeId, ct));
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteEventCategoryTypeCommand(eventCategoryTypeId), ct)
+        );
     }
 }
