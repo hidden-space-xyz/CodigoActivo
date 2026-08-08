@@ -1,4 +1,7 @@
 using System.Globalization;
+using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Announcements.Commands;
 using CodigoActivo.Application.Announcements.Queries;
 using CodigoActivo.Application.Auth;
@@ -21,8 +24,6 @@ using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Seo.Queries;
-using CodigoActivo.Application.Services;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
@@ -64,7 +65,6 @@ public static class DependencyInjection
         AddPasswordReset(services, configuration);
         AddEmail(services, configuration);
         AddCaching(services);
-        AddApplicationServices(services);
         AddApplicationHandlers(services);
         return services;
     }
@@ -439,12 +439,6 @@ public static class DependencyInjection
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();
     }
 
-    private static void AddApplicationServices(IServiceCollection services)
-    {
-        services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
-        services.AddScoped<IActivityService, ActivityService>();
-    }
-
     private static void AddApplicationHandlers(IServiceCollection services)
     {
         AddPartnerHandlers(services);
@@ -453,6 +447,7 @@ public static class DependencyInjection
         AddResourceHandlers(services);
         AddFileHandlers(services);
         AddEventHandlers(services);
+        AddActivityHandlers(services);
         AddParticipationHandlers(services);
         AddUserHandlers(services);
         AddAuthHandlers(services);
@@ -504,6 +499,7 @@ public static class DependencyInjection
         services.AddScoped<UpdateFileCommandHandler>();
         services.AddScoped<DeleteFileCommandHandler>();
         services.AddScoped<FileUploadValidator>();
+        services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
     }
 
     private static void AddEventHandlers(IServiceCollection services)
@@ -520,6 +516,30 @@ public static class DependencyInjection
         services.AddScoped<UpdateEventCategoryTypeCommandHandler>();
         services.AddScoped<DeleteEventCategoryTypeCommandHandler>();
         services.AddScoped<EventCategoryChecker>();
+    }
+
+    private static void AddActivityHandlers(IServiceCollection services)
+    {
+        services.AddScoped<ListActivitiesQueryHandler>();
+        services.AddScoped<GetActivityByIdQueryHandler>();
+        services.AddScoped<ListAssignedActivitiesQueryHandler>();
+        services.AddScoped<ListActivityRoleTypesQueryHandler>();
+        services.AddScoped<ListAssignmentStatusTypesQueryHandler>();
+        services.AddScoped<ListActivityModalityTypesQueryHandler>();
+        services.AddScoped<VerifyTimeOverlapsQueryHandler>();
+        services.AddScoped<GetHouseholdAssignmentsQueryHandler>();
+        services.AddScoped<GetHouseholdSignupRolesQueryHandler>();
+        services.AddScoped<CreateActivityCommandHandler>();
+        services.AddScoped<UpdateActivityCommandHandler>();
+        services.AddScoped<DeleteActivityCommandHandler>();
+        services.AddScoped<AssignActivityCommandHandler>();
+        services.AddScoped<AssignHouseholdCommandHandler>();
+        services.AddScoped<UnassignActivityCommandHandler>();
+        services.AddScoped<ChangeAssignmentStatusCommandHandler>();
+        services.AddScoped<ChangeAssignmentRoleCommandHandler>();
+        services.AddScoped<SignupGate>();
+        services.AddScoped<ActivityValidator>();
+        services.AddScoped<ActivitySignupNotifier>();
     }
 
     private static void AddParticipationHandlers(IServiceCollection services)

@@ -85,7 +85,7 @@ configured SMTP server (`SMTP_HOST` + `SMTP_FROM_ADDRESS`), or the API refuses t
 ### Automatic signup notifications
 
 Signing up for an activity emails an acknowledgement that the request is pending, and an admin confirming or
-rejecting it emails the outcome. Both are queued by `ActivityService` *after* the write has been committed
+rejecting it emails the outcome. Both are queued by `ActivitySignupNotifier` *after* the write has been committed
 and delivered by the background dispatcher described below, so no signup request waits on SMTP.
 
 - **The address never comes from the request.** It is resolved server-side from the enrolled account, and a
