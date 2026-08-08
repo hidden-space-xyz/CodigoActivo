@@ -5,29 +5,6 @@ using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Services.Abstractions;
 
-public interface IAuthService
-{
-    public Task<Result<UserResponse>> LoginAsync(LoginRequest request, CancellationToken ct = default);
-    public Task<Result<UserResponse>> GetCurrentAsync(Guid userId, CancellationToken ct = default);
-
-    public Task<Result<RegisterResponse>> RegisterAsync(
-        RegisterRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<UserResponse>> VerifyAsync(Guid id, string otp, CancellationToken ct = default);
-
-    public Task<Result> ResendVerificationAsync(Guid id, CancellationToken ct = default);
-
-    public Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default);
-
-    public Task<Result> ResetPasswordAsync(
-        Guid id,
-        ResetPasswordRequest request,
-        CancellationToken ct = default
-    );
-}
-
 public interface IActivityService
 {
     public Task<PagedResult<ActivityResponse>> ListAsync(

@@ -1,6 +1,9 @@
 using System.Globalization;
 using CodigoActivo.Application.Announcements.Commands;
 using CodigoActivo.Application.Announcements.Queries;
+using CodigoActivo.Application.Auth;
+using CodigoActivo.Application.Auth.Commands;
+using CodigoActivo.Application.Auth.Queries;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
@@ -436,7 +439,6 @@ public static class DependencyInjection
     private static void AddApplicationServices(IServiceCollection services)
     {
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
-        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -452,6 +454,7 @@ public static class DependencyInjection
         AddEventHandlers(services);
         AddParticipationHandlers(services);
         AddUserHandlers(services);
+        AddAuthHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -536,5 +539,18 @@ public static class DependencyInjection
         services.AddScoped<ChangeUserTypeCommandHandler>();
         services.AddScoped<AddChildCommandHandler>();
         services.AddScoped<ChangePasswordCommandHandler>();
+    }
+
+    private static void AddAuthHandlers(IServiceCollection services)
+    {
+        services.AddScoped<GetCurrentUserQueryHandler>();
+        services.AddScoped<LoginCommandHandler>();
+        services.AddScoped<RegisterCommandHandler>();
+        services.AddScoped<VerifyUserCommandHandler>();
+        services.AddScoped<ResendVerificationCommandHandler>();
+        services.AddScoped<ForgotPasswordCommandHandler>();
+        services.AddScoped<ResetPasswordCommandHandler>();
+        services.AddScoped<AccountEmails>();
+        services.AddScoped<OtpValidator>();
     }
 }
