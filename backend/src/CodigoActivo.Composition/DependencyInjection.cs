@@ -1,4 +1,6 @@
 using System.Globalization;
+using CodigoActivo.Application.Announcements.Commands;
+using CodigoActivo.Application.Announcements.Queries;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Partners.Commands;
@@ -428,7 +430,6 @@ public static class DependencyInjection
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IResourceService, ResourceService>();
-        services.AddScoped<IAnnouncementService, AnnouncementService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
@@ -439,6 +440,7 @@ public static class DependencyInjection
     {
         AddPartnerHandlers(services);
         AddSeoHandlers(services);
+        AddAnnouncementHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -454,5 +456,16 @@ public static class DependencyInjection
     {
         services.AddScoped<GetSitemapXmlQueryHandler>();
         services.AddScoped<GetRobotsTxtQueryHandler>();
+    }
+
+    private static void AddAnnouncementHandlers(IServiceCollection services)
+    {
+        services.AddScoped<ListAnnouncementsQueryHandler>();
+        services.AddScoped<GetAnnouncementByIdQueryHandler>();
+        services.AddScoped<GetAnnouncementYearsQueryHandler>();
+        services.AddScoped<CreateAnnouncementCommandHandler>();
+        services.AddScoped<UpdateAnnouncementCommandHandler>();
+        services.AddScoped<DeleteAnnouncementCommandHandler>();
+        services.AddScoped<SetAnnouncementFeaturedCommandHandler>();
     }
 }
