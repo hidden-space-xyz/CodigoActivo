@@ -243,34 +243,6 @@ public interface IResourceService
     public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
 }
 
-public interface IAnnouncementService
-{
-    public Task<PagedResult<AnnouncementListItemResponse>> ListAsync(
-        AnnouncementListQuery query,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<AnnouncementResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
-
-    public Task<IReadOnlyList<int>> GetYearsAsync(CancellationToken ct = default);
-
-    public Task<Result<AnnouncementResponse>> CreateAsync(
-        CreateAnnouncementRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<AnnouncementResponse>> UpdateAsync(
-        Guid id,
-        UpdateAnnouncementRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
-    public Task<Result<AnnouncementResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
-}
-
 public interface IFileService
 {
     public Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
