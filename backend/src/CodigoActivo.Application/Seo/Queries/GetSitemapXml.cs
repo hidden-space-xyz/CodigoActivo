@@ -1,23 +1,25 @@
 using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Options;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.Extensions.Caching.Hybrid;
 
-namespace CodigoActivo.Application.Services;
+namespace CodigoActivo.Application.Seo.Queries;
 
-public class SitemapService(
+public sealed record GetSitemapXmlQuery : IQuery<string>;
+
+public sealed class GetSitemapXmlQueryHandler(
     IEventRepository events,
     IAnnouncementRepository announcements,
     IResourceRepository resources,
     IQueryExecutor executor,
     ApplicationOptions application,
     HybridCache cache
-) : ISitemapService
+) : IQueryHandler<GetSitemapXmlQuery, string>
 {
     private static readonly XNamespace Xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
@@ -31,7 +33,7 @@ public class SitemapService(
         "/register",
     ];
 
-    public async Task<string> GetSitemapXmlAsync(CancellationToken ct = default)
+    public async Task<string> HandleAsync(GetSitemapXmlQuery query, CancellationToken ct = default)
     {
         return await cache.GetOrCreateAsync(
             "sitemap",
@@ -39,20 +41,6 @@ public class SitemapService(
             CachePolicies.PublicContent,
             [CacheTags.Events, CacheTags.Announcements, CacheTags.Resources],
             ct
-        );
-    }
-
-    public string GetRobotsTxt()
-    {
-        var baseUrl = application.BaseUrl.TrimEnd('/');
-        return string.Join(
-            '\n',
-            "User-agent: *",
-            "Disallow: /admin",
-            "Disallow: /api/",
-            "Allow: /api/files/",
-            "",
-            $"Sitemap: {baseUrl}/sitemap.xml"
         );
     }
 

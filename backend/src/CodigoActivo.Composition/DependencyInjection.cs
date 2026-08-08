@@ -3,6 +3,7 @@ using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Queries;
+using CodigoActivo.Application.Seo.Queries;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
@@ -431,13 +432,13 @@ public static class DependencyInjection
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
-        services.AddScoped<ISitemapService, SitemapService>();
         services.AddScoped<IEmailService, EmailService>();
     }
 
     private static void AddApplicationHandlers(IServiceCollection services)
     {
         AddPartnerHandlers(services);
+        AddSeoHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -447,5 +448,11 @@ public static class DependencyInjection
         services.AddScoped<CreatePartnerCommandHandler>();
         services.AddScoped<UpdatePartnerCommandHandler>();
         services.AddScoped<DeletePartnerCommandHandler>();
+    }
+
+    private static void AddSeoHandlers(IServiceCollection services)
+    {
+        services.AddScoped<GetSitemapXmlQueryHandler>();
+        services.AddScoped<GetRobotsTxtQueryHandler>();
     }
 }
