@@ -15,6 +15,7 @@ using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Participation.Queries;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Queries;
+using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Seo.Queries;
@@ -440,7 +441,6 @@ public static class DependencyInjection
     {
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddScoped<IActivityService, ActivityService>();
-        services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IEmailService, EmailService>();
     }
 
@@ -455,6 +455,7 @@ public static class DependencyInjection
         AddParticipationHandlers(services);
         AddUserHandlers(services);
         AddAuthHandlers(services);
+        AddReportHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -552,5 +553,15 @@ public static class DependencyInjection
         services.AddScoped<ResetPasswordCommandHandler>();
         services.AddScoped<AccountEmails>();
         services.AddScoped<OtpValidator>();
+    }
+
+    private static void AddReportHandlers(IServiceCollection services)
+    {
+        services.AddScoped<GetEventSummaryQueryHandler>();
+        services.AddScoped<ListEventAttendeesQueryHandler>();
+        services.AddScoped<GetEventBadgesQueryHandler>();
+        services.AddScoped<GetEventRosterQueryHandler>();
+        services.AddScoped<GetDashboardSummaryQueryHandler>();
+        services.AddScoped<GetDashboardAnalyticsQueryHandler>();
     }
 }
