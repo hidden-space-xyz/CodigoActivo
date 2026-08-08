@@ -216,33 +216,6 @@ public interface IActivityService
     );
 }
 
-public interface IResourceService
-{
-    public Task<PagedResult<ResourceListItemResponse>> ListAsync(
-        ResourceListQuery query,
-        CancellationToken ct = default
-    );
-
-    public Task<IReadOnlyList<ResourceTypeResponse>> ListTypesAsync(CancellationToken ct = default);
-
-    public Task<Result<ResourceResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
-
-    public Task<Result<ResourceResponse>> CreateAsync(
-        CreateResourceRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<ResourceResponse>> UpdateAsync(
-        Guid id,
-        UpdateResourceRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
-}
-
 public interface IFileService
 {
     public Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);

@@ -5,6 +5,8 @@ using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Queries;
+using CodigoActivo.Application.Resources.Commands;
+using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Seo.Queries;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
@@ -429,7 +431,6 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IActivityService, ActivityService>();
-        services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
@@ -441,6 +442,7 @@ public static class DependencyInjection
         AddPartnerHandlers(services);
         AddSeoHandlers(services);
         AddAnnouncementHandlers(services);
+        AddResourceHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -467,5 +469,15 @@ public static class DependencyInjection
         services.AddScoped<UpdateAnnouncementCommandHandler>();
         services.AddScoped<DeleteAnnouncementCommandHandler>();
         services.AddScoped<SetAnnouncementFeaturedCommandHandler>();
+    }
+
+    private static void AddResourceHandlers(IServiceCollection services)
+    {
+        services.AddScoped<ListResourcesQueryHandler>();
+        services.AddScoped<ListResourceTypesQueryHandler>();
+        services.AddScoped<GetResourceByIdQueryHandler>();
+        services.AddScoped<CreateResourceCommandHandler>();
+        services.AddScoped<UpdateResourceCommandHandler>();
+        services.AddScoped<DeleteResourceCommandHandler>();
     }
 }
