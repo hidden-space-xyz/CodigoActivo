@@ -101,37 +101,6 @@ public interface IActivityService
     );
 }
 
-public interface IReportService
-{
-    public Task<Result<EventSummaryResponse>> GetEventSummaryAsync(
-        Guid eventId,
-        CancellationToken ct = default
-    );
-
-    public Task<PagedResult<EventAttendeeResponse>> ListEventAttendeesAsync(
-        Guid eventId,
-        EventAttendeeListQuery query,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventBadgesResponse>> GetEventBadgesAsync(
-        Guid eventId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventRosterResponse>> GetEventRosterAsync(
-        Guid eventId,
-        CancellationToken ct = default
-    );
-
-    public Task<DashboardSummaryResponse> GetDashboardSummaryAsync(CancellationToken ct = default);
-
-    public Task<DashboardAnalyticsResponse> GetDashboardAnalyticsAsync(
-        DashboardAnalyticsQuery query,
-        CancellationToken ct = default
-    );
-}
-
 public interface IEmailService
 {
     public Task<Result<SendEmailResultResponse>> SendToUserAsync(
