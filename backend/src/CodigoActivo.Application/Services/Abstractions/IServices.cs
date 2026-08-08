@@ -348,13 +348,6 @@ public interface IParticipationService
     );
 }
 
-public interface ISitemapService
-{
-    public Task<string> GetSitemapXmlAsync(CancellationToken ct = default);
-
-    public string GetRobotsTxt();
-}
-
 public interface IEmailService
 {
     public Task<Result<SendEmailResultResponse>> SendToUserAsync(
