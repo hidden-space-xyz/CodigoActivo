@@ -1,7 +1,8 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -20,7 +21,7 @@ public sealed class FileServiceTests
     private readonly ILocalFileSystemRepository storage =
         Substitute.For<ILocalFileSystemRepository>();
     private readonly TestClock clock = new();
-    private readonly FileStorageOptions options = new();
+    private readonly FileUploadOptions options = new();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly FileService sut;
 
@@ -163,7 +164,7 @@ public sealed class FileServiceTests
     [Fact]
     public async Task CreateAsync_UploadEmpty_ReturnsValidationError()
     {
-        var upload = new FileUploadRequest(new MemoryStream(), "empty.png", 0);
+        var upload = new FileUpload(new MemoryStream(), "empty.png", 0);
 
         var result = await sut.CreateAsync(
             upload,
@@ -179,7 +180,7 @@ public sealed class FileServiceTests
     public async Task CreateAsync_UploadTooLarge_ReturnsValidationError()
     {
         options.MaxSizeBytes = 10;
-        var upload = new FileUploadRequest(PngStream(), "big.png", 11);
+        var upload = new FileUpload(PngStream(), "big.png", 11);
 
         var result = await sut.CreateAsync(
             upload,
@@ -196,7 +197,7 @@ public sealed class FileServiceTests
     {
         options.MaxSizeBytes = 32;
         var content = PngStream();
-        var upload = new FileUploadRequest(content, "exact.png", 32);
+        var upload = new FileUpload(content, "exact.png", 32);
 
         var result = await sut.CreateAsync(
             upload,
@@ -215,7 +216,7 @@ public sealed class FileServiceTests
     [Fact]
     public async Task CreateAsync_StreamNotSeekable_ReturnsValidationError()
     {
-        var upload = new FileUploadRequest(new NonSeekableStream(PngBytes()), "x.png", 32);
+        var upload = new FileUpload(new NonSeekableStream(PngBytes()), "x.png", 32);
 
         var result = await sut.CreateAsync(
             upload,
@@ -230,7 +231,7 @@ public sealed class FileServiceTests
     [Fact]
     public async Task CreateAsync_FormatUnsupported_ReturnsValidationError()
     {
-        var upload = new FileUploadRequest(JunkStream(), "junk.bin", 32);
+        var upload = new FileUpload(JunkStream(), "junk.bin", 32);
 
         var result = await sut.CreateAsync(
             upload,
@@ -251,7 +252,7 @@ public sealed class FileServiceTests
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         var content = PngStream();
-        var upload = new FileUploadRequest(content, "  C:\\folder\\avatar.png  ", 32);
+        var upload = new FileUpload(content, "  C:\\folder\\avatar.png  ", 32);
 
         var result = await sut.CreateAsync(upload, caller, TestContext.Current.CancellationToken);
 
@@ -276,7 +277,7 @@ public sealed class FileServiceTests
     [Fact]
     public async Task CreateAsync_BlankFilename_DefaultsNameToFile()
     {
-        var upload = new FileUploadRequest(PngStream(), "   ", 32);
+        var upload = new FileUpload(PngStream(), "   ", 32);
 
         var result = await sut.CreateAsync(
             upload,
@@ -292,7 +293,7 @@ public sealed class FileServiceTests
     public async Task CreateAsync_FileNameLongerThanMaxLength_TruncatesNameTo260Chars()
     {
         var longName = new string('a', 300);
-        var upload = new FileUploadRequest(PngStream(), longName, 32);
+        var upload = new FileUpload(PngStream(), longName, 32);
 
         var result = await sut.CreateAsync(
             upload,
@@ -308,7 +309,7 @@ public sealed class FileServiceTests
     [Fact]
     public async Task CreateAsync_PersistenceThrows_RollsBackStorage()
     {
-        var upload = new FileUploadRequest(PngStream(), "avatar.png", 32);
+        var upload = new FileUpload(PngStream(), "avatar.png", 32);
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => throw new InvalidOperationException("db down"));
 
@@ -323,7 +324,7 @@ public sealed class FileServiceTests
     public async Task UpdateAsync_FileMissing_ReturnsNotFound()
     {
         FileMissing();
-        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+        var upload = new FileUpload(PngStream(), "new.png", 32);
 
         var result = await sut.UpdateAsync(
             Guid.NewGuid(),
@@ -362,7 +363,7 @@ public sealed class FileServiceTests
         var file = NewFile(name: "old.png", extension: "png");
         FileFound(file);
         var content = PngStream();
-        var upload = new FileUploadRequest(content, "renamed.png", 32);
+        var upload = new FileUpload(content, "renamed.png", 32);
 
         var result = await sut.UpdateAsync(file.Id, upload, TestContext.Current.CancellationToken);
 
@@ -389,7 +390,7 @@ public sealed class FileServiceTests
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
         FileFound(file);
-        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+        var upload = new FileUpload(PngStream(), "new.png", 32);
 
         var result = await sut.UpdateAsync(file.Id, upload, TestContext.Current.CancellationToken);
 
@@ -407,7 +408,7 @@ public sealed class FileServiceTests
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
         FileFound(file);
-        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+        var upload = new FileUpload(PngStream(), "new.png", 32);
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => throw new InvalidOperationException("db down"));
 
@@ -424,7 +425,7 @@ public sealed class FileServiceTests
     {
         var file = NewFile(name: "old.png", extension: "png");
         FileFound(file);
-        var upload = new FileUploadRequest(PngStream(), "new.png", 32);
+        var upload = new FileUpload(PngStream(), "new.png", 32);
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => throw new InvalidOperationException("db down"));
 

@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;

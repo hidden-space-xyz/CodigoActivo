@@ -1,6 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;

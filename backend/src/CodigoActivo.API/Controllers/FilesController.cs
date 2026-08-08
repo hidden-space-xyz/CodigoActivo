@@ -3,6 +3,7 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -79,10 +80,10 @@ public class FilesController(IFileService files) : ApiControllerBase
         return ToNoContent(await files.DeleteAsync(fileId, ct));
     }
 
-    private static FileUploadRequest? ToUploadRequest(IFormFile? file)
+    private static FileUpload? ToUploadRequest(IFormFile? file)
     {
         return file is null
             ? null
-            : new FileUploadRequest(file.OpenReadStream(), file.FileName, file.Length);
+            : new FileUpload(file.OpenReadStream(), file.FileName, file.Length);
     }
 }

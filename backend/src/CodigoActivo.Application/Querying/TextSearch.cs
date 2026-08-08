@@ -61,7 +61,7 @@ public static class TextSearch
 
         var termAccess = Expression.Property(
             Expression.Constant(new Term(term)),
-            nameof(Querying.Term.Value)
+            nameof(Term.Value)
         );
         body = Expression.Call(body, ContainsMethod, termAccess);
         return Expression.Lambda<Func<T, bool>>(body, selector.Parameters);
@@ -77,6 +77,6 @@ public static class TextSearch
             ? source
             : source.Where(Contains(selector, Normalize(term)));
     }
-}
 
-internal sealed record Term(string Value);
+    private sealed record Term(string Value);
+}

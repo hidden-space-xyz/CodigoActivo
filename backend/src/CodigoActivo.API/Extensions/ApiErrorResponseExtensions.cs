@@ -1,8 +1,7 @@
+using CodigoActivo.API.Contracts;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.API.Extensions;
-
-public sealed record ApiErrorResponse(string Title, int Status, ErrorCode Code, string TraceId);
 
 public static class ApiErrorResponseExtensions
 {

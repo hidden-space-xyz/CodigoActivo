@@ -7,12 +7,3 @@ public record FileResponse(
     DateTimeOffset UploadedAt,
     Guid UploadedBy
 );
-
-public sealed record FileUploadRequest(Stream Content, string FileName, long Length);
-
-public sealed record FileContentValueObject(
-    Stream Content,
-    string ContentType,
-    string FileName,
-    DateTimeOffset UploadedAt
-);

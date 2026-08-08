@@ -1,7 +1,8 @@
 namespace CodigoActivo.Application.Querying;
 
-public sealed record DashboardAnalyticsQuery
+public sealed class DashboardAnalyticsQuery
 {
-    public DateOnly? From { get; init; }
-    public DateOnly? To { get; init; }
+    public DateOnly? From { get; set; }
+
+    public DateOnly? To { get; set; }
 }

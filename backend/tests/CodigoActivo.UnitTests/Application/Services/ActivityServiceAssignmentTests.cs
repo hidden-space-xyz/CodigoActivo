@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;

@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Communication;
+namespace CodigoActivo.Application.Options;
 
 public sealed class ManualEmailOptions
 {

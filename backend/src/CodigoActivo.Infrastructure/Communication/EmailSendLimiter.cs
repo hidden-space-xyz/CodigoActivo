@@ -3,6 +3,12 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
+public readonly record struct EmailSendDecision(
+    EmailLimitScope Scope,
+    EmailGuardAlert Alert,
+    int GlobalRemaining
+);
+
 public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 {
     private const double GlobalLowWatermark = 0.2;

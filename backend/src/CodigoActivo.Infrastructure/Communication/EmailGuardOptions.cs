@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Communication;
+namespace CodigoActivo.Infrastructure.Communication;
 
 public sealed class EmailGuardOptions
 {

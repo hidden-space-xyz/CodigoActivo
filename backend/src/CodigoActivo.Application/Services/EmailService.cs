@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Resources.Localization;
 using CodigoActivo.Application.Services.Abstractions;

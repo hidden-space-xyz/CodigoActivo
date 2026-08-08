@@ -1,7 +1,7 @@
 using System.Text;
 using AwesomeAssertions;
 using CodigoActivo.API.Attributes;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Application.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +21,7 @@ public sealed class FileUploadSizeLimitAttributeTests
     private static IAuthorizationFilter BuildFilter(long maxSizeBytes)
     {
         var provider = new ServiceCollection()
-            .AddSingleton(new FileStorageOptions { MaxSizeBytes = maxSizeBytes })
+            .AddSingleton(new FileUploadOptions { MaxSizeBytes = maxSizeBytes })
             .BuildServiceProvider();
         return new FileUploadSizeLimitAttribute()
             .CreateInstance(provider)

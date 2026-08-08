@@ -1,6 +1,5 @@
 using System.Text;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Storage;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;

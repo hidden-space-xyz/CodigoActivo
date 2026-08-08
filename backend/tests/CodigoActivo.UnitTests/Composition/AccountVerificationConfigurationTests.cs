@@ -1,6 +1,6 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Composition;
-using CodigoActivo.Domain.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

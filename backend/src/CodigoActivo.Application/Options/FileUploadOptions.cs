@@ -1,10 +1,8 @@
-namespace CodigoActivo.Domain.Storage;
+namespace CodigoActivo.Application.Options;
 
-public sealed class FileStorageOptions
+public sealed class FileUploadOptions
 {
     public const long DefaultMaxSizeBytes = 10 * 1024 * 1024;
-
-    public string RootPath { get; set; } = "files";
 
     public long MaxSizeBytes { get; set; } = DefaultMaxSizeBytes;
 }

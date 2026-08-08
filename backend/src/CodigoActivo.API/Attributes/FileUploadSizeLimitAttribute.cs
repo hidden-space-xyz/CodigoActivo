@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Application.Options;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -12,12 +12,12 @@ public sealed class FileUploadSizeLimitAttribute : Attribute, IFilterFactory
     public IFilterMetadata CreateInstance(IServiceProvider serviceProvider)
     {
         return new FileUploadSizeLimitFilter(
-            serviceProvider.GetRequiredService<FileStorageOptions>()
+            serviceProvider.GetRequiredService<FileUploadOptions>()
         );
     }
 }
 
-internal sealed class FileUploadSizeLimitFilter(FileStorageOptions options) : IAuthorizationFilter
+internal sealed class FileUploadSizeLimitFilter(FileUploadOptions options) : IAuthorizationFilter
 {
     internal const long MultipartOverheadBytes = 64 * 1024;
 

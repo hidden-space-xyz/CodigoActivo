@@ -3,6 +3,7 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -16,7 +17,7 @@ public class FileService(
     IUnitOfWork uow,
     ILocalFileSystemRepository storage,
     IClock clock,
-    FileStorageOptions options,
+    FileUploadOptions options,
     ICacheInvalidator cacheInvalidator
 ) : IFileService
 {
@@ -30,7 +31,7 @@ public class FileService(
         return response is null ? Error.NotFound(ErrorCode.FileNotFound) : Result.Success(response);
     }
 
-    public async Task<Result<FileContentValueObject>> GetContentAsync(
+    public async Task<Result<FileContent>> GetContentAsync(
         Guid id,
         CancellationToken ct = default
     )
@@ -53,7 +54,7 @@ public class FileService(
         var format = await stream.DetectImageFormatAsync(ct);
         stream.Position = 0;
 
-        return new FileContentValueObject(
+        return new FileContent(
             stream,
             format?.ContentType ?? FallbackContentType,
             meta.Value.Name,
@@ -62,7 +63,7 @@ public class FileService(
     }
 
     public async Task<Result<FileResponse>> CreateAsync(
-        FileUploadRequest? upload,
+        FileUpload? upload,
         Guid userId,
         CancellationToken ct = default
     )
@@ -101,7 +102,7 @@ public class FileService(
 
     public async Task<Result<FileResponse>> UpdateAsync(
         Guid id,
-        FileUploadRequest? upload,
+        FileUpload? upload,
         CancellationToken ct = default
     )
     {
@@ -179,7 +180,7 @@ public class FileService(
     }
 
     private async Task<Result<ImageFormat>> ValidateAndDetectAsync(
-        FileUploadRequest? upload,
+        FileUpload? upload,
         CancellationToken ct
     )
     {
