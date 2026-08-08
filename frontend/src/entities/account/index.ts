@@ -7,6 +7,7 @@ export type {
 } from './model/account-inputs'
 export type {
   AccountChild,
+  AccountCertificate,
   AccountEventRating,
   AccountHistoryEntry,
   AccountProfile,
@@ -18,6 +19,7 @@ export {
   deleteAccountChildRequest,
   deleteAccountRequest,
   getAccountChildrenRequest,
+  getAccountCertificatesRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
   saveAccountEventRatingRequest,

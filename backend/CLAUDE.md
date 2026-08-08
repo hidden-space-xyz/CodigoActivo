@@ -289,6 +289,22 @@ Six details are load-bearing:
 
 The queue is in-memory by design (see [SECURITY.md](../SECURITY.md)): no EF migration, and no OTP or reset URL is ever written to `db-data`. Pending mail dies with the process, which is acceptable because the write that triggered it is already committed and a member can always request a new code.
 
+### Participation certificates
+
+**The code says `certificate`; the Spanish UI calls it «diploma».** `EventCertificateResponse`, `GetCertificatesAsync`, `/api/me/certificates` — English domain term everywhere, because «diploma» is the Spanish word and identifiers here are English. The user-facing wording lives only in `frontend/src/shared/i18n/locales/es.ts`.
+
+`GET /api/me/certificates` (`MeController` → `ParticipationService.GetCertificatesAsync`) returns the caller's household's diplomas. **Nothing is persisted** — see the root `CLAUDE.md`. Five details are load-bearing:
+
+- **The grain is `(event, member)`, not the assignment row.** The DB-side filter is `AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed && Activity.Event.EventEndsAt < clock.Today && (UserId == caller || User.ParentId == caller)`; the `DistinctBy((EventId, UserId))` runs **after** `ToListAsync` because it does not translate. A member with three confirmed activities in one event gets one diploma — the sheet names no activity, so three would be byte-identical.
+- **`EventEndsAt < clock.Today` is strict**, matching `SaveRatingAsync`'s `EventRatingNotFinished` gate: an event that ends *today* has not finished, and rating and diploma must agree on that.
+- **The projection uses member-init into a private `CertificateRow`**, never a positional ctor — a positional record stops EF translating (same rule as `Projections.cs`).
+- **`Code` is the low 32 bits of a deterministic FNV-1a hash over the two GUIDs' bytes**, formatted `CA-{year}-{8 hex}` (`hash.ToString("X16")[8..]` — written that way rather than a `(uint)` narrowing cast, which trips MA0181). It is a *filing reference*, deliberately not a verification token: nothing can validate it, so the frontend labels it `Registro` and there is no public lookup endpoint. Never make it random or clock-derived — the same diploma must reprint identically forever. Two members of one household in one event get different codes because the user GUID is folded in.
+- **No caching and no `Result<T>`.** The read is per-caller and authenticated, so HybridCache would key on the user and OutputCache never caches authenticated requests. An empty list is the natural "no diplomas yet" answer, which is why the feature needs no new `ErrorCode` and no `errors.*` key.
+
+Ordering is `EventEndsAt` desc → `EventId` → self-before-minors → `TextSearch.Normalize`d name → `UserId`. The name keys go through `TextSearch.Normalize` + `StringComparer.Ordinal` because the prod image runs invariant globalization, where culture comparers degrade to ordinal anyway.
+
+Covered by the `Certificates_*` tests in `IntegrationTests/Controllers/MeControllerTests.cs` (confirmed-only, finished-only, **ends-today**, dedup, one-per-household-member, household isolation, 401). `Certificates_EventEndingToday_ReturnsNothing` is the one that pins the strict `<` — the "unfinished" case sits a month past the test clock, so without it a slip to `<=` stays green. There is no `ParticipationServiceTests` unit file — this service has always been covered end-to-end, which is the right call here because the filter runs in SQL.
+
 ### Startup and the rest
 
 - **SEO**: `SeoController` serves `GET`+`HEAD /api/sitemap.xml` and `/api/robots.txt` from `Application/Services/SitemapService.cs`, `[AllowAnonymous]` + `[ApiExplorerSettings(IgnoreApi = true)]` so they stay out of `swagger.json`, output-cached under `OutputCachePolicies.Seo` and sent with `Cache-Control: public, max-age=1h`. nginx/Vite expose them at the site root.

@@ -27,4 +27,12 @@ public class MeController(IActivityService activities, IParticipationService par
     {
         return Ok(await participation.GetHistoryAsync(UserId, ct));
     }
+
+    [HttpGet("certificates")]
+    public async Task<ActionResult<IReadOnlyList<EventCertificateResponse>>> CertificatesAsync(
+        CancellationToken ct
+    )
+    {
+        return Ok(await participation.GetCertificatesAsync(UserId, ct));
+    }
 }

@@ -1,6 +1,6 @@
 import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
 import { putApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
-import { getApiMeEventHistory } from '@/shared/api/generated/endpoints/me/me'
+import { getApiMeCertificates, getApiMeEventHistory } from '@/shared/api/generated/endpoints/me/me'
 import {
   deleteApiUsersUserId,
   getApiUsers,
@@ -19,12 +19,14 @@ import type {
 } from '../model/account-inputs'
 import type {
   AccountChild,
+  AccountCertificate,
   AccountEventRating,
   AccountHistoryEntry,
   AccountProfile,
 } from '../model/types'
 import {
   toAccountChild,
+  toAccountCertificate,
   toAccountEventRating,
   toAccountHistoryEntry,
   toAccountProfile,
@@ -96,6 +98,11 @@ export async function deleteAccountChildRequest(childId: string): Promise<void> 
 export async function getAccountHistoryRequest(): Promise<readonly AccountHistoryEntry[]> {
   const { data } = await getApiMeEventHistory()
   return (data ?? []).map(toAccountHistoryEntry)
+}
+
+export async function getAccountCertificatesRequest(): Promise<readonly AccountCertificate[]> {
+  const { data } = await getApiMeCertificates()
+  return (data ?? []).map(toAccountCertificate)
 }
 
 export async function saveAccountEventRatingRequest(

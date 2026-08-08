@@ -39,6 +39,19 @@ export interface AccountEventRating {
   readonly suggestions: string
 }
 
+export interface AccountCertificate {
+  readonly code: string
+  readonly eventId: string
+  readonly participantId: string
+  readonly firstName: string
+  readonly lastName: string
+  readonly isSelf: boolean
+  readonly eventTitle: string
+  readonly eventSubtitle: string
+  readonly startsAt: string
+  readonly endsAt: string
+}
+
 export interface AccountHistoryEntry {
   readonly eventId: string
   readonly title: string

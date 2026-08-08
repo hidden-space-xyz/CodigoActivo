@@ -164,6 +164,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 
     private static readonly DateOnly PastStart = new(2026, 6, 1);
     private static readonly DateOnly PastEnd = new(2026, 6, 2);
+    private static readonly DateOnly TodayStart = new(2026, 7, 3);
+    private static readonly DateOnly TodayEnd = new(2026, 7, 4);
     private static readonly DateOnly FutureStart = new(2026, 8, 1);
     private static readonly DateOnly FutureEnd = new(2026, 8, 2);
 
@@ -323,6 +325,212 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         var history = await GetHistoryAsMemberAsync();
 
         history.Should().BeEmpty();
+    }
+
+    private async Task SeedExtraAssignmentAsync(
+        Guid eventId,
+        Guid userId,
+        string activityTitle,
+        Guid statusId
+    )
+    {
+        var activityId = Guid.NewGuid();
+        var thumbnailId = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(Thumbnail(thumbnailId));
+            db.Activities.Add(
+                new Activity
+                {
+                    Id = activityId,
+                    Title = activityTitle,
+                    Description = "Descripción",
+                    Location = "Sala",
+                    ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 16, 0, 0, TimeSpan.Zero),
+                    ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
+                    EventId = eventId,
+                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            db.ActivityUserRoleAssignments.Add(
+                new ActivityUserRoleAssignment
+                {
+                    UserId = userId,
+                    ActivityId = activityId,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    AssignmentStatusId = statusId,
+                }
+            );
+            return Task.CompletedTask;
+        });
+    }
+
+    private async Task<List<EventCertificateResponse>> GetCertificatesAsMemberAsync()
+    {
+        var client = await LoginAsMemberAsync();
+        var response = await client.GetAsync(TestUri.Rel("/api/me/certificates"), Ct);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return await response.ReadJsonAsync<List<EventCertificateResponse>>(Ct) ?? [];
+    }
+
+    private Task<Guid> SeedPastConfirmedAsync(Guid userId, string activityTitle)
+    {
+        return SeedAssignmentAsync(
+            userId,
+            activityTitle,
+            new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
+            SeedIds.ActivityRoleTypes.Participant,
+            SeedIds.AssignmentStatusTypes.Confirmed,
+            PastStart,
+            PastEnd
+        );
+    }
+
+    [Fact]
+    public async Task Certificates_Anonymous_ReturnsUnauthorized()
+    {
+        var client = CreateClient();
+
+        var response = await client.GetAsync(TestUri.Rel("/api/me/certificates"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Certificates_PastEventWithConfirmedAssignment_ReturnsOwnCertificate()
+    {
+        var eventId = await SeedPastConfirmedAsync(
+            TestSeedData.Users.MemberId,
+            "Taller de robótica"
+        );
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        var certificate = certificates.Should().ContainSingle().Subject;
+        certificate.EventId.Should().Be(eventId);
+        certificate.UserId.Should().Be(TestSeedData.Users.MemberId);
+        certificate.FirstName.Should().Be("Marta");
+        certificate.LastName.Should().Be("Miembro");
+        certificate.IsSelf.Should().BeTrue();
+        certificate.EventTitle.Should().Be("Evento");
+        certificate.EventStartsAt.Should().Be(PastStart);
+        certificate.EventEndsAt.Should().Be(PastEnd);
+        certificate.Code.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task Certificates_PastEventWithUnconfirmedAssignment_ReturnsNothing()
+    {
+        await SeedAssignmentAsync(
+            TestSeedData.Users.MemberId,
+            "Taller pasado",
+            new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
+            SeedIds.ActivityRoleTypes.Participant,
+            SeedIds.AssignmentStatusTypes.Requested,
+            PastStart,
+            PastEnd
+        );
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        certificates.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Certificates_EventEndingToday_ReturnsNothing()
+    {
+        await SeedAssignmentAsync(
+            TestSeedData.Users.MemberId,
+            "Taller que acaba hoy",
+            new DateTimeOffset(2026, 7, 4, 10, 0, 0, TimeSpan.Zero),
+            SeedIds.ActivityRoleTypes.Participant,
+            SeedIds.AssignmentStatusTypes.Confirmed,
+            TodayStart,
+            TodayEnd
+        );
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        certificates.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Certificates_UnfinishedEventWithConfirmedAssignment_ReturnsNothing()
+    {
+        await SeedAssignmentAsync(
+            TestSeedData.Users.MemberId,
+            "Taller futuro",
+            new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
+            SeedIds.ActivityRoleTypes.Participant,
+            SeedIds.AssignmentStatusTypes.Confirmed,
+            FutureStart,
+            FutureEnd
+        );
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        certificates.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Certificates_SeveralConfirmedActivitiesInOneEvent_ReturnsOneCertificate()
+    {
+        var eventId = await SeedPastConfirmedAsync(
+            TestSeedData.Users.MemberId,
+            "Primera actividad"
+        );
+        await SeedExtraAssignmentAsync(
+            eventId,
+            TestSeedData.Users.MemberId,
+            "Segunda actividad",
+            SeedIds.AssignmentStatusTypes.Confirmed
+        );
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        certificates.Should().ContainSingle().Which.EventId.Should().Be(eventId);
+    }
+
+    [Fact]
+    public async Task Certificates_ParentAndChildConfirmedInOneEvent_ReturnsOneCertificatePerMember()
+    {
+        var eventId = await SeedPastConfirmedAsync(
+            TestSeedData.Users.MemberId,
+            "Actividad de la madre"
+        );
+        await SeedExtraAssignmentAsync(
+            eventId,
+            TestSeedData.Users.MemberChildId,
+            "Actividad del menor",
+            SeedIds.AssignmentStatusTypes.Confirmed
+        );
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        certificates.Should().HaveCount(2);
+        certificates.Should().AllSatisfy(certificate => certificate.EventId.Should().Be(eventId));
+        certificates
+            .Should()
+            .Contain(certificate => certificate.UserId == TestSeedData.Users.MemberId && certificate.IsSelf);
+        certificates
+            .Should()
+            .Contain(certificate =>
+                certificate.UserId == TestSeedData.Users.MemberChildId && !certificate.IsSelf
+            );
+        certificates.Select(certificate => certificate.Code).Distinct(StringComparer.Ordinal).Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Certificates_OtherHouseholdConfirmedAssignment_IsNotReturned()
+    {
+        await SeedPastConfirmedAsync(TestSeedData.Users.AdminId, "Taller ajeno");
+
+        var certificates = await GetCertificatesAsMemberAsync();
+
+        certificates.Should().BeEmpty();
     }
 
     [Fact]

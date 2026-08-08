@@ -6,6 +6,7 @@ export const es = {
     edit: 'Editar',
     create: 'Crear',
     apply: 'Aplicar',
+    close: 'Cerrar',
     loading: 'Cargando…',
     loadMore: 'Cargar más',
     retry: 'Reintentar',
@@ -340,7 +341,12 @@ export const es = {
       eyebrow: '// mi cuenta',
       title: 'Mi área de usuario',
       intro:
-        'Gestiona tus datos, tu contraseña, los menores a tu cargo y tu historial de eventos.',
+        'Gestiona tus datos, tu contraseña, los menores a tu cargo, tu historial de eventos y tus diplomas.',
+      tabs: {
+        profile: 'Perfil',
+        history: 'Historial',
+        certificates: 'Diplomas',
+      },
     },
     notFound: {
       eyebrow: '// error 404',
@@ -1084,7 +1090,7 @@ export const es = {
     account: {
       notAuthenticated: 'No autenticado',
       profile: {
-        title: 'Mis datos',
+        lead: 'Con estos datos te identificamos en la asociación. Mantén tu correo al día: es donde recibirás las confirmaciones de inscripción.',
         editData: 'Editar datos',
         changePassword: 'Cambiar contraseña',
         deleteAccount: 'Eliminar mi cuenta',
@@ -1101,7 +1107,8 @@ export const es = {
         passwordUpdatedSummary: 'Contraseña cambiada',
       },
       minors: {
-        title: 'Mis menores',
+        title: 'Menores a mi cargo',
+        lead: 'Los menores a tu cargo no tienen cuenta propia: los inscribes tú a las actividades y las notificaciones llegan a tu correo.',
         add: '+ Añadir menor',
         empty: 'No tienes menores a tu cargo. Puedes añadir los que quieras inscribir.',
         addHeader: 'Añadir menor',
@@ -1116,7 +1123,7 @@ export const es = {
         deletedSummary: 'Menor eliminado',
       },
       history: {
-        title: 'Historial',
+        lead: 'Todas las inscripciones de tu unidad familiar, próximas y pasadas. Cuando un evento termina puedes valorarlo.',
         empty: 'Todavía no tienes inscripciones en ningún evento.',
         error: 'No se ha podido cargar tu historial. Inténtalo de nuevo más tarde.',
         upcoming: 'Próximos eventos',
@@ -1130,6 +1137,35 @@ export const es = {
           header: 'Valorar evento',
           score: 'Tu puntuación',
           clearScore: 'Quitar puntuación',
+        },
+      },
+      certificates: {
+        lead: 'Al terminar un evento se emite un diploma por cada persona de tu unidad familiar cuya asistencia quedó confirmada. Ábrelo para verlo en grande o descárgalo en PNG o PDF.',
+        empty:
+          'Todavía no tienes diplomas. Aparecerán aquí en cuanto termine un evento en el que hayas participado con la asistencia confirmada.',
+        error: 'No se han podido cargar tus diplomas. Inténtalo de nuevo más tarde.',
+        renderError: 'No se ha podido generar el diploma. Inténtalo de nuevo.',
+        view: 'Ver diploma',
+        png: 'PNG',
+        pdf: 'PDF',
+        download: 'Descargar PNG',
+        downloadPdf: 'Descargar PDF',
+        openAria: 'Ver el diploma de {name} en {event}',
+        fileNamePrefix: 'diploma',
+        dialog: {
+          header: 'Diploma de participación',
+          hint: 'Descárgalo como imagen PNG o como PDF: ambos en tamaño A4 apaisado y calidad de impresión.',
+        },
+        sheet: {
+          eyebrow: 'Diploma de participación',
+          preamble: 'Se certifica que',
+          connector: 'ha participado en',
+          microtext: 'Código Activo · Diploma de participación',
+          sealTop: 'Asociación Código Activo',
+          sealBottom: 'León · desde 2016',
+          issuerLabel: 'Otorga',
+          issuerValue: 'Código Activo · León',
+          registryLabel: 'Registro',
         },
       },
     },

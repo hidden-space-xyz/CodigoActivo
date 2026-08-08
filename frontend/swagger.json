@@ -2187,6 +2187,28 @@
         }
       }
     },
+    "/api/me/certificates": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventCertificateResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/partners": {
       "get": {
         "tags": [
@@ -4585,6 +4607,51 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventCertificateResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isSelf": {
+            "type": "boolean"
+          },
+          "eventTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventSubtitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "eventStartsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "eventEndsAt": {
+            "type": "string",
+            "format": "date"
           }
         },
         "additionalProperties": false

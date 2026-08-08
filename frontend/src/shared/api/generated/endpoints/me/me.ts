@@ -16,6 +16,7 @@ import type {
 
 import type {
   AssignedActivityResponse,
+  EventCertificateResponse,
   EventHistoryResponse,
   GetApiMeAssignedActivitiesParams
 } from '../../models';
@@ -185,4 +186,80 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiMeEventHistoryMutationOptions(options), queryClient);
+    }
+    export type getApiMeCertificatesResponse200 = {
+  data: EventCertificateResponse[]
+  status: 200
+}
+
+export type getApiMeCertificatesResponseSuccess = (getApiMeCertificatesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMeCertificatesResponse = (getApiMeCertificatesResponseSuccess)
+
+export const getGetApiMeCertificatesUrl = () => {
+
+
+
+
+  return `/api/me/certificates`
+}
+
+export const getApiMeCertificates = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMeCertificatesResponse> => {
+
+  return httpClient<getApiMeCertificatesResponse>(getGetApiMeCertificatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiMeCertificatesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeCertificates>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeCertificates>>, TError,void, TContext> => {
+
+const mutationKey = ['getApiMeCertificates'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeCertificates>>, void> = () => {
+
+
+          return  getApiMeCertificates(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMeCertificatesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeCertificates>>>
+
+    export type GetApiMeCertificatesMutationError = unknown
+
+    export const useGetApiMeCertificates = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeCertificates>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMeCertificates>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiMeCertificatesMutationOptions(options), queryClient);
     }

@@ -62,16 +62,16 @@ const groups = computed(() => [
 </script>
 
 <template>
-  <section class="acc-card">
-    <div class="acc-card__head">
-      <h2 class="acc-card__title">{{ $t('features.account.history.title') }}</h2>
+  <section class="acc-pane">
+    <div class="acc-pane__head">
+      <p class="acc-pane__lead">{{ $t('features.account.history.lead') }}</p>
     </div>
 
-    <p v-if="history.isLoading.value" class="acc-card__state">{{ $t('common.loading') }}</p>
-    <p v-else-if="history.isError.value" class="acc-card__state">
+    <p v-if="history.isLoading.value" class="acc-pane__state">{{ $t('common.loading') }}</p>
+    <p v-else-if="history.isError.value" class="acc-pane__state">
       {{ $t('features.account.history.error') }}
     </p>
-    <p v-else-if="entries.length === 0" class="acc-card__state">
+    <p v-else-if="entries.length === 0" class="acc-pane__state">
       {{ $t('features.account.history.empty') }}
     </p>
 
@@ -156,30 +156,18 @@ const groups = computed(() => [
 </template>
 
 <style scoped>
-.acc-card {
-  background: var(--ca-bg-elevated);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 18px;
-  padding: 26px 28px;
-}
-
-.acc-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+.acc-pane__head {
   margin-bottom: 18px;
 }
 
-.acc-card__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 20px;
-  color: var(--ca-text-bright);
+.acc-pane__lead {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  max-width: 62ch;
 }
 
-.acc-card__state {
+.acc-pane__state {
   color: var(--ca-text-dim);
   font-family: var(--ca-font-mono);
 }

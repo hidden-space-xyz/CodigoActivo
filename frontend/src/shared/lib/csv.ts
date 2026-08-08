@@ -50,8 +50,8 @@ export function useCsvExport<T>(options: CsvExportOptions<T>) {
   return { exporting, exportCsv }
 }
 
-export function downloadCsv(filename: string, content: string): void {
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }))
+export function downloadBlob(filename: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = filename
@@ -60,4 +60,8 @@ export function downloadCsv(filename: string, content: string): void {
   link.click()
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+export function downloadCsv(filename: string, content: string): void {
+  downloadBlob(filename, new Blob([content], { type: 'text/csv;charset=utf-8' }))
 }
