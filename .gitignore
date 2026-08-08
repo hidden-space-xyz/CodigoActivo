@@ -1,4 +1,4 @@
-files/
+backend/src/CodigoActivo.API/files/
 example/
 .claude/settings.local.json
 
