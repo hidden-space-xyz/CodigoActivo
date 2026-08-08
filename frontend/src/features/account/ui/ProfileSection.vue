@@ -115,10 +115,10 @@ function confirmDeleteAccount(): void {
 </script>
 
 <template>
-  <section class="acc-card">
-    <div class="acc-card__head">
-      <h2 class="acc-card__title">{{ $t('features.account.profile.title') }}</h2>
-      <div class="acc-card__actions">
+  <section class="acc-pane">
+    <div class="acc-pane__head">
+      <p class="acc-pane__lead">{{ $t('features.account.profile.lead') }}</p>
+      <div class="acc-pane__actions">
         <BaseButton variant="ghost" @click="openEdit">{{
           $t('features.account.profile.editData')
         }}</BaseButton>
@@ -131,7 +131,7 @@ function confirmDeleteAccount(): void {
       </div>
     </div>
 
-    <p v-if="profile.isLoading.value" class="acc-card__state">{{ $t('common.loading') }}</p>
+    <p v-if="profile.isLoading.value" class="acc-pane__state">{{ $t('common.loading') }}</p>
     <dl v-else-if="user" class="acc-info">
       <div class="acc-info__row">
         <dt>{{ $t('common.name') }}</dt>
@@ -299,14 +299,7 @@ function confirmDeleteAccount(): void {
 </template>
 
 <style scoped>
-.acc-card {
-  background: var(--ca-bg-elevated);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 18px;
-  padding: 26px 28px;
-}
-
-.acc-card__head {
+.acc-pane__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -315,20 +308,22 @@ function confirmDeleteAccount(): void {
   margin-bottom: 18px;
 }
 
-.acc-card__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 20px;
-  color: var(--ca-text-bright);
+.acc-pane__lead {
+  flex: 1;
+  min-width: 240px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  max-width: 46ch;
 }
 
-.acc-card__actions {
+.acc-pane__actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.acc-card__state {
+.acc-pane__state {
   color: var(--ca-text-dim);
   font-family: var(--ca-font-mono);
 }
@@ -416,6 +411,14 @@ function confirmDeleteAccount(): void {
   .acc-info,
   .acc-form__grid {
     grid-template-columns: 1fr;
+  }
+
+  .acc-pane__actions {
+    width: 100%;
+  }
+
+  .acc-pane__actions > * {
+    flex: 1 1 100%;
   }
 }
 </style>

@@ -356,6 +356,11 @@ public interface IParticipationService
         CancellationToken ct = default
     );
 
+    public Task<IReadOnlyList<EventCertificateResponse>> GetCertificatesAsync(
+        Guid userId,
+        CancellationToken ct = default
+    );
+
     public Task<Result<EventRatingResponse>> SaveRatingAsync(
         Guid eventId,
         Guid userId,

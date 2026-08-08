@@ -1,4 +1,5 @@
 import type {
+  EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
   EventRatingResponse,
@@ -16,6 +17,7 @@ import type {
 } from '../model/account-inputs'
 import type {
   AccountChild,
+  AccountCertificate,
   AccountEventRating,
   AccountHistoryActivity,
   AccountHistoryEntry,
@@ -112,6 +114,21 @@ export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHisto
     canRate: entry.canRate ?? false,
     rating: entry.myRating ? toAccountEventRating(entry.myRating) : null,
     activities: (entry.activities ?? []).map(toAccountHistoryActivity),
+  }
+}
+
+export function toAccountCertificate(certificate: EventCertificateResponse): AccountCertificate {
+  return {
+    code: certificate.code ?? '',
+    eventId: certificate.eventId ?? '',
+    participantId: certificate.userId ?? '',
+    firstName: certificate.firstName ?? '',
+    lastName: certificate.lastName ?? '',
+    isSelf: certificate.isSelf ?? false,
+    eventTitle: certificate.eventTitle ?? '',
+    eventSubtitle: certificate.eventSubtitle ?? '',
+    startsAt: certificate.eventStartsAt ?? '',
+    endsAt: certificate.eventEndsAt ?? '',
   }
 }
 

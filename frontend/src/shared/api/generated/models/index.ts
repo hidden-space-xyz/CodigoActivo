@@ -54,6 +54,7 @@ export * from './eventBadgesResponse';
 export * from './eventCategoryResponse';
 export * from './eventCategoryTypeResponse';
 export * from './eventCategoryTypeResponsePagedResult';
+export * from './eventCertificateResponse';
 export * from './eventHistoryActivityResponse';
 export * from './eventHistoryResponse';
 export * from './eventListItemResponse';

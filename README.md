@@ -32,8 +32,10 @@ and member sign-up, plus an **admin back-office** where the team runs it all.
 - **Public site** — home, about, events, announcements, resources and partners, with rich-text content
   and per-activity signup on each event.
 - **Member accounts** — registration (adults can enroll the minors in their care), OTP email
-  verification, password reset, and a self-service account page with profile, dependent minors, and a
-  participation history from which members rate the events they attended.
+  verification, password reset, and a self-service account page organised into three tabs — profile
+  (with the dependent minors), a participation history from which members rate the events they
+  attended, and the participation certificates earned by every member of the household, rendered in the
+  browser and downloadable as a print-quality PNG or PDF.
 - **Admin back-office** — dashboard with charts, events (detail with activities, attendees and ratings
   tabs, plus a printable roster and badges), announcements, resources, partners, users and catalogs.
   Users and event attendees export to CSV.
