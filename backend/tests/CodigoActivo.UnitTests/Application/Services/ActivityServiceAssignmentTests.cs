@@ -2,8 +2,8 @@ using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Services;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
@@ -70,7 +70,7 @@ public sealed class ActivityServiceAssignmentTests
             activities,
             events,
             files,
-            Substitute.For<IFileService>(),
+            Substitute.For<IOrphanFileCleaner>(),
             statuses,
             roleTypes,
             modalityTypes,

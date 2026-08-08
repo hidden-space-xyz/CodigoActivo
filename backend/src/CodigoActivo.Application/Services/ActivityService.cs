@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -18,7 +19,7 @@ public class ActivityService(
     IActivityRepository activities,
     IEventRepository events,
     IFileRepository files,
-    IFileService fileService,
+    IOrphanFileCleaner orphanCleaner,
     IAssignmentStatusTypeRepository statuses,
     IActivityRoleTypeRepository roleTypes,
     IActivityModalityTypeRepository modalityTypes,
@@ -268,7 +269,7 @@ public class ActivityService(
 
         if (previousThumbnailId != request.ThumbnailId)
         {
-            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+            await orphanCleaner.DeleteIfOrphanedAsync(previousThumbnailId, ct);
         }
 
         return await GetByIdAsync(activityId, ct);
@@ -286,7 +287,7 @@ public class ActivityService(
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
-        await fileService.DeleteIfOrphanedAsync(activity.ThumbnailId, ct);
+        await orphanCleaner.DeleteIfOrphanedAsync(activity.ThumbnailId, ct);
         return Result.Success();
     }
 

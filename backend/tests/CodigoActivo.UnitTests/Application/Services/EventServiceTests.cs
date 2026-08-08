@@ -2,9 +2,9 @@ using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -19,7 +19,7 @@ public sealed class EventServiceTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly IFileService fileService = Substitute.For<IFileService>();
+    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
@@ -34,7 +34,7 @@ public sealed class EventServiceTests
             events,
             activities,
             files,
-            fileService,
+            orphanCleaner,
             categoryTypes,
             new FakeQueryExecutor(),
             clock,
@@ -1047,7 +1047,7 @@ public sealed class EventServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
@@ -1071,7 +1071,7 @@ public sealed class EventServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -1131,7 +1131,7 @@ public sealed class EventServiceTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -1175,7 +1175,7 @@ public sealed class EventServiceTests
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await fileService
+        await orphanCleaner
             .DidNotReceiveWithAnyArgs()
             .DeleteOrphanedAsync(
                 Arg.Any<IReadOnlyCollection<Guid>>(),
@@ -1230,7 +1230,7 @@ public sealed class EventServiceTests
         result.IsSuccess.Should().BeTrue();
         events.Received(1).Remove(ev);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids =>
@@ -1283,7 +1283,7 @@ public sealed class EventServiceTests
         var result = await sut.DeleteAsync(ev.Id, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        await fileService
+        await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(embeddedId)),

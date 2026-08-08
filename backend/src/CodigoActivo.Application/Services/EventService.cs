@@ -1,6 +1,7 @@
 using System.Globalization;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -16,7 +17,7 @@ public class EventService(
     IEventRepository events,
     IActivityRepository activities,
     IFileRepository files,
-    IFileService fileService,
+    IOrphanFileCleaner orphanCleaner,
     IEventCategoryTypeRepository categoryTypes,
     IQueryExecutor executor,
     IClock clock,
@@ -288,7 +289,7 @@ public class EventService(
             orphanCandidates.Add(previousThumbnailId);
         }
 
-        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
+        await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return await GetByIdAsync(id, ct);
     }
@@ -315,7 +316,7 @@ public class EventService(
             .Concat(RichTextFileReferences.Extract(ev.Description))
             .Distinct()
             .ToList();
-        await fileService.DeleteOrphanedAsync(orphanCandidates, ct);
+        await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
 
         return Result.Success();
     }

@@ -1,14 +1,13 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Resources.Localization;
 using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Services;
 
@@ -18,11 +17,9 @@ public class FileService(
     ILocalFileSystemRepository storage,
     IClock clock,
     FileStorageOptions options,
-    ILogger<FileService> logger,
     ICacheInvalidator cacheInvalidator
 ) : IFileService
 {
-    private const int MaxNameLength = 260;
     private const string FallbackContentType = "application/octet-stream";
 
     public async Task<Result<FileResponse>> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -45,7 +42,7 @@ public class FileService(
         }
 
         var stream = await storage.OpenReadAsync(
-            StoredName(meta.Value.Id, meta.Value.Extension),
+            FileNaming.StoredName(meta.Value.Id, meta.Value.Extension),
             ct
         );
         if (stream is null)
@@ -79,13 +76,13 @@ public class FileService(
         var format = detection.Value;
         var file = new FileEntity
         {
-            Name = SanitizeName(upload!.FileName),
+            Name = FileNaming.SanitizeName(upload!.FileName),
             Extension = format.Extension,
             UploadedAt = clock.UtcNow,
             UploadedBy = userId,
         };
 
-        var storedName = StoredName(file.Id, file.Extension);
+        var storedName = FileNaming.StoredName(file.Id, file.Extension);
         await storage.SaveAsync(storedName, upload.Content, ct);
 
         try
@@ -121,8 +118,8 @@ public class FileService(
         }
 
         var format = detection.Value;
-        var oldStoredName = StoredName(file.Id, file.Extension);
-        var newStoredName = StoredName(file.Id, format.Extension);
+        var oldStoredName = FileNaming.StoredName(file.Id, file.Extension);
+        var newStoredName = FileNaming.StoredName(file.Id, format.Extension);
         var extensionChanged = !string.Equals(
             oldStoredName,
             newStoredName,
@@ -131,7 +128,7 @@ public class FileService(
 
         await storage.SaveAsync(newStoredName, upload!.Content, ct);
 
-        file.Name = SanitizeName(upload.FileName);
+        file.Name = FileNaming.SanitizeName(upload.FileName);
         file.Extension = format.Extension;
         file.UploadedAt = clock.UtcNow;
 
@@ -171,7 +168,7 @@ public class FileService(
             return Error.Conflict(ErrorCode.FileInUse);
         }
 
-        var storedName = StoredName(file.Id, file.Extension);
+        var storedName = FileNaming.StoredName(file.Id, file.Extension);
 
         files.Remove(file);
         await uow.SaveChangesAsync(ct);
@@ -179,93 +176,6 @@ public class FileService(
         storage.Delete(storedName);
         await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         return Result.Success();
-    }
-
-    public async Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default)
-    {
-        try
-        {
-            _ = await DeleteAsync(fileId, ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(ex, "Best-effort orphan cleanup failed for file {FileId}", fileId);
-            }
-        }
-    }
-
-    public async Task DeleteOrphanedAsync(
-        IReadOnlyCollection<Guid> fileIds,
-        CancellationToken ct = default
-    )
-    {
-        try
-        {
-            var candidates = fileIds.Distinct().ToList();
-            if (candidates.Count is 0)
-            {
-                return;
-            }
-
-            var inUse = await files.GetInUseAsync(candidates, ct);
-            var orphanIds = candidates.Except(inUse).ToList();
-            if (orphanIds.Count is 0)
-            {
-                return;
-            }
-
-            var orphans = await files.GetAsync(f => orphanIds.Contains(f.Id), ct);
-            if (orphans.Count is 0)
-            {
-                return;
-            }
-
-            foreach (var file in orphans)
-            {
-                files.Remove(file);
-            }
-
-            await uow.SaveChangesAsync(ct);
-
-            foreach (var file in orphans)
-            {
-                DeleteStoredContent(file.Id, file.Extension);
-            }
-
-            await cacheInvalidator.InvalidateAsync(CacheTags.Files);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(
-                    ex,
-                    "Best-effort orphan cleanup failed for files {FileIds}",
-                    fileIds
-                );
-            }
-        }
-    }
-
-    private void DeleteStoredContent(Guid fileId, string extension)
-    {
-        try
-        {
-            storage.Delete(StoredName(fileId, extension));
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(
-                    ex,
-                    "Best-effort stored content deletion failed for file {FileId}",
-                    fileId
-                );
-            }
-        }
     }
 
     private async Task<Result<ImageFormat>> ValidateAndDetectAsync(
@@ -302,21 +212,5 @@ public class FileService(
 
         upload.Content.Position = 0;
         return format;
-    }
-
-    private static string StoredName(Guid id, string extension)
-    {
-        return $"{id}.{extension}";
-    }
-
-    private static string SanitizeName(string? fileName)
-    {
-        var name = Path.GetFileName(fileName ?? string.Empty).Trim();
-        if (string.IsNullOrEmpty(name))
-        {
-            name = AppStrings.FilesFallbackFileName;
-        }
-
-        return name.Length > MaxNameLength ? name[..MaxNameLength] : name;
     }
 }

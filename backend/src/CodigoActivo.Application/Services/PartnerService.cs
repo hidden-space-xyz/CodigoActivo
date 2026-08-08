@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Services.Abstractions;
@@ -14,7 +15,7 @@ namespace CodigoActivo.Application.Services;
 public class PartnerService(
     IPartnerRepository partners,
     IFileRepository files,
-    IFileService fileService,
+    IOrphanFileCleaner orphanCleaner,
     IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow,
@@ -146,7 +147,7 @@ public class PartnerService(
 
         if (previousThumbnailId != request.ThumbnailId)
         {
-            await fileService.DeleteIfOrphanedAsync(previousThumbnailId, ct);
+            await orphanCleaner.DeleteIfOrphanedAsync(previousThumbnailId, ct);
         }
 
         return partner.ToResponse();
@@ -164,7 +165,7 @@ public class PartnerService(
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
 
-        await fileService.DeleteIfOrphanedAsync(partner.ThumbnailId, ct);
+        await orphanCleaner.DeleteIfOrphanedAsync(partner.ThumbnailId, ct);
         return Result.Success();
     }
 }
