@@ -17,6 +17,8 @@ using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Seo.Queries;
 using CodigoActivo.Application.Services;
 using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Repositories;
@@ -435,7 +437,6 @@ public static class DependencyInjection
     {
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IUserService, UserService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -450,6 +451,7 @@ public static class DependencyInjection
         AddFileHandlers(services);
         AddEventHandlers(services);
         AddParticipationHandlers(services);
+        AddUserHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -520,5 +522,19 @@ public static class DependencyInjection
         services.AddScoped<GetEventCertificatesQueryHandler>();
         services.AddScoped<ListEventRatingsQueryHandler>();
         services.AddScoped<SaveEventRatingCommandHandler>();
+    }
+
+    private static void AddUserHandlers(IServiceCollection services)
+    {
+        services.AddScoped<ListUsersQueryHandler>();
+        services.AddScoped<GetUserByIdQueryHandler>();
+        services.AddScoped<ListUserStatusTypesQueryHandler>();
+        services.AddScoped<ListUserTypesQueryHandler>();
+        services.AddScoped<UpdateUserCommandHandler>();
+        services.AddScoped<DeleteUserCommandHandler>();
+        services.AddScoped<SetAdminCommandHandler>();
+        services.AddScoped<ChangeUserTypeCommandHandler>();
+        services.AddScoped<AddChildCommandHandler>();
+        services.AddScoped<ChangePasswordCommandHandler>();
     }
 }
