@@ -73,52 +73,6 @@ public interface IUserService
     public Task<IReadOnlyList<UserTypeResponse>> ListUserTypesAsync(CancellationToken ct = default);
 }
 
-public interface IEventService
-{
-    public Task<PagedResult<EventListItemResponse>> ListAsync(
-        EventListQuery query,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventResponse>> GetByIdAsync(Guid id, CancellationToken ct = default);
-
-    public Task<IReadOnlyList<int>> GetPastYearsAsync(CancellationToken ct = default);
-
-    public Task<Result<EventResponse>> CreateAsync(
-        CreateEventRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventResponse>> UpdateAsync(
-        Guid id,
-        UpdateEventRequest request,
-        Guid userId,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteAsync(Guid id, CancellationToken ct = default);
-    public Task<Result<EventResponse>> SetFeaturedAsync(Guid id, CancellationToken ct = default);
-
-    public Task<PagedResult<EventCategoryTypeResponse>> ListCategoryTypesAsync(
-        EventCategoryTypeListQuery query,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
-        CreateEventCategoryTypeRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
-        Guid id,
-        UpdateEventCategoryTypeRequest request,
-        CancellationToken ct = default
-    );
-
-    public Task<Result> DeleteCategoryTypeAsync(Guid id, CancellationToken ct = default);
-}
-
 public interface IActivityService
 {
     public Task<PagedResult<ActivityResponse>> ListAsync(

@@ -1,6 +1,9 @@
 using System.Globalization;
 using CodigoActivo.Application.Announcements.Commands;
 using CodigoActivo.Application.Announcements.Queries;
+using CodigoActivo.Application.Events;
+using CodigoActivo.Application.Events.Commands;
+using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Files.Queries;
@@ -431,7 +434,6 @@ public static class DependencyInjection
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
-        services.AddScoped<IEventService, EventService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IParticipationService, ParticipationService>();
         services.AddScoped<IReportService, ReportService>();
@@ -445,6 +447,7 @@ public static class DependencyInjection
         AddAnnouncementHandlers(services);
         AddResourceHandlers(services);
         AddFileHandlers(services);
+        AddEventHandlers(services);
     }
 
     private static void AddPartnerHandlers(IServiceCollection services)
@@ -491,5 +494,21 @@ public static class DependencyInjection
         services.AddScoped<UpdateFileCommandHandler>();
         services.AddScoped<DeleteFileCommandHandler>();
         services.AddScoped<FileUploadValidator>();
+    }
+
+    private static void AddEventHandlers(IServiceCollection services)
+    {
+        services.AddScoped<ListEventsQueryHandler>();
+        services.AddScoped<GetEventByIdQueryHandler>();
+        services.AddScoped<GetPastEventYearsQueryHandler>();
+        services.AddScoped<ListEventCategoryTypesQueryHandler>();
+        services.AddScoped<CreateEventCommandHandler>();
+        services.AddScoped<UpdateEventCommandHandler>();
+        services.AddScoped<DeleteEventCommandHandler>();
+        services.AddScoped<SetEventFeaturedCommandHandler>();
+        services.AddScoped<CreateEventCategoryTypeCommandHandler>();
+        services.AddScoped<UpdateEventCategoryTypeCommandHandler>();
+        services.AddScoped<DeleteEventCategoryTypeCommandHandler>();
+        services.AddScoped<EventCategoryChecker>();
     }
 }
