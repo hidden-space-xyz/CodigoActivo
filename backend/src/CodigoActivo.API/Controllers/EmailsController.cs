@@ -3,8 +3,8 @@ using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Querying;
-using CodigoActivo.Application.Services.Abstractions;
 using CodigoActivo.Application.Validation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +12,7 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/emails")]
-public class EmailsController(IEmailService emails) : ApiControllerBase
+public class EmailsController : ApiControllerBase
 {
     [HttpPost("users/{userId:guid}")]
     [AllowOnlyAdmin]
@@ -27,14 +27,17 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
             string subject,
         [FromForm] [Required] [MaxLength(SendEmailRequest.BodyMaxLength)] [NotBlank] string body,
         [FromForm] IEnumerable<IFormFile>? attachments,
+        [FromServices] SendEmailToUserCommandHandler handler,
         CancellationToken ct
     )
     {
         return ToOk(
-            await emails.SendToUserAsync(
-                userId,
-                new SendEmailRequest(subject, body),
-                ToAttachments(attachments),
+            await handler.HandleAsync(
+                new SendEmailToUserCommand(
+                    userId,
+                    new SendEmailRequest(subject, body),
+                    ToAttachments(attachments)
+                ),
                 ct
             )
         );
@@ -53,14 +56,17 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
             string subject,
         [FromForm] [Required] [MaxLength(SendEmailRequest.BodyMaxLength)] [NotBlank] string body,
         [FromForm] IEnumerable<IFormFile>? attachments,
+        [FromServices] SendEmailToUsersCommandHandler handler,
         CancellationToken ct
     )
     {
         return ToOk(
-            await emails.SendToUsersAsync(
-                query,
-                new SendEmailRequest(subject, body),
-                ToAttachments(attachments),
+            await handler.HandleAsync(
+                new SendEmailToUsersCommand(
+                    query,
+                    new SendEmailRequest(subject, body),
+                    ToAttachments(attachments)
+                ),
                 ct
             )
         );
@@ -80,15 +86,18 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
             string subject,
         [FromForm] [Required] [MaxLength(SendEmailRequest.BodyMaxLength)] [NotBlank] string body,
         [FromForm] IEnumerable<IFormFile>? attachments,
+        [FromServices] SendEmailToEventAttendeesCommandHandler handler,
         CancellationToken ct
     )
     {
         return ToOk(
-            await emails.SendToEventAttendeesAsync(
-                eventId,
-                query,
-                new SendEmailRequest(subject, body),
-                ToAttachments(attachments),
+            await handler.HandleAsync(
+                new SendEmailToEventAttendeesCommand(
+                    eventId,
+                    query,
+                    new SendEmailRequest(subject, body),
+                    ToAttachments(attachments)
+                ),
                 ct
             )
         );
@@ -98,12 +107,14 @@ public class EmailsController(IEmailService emails) : ApiControllerBase
     {
         return files is null
             ? []
-            : [.. files
-                .Select(file => new EmailAttachmentUpload(
+            :
+            [
+                .. files.Select(file => new EmailAttachmentUpload(
                     file.OpenReadStream(),
                     file.FileName,
                     file.ContentType,
                     file.Length
-                ))];
+                )),
+            ];
     }
 }

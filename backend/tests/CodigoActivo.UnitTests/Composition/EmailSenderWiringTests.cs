@@ -1,7 +1,7 @@
 using System.Reflection;
 using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Application.Services;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
@@ -17,7 +17,7 @@ public sealed class EmailSenderWiringTests
     private static readonly Assembly[] ProductionAssemblies =
     [
         typeof(IEmailSender).Assembly,
-        typeof(EmailService).Assembly,
+        typeof(ManualEmailDispatcher).Assembly,
         typeof(SmtpEmailSender).Assembly,
         typeof(DependencyInjection).Assembly,
         typeof(ApiErrorResponseExtensions).Assembly,
@@ -42,7 +42,7 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void ProductionCode_OnlyTheQueueDrainAndTheAdminEmailService_DependOnIEmailTransport()
+    public void ProductionCode_OnlyTheQueueDrainAndTheManualEmailDispatcher_DependOnIEmailTransport()
     {
         var consumers = ProductionTypes()
             .Where(type =>
@@ -54,7 +54,7 @@ public sealed class EmailSenderWiringTests
 
         consumers
             .Should()
-            .BeEquivalentTo([typeof(ChannelEmailDispatcher), typeof(EmailService)]);
+            .BeEquivalentTo([typeof(ChannelEmailDispatcher), typeof(ManualEmailDispatcher)]);
     }
 
     [Fact]

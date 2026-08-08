@@ -1,5 +1,4 @@
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 
@@ -97,31 +96,6 @@ public interface IActivityService
 
     public Task<IReadOnlyList<HouseholdSignupRolesResponse>> GetHouseholdSignupRolesAsync(
         Guid actingUserId,
-        CancellationToken ct = default
-    );
-}
-
-public interface IEmailService
-{
-    public Task<Result<SendEmailResultResponse>> SendToUserAsync(
-        Guid userId,
-        SendEmailRequest request,
-        IReadOnlyList<EmailAttachmentUpload> attachments,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<SendEmailResultResponse>> SendToUsersAsync(
-        UserListQuery query,
-        SendEmailRequest request,
-        IReadOnlyList<EmailAttachmentUpload> attachments,
-        CancellationToken ct = default
-    );
-
-    public Task<Result<SendEmailResultResponse>> SendToEventAttendeesAsync(
-        Guid eventId,
-        EventAttendeeListQuery query,
-        SendEmailRequest request,
-        IReadOnlyList<EmailAttachmentUpload> attachments,
         CancellationToken ct = default
     );
 }
