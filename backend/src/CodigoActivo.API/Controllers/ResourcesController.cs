@@ -3,7 +3,8 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
-using CodigoActivo.Application.Services.Abstractions;
+using CodigoActivo.Application.Resources.Commands;
+using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,26 +14,28 @@ namespace CodigoActivo.API.Controllers;
 
 [ApiController]
 [Route("api/resources")]
-public class ResourcesController(IResourceService resources) : ApiControllerBase
+public class ResourcesController : ApiControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Resources)]
     public async Task<ActionResult<PagedResult<ResourceListItemResponse>>> ListAsync(
         [FromQuery] ResourceListQuery query,
+        [FromServices] ListResourcesQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await resources.ListAsync(query, ct));
+        return Ok(await handler.HandleAsync(new ListResourcesQuery(query), ct));
     }
 
     [HttpGet("types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<ResourceTypeResponse>>> TypesAsync(
+        [FromServices] ListResourceTypesQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await resources.ListTypesAsync(ct));
+        return Ok(await handler.HandleAsync(new ListResourceTypesQuery(), ct));
     }
 
     [HttpGet("{resourceId:guid}")]
@@ -40,21 +43,23 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Resources)]
     public async Task<ActionResult<ResourceResponse>> GetAsync(
         Guid resourceId,
+        [FromServices] GetResourceByIdQueryHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await resources.GetByIdAsync(resourceId, ct));
+        return ToOk(await handler.HandleAsync(new GetResourceByIdQuery(resourceId), ct));
     }
 
     [HttpPost]
     [AllowOnlyAdmin]
     public async Task<ActionResult<ResourceResponse>> CreateAsync(
         [FromBody] CreateResourceRequest request,
+        [FromServices] CreateResourceCommandHandler handler,
         CancellationToken ct
     )
     {
         return ToCreated(
-            await resources.CreateAsync(request, UserId, ct),
+            await handler.HandleAsync(new CreateResourceCommand(request, UserId), ct),
             r => $"/api/resources/{r.Id}"
         );
     }
@@ -64,16 +69,23 @@ public class ResourcesController(IResourceService resources) : ApiControllerBase
     public async Task<ActionResult<ResourceResponse>> UpdateAsync(
         Guid resourceId,
         [FromBody] UpdateResourceRequest request,
+        [FromServices] UpdateResourceCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(await resources.UpdateAsync(resourceId, request, UserId, ct));
+        return ToOk(
+            await handler.HandleAsync(new UpdateResourceCommand(resourceId, request, UserId), ct)
+        );
     }
 
     [HttpDelete("{resourceId:guid}")]
     [AllowOnlyAdmin]
-    public async Task<IActionResult> DeleteAsync(Guid resourceId, CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(
+        Guid resourceId,
+        [FromServices] DeleteResourceCommandHandler handler,
+        CancellationToken ct
+    )
     {
-        return ToNoContent(await resources.DeleteAsync(resourceId, ct));
+        return ToNoContent(await handler.HandleAsync(new DeleteResourceCommand(resourceId), ct));
     }
 }
