@@ -6,7 +6,10 @@ defineProps<{ event: UpcomingEvent }>()
 </script>
 
 <template>
-  <RouterLink :to="{ name: 'event-detail', params: { eventId: event.id } }" class="event-card">
+  <RouterLink
+    :to="{ name: 'event-detail', params: { eventId: event.id } }"
+    class="ca-list-card event-card"
+  >
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
 
     <h3 class="event-card__title">{{ event.title }}</h3>
@@ -37,21 +40,7 @@ defineProps<{ event: UpcomingEvent }>()
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 16px;
-  padding: 16px;
   cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.event-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--ca-border-strong);
 }
 
 .event-card__title {

@@ -61,7 +61,7 @@ export function useEventActivities(eventId: () => string) {
   })
 
   const signupRoles = useQuery({
-    queryKey: computed(() => activityQueryKeys.signupRoles(userId.value ?? '')),
+    queryKey: activityQueryKeys.signupRoles(),
     queryFn: () => getSignupRolesRequest(),
     enabled: isAuthenticated,
   })
@@ -92,7 +92,7 @@ export function useEventActivities(eventId: () => string) {
   const members = computed<HouseholdMember[]>(() => {
     const self: HouseholdMember = {
       id: userId.value ?? '',
-      name: session.user?.firstName ?? i18n.global.t('pages.eventDetail.selfMember'),
+      name: session.user?.firstName ?? i18n.global.t('features.activitySignup.selfMember'),
     }
     return [self, ...(householdMembers.data.value ?? [])]
   })
@@ -105,7 +105,8 @@ export function useEventActivities(eventId: () => string) {
 
   const assign = useMutation({
     mutationFn: (vars: { activityId: string; activityRoleTypeId: string }) => {
-      if (!userId.value) return Promise.reject(new Error(i18n.global.t('pages.eventDetail.notAuthenticated')))
+      if (!userId.value)
+        return Promise.reject(new Error(i18n.global.t('features.activitySignup.notAuthenticated')))
       return assignActivityRequest(vars.activityId, userId.value, vars.activityRoleTypeId)
     },
     onSuccess: invalidate,

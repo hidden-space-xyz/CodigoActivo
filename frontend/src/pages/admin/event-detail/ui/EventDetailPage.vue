@@ -13,6 +13,7 @@ import {
 
 import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
 import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
+import { toActivityDetail, type ActivityDetail } from '@/entities/activity'
 import { useEvent, useEventSummary } from '@/features/manage-events'
 import EventAttendeesTab from './EventAttendeesTab.vue'
 import EventOpinionsTab from './EventOpinionsTab.vue'
@@ -70,7 +71,7 @@ function onModalityFilter(value: string | boolean | null): void {
 }
 
 const activityDialogVisible = ref(false)
-const selectedActivity = ref<ActivityResponse | null>(null)
+const selectedActivity = ref<ActivityDetail | null>(null)
 const activitySaving = computed(
   () => activities.create.isPending.value || activities.update.isPending.value,
 )
@@ -89,7 +90,7 @@ function openRoster(): void {
 }
 
 async function openEditActivity(activity: ActivityResponse): Promise<void> {
-  selectedActivity.value = activity
+  selectedActivity.value = toActivityDetail(activity)
   activityDialogVisible.value = true
   if (!activity.id) return
   try {

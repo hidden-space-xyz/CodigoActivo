@@ -14,7 +14,10 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
     <div class="ca-container">
       <div class="home-section__head">
         <div>
-          <SectionEyebrow :text="$t('pages.home.announcements.eyebrow')" color="var(--ca-orange-ink)" />
+          <SectionEyebrow
+            :text="$t('pages.home.announcements.eyebrow')"
+            color="var(--ca-orange-ink)"
+          />
           <h2 class="home-section__title">{{ $t('pages.home.announcements.title') }}</h2>
         </div>
         <BaseButton variant="link" :to="{ name: 'announcements' }">

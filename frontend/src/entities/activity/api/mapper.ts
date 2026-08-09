@@ -10,6 +10,7 @@ import { i18n } from '@/shared/i18n'
 
 import type {
   ActivityAssignment,
+  ActivityDetail,
   ActivityOverlap,
   EventActivity,
   HouseholdActivityAssignment,
@@ -30,6 +31,25 @@ export function toEventActivity(activity: ActivityResponse): EventActivity {
     highDemandRoleIds: (activity.roleCapacities ?? [])
       .filter((capacity) => capacity.isHighDemand && capacity.activityRoleTypeId)
       .map((capacity) => capacity.activityRoleTypeId as string),
+  }
+}
+
+export function toActivityDetail(activity: ActivityResponse): ActivityDetail {
+  return {
+    id: activity.id ?? '',
+    title: activity.title ?? '',
+    description: activity.description ?? '',
+    location: activity.location ?? '',
+    modalityId: activity.modalityId ?? '',
+    startsAt: activity.activityStartsAt ?? null,
+    endsAt: activity.activityEndsAt ?? null,
+    thumbnailId: activity.thumbnailId ?? '',
+    roleCapacities: (activity.roleCapacities ?? [])
+      .filter((capacity) => capacity.activityRoleTypeId)
+      .map((capacity) => ({
+        roleTypeId: capacity.activityRoleTypeId as string,
+        desiredCount: capacity.desiredCount ?? null,
+      })),
   }
 }
 

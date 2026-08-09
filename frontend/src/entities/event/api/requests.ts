@@ -1,9 +1,30 @@
 import {
+  deleteApiEventsEventId,
   getApiEvents,
   getApiEventsEventId,
+  getApiEventsEventIdRatings,
   getApiEventsPastYears,
+  patchApiEventsEventIdFeature,
+  postApiEvents,
+  putApiEventsEventId,
 } from '@/shared/api/generated/endpoints/events/events'
-import type { EventResponse } from '@/shared/api/generated/models'
+import {
+  getApiReportsDashboardAnalytics,
+  getApiReportsEventsEventIdAttendees,
+  getApiReportsEventsEventIdBadges,
+  getApiReportsEventsEventIdRoster,
+  getApiReportsEventsEventIdSummary,
+} from '@/shared/api/generated/endpoints/reports/reports'
+import type {
+  CreateEventRequest,
+  EventListItemResponse,
+  EventResponse,
+  GetApiEventsEventIdRatingsParams,
+  GetApiEventsParams,
+  GetApiReportsDashboardAnalyticsParams,
+  GetApiReportsEventsEventIdAttendeesParams,
+  UpdateEventRequest,
+} from '@/shared/api/generated/models'
 import { FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
 import type { PagedListPage } from '@/shared/lib'
 
@@ -59,4 +80,60 @@ export async function getHomeEventsRequest(): Promise<HomeEvents> {
   const upcoming = (upcomingPage.data.items ?? []).map(toUpcomingEvent)
   const items = upcoming.filter((event) => event.id !== featured?.id).slice(0, 3)
   return { featured, items }
+}
+
+export function getEventsAdminPageRequest(
+  params: GetApiEventsParams,
+): Promise<{ items: EventListItemResponse[]; total: number }> {
+  return getApiEvents(params).then(toPage)
+}
+
+export function getEventAdminRequest(id: string) {
+  return unwrapOrNull<EventResponse>(getApiEventsEventId(id))
+}
+
+export function createEventRequest(body: CreateEventRequest) {
+  return postApiEvents(body).then((r) => r.data)
+}
+
+export function updateEventRequest(id: string, body: UpdateEventRequest) {
+  return putApiEventsEventId(id, body).then((r) => r.data)
+}
+
+export function deleteEventRequest(id: string) {
+  return deleteApiEventsEventId(id)
+}
+
+export function toggleEventFeatureRequest(id: string) {
+  return patchApiEventsEventIdFeature(id).then((r) => r.data)
+}
+
+export function getEventRatingsPageRequest(
+  eventId: string,
+  params: GetApiEventsEventIdRatingsParams,
+) {
+  return getApiEventsEventIdRatings(eventId, params).then(toPage)
+}
+
+export function getEventSummaryRequest(eventId: string) {
+  return getApiReportsEventsEventIdSummary(eventId).then((r) => r.data)
+}
+
+export function getEventAttendeesPageRequest(
+  eventId: string,
+  params: GetApiReportsEventsEventIdAttendeesParams,
+) {
+  return getApiReportsEventsEventIdAttendees(eventId, params).then(toPage)
+}
+
+export function getEventBadgesRequest(eventId: string) {
+  return getApiReportsEventsEventIdBadges(eventId).then((r) => r.data)
+}
+
+export function getEventRosterRequest(eventId: string) {
+  return getApiReportsEventsEventIdRoster(eventId).then((r) => r.data)
+}
+
+export function getDashboardAnalyticsRequest(params: GetApiReportsDashboardAnalyticsParams) {
+  return getApiReportsDashboardAnalytics(params).then((r) => r.data)
 }

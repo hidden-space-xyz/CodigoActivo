@@ -274,12 +274,7 @@ function drawFrame(ctx: CanvasRenderingContext2D): void {
 }
 
 function inset(ctx: CanvasRenderingContext2D, value: number): void {
-  ctx.strokeRect(
-    value,
-    value,
-    SHEET_WIDTH_MM - value * 2,
-    SHEET_HEIGHT_MM - value * 2,
-  )
+  ctx.strokeRect(value, value, SHEET_WIDTH_MM - value * 2, SHEET_HEIGHT_MM - value * 2)
 }
 
 function microLine(ctx: CanvasRenderingContext2D, unit: string, length: number): void {
@@ -479,12 +474,7 @@ function drawCodeField(ctx: CanvasRenderingContext2D): void {
   ctx.fillRect(0, 0, SHEET_WIDTH_MM, SHEET_HEIGHT_MM)
 }
 
-function drawMedallion(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  glyph: string,
-): void {
+function drawMedallion(ctx: CanvasRenderingContext2D, cx: number, cy: number, glyph: string): void {
   ctx.save()
 
   ctx.fillStyle = PAPER

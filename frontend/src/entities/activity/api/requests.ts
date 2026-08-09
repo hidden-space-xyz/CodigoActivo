@@ -1,21 +1,34 @@
 import {
+  deleteApiActivitiesActivityId,
   getApiActivities,
   getApiActivitiesActivityId,
   getApiActivitiesActivityIdOverlapsUserId,
   getApiActivitiesHouseholdAssignmentsEventId,
   getApiActivitiesSignupRoles,
   patchApiActivitiesActivityIdUserIdAssign,
+  patchApiActivitiesActivityIdUserIdChangeRole,
+  patchApiActivitiesActivityIdUserIdChangeStatus,
   patchApiActivitiesActivityIdUserIdUnassign,
   postApiActivitiesActivityIdAssignHousehold,
+  postApiActivitiesEventId,
+  putApiActivitiesActivityId,
 } from '@/shared/api/generated/endpoints/activities/activities'
 import { getApiMeAssignedActivities } from '@/shared/api/generated/endpoints/me/me'
 import { getApiUsers } from '@/shared/api/generated/endpoints/users/users'
-import type { ActivityResponse } from '@/shared/api/generated/models'
+import type {
+  ActivityResponse,
+  ChangeAssignmentRoleRequest,
+  ChangeAssignmentStatusRequest,
+  CreateActivityRequest,
+  GetApiActivitiesParams,
+  UpdateActivityRequest,
+} from '@/shared/api/generated/models'
 import { toPage, unwrapOrNull } from '@/shared/api'
 
 import type { HouseholdAssignmentInput } from '../model/household-assignment-input'
 import type {
   ActivityAssignment,
+  ActivityDetail,
   EventActivity,
   HouseholdActivityAssignment,
   HouseholdMember,
@@ -24,6 +37,7 @@ import type {
 } from '../model/types'
 import {
   toActivityAssignment,
+  toActivityDetail,
   toEventActivity,
   toHouseholdActivityAssignment,
   toHouseholdMember,
@@ -54,8 +68,9 @@ async function listEventActivitiesRequest(eventId: string): Promise<ActivityResp
   return items
 }
 
-export async function getActivityByIdRequest(activityId: string): Promise<ActivityResponse | null> {
-  return unwrapOrNull<ActivityResponse>(getApiActivitiesActivityId(activityId))
+export async function getActivityByIdRequest(activityId: string): Promise<ActivityDetail | null> {
+  const response = await unwrapOrNull<ActivityResponse>(getApiActivitiesActivityId(activityId))
+  return response ? toActivityDetail(response) : null
 }
 
 export async function getHouseholdAssignmentsRequest(
@@ -113,4 +128,44 @@ export async function assignHouseholdRequest(
 
 export async function unassignActivityRequest(activityId: string, userId: string): Promise<void> {
   await patchApiActivitiesActivityIdUserIdUnassign(activityId, userId)
+}
+
+export function getActivitiesAdminPageRequest(
+  params: GetApiActivitiesParams,
+): Promise<{ items: ActivityResponse[]; total: number }> {
+  return getApiActivities(params).then(toPage)
+}
+
+export function getEventActivityOptionsRequest(eventId: string): Promise<ActivityResponse[]> {
+  return listEventActivitiesRequest(eventId)
+}
+
+export function createActivityRequest(eventId: string, body: CreateActivityRequest) {
+  return postApiActivitiesEventId(eventId, body).then((r) => r.data)
+}
+
+export function updateActivityRequest(id: string, body: UpdateActivityRequest) {
+  return putApiActivitiesActivityId(id, body).then((r) => r.data)
+}
+
+export function deleteActivityRequest(id: string) {
+  return deleteApiActivitiesActivityId(id)
+}
+
+export function changeAssignmentStatusRequest(
+  activityId: string,
+  userId: string,
+  body: ChangeAssignmentStatusRequest,
+) {
+  return patchApiActivitiesActivityIdUserIdChangeStatus(activityId, userId, body).then(
+    (r) => r.data,
+  )
+}
+
+export function changeAssignmentRoleRequest(
+  activityId: string,
+  userId: string,
+  body: ChangeAssignmentRoleRequest,
+) {
+  return patchApiActivitiesActivityIdUserIdChangeRole(activityId, userId, body).then((r) => r.data)
 }

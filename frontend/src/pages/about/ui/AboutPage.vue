@@ -35,7 +35,7 @@ const joinVisible = ref(false)
     <section class="about-what">
       <div class="ca-container--narrow about-what__grid">
         <div class="about-what__photo" aria-hidden="true">
-          foto del equipo / taller en acción 1200 × 900
+          {{ $t('pages.about.what.photoPlaceholder') }}
         </div>
         <div>
           <SectionEyebrow :text="$t('pages.about.eyebrowWhat')" color="var(--ca-lime-ink)" />

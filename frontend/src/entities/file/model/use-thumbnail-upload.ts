@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { getErrorMessage } from '@/shared/lib'
 
-import { uploadThumbnail } from '../api/requests'
+import { uploadThumbnailRequest } from '../api/requests'
 
 export function useThumbnailUpload(existingId: MaybeRefOrGetter<string | null | undefined>) {
   const { t } = useI18n()
@@ -24,7 +24,7 @@ export function useThumbnailUpload(existingId: MaybeRefOrGetter<string | null | 
     if (!pickedFile.value) return toValue(existingId) ?? null
     uploading.value = true
     try {
-      return await uploadThumbnail(pickedFile.value, toValue(existingId))
+      return await uploadThumbnailRequest(pickedFile.value, toValue(existingId))
     } catch (error) {
       uploadError.value = getErrorMessage(error, t('entities.file.thumbnail.uploadFailed'))
       return null

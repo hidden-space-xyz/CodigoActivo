@@ -15,11 +15,8 @@ import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
 import { UserFormDialog, useUsers } from '@/features/manage-users'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { genderLabel } from '@/entities/user'
-import type {
-  PostApiEmailsUsersParams,
-  UpdateUserRequest,
-  UserResponse,
-} from '@/shared/api/generated/models'
+import type { UpdateUserInput, User } from '@/entities/user'
+import type { PostApiEmailsUsersParams } from '@/shared/api/generated/models'
 import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
@@ -43,13 +40,13 @@ const { confirmDelete: requireDelete } = useDeleteConfirm()
 const { sendToUsers } = useSendEmail()
 
 const dialogVisible = ref(false)
-const selected = ref<UserResponse | null>(null)
+const selected = ref<User | null>(null)
 
 const typeDialogVisible = ref(false)
-const typeUser = ref<UserResponse | null>(null)
+const typeUser = ref<User | null>(null)
 const selectedUserTypeId = ref<string | null>(null)
 
-function birthDateWithAge(user: UserResponse): string {
+function birthDateWithAge(user: User): string {
   const formatted = formatDate(user.birthDate)
   if (formatted === '—') return '—'
   const age = ageFrom(user.birthDate)
@@ -69,7 +66,7 @@ const adminOptions: { label: string; value: boolean }[] = [
   { label: t('common.no'), value: false },
 ]
 
-function showTutorOf(user: UserResponse): void {
+function showTutorOf(user: User): void {
   if (!user.parentId) return
   table.clearFilters()
   relationFilter.value = {
@@ -78,7 +75,7 @@ function showTutorOf(user: UserResponse): void {
   }
 }
 
-function showDependentsOf(user: UserResponse): void {
+function showDependentsOf(user: User): void {
   if (!user.id) return
   table.clearFilters()
   relationFilter.value = {
@@ -91,7 +88,7 @@ function clearRelationFilter(): void {
   relationFilter.value = null
 }
 
-async function openEdit(user: UserResponse): Promise<void> {
+async function openEdit(user: User): Promise<void> {
   selected.value = user
   dialogVisible.value = true
   if (!user.id) return
@@ -100,7 +97,7 @@ async function openEdit(user: UserResponse): Promise<void> {
   } catch {}
 }
 
-function onSubmit(body: UpdateUserRequest): void {
+function onSubmit(body: UpdateUserInput): void {
   if (!selected.value?.id) return
   update.mutate(
     { id: selected.value.id, body },
@@ -114,13 +111,13 @@ function onSubmit(body: UpdateUserRequest): void {
   )
 }
 
-function openChangeType(user: UserResponse): void {
+function openChangeType(user: User): void {
   typeUser.value = user
   selectedUserTypeId.value = user.type?.id ?? null
   typeDialogVisible.value = true
 }
 
-function toggleAdmin(user: UserResponse, value: boolean): void {
+function toggleAdmin(user: User, value: boolean): void {
   if (!user.id) return
   setAdmin.mutate(
     { id: user.id, isAdmin: value },
@@ -163,7 +160,7 @@ const exportHeaders = [
   t('pages.admin.users.export.columns.guardian'),
 ]
 
-function exportRow(user: UserResponse): CsvValue[] {
+function exportRow(user: User): CsvValue[] {
   return [
     user.firstName,
     user.lastName,
@@ -178,7 +175,7 @@ function exportRow(user: UserResponse): CsvValue[] {
   ]
 }
 
-const { exporting, exportCsv } = useCsvExport<UserResponse>({
+const { exporting, exportCsv } = useCsvExport<User>({
   fetchRows: fetchAllUsers,
   headers: exportHeaders,
   toRow: exportRow,
@@ -193,7 +190,7 @@ const {
   sending: emailSending,
   open: openEmail,
   submit: submitEmail,
-} = useSendEmailDialog<UserResponse>({
+} = useSendEmailDialog<User>({
   idOf: (user) => user.id,
   targetOne: (user) => t('pages.admin.users.email.targetOne', { fullName: fullName(user) }),
   targetAll: () => t('pages.admin.users.email.targetFiltered', table.total.value),
@@ -206,7 +203,7 @@ const {
   onError: (error) => feedback.error(error),
 })
 
-function confirmDelete(user: UserResponse): void {
+function confirmDelete(user: User): void {
   requireDelete({
     header: t('pages.admin.users.delete.header'),
     message: t('pages.admin.users.delete.message', { fullName: fullName(user) }),

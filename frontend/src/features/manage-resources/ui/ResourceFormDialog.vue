@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button, RichTextEditor } from '@/shared/ui'
 
-import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
+import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import { useResourceTypesList } from '@/entities/catalog'
 import type {
   CreateResourceRequest,
@@ -173,7 +173,7 @@ async function save(): Promise<void> {
       </div>
       <div v-if="selectedType && !isExternal" class="form__field">
         <label>{{ $t('features.manageResources.description') }}</label>
-        <RichTextEditor v-model="form.description" />
+        <RichTextEditor v-model="form.description" :upload="uploadFileRequest" />
         <small v-if="submitted && descriptionMissing" class="form__error">{{
           $t('features.manageResources.descriptionRequired')
         }}</small>

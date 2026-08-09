@@ -51,7 +51,9 @@ interface SheetChunk {
 
 function pluralizeRole(name: string): string {
   if (!name) return t('pages.admin.eventRoster.roleFallback')
-  return /[aeiouáéíóú]$/i.test(name) ? `${name}s` : `${name}es`
+  return /[aeiouáéíóú]$/i.test(name)
+    ? t('pages.admin.eventRoster.rolePluralVowel', { name })
+    : t('pages.admin.eventRoster.rolePluralConsonant', { name })
 }
 
 function rowsFor(activity: EventRosterActivityResponse): RosterRow[] {
@@ -193,7 +195,9 @@ function printSheets(): void {
     </DataState>
 
     <div v-for="(page, pageIndex) in sheets" :key="pageIndex" class="sheet">
-      <p class="sheet__event">{{ $t('pages.admin.eventRoster.sheetHeader', { title: eventTitle }) }}</p>
+      <p class="sheet__event">
+        {{ $t('pages.admin.eventRoster.sheetHeader', { title: eventTitle }) }}
+      </p>
 
       <section
         v-for="chunk in page"
@@ -259,7 +263,9 @@ function printSheets(): void {
     </div>
 
     <div ref="measureEl" class="sheet measure" aria-hidden="true">
-      <p class="sheet__event" data-part="sheet-head">{{ $t('pages.admin.eventRoster.sheetHeader', { title: eventTitle }) }}</p>
+      <p class="sheet__event" data-part="sheet-head">
+        {{ $t('pages.admin.eventRoster.sheetHeader', { title: eventTitle }) }}
+      </p>
       <section
         v-for="(activity, index) in rosterActivities"
         :key="activity.activityId"

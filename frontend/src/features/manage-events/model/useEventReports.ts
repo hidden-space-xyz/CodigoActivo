@@ -2,13 +2,6 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, ref, toValue } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
-import { getApiEventsEventIdRatings } from '@/shared/api/generated/endpoints/events/events'
-import {
-  getApiReportsEventsEventIdAttendees,
-  getApiReportsEventsEventIdBadges,
-  getApiReportsEventsEventIdRoster,
-  getApiReportsEventsEventIdSummary,
-} from '@/shared/api/generated/endpoints/reports/reports'
 import type {
   EventAttendeeResponse,
   EventRatingListItemResponse,
@@ -16,14 +9,21 @@ import type {
   GetApiEventsEventIdRatingsParams,
   GetApiReportsEventsEventIdAttendeesParams,
 } from '@/shared/api/generated/models'
-import { toPage } from '@/shared/api'
 import { fetchAllPages, useServerTable } from '@/shared/lib'
-import { eventQueryKeys, eventReportQueryKeys } from '@/entities/event'
+import {
+  eventQueryKeys,
+  eventReportQueryKeys,
+  getEventAttendeesPageRequest,
+  getEventBadgesRequest,
+  getEventRatingsPageRequest,
+  getEventRosterRequest,
+  getEventSummaryRequest,
+} from '@/entities/event'
 
 export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.summary(toValue(eventId))),
-    queryFn: () => getApiReportsEventsEventIdSummary(toValue(eventId)).then((r) => r.data),
+    queryFn: () => getEventSummaryRequest(toValue(eventId)),
   })
 }
 
@@ -49,8 +49,7 @@ export function useEventAttendeesTable(
 
   const table = useServerTable<EventAttendeeResponse, GetApiReportsEventsEventIdAttendeesParams>({
     queryKey: eventReportQueryKeys.attendees(),
-    fetchPage: (params) =>
-      getApiReportsEventsEventIdAttendees(toValue(eventId), params).then(toPage),
+    fetchPage: (params) => getEventAttendeesPageRequest(toValue(eventId), params),
     defaultSort: { field: 'firstName', order: 1 },
     extraParams: () => ({ eventId: toValue(eventId), ...filterParams() }),
     enabled: () => toValue(active),
@@ -59,10 +58,10 @@ export function useEventAttendeesTable(
   function fetchAllAttendees(): Promise<EventAttendeeResponse[]> {
     return fetchAllPages(
       (params) =>
-        getApiReportsEventsEventIdAttendees(
+        getEventAttendeesPageRequest(
           toValue(eventId),
           params as GetApiReportsEventsEventIdAttendeesParams,
-        ).then(toPage),
+        ),
       { ...filterParams(), sort: table.sortParam.value },
     )
   }
@@ -86,7 +85,7 @@ export function useEventRatingsTable(
 ) {
   const table = useServerTable<EventRatingListItemResponse, GetApiEventsEventIdRatingsParams>({
     queryKey: eventQueryKeys.ratings(),
-    fetchPage: (params) => getApiEventsEventIdRatings(toValue(eventId), params).then(toPage),
+    fetchPage: (params) => getEventRatingsPageRequest(toValue(eventId), params),
     defaultSort: { field: 'createdAt', order: -1 },
     extraParams: () => ({ eventId: toValue(eventId) }),
     enabled: () => toValue(active),
@@ -98,7 +97,7 @@ export function useEventRatingsTable(
 export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.badges(toValue(eventId))),
-    queryFn: () => getApiReportsEventsEventIdBadges(toValue(eventId)).then((r) => r.data),
+    queryFn: () => getEventBadgesRequest(toValue(eventId)),
     staleTime: 0,
     refetchOnMount: 'always',
   })
@@ -107,7 +106,7 @@ export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
 export function useEventRoster(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.roster(toValue(eventId))),
-    queryFn: () => getApiReportsEventsEventIdRoster(toValue(eventId)).then((r) => r.data),
+    queryFn: () => getEventRosterRequest(toValue(eventId)),
     staleTime: 0,
     refetchOnMount: 'always',
   })

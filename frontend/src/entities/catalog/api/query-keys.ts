@@ -1,9 +1,11 @@
 export const catalogQueryKeys = {
-  userTypes: ['user-types'] as const,
-  userStatusTypes: ['user-status-types'] as const,
-  activityRoleTypes: ['activity-role-types'] as const,
-  assignmentStatusTypes: ['assignment-status-types'] as const,
-  eventCategoryTypes: ['event-category-types'] as const,
-  activityModalityTypes: ['activity-modality-types'] as const,
-  resourceTypes: ['resource-types'] as const,
+  all: ['catalogs'] as const,
+  userTypes: () => [...catalogQueryKeys.all, 'user-types'] as const,
+  userStatusTypes: () => [...catalogQueryKeys.all, 'user-status-types'] as const,
+  activityRoleTypes: () => [...catalogQueryKeys.all, 'activity-role-types'] as const,
+  assignmentStatusTypes: () => [...catalogQueryKeys.all, 'assignment-status-types'] as const,
+  eventCategoryTypes: () => [...catalogQueryKeys.all, 'event-category-types'] as const,
+  eventCategoryTypesTable: () => [...catalogQueryKeys.eventCategoryTypes(), 'table'] as const,
+  activityModalityTypes: () => [...catalogQueryKeys.all, 'activity-modality-types'] as const,
+  resourceTypes: () => [...catalogQueryKeys.all, 'resource-types'] as const,
 }

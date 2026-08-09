@@ -10,7 +10,7 @@ import {
   RichTextEditor,
 } from '@/shared/ui'
 
-import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
+import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import type { ContentController, ContentItem, ContentRequest } from '../model/use-content-entity'
 import { EMPTY_DOC_JSON, formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 
@@ -289,7 +289,7 @@ function confirmDelete(item: ContentItem): void {
         </div>
         <div class="form__field">
           <label>{{ $t('widgets.contentEntityPage.form.description') }}</label>
-          <RichTextEditor v-model="form.description" />
+          <RichTextEditor v-model="form.description" :upload="uploadFileRequest" />
         </div>
         <div class="form__field">
           <label>{{ $t('common.image') }}</label>

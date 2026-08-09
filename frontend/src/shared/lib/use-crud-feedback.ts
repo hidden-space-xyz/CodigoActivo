@@ -2,7 +2,7 @@ import { h, type VNode } from 'vue'
 import { ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
-import { ApiError } from '@/shared/api/http-client'
+import { ApiError } from '@/shared/api'
 import { getErrorMessage } from './api-error'
 
 const TRACE_STYLE = {

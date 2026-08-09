@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { AppIcon, DataState } from '@/shared/ui'
 
-import { fullName, normalizeHexColor } from '@/shared/lib'
+import { fullName, hexLuminance, normalizeHexColor } from '@/shared/lib'
 import { useEventBadges } from '@/features/manage-events'
 import type { EventBadgeResponse } from '@/shared/api/generated/models'
 
@@ -102,15 +102,11 @@ const MIN_READABLE_LUMINANCE = 0.82
 function accentColor(badge: EventBadgeResponse): string {
   const hex = normalizeHexColor(badge.userTypeColor)
   if (!hex) return FALLBACK_ACCENT
-  const red = Number.parseInt(hex.slice(1, 3), 16)
-  const green = Number.parseInt(hex.slice(3, 5), 16)
-  const blue = Number.parseInt(hex.slice(5, 7), 16)
-  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-  return luminance > MIN_READABLE_LUMINANCE ? FALLBACK_ACCENT : hex
+  return hexLuminance(hex) > MIN_READABLE_LUMINANCE ? FALLBACK_ACCENT : hex
 }
 
 function guardianName(badge: EventBadgeResponse): string {
-  return [badge.guardian?.firstName].filter(Boolean).join(' ')
+  return badge.guardian?.firstName ?? ''
 }
 
 function visibleActivities(badge: EventBadgeResponse): string[] {
@@ -157,7 +153,7 @@ function printSheets(): void {
         <header class="badge__band">
           <span class="badge__brand">
             <span class="badge__brand-mark">&lt;/&gt;</span>
-            Código Activo
+            {{ $t('seo.siteName') }}
           </span>
           <span class="badge__event">{{ eventTitle }}</span>
         </header>
@@ -266,7 +262,7 @@ function printSheets(): void {
 }
 
 .badge::after {
-  content: 'def confirmar_asistencia(usuario, actividad):\A     asistente = {"nombre": usuario.nombre, "confirmado": True}\A     actividad.inscritos.append(asistente)\A     return f"¡Nos vemos alli, {usuario.nombre}!"\A \A actividades = ["robotica", "scratch", "huerto_urbano", "gymkhana"]\A evento = Evento("Feria de Voluntariado", anio=2026)\A \A for titulo in actividades:\A     taller = evento.crear_actividad(titulo, plazas=20)\A     for peque in taller.lista_espera:\A         confirmar_asistencia(peque, taller)\A \A print(f"{evento.nombre}: {len(evento.inscritos)} inscritos")';
+  content: 'def confirmar_asistencia(usuario, actividad):\A     asistente = {"nombre": usuario.nombre, "confirmado": True}\A     actividad.inscritos.append(asistente)\A     return f"¡Nos vemos allí, {usuario.nombre}!"\A \A actividades = ["robotica", "scratch", "huerto_urbano", "gymkhana"]\A evento = Evento("Feria de Voluntariado", anio=2026)\A \A for titulo in actividades:\A     taller = evento.crear_actividad(titulo, plazas=20)\A     for peque in taller.lista_espera:\A         confirmar_asistencia(peque, taller)\A \A print(f"{evento.nombre}: {len(evento.inscritos)} inscritos")';
   position: absolute;
   z-index: 0;
   inset: 0;

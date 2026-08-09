@@ -325,6 +325,7 @@ export const es = {
       },
       what: {
         title: 'De Scratch a la IA',
+        photoPlaceholder: 'foto del equipo / taller en acción 1200 × 900',
       },
       cta: {
         title: '¿Te sumas al proyecto?',
@@ -454,6 +455,8 @@ export const es = {
         print: 'Imprimir',
         sheetHeader: '{title} · Listado de asistencia',
         continued: ' (continuación)',
+        rolePluralVowel: '{name}s',
+        rolePluralConsonant: '{name}es',
         colAttends: 'Asiste',
         colFullName: 'Nombre y apellidos',
         colAge: 'Edad',
@@ -874,8 +877,6 @@ export const es = {
       highDemandWarning:
         'Esta actividad está muy solicitada y es posible que se agoten las plazas. Te recomendamos elegir otras opciones adicionales.',
       simultaneous: '{n} simultánea | {n} simultáneas',
-      selfMember: 'Yo',
-      notAuthenticated: 'No autenticado',
       info: {
         date: 'Fecha',
         earlySignup: 'Inscripción anticipada',
@@ -1036,6 +1037,10 @@ export const es = {
       optionalSuffix: ' (opcional)',
       birthDateInvalid: 'Indica una fecha de nacimiento válida.',
       contactRequired: 'Los usuarios adultos necesitan correo y teléfono.',
+    },
+    activitySignup: {
+      selfMember: 'Yo',
+      notAuthenticated: 'No autenticado',
     },
     sendEmail: {
       header: 'Enviar correo',

@@ -13,11 +13,11 @@ const PAGINATION_LAYOUT_NARROW = 'prev, pager, next'
 const NARROW_QUERY = '(max-width: 640px)'
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
-export interface ServerTableColumn {
-  readonly param?: string
+export interface ServerTableColumn<TParams = Record<string, unknown>> {
+  readonly param?: Extract<keyof TParams, string>
   readonly type?: ServerTableFieldType
-  readonly fromParam?: string
-  readonly toParam?: string
+  readonly fromParam?: Extract<keyof TParams, string>
+  readonly toParam?: Extract<keyof TParams, string>
 }
 
 export type ServerTableFilterValue =
@@ -86,15 +86,15 @@ export async function fetchAllPages<T>(
 interface UseServerTableOptions<T, TParams> {
   readonly queryKey: readonly unknown[]
   readonly fetchPage: (params: TParams) => Promise<ServerTablePage<T>>
-  readonly columns?: Record<string, ServerTableColumn> | undefined
+  readonly columns?: Record<string, ServerTableColumn<TParams>> | undefined
   readonly defaultSort?: { readonly field: string; readonly order?: 1 | -1 } | undefined
   readonly rows?: number | undefined
   readonly extraParams?: (() => Record<string, unknown>) | undefined
   readonly enabled?: (() => boolean) | undefined
 }
 
-function initialFilters(
-  columns: Record<string, ServerTableColumn>,
+function initialFilters<TParams>(
+  columns: Record<string, ServerTableColumn<TParams>>,
 ): Record<string, ServerTableFilterState> {
   const filters: Record<string, ServerTableFilterState> = {}
   for (const key of Object.keys(columns)) filters[key] = { value: null }
@@ -159,6 +159,9 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
 
   const tableQuery = useQuery({
     queryKey: computed(() => [...options.queryKey, params.value]),
+    // params is stitched together from column keys and extraParams at runtime, so its shape
+    // cannot be proven to match TParams; explicit param names are still checked via the
+    // ServerTableColumn<TParams> constraint.
     queryFn: () => options.fetchPage(params.value as unknown as TParams),
     placeholderData: keepPreviousData,
     enabled: computed(() => options.enabled?.() ?? true),

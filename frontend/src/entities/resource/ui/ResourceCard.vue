@@ -15,7 +15,11 @@ const linkAttrs = computed(() =>
 </script>
 
 <template>
-  <component :is="resource.url ? 'a' : RouterLink" v-bind="linkAttrs" class="resource-card">
+  <component
+    :is="resource.url ? 'a' : RouterLink"
+    v-bind="linkAttrs"
+    class="ca-list-card resource-card"
+  >
     <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 
     <ColorTag
@@ -34,20 +38,6 @@ const linkAttrs = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 16px;
-  padding: 16px;
-  text-decoration: none;
-  color: inherit;
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.resource-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--ca-border-strong);
 }
 
 .resource-card__type {

@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AppButton as Button, AppIcon } from '@/shared/ui'
 
-import { useEventActivities } from '../model/useEventActivities'
+import { useEventActivities } from '@/features/activity-signup'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
-import type { TimelineActivity, TimelineMemberAssignment } from '../model/activity-timeline.types'
+import type { TimelineActivity, TimelineMemberAssignment } from '../model/types'
 import type { ActivityOverlap } from '@/entities/activity'
 import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
 

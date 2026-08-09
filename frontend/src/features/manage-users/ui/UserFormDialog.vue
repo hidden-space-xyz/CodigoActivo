@@ -3,16 +3,17 @@ import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
 
 import { genderOptions } from '@/entities/user'
-import type { Gender, UpdateUserRequest, UserResponse } from '@/shared/api/generated/models'
+import type { UpdateUserInput, User } from '@/entities/user'
+import type { Gender } from '@/shared/api/generated/models'
 import { ageFrom, parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const DATE_FORMAT = 'DD/MM/YYYY'
 
-const props = defineProps<{ visible: boolean; user: UserResponse | null; saving: boolean }>()
+const props = defineProps<{ visible: boolean; user: User | null; saving: boolean }>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  submit: [body: UpdateUserRequest]
+  submit: [body: UpdateUserInput]
 }>()
 
 interface UserForm {
@@ -83,7 +84,7 @@ function save(): void {
   const birthDate = form.birthDate
   const gender = form.gender
   if (!birthDate || !gender) return
-  const body: UpdateUserRequest = {
+  const body: UpdateUserInput = {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
     email: form.email.trim() ? form.email.trim() : null,

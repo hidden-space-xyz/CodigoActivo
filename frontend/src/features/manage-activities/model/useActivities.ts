@@ -2,41 +2,39 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, ref, toValue } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import {
-  deleteApiActivitiesActivityId,
-  getApiActivities,
-  postApiActivitiesEventId,
-  putApiActivitiesActivityId,
-} from '@/shared/api/generated/endpoints/activities/activities'
 import type {
   ActivityResponse,
   CreateActivityRequest,
   GetApiActivitiesParams,
   UpdateActivityRequest,
 } from '@/shared/api/generated/models'
-import { toPage } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
-import { activityQueryKeys, getActivityByIdRequest } from '@/entities/activity'
+import {
+  activityQueryKeys,
+  createActivityRequest,
+  deleteActivityRequest,
+  getActivitiesAdminPageRequest,
+  getActivityByIdRequest,
+  getEventActivityOptionsRequest,
+  updateActivityRequest,
+} from '@/entities/activity'
 import { eventReportQueryKeys } from '@/entities/event'
 
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['activities'] })
+    void queryClient.invalidateQueries({ queryKey: activityQueryKeys.all })
     void queryClient.invalidateQueries({
       queryKey: eventReportQueryKeys.summary(toValue(eventId)),
     })
     void queryClient.invalidateQueries({ queryKey: eventReportQueryKeys.attendees() })
-    void queryClient.invalidateQueries({
-      queryKey: activityQueryKeys.publicByEvent(toValue(eventId)),
-    })
   }
 
   const modalityTypeId = ref<string | null>(null)
 
   const table = useServerTable<ActivityResponse, GetApiActivitiesParams>({
-    queryKey: ['activities', 'admin-table'],
-    fetchPage: (params) => getApiActivities(params).then(toPage),
+    queryKey: activityQueryKeys.adminTable(),
+    fetchPage: (params) => getActivitiesAdminPageRequest(params),
     defaultSort: { field: 'activityStartsAt', order: 1 },
     columns: {
       title: { type: 'text' },
@@ -49,27 +47,23 @@ export function useActivities(eventId: MaybeRefOrGetter<string>) {
   })
 
   const options = useQuery({
-    queryKey: computed(() => ['activities', 'event-options', toValue(eventId)] as const),
-    queryFn: () =>
-      getApiActivities({ eventId: toValue(eventId), pageSize: 100, sort: 'activityStartsAt' }).then(
-        (response) => response.data.items ?? [],
-      ),
+    queryKey: computed(() => activityQueryKeys.eventOptions(toValue(eventId))),
+    queryFn: () => getEventActivityOptionsRequest(toValue(eventId)),
   })
 
   const create = useMutation({
-    mutationFn: (body: CreateActivityRequest) =>
-      postApiActivitiesEventId(toValue(eventId), body).then((r) => r.data),
+    mutationFn: (body: CreateActivityRequest) => createActivityRequest(toValue(eventId), body),
     onSuccess: invalidate,
   })
 
   const update = useMutation({
     mutationFn: (vars: { id: string; body: UpdateActivityRequest }) =>
-      putApiActivitiesActivityId(vars.id, vars.body).then((r) => r.data),
+      updateActivityRequest(vars.id, vars.body),
     onSuccess: invalidate,
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiActivitiesActivityId(id),
+    mutationFn: (id: string) => deleteActivityRequest(id),
     onSuccess: invalidate,
   })
 

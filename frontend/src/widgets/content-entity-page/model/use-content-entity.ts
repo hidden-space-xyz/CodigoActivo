@@ -21,7 +21,7 @@ export interface ContentRequest {
 interface ContentApi<TParams> {
   queryKey: readonly unknown[]
   fetchPage: (params: TParams) => Promise<ServerTablePage<ContentItem>>
-  columns: Record<string, ServerTableColumn>
+  columns: Record<string, ServerTableColumn<TParams>>
   defaultSort?: { readonly field: string; readonly order?: 1 | -1 }
   fetchOne: (id: string) => Promise<ContentItem | null>
   create: (body: ContentRequest) => Promise<unknown>
