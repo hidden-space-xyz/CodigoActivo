@@ -103,7 +103,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_AsAdmin_MailsEveryUserWithAnAddressOneMessageEach()
+    public async Task SendToUsersAsAdminMailsEveryUserWithAnAddressOneMessageEach()
     {
         var client = await LoginAsAdminAsync();
 
@@ -132,7 +132,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_MarkupInTheAdminsMessage_IsHtmlEncoded()
+    public async Task SendToUsersMarkupInTheAdminsMessageIsHtmlEncoded()
     {
         var client = await LoginAsAdminAsync();
 
@@ -157,7 +157,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_SomeRecipientsRejected_ReportsThemAsFailed()
+    public async Task SendToUsersSomeRecipientsRejectedReportsThemAsFailed()
     {
         var client = await LoginAsAdminAsync();
         Factory.EmailSender.FailFor(TestSeedData.PendingEmail, TestSeedData.BlockedEmail);
@@ -175,7 +175,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_SmtpUnavailable_ReturnsBadRequestSendFailed()
+    public async Task SendToUsersSmtpUnavailableReturnsBadRequestSendFailed()
     {
         var client = await LoginAsAdminAsync();
         Factory.EmailSender.ThrowOnSend = new InvalidOperationException(
@@ -189,7 +189,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_FilteredByStatus_OnlyMailsMatchingUsers()
+    public async Task SendToUsersFilteredByStatusOnlyMailsMatchingUsers()
     {
         var client = await LoginAsAdminAsync();
 
@@ -207,7 +207,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_FilterMatchesNobodyWithAnAddress_ReturnsNoRecipients()
+    public async Task SendToUsersFilterMatchesNobodyWithAnAddressReturnsNoRecipients()
     {
         var client = await LoginAsAdminAsync();
 
@@ -220,7 +220,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_WithAttachments_AttachesThemWithoutStoringAnyFile()
+    public async Task SendToUsersWithAttachmentsAttachesThemWithoutStoringAnyFile()
     {
         var client = await LoginAsAdminAsync();
         var filesBefore = await Factory.QueryAsync(db =>
@@ -246,7 +246,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_BlankSubject_ReturnsBadRequestValidationFailed()
+    public async Task SendToUsersBlankSubjectReturnsBadRequestValidationFailed()
     {
         var client = await LoginAsAdminAsync();
 
@@ -257,7 +257,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_MissingBodyPart_ReturnsBadRequestValidationFailed()
+    public async Task SendToUsersMissingBodyPartReturnsBadRequestValidationFailed()
     {
         var client = await LoginAsAdminAsync();
 
@@ -268,7 +268,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_MissingCsrfToken_ReturnsBadRequestInvalidCsrf()
+    public async Task SendToUsersMissingCsrfTokenReturnsBadRequestInvalidCsrf()
     {
         var client = await LoginAsAdminAsync();
 
@@ -279,7 +279,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_AsMember_ReturnsForbidden()
+    public async Task SendToUsersAsMemberReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -290,7 +290,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_AnonymousUser_ReturnsUnauthorized()
+    public async Task SendToUsersAnonymousUserReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -301,7 +301,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUser_AsAdmin_MailsOnlyThatUser()
+    public async Task SendToUserAsAdminMailsOnlyThatUser()
     {
         var client = await LoginAsAdminAsync();
 
@@ -320,7 +320,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUser_DependentWithoutAddress_ReturnsRecipientWithoutAddress()
+    public async Task SendToUserDependentWithoutAddressReturnsRecipientWithoutAddress()
     {
         var client = await LoginAsAdminAsync();
 
@@ -333,7 +333,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUser_UnknownUser_ReturnsNotFound()
+    public async Task SendToUserUnknownUserReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -343,7 +343,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToEventAttendees_AsAdmin_MailsAttendeesAndSkipsTheDependent()
+    public async Task SendToEventAttendeesAsAdminMailsAttendeesAndSkipsTheDependent()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -360,7 +360,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToEventAttendees_FilteredByStatus_OnlyMailsMatchingAttendees()
+    public async Task SendToEventAttendeesFilteredByStatusOnlyMailsMatchingAttendees()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -379,7 +379,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToEventAttendees_UnknownEvent_ReturnsNotFound()
+    public async Task SendToEventAttendeesUnknownEventReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -391,7 +391,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToEventAttendees_AsMember_ReturnsForbidden()
+    public async Task SendToEventAttendeesAsMemberReturnsForbidden()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsMemberAsync();

@@ -44,13 +44,13 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void Constructor_ValidRootPath_CreatesRootDirectory()
+    public void ConstructorValidRootPathCreatesRootDirectory()
     {
         Directory.Exists(rootPath).Should().BeTrue();
     }
 
     [Fact]
-    public void Constructor_BlankRootPath_FallsBackToFilesUnderTheWorkingDirectory()
+    public void ConstructorBlankRootPathFallsBackToFilesUnderTheWorkingDirectory()
     {
         _ = new LocalFileSystemRepository(new FileStorageOptions { RootPath = "   " });
 
@@ -58,7 +58,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_SavedFile_OpenReadAsyncRoundTripsBytes()
+    public async Task SaveAsyncSavedFileOpenReadAsyncRoundTripsBytes()
     {
         var payload = Encoding.UTF8.GetBytes("hello storage");
 
@@ -72,7 +72,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_NameAlreadyOnDisk_OverwritesTheWholeFile()
+    public async Task SaveAsyncNameAlreadyOnDiskOverwritesTheWholeFile()
     {
         await sut.SaveAsync("dup.bin", new MemoryStream([1, 2, 3, 4, 5, 6]), Ct);
 
@@ -86,7 +86,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task OpenReadAsync_MissingFile_ReturnsNull()
+    public async Task OpenReadAsyncMissingFileReturnsNull()
     {
         var stream = await sut.OpenReadAsync("does-not-exist.bin", Ct);
 
@@ -94,7 +94,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task Delete_ExistingFile_RemovesFile()
+    public async Task DeleteExistingFileRemovesFile()
     {
         await sut.SaveAsync("temp.dat", new MemoryStream([1, 2, 3]), Ct);
 
@@ -105,7 +105,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void Delete_MissingFile_IsNoOp()
+    public void DeleteMissingFileIsNoOp()
     {
         sut.Invoking(s => s.Delete("nothing-here.dat")).Should().NotThrow();
     }
@@ -116,7 +116,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("a/b")]
     [InlineData("../x")]
     [InlineData("/etc/passwd")]
-    public void Delete_BlankOrPathTraversalName_ThrowsArgumentException(string name)
+    public void DeleteBlankOrPathTraversalNameThrowsArgumentException(string name)
     {
         sut.Invoking(s => s.Delete(name))
             .Should()
@@ -129,7 +129,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("   ")]
     [InlineData("../escape.txt")]
     [InlineData("nested/escape.txt")]
-    public async Task SaveAsync_BlankOrPathTraversalName_ThrowsArgumentException(string name)
+    public async Task SaveAsyncBlankOrPathTraversalNameThrowsArgumentException(string name)
     {
         await sut.Invoking(s => s.SaveAsync(name, new MemoryStream([0]), Ct))
             .Should()
@@ -141,7 +141,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("../escape.txt")]
-    public async Task OpenReadAsync_BlankOrPathTraversalName_ThrowsArgumentException(string name)
+    public async Task OpenReadAsyncBlankOrPathTraversalNameThrowsArgumentException(string name)
     {
         await sut.Invoking(s => s.OpenReadAsync(name, Ct))
             .Should()

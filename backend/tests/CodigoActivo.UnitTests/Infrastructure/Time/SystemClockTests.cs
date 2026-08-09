@@ -17,7 +17,7 @@ public sealed class SystemClockTests
     }
 
     [Fact]
-    public void UtcNow_AnyTimezone_ReturnsTheProvidedInstantUnshifted()
+    public void UtcNowAnyTimezoneReturnsTheProvidedInstantUnshifted()
     {
         var sut = new SystemClock(Zone(5), new FixedTimeProvider(Instant));
 
@@ -29,7 +29,7 @@ public sealed class SystemClockTests
     [InlineData(14, 2026, 7, 5)]
     [InlineData(0, 2026, 7, 4)]
     [InlineData(-11, 2026, 7, 4)]
-    public void Today_ConfiguredTimezone_ShiftsTheCalendarDate(
+    public void TodayConfiguredTimezoneShiftsTheCalendarDate(
         int offsetHours,
         int year,
         int month,
@@ -42,7 +42,7 @@ public sealed class SystemClockTests
     }
 
     [Fact]
-    public void TimeZone_ConfiguredTimezone_IsExposedUnchanged()
+    public void TimeZoneConfiguredTimezoneIsExposedUnchanged()
     {
         var zone = Zone(3);
 

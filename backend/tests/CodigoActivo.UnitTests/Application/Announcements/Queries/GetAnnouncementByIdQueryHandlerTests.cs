@@ -24,7 +24,7 @@ public sealed class GetAnnouncementByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AnnouncementMissing_ReturnsNotFound()
+    public async Task HandleAsyncAnnouncementMissingReturnsNotFound()
     {
         announcements.HasAnnouncements();
 

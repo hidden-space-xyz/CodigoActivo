@@ -29,7 +29,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_ProducesExpectedCounts()
+    public void BuildGraphDefaultProducesExpectedCounts()
     {
         graph.Users.Should().HaveCount(25);
         graph.Events.Should().HaveCount(20);
@@ -44,7 +44,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EachEventHasFiveActivities()
+    public void BuildGraphDefaultEachEventHasFiveActivities()
     {
         var activitiesPerEvent = graph.Activities.GroupBy(a => a.EventId).ToList();
 
@@ -53,7 +53,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EventSchedulesAreCoherent()
+    public void BuildGraphDefaultEventSchedulesAreCoherent()
     {
         graph
             .Events.Should()
@@ -68,7 +68,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_LeavesFiveUpcomingEventsAndFinishesTheRest()
+    public void BuildGraphDefaultLeavesFiveUpcomingEventsAndFinishesTheRest()
     {
         var upcoming = graph.Events.Where(e => e.EventEndsAt >= clock.Today).ToList();
         var finished = graph.Events.Where(e => e.EventEndsAt < clock.Today).ToList();
@@ -78,7 +78,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_FeaturesExactlyOneUpcomingEvent()
+    public void BuildGraphDefaultFeaturesExactlyOneUpcomingEvent()
     {
         var featured = graph.Events.Where(e => e.Featured).ToList();
 
@@ -87,13 +87,13 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_FeaturesExactlyOneAnnouncement()
+    public void BuildGraphDefaultFeaturesExactlyOneAnnouncement()
     {
         graph.Announcements.Should().ContainSingle(a => a.Featured);
     }
 
     [Fact]
-    public void BuildGraph_Default_KeepsSomeUpcomingSignupsOpen()
+    public void BuildGraphDefaultKeepsSomeUpcomingSignupsOpen()
     {
         var open = graph.Events.Where(e =>
             e.EventEndsAt >= clock.Today
@@ -105,7 +105,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_SignupTimestampsAreCoherent()
+    public void BuildGraphDefaultSignupTimestampsAreCoherent()
     {
         var eventByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
         var eventsById = graph.Events.ToDictionary(e => e.Id);
@@ -122,7 +122,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EachEventReferencesExistingCategory()
+    public void BuildGraphDefaultEachEventReferencesExistingCategory()
     {
         var categoryIds = graph.CategoryTypes.Select(c => c.Id).ToHashSet();
         var linkedEventIds = graph.EventCategories.Select(x => x.EventId).ToHashSet();
@@ -134,7 +134,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_ActivitiesFallWithinEventRange()
+    public void BuildGraphDefaultActivitiesFallWithinEventRange()
     {
         var eventsById = graph.Events.ToDictionary(e => e.Id);
 
@@ -150,7 +150,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EachActivityHasFiveDistinctUsers()
+    public void BuildGraphDefaultEachActivityHasFiveDistinctUsers()
     {
         var byActivity = graph.Assignments.GroupBy(x => x.ActivityId).ToList();
 
@@ -161,7 +161,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EachActivityHasExactlyOneLeader()
+    public void BuildGraphDefaultEachActivityHasExactlyOneLeader()
     {
         var byActivity = graph.Assignments.GroupBy(x => x.ActivityId).ToList();
 
@@ -175,7 +175,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EveryAssignedRoleComesFromTheFixedCatalog()
+    public void BuildGraphDefaultEveryAssignedRoleComesFromTheFixedCatalog()
     {
         var catalog = new HashSet<Guid>
         {
@@ -188,7 +188,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_LeaderAssignmentsBelongToMemberTypeUsers()
+    public void BuildGraphDefaultLeaderAssignmentsBelongToMemberTypeUsers()
     {
         var memberIds = graph
             .Users.Where(u => u.UserTypeId == SeedIds.UserTypes.Member)
@@ -204,7 +204,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_AssignmentsHaveUniqueKeysAndKnownUsers()
+    public void BuildGraphDefaultAssignmentsHaveUniqueKeysAndKnownUsers()
     {
         var userIds = graph.Users.Select(u => u.Id).ToHashSet();
 
@@ -216,7 +216,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RoleCapacitiesAreDeterministicAndFromTheCatalog()
+    public void BuildGraphDefaultRoleCapacitiesAreDeterministicAndFromTheCatalog()
     {
         var catalog = new HashSet<Guid>
         {
@@ -240,7 +240,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_SomeActivitiesExceedTheirDesiredCounts()
+    public void BuildGraphDefaultSomeActivitiesExceedTheirDesiredCounts()
     {
         var overSubscribed = graph.Activities.Where(activity =>
             activity.RoleCapacities.Any(capacity =>
@@ -259,13 +259,13 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_ContainsExactlyOneAdmin()
+    public void BuildGraphDefaultContainsExactlyOneAdmin()
     {
         graph.Users.Should().ContainSingle(u => u.IsAdmin);
     }
 
     [Fact]
-    public void BuildGraph_Default_EmailsAndPhonesAreUnique()
+    public void BuildGraphDefaultEmailsAndPhonesAreUnique()
     {
         graph
             .Users.Where(u => u.Email is not null)
@@ -280,7 +280,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_ChildrenAreDependentParticipantsWithoutCredentials()
+    public void BuildGraphDefaultChildrenAreDependentParticipantsWithoutCredentials()
     {
         var userIds = graph.Users.Select(u => u.Id).ToHashSet();
         var children = graph.Users.Where(u => u.ParentId is not null).ToList();
@@ -301,7 +301,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_FileIdsAreUniqueAndUploadedByTheAdmin()
+    public void BuildGraphDefaultFileIdsAreUniqueAndUploadedByTheAdmin()
     {
         var adminId = graph.Users.Single(u => u.IsAdmin).Id;
 
@@ -310,7 +310,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EveryThumbnailReferencesSeededFile()
+    public void BuildGraphDefaultEveryThumbnailReferencesSeededFile()
     {
         var fileIds = graph.Files.Select(f => f.Id).ToHashSet();
 
@@ -322,7 +322,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_EmbeddedEventImagesReferenceSeededFiles()
+    public void BuildGraphDefaultEmbeddedEventImagesReferenceSeededFiles()
     {
         var fileIds = graph.Files.Select(f => f.Id).ToHashSet();
 
@@ -337,7 +337,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RichTextDescriptionsAreValidJsonDocuments()
+    public void BuildGraphDefaultRichTextDescriptionsAreValidJsonDocuments()
     {
         var richText = graph
             .Events.Select(e => e.Description)
@@ -354,7 +354,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RatingsOnlyTargetFinishedEvents()
+    public void BuildGraphDefaultRatingsOnlyTargetFinishedEvents()
     {
         var eventsById = graph.Events.ToDictionary(e => e.Id);
 
@@ -367,7 +367,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_SomeFinishedEventsHaveNoRatings()
+    public void BuildGraphDefaultSomeFinishedEventsHaveNoRatings()
     {
         var ratedEventIds = graph.Ratings.Select(r => r.EventId).ToHashSet();
         var finished = graph.Events.Where(e => e.EventEndsAt < clock.Today).ToList();
@@ -377,7 +377,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RatersHaveAConfirmedAssignmentInTheRatedEvent()
+    public void BuildGraphDefaultRatersHaveAConfirmedAssignmentInTheRatedEvent()
     {
         var eventIdByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
         var confirmed = graph
@@ -393,7 +393,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RatersCanSignIn()
+    public void BuildGraphDefaultRatersCanSignIn()
     {
         var usersById = graph.Users.ToDictionary(u => u.Id);
 
@@ -408,14 +408,14 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RatingsAreUniquePerEventAndUser()
+    public void BuildGraphDefaultRatingsAreUniquePerEventAndUser()
     {
         graph.Ratings.Select(r => (r.EventId, r.UserId)).Should().OnlyHaveUniqueItems();
         graph.Ratings.Select(r => r.Id).Should().OnlyHaveUniqueItems();
     }
 
     [Fact]
-    public void BuildGraph_Default_RatingScoresAndAnswersAreWithinContract()
+    public void BuildGraphDefaultRatingScoresAndAnswersAreWithinContract()
     {
         graph.Ratings.Should().OnlyContain(r => r.Score >= 0 && r.Score <= 5);
         graph
@@ -438,7 +438,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_RatingTimestampsFallBetweenTheEventAndNow()
+    public void BuildGraphDefaultRatingTimestampsFallBetweenTheEventAndNow()
     {
         var eventsById = graph.Events.ToDictionary(e => e.Id);
 
@@ -459,7 +459,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraph_Default_ResourcesMatchTheirTypeContract()
+    public void BuildGraphDefaultResourcesMatchTheirTypeContract()
     {
         var external = graph.Resources.Where(r => r.Url is not null).ToList();
         var internals = graph.Resources.Where(r => r.Url is null).ToList();

@@ -25,7 +25,7 @@ public sealed class StreamExtensionsTests
 
     [Theory]
     [MemberData(nameof(ValidHeaders))]
-    public async Task DetectImageFormatAsync_ValidHeader_RecognisesFormat(
+    public async Task DetectImageFormatAsyncValidHeaderRecognisesFormat(
         byte[] header,
         string expectedExtension,
         string expectedContentType
@@ -60,7 +60,7 @@ public sealed class StreamExtensionsTests
 
     [Theory]
     [MemberData(nameof(RejectedHeaders))]
-    public async Task DetectImageFormatAsync_UnrecognisedHeader_ReturnsNull(byte[] header)
+    public async Task DetectImageFormatAsyncUnrecognisedHeaderReturnsNull(byte[] header)
     {
         await using var stream = new MemoryStream(header);
 
@@ -70,7 +70,7 @@ public sealed class StreamExtensionsTests
     }
 
     [Fact]
-    public async Task DetectImageFormatAsync_EmptyStream_ReturnsNull()
+    public async Task DetectImageFormatAsyncEmptyStreamReturnsNull()
     {
         await using var stream = new MemoryStream([]);
 
@@ -80,7 +80,7 @@ public sealed class StreamExtensionsTests
     }
 
     [Fact]
-    public async Task DetectImageFormatAsync_NonSeekableStream_UsesBytesReadAsLength()
+    public async Task DetectImageFormatAsyncNonSeekableStreamUsesBytesReadAsLength()
     {
         await using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 12, length: 20));
 
@@ -90,7 +90,7 @@ public sealed class StreamExtensionsTests
     }
 
     [Fact]
-    public async Task DetectImageFormatAsync_OversizedWebpOnNonSeekableStream_ReturnsNull()
+    public async Task DetectImageFormatAsyncOversizedWebpOnNonSeekableStreamReturnsNull()
     {
         await using var stream = new NonSeekableStream(Webp("VP8 ", riffSize: 40, length: 20));
 

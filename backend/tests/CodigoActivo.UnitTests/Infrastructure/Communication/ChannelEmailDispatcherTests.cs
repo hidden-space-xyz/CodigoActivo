@@ -36,7 +36,7 @@ public sealed class ChannelEmailDispatcherTests
     }
 
     [Fact]
-    public void TryEnqueue_QueueFull_ReturnsFalse()
+    public void TryEnqueueQueueFullReturnsFalse()
     {
         var queue = Create(new RecordingEmailSender(), new EmailQueueOptions { Capacity = 1 });
 
@@ -45,7 +45,7 @@ public sealed class ChannelEmailDispatcherTests
     }
 
     [Fact]
-    public async Task StopAsync_PendingMessages_DeliversThemBeforeReturning()
+    public async Task StopAsyncPendingMessagesDeliversThemBeforeReturning()
     {
         var transport = new RecordingEmailSender();
         var queue = Create(transport);
@@ -63,7 +63,7 @@ public sealed class ChannelEmailDispatcherTests
     }
 
     [Fact]
-    public async Task StopAsync_TransportThrows_KeepsDeliveringTheRemainingMessages()
+    public async Task StopAsyncTransportThrowsKeepsDeliveringTheRemainingMessages()
     {
         var transport = new RecordingEmailSender();
         transport.FailingRecipients.Add("roto@example.test");
@@ -79,7 +79,7 @@ public sealed class ChannelEmailDispatcherTests
     }
 
     [Fact]
-    public async Task TryEnqueue_AfterTheQueueStopped_ReturnsFalse()
+    public async Task TryEnqueueAfterTheQueueStoppedReturnsFalse()
     {
         var transport = new RecordingEmailSender();
         var queue = Create(transport);
@@ -92,7 +92,7 @@ public sealed class ChannelEmailDispatcherTests
     }
 
     [Fact]
-    public async Task StopAsync_DrainDeadlineElapses_ReturnsWithoutWaitingForTheTransport()
+    public async Task StopAsyncDrainDeadlineElapsesReturnsWithoutWaitingForTheTransport()
     {
         var transport = new BlockingEmailTransport();
         var queue = new ChannelEmailDispatcher(
@@ -115,7 +115,7 @@ public sealed class ChannelEmailDispatcherTests
     }
 
     [Fact]
-    public async Task StartAsync_ConfiguredWorkers_DeliverConcurrently()
+    public async Task StartAsyncConfiguredWorkersDeliverConcurrently()
     {
         const int Workers = 3;
         var transport = new BlockingEmailTransport(Workers);

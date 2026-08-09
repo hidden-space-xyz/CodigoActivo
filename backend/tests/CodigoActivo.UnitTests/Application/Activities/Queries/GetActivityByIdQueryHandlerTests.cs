@@ -42,7 +42,7 @@ public sealed class GetActivityByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityExists_ReturnsActivity()
+    public async Task HandleAsyncActivityExistsReturnsActivity()
     {
         var activity = NewActivity();
         activities.HasActivities(activity);
@@ -58,7 +58,7 @@ public sealed class GetActivityByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityMissing_ReturnsNotFound()
+    public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
         activities.HasActivities();
 
@@ -73,7 +73,7 @@ public sealed class GetActivityByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AssignmentsExceedDesiredCount_FlagsOnlySaturatedRole()
+    public async Task HandleAsyncAssignmentsExceedDesiredCountFlagsOnlySaturatedRole()
     {
         var activity = NewActivity();
         activity.RoleCapacities =
@@ -119,7 +119,7 @@ public sealed class GetActivityByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NonDeniedAssignmentsAtDesiredCount_RoleNotHighDemand()
+    public async Task HandleAsyncNonDeniedAssignmentsAtDesiredCountRoleNotHighDemand()
     {
         var activity = NewActivity();
         activity.RoleCapacities = [Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 1)];

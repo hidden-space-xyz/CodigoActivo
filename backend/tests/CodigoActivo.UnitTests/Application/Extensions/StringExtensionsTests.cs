@@ -11,7 +11,7 @@ public sealed class StringExtensionsTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("\t\n ")]
-    public void NormalizeOrNull_NullEmptyOrWhitespace_ReturnsNull(string? value)
+    public void NormalizeOrNullNullEmptyOrWhitespaceReturnsNull(string? value)
     {
         value.NormalizeOrNull().Should().BeNull();
     }
@@ -21,7 +21,7 @@ public sealed class StringExtensionsTests
     [InlineData("  Acme  ", "Acme")]
     [InlineData("\tAcme\n", "Acme")]
     [InlineData("a b", "a b")]
-    public void NormalizeOrNull_MeaningfulValue_TrimsAndReturnsValue(string value, string expected)
+    public void NormalizeOrNullMeaningfulValueTrimsAndReturnsValue(string value, string expected)
     {
         value.NormalizeOrNull().Should().Be(expected);
     }

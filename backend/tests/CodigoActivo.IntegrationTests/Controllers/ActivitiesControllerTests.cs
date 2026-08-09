@@ -114,7 +114,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListAsync_Anonymous_ReturnsPagedEnvelope()
+    public async Task ListAsyncAnonymousReturnsPagedEnvelope()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -131,7 +131,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_ModalityTypeIdFilter_ReturnsOnlyMatchingModality()
+    public async Task ListModalityTypeIdFilterReturnsOnlyMatchingModality()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -158,7 +158,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_LocationFilter_MatchesAccentAndCaseInsensitively()
+    public async Task ListLocationFilterMatchesAccentAndCaseInsensitively()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -175,7 +175,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByActivityDateRange_MatchesActivitiesOverlappingRange()
+    public async Task ListFilterByActivityDateRangeMatchesActivitiesOverlappingRange()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -217,7 +217,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SortByLocation_OrdersByLocation()
+    public async Task ListSortByLocationOrdersByLocation()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -239,7 +239,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_ActivityAbsent_Returns404ActivityNotFound()
+    public async Task GetActivityAbsentReturns404ActivityNotFound()
     {
         var client = CreateClient();
 
@@ -249,7 +249,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AsAdmin_PersistsAndReturns201WithLocation()
+    public async Task CreateAsAdminPersistsAndReturns201WithLocation()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -269,7 +269,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_WithRoleCapacities_PersistsAndReturnsThem()
+    public async Task CreateWithRoleCapacitiesPersistsAndReturnsThem()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -301,7 +301,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_DuplicatedRoleCapacityRole_ReturnsBadRequest()
+    public async Task CreateDuplicatedRoleCapacityRoleReturnsBadRequest()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -321,7 +321,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_RoleCapacityWithoutPositiveCount_ReturnsValidationError()
+    public async Task CreateRoleCapacityWithoutPositiveCountReturnsValidationError()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -340,7 +340,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_WithRoleCapacities_ReplacesExistingSet()
+    public async Task UpdateWithRoleCapacitiesReplacesExistingSet()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -412,7 +412,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_NonDeniedAssignmentsExceedDesiredCount_FlagsHighDemand()
+    public async Task ListNonDeniedAssignmentsExceedDesiredCountFlagsHighDemand()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -505,7 +505,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AsMember_ReturnsForbidden()
+    public async Task CreateAsMemberReturnsForbidden()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -521,7 +521,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_Anonymous_ReturnsUnauthorized()
+    public async Task CreateAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -535,7 +535,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_BlankTitle_ReturnsValidationError()
+    public async Task CreateBlankTitleReturnsValidationError()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -548,7 +548,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_MissingCsrfToken_IsRejected()
+    public async Task CreateMissingCsrfTokenIsRejected()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -564,7 +564,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_AsAdmin_ChangesActivity()
+    public async Task UpdateAsAdminChangesActivity()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -591,7 +591,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_AsAdmin_RemovesActivityAndOrphanedThumbnail()
+    public async Task DeleteAsAdminRemovesActivityAndOrphanedThumbnail()
     {
         var eventThumb = await SeedThumbnailAsync();
         var activityThumb = await SeedThumbnailAsync();
@@ -610,7 +610,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_ThumbnailSharedWithEvent_KeepsThumbnail()
+    public async Task DeleteThumbnailSharedWithEventKeepsThumbnail()
     {
         var thumb = await SeedThumbnailAsync();
         var eventId = await SeedEventAsync(thumb);
@@ -626,7 +626,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RoleTypes_AsAdmin_ListsSeededRoles()
+    public async Task RoleTypesAsAdminListsSeededRoles()
     {
         var client = await LoginAsAdminAsync();
 
@@ -647,7 +647,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignmentStatusTypes_AsAdmin_ListsSeededStatuses()
+    public async Task AssignmentStatusTypesAsAdminListsSeededStatuses()
     {
         var client = await LoginAsAdminAsync();
 
@@ -661,7 +661,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ModalityTypes_AsAdmin_ListsSeededModalities()
+    public async Task ModalityTypesAsAdminListsSeededModalities()
     {
         var client = await LoginAsAdminAsync();
 

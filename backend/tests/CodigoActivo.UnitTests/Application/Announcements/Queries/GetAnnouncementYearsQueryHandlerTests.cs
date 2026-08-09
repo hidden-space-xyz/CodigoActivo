@@ -24,7 +24,7 @@ public sealed class GetAnnouncementYearsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DuplicateYears_ReturnsDistinctDescending()
+    public async Task HandleAsyncDuplicateYearsReturnsDistinctDescending()
     {
         announcements.HasAnnouncements(
             NewAnnouncement(year: 2023),

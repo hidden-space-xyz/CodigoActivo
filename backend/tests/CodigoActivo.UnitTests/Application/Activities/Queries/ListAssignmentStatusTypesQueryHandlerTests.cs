@@ -25,7 +25,7 @@ public sealed class ListAssignmentStatusTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleStatusTypes_OrdersByNameAndProjects()
+    public async Task HandleAsyncMultipleStatusTypesOrdersByNameAndProjects()
     {
         statuses
             .Query()

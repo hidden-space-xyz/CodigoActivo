@@ -55,7 +55,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Event_EventWithCategories_MapsScalarsAndCategories()
+    public void EventEventWithCategoriesMapsScalarsAndCategories()
     {
         var categoryTypeId = Guid.NewGuid();
         var @event = NewEvent(categoryTypeId, "{}");
@@ -84,7 +84,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Event_EventWithoutCategories_YieldsEmptyCategories()
+    public void EventEventWithoutCategoriesYieldsEmptyCategories()
     {
         var @event = new Event { Title = "T", Subtitle = "S" };
 
@@ -92,7 +92,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void EventListItem_EventWithCategories_MapsScalarsAndCategoriesWithoutDescription()
+    public void EventListItemEventWithCategoriesMapsScalarsAndCategoriesWithoutDescription()
     {
         var categoryTypeId = Guid.NewGuid();
         var @event = NewEvent(categoryTypeId, "{\"heavy\":true}");
@@ -124,7 +124,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Partner_PartnerWithWeb_MapsAllFieldsIncludingWebsite()
+    public void PartnerPartnerWithWebMapsAllFieldsIncludingWebsite()
     {
         var partner = new Partner
         {
@@ -161,7 +161,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void Activity_ActivityWithModality_MapsScalarsAndModality()
+    public void ActivityActivityWithModalityMapsScalarsAndModality()
     {
         var modalityId = Guid.NewGuid();
         var activity = new Activity
@@ -250,7 +250,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void User_UserWithParentAndChildren_MapsScalarsLeavingTypeParentNameAndDependentCountNull()
+    public void UserUserWithParentAndChildrenMapsScalarsLeavingTypeParentNameAndDependentCountNull()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -278,7 +278,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void UserWithType_UserWithParentAndChildren_MapsScalarsTypeParentNameAndDependentCount()
+    public void UserWithTypeUserWithParentAndChildrenMapsScalarsTypeParentNameAndDependentCount()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -306,7 +306,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void UserWithType_UserWithoutParentOrChildren_YieldsNullParentNameAndZeroDependentCount()
+    public void UserWithTypeUserWithoutParentOrChildrenYieldsNullParentNameAndZeroDependentCount()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -320,7 +320,7 @@ public sealed class ProjectionsTests
     }
 
     [Fact]
-    public void AssignedActivity_AssignmentWithActivityRoleAndStatus_MapsActivityChainRoleAndStatus()
+    public void AssignedActivityAssignmentWithActivityRoleAndStatusMapsActivityChainRoleAndStatus()
     {
         var activityId = Guid.NewGuid();
         var eventId = Guid.NewGuid();

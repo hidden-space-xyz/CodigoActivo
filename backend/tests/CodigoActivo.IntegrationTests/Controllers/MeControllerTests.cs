@@ -97,7 +97,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignedActivities_Anonymous_ReturnsUnauthorized()
+    public async Task AssignedActivitiesAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -107,7 +107,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignedActivities_MemberWithAssignment_ReturnsProjectedAssignment()
+    public async Task AssignedActivitiesMemberWithAssignmentReturnsProjectedAssignment()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -132,7 +132,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignedActivities_EventIdFilter_ExcludesOtherEventAssignments()
+    public async Task AssignedActivitiesEventIdFilterExcludesOtherEventAssignments()
     {
         var targetEventId = await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -185,7 +185,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_Anonymous_ReturnsUnauthorized()
+    public async Task EventHistoryAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -195,7 +195,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_PastEventWithoutConfirmedAssignment_OmitsEvent()
+    public async Task EventHistoryPastEventWithoutConfirmedAssignmentOmitsEvent()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -213,7 +213,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_PastEventWithConfirmedAssignment_IncludesEventMarkedAsPast()
+    public async Task EventHistoryPastEventWithConfirmedAssignmentIncludesEventMarkedAsPast()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -235,7 +235,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_FutureEventWithRequestedAssignment_KeepsAssignmentAndStatus()
+    public async Task EventHistoryFutureEventWithRequestedAssignmentKeepsAssignmentAndStatus()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -259,7 +259,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_ChildAssignment_IncludesHouseholdMemberAsNotSelf()
+    public async Task EventHistoryChildAssignmentIncludesHouseholdMemberAsNotSelf()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberChildId,
@@ -281,7 +281,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_UpcomingAndPastEvents_OrdersUpcomingFirst()
+    public async Task EventHistoryUpcomingAndPastEventsOrdersUpcomingFirst()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -310,7 +310,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_OtherUsersAssignment_IsNotReturned()
+    public async Task EventHistoryOtherUsersAssignmentIsNotReturned()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.AdminId,
@@ -390,7 +390,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_Anonymous_ReturnsUnauthorized()
+    public async Task CertificatesAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -400,7 +400,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_PastEventWithConfirmedAssignment_ReturnsOwnCertificate()
+    public async Task CertificatesPastEventWithConfirmedAssignmentReturnsOwnCertificate()
     {
         var eventId = await SeedPastConfirmedAsync(
             TestSeedData.Users.MemberId,
@@ -422,7 +422,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_PastEventWithUnconfirmedAssignment_ReturnsNothing()
+    public async Task CertificatesPastEventWithUnconfirmedAssignmentReturnsNothing()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -440,7 +440,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_EventEndingToday_ReturnsNothing()
+    public async Task CertificatesEventEndingTodayReturnsNothing()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -458,7 +458,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_UnfinishedEventWithConfirmedAssignment_ReturnsNothing()
+    public async Task CertificatesUnfinishedEventWithConfirmedAssignmentReturnsNothing()
     {
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -476,7 +476,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_SeveralConfirmedActivitiesInOneEvent_ReturnsOneCertificate()
+    public async Task CertificatesSeveralConfirmedActivitiesInOneEventReturnsOneCertificate()
     {
         var eventId = await SeedPastConfirmedAsync(
             TestSeedData.Users.MemberId,
@@ -495,7 +495,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_ParentAndChildConfirmedInOneEvent_ReturnsOneCertificatePerMember()
+    public async Task CertificatesParentAndChildConfirmedInOneEventReturnsOneCertificatePerMember()
     {
         var eventId = await SeedPastConfirmedAsync(
             TestSeedData.Users.MemberId,
@@ -524,7 +524,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Certificates_OtherHouseholdConfirmedAssignment_IsNotReturned()
+    public async Task CertificatesOtherHouseholdConfirmedAssignmentIsNotReturned()
     {
         await SeedPastConfirmedAsync(TestSeedData.Users.AdminId, "Taller ajeno");
 
@@ -534,7 +534,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistory_RatedPastEvent_EmbedsOwnRating()
+    public async Task EventHistoryRatedPastEventEmbedsOwnRating()
     {
         var eventId = await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,

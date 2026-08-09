@@ -16,7 +16,7 @@ public sealed class ActivitySignupEmailTests
     );
 
     [Fact]
-    public void Create_MarkupInNames_EncodesTheHtmlBodyAndLeavesTheTextBodyIntact()
+    public void CreateMarkupInNamesEncodesTheHtmlBodyAndLeavesTheTextBodyIntact()
     {
         var message = ActivitySignupEmail.Create(
             "ada@test.com",

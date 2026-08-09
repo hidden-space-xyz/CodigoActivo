@@ -43,7 +43,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
 
@@ -57,7 +57,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserNotPending_ReturnsConflict()
+    public async Task HandleAsyncUserNotPendingReturnsConflict()
     {
         var user = users.FindReturns(NewUser(statusId: SeedIds.UserStatusTypes.Active));
 
@@ -71,7 +71,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PendingUserWithoutEmail_ReturnsConflict()
+    public async Task HandleAsyncPendingUserWithoutEmailReturnsConflict()
     {
         var user = users.FindReturns(NewPendingWithOtp(clock));
         user.Email = null;
@@ -86,7 +86,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NeverSentBefore_AllowsImmediateResend()
+    public async Task HandleAsyncNeverSentBeforeAllowsImmediateResend()
     {
         var user = users.FindReturns(
             NewUser(
@@ -110,7 +110,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_VerificationNotRequired_ReturnsConflict()
+    public async Task HandleAsyncVerificationNotRequiredReturnsConflict()
     {
         verification.Required = false;
         var user = users.FindReturns(NewPendingWithOtp(clock));
@@ -125,7 +125,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithinCooldown_ReturnsConflict()
+    public async Task HandleAsyncWithinCooldownReturnsConflict()
     {
         var user = users.FindReturns(
             NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddSeconds(-10))
@@ -142,7 +142,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CooldownElapsed_IssuesNewCodeAndPersists()
+    public async Task HandleAsyncCooldownElapsedIssuesNewCodeAndPersists()
     {
         var user = users.FindReturns(
             NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
@@ -165,7 +165,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSendFails_DoesNotPersistNewCode()
+    public async Task HandleAsyncEmailSendFailsDoesNotPersistNewCode()
     {
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         var user = users.FindReturns(
@@ -185,7 +185,7 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_QuotaDenied_ReturnsConflictAndKeepsTheIssuedCode()
+    public async Task HandleAsyncQuotaDeniedReturnsConflictAndKeepsTheIssuedCode()
     {
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
         var user = users.FindReturns(

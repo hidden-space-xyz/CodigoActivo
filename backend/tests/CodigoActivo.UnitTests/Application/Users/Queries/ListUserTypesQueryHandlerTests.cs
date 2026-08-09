@@ -24,7 +24,7 @@ public sealed class ListUserTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleUserTypes_ProjectsOrderedByName()
+    public async Task HandleAsyncMultipleUserTypesProjectsOrderedByName()
     {
         userTypes.HasUserTypes(
             NewUserType("Volunteer"),

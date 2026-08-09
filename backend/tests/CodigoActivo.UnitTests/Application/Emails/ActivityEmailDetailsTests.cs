@@ -30,7 +30,7 @@ public sealed class ActivityEmailDetailsTests
     }
 
     [Fact]
-    public void ScheduleText_SameLocalDay_RendersOneDateAndATimeRange()
+    public void ScheduleTextSameLocalDayRendersOneDateAndATimeRange()
     {
         var details = Details(
             new DateTimeOffset(2026, 7, 20, 16, 0, 0, TimeSpan.Zero),
@@ -41,7 +41,7 @@ public sealed class ActivityEmailDetailsTests
     }
 
     [Fact]
-    public void ScheduleText_CrossesLocalMidnight_RendersBothDates()
+    public void ScheduleTextCrossesLocalMidnightRendersBothDates()
     {
         var details = Details(
             new DateTimeOffset(2026, 7, 20, 21, 0, 0, TimeSpan.Zero),
@@ -55,7 +55,7 @@ public sealed class ActivityEmailDetailsTests
     }
 
     [Fact]
-    public void ToBlock_RoleProvided_AppendsTheRoleRow()
+    public void ToBlockRoleProvidedAppendsTheRoleRow()
     {
         var details = Details(
             new DateTimeOffset(2026, 7, 20, 16, 0, 0, TimeSpan.Zero),
@@ -70,7 +70,7 @@ public sealed class ActivityEmailDetailsTests
     }
 
     [Fact]
-    public void ToBlock_MarkupInAValue_IsHtmlEncoded()
+    public void ToBlockMarkupInAValueIsHtmlEncoded()
     {
         var details = Details(
             new DateTimeOffset(2026, 7, 20, 16, 0, 0, TimeSpan.Zero),

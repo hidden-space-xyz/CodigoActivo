@@ -32,7 +32,7 @@ public sealed class SetAnnouncementFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_IdMissing_ReturnsNotFound()
+    public async Task HandleAsyncIdMissingReturnsNotFound()
     {
         announcements
             .SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
@@ -49,7 +49,7 @@ public sealed class SetAnnouncementFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_Marked_ReturnsFeaturedAnnouncement()
+    public async Task HandleAsyncMarkedReturnsFeaturedAnnouncement()
     {
         var announcement = NewAnnouncement("Featured", featured: true);
         announcements.SetFeaturedAsync(announcement.Id, Arg.Any<CancellationToken>()).Returns(true);
@@ -66,7 +66,7 @@ public sealed class SetAnnouncementFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_Marked_InvalidatesAnnouncementsCache()
+    public async Task HandleAsyncMarkedInvalidatesAnnouncementsCache()
     {
         var announcement = NewAnnouncement("Featured", featured: true);
         announcements.SetFeaturedAsync(announcement.Id, Arg.Any<CancellationToken>()).Returns(true);

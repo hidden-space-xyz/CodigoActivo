@@ -54,7 +54,7 @@ public sealed class FileUploadSizeLimitAttributeTests
     }
 
     [Fact]
-    public void OnAuthorization_WritableBodySizeFeature_SetsConfiguredMaxPlusMultipartOverhead()
+    public void OnAuthorizationWritableBodySizeFeatureSetsConfiguredMaxPlusMultipartOverhead()
     {
         const long ConfiguredMax = 20 * 1024 * 1024;
         var feature = new FakeMaxRequestBodySizeFeature();
@@ -67,7 +67,7 @@ public sealed class FileUploadSizeLimitAttributeTests
     }
 
     [Fact]
-    public void OnAuthorization_ReadOnlyBodySizeFeature_LeavesFeatureUntouched()
+    public void OnAuthorizationReadOnlyBodySizeFeatureLeavesFeatureUntouched()
     {
         var feature = new FakeMaxRequestBodySizeFeature { IsReadOnly = true };
         var httpContext = new DefaultHttpContext();
@@ -79,7 +79,7 @@ public sealed class FileUploadSizeLimitAttributeTests
     }
 
     [Fact]
-    public void OnAuthorization_FormAlreadyRead_KeepsExistingFormFeature()
+    public void OnAuthorizationFormAlreadyReadKeepsExistingFormFeature()
     {
         var existing = new FormFeature(FormCollection.Empty);
         var httpContext = new DefaultHttpContext();
@@ -91,7 +91,7 @@ public sealed class FileUploadSizeLimitAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorization_MultipartBodyAboveConfiguredMax_FailsFormRead()
+    public async Task OnAuthorizationMultipartBodyAboveConfiguredMaxFailsFormRead()
     {
         var httpContext = MultipartContext(payloadBytes: 128 * 1024);
 
@@ -102,7 +102,7 @@ public sealed class FileUploadSizeLimitAttributeTests
     }
 
     [Fact]
-    public async Task OnAuthorization_MultipartBodyWithinConfiguredMax_ReadsForm()
+    public async Task OnAuthorizationMultipartBodyWithinConfiguredMaxReadsForm()
     {
         var httpContext = MultipartContext(payloadBytes: 128 * 1024);
 

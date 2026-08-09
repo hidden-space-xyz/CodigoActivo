@@ -26,7 +26,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TitleFilterWithAccent_MatchesCaseAndAccentInsensitively()
+    public async Task HandleAsyncTitleFilterWithAccentMatchesCaseAndAccentInsensitively()
     {
         resources.HasResources(NewResource("Manual Ávila"), NewResource("Otro"));
 
@@ -39,7 +39,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SubtitleFilter_MatchesSubstring()
+    public async Task HandleAsyncSubtitleFilterMatchesSubstring()
     {
         resources.HasResources(
             NewResource("A", subtitle: "documentación"),
@@ -55,7 +55,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExplicitTitleSort_OrdersAscendingByTitle()
+    public async Task HandleAsyncExplicitTitleSortOrdersAscendingByTitle()
     {
         resources.HasResources(NewResource("Charlie"), NewResource("Alpha"), NewResource("Bravo"));
 
@@ -68,7 +68,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoSortSpecified_DefaultsToCreatedAtDescending()
+    public async Task HandleAsyncNoSortSpecifiedDefaultsToCreatedAtDescending()
     {
         resources.HasResources(
             NewResource("Old", year: 2022),
@@ -85,7 +85,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceTypeIdFilter_KeepsResourcesOfThatType()
+    public async Task HandleAsyncResourceTypeIdFilterKeepsResourcesOfThatType()
     {
         var target = NewResource("Interno");
         resources.HasResources(target, NewResource("Otro"));
@@ -101,7 +101,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UrlFilter_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncUrlFilterIsAccentAndCaseInsensitive()
     {
         resources.HasResources(
             NewResource("Curso", url: "https://cursos.es/robótica"),
@@ -117,7 +117,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CreatedRangeFilter_KeepsResourcesWithinDayBounds()
+    public async Task HandleAsyncCreatedRangeFilterKeepsResourcesWithinDayBounds()
     {
         resources.HasResources(
             NewResource("Viejo", year: 2022),
@@ -140,7 +140,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByType_OrdersByTypeName()
+    public async Task HandleAsyncSortByTypeOrdersByTypeName()
     {
         resources.HasResources(
             NewResource("Tercero", type: NewResourceType(name: "Video")),
@@ -160,7 +160,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByUrlDescending_OrdersByUrlDescending()
+    public async Task HandleAsyncSortByUrlDescendingOrdersByUrlDescending()
     {
         resources.HasResources(
             NewResource("A", url: "https://a.es"),
@@ -180,7 +180,7 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceHasType_ProjectsTypeAndUrl()
+    public async Task HandleAsyncResourceHasTypeProjectsTypeAndUrl()
     {
         var resource = NewResource();
         resource.Url = "https://ejemplo.es/recurso";

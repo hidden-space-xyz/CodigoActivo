@@ -24,7 +24,7 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NothingRemoved_ReturnsNotFound()
+    public async Task HandleAsyncNothingRemovedReturnsNotFound()
     {
         categoryTypes
             .RemoveAsync(
@@ -45,7 +45,7 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_Removed_InvalidatesCategoryTypesAndEventsCache()
+    public async Task HandleAsyncRemovedInvalidatesCategoryTypesAndEventsCache()
     {
         categoryTypes
             .RemoveAsync(

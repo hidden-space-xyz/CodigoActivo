@@ -70,7 +70,7 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ParentMissing_ReturnsNotFound()
+    public async Task HandleAsyncParentMissingReturnsNotFound()
     {
         users.FindReturns(null);
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
@@ -85,7 +85,7 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ParentIsMinor_ReturnsBadRequest()
+    public async Task HandleAsyncParentIsMinorReturnsBadRequest()
     {
         users.FindReturns(NewUser(dob: MinorDob));
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
@@ -100,7 +100,7 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ChildBirthDateNotMinor_ReturnsBadRequest()
+    public async Task HandleAsyncChildBirthDateNotMinorReturnsBadRequest()
     {
         users.FindReturns(NewUser(dob: AdultDob));
         var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Gender.Male);
@@ -115,7 +115,7 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_CreatesDependentChildPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestCreatesDependentChildPersistsAndInvalidatesCache()
     {
         var parentId = Guid.NewGuid();
         var parent = NewUser(id: parentId, dob: AdultDob);

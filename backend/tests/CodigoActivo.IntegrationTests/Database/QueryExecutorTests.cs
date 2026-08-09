@@ -55,7 +55,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task ToPagedAsync_MiddlePage_ReturnsTotalAndPageSlice()
+    public async Task ToPagedAsyncMiddlePageReturnsTotalAndPageSlice()
     {
         await SeedUsersAsync("A", "B", "C", "D", "E");
         await using var db = postgres.CreateContext();
@@ -69,7 +69,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task ToPagedAsync_LastPartialPage_ReturnsRemainingItems()
+    public async Task ToPagedAsyncLastPartialPageReturnsRemainingItems()
     {
         await SeedUsersAsync("A", "B", "C", "D", "E");
         await using var db = postgres.CreateContext();
@@ -81,7 +81,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task ToPagedAsync_PageBeyondLast_ReturnsEmptySliceWithTotal()
+    public async Task ToPagedAsyncPageBeyondLastReturnsEmptySliceWithTotal()
     {
         await SeedUsersAsync("A", "B");
         await using var db = postgres.CreateContext();
@@ -93,7 +93,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task ToPagedAsync_EmptySource_ReturnsZeroTotalAndEmptySlice()
+    public async Task ToPagedAsyncEmptySourceReturnsZeroTotalAndEmptySlice()
     {
         await using var db = postgres.CreateContext();
 
@@ -104,7 +104,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task ToPagedAsync_PageNumberThatWouldOverflowInt32_ReturnsEmptySliceWithoutThrowing()
+    public async Task ToPagedAsyncPageNumberThatWouldOverflowInt32ReturnsEmptySliceWithoutThrowing()
     {
         await SeedUsersAsync("A");
         await using var db = postgres.CreateContext();
@@ -121,7 +121,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task ToListAsync_MatchingRows_MaterialisesEveryRow()
+    public async Task ToListAsyncMatchingRowsMaterialisesEveryRow()
     {
         await SeedUsersAsync("A", "B", "C");
         await using var db = postgres.CreateContext();
@@ -132,7 +132,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task FirstOrDefaultAsync_MatchingRows_ReturnsTheFirstInQueryOrder()
+    public async Task FirstOrDefaultAsyncMatchingRowsReturnsTheFirstInQueryOrder()
     {
         await SeedUsersAsync("B", "A", "C");
         await using var db = postgres.CreateContext();
@@ -143,7 +143,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     }
 
     [Fact]
-    public async Task FirstOrDefaultAsync_NoRows_ReturnsNull()
+    public async Task FirstOrDefaultAsyncNoRowsReturnsNull()
     {
         await using var db = postgres.CreateContext();
 

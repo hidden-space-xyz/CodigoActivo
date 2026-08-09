@@ -64,7 +64,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityWindowMissing_ReturnsNotFound()
+    public async Task HandleAsyncActivityWindowMissingReturnsNotFound()
     {
         activities.Query().Returns(new List<Activity>().AsQueryable());
 
@@ -85,7 +85,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_OutsideWindowForMember_ReturnsSignupClosed()
+    public async Task HandleAsyncOutsideWindowForMemberReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
@@ -108,7 +108,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsUserNotFound()
+    public async Task HandleAsyncUserMissingReturnsUserNotFound()
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
@@ -132,7 +132,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_VolunteerRoleForNonSocioUser_PersistsAssignment()
+    public async Task HandleAsyncVolunteerRoleForNonSocioUserPersistsAssignment()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -168,7 +168,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LeaderRoleForSocioUser_PersistsAssignment()
+    public async Task HandleAsyncLeaderRoleForSocioUserPersistsAssignment()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -204,7 +204,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LeaderRoleForNonSocioUser_ReturnsRoleNotAllowed()
+    public async Task HandleAsyncLeaderRoleForNonSocioUserReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -229,7 +229,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LeaderRoleForNonSocioUserAsAdmin_ReturnsRoleNotAllowed()
+    public async Task HandleAsyncLeaderRoleForNonSocioUserAsAdminReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -254,7 +254,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnknownRoleForSocioUser_ReturnsRoleNotAllowed()
+    public async Task HandleAsyncUnknownRoleForSocioUserReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -279,7 +279,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AssignmentAlreadyExists_ReturnsConflict()
+    public async Task HandleAsyncAssignmentAlreadyExistsReturnsConflict()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -311,7 +311,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequestAsAdmin_PersistsReturnsRequestedStatusAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestAsAdminPersistsReturnsRequestedStatusAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -357,7 +357,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MemberAtExactSignupStart_IsOpenAndPersists()
+    public async Task HandleAsyncMemberAtExactSignupStartIsOpenAndPersists()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -393,7 +393,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MemberAtExactSignupEnd_IsOpenAndPersists()
+    public async Task HandleAsyncMemberAtExactSignupEndIsOpenAndPersists()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -429,7 +429,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForSocio_IsOpenAndPersists()
+    public async Task HandleAsyncEarlySignupWindowForSocioIsOpenAndPersists()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -456,7 +456,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForSponsor_IsOpenAndPersists()
+    public async Task HandleAsyncEarlySignupWindowForSponsorIsOpenAndPersists()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -483,7 +483,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForParticipant_ReturnsSignupEarlyOnly()
+    public async Task HandleAsyncEarlySignupWindowForParticipantReturnsSignupEarlyOnly()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -510,7 +510,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForChildOfSocio_IsOpenAndPersists()
+    public async Task HandleAsyncEarlySignupWindowForChildOfSocioIsOpenAndPersists()
     {
         var activityId = Guid.NewGuid();
         var childId = Guid.NewGuid();
@@ -537,7 +537,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForChildOfParticipant_ReturnsSignupEarlyOnly()
+    public async Task HandleAsyncEarlySignupWindowForChildOfParticipantReturnsSignupEarlyOnly()
     {
         var activityId = Guid.NewGuid();
         var childId = Guid.NewGuid();
@@ -564,7 +564,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_BeforeEarlySignupWindowForSocio_ReturnsSignupClosed()
+    public async Task HandleAsyncBeforeEarlySignupWindowForSocioReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -591,7 +591,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoEarlySignupWindowForSocio_ReturnsSignupClosed()
+    public async Task HandleAsyncNoEarlySignupWindowForSocioReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -618,7 +618,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_SendsPendingSignupEmailToTheUser()
+    public async Task HandleAsyncValidRequestSendsPendingSignupEmailToTheUser()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -651,7 +651,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DependentMinor_SendsPendingSignupEmailToTheGuardian()
+    public async Task HandleAsyncDependentMinorSendsPendingSignupEmailToTheGuardian()
     {
         var activityId = Guid.NewGuid();
         var childId = Guid.NewGuid();

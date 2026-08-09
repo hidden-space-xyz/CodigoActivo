@@ -27,7 +27,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_YearFilter_ReturnsMatchingYear()
+    public async Task HandleAsyncYearFilterReturnsMatchingYear()
     {
         announcements.HasAnnouncements(
             NewAnnouncement("Old", year: 2023),
@@ -43,7 +43,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_YearOutOfRange_ReturnsEmpty()
+    public async Task HandleAsyncYearOutOfRangeReturnsEmpty()
     {
         announcements.HasAnnouncements(NewAnnouncement("Any", year: 2025));
 
@@ -57,7 +57,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_YearMaximumSupported_ReturnsAnnouncementsOfYear9999()
+    public async Task HandleAsyncYearMaximumSupportedReturnsAnnouncementsOfYear9999()
     {
         announcements.HasAnnouncements(
             NewAnnouncement("Antiguo", year: 2025),
@@ -73,7 +73,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CreatedRangeFilter_KeepsAnnouncementsWithinDayBounds()
+    public async Task HandleAsyncCreatedRangeFilterKeepsAnnouncementsWithinDayBounds()
     {
         announcements.HasAnnouncements(
             NewAnnouncement(
@@ -105,7 +105,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CreatedToFilter_UsesAppTimeZoneDayEnd()
+    public async Task HandleAsyncCreatedToFilterUsesAppTimeZoneDayEnd()
     {
         clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "UTC+02",
@@ -137,7 +137,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     [Theory]
     [InlineData(true, "Star")]
     [InlineData(false, "Plain")]
-    public async Task HandleAsync_FeaturedFilter_ReturnsMatchingFeaturedState(
+    public async Task HandleAsyncFeaturedFilterReturnsMatchingFeaturedState(
         bool featured,
         string expected
     )
@@ -156,7 +156,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TitleSearch_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncTitleSearchIsAccentAndCaseInsensitive()
     {
         announcements.HasAnnouncements(NewAnnouncement("Reunión Ávila"), NewAnnouncement("Otra"));
 
@@ -169,7 +169,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SubtitleSearch_MatchesSubstring()
+    public async Task HandleAsyncSubtitleSearchMatchesSubstring()
     {
         announcements.HasAnnouncements(
             NewAnnouncement("A", subtitle: "primavera"),
@@ -185,7 +185,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExplicitTitleSort_OrdersAscending()
+    public async Task HandleAsyncExplicitTitleSortOrdersAscending()
     {
         announcements.HasAnnouncements(
             NewAnnouncement("Charlie"),
@@ -202,7 +202,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EqualCreatedAt_OrdersByIdTieBreakForStablePagination()
+    public async Task HandleAsyncEqualCreatedAtOrdersByIdTieBreakForStablePagination()
     {
         var first = NewAnnouncement("First");
         first.Id = new Guid("00000001-0000-0000-0000-000000000000");

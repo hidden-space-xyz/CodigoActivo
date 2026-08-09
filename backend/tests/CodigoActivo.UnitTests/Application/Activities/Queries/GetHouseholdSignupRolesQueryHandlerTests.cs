@@ -29,7 +29,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SocioParentWithParticipantChild_ReturnsRolesPerMember()
+    public async Task HandleAsyncSocioParentWithParticipantChildReturnsRolesPerMember()
     {
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
@@ -70,7 +70,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ParticipantTypeUserWithoutChildren_ReturnsParticipantAndVolunteerOnly()
+    public async Task HandleAsyncParticipantTypeUserWithoutChildrenReturnsParticipantAndVolunteerOnly()
     {
         var actingUserId = Guid.NewGuid();
         users.HouseholdUsers(

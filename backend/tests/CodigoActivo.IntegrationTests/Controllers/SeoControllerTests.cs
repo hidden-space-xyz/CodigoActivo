@@ -104,7 +104,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Sitemap_MixedContentSeeded_ReturnsXmlWithoutExternalResources()
+    public async Task SitemapMixedContentSeededReturnsXmlWithoutExternalResources()
     {
         var content = await SeedContentAsync();
         var client = CreateClient();
@@ -125,7 +125,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Sitemap_HeadRequest_ReturnsOk()
+    public async Task SitemapHeadRequestReturnsOk()
     {
         var client = CreateClient();
 
@@ -137,7 +137,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Robots_HeadRequest_ReturnsOk()
+    public async Task RobotsHeadRequestReturnsOk()
     {
         var client = CreateClient();
 
@@ -149,7 +149,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Robots_Anonymous_ReturnsTextPlainRules()
+    public async Task RobotsAnonymousReturnsTextPlainRules()
     {
         var client = CreateClient();
 

@@ -48,7 +48,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UploadMissing_ReturnsValidationError()
+    public async Task HandleAsyncUploadMissingReturnsValidationError()
     {
         var result = await sut.HandleAsync(
             new CreateFileCommand(null, Guid.NewGuid()),
@@ -60,7 +60,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UploadEmpty_ReturnsValidationError()
+    public async Task HandleAsyncUploadEmptyReturnsValidationError()
     {
         var upload = new FileUpload(new MemoryStream(), "empty.png", 0);
 
@@ -74,7 +74,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UploadTooLarge_ReturnsValidationError()
+    public async Task HandleAsyncUploadTooLargeReturnsValidationError()
     {
         options.MaxSizeBytes = 10;
         var upload = new FileUpload(PngStream(), "big.png", 11);
@@ -89,7 +89,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UploadAtExactSizeLimit_IsAccepted()
+    public async Task HandleAsyncUploadAtExactSizeLimitIsAccepted()
     {
         options.MaxSizeBytes = 32;
         var content = PngStream();
@@ -109,7 +109,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StreamNotSeekable_ReturnsValidationError()
+    public async Task HandleAsyncStreamNotSeekableReturnsValidationError()
     {
         var upload = new FileUpload(new NonSeekableStream(PngBytes()), "x.png", 32);
 
@@ -123,7 +123,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FormatUnsupported_ReturnsValidationError()
+    public async Task HandleAsyncFormatUnsupportedReturnsValidationError()
     {
         var upload = new FileUpload(JunkStream(), "junk.bin", 32);
 
@@ -140,7 +140,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidUpload_SavesContentPersistsEntityAndReturnsResponse()
+    public async Task HandleAsyncValidUploadSavesContentPersistsEntityAndReturnsResponse()
     {
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
@@ -171,7 +171,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_BlankFilename_DefaultsNameToFile()
+    public async Task HandleAsyncBlankFilenameDefaultsNameToFile()
     {
         var upload = new FileUpload(PngStream(), "   ", 32);
 
@@ -185,7 +185,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FileNameLongerThanMaxLength_TruncatesNameTo260Chars()
+    public async Task HandleAsyncFileNameLongerThanMaxLengthTruncatesNameTo260Chars()
     {
         var longName = new string('a', 300);
         var upload = new FileUpload(PngStream(), longName, 32);
@@ -201,7 +201,7 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PersistenceThrows_RollsBackStorage()
+    public async Task HandleAsyncPersistenceThrowsRollsBackStorage()
     {
         var upload = new FileUpload(PngStream(), "avatar.png", 32);
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))

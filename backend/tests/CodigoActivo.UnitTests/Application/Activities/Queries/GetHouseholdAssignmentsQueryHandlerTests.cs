@@ -64,7 +64,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ParentAndChildAssigned_OrdersByFirstNameAndIncludesChild()
+    public async Task HandleAsyncParentAndChildAssignedOrdersByFirstNameAndIncludesChild()
     {
         var actingUserId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
@@ -93,7 +93,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SameUserMultipleActivities_OrdersByActivityStart()
+    public async Task HandleAsyncSameUserMultipleActivitiesOrdersByActivityStart()
     {
         var actingUserId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
@@ -111,7 +111,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StrangerOrOtherEventAssignments_AreExcluded()
+    public async Task HandleAsyncStrangerOrOtherEventAssignmentsAreExcluded()
     {
         var actingUserId = Guid.NewGuid();
         var eventId = Guid.NewGuid();

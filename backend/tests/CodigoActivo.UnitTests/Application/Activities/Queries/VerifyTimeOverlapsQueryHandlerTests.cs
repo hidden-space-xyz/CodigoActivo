@@ -31,7 +31,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityMissing_ReturnsNotFound()
+    public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
         activities.Query().Returns(new List<Activity>().AsQueryable());
 
@@ -45,7 +45,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_OverlappingAssignments_ReportsOverlapsExcludingTargetAndOtherUsers()
+    public async Task HandleAsyncOverlappingAssignmentsReportsOverlapsExcludingTargetAndOtherUsers()
     {
         var userId = Guid.NewGuid();
         var target = OverlapActivity(Guid.NewGuid(), 10, 12);
@@ -70,7 +70,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleOverlaps_OrdersByStartThenActivityId()
+    public async Task HandleAsyncMultipleOverlapsOrdersByStartThenActivityId()
     {
         var userId = Guid.NewGuid();
         var target = OverlapActivity(Guid.NewGuid(), 9, 14);
@@ -97,7 +97,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DisjointAssignments_ReportsNoOverlaps()
+    public async Task HandleAsyncDisjointAssignmentsReportsNoOverlaps()
     {
         var userId = Guid.NewGuid();
         var target = OverlapActivity(Guid.NewGuid(), 10, 12);
@@ -117,7 +117,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AdjacentAssignments_ReportsNoOverlaps()
+    public async Task HandleAsyncAdjacentAssignmentsReportsNoOverlaps()
     {
         var userId = Guid.NewGuid();
         var target = OverlapActivity(Guid.NewGuid(), 10, 12);

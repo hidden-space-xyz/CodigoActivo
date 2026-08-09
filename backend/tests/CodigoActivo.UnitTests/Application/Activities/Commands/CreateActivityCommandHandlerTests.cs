@@ -90,7 +90,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.HasEvents();
 
@@ -106,7 +106,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StartMissing_ReturnsScheduleRequired()
+    public async Task HandleAsyncStartMissingReturnsScheduleRequired()
     {
         var ev = EventExists();
 
@@ -133,7 +133,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EndNotAfterStart_ReturnsInvalidRange()
+    public async Task HandleAsyncEndNotAfterStartReturnsInvalidRange()
     {
         var ev = EventExists();
         var when = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
@@ -154,7 +154,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DatesExceedEventRange_ReturnsOutsideEventRange()
+    public async Task HandleAsyncDatesExceedEventRangeReturnsOutsideEventRange()
     {
         var ev = EventExists();
 
@@ -177,7 +177,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StartsBeforeEventRange_ReturnsOutsideEventRange()
+    public async Task HandleAsyncStartsBeforeEventRangeReturnsOutsideEventRange()
     {
         var ev = EventExists();
 
@@ -200,7 +200,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
+    public async Task HandleAsyncThumbnailMissingReturnsThumbnailNotFound()
     {
         var ev = EventExists();
         files.ThumbnailExists(false);
@@ -217,7 +217,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ModalityMissing_ReturnsModalityTypeNotFound()
+    public async Task HandleAsyncModalityMissingReturnsModalityTypeNotFound()
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
@@ -235,7 +235,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_PersistsTrimmedActivityReturnsProjectionAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestPersistsTrimmedActivityReturnsProjectionAndInvalidatesCache()
     {
         var eventId = Guid.NewGuid();
         var caller = Guid.NewGuid();
@@ -282,7 +282,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithRoleCapacities_PersistsDesiredCounts()
+    public async Task HandleAsyncWithRoleCapacitiesPersistsDesiredCounts()
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
@@ -338,7 +338,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DuplicatedRoleCapacityRole_ReturnsBadRequest()
+    public async Task HandleAsyncDuplicatedRoleCapacityRoleReturnsBadRequest()
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
@@ -367,7 +367,7 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnknownRoleCapacityRole_ReturnsRoleTypeNotFound()
+    public async Task HandleAsyncUnknownRoleCapacityRoleReturnsRoleTypeNotFound()
     {
         var ev = EventExists();
         files.ThumbnailExists(true);

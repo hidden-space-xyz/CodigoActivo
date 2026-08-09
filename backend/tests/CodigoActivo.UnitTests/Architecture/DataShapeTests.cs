@@ -8,7 +8,7 @@ namespace CodigoActivo.UnitTests.Architecture;
 public sealed class DataShapeTests
 {
     [Fact]
-    public void ApplicationDtos_PublicTypes_AreWireRecordsOnly()
+    public void ApplicationDtosPublicTypesAreWireRecordsOnly()
     {
         var dtoTypes = typeof(IQuery<>)
             .Assembly.GetTypes()
@@ -40,7 +40,7 @@ public sealed class DataShapeTests
     }
 
     [Fact]
-    public void DomainAssembly_Types_NeverCarryConfigurationOptions()
+    public void DomainAssemblyTypesNeverCarryConfigurationOptions()
     {
         var offenders = typeof(Result)
             .Assembly.GetTypes()

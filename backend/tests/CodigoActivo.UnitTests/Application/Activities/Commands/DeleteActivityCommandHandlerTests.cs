@@ -24,7 +24,7 @@ public sealed class DeleteActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityMissing_ReturnsNotFound()
+    public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
         activities.ActivityFound(null);
 
@@ -46,7 +46,7 @@ public sealed class DeleteActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityExists_InvalidatesActivitiesCache()
+    public async Task HandleAsyncActivityExistsInvalidatesActivitiesCache()
     {
         var activity = NewActivity();
         activities.ActivityFound(activity);

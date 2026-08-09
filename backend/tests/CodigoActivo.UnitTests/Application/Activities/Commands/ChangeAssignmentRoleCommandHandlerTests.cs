@@ -28,7 +28,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AssignmentMissing_ReturnsNotFound()
+    public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
         activities.ExistingAssignment(null);
 
@@ -48,7 +48,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RoleTypeMissing_ReturnsRoleTypeNotFound()
+    public async Task HandleAsyncRoleTypeMissingReturnsRoleTypeNotFound()
     {
         activities.ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
         ActivityRoleType? missingRoleType = null;
@@ -75,7 +75,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_UpdatesRolePersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestUpdatesRolePersistsAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -129,7 +129,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SameRoleAsCurrent_ReturnsUnchangedWithoutRemovingOrSaving()
+    public async Task HandleAsyncSameRoleAsCurrentReturnsUnchangedWithoutRemovingOrSaving()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();

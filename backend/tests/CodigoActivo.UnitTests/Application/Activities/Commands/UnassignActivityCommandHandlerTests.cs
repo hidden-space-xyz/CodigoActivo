@@ -32,7 +32,7 @@ public sealed class UnassignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AssignmentMissing_ReturnsNotFound()
+    public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
         activities.ExistingAssignment(null);
 
@@ -48,7 +48,7 @@ public sealed class UnassignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AsAdmin_RemovesWithoutWindowCheckAndInvalidatesCache()
+    public async Task HandleAsyncAsAdminRemovesWithoutWindowCheckAndInvalidatesCache()
     {
         var assignment = Assignment(Guid.NewGuid(), Guid.NewGuid());
         activities.ExistingAssignment(assignment);
@@ -71,7 +71,7 @@ public sealed class UnassignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WindowClosedForMember_ReturnsSignupClosed()
+    public async Task HandleAsyncWindowClosedForMemberReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         var assignment = Assignment(Guid.NewGuid(), activityId);
@@ -92,7 +92,7 @@ public sealed class UnassignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WindowOpenForMember_RemovesAssignment()
+    public async Task HandleAsyncWindowOpenForMemberRemovesAssignment()
     {
         var activityId = Guid.NewGuid();
         var assignment = Assignment(Guid.NewGuid(), activityId);

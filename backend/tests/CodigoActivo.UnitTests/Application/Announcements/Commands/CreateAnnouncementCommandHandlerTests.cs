@@ -33,7 +33,7 @@ public sealed class CreateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_FailsAndDoesNotPersist()
+    public async Task HandleAsyncThumbnailMissingFailsAndDoesNotPersist()
     {
         files.ThumbnailExists(false);
         var request = new CreateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
@@ -54,7 +54,7 @@ public sealed class CreateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_PersistsTrimmedAnnouncementAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestPersistsTrimmedAnnouncementAndInvalidatesCache()
     {
         files.ThumbnailExists(true);
         var caller = Guid.NewGuid();

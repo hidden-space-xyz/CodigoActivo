@@ -176,7 +176,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MixedData_ProducesExpectedSeriesAndBreakdowns()
+    public async Task HandleAsyncMixedDataProducesExpectedSeriesAndBreakdowns()
     {
         var e1 = new Guid("eeeeeeee-0000-0000-0000-000000000001");
         var e2 = new Guid("eeeeeeee-0000-0000-0000-000000000002");

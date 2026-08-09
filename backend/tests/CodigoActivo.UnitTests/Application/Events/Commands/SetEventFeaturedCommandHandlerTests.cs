@@ -27,7 +27,7 @@ public sealed class SetEventFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.SetFeaturedAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 
@@ -41,7 +41,7 @@ public sealed class SetEventFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventExists_ReturnsFeaturedEventAndInvalidatesCache()
+    public async Task HandleAsyncEventExistsReturnsFeaturedEventAndInvalidatesCache()
     {
         var ev = NewEvent(featured: true);
         events.HasEvents(ev);

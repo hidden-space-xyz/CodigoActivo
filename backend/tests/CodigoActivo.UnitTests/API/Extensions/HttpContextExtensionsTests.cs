@@ -11,7 +11,7 @@ namespace CodigoActivo.UnitTests.API.Extensions;
 public sealed class HttpContextExtensionsTests
 {
     [Fact]
-    public async Task WriteApiErrorAsync_NotFoundError_SetsStatusAndWritesJsonBody()
+    public async Task WriteApiErrorAsyncNotFoundErrorSetsStatusAndWritesJsonBody()
     {
         var context = new DefaultHttpContext { TraceIdentifier = "trace-http-1" };
         var responseBody = new MemoryStream();

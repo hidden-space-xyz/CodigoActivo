@@ -30,7 +30,7 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
 
@@ -44,7 +44,7 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_GrantAdminToNonAdmin_GrantsAndSaves()
+    public async Task HandleAsyncGrantAdminToNonAdminGrantsAndSaves()
     {
         var user = NewUser(isAdmin: false);
         users.FindReturns(user);
@@ -60,7 +60,7 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FlagUnchanged_IsNoopAndDoesNotSave()
+    public async Task HandleAsyncFlagUnchangedIsNoopAndDoesNotSave()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
@@ -75,7 +75,7 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RevokeWithOtherAdminsRemaining_RevokesAndSaves()
+    public async Task HandleAsyncRevokeWithOtherAdminsRemainingRevokesAndSaves()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
@@ -94,7 +94,7 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RevokeLastAdmin_ReturnsForbidden()
+    public async Task HandleAsyncRevokeLastAdminReturnsForbidden()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);

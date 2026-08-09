@@ -82,7 +82,7 @@ public sealed class GetEventSummaryQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.HasEvents(
             new Event
@@ -106,7 +106,7 @@ public sealed class GetEventSummaryQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MixedStatusesAndRepeatedUsers_AggregatesCountsAndBreakdown()
+    public async Task HandleAsyncMixedStatusesAndRepeatedUsersAggregatesCountsAndBreakdown()
     {
         var user1 = Guid.NewGuid();
         var user2 = Guid.NewGuid();
@@ -164,7 +164,7 @@ public sealed class GetEventSummaryQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoAssignments_ReturnsZeroCounts()
+    public async Task HandleAsyncNoAssignmentsReturnsZeroCounts()
     {
         events.HasEvents(
             new Event

@@ -52,7 +52,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Csrf_Anonymous_ReturnsTokenAndSetsCookie()
+    public async Task CsrfAnonymousReturnsTokenAndSetsCookie()
     {
         var client = CreateClient();
 
@@ -67,7 +67,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Register_NewAdult_ReturnsCreatedSendsOtpAndPersistsPending()
+    public async Task RegisterNewAdultReturnsCreatedSendsOtpAndPersistsPending()
     {
         var client = CreateClient();
 
@@ -100,7 +100,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Register_WithMinors_AssignsParticipantTypeToAdultAndMinors()
+    public async Task RegisterWithMinorsAssignsParticipantTypeToAdultAndMinors()
     {
         var client = CreateClient();
 
@@ -135,7 +135,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Register_GenderMissing_ReturnsValidationError()
+    public async Task RegisterGenderMissingReturnsValidationError()
     {
         var client = CreateClient();
 
@@ -157,7 +157,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Register_MinorGenderMissing_ReturnsValidationError()
+    public async Task RegisterMinorGenderMissingReturnsValidationError()
     {
         var client = CreateClient();
 
@@ -192,7 +192,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!")]
     [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!")]
     [InlineData("Nadia", "valid@codigoactivo.test", "+34600000098", "short")]
-    public async Task Register_InvalidBody_ReturnsValidationError(
+    public async Task RegisterInvalidBodyReturnsValidationError(
         string firstName,
         string email,
         string phone,
@@ -214,7 +214,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData(2026, 7, 5)]
     [InlineData(2027, 1, 1)]
     [InlineData(1, 1, 1)]
-    public async Task Register_BirthDateInTheFutureOrUnset_ReturnsValidationError(
+    public async Task RegisterBirthDateInTheFutureOrUnsetReturnsValidationError(
         int year,
         int month,
         int day
@@ -232,7 +232,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Register_BirthDateIsTheClocksToday_PassesValidation()
+    public async Task RegisterBirthDateIsTheClocksTodayPassesValidation()
     {
         var client = CreateClient();
 
@@ -246,7 +246,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_CorrectOtp_ActivatesUser()
+    public async Task VerifyCorrectOtpActivatesUser()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
@@ -267,7 +267,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task VerifyThenLogin_ValidOtpAndCredentials_Succeeds()
+    public async Task VerifyThenLoginValidOtpAndCredentialsSucceeds()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
@@ -291,7 +291,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_WrongOtp_RejectedAndAccountStaysPending()
+    public async Task VerifyWrongOtpRejectedAndAccountStaysPending()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -310,7 +310,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_ExpiredOtp_Rejected()
+    public async Task VerifyExpiredOtpRejected()
     {
         var client = CreateClient();
         var (userId, otp) = await RegisterPendingAdultAsync(client);
@@ -326,7 +326,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_BlankOtp_ReturnsValidationError()
+    public async Task VerifyBlankOtpReturnsValidationError()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -341,7 +341,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Verify_UnknownUser_ReturnsNotFound()
+    public async Task VerifyUnknownUserReturnsNotFound()
     {
         var client = CreateClient();
 
@@ -355,7 +355,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerification_WithinCooldown_Rejected()
+    public async Task ResendVerificationWithinCooldownRejected()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -370,7 +370,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerification_AfterCooldown_SendsNewWorkingCode()
+    public async Task ResendVerificationAfterCooldownSendsNewWorkingCode()
     {
         var client = CreateClient();
         var (userId, _) = await RegisterPendingAdultAsync(client);
@@ -395,7 +395,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerification_NewCodeIssued_InvalidatesPreviousCode()
+    public async Task ResendVerificationNewCodeIssuedInvalidatesPreviousCode()
     {
         var client = CreateClient();
         var (userId, firstOtp) = await RegisterPendingAdultAsync(client);
@@ -426,7 +426,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerification_ActiveUser_Rejected()
+    public async Task ResendVerificationActiveUserRejected()
     {
         var client = CreateClient();
 
@@ -440,7 +440,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_PendingUserVerificationRequired_ReturnsForbidden()
+    public async Task LoginPendingUserVerificationRequiredReturnsForbidden()
     {
         var client = CreateClient();
 
@@ -454,7 +454,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_ValidCredentials_ReturnsOkSetsCookieAndRecordsLogin()
+    public async Task LoginValidCredentialsReturnsOkSetsCookieAndRecordsLogin()
     {
         var client = CreateClient();
 
@@ -475,7 +475,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_WrongPassword_ReturnsUnauthorized()
+    public async Task LoginWrongPasswordReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -489,7 +489,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Login_WithoutCsrfToken_ReturnsBadRequest()
+    public async Task LoginWithoutCsrfTokenReturnsBadRequest()
     {
         var client = CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
@@ -506,7 +506,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Me_Authenticated_ReturnsCurrentUser()
+    public async Task MeAuthenticatedReturnsCurrentUser()
     {
         var client = await LoginAsAdminAsync();
 
@@ -520,7 +520,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Me_Anonymous_ReturnsUnauthorized()
+    public async Task MeAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -530,7 +530,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Logout_Authenticated_ReturnsNoContentAndClearsSession()
+    public async Task LogoutAuthenticatedReturnsNoContentAndClearsSession()
     {
         var client = await LoginAsAdminAsync();
 
@@ -554,7 +554,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_KnownEmail_SendsResetLinkAndStoresCodeHashed()
+    public async Task ForgotPasswordKnownEmailSendsResetLinkAndStoresCodeHashed()
     {
         var client = CreateClient();
 
@@ -576,7 +576,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_UnknownEmail_ReturnsNoContentWithoutSending()
+    public async Task ForgotPasswordUnknownEmailReturnsNoContentWithoutSending()
     {
         var client = CreateClient();
 
@@ -591,7 +591,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_BlockedUser_ReturnsNoContentWithoutSending()
+    public async Task ForgotPasswordBlockedUserReturnsNoContentWithoutSending()
     {
         var client = CreateClient();
 
@@ -606,7 +606,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_InvalidEmail_ReturnsValidationError()
+    public async Task ForgotPasswordInvalidEmailReturnsValidationError()
     {
         var client = CreateClient();
 
@@ -620,7 +620,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_WithinCooldown_DoesNotSendSecondEmail()
+    public async Task ForgotPasswordWithinCooldownDoesNotSendSecondEmail()
     {
         var client = CreateClient();
         await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
@@ -636,7 +636,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_AfterCooldown_NewCodeInvalidatesPreviousOne()
+    public async Task ForgotPasswordAfterCooldownNewCodeInvalidatesPreviousOne()
     {
         var client = CreateClient();
         var firstCode = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
@@ -663,7 +663,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPasswordThenLogin_ValidCode_AllowsOnlyTheNewPassword()
+    public async Task ResetPasswordThenLoginValidCodeAllowsOnlyTheNewPassword()
     {
         var client = CreateClient();
         var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
@@ -697,7 +697,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_ExpiredCode_Rejected()
+    public async Task ResetPasswordExpiredCodeRejected()
     {
         var client = CreateClient();
         var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
@@ -713,7 +713,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_WrongCode_RejectedWithoutConsumingTheCode()
+    public async Task ResetPasswordWrongCodeRejectedWithoutConsumingTheCode()
     {
         var client = CreateClient();
         var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
@@ -734,7 +734,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_CodeAlreadyUsed_Rejected()
+    public async Task ResetPasswordCodeAlreadyUsedRejected()
     {
         var client = CreateClient();
         var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);
@@ -756,7 +756,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_WithoutPriorRequest_Rejected()
+    public async Task ResetPasswordWithoutPriorRequestRejected()
     {
         var client = CreateClient();
 
@@ -770,7 +770,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_UnknownUser_ReturnsNotFound()
+    public async Task ResetPasswordUnknownUserReturnsNotFound()
     {
         var client = CreateClient();
 
@@ -784,7 +784,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_UppercaseEmail_SendsResetCodeToTheNormalizedAddress()
+    public async Task ForgotPasswordUppercaseEmailSendsResetCodeToTheNormalizedAddress()
     {
         var client = CreateClient();
 
@@ -800,7 +800,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_PendingUser_ChangesPasswordWithoutActivatingTheAccount()
+    public async Task ResetPasswordPendingUserChangesPasswordWithoutActivatingTheAccount()
     {
         var client = CreateClient();
         var code = await RequestPasswordResetAsync(client, TestSeedData.PendingEmail);
@@ -818,7 +818,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_VerificationOtpAndResetCode_AreNotInterchangeable()
+    public async Task ResetPasswordVerificationOtpAndResetCodeAreNotInterchangeable()
     {
         var client = CreateClient();
         var (userId, verificationOtp) = await RegisterPendingAdultAsync(client);
@@ -857,7 +857,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResetPassword_ShortPassword_ReturnsValidationError()
+    public async Task ResetPasswordShortPasswordReturnsValidationError()
     {
         var client = CreateClient();
         var code = await RequestPasswordResetAsync(client, TestSeedData.MemberEmail);

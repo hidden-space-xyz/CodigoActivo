@@ -37,7 +37,7 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
 
@@ -54,7 +54,7 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoCodeRequested_ReturnsBadRequest()
+    public async Task HandleAsyncNoCodeRequestedReturnsBadRequest()
     {
         var user = users.FindReturns(NewUser());
 
@@ -71,7 +71,7 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExpiredCode_ReturnsBadRequest()
+    public async Task HandleAsyncExpiredCodeReturnsBadRequest()
     {
         var user = users.FindReturns(
             NewUserWithResetCode(clock, expiresAt: clock.UtcNow.AddMinutes(-5))
@@ -90,7 +90,7 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WrongCode_ReturnsBadRequestWithoutPersisting()
+    public async Task HandleAsyncWrongCodeReturnsBadRequestWithoutPersisting()
     {
         var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-real-code"));
         var previousPasswordHash = user.PasswordHash;
@@ -110,7 +110,7 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserBlockedAfterRequest_ReturnsBadRequest()
+    public async Task HandleAsyncUserBlockedAfterRequestReturnsBadRequest()
     {
         var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
         user.UserStatusTypeId = SeedIds.UserStatusTypes.Blocked;
@@ -128,7 +128,7 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CorrectCode_ChangesPasswordAndClearsCode()
+    public async Task HandleAsyncCorrectCodeChangesPasswordAndClearsCode()
     {
         var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
 

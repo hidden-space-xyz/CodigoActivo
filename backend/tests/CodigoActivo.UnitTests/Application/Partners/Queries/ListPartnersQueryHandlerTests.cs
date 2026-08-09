@@ -24,7 +24,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TierFilter_ReturnsMatchingTier()
+    public async Task HandleAsyncTierFilterReturnsMatchingTier()
     {
         partners.HasPartners(NewPartner("Gold", tier: 1), NewPartner("Silver", tier: 2));
 
@@ -37,7 +37,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FromDateRangeFilter_KeepsPartnersWithinInclusiveBounds()
+    public async Task HandleAsyncFromDateRangeFilterKeepsPartnersWithinInclusiveBounds()
     {
         partners.HasPartners(
             NewPartner("Antes", fromDate: new DateOnly(2019, 12, 31)),
@@ -61,7 +61,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FromDateFromFilter_ExcludesEarlierPartners()
+    public async Task HandleAsyncFromDateFromFilterExcludesEarlierPartners()
     {
         partners.HasPartners(
             NewPartner("Viejo", fromDate: new DateOnly(2018, 5, 5)),
@@ -77,7 +77,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameSearch_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
     {
         partners.HasPartners(NewPartner("Fundación Ávila"), NewPartner("Banco"));
 
@@ -90,7 +90,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WebsiteSearch_MatchesSubstring()
+    public async Task HandleAsyncWebsiteSearchMatchesSubstring()
     {
         partners.HasPartners(
             NewPartner("A", web: "https://alpha.org"),
@@ -106,7 +106,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExplicitDescendingSort_OrdersDescending()
+    public async Task HandleAsyncExplicitDescendingSortOrdersDescending()
     {
         partners.HasPartners(NewPartner("Acme"), NewPartner("Zeta"), NewPartner("Mint"));
 
@@ -119,7 +119,7 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoSortSpecified_OrdersByTierAscendingThenFromDateDescending()
+    public async Task HandleAsyncNoSortSpecifiedOrdersByTierAscendingThenFromDateDescending()
     {
         var tier1Newer = NewPartner("Tier1Newer", tier: 1);
         tier1Newer.FromDate = new DateOnly(2023, 6, 1);

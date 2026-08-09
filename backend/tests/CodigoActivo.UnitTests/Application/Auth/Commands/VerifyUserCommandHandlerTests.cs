@@ -35,7 +35,7 @@ public sealed class VerifyUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
 
@@ -49,7 +49,7 @@ public sealed class VerifyUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserNotPending_ReturnsBadRequest()
+    public async Task HandleAsyncUserNotPendingReturnsBadRequest()
     {
         var user = users.FindReturns(
             NewUser(
@@ -81,7 +81,7 @@ public sealed class VerifyUserCommandHandlerTests
 
     [Theory]
     [MemberData(nameof(InvalidOtpCases))]
-    public async Task HandleAsync_InvalidOrExpiredOtp_ReturnsBadRequest(
+    public async Task HandleAsyncInvalidOrExpiredOtpReturnsBadRequest(
         string otpArgument,
         bool hasStoredHash,
         int? expiresInMinutes
@@ -107,7 +107,7 @@ public sealed class VerifyUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WrongCode_ReturnsBadRequestWithoutPersisting()
+    public async Task HandleAsyncWrongCodeReturnsBadRequestWithoutPersisting()
     {
         var user = users.FindReturns(NewPendingWithOtp(clock, code: "the-real-code"));
 
@@ -122,7 +122,7 @@ public sealed class VerifyUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CorrectCode_ActivatesUserAndClearsOtp()
+    public async Task HandleAsyncCorrectCodeActivatesUserAndClearsOtp()
     {
         var user = users.FindReturns(NewPendingWithOtp(clock, code: "the-real-code"));
         users

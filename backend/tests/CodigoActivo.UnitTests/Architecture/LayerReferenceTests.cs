@@ -36,7 +36,7 @@ public sealed class LayerReferenceTests
     }
 
     [Fact]
-    public void ApplicationAssembly_References_NeverIncludePersistenceWebOrOuterLayers()
+    public void ApplicationAssemblyReferencesNeverIncludePersistenceWebOrOuterLayers()
     {
         var references = ReferencedAssemblyNames(typeof(IQuery<>).Assembly);
 
@@ -50,7 +50,7 @@ public sealed class LayerReferenceTests
     }
 
     [Fact]
-    public void DomainAssembly_References_AreBclOnly()
+    public void DomainAssemblyReferencesAreBclOnly()
     {
         var references = ReferencedAssemblyNames(typeof(Result).Assembly);
 
@@ -64,7 +64,7 @@ public sealed class LayerReferenceTests
     }
 
     [Fact]
-    public void InfrastructureAssembly_References_NeverIncludeApplication()
+    public void InfrastructureAssemblyReferencesNeverIncludeApplication()
     {
         var references = ReferencedAssemblyNames(typeof(SmtpEmailSender).Assembly);
 
@@ -72,7 +72,7 @@ public sealed class LayerReferenceTests
     }
 
     [Fact]
-    public void ControllerSignatures_CodigoActivoTypes_ComeFromApplicationOrDomainCommon()
+    public void ControllerSignaturesCodigoActivoTypesComeFromApplicationOrDomainCommon()
     {
         var controllers = typeof(ApiErrorResponseExtensions)
             .Assembly.GetTypes()

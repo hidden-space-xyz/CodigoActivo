@@ -24,7 +24,7 @@ public sealed class GetResourceByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceExists_ReturnsResource()
+    public async Task HandleAsyncResourceExistsReturnsResource()
     {
         var resource = NewResource();
         resources.HasResources(resource);
@@ -40,7 +40,7 @@ public sealed class GetResourceByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceMissing_ReturnsNotFound()
+    public async Task HandleAsyncResourceMissingReturnsNotFound()
     {
         resources.HasResources();
 

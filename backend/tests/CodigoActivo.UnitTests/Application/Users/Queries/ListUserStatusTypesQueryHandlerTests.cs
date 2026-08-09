@@ -25,7 +25,7 @@ public sealed class ListUserStatusTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleStatusTypes_ProjectsOrderedByName()
+    public async Task HandleAsyncMultipleStatusTypesProjectsOrderedByName()
     {
         userStatusTypes.HasStatusTypes(
             NewStatusType("Pending"),

@@ -45,7 +45,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_QuotaDenied_StillReportsSuccessAndIssuesNoCode()
+    public async Task HandleAsyncQuotaDeniedStillReportsSuccessAndIssuesNoCode()
     {
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Global);
         var user = users.FindReturns(NewUser());
@@ -62,7 +62,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsSuccessWithoutSending()
+    public async Task HandleAsyncUserMissingReturnsSuccessWithoutSending()
     {
         users.FindReturns(null);
 
@@ -77,7 +77,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserWithoutPassword_ReturnsSuccessWithoutSending()
+    public async Task HandleAsyncUserWithoutPasswordReturnsSuccessWithoutSending()
     {
         users.FindReturns(NewUser(passwordHash: null));
 
@@ -98,7 +98,7 @@ public sealed class ForgotPasswordCommandHandlerTests
 
     [Theory]
     [MemberData(nameof(IneligibleResetStatuses))]
-    public async Task HandleAsync_IneligibleStatus_ReturnsSuccessWithoutSending(Guid statusId)
+    public async Task HandleAsyncIneligibleStatusReturnsSuccessWithoutSending(Guid statusId)
     {
         users.FindReturns(NewUser(statusId: statusId));
 
@@ -113,7 +113,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithinCooldown_ReturnsSuccessWithoutSending()
+    public async Task HandleAsyncWithinCooldownReturnsSuccessWithoutSending()
     {
         var user = users.FindReturns(NewUser());
         user.PasswordResetLastSentAt = clock.UtcNow.AddSeconds(-10);
@@ -129,7 +129,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EligibleUser_SendsGuidCodeAndPersistsHash()
+    public async Task HandleAsyncEligibleUserSendsGuidCodeAndPersistsHash()
     {
         var user = users.FindReturns(NewUser());
 
@@ -151,7 +151,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CooldownElapsed_ReplacesPreviousCode()
+    public async Task HandleAsyncCooldownElapsedReplacesPreviousCode()
     {
         var user = users.FindReturns(
             NewUserWithResetCode(clock, code: "old-code", lastSentAt: clock.UtcNow.AddMinutes(-5))
@@ -170,7 +170,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSendFails_ReturnsSuccessWithoutPersisting()
+    public async Task HandleAsyncEmailSendFailsReturnsSuccessWithoutPersisting()
     {
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         var user = users.FindReturns(NewUser());

@@ -36,7 +36,7 @@ public sealed class UpdateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AnnouncementMissing_ReturnsNotFound()
+    public async Task HandleAsyncAnnouncementMissingReturnsNotFound()
     {
         announcements.Finds(null);
         var request = new UpdateAnnouncementRequest("Title", "Subtitle", "{}", Guid.NewGuid());
@@ -59,7 +59,7 @@ public sealed class UpdateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsBadRequest()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequest()
     {
         var announcement = NewAnnouncement();
         announcements.Finds(announcement);
@@ -78,7 +78,7 @@ public sealed class UpdateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
     {
         var announcement = NewAnnouncement("Old", "OldSub");
         announcements.Finds(announcement);
@@ -116,7 +116,7 @@ public sealed class UpdateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailReplaced_CleansUpPreviousFileAfterSave()
+    public async Task HandleAsyncThumbnailReplacedCleansUpPreviousFileAfterSave()
     {
         var announcement = NewAnnouncement();
         var previousThumbnailId = announcement.ThumbnailId;
@@ -141,7 +141,7 @@ public sealed class UpdateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailUnchanged_DoesNotCleanUp()
+    public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUp()
     {
         var announcement = NewAnnouncement();
         announcements.Finds(announcement);
@@ -168,7 +168,7 @@ public sealed class UpdateAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ImagesDroppedFromDescription_CleansUpDroppedKeepsRest()
+    public async Task HandleAsyncImagesDroppedFromDescriptionCleansUpDroppedKeepsRest()
     {
         var announcement = NewAnnouncement();
         var removedId = Guid.NewGuid();

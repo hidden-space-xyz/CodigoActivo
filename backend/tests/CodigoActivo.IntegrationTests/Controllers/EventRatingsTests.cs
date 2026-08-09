@@ -98,7 +98,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_Anonymous_ReturnsUnauthorized()
+    public async Task SaveRatingAnonymousReturnsUnauthorized()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = CreateClient();
@@ -113,7 +113,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_UnknownEvent_ReturnsNotFound()
+    public async Task SaveRatingUnknownEventReturnsNotFound()
     {
         var client = await LoginAsMemberAsync();
 
@@ -127,7 +127,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_EventNotFinished_ReturnsConflict()
+    public async Task SaveRatingEventNotFinishedReturnsConflict()
     {
         await SeedEventAsync(FutureStart, FutureEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -142,7 +142,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_WithoutConfirmedAssignment_ReturnsConflict()
+    public async Task SaveRatingWithoutConfirmedAssignmentReturnsConflict()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Requested);
         var client = await LoginAsMemberAsync();
@@ -157,7 +157,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_ScoreOutOfRange_ReturnsBadRequest()
+    public async Task SaveRatingScoreOutOfRangeReturnsBadRequest()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -172,7 +172,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_PastEventWithConfirmedAssignment_PersistsAnswers()
+    public async Task SaveRatingPastEventWithConfirmedAssignmentPersistsAnswers()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -195,7 +195,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_CalledTwice_UpdatesInsteadOfDuplicating()
+    public async Task SaveRatingCalledTwiceUpdatesInsteadOfDuplicating()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -228,7 +228,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRating_BlankAnswers_AreStoredAsNull()
+    public async Task SaveRatingBlankAnswersAreStoredAsNull()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -247,7 +247,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Ratings_MemberUser_ReturnsForbidden()
+    public async Task RatingsMemberUserReturnsForbidden()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -258,7 +258,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Ratings_UnknownEvent_ReturnsNotFound()
+    public async Task RatingsUnknownEventReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -268,7 +268,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Ratings_Admin_ReturnsAnonymousOpinions()
+    public async Task RatingsAdminReturnsAnonymousOpinions()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
@@ -300,7 +300,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummary_WithRatings_ReturnsCountAndAverage()
+    public async Task EventSummaryWithRatingsReturnsCountAndAverage()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
@@ -334,7 +334,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummary_WithoutRatings_ReturnsNullAverage()
+    public async Task EventSummaryWithoutRatingsReturnsNullAverage()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsAdminAsync();

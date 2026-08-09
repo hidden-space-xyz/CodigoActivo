@@ -24,7 +24,7 @@ public sealed class ListResourceTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TypesExist_ReturnsTypesOrderedByName()
+    public async Task HandleAsyncTypesExistReturnsTypesOrderedByName()
     {
         resourceTypes.HasTypes(
             NewResourceType(isExternal: true, name: "Externo"),

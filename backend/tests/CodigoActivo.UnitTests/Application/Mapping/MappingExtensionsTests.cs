@@ -12,7 +12,7 @@ public sealed class MappingExtensionsTests
     private static readonly DateTimeOffset Updated = new(2025, 6, 7, 8, 9, 10, TimeSpan.Zero);
 
     [Fact]
-    public void ToResponse_FullUserWithNavigations_MapsScalarsStatusAndNullType()
+    public void ToResponseFullUserWithNavigationsMapsScalarsStatusAndNullType()
     {
         var statusId = Guid.NewGuid();
         var typeId = Guid.NewGuid();
@@ -68,7 +68,7 @@ public sealed class MappingExtensionsTests
     }
 
     [Fact]
-    public void ToResponse_NullStatusNavigation_MapsEmptyStatusNameAndColor()
+    public void ToResponseNullStatusNavigationMapsEmptyStatusNameAndColor()
     {
         var statusId = Guid.NewGuid();
         var user = new User

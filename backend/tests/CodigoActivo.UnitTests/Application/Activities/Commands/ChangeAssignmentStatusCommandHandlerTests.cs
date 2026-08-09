@@ -72,7 +72,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AssignmentMissing_ReturnsNotFound()
+    public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
         activities.ExistingAssignment(null);
 
@@ -92,7 +92,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StatusMissing_ReturnsAssignmentStatusTypeNotFound()
+    public async Task HandleAsyncStatusMissingReturnsAssignmentStatusTypeNotFound()
     {
         activities.ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
         AssignmentStatusType? missingStatus = null;
@@ -119,7 +119,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_UpdatesStatusPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestUpdatesStatusPersistsAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -166,7 +166,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_Confirmed_SendsDecisionEmailToTheUser()
+    public async Task HandleAsyncConfirmedSendsDecisionEmailToTheUser()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -204,7 +204,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_Denied_SendsDecisionEmailNamingTheDependentMinor()
+    public async Task HandleAsyncDeniedSendsDecisionEmailNamingTheDependentMinor()
     {
         var activityId = Guid.NewGuid();
         var childId = Guid.NewGuid();
@@ -238,7 +238,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SameStatusReapplied_DoesNotSendEmail()
+    public async Task HandleAsyncSameStatusReappliedDoesNotSendEmail()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -264,7 +264,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MovedBackToRequested_DoesNotSendEmail()
+    public async Task HandleAsyncMovedBackToRequestedDoesNotSendEmail()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();

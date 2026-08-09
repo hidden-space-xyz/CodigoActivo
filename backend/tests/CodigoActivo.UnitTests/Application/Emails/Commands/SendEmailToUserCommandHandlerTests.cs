@@ -27,7 +27,7 @@ public sealed class SendEmailToUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserWithoutEmail_ReturnsRecipientWithoutAddress()
+    public async Task HandleAsyncUserWithoutEmailReturnsRecipientWithoutAddress()
     {
         var parent = NewUser("Marta", "marta@test.local");
         var child = NewUser("Mateo", null, parent);
@@ -43,7 +43,7 @@ public sealed class SendEmailToUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnknownUser_ReturnsNotFound()
+    public async Task HandleAsyncUnknownUserReturnsNotFound()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"));
 
@@ -56,7 +56,7 @@ public sealed class SendEmailToUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_KnownUser_SendsExactlyOneMessage()
+    public async Task HandleAsyncKnownUserSendsExactlyOneMessage()
     {
         var ana = NewUser("Ana", "ana@test.local");
         users.HasUsers(ana, NewUser("Berto", "berto@test.local"));

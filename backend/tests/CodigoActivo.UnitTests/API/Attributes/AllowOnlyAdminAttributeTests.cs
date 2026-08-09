@@ -37,7 +37,7 @@ public sealed class AllowOnlyAdminAttributeTests
     }
 
     [Fact]
-    public void OnAuthorization_NoUserId_Challenges()
+    public void OnAuthorizationNoUserIdChallenges()
     {
         var context = BuildContext(Anonymous());
 
@@ -47,7 +47,7 @@ public sealed class AllowOnlyAdminAttributeTests
     }
 
     [Fact]
-    public void OnAuthorization_AuthenticatedNonAdmin_Forbids()
+    public void OnAuthorizationAuthenticatedNonAdminForbids()
     {
         var context = BuildContext(User(Guid.NewGuid()));
 
@@ -57,7 +57,7 @@ public sealed class AllowOnlyAdminAttributeTests
     }
 
     [Fact]
-    public void OnAuthorization_Admin_AllowsRequest()
+    public void OnAuthorizationAdminAllowsRequest()
     {
         var context = BuildContext(User(Guid.NewGuid(), isAdmin: true));
 

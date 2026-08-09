@@ -25,7 +25,7 @@ public sealed class ListActivityRoleTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleRoleTypes_OrdersByNameAndProjects()
+    public async Task HandleAsyncMultipleRoleTypesOrdersByNameAndProjects()
     {
         roleTypes
             .Query()

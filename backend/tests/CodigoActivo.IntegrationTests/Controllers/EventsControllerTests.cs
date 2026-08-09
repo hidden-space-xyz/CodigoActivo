@@ -132,7 +132,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListAsync_Anonymous_ReturnsPagedEnvelopeWithCategories()
+    public async Task ListAsyncAnonymousReturnsPagedEnvelopeWithCategories()
     {
         var categoryId = await SeedCategoryTypeAsync("Cultura");
         await SeedEventAsync(
@@ -156,7 +156,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetAsync_EventMissing_Returns404EventNotFound()
+    public async Task GetAsyncEventMissingReturns404EventNotFound()
     {
         var client = CreateClient();
 
@@ -166,7 +166,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task PastYearsAsync_Anonymous_ReturnsDistinctYearsDescending()
+    public async Task PastYearsAsyncAnonymousReturnsDistinctYearsDescending()
     {
         await SeedEventAsync(new DateOnly(2024, 5, 1), new DateOnly(2024, 6, 1), title: "P24");
         await SeedEventAsync(new DateOnly(2025, 5, 1), new DateOnly(2025, 6, 1), title: "P25a");
@@ -182,7 +182,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListAsync_SortByCategories_OrdersByMinimumCategoryName()
+    public async Task ListAsyncSortByCategoriesOrdersByMinimumCategoryName()
     {
         var ajedrez = await SeedCategoryTypeAsync("Ajedrez");
         var charla = await SeedCategoryTypeAsync("Charla");
@@ -221,7 +221,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SortBySignupDates_OrdersIndependentlyOfEventDates()
+    public async Task ListSortBySignupDatesOrdersIndependentlyOfEventDates()
     {
         await SeedEventAsync(
             new DateOnly(2026, 8, 1),
@@ -259,7 +259,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByCategoryTypeId_ReturnsOnlyEventsWithThatCategory()
+    public async Task ListFilterByCategoryTypeIdReturnsOnlyEventsWithThatCategory()
     {
         var robotica = await SeedCategoryTypeAsync("Robótica");
         var charlas = await SeedCategoryTypeAsync("Charlas");
@@ -286,7 +286,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByEventDateRange_MatchesEventsOverlappingRange()
+    public async Task ListFilterByEventDateRangeMatchesEventsOverlappingRange()
     {
         await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5), title: "Corto");
         await SeedEventAsync(new DateOnly(2026, 8, 10), new DateOnly(2026, 8, 12), title: "Tardio");
@@ -313,7 +313,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SignupFromFilter_UsesAppTimezoneDayLowerBound()
+    public async Task ListSignupFromFilterUsesAppTimezoneDayLowerBound()
     {
         Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "UTC+02",
@@ -346,7 +346,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SignupToFilter_UsesAppTimezoneDayUpperBound()
+    public async Task ListSignupToFilterUsesAppTimezoneDayUpperBound()
     {
         Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "UTC+02",
@@ -379,7 +379,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByYear_UsesEventStartBoundaries()
+    public async Task ListFilterByYearUsesEventStartBoundaries()
     {
         await SeedEventAsync(
             new DateOnly(2025, 12, 31),
@@ -408,7 +408,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_YearZero_ReturnsEmptyPage()
+    public async Task ListYearZeroReturnsEmptyPage()
     {
         await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2), title: "Alguno");
         var client = CreateClient();
@@ -422,7 +422,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AsAdmin_PersistsEventAndReturns201()
+    public async Task CreateAsAdminPersistsEventAndReturns201()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync("Taller");
@@ -444,7 +444,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AsMember_ReturnsForbidden()
+    public async Task CreateAsMemberReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
@@ -457,7 +457,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_Anonymous_ReturnsUnauthorized()
+    public async Task CreateAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
         var request = BuildCreate(Guid.NewGuid(), [Guid.NewGuid()]);
@@ -468,7 +468,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_BlankTitle_ReturnsValidationError()
+    public async Task CreateBlankTitleReturnsValidationError()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
@@ -481,7 +481,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_AsAdmin_PersistsChanges()
+    public async Task UpdateAsAdminPersistsChanges()
     {
         var categoryId = await SeedCategoryTypeAsync("Original");
         var id = await SeedEventAsync(
@@ -503,7 +503,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_ReplacementThumbnail_DeletesOrphanedOldFile()
+    public async Task UpdateReplacementThumbnailDeletesOrphanedOldFile()
     {
         var categoryId = await SeedCategoryTypeAsync("Cascada");
         var id = await SeedEventAsync(
@@ -527,7 +527,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_AsAdmin_RemovesEventAndOrphanedThumbnail()
+    public async Task DeleteAsAdminRemovesEventAndOrphanedThumbnail()
     {
         var id = await SeedEventAsync(
             new DateOnly(2026, 8, 1),
@@ -548,7 +548,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Feature_EventMissing_Returns404EventNotFound()
+    public async Task FeatureEventMissingReturns404EventNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -558,7 +558,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CategoryTypes_AsAdmin_ReturnsPagedEnvelopeWithSeededTypes()
+    public async Task CategoryTypesAsAdminReturnsPagedEnvelopeWithSeededTypes()
     {
         await SeedCategoryTypeAsync("Alpha");
         var client = await LoginAsAdminAsync();
@@ -574,7 +574,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CategoryTypes_NameFilter_MatchesAccentAndCaseInsensitively()
+    public async Task CategoryTypesNameFilterMatchesAccentAndCaseInsensitively()
     {
         await SeedCategoryTypeAsync("Robótica", "#112233");
         await SeedCategoryTypeAsync("Charlas", "#445566");
@@ -589,7 +589,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CategoryTypes_ColorFilter_MatchesCaseInsensitively()
+    public async Task CategoryTypesColorFilterMatchesCaseInsensitively()
     {
         await SeedCategoryTypeAsync("Robótica", "#AABB01");
         await SeedCategoryTypeAsync("Charlas", "#CCDD02");
@@ -604,7 +604,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CategoryTypes_SortByColor_OrdersByColorInsteadOfName()
+    public async Task CategoryTypesSortByColorOrdersByColorInsteadOfName()
     {
         await SeedCategoryTypeAsync("Alpha", "#333333");
         await SeedCategoryTypeAsync("Beta", "#111111");
@@ -628,7 +628,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeleteCategoryType_MissingId_Returns404WithErrorCode()
+    public async Task DeleteCategoryTypeMissingIdReturns404WithErrorCode()
     {
         var client = await LoginAsAdminAsync();
 
@@ -641,7 +641,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CategoryTypes_SecondPageOfOne_ReturnsSecondTypeByNameWithTotal()
+    public async Task CategoryTypesSecondPageOfOneReturnsSecondTypeByNameWithTotal()
     {
         await SeedCategoryTypeAsync("Beta", "#222222");
         await SeedCategoryTypeAsync("Alpha", "#111111");
@@ -658,7 +658,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateCategoryType_AsAdmin_PersistsAndReturnsOk()
+    public async Task CreateCategoryTypeAsAdminPersistsAndReturnsOk()
     {
         var client = await LoginAsAdminAsync();
         var request = new CreateEventCategoryTypeRequest("Innovación", "#3366cc");
@@ -674,7 +674,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateCategoryType_AsAdmin_PersistsChanges()
+    public async Task UpdateCategoryTypeAsAdminPersistsChanges()
     {
         var id = await SeedCategoryTypeAsync("Vieja", "#111111");
         var client = await LoginAsAdminAsync();
@@ -689,7 +689,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeleteCategoryType_AsAdmin_RemovesIt()
+    public async Task DeleteCategoryTypeAsAdminRemovesIt()
     {
         var id = await SeedCategoryTypeAsync("Efímera");
         var client = await LoginAsAdminAsync();

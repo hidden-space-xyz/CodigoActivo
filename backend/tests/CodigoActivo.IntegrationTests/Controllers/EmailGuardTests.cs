@@ -105,7 +105,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Assign_RepeatedSignupLoop_KeepsSucceedingButStopsMailingTheMember()
+    public async Task AssignRepeatedSignupLoopKeepsSucceedingButStopsMailingTheMember()
     {
         var host = ArmedGuard();
         var activityId = await SeedActivityAsync();
@@ -120,7 +120,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_AutomaticQuotaExhausted_StillMailsEveryAdminRecipient()
+    public async Task SendToUsersAutomaticQuotaExhaustedStillMailsEveryAdminRecipient()
     {
         var host = ArmedGuard();
         var activityId = await SeedActivityAsync();
@@ -151,7 +151,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsers_RepeatedImmediately_IsNeverThrottled()
+    public async Task SendToUsersRepeatedImmediatelyIsNeverThrottled()
     {
         var host = ArmedGuard();
         var admin = await LoginAsync(host, TestSeedData.AdminCredentials);
@@ -167,7 +167,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerification_QuotaExhausted_ReportsTheCooldownWithoutInventingANewCode()
+    public async Task ResendVerificationQuotaExhaustedReportsTheCooldownWithoutInventingANewCode()
     {
         var host = ArmedGuard();
         var client = host.CreateClient();
@@ -190,7 +190,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ForgotPassword_QuotaExhausted_StillAnswersSuccessAndLeaksNothing()
+    public async Task ForgotPasswordQuotaExhaustedStillAnswersSuccessAndLeaksNothing()
     {
         var host = ArmedGuard();
         var client = host.CreateClient();

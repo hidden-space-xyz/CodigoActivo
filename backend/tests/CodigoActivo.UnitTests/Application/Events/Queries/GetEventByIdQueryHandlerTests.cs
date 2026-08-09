@@ -20,7 +20,7 @@ public sealed class GetEventByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventExists_ReturnsEvent()
+    public async Task HandleAsyncEventExistsReturnsEvent()
     {
         var ev = NewEvent();
         events.HasEvents(ev);
@@ -35,7 +35,7 @@ public sealed class GetEventByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.HasEvents();
 

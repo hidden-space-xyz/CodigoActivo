@@ -66,7 +66,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_InvalidScheduleRange_ReturnsErrorBeforeTouchingRepository()
+    public async Task HandleAsyncInvalidScheduleRangeReturnsErrorBeforeTouchingRepository()
     {
         var request = UpdateReq(
             eventStart: new DateOnly(2026, 8, 5),
@@ -88,7 +88,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoCategoriesSupplied_ReturnsCategoriesRequired()
+    public async Task HandleAsyncNoCategoriesSuppliedReturnsCategoriesRequired()
     {
         var request = UpdateReq(categoryTypeIds: null);
 
@@ -103,7 +103,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         Event? missing = null;
         categoryTypes.HasCategoryCount(1);
@@ -122,7 +122,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityOutsideNewRange_ReturnsActivitiesOutsideRange()
+    public async Task HandleAsyncActivityOutsideNewRangeReturnsActivitiesOutsideRange()
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
@@ -149,7 +149,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
+    public async Task HandleAsyncThumbnailMissingReturnsThumbnailNotFound()
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
@@ -176,7 +176,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_ReplacesCategoriesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestReplacesCategoriesPersistsAndInvalidatesCache()
     {
         var caller = Guid.NewGuid();
         var newCategoryId = Guid.NewGuid();
@@ -218,7 +218,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SameThumbnail_DoesNotCleanUp()
+    public async Task HandleAsyncSameThumbnailDoesNotCleanUp()
     {
         var ev = NewEvent();
         PrepareUpdate(ev);
@@ -239,7 +239,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailReplaced_IncludesPreviousThumbnailInOrphanBatch()
+    public async Task HandleAsyncThumbnailReplacedIncludesPreviousThumbnailInOrphanBatch()
     {
         var ev = NewEvent();
         var previousThumbnailId = ev.ThumbnailId;
@@ -263,7 +263,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnchangedCategories_KeepsExistingCategoryInstances()
+    public async Task HandleAsyncUnchangedCategoriesKeepsExistingCategoryInstances()
     {
         var keptA = Guid.NewGuid();
         var keptB = Guid.NewGuid();
@@ -288,7 +288,7 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ImagesDroppedFromDescription_CleansUpRemovedKeepsRest()
+    public async Task HandleAsyncImagesDroppedFromDescriptionCleansUpRemovedKeepsRest()
     {
         var ev = NewEvent();
         var removedId = Guid.NewGuid();

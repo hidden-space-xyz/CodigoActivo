@@ -41,7 +41,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SeveralRecipients_SendsOneMessagePerRecipientInOneBatch()
+    public async Task HandleAsyncSeveralRecipientsSendsOneMessagePerRecipientInOneBatch()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
 
@@ -61,7 +61,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DependentWithoutEmail_SkipsItWithoutSending()
+    public async Task HandleAsyncDependentWithoutEmailSkipsItWithoutSending()
     {
         var parent = NewUser("Marta", "marta@test.local");
         users.HasUsers(parent, NewUser("Mateo", null, parent));
@@ -78,7 +78,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FilterMatchesOnlyDependents_ReturnsNoRecipients()
+    public async Task HandleAsyncFilterMatchesOnlyDependentsReturnsNoRecipients()
     {
         var parent = NewUser("Marta", "marta@test.local");
         users.HasUsers(parent, NewUser("Mateo", null, parent));
@@ -93,7 +93,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameFilter_OnlyMailsMatchingUsers()
+    public async Task HandleAsyncNameFilterOnlyMailsMatchingUsers()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
 
@@ -107,7 +107,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MoreRecipientsThanAllowed_ReturnsTooManyRecipients()
+    public async Task HandleAsyncMoreRecipientsThanAllowedReturnsTooManyRecipients()
     {
         options.MaxRecipients = 1;
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
@@ -122,7 +122,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SomeRecipientsRejected_ReportsThemAsFailed()
+    public async Task HandleAsyncSomeRecipientsRejectedReportsThemAsFailed()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
         emailSender.FailingRecipients.Add("berto@test.local");
@@ -138,7 +138,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SmtpUnavailable_ReturnsSendFailed()
+    public async Task HandleAsyncSmtpUnavailableReturnsSendFailed()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"));
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
@@ -152,7 +152,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithAttachment_BuffersItForEveryRecipient()
+    public async Task HandleAsyncWithAttachmentBuffersItForEveryRecipient()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
 
@@ -170,7 +170,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     [Theory]
     [InlineData("../../etc/passwd")]
     [InlineData(@"..\..\etc\passwd")]
-    public async Task HandleAsync_AttachmentPathInFileName_KeepsOnlyTheFileName(string fileName)
+    public async Task HandleAsyncAttachmentPathInFileNameKeepsOnlyTheFileName(string fileName)
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"));
 
@@ -187,7 +187,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AttachmentsOverTheSizeCap_ReturnsAttachmentsTooLarge()
+    public async Task HandleAsyncAttachmentsOverTheSizeCapReturnsAttachmentsTooLarge()
     {
         options.MaxAttachmentsBytes = 4;
         users.HasUsers(NewUser("Ana", "ana@test.local"));
@@ -202,7 +202,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MoreAttachmentsThanAllowed_ReturnsTooManyAttachments()
+    public async Task HandleAsyncMoreAttachmentsThanAllowedReturnsTooManyAttachments()
     {
         options.MaxAttachments = 1;
         users.HasUsers(NewUser("Ana", "ana@test.local"));
@@ -220,7 +220,7 @@ public sealed class SendEmailToUsersCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmptyAttachment_ReturnsAttachmentEmpty()
+    public async Task HandleAsyncEmptyAttachmentReturnsAttachmentEmpty()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"));
 

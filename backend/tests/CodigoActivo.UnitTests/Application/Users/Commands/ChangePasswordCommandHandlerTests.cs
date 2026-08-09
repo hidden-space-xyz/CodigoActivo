@@ -30,7 +30,7 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
         var request = new ChangePasswordRequest("old", "newpassword");
@@ -45,7 +45,7 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PasswordNotSet_ReturnsBadRequest()
+    public async Task HandleAsyncPasswordNotSetReturnsBadRequest()
     {
         var user = NewUser();
         user.PasswordHash = null;
@@ -62,7 +62,7 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_IncorrectCurrentPassword_ReturnsBadRequest()
+    public async Task HandleAsyncIncorrectCurrentPasswordReturnsBadRequest()
     {
         var user = NewUser();
         user.PasswordHash = hasher.Hash("correct");
@@ -79,7 +79,7 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidCurrentPassword_RehashesAndPersists()
+    public async Task HandleAsyncValidCurrentPasswordRehashesAndPersists()
     {
         var user = NewUser();
         user.PasswordHash = hasher.Hash("correct");

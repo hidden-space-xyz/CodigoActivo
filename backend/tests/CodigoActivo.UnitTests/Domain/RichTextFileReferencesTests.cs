@@ -7,7 +7,7 @@ namespace CodigoActivo.UnitTests.Domain;
 public sealed class RichTextFileReferencesTests
 {
     [Fact]
-    public void ContentUrlMarker_Guid_BuildsStoredUrlShape()
+    public void ContentUrlMarkerGuidBuildsStoredUrlShape()
     {
         var id = Guid.Parse("11111111-2222-3333-4444-555555555555");
 
@@ -22,13 +22,13 @@ public sealed class RichTextFileReferencesTests
     [InlineData("")]
     [InlineData("{}")]
     [InlineData("{\"src\":\"/api/files/not-a-guid/content\"}")]
-    public void Extract_NoValidReferenceEmbedded_ReturnsEmpty(string? json)
+    public void ExtractNoValidReferenceEmbeddedReturnsEmpty(string? json)
     {
         RichTextFileReferences.Extract(json).Should().BeEmpty();
     }
 
     [Fact]
-    public void Extract_DuplicateAndAbsoluteUrls_FindsIdsDeduped()
+    public void ExtractDuplicateAndAbsoluteUrlsFindsIdsDeduped()
     {
         var a = Guid.NewGuid();
         var b = Guid.NewGuid();
@@ -41,7 +41,7 @@ public sealed class RichTextFileReferencesTests
     }
 
     [Fact]
-    public void ExtractRemoved_IdDroppedFromDocument_ReturnsOnlyDroppedIds()
+    public void ExtractRemovedIdDroppedFromDocumentReturnsOnlyDroppedIds()
     {
         var removed = Guid.NewGuid();
         var kept = Guid.NewGuid();

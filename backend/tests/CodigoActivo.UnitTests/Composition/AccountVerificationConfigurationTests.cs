@@ -30,7 +30,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_ValidAccountVerificationSettings_BindsOptionsFromConfiguration()
+    public void AddCodigoActivoValidAccountVerificationSettingsBindsOptionsFromConfiguration()
     {
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -50,7 +50,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_MissingOrInvalidValues_DefaultsAccountVerificationOptions()
+    public void AddCodigoActivoMissingOrInvalidValuesDefaultsAccountVerificationOptions()
     {
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -68,7 +68,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_RequiredFlagAbsent_DefaultsRequiredToTrue()
+    public void AddCodigoActivoRequiredFlagAbsentDefaultsRequiredToTrue()
     {
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -84,7 +84,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     [Theory]
     [InlineData(null, "no-reply@example.test")]
     [InlineData("smtp.example.test", null)]
-    public void AddCodigoActivo_VerificationRequiredButSmtpUnconfigured_Throws(
+    public void AddCodigoActivoVerificationRequiredButSmtpUnconfiguredThrows(
         string? host,
         string? from
     )
@@ -102,7 +102,7 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_VerificationDisabled_DoesNotRequireSmtp()
+    public void AddCodigoActivoVerificationDisabledDoesNotRequireSmtp()
     {
         var act = () =>
             Build(

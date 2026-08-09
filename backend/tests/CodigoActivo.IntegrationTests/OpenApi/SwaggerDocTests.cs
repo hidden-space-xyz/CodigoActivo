@@ -23,7 +23,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SwaggerDocument_DevelopmentEnvironment_IsServed()
+    public async Task SwaggerDocumentDevelopmentEnvironmentIsServed()
     {
         var client = factory.CreateClient();
 
@@ -33,7 +33,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SwaggerDocument_ListEndpoints_QueryParametersAreCamelCased()
+    public async Task SwaggerDocumentListEndpointsQueryParametersAreCamelCased()
     {
         using var doc = await FetchSwaggerAsync(Ct);
 
@@ -60,7 +60,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SwaggerDocument_OperationResponses_OnlyJsonMediaType()
+    public async Task SwaggerDocumentOperationResponsesOnlyJsonMediaType()
     {
         using var doc = await FetchSwaggerAsync(Ct);
 
@@ -86,7 +86,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SwaggerDocument_ErrorSchema_IsForcedIntoComponents()
+    public async Task SwaggerDocumentErrorSchemaIsForcedIntoComponents()
     {
         using var doc = await FetchSwaggerAsync(Ct);
 

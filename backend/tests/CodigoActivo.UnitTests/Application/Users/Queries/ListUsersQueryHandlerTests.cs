@@ -38,7 +38,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CallerIsAdmin_ReturnsAllUsers()
+    public async Task HandleAsyncCallerIsAdminReturnsAllUsers()
     {
         users.HasUsers(
             NewUser(id: Guid.NewGuid()),
@@ -54,7 +54,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CallerIsNotAdmin_ReturnsOnlySelfAndDependents()
+    public async Task HandleAsyncCallerIsNotAdminReturnsOnlySelfAndDependents()
     {
         var caller = Guid.NewGuid();
         users.HasUsers(
@@ -71,7 +71,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ParentIdFilter_ReturnsOnlyMatchingChildren()
+    public async Task HandleAsyncParentIdFilterReturnsOnlyMatchingChildren()
     {
         var parent = Guid.NewGuid();
         users.HasUsers(
@@ -85,7 +85,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameSearch_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
     {
         users.HasUsers(NewUser(first: "Ávila"), NewUser(first: "Benito"));
 
@@ -95,7 +95,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameSearchByLastName_MatchesSubstring()
+    public async Task HandleAsyncNameSearchByLastNameMatchesSubstring()
     {
         users.HasUsers(NewUser(last: "Gonzalez"), NewUser(last: "Martinez"));
 
@@ -105,7 +105,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameSearchSpansFirstAndLastName_MatchesCombinedFullName()
+    public async Task HandleAsyncNameSearchSpansFirstAndLastNameMatchesCombinedFullName()
     {
         users.HasUsers(
             NewUser(first: "Ana", last: "García"),
@@ -119,7 +119,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PhoneFilter_MatchesSubstring()
+    public async Task HandleAsyncPhoneFilterMatchesSubstring()
     {
         users.HasUsers(NewUser(phone: "600111222"), NewUser(phone: "699888777"));
 
@@ -129,7 +129,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_IdFilter_ReturnsOnlyMatchingUser()
+    public async Task HandleAsyncIdFilterReturnsOnlyMatchingUser()
     {
         var target = NewUser(first: "Target");
         users.HasUsers(target, NewUser(first: "Other"), NewUser(first: "Another"));
@@ -140,7 +140,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserTypeIdFilter_ReturnsOnlyMatchingType()
+    public async Task HandleAsyncUserTypeIdFilterReturnsOnlyMatchingType()
     {
         var typeId = Guid.NewGuid();
         users.HasUsers(NewUser(first: "Match", typeId: typeId), NewUser(first: "Other"));
@@ -151,7 +151,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserStatusTypeIdFilter_ReturnsOnlyMatchingStatus()
+    public async Task HandleAsyncUserStatusTypeIdFilterReturnsOnlyMatchingStatus()
     {
         var statusId = Guid.NewGuid();
         users.HasUsers(NewUser(first: "Match", statusId: statusId), NewUser(first: "Other"));
@@ -162,7 +162,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_IsAdminFilter_ReturnsOnlyAdmins()
+    public async Task HandleAsyncIsAdminFilterReturnsOnlyAdmins()
     {
         users.HasUsers(NewUser(first: "Boss", isAdmin: true), NewUser(first: "Plain"));
 
@@ -172,7 +172,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_BirthDateRangeFilter_KeepsUsersWithinInclusiveBounds()
+    public async Task HandleAsyncBirthDateRangeFilterKeepsUsersWithinInclusiveBounds()
     {
         users.HasUsers(
             NewUser(first: "Antes", dob: new DateOnly(2005, 6, 14)),
@@ -193,7 +193,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_BirthDateFromFilter_ExcludesOlderUsers()
+    public async Task HandleAsyncBirthDateFromFilterExcludesOlderUsers()
     {
         users.HasUsers(
             NewUser(first: "Mayor", dob: new DateOnly(1980, 1, 1)),
@@ -208,7 +208,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByParentName_OrdersByParentFirstName()
+    public async Task HandleAsyncSortByParentNameOrdersByParentFirstName()
     {
         var zoe = NewUser(first: "Zoe");
         var ana = NewUser(first: "Ana");
@@ -227,7 +227,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByDependentsDescending_OrdersByChildrenCount()
+    public async Task HandleAsyncSortByDependentsDescendingOrdersByChildrenCount()
     {
         var none = NewUser(first: "Cero");
         var two = NewUser(first: "Dos");
@@ -244,7 +244,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByEmail_OrdersResultsByEmail()
+    public async Task HandleAsyncSortByEmailOrdersResultsByEmail()
     {
         users.HasUsers(
             NewUser(email: "charlie@test.com"),
@@ -261,7 +261,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByStatus_OrdersByStatusTypeName()
+    public async Task HandleAsyncSortByStatusOrdersByStatusTypeName()
     {
         users.HasUsers(
             NewUser(statusName: "Pending"),
@@ -278,7 +278,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByType_OrdersByUserTypeName()
+    public async Task HandleAsyncSortByTypeOrdersByUserTypeName()
     {
         users.HasUsers(
             NewUser(typeName: "Voluntario"),
@@ -295,7 +295,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByIsAdminDescending_PutsAdminsFirst()
+    public async Task HandleAsyncSortByIsAdminDescendingPutsAdminsFirst()
     {
         users.HasUsers(NewUser(first: "Plain"), NewUser(first: "Boss", isAdmin: true));
 
@@ -305,7 +305,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AdminProjection_FillsParentNameAndDependentCount()
+    public async Task HandleAsyncAdminProjectionFillsParentNameAndDependentCount()
     {
         var parent = NewUser(first: "Padre", last: "Perez");
         var child = NewUser(first: "Kid", last: "Perez", parentId: parent.Id);
@@ -328,7 +328,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NonAdminProjection_LeavesParentNameAndDependentCountNull()
+    public async Task HandleAsyncNonAdminProjectionLeavesParentNameAndDependentCountNull()
     {
         var callerId = Guid.NewGuid();
         var caller = NewUser(first: "Self", id: callerId);
@@ -344,7 +344,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSearch_MatchesSubstring()
+    public async Task HandleAsyncEmailSearchMatchesSubstring()
     {
         users.HasUsers(NewUser(email: "alpha@test.com"), NewUser(email: "beta@test.com"));
 
@@ -354,7 +354,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExplicitDescendingSort_OrdersResultsDescending()
+    public async Task HandleAsyncExplicitDescendingSortOrdersResultsDescending()
     {
         users.HasUsers(NewUser(last: "Aaa"), NewUser(last: "Zzz"), NewUser(last: "Mmm"));
 
@@ -364,7 +364,7 @@ public sealed class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PageAndPageSizeGiven_ReturnsPagedResults()
+    public async Task HandleAsyncPageAndPageSizeGivenReturnsPagedResults()
     {
         users.HasUsers(NewUser(first: "A"), NewUser(first: "B"), NewUser(first: "C"));
 

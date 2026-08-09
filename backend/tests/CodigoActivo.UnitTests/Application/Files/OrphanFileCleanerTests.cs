@@ -80,7 +80,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_NoLongerReferenced_DeletesFile()
+    public async Task DeleteIfOrphanedAsyncNoLongerReferencedDeletesFile()
     {
         var file = NewFile();
         FileFound(file);
@@ -94,7 +94,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_StillInUse_KeepsFileSilently()
+    public async Task DeleteIfOrphanedAsyncStillInUseKeepsFileSilently()
     {
         var file = NewFile();
         FileFound(file);
@@ -110,7 +110,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_FileMissing_IgnoresSilently()
+    public async Task DeleteIfOrphanedAsyncFileMissingIgnoresSilently()
     {
         FileMissing();
 
@@ -123,7 +123,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_StorageThrows_SwallowsException()
+    public async Task DeleteIfOrphanedAsyncStorageThrowsSwallowsException()
     {
         var file = NewFile();
         FileFound(file);
@@ -137,7 +137,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteIfOrphanedAsync_Cancelled_PropagatesCancellation()
+    public async Task DeleteIfOrphanedAsyncCancelledPropagatesCancellation()
     {
         files
             .When(f =>
@@ -155,7 +155,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsync_MixedCandidates_RemovesOrphansOnceAndDeletesStoredContent()
+    public async Task DeleteOrphanedAsyncMixedCandidatesRemovesOrphansOnceAndDeletesStoredContent()
     {
         var inUseFile = NewFile(name: "used.png", extension: "png");
         var orphanPng = NewFile(name: "a.png", extension: "png");
@@ -184,7 +184,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsync_EmptyCandidates_DoesNotTouchRepository()
+    public async Task DeleteOrphanedAsyncEmptyCandidatesDoesNotTouchRepository()
     {
         await sut.DeleteOrphanedAsync([], TestContext.Current.CancellationToken);
 
@@ -196,7 +196,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsync_AllCandidatesInUse_KeepsFiles()
+    public async Task DeleteOrphanedAsyncAllCandidatesInUseKeepsFiles()
     {
         var first = NewFile();
         var second = NewFile();
@@ -210,7 +210,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsync_RepositoryThrows_SwallowsException()
+    public async Task DeleteOrphanedAsyncRepositoryThrowsSwallowsException()
     {
         files
             .When(f =>
@@ -226,7 +226,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsync_StorageThrows_SwallowsExceptionAfterRemoving()
+    public async Task DeleteOrphanedAsyncStorageThrowsSwallowsExceptionAfterRemoving()
     {
         var orphan = NewFile();
         InUseFilesAre();
@@ -242,7 +242,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsync_Cancelled_PropagatesCancellation()
+    public async Task DeleteOrphanedAsyncCancelledPropagatesCancellation()
     {
         files
             .When(f =>

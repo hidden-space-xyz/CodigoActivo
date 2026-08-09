@@ -18,7 +18,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_MultipleMediaTypesInResponses_ReducesToApplicationJson()
+    public void ApplyMultipleMediaTypesInResponsesReducesToApplicationJson()
     {
         var operation = new OpenApiOperation
         {
@@ -42,7 +42,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_MultipleMediaTypesInRequestBody_ReducesToApplicationJson()
+    public void ApplyMultipleMediaTypesInRequestBodyReducesToApplicationJson()
     {
         var operation = new OpenApiOperation
         {
@@ -58,7 +58,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_JsonMediaTypeAbsent_LeavesContentUnchanged()
+    public void ApplyJsonMediaTypeAbsentLeavesContentUnchanged()
     {
         var operation = new OpenApiOperation
         {
@@ -80,7 +80,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_NullResponsesAndRequestBody_DoesNotThrow()
+    public void ApplyNullResponsesAndRequestBodyDoesNotThrow()
     {
         var operation = new OpenApiOperation { Responses = null, RequestBody = null };
 
@@ -90,7 +90,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_NullResponseContent_DoesNotThrow()
+    public void ApplyNullResponseContentDoesNotThrow()
     {
         var operation = new OpenApiOperation
         {
@@ -107,7 +107,7 @@ public sealed class OpenApiFiltersTests
     [InlineData("Page", "page")]
     [InlineData("PageSize", "pageSize")]
     [InlineData("X", "x")]
-    public void Apply_PascalCaseQueryParameter_LowercasesFirstLetter(string given, string expected)
+    public void ApplyPascalCaseQueryParameterLowercasesFirstLetter(string given, string expected)
     {
         var parameter = QueryParam(given);
         var operation = new OpenApiOperation { Parameters = [parameter] };
@@ -118,7 +118,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_NonQueryParameters_AreIgnored()
+    public void ApplyNonQueryParametersAreIgnored()
     {
         var pathParam = new OpenApiParameter { Name = "Id", In = ParameterLocation.Path };
         var headerParam = new OpenApiParameter { Name = "ApiKey", In = ParameterLocation.Header };
@@ -133,7 +133,7 @@ public sealed class OpenApiFiltersTests
     [Theory]
     [InlineData("page")]
     [InlineData("pageSize")]
-    public void Apply_AlreadyCamelCaseQueryParameter_LeavesNameUnchanged(string name)
+    public void ApplyAlreadyCamelCaseQueryParameterLeavesNameUnchanged(string name)
     {
         var parameter = QueryParam(name);
         var operation = new OpenApiOperation { Parameters = [parameter] };
@@ -144,7 +144,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_EmptyNamedQueryParameter_IsSkipped()
+    public void ApplyEmptyNamedQueryParameterIsSkipped()
     {
         var parameter = new OpenApiParameter { Name = string.Empty, In = ParameterLocation.Query };
         var operation = new OpenApiOperation { Parameters = [parameter] };
@@ -155,7 +155,7 @@ public sealed class OpenApiFiltersTests
     }
 
     [Fact]
-    public void Apply_NullParameters_DoesNotThrow()
+    public void ApplyNullParametersDoesNotThrow()
     {
         var operation = new OpenApiOperation { Parameters = null };
 

@@ -20,7 +20,7 @@ public sealed class GetDashboardSummaryQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RepositoryCounts_MapsInOrder()
+    public async Task HandleAsyncRepositoryCountsMapsInOrder()
     {
         dashboard
             .GetCountsAsync(Arg.Any<CancellationToken>())

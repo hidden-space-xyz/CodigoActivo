@@ -65,7 +65,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_AnonymousUser_Challenges()
+    public async Task OnAuthorizationAsyncAnonymousUserChallenges()
     {
         var context = BuildContext(Anonymous(), Guid.NewGuid());
 
@@ -81,7 +81,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_AdminUser_AllowsRegardlessOfRoute()
+    public async Task OnAuthorizationAsyncAdminUserAllowsRegardlessOfRoute()
     {
         var context = BuildContext(User(Guid.NewGuid(), isAdmin: true), Guid.NewGuid());
 
@@ -97,7 +97,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_RouteUserIsSelf_Allows()
+    public async Task OnAuthorizationAsyncRouteUserIsSelfAllows()
     {
         var self = Guid.NewGuid();
         var context = BuildContext(User(self), self);
@@ -114,7 +114,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_RouteKeyMissing_Forbids()
+    public async Task OnAuthorizationAsyncRouteKeyMissingForbids()
     {
         var context = BuildContext(User(Guid.NewGuid()), includeRouteKey: false);
 
@@ -130,7 +130,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_RouteValueUnparseable_Forbids()
+    public async Task OnAuthorizationAsyncRouteValueUnparseableForbids()
     {
         var context = BuildContext(User(Guid.NewGuid()), "not-a-guid");
 
@@ -146,7 +146,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_TargetIsOwnChild_Allows()
+    public async Task OnAuthorizationAsyncTargetIsOwnChildAllows()
     {
         var currentUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
@@ -164,7 +164,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_TargetIsUnrelatedUser_Forbids()
+    public async Task OnAuthorizationAsyncTargetIsUnrelatedUserForbids()
     {
         users
             .ExistsAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
@@ -180,7 +180,7 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     }
 
     [Fact]
-    public async Task OnAuthorizationAsync_TargetIsOwnChild_QueriesForChildOwnedByCaller()
+    public async Task OnAuthorizationAsyncTargetIsOwnChildQueriesForChildOwnedByCaller()
     {
         var callerId = Guid.NewGuid();
         var childId = Guid.NewGuid();

@@ -40,7 +40,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceMissing_ReturnsNotFound()
+    public async Task HandleAsyncResourceMissingReturnsNotFound()
     {
         resources.Finds(null);
         var request = new UpdateResourceRequest(
@@ -70,7 +70,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceTypeMissing_ReturnsBadRequest()
+    public async Task HandleAsyncResourceTypeMissingReturnsBadRequest()
     {
         var resource = NewResource();
         resources.Finds(resource);
@@ -96,7 +96,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_InternalWithUrl_ReturnsBadRequest()
+    public async Task HandleAsyncInternalWithUrlReturnsBadRequest()
     {
         var resource = NewResource();
         resources.Finds(resource);
@@ -122,7 +122,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExternalWithDescription_ReturnsBadRequest()
+    public async Task HandleAsyncExternalWithDescriptionReturnsBadRequest()
     {
         var resource = NewResource();
         resources.Finds(resource);
@@ -148,7 +148,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsBadRequest()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequest()
     {
         var resource = NewResource();
         resources.Finds(resource);
@@ -175,7 +175,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_MutatesPersistsResourceAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestMutatesPersistsResourceAndInvalidatesCache()
     {
         var resource = NewResource("Old", "OldSub");
         resources.Finds(resource);
@@ -219,7 +219,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SwitchToExternal_ClearsDescriptionAndCleansEmbeddedImages()
+    public async Task HandleAsyncSwitchToExternalClearsDescriptionAndCleansEmbeddedImages()
     {
         var resource = NewResource();
         var embeddedId = Guid.NewGuid();
@@ -255,7 +255,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SwitchToInternal_ClearsUrl()
+    public async Task HandleAsyncSwitchToInternalClearsUrl()
     {
         var resource = NewResource();
         resource.Description = "{}";
@@ -283,7 +283,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailReplaced_CleansUpPreviousThumbnailAfterSave()
+    public async Task HandleAsyncThumbnailReplacedCleansUpPreviousThumbnailAfterSave()
     {
         var resource = NewResource();
         var previousThumbnailId = resource.ThumbnailId;
@@ -316,7 +316,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailUnchanged_DoesNotCleanUpThumbnail()
+    public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUpThumbnail()
     {
         var resource = NewResource();
         resource.Description = SomeRichText;
@@ -347,7 +347,7 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ImageRemovedFromDescription_CleansUpRemovedImageOnly()
+    public async Task HandleAsyncImageRemovedFromDescriptionCleansUpRemovedImageOnly()
     {
         var resource = NewResource();
         var removedId = Guid.NewGuid();

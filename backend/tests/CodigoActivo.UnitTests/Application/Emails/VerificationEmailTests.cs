@@ -10,7 +10,7 @@ public sealed class VerificationEmailTests
     private const string SiteUrl = "https://app.test";
 
     [Fact]
-    public void Create_ValidRequest_AddressesRecipientWithCodeLinkAndLifetime()
+    public void CreateValidRequestAddressesRecipientWithCodeLinkAndLifetime()
     {
         var message = VerificationEmail.Create(
             "ana@test.com",
@@ -42,7 +42,7 @@ public sealed class VerificationEmailTests
     }
 
     [Fact]
-    public void Create_ScriptInName_HtmlEncodesRecipientName()
+    public void CreateScriptInNameHtmlEncodesRecipientName()
     {
         var message = VerificationEmail.Create(
             "ana@test.com",

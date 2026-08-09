@@ -22,7 +22,7 @@ public sealed class ValidationAttributesTests : IDisposable
     }
 
     [Fact]
-    public void IsValid_NotBlankNonStringValues_ReturnsTrue()
+    public void IsValidNotBlankNonStringValuesReturnsTrue()
     {
         new NotBlankAttribute().IsValid(123).Should().BeTrue();
         new NotBlankAttribute().IsValid(null).Should().BeTrue();
@@ -32,19 +32,19 @@ public sealed class ValidationAttributesTests : IDisposable
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("\t\n")]
-    public void IsValid_NotBlankBlankOrWhitespaceString_ReturnsFalse(string value)
+    public void IsValidNotBlankBlankOrWhitespaceStringReturnsFalse(string value)
     {
         new NotBlankAttribute().IsValid(value).Should().BeFalse();
     }
 
     [Fact]
-    public void IsValid_NotBlankNonBlankString_ReturnsTrue()
+    public void IsValidNotBlankNonBlankStringReturnsTrue()
     {
         new NotBlankAttribute().IsValid("Acme").Should().BeTrue();
     }
 
     [Fact]
-    public void IsValid_JsonStringNonStringValues_ReturnsTrue()
+    public void IsValidJsonStringNonStringValuesReturnsTrue()
     {
         new JsonStringAttribute().IsValid(42).Should().BeTrue();
         new JsonStringAttribute().IsValid(null).Should().BeTrue();
@@ -54,7 +54,7 @@ public sealed class ValidationAttributesTests : IDisposable
     [InlineData("{}")]
     [InlineData("\"just a string\"")]
     [InlineData("null")]
-    public void IsValid_WellFormedJson_ReturnsTrue(string value)
+    public void IsValidWellFormedJsonReturnsTrue(string value)
     {
         new JsonStringAttribute().IsValid(value).Should().BeTrue();
     }
@@ -64,7 +64,7 @@ public sealed class ValidationAttributesTests : IDisposable
     [InlineData("not json")]
     [InlineData("{\"a\":}")]
     [InlineData("")]
-    public void IsValid_MalformedJson_ReturnsFalse(string value)
+    public void IsValidMalformedJsonReturnsFalse(string value)
     {
         new JsonStringAttribute().IsValid(value).Should().BeFalse();
     }
@@ -72,7 +72,7 @@ public sealed class ValidationAttributesTests : IDisposable
     [Theory]
     [InlineData(2026, 7, 5)]
     [InlineData(2027, 1, 1)]
-    public void GetValidationResult_NotDefaultOrFutureDateFutureDate_Fails(
+    public void GetValidationResultNotDefaultOrFutureDateFutureDateFails(
         int year,
         int month,
         int day
@@ -87,7 +87,7 @@ public sealed class ValidationAttributesTests : IDisposable
     [InlineData(2026, 7, 4)]
     [InlineData(2026, 7, 3)]
     [InlineData(2000, 1, 1)]
-    public void GetValidationResult_NotDefaultOrFutureDateTodayOrPast_Succeeds(
+    public void GetValidationResultNotDefaultOrFutureDateTodayOrPastSucceeds(
         int year,
         int month,
         int day
@@ -99,7 +99,7 @@ public sealed class ValidationAttributesTests : IDisposable
     }
 
     [Fact]
-    public void GetValidationResult_NotDefaultOrFutureDateDefaultDate_Fails()
+    public void GetValidationResultNotDefaultOrFutureDateDefaultDateFails()
     {
         var result = Validate(default(DateOnly));
 
@@ -107,14 +107,14 @@ public sealed class ValidationAttributesTests : IDisposable
     }
 
     [Fact]
-    public void GetValidationResult_NotDefaultOrFutureDateNonDateOnlyValue_Succeeds()
+    public void GetValidationResultNotDefaultOrFutureDateNonDateOnlyValueSucceeds()
     {
         Validate("2024-01-01").Should().BeNull();
         Validate(null).Should().BeNull();
     }
 
     [Fact]
-    public void GetValidationResult_NotDefaultOrFutureDateFutureDate_NamesTheOffendingMember()
+    public void GetValidationResultNotDefaultOrFutureDateFutureDateNamesTheOffendingMember()
     {
         var result = Validate(Today.AddDays(1));
 

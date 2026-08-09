@@ -26,7 +26,7 @@ public sealed class DeleteFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FileMissing_ReturnsNotFound()
+    public async Task HandleAsyncFileMissingReturnsNotFound()
     {
         files.FileMissing();
 
@@ -41,7 +41,7 @@ public sealed class DeleteFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FileStillInUse_ReturnsConflict()
+    public async Task HandleAsyncFileStillInUseReturnsConflict()
     {
         var file = NewFile();
         files.FileFound(file);
@@ -62,7 +62,7 @@ public sealed class DeleteFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NotInUse_RemovesRowSavesDeletesStoredContentAndInvalidatesCache()
+    public async Task HandleAsyncNotInUseRemovesRowSavesDeletesStoredContentAndInvalidatesCache()
     {
         var file = NewFile(name: "gone.png", extension: "png");
         files.FileFound(file);
