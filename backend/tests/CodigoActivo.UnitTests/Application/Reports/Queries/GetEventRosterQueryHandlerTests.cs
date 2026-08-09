@@ -67,7 +67,7 @@ public sealed class GetEventRosterQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.HasEvents();
 
@@ -83,7 +83,7 @@ public sealed class GetEventRosterQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ConfirmedAssignments_GroupsByActivityWithGuardianContact()
+    public async Task HandleAsyncConfirmedAssignmentsGroupsByActivityWithGuardianContact()
     {
         var taller = RosterActivity("Taller", When);
         var charla = RosterActivity("Charla", When.AddHours(2));
@@ -155,7 +155,7 @@ public sealed class GetEventRosterQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MixedRoles_OrdersLeadersFirstAndKeepsHighestRolePerUser()
+    public async Task HandleAsyncMixedRolesOrdersLeadersFirstAndKeepsHighestRolePerUser()
     {
         var taller = RosterActivity("Taller", When);
 
@@ -200,7 +200,7 @@ public sealed class GetEventRosterQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoConfirmedAssignments_ReturnsEmptyActivities()
+    public async Task HandleAsyncNoConfirmedAssignmentsReturnsEmptyActivities()
     {
         events.HasEvents(
             new Event

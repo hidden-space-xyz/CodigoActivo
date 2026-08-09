@@ -25,7 +25,7 @@ public sealed class ListActivityModalityTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleModalityTypes_OrdersByNameAndProjects()
+    public async Task HandleAsyncMultipleModalityTypesOrdersByNameAndProjects()
     {
         modalityTypes
             .Query()

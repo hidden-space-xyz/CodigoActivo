@@ -153,7 +153,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AdultBirthDateIsMinor_ReturnsBadRequest()
+    public async Task HandleAsyncAdultBirthDateIsMinorReturnsBadRequest()
     {
         var result = await sut.HandleAsync(
             new RegisterCommand(NewRegister(birthDate: MinorBirthDate)),
@@ -168,7 +168,7 @@ public sealed class RegisterCommandHandlerTests
     [InlineData("   ", "+34123456789", "password123")]
     [InlineData("ana@test.com", "   ", "password123")]
     [InlineData("ana@test.com", "+34123456789", "   ")]
-    public async Task HandleAsync_MissingContactInfo_ReturnsBadRequest(
+    public async Task HandleAsyncMissingContactInfoReturnsBadRequest(
         string email,
         string phone,
         string password
@@ -186,7 +186,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailOrPhoneInUse_ReturnsConflict()
+    public async Task HandleAsyncEmailOrPhoneInUseReturnsConflict()
     {
         ExistsReturns(false, true);
 
@@ -203,7 +203,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MinorWithAdultBirthDate_ReturnsBadRequest()
+    public async Task HandleAsyncMinorWithAdultBirthDateReturnsBadRequest()
     {
         ExistsReturns(false, false);
 
@@ -217,7 +217,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FirstUser_BecomesAdminWithParticipantType()
+    public async Task HandleAsyncFirstUserBecomesAdminWithParticipantType()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
         ExistsReturns(false, false);
@@ -249,7 +249,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NewAdult_SendsGuidOtpHashedAtRestAndInvalidatesCache()
+    public async Task HandleAsyncNewAdultSendsGuidOtpHashedAtRestAndInvalidatesCache()
     {
         var added = await CaptureAddedUsersAsync();
         ExistsReturns(false, false);
@@ -290,7 +290,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSendFails_SucceedsAndClearsLastSent()
+    public async Task HandleAsyncEmailSendFailsSucceedsAndClearsLastSent()
     {
         var added = await CaptureAddedUsersAsync();
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
@@ -318,7 +318,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailSendCancelled_PropagatesOperationCanceledException()
+    public async Task HandleAsyncEmailSendCancelledPropagatesOperationCanceledException()
     {
         var added = await CaptureAddedUsersAsync();
         emailSender.ThrowOnSend = new OperationCanceledException("registration cancelled");
@@ -337,7 +337,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SubsequentUserWithMinor_CreatesAdultAndMinorAsParticipants()
+    public async Task HandleAsyncSubsequentUserWithMinorCreatesAdultAndMinorAsParticipants()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
         ExistsReturns(true, false);

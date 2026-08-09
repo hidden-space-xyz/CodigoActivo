@@ -30,7 +30,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AsAdmin_ReturnsCreatedAndPersistsFile()
+    public async Task CreateAsAdminReturnsCreatedAndPersistsFile()
     {
         var bytes = TestSeedData.ValidPng();
         var client = await LoginAsAdminAsync();
@@ -56,7 +56,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AsMember_ReturnsForbidden()
+    public async Task CreateAsMemberReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -70,7 +70,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_Anonymous_ReturnsUnauthorized()
+    public async Task CreateAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -84,7 +84,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_MissingCsrfToken_ReturnsBadRequestInvalidCsrf()
+    public async Task CreateMissingCsrfTokenReturnsBadRequestInvalidCsrf()
     {
         var client = await LoginAsAdminAsync();
 
@@ -99,7 +99,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_MissingFilePart_ReturnsBadRequestValidationFailed()
+    public async Task CreateMissingFilePartReturnsBadRequestValidationFailed()
     {
         var client = await LoginAsAdminAsync();
         var before = await Factory.QueryAsync(db => db.Files.CountAsync(Ct));
@@ -117,7 +117,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_EmptyFile_ReturnsBadRequestFileUploadEmpty()
+    public async Task CreateEmptyFileReturnsBadRequestFileUploadEmpty()
     {
         var client = await LoginAsAdminAsync();
 
@@ -127,7 +127,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_Anonymous_ReturnsUploadedFileMetadata()
+    public async Task GetAnonymousReturnsUploadedFileMetadata()
     {
         var created = await UploadAsAdminAsync(fileName: "avatar.png");
         var client = CreateClient();
@@ -142,7 +142,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_UnknownId_ReturnsNotFoundFileNotFound()
+    public async Task GetUnknownIdReturnsNotFoundFileNotFound()
     {
         var client = CreateClient();
 
@@ -152,7 +152,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContent_ExistingFile_ReturnsStoredBytesAndContentType()
+    public async Task GetContentExistingFileReturnsStoredBytesAndContentType()
     {
         var bytes = TestSeedData.ValidPng();
         var created = await UploadAsAdminAsync(bytes, "photo.png");
@@ -167,7 +167,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContent_BlobMissingFromStorage_ReturnsNotFoundStorageMissing()
+    public async Task GetContentBlobMissingFromStorageReturnsNotFoundStorageMissing()
     {
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
@@ -192,7 +192,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContent_IfNoneMatchMatchesEtag_ReturnsNotModified()
+    public async Task GetContentIfNoneMatchMatchesEtagReturnsNotModified()
     {
         var created = await UploadAsAdminAsync(TestSeedData.ValidPng(), "cached.png");
         var client = CreateClient();
@@ -219,7 +219,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_AsAdmin_ReplacesContentAndNameKeepingId()
+    public async Task UpdateAsAdminReplacesContentAndNameKeepingId()
     {
         var created = await UploadAsAdminAsync(fileName: "old.png");
         var client = await LoginAsAdminAsync();
@@ -242,7 +242,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_AsAdmin_RemovesFileAndSubsequentGetIsNotFound()
+    public async Task DeleteAsAdminRemovesFileAndSubsequentGetIsNotFound()
     {
         var created = await UploadAsAdminAsync();
         var client = await LoginAsAdminAsync();
@@ -259,7 +259,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_FileEmbeddedInDescription_ReturnsConflictFileInUse()
+    public async Task DeleteFileEmbeddedInDescriptionReturnsConflictFileInUse()
     {
         var created = await UploadAsAdminAsync();
         var thumbnailId = Guid.NewGuid();

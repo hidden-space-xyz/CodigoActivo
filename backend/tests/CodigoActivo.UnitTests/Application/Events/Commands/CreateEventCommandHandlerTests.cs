@@ -105,7 +105,7 @@ public sealed class CreateEventCommandHandlerTests
 
     [Theory]
     [MemberData(nameof(MissingScheduleDateRequests))]
-    public async Task HandleAsync_MissingScheduleDate_ReturnsScheduleRequired(
+    public async Task HandleAsyncMissingScheduleDateReturnsScheduleRequired(
         CreateEventRequest request
     )
     {
@@ -122,7 +122,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventEndBeforeStart_ReturnsInvalidRange()
+    public async Task HandleAsyncEventEndBeforeStartReturnsInvalidRange()
     {
         var request = CreateReq(
             eventStart: new DateOnly(2026, 8, 5),
@@ -142,7 +142,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SignupEndNotAfterStart_ReturnsInvalidRange()
+    public async Task HandleAsyncSignupEndNotAfterStartReturnsInvalidRange()
     {
         var signup = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         var request = CreateReq(
@@ -162,7 +162,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SignupStartsAfterEventEnd_ReturnsInvalidRange()
+    public async Task HandleAsyncSignupStartsAfterEventEndReturnsInvalidRange()
     {
         var request = CreateReq(
             eventStart: new DateOnly(2026, 8, 1),
@@ -183,7 +183,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupNotBeforeSignupStart_ReturnsEarlySignupNotBeforeSignup()
+    public async Task HandleAsyncEarlySignupNotBeforeSignupStartReturnsEarlySignupNotBeforeSignup()
     {
         var signupStart = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         var request = CreateReq(
@@ -203,7 +203,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupBeforeSignupStart_PersistsEarlySignupInUtc()
+    public async Task HandleAsyncEarlySignupBeforeSignupStartPersistsEarlySignupInUtc()
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
@@ -227,7 +227,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
+    public async Task HandleAsyncThumbnailMissingReturnsThumbnailNotFound()
     {
         files.ThumbnailExists(false);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
@@ -247,7 +247,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NullCategories_ReturnsCategoriesRequired()
+    public async Task HandleAsyncNullCategoriesReturnsCategoriesRequired()
     {
         files.ThumbnailExists(true);
         var request = CreateReq(categoryTypeIds: null);
@@ -264,7 +264,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmptyCategories_ReturnsCategoriesRequired()
+    public async Task HandleAsyncEmptyCategoriesReturnsCategoriesRequired()
     {
         files.ThumbnailExists(true);
         var request = CreateReq(categoryTypeIds: []);
@@ -281,7 +281,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnknownCategoryTypeId_ReturnsCategoryTypeNotFound()
+    public async Task HandleAsyncUnknownCategoryTypeIdReturnsCategoryTypeNotFound()
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
@@ -299,7 +299,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_PersistsTrimmedEventWithAuditAndCategoriesAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestPersistsTrimmedEventWithAuditAndCategoriesAndInvalidatesCache()
     {
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
@@ -349,7 +349,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DuplicateCategoryTypeIds_PersistsSingleCategory()
+    public async Task HandleAsyncDuplicateCategoryTypeIdsPersistsSingleCategory()
     {
         var categoryId = Guid.NewGuid();
         files.ThumbnailExists(true);
@@ -378,7 +378,7 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SignupStartsOnEventEndDate_Succeeds()
+    public async Task HandleAsyncSignupStartsOnEventEndDateSucceeds()
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);

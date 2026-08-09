@@ -31,7 +31,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     }
 
     [Fact]
-    public async Task GetCountsAsync_EmptyDatabase_ReturnsZeroForEveryTable()
+    public async Task GetCountsAsyncEmptyDatabaseReturnsZeroForEveryTable()
     {
         await using var ctx = postgres.CreateContext();
         var repo = new DashboardRepository(ctx);
@@ -47,7 +47,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     }
 
     [Fact]
-    public async Task GetCountsAsync_SeededRows_ReturnsDistinctCountPerTable()
+    public async Task GetCountsAsyncSeededRowsReturnsDistinctCountPerTable()
     {
         await using var ctx = postgres.CreateContext();
         SeedDistinctRowCounts(ctx);

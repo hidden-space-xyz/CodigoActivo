@@ -44,7 +44,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task List_NoFilters_ReturnsOkPagedEnvelope()
+    public async Task ListNoFiltersReturnsOkPagedEnvelope()
     {
         await SeedAnnouncementAsync("Alpha");
         var client = CreateClient();
@@ -59,7 +59,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Years_DuplicateYears_ReturnsDistinctDescending()
+    public async Task YearsDuplicateYearsReturnsDistinctDescending()
     {
         await SeedAnnouncementAsync("A", year: 2021);
         await SeedAnnouncementAsync("B", year: 2023);
@@ -74,7 +74,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Get_AnnouncementExists_ReturnsOkWithAnnouncement()
+    public async Task GetAnnouncementExistsReturnsOkWithAnnouncement()
     {
         var id = await SeedAnnouncementAsync("Beta");
         var client = CreateClient();
@@ -87,7 +87,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Create_AsAdmin_ReturnsCreatedAndPersists()
+    public async Task CreateAsAdminReturnsCreatedAndPersists()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -107,7 +107,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Create_AsMember_ReturnsForbidden()
+    public async Task CreateAsMemberReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsMemberAsync();
@@ -119,7 +119,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Create_Anonymous_ReturnsUnauthorized()
+    public async Task CreateAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
         var request = new CreateAnnouncementRequest("Nope", "Sub", Description, Guid.NewGuid());
@@ -132,7 +132,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     [Theory]
     [InlineData("   ", "Sub")]
     [InlineData("Title", "   ")]
-    public async Task Create_BlankField_ReturnsValidationError(string title, string subtitle)
+    public async Task CreateBlankFieldReturnsValidationError(string title, string subtitle)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -144,7 +144,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Create_MissingCsrfToken_ReturnsBadRequest()
+    public async Task CreateMissingCsrfTokenReturnsBadRequest()
     {
         var client = await LoginAsAdminAsync();
         var thumbnailId = await SeedThumbnailAsync();
@@ -162,7 +162,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Update_AsAdmin_PersistsChanges()
+    public async Task UpdateAsAdminPersistsChanges()
     {
         var id = await SeedAnnouncementAsync("Before");
         var thumbnailId = await SeedThumbnailAsync();
@@ -179,7 +179,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Update_ReplacesThumbnail_DeletesOrphanedOldFile()
+    public async Task UpdateReplacesThumbnailDeletesOrphanedOldFile()
     {
         var id = await SeedAnnouncementAsync("Reemplazo");
         var oldThumbnailId = (await FindAsync<Announcement>(id))!.ThumbnailId;
@@ -202,7 +202,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Update_RemovesEmbeddedImage_DeletesOrphanedFile()
+    public async Task UpdateRemovesEmbeddedImageDeletesOrphanedFile()
     {
         var id = await SeedAnnouncementAsync("Con imagen");
         var thumbnailId = (await FindAsync<Announcement>(id))!.ThumbnailId;
@@ -236,7 +236,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Feature_AnnouncementMissing_ReturnsNotFound()
+    public async Task FeatureAnnouncementMissingReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -249,7 +249,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Delete_AsAdmin_RemovesAnnouncementAndOrphanedThumbnail()
+    public async Task DeleteAsAdminRemovesAnnouncementAndOrphanedThumbnail()
     {
         var id = await SeedAnnouncementAsync("Doomed");
         var thumbnailId = (await FindAsync<Announcement>(id))!.ThumbnailId;
@@ -266,7 +266,7 @@ public sealed class AnnouncementsControllerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task Delete_SharedThumbnail_KeepsThumbnailAndSurvivor()
+    public async Task DeleteSharedThumbnailKeepsThumbnailAndSurvivor()
     {
         var sharedThumbnailId = await SeedThumbnailAsync();
         var doomedId = Guid.NewGuid();

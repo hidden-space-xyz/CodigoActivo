@@ -7,6 +7,3 @@ dotnet_diagnostic.CA1848.severity = none
 
 [**/Migrations/*.cs]
 generated_code = true
-
-[tests/**/*.cs]
-dotnet_diagnostic.CA1707.severity = none

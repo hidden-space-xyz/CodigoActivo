@@ -20,7 +20,7 @@ public sealed class GetUserByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserExists_ReturnsUser()
+    public async Task HandleAsyncUserExistsReturnsUser()
     {
         var user = NewUser();
         users.HasUsers(user);
@@ -37,7 +37,7 @@ public sealed class GetUserByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.HasUsers();
 

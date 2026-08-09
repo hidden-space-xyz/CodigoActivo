@@ -16,7 +16,7 @@ public sealed class ActivitySignupDecisionEmailTests
     );
 
     [Fact]
-    public void Confirmed_MarkupInParticipantName_EncodesTheHtmlBodyAndLeavesTheTextBodyIntact()
+    public void ConfirmedMarkupInParticipantNameEncodesTheHtmlBodyAndLeavesTheTextBodyIntact()
     {
         var message = ActivitySignupDecisionEmail.Confirmed(
             "ada@test.com",
@@ -33,7 +33,7 @@ public sealed class ActivitySignupDecisionEmailTests
     }
 
     [Fact]
-    public void Denied_NoParticipantName_AddressesTheRecipientsOwnSignupAndOmitsRoleAndNote()
+    public void DeniedNoParticipantNameAddressesTheRecipientsOwnSignupAndOmitsRoleAndNote()
     {
         var message = ActivitySignupDecisionEmail.Denied(
             "ada@test.com",

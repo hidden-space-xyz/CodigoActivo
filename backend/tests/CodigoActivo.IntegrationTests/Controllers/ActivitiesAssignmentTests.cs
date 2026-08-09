@@ -132,7 +132,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Assign_SelfMember_PersistsRequestedAssignment()
+    public async Task AssignSelfMemberPersistsRequestedAssignment()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -153,7 +153,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Assign_ActivityMissing_ReturnsNotFound()
+    public async Task AssignActivityMissingReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
         var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
@@ -168,7 +168,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Assign_ChildAsLeader_ReturnsBadRequest()
+    public async Task AssignChildAsLeaderReturnsBadRequest()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -185,7 +185,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Assign_NonHouseholdUser_ReturnsForbidden()
+    public async Task AssignNonHouseholdUserReturnsForbidden()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -201,7 +201,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignHousehold_SelfAndChild_CreatesBothAssignments()
+    public async Task AssignHouseholdSelfAndChildCreatesBothAssignments()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -226,7 +226,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignHousehold_SelfAndChild_EmailsOneSignupSummaryToTheMember()
+    public async Task AssignHouseholdSelfAndChildEmailsOneSignupSummaryToTheMember()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -253,7 +253,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeStatus_ConfirmedForDependentMinor_EmailsTheDecisionToTheGuardian()
+    public async Task ChangeStatusConfirmedForDependentMinorEmailsTheDecisionToTheGuardian()
     {
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(
@@ -281,7 +281,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Unassign_SelfMemberSignupOpen_RemovesAssignment()
+    public async Task UnassignSelfMemberSignupOpenRemovesAssignment()
     {
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
@@ -297,7 +297,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeStatus_Admin_UpdatesAndPersistsStatus()
+    public async Task ChangeStatusAdminUpdatesAndPersistsStatus()
     {
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
@@ -318,7 +318,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeRole_Admin_UpdatesAndPersistsRole()
+    public async Task ChangeRoleAdminUpdatesAndPersistsRole()
     {
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(
@@ -343,7 +343,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeRole_AdminSetsLeaderForParticipantTypeUser_UpdatesRole()
+    public async Task ChangeRoleAdminSetsLeaderForParticipantTypeUserUpdatesRole()
     {
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(
@@ -366,7 +366,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Overlaps_ConflictingActivityForSelf_ReturnsOverlap()
+    public async Task OverlapsConflictingActivityForSelfReturnsOverlap()
     {
         var (_, targetId) = await SeedActivityAsync(
             activityStart: new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
@@ -391,7 +391,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task HouseholdAssignments_MemberAndChildrenAssigned_ReturnsBothOrderedByFirstName()
+    public async Task HouseholdAssignmentsMemberAndChildrenAssignedReturnsBothOrderedByFirstName()
     {
         var (eventId, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
@@ -415,7 +415,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task HouseholdAssignments_Anonymous_ReturnsUnauthorized()
+    public async Task HouseholdAssignmentsAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -428,7 +428,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Assign_UnknownRoleType_ReturnsBadRequest()
+    public async Task AssignUnknownRoleTypeReturnsBadRequest()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -445,7 +445,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignHousehold_ChildAsLeader_ReturnsBadRequest()
+    public async Task AssignHouseholdChildAsLeaderReturnsBadRequest()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -466,7 +466,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SignupRoles_MemberWithChild_ReturnsRolesPerHouseholdMember()
+    public async Task SignupRolesMemberWithChildReturnsRolesPerHouseholdMember()
     {
         var client = await LoginAsMemberAsync();
 
@@ -493,7 +493,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SignupRoles_Anonymous_ReturnsUnauthorized()
+    public async Task SignupRolesAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
 

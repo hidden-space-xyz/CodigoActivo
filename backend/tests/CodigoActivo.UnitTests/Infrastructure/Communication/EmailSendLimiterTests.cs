@@ -31,7 +31,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_BeyondTheRecipientBurst_DeniesWithRecipientScope()
+    public void TryConsumeBeyondTheRecipientBurstDeniesWithRecipientScope()
     {
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
@@ -44,7 +44,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_AfterTheHourlyWindowRefills_AllowsAgain()
+    public void TryConsumeAfterTheHourlyWindowRefillsAllowsAgain()
     {
         var clock = new TestClock();
         var limiter = new EmailSendLimiter(Options(), clock);
@@ -60,7 +60,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_DailyCapReached_DeniesEvenAfterTheHourlyWindowRefills()
+    public void TryConsumeDailyCapReachedDeniesEvenAfterTheHourlyWindowRefills()
     {
         var clock = new TestClock();
         var limiter = new EmailSendLimiter(Options(), clock);
@@ -81,7 +81,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_SubAddressedAndMixedCaseVariants_ShareOneRecipientBudget()
+    public void TryConsumeSubAddressedAndMixedCaseVariantsShareOneRecipientBudget()
     {
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
@@ -93,7 +93,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void NormalizeKey_GmailAddress_FoldsDotsInTheLocalPart()
+    public void NormalizeKeyGmailAddressFoldsDotsInTheLocalPart()
     {
         EmailSendLimiter
             .NormalizeKey("v.ic.tim+tag@GMAIL.com")
@@ -107,7 +107,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void NormalizeKey_NonGmailDomain_KeepsDotsSignificant()
+    public void NormalizeKeyNonGmailDomainKeepsDotsSignificant()
     {
         EmailSendLimiter
             .NormalizeKey("first.last@example.test")
@@ -116,7 +116,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_GlobalBudgetDrainedByOtherRecipients_DeniesWithGlobalScope()
+    public void TryConsumeGlobalBudgetDrainedByOtherRecipientsDeniesWithGlobalScope()
     {
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
@@ -131,7 +131,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_ActivityMailExhaustedTheBudget_StillDeliversAccountEmail()
+    public void TryConsumeActivityMailExhaustedTheBudgetStillDeliversAccountEmail()
     {
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
@@ -151,7 +151,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_ReserveWiderThanTheGlobalBurst_StillDeliversAutomaticMail()
+    public void TryConsumeReserveWiderThanTheGlobalBurstStillDeliversAutomaticMail()
     {
         var limiter = new EmailSendLimiter(
             new EmailGuardOptions { GlobalBurst = 6 },
@@ -162,7 +162,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_RecipientDenied_LeavesTheGlobalBudgetUntouched()
+    public void TryConsumeRecipientDeniedLeavesTheGlobalBudgetUntouched()
     {
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
@@ -180,7 +180,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_GlobalDenial_DoesNotStartTrackingTheRecipient()
+    public void TryConsumeGlobalDenialDoesNotStartTrackingTheRecipient()
     {
         var limiter = new EmailSendLimiter(Options(), new TestClock());
 
@@ -201,7 +201,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_ClockStepsBackwards_DoesNotMintTokens()
+    public void TryConsumeClockStepsBackwardsDoesNotMintTokens()
     {
         var clock = new TestClock();
         var limiter = new EmailSendLimiter(Options(), clock);
@@ -217,7 +217,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_TrackingTableSaturated_FallsBackToTheGlobalBudget()
+    public void TryConsumeTrackingTableSaturatedFallsBackToTheGlobalBudget()
     {
         var options = Options();
         options.MaxTrackedRecipients = 2;
@@ -234,7 +234,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_SweepRuns_EvictsOnlyFullyRefilledRecipients()
+    public void TryConsumeSweepRunsEvictsOnlyFullyRefilledRecipients()
     {
         var clock = new TestClock();
         var limiter = new EmailSendLimiter(Options(), clock);
@@ -254,7 +254,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_ShippedDefaults_LetAnEventOpeningAndItsRosterReviewThrough()
+    public void TryConsumeShippedDefaultsLetAnEventOpeningAndItsRosterReviewThrough()
     {
         var limiter = new EmailSendLimiter(new EmailGuardOptions(), new TestClock());
 
@@ -279,7 +279,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_ShippedDefaults_LetAGuardianReceiveEveryHouseholdNotification()
+    public void TryConsumeShippedDefaultsLetAGuardianReceiveEveryHouseholdNotification()
     {
         var clock = new TestClock();
         var limiter = new EmailSendLimiter(new EmailGuardOptions(), clock);
@@ -298,7 +298,7 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsume_FromManyThreads_GrantsExactlyTheBurst()
+    public void TryConsumeFromManyThreadsGrantsExactlyTheBurst()
     {
         var options = Options();
         options.GlobalBurst = 1000;

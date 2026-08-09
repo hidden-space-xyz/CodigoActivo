@@ -25,7 +25,7 @@ public sealed class DeleteResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceMissing_ReturnsNotFound()
+    public async Task HandleAsyncResourceMissingReturnsNotFound()
     {
         resources.Finds(null);
 
@@ -51,7 +51,7 @@ public sealed class DeleteResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceExists_RemovesSavesCleansUpFilesAndInvalidatesCache()
+    public async Task HandleAsyncResourceExistsRemovesSavesCleansUpFilesAndInvalidatesCache()
     {
         var resource = NewResource();
         var embeddedId = Guid.NewGuid();

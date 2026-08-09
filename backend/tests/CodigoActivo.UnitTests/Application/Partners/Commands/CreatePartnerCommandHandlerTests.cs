@@ -26,7 +26,7 @@ public sealed class CreatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsBadRequestAndDoesNotPersist()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequestAndDoesNotPersist()
     {
         files.ThumbnailExists(false);
         var request = new CreatePartnerRequest(
@@ -53,7 +53,7 @@ public sealed class CreatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_PersistsTrimmedNormalizedPartnerAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestPersistsTrimmedNormalizedPartnerAndInvalidatesCache()
     {
         files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
@@ -100,7 +100,7 @@ public sealed class CreatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_BlankWebsite_StoresNullWebsite()
+    public async Task HandleAsyncBlankWebsiteStoresNullWebsite()
     {
         files.ThumbnailExists(true);
         var request = new CreatePartnerRequest(

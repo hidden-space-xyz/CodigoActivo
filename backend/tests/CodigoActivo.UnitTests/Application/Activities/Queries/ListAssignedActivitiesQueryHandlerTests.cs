@@ -55,7 +55,7 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MultipleUsersAssigned_FiltersByUserAndOrdersByStart()
+    public async Task HandleAsyncMultipleUsersAssignedFiltersByUserAndOrdersByStart()
     {
         var userId = Guid.NewGuid();
         activities
@@ -91,7 +91,7 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventIdFilter_ExcludesOtherEventAssignments()
+    public async Task HandleAsyncEventIdFilterExcludesOtherEventAssignments()
     {
         var userId = Guid.NewGuid();
         var eventId = Guid.NewGuid();

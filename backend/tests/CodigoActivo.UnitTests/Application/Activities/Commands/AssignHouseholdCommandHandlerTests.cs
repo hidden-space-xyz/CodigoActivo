@@ -62,7 +62,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoAssignments_ReturnsHouseholdAssignmentsRequired()
+    public async Task HandleAsyncNoAssignmentsReturnsHouseholdAssignmentsRequired()
     {
         var result = await sut.HandleAsync(
             new AssignHouseholdCommand(
@@ -81,7 +81,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WindowClosedForMember_ReturnsSignupClosed()
+    public async Task HandleAsyncWindowClosedForMemberReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
@@ -104,7 +104,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MemberNotInHousehold_ReturnsMemberNotAllowed()
+    public async Task HandleAsyncMemberNotInHouseholdReturnsMemberNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -129,7 +129,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RoleUnknown_ReturnsRoleNotAllowed()
+    public async Task HandleAsyncRoleUnknownReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -161,7 +161,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LeaderRoleForNonSocioMember_ReturnsRoleNotAllowed()
+    public async Task HandleAsyncLeaderRoleForNonSocioMemberReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -192,7 +192,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForSocioHousehold_CreatesAssignmentsForAll()
+    public async Task HandleAsyncEarlySignupWindowForSocioHouseholdCreatesAssignmentsForAll()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -219,7 +219,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EarlySignupWindowForParticipantHousehold_ReturnsSignupEarlyOnly()
+    public async Task HandleAsyncEarlySignupWindowForParticipantHouseholdReturnsSignupEarlyOnly()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -254,7 +254,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MixedValidRoles_CreatesAssignmentsForAllAndInvalidatesCache()
+    public async Task HandleAsyncMixedValidRolesCreatesAssignmentsForAllAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -308,7 +308,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MixOfNewAndExisting_CreatesMissingAndSkipsExisting()
+    public async Task HandleAsyncMixOfNewAndExistingCreatesMissingAndSkipsExisting()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -358,7 +358,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SelfAndChild_SendsOneEmailListingEveryone()
+    public async Task HandleAsyncSelfAndChildSendsOneEmailListingEveryone()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
@@ -392,7 +392,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EmailDeliveryFails_StillPersistsTheAssignments()
+    public async Task HandleAsyncEmailDeliveryFailsStillPersistsTheAssignments()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();

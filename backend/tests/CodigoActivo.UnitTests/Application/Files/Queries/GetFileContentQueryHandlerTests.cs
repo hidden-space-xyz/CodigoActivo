@@ -23,7 +23,7 @@ public sealed class GetFileContentQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MetadataMissing_ReturnsNotFound()
+    public async Task HandleAsyncMetadataMissingReturnsNotFound()
     {
         files.FileMissing();
 
@@ -39,7 +39,7 @@ public sealed class GetFileContentQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_KnownSignature_ReturnsDetectedContentTypeAndRewindsStream()
+    public async Task HandleAsyncKnownSignatureReturnsDetectedContentTypeAndRewindsStream()
     {
         var file = NewFile(name: "avatar.png");
         files.FileFound(file);
@@ -59,7 +59,7 @@ public sealed class GetFileContentQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnknownBytes_FallsBackToOctetStream()
+    public async Task HandleAsyncUnknownBytesFallsBackToOctetStream()
     {
         var file = NewFile();
         files.FileFound(file);

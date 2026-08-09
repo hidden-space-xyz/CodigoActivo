@@ -24,7 +24,7 @@ public sealed class GetPartnerByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PartnerExists_ReturnsPartner()
+    public async Task HandleAsyncPartnerExistsReturnsPartner()
     {
         var partner = NewPartner();
         partners.HasPartners(partner);
@@ -39,7 +39,7 @@ public sealed class GetPartnerByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PartnerMissing_ReturnsNotFound()
+    public async Task HandleAsyncPartnerMissingReturnsNotFound()
     {
         partners.HasPartners();
 

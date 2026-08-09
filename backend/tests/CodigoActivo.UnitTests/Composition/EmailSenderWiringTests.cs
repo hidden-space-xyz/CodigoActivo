@@ -29,7 +29,7 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void ProductionCode_OnlyTheThrottlingDecorator_ImplementsIEmailSender()
+    public void ProductionCodeOnlyTheThrottlingDecoratorImplementsIEmailSender()
     {
         var implementations = ProductionTypes()
             .Where(type =>
@@ -42,7 +42,7 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void ProductionCode_OnlyTheQueueDrainAndTheManualEmailDispatcher_DependOnIEmailTransport()
+    public void ProductionCodeOnlyTheQueueDrainAndTheManualEmailDispatcherDependOnIEmailTransport()
     {
         var consumers = ProductionTypes()
             .Where(type =>
@@ -58,7 +58,7 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void ProductionCode_OnlyTheThrottlingDecorator_DependsOnIEmailDispatcher()
+    public void ProductionCodeOnlyTheThrottlingDecoratorDependsOnIEmailDispatcher()
     {
         var consumers = ProductionTypes()
             .Where(type =>
@@ -72,7 +72,7 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void AddCodigoActivo_ResolvesTheGuardedSenderAndTheRawTransportSeparately()
+    public void AddCodigoActivoResolvesTheGuardedSenderAndTheRawTransportSeparately()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(

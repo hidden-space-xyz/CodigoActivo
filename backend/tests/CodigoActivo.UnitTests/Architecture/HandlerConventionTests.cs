@@ -53,7 +53,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void Handlers_Always_AreSealed()
+    public void HandlersAlwaysAreSealed()
     {
         var offenders = HandlerImplementations()
             .Select(entry => entry.Handler)
@@ -66,7 +66,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void Handlers_Always_ImplementExactlyOneHandlerContract()
+    public void HandlersAlwaysImplementExactlyOneHandlerContract()
     {
         var offenders = HandlerImplementations()
             .GroupBy(entry => entry.Handler)
@@ -78,7 +78,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void Handlers_Always_AreNamedAfterTheirMessage()
+    public void HandlersAlwaysAreNamedAfterTheirMessage()
     {
         var offenders = HandlerImplementations()
             .Where(entry =>
@@ -95,7 +95,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void Messages_Always_CarryTheSuffixOfTheirContract()
+    public void MessagesAlwaysCarryTheSuffixOfTheirContract()
     {
         var offenders = HandlerImplementations()
             .Where(entry =>
@@ -112,7 +112,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void MessagesAndHandlers_Always_ShareAnAggregateCommandsOrQueriesNamespace()
+    public void MessagesAndHandlersAlwaysShareAnAggregateCommandsOrQueriesNamespace()
     {
         var offenders = HandlerImplementations()
             .Where(entry =>
@@ -134,7 +134,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void Messages_Always_HaveExactlyOneHandler()
+    public void MessagesAlwaysHaveExactlyOneHandler()
     {
         var messages = typeof(IQuery<>)
             .Assembly.GetTypes()
@@ -158,7 +158,7 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
-    public void QueryHandlers_Constructors_NeverDependOnWriteOrEmailPorts()
+    public void QueryHandlersConstructorsNeverDependOnWriteOrEmailPorts()
     {
         var offenders = HandlerImplementations()
             .Where(entry =>

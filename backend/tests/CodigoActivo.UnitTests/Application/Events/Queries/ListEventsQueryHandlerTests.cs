@@ -27,7 +27,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoScope_ProjectsAndPagesAll()
+    public async Task HandleAsyncNoScopeProjectsAndPagesAll()
     {
         events.HasEvents(NewEvent("A"), NewEvent("B"));
 
@@ -44,7 +44,7 @@ public sealed class ListEventsQueryHandlerTests
     [Theory]
     [InlineData(EventScope.Upcoming, "Upcoming")]
     [InlineData(EventScope.Past, "Past")]
-    public async Task HandleAsync_Scope_KeepsEventsMatchingScope(
+    public async Task HandleAsyncScopeKeepsEventsMatchingScope(
         EventScope scope,
         string expectedTitle
     )
@@ -64,7 +64,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_YearFilter_KeepsMatchingYear()
+    public async Task HandleAsyncYearFilterKeepsMatchingYear()
     {
         events.HasEvents(
             NewEvent("Y2025", starts: new DateOnly(2025, 5, 1), ends: new DateOnly(2025, 5, 2)),
@@ -80,7 +80,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_YearOutOfRange_ReturnsEmpty()
+    public async Task HandleAsyncYearOutOfRangeReturnsEmpty()
     {
         events.HasEvents(
             NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2))
@@ -96,7 +96,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_YearMaximumSupported_ReturnsEventsOfYear9999()
+    public async Task HandleAsyncYearMaximumSupportedReturnsEventsOfYear9999()
     {
         events.HasEvents(
             NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2)),
@@ -112,7 +112,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_CategoryTypeIdFilter_KeepsEventsWithMatchingCategory()
+    public async Task HandleAsyncCategoryTypeIdFilterKeepsEventsWithMatchingCategory()
     {
         var categoryId = Guid.NewGuid();
         events.HasEvents(
@@ -129,7 +129,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventDateRangeFilter_KeepsEventsOverlappingRange()
+    public async Task HandleAsyncEventDateRangeFilterKeepsEventsOverlappingRange()
     {
         events.HasEvents(
             NewEvent("Antes", starts: new DateOnly(2026, 3, 1), ends: new DateOnly(2026, 3, 2)),
@@ -153,7 +153,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SignupFromFilter_UsesAppTimeZoneDayStart()
+    public async Task HandleAsyncSignupFromFilterUsesAppTimeZoneDayStart()
     {
         clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "UTC+02",
@@ -178,7 +178,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SignupToFilter_ExcludesSignupsStartingAfterDayEnd()
+    public async Task HandleAsyncSignupToFilterExcludesSignupsStartingAfterDayEnd()
     {
         events.HasEvents(
             NewEvent(
@@ -197,7 +197,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortBySignupStartsAt_OrdersBySignupStart()
+    public async Task HandleAsyncSortBySignupStartsAtOrdersBySignupStart()
     {
         events.HasEvents(
             NewEvent(
@@ -220,7 +220,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortBySignupEndsAtDescending_OrdersBySignupEndDescending()
+    public async Task HandleAsyncSortBySignupEndsAtDescendingOrdersBySignupEndDescending()
     {
         events.HasEvents(
             NewEvent("Medio", signupEnd: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)),
@@ -237,7 +237,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByCategories_OrdersByMinimumCategoryName()
+    public async Task HandleAsyncSortByCategoriesOrdersByMinimumCategoryName()
     {
         var second = WithCategory(NewEvent("Segundo"), Guid.NewGuid(), "Charlas");
         WithCategory(second, Guid.NewGuid(), "Zumba");
@@ -254,7 +254,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FeaturedFilter_KeepsFeaturedOnly()
+    public async Task HandleAsyncFeaturedFilterKeepsFeaturedOnly()
     {
         events.HasEvents(NewEvent("Plain", featured: false), NewEvent("Star", featured: true));
 
@@ -267,7 +267,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TitleSearch_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncTitleSearchIsAccentAndCaseInsensitive()
     {
         events.HasEvents(NewEvent("Festival Ávila"), NewEvent("Concierto"));
 
@@ -280,7 +280,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SubtitleSearch_MatchesSubstring()
+    public async Task HandleAsyncSubtitleSearchMatchesSubstring()
     {
         events.HasEvents(
             NewEvent("A", subtitle: "Talleres de robótica"),
@@ -296,7 +296,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DescendingTitleSort_OrdersResults()
+    public async Task HandleAsyncDescendingTitleSortOrdersResults()
     {
         events.HasEvents(NewEvent("Alpha"), NewEvent("Zeta"), NewEvent("Mint"));
 
@@ -309,7 +309,7 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SecondPage_SkipsFirstPageItems()
+    public async Task HandleAsyncSecondPageSkipsFirstPageItems()
     {
         events.HasEvents(NewEvent("Alpha"), NewEvent("Mint"), NewEvent("Zeta"));
 

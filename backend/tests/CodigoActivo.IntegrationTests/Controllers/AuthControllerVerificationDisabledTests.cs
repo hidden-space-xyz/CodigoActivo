@@ -34,7 +34,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
     }
 
     [Fact]
-    public async Task Register_VerificationDisabled_CreatesActiveAccountWithoutSendingEmail()
+    public async Task RegisterVerificationDisabledCreatesActiveAccountWithoutSendingEmail()
     {
         var client = CreateDisabledClient();
 
@@ -52,7 +52,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
     }
 
     [Fact]
-    public async Task Register_VerificationDisabled_AllowsImmediateLogin()
+    public async Task RegisterVerificationDisabledAllowsImmediateLogin()
     {
         var client = CreateDisabledClient();
         using var register = await client.PostJsonAsync(
@@ -72,7 +72,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
     }
 
     [Fact]
-    public async Task Login_ExistingPendingUserVerificationDisabled_ActivatesAndStampsClockTimes()
+    public async Task LoginExistingPendingUserVerificationDisabledActivatesAndStampsClockTimes()
     {
         var client = CreateDisabledClient();
 
@@ -90,7 +90,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
     }
 
     [Fact]
-    public async Task ResendVerification_VerificationDisabled_IsRejected()
+    public async Task ResendVerificationVerificationDisabledIsRejected()
     {
         var client = CreateDisabledClient();
 

@@ -23,7 +23,7 @@ public sealed class SortMapTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("unknown")]
-    public void Apply_SortMissingOrUnknown_FallsBackToDefaultThenTie(string? sort)
+    public void ApplySortMissingOrUnknownFallsBackToDefaultThenTie(string? sort)
     {
         var rows = Rows(new Row(2, 0, 30, "x"), new Row(1, 0, 20, "y"), new Row(1, 0, 10, "z"));
 
@@ -33,7 +33,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_SingleKey_OrdersAscendingThenTie()
+    public void ApplySingleKeyOrdersAscendingThenTie()
     {
         var rows = Rows(new Row(3, 0, 1, "x"), new Row(1, 0, 2, "y"), new Row(2, 0, 3, "z"));
 
@@ -43,7 +43,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_KeyPrefixedWithMinus_OrdersDescending()
+    public void ApplyKeyPrefixedWithMinusOrdersDescending()
     {
         var rows = Rows(new Row(1, 0, 1, "x"), new Row(3, 0, 2, "y"), new Row(2, 0, 3, "z"));
 
@@ -53,7 +53,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_MultiKeySort_OrdersWithMixedDirections()
+    public void ApplyMultiKeySortOrdersWithMixedDirections()
     {
         var rows = Rows(
             new Row(1, 5, 1, "x"),
@@ -68,7 +68,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_UnknownKeysMixedWithKnown_IgnoresUnknownHonoursKnown()
+    public void ApplyUnknownKeysMixedWithKnownIgnoresUnknownHonoursKnown()
     {
         var rows = Rows(new Row(2, 0, 1, "x"), new Row(1, 0, 2, "y"));
 
@@ -78,7 +78,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_EqualKeys_AppendsTieBreakerForStableOrder()
+    public void ApplyEqualKeysAppendsTieBreakerForStableOrder()
     {
         var rows = Rows(
             new Row(7, 0, 40, "x"),
@@ -93,7 +93,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Default_UnregisteredTerm_IsDropped()
+    public void DefaultUnregisteredTermIsDropped()
     {
         var map = new SortMap<Row>().Add("a", r => r.A).Default("missing").Tie(r => r.Id);
         var rows = Rows(new Row(9, 0, 3, "x"), new Row(1, 0, 1, "y"), new Row(5, 0, 2, "z"));
@@ -104,7 +104,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_NoTermsDefaultsOrTie_ReturnsSourceUnordered()
+    public void ApplyNoTermsDefaultsOrTieReturnsSourceUnordered()
     {
         var map = new SortMap<Row>().Add("a", r => r.A);
         var rows = Rows(new Row(3, 0, 3, "x"), new Row(1, 0, 1, "y"), new Row(2, 0, 2, "z"));
@@ -115,7 +115,7 @@ public sealed class SortMapTests
     }
 
     [Fact]
-    public void Apply_NoTieBreakerRegistered_OrdersWithoutTieBreaker()
+    public void ApplyNoTieBreakerRegisteredOrdersWithoutTieBreaker()
     {
         var map = new SortMap<Row>().Add("a", r => r.A).Default("a");
         var rows = Rows(new Row(3, 0, 3, "x"), new Row(1, 0, 1, "y"), new Row(2, 0, 2, "z"));

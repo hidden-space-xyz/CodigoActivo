@@ -7,7 +7,7 @@ namespace CodigoActivo.UnitTests.Domain;
 public sealed class CommonTests
 {
     [Fact]
-    public void ImplicitConversion_ValueToResultOfT_ProducesSuccess()
+    public void ImplicitConversionValueToResultOfTProducesSuccess()
     {
         Result<string> result = "hello";
 
@@ -17,7 +17,7 @@ public sealed class CommonTests
     }
 
     [Fact]
-    public void Value_FailedResultOfT_ThrowsInvalidOperation()
+    public void ValueFailedResultOfTThrowsInvalidOperation()
     {
         Result<int> result = Error.Forbidden(ErrorCode.AccessDenied);
 
@@ -29,7 +29,7 @@ public sealed class CommonTests
     }
 
     [Fact]
-    public void Success_NullReferenceValue_PreservesNull()
+    public void SuccessNullReferenceValuePreservesNull()
     {
         var result = Result.Success<string?>(null);
 
@@ -49,7 +49,7 @@ public sealed class CommonTests
 
     [Theory]
     [MemberData(nameof(ErrorFactories))]
-    public void ErrorFactory_GivenCode_SetsMatchingKindAndCarriesCode(
+    public void ErrorFactoryGivenCodeSetsMatchingKindAndCarriesCode(
         Func<ErrorCode, Error> factory,
         ErrorKind expectedKind
     )

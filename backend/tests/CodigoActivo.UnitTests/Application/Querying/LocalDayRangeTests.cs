@@ -32,7 +32,7 @@ public sealed class LocalDayRangeTests
     );
 
     [Fact]
-    public void LowerUtc_RegularDay_ReturnsUtcMidnightOfZone()
+    public void LowerUtcRegularDayReturnsUtcMidnightOfZone()
     {
         var zone = TimeZoneInfo.CreateCustomTimeZone("Test/Fixed", TimeSpan.FromHours(2), "F", "F");
 
@@ -42,7 +42,7 @@ public sealed class LocalDayRangeTests
     }
 
     [Fact]
-    public void LowerUtc_DstGapCoversMidnight_ReturnsGapStartInstantInsteadOfThrowing()
+    public void LowerUtcDstGapCoversMidnightReturnsGapStartInstantInsteadOfThrowing()
     {
         var lower = LocalDayRange.LowerUtc(new DateOnly(2026, 9, 6), MidnightGapZone);
 
@@ -50,7 +50,7 @@ public sealed class LocalDayRangeTests
     }
 
     [Fact]
-    public void UpperExclusiveUtc_RegularDay_ReturnsStartOfNextDay()
+    public void UpperExclusiveUtcRegularDayReturnsStartOfNextDay()
     {
         var zone = TimeZoneInfo.CreateCustomTimeZone("Test/Fixed", TimeSpan.FromHours(2), "F", "F");
 

@@ -25,7 +25,7 @@ public sealed class DeletePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PartnerMissing_ReturnsNotFound()
+    public async Task HandleAsyncPartnerMissingReturnsNotFound()
     {
         partners.Finds(null);
 
@@ -46,7 +46,7 @@ public sealed class DeletePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PartnerExists_InvalidatesPartnersCache()
+    public async Task HandleAsyncPartnerExistsInvalidatesPartnersCache()
     {
         var partner = NewPartner();
         partners.Finds(partner);

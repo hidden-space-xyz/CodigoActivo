@@ -37,7 +37,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FileMissing_ReturnsNotFound()
+    public async Task HandleAsyncFileMissingReturnsNotFound()
     {
         files.FileMissing();
         var upload = new FileUpload(PngStream(), "new.png", 32);
@@ -55,7 +55,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UploadMissing_ReturnsValidationError()
+    public async Task HandleAsyncUploadMissingReturnsValidationError()
     {
         files.FileFound(NewFile());
 
@@ -72,7 +72,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExtensionUnchanged_ReplacesContentWithoutDeletingAndInvalidatesCache()
+    public async Task HandleAsyncExtensionUnchangedReplacesContentWithoutDeletingAndInvalidatesCache()
     {
         var file = NewFile(name: "old.png", extension: "png");
         files.FileFound(file);
@@ -103,7 +103,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExtensionChanges_DeletesOldStoredFile()
+    public async Task HandleAsyncExtensionChangesDeletesOldStoredFile()
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
         files.FileFound(file);
@@ -124,7 +124,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PersistenceThrowsWithExtensionChanged_RollsBackNewContent()
+    public async Task HandleAsyncPersistenceThrowsWithExtensionChangedRollsBackNewContent()
     {
         var file = NewFile(name: "old.jpg", extension: "jpg");
         files.FileFound(file);
@@ -144,7 +144,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PersistenceThrowsWithExtensionUnchanged_DoesNotDeleteStoredContent()
+    public async Task HandleAsyncPersistenceThrowsWithExtensionUnchangedDoesNotDeleteStoredContent()
     {
         var file = NewFile(name: "old.png", extension: "png");
         files.FileFound(file);

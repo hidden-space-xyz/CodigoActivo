@@ -39,7 +39,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
         var request = new UpdateUserRequest(
@@ -62,7 +62,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AdultWithParentId_ReturnsBadRequest()
+    public async Task HandleAsyncAdultWithParentIdReturnsBadRequest()
     {
         users.FindReturns(NewUser());
         var request = new UpdateUserRequest(
@@ -87,7 +87,7 @@ public sealed class UpdateUserCommandHandlerTests
     [Theory]
     [InlineData(null, "555")]
     [InlineData("a@test.com", "   ")]
-    public async Task HandleAsync_AdultMissingContactInfo_ReturnsBadRequest(
+    public async Task HandleAsyncAdultMissingContactInfoReturnsBadRequest(
         string? email,
         string? phone
     )
@@ -105,7 +105,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AdultEmailAlreadyInUse_ReturnsConflict()
+    public async Task HandleAsyncAdultEmailAlreadyInUseReturnsConflict()
     {
         users.FindReturns(NewUser());
         users
@@ -131,7 +131,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AdultPhoneAlreadyInUse_ReturnsConflict()
+    public async Task HandleAsyncAdultPhoneAlreadyInUseReturnsConflict()
     {
         users.FindReturns(NewUser());
         users
@@ -160,7 +160,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidAdultUpdate_NormalizesContactPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidAdultUpdateNormalizesContactPersistsAndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id, parentId: Guid.NewGuid());
@@ -212,7 +212,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MinorWithoutParentId_ReturnsBadRequest()
+    public async Task HandleAsyncMinorWithoutParentIdReturnsBadRequest()
     {
         users.FindReturns(NewUser());
         var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Gender.Male, null);
@@ -227,7 +227,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MinorSetAsOwnParent_ReturnsBadRequest()
+    public async Task HandleAsyncMinorSetAsOwnParentReturnsBadRequest()
     {
         var id = Guid.NewGuid();
         users.FindReturns(NewUser(id: id));
@@ -243,7 +243,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MinorParentMissing_ReturnsNotFound()
+    public async Task HandleAsyncMinorParentMissingReturnsNotFound()
     {
         users.FindReturns(NewUser(), null);
         var request = new UpdateUserRequest(
@@ -266,7 +266,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MinorParentIsMinor_ReturnsBadRequest()
+    public async Task HandleAsyncMinorParentIsMinorReturnsBadRequest()
     {
         users.FindReturns(NewUser(), NewUser(dob: MinorDob));
         var request = new UpdateUserRequest(
@@ -289,7 +289,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidMinorUpdate_ClearsContactAndCredentialsAndSetsParent()
+    public async Task HandleAsyncValidMinorUpdateClearsContactAndCredentialsAndSetsParent()
     {
         var id = Guid.NewGuid();
         var parentId = Guid.NewGuid();
@@ -326,7 +326,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_MinorReassignedToDifferentParent_ReturnsForbidden()
+    public async Task HandleAsyncMinorReassignedToDifferentParentReturnsForbidden()
     {
         var id = Guid.NewGuid();
         var currentParentId = Guid.NewGuid();

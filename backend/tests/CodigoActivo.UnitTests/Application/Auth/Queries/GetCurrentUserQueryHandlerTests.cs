@@ -19,7 +19,7 @@ public sealed class GetCurrentUserQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsUnauthorized()
+    public async Task HandleAsyncUserMissingReturnsUnauthorized()
     {
         User? missing = null;
         users

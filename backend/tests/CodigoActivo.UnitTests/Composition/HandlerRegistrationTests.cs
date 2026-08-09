@@ -48,7 +48,7 @@ public sealed class HandlerRegistrationTests
     }
 
     [Fact]
-    public void AddCodigoActivo_HandlerDescriptors_MatchTheDiscoveredHandlersExactly()
+    public void AddCodigoActivoHandlerDescriptorsMatchTheDiscoveredHandlersExactly()
     {
         var services = BuildServices();
 
@@ -69,7 +69,7 @@ public sealed class HandlerRegistrationTests
     }
 
     [Fact]
-    public void AddCodigoActivo_EveryHandler_ResolvesInsideAScope()
+    public void AddCodigoActivoEveryHandlerResolvesInsideAScope()
     {
         using var provider = BuildServices().BuildServiceProvider();
         using var scope = provider.CreateScope();

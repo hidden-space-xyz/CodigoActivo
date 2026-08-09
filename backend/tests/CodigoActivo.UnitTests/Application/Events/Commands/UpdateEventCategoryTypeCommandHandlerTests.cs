@@ -25,7 +25,7 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TypeMissing_ReturnsNotFound()
+    public async Task HandleAsyncTypeMissingReturnsNotFound()
     {
         categoryTypes.Finds(null);
 
@@ -44,7 +44,7 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameTakenByAnother_ReturnsConflict()
+    public async Task HandleAsyncNameTakenByAnotherReturnsConflict()
     {
         var id = Guid.NewGuid();
         var existing = new EventCategoryType
@@ -71,7 +71,7 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var existing = new EventCategoryType

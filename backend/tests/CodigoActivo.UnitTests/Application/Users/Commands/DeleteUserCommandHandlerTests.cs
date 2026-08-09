@@ -30,7 +30,7 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TargetIsAdmin_ReturnsForbidden()
+    public async Task HandleAsyncTargetIsAdminReturnsForbidden()
     {
         var id = Guid.NewGuid();
         users.FindReturns(NewUser(id: id, isAdmin: true));
@@ -46,7 +46,7 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
 
@@ -63,7 +63,7 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TargetIsNonAdmin_RemovesSavesAndInvalidatesCache()
+    public async Task HandleAsyncTargetIsNonAdminRemovesSavesAndInvalidatesCache()
     {
         var user = NewUser(isAdmin: false);
         users.FindReturns(user);

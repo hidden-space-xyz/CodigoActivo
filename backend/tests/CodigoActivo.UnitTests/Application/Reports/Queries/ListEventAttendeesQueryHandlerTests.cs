@@ -92,7 +92,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AssignmentsAcrossActivities_GroupsPerUserWithOrderedAssignments()
+    public async Task HandleAsyncAssignmentsAcrossActivitiesGroupsPerUserWithOrderedAssignments()
     {
         var ana = NewUser("Ana", NewUser("Tutora"), gender: Gender.Other);
         var berto = NewUser("Berto");
@@ -156,7 +156,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SearchMatchingGuardianName_FoldsAccentsAndFiltersUsers()
+    public async Task HandleAsyncSearchMatchingGuardianNameFoldsAccentsAndFiltersUsers()
     {
         var zoe = NewUser("Zoe", NewUser("María"));
         var berto = NewUser("Berto");
@@ -169,7 +169,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SearchMatchingOwnPhone_FiltersUsers()
+    public async Task HandleAsyncSearchMatchingOwnPhoneFiltersUsers()
     {
         var zoe = NewUser("Zoe", NewUser("María"));
         var berto = NewUser("Berto");
@@ -185,7 +185,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityAndStatusFilters_RequireOneAssignmentMatchingBoth()
+    public async Task HandleAsyncActivityAndStatusFiltersRequireOneAssignmentMatchingBoth()
     {
         var activityA = Guid.NewGuid();
         var activityB = Guid.NewGuid();
@@ -211,7 +211,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserTypeFilter_ReturnsOnlyMatchingUsers()
+    public async Task HandleAsyncUserTypeFilterReturnsOnlyMatchingUsers()
     {
         var ana = NewUser("Ana", userTypeId: SeedIds.UserTypes.Participant);
         var berto = NewUser("Berto");
@@ -227,7 +227,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_OverlappingAssignments_FlagsConflictsExcludingDenied()
+    public async Task HandleAsyncOverlappingAssignmentsFlagsConflictsExcludingDenied()
     {
         var carla = NewUser("Carla");
         var dani = NewUser("Dani");
@@ -259,7 +259,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByEmail_OrdersByEmailAscending()
+    public async Task HandleAsyncSortByEmailOrdersByEmailAscending()
     {
         var carla = NewUser("Carla", email: "charlie@test.local");
         var ana = NewUser("Ana", email: "alice@test.local");
@@ -274,7 +274,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByBirthDateDescending_OrdersOldestLast()
+    public async Task HandleAsyncSortByBirthDateDescendingOrdersOldestLast()
     {
         var oldest = NewUser("Vieja", birthDate: new DateOnly(1980, 1, 1));
         var youngest = NewUser("Joven", birthDate: new DateOnly(2010, 1, 1));
@@ -290,7 +290,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByType_OrdersByUserTypeName()
+    public async Task HandleAsyncSortByTypeOrdersByUserTypeName()
     {
         var volunteer = NewUser("Vero", typeName: "Voluntario");
         var member = NewUser("Mario", typeName: "Miembro");
@@ -305,7 +305,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsEmptyPage()
+    public async Task HandleAsyncEventMissingReturnsEmptyPage()
     {
         var ana = NewUser("Ana");
         HasConfirmedAttendees(ana);
@@ -317,7 +317,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SecondPage_ReturnsRemainingUsersWithTotal()
+    public async Task HandleAsyncSecondPageReturnsRemainingUsersWithTotal()
     {
         var ana = NewUser("Ana");
         var berto = NewUser("Berto");

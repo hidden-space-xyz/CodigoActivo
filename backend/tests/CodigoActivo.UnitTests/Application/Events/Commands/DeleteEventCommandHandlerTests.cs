@@ -34,7 +34,7 @@ public sealed class DeleteEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.Finds(null);
 
@@ -59,7 +59,7 @@ public sealed class DeleteEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidEvent_RemovesCleansThumbnailsAndInvalidatesCache()
+    public async Task HandleAsyncValidEventRemovesCleansThumbnailsAndInvalidatesCache()
     {
         var ev = NewEvent();
         events.Finds(ev);
@@ -147,7 +147,7 @@ public sealed class DeleteEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ImagesEmbeddedInDescription_CleansThemUp()
+    public async Task HandleAsyncImagesEmbeddedInDescriptionCleansThemUp()
     {
         var ev = NewEvent();
         var embeddedId = Guid.NewGuid();

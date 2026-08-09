@@ -36,7 +36,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ResourceTypeMissing_ReturnsBadRequestAndDoesNotPersist()
+    public async Task HandleAsyncResourceTypeMissingReturnsBadRequestAndDoesNotPersist()
     {
         resourceTypes.TypeMissing();
         var request = new CreateResourceRequest(
@@ -64,7 +64,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_InternalWithUrl_ReturnsBadRequest()
+    public async Task HandleAsyncInternalWithUrlReturnsBadRequest()
     {
         var type = resourceTypes.TypeExists();
         var request = new CreateResourceRequest(
@@ -92,9 +92,7 @@ public sealed class CreateResourceCommandHandlerTests
     [InlineData("")]
     [InlineData("{}")]
     [InlineData(EmptyRichText)]
-    public async Task HandleAsync_InternalWithEmptyDescription_ReturnsBadRequest(
-        string? description
-    )
+    public async Task HandleAsyncInternalWithEmptyDescriptionReturnsBadRequest(string? description)
     {
         var type = resourceTypes.TypeExists();
         var request = new CreateResourceRequest(
@@ -118,7 +116,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExternalWithDescription_ReturnsBadRequest()
+    public async Task HandleAsyncExternalWithDescriptionReturnsBadRequest()
     {
         var type = resourceTypes.TypeExists(isExternal: true);
         var request = new CreateResourceRequest(
@@ -142,7 +140,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExternalWithoutUrl_ReturnsBadRequest()
+    public async Task HandleAsyncExternalWithoutUrlReturnsBadRequest()
     {
         var type = resourceTypes.TypeExists(isExternal: true);
         var request = new CreateResourceRequest(
@@ -166,7 +164,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsBadRequestAndDoesNotPersist()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequestAndDoesNotPersist()
     {
         var type = resourceTypes.TypeExists();
         files.ThumbnailExists(false);
@@ -195,7 +193,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidInternalRequest_PersistsTrimmedResourceAndInvalidatesCache()
+    public async Task HandleAsyncValidInternalRequestPersistsTrimmedResourceAndInvalidatesCache()
     {
         var type = resourceTypes.TypeExists();
         files.ThumbnailExists(true);
@@ -248,7 +246,7 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidExternalRequest_PersistsTrimmedUrlAndEmptyDescription()
+    public async Task HandleAsyncValidExternalRequestPersistsTrimmedUrlAndEmptyDescription()
     {
         var type = resourceTypes.TypeExists(isExternal: true);
         files.ThumbnailExists(true);

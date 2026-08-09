@@ -34,7 +34,7 @@ public sealed class GetSitemapXmlQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoContent_ReturnsDeclarationAndStaticUrls()
+    public async Task HandleAsyncNoContentReturnsDeclarationAndStaticUrls()
     {
         var xml = await sut.HandleAsync(
             new GetSitemapXmlQuery(),
@@ -53,7 +53,7 @@ public sealed class GetSitemapXmlQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExternalResource_ExcludesItsUrl()
+    public async Task HandleAsyncExternalResourceExcludesItsUrl()
     {
         var internalResource = NewResource(url: null);
         var externalResource = NewResource(url: "https://example.org/externo");
@@ -69,7 +69,7 @@ public sealed class GetSitemapXmlQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UpdatedAtPresent_UsesUpdatedAtAsLastmod()
+    public async Task HandleAsyncUpdatedAtPresentUsesUpdatedAtAsLastmod()
     {
         var ev = NewEvent(
             createdAt: new DateTimeOffset(2026, 1, 5, 9, 0, 0, TimeSpan.Zero),
@@ -88,7 +88,7 @@ public sealed class GetSitemapXmlQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UpdatedAtMissing_FallsBackToCreatedAt()
+    public async Task HandleAsyncUpdatedAtMissingFallsBackToCreatedAt()
     {
         var announcement = NewAnnouncement(new DateTimeOffset(2026, 3, 4, 23, 0, 0, TimeSpan.Zero));
         announcements.Query().Returns(new[] { announcement }.AsQueryable());

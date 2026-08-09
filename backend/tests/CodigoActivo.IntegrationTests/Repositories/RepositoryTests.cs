@@ -185,7 +185,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task Query_PartnersExist_ReturnsAllRowsUntracked()
+    public async Task QueryPartnersExistReturnsAllRowsUntracked()
     {
         await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(NewPartner("A"), NewPartner("B"));
@@ -200,7 +200,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task AddAsync_BeforeSaveChanges_DoesNotPersist()
+    public async Task AddAsyncBeforeSaveChangesDoesNotPersist()
     {
         var partner = NewPartner();
         await using (var ctx = postgres.CreateContext())
@@ -223,7 +223,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task FindAsync_PredicateMatch_ReturnsFirstMatchOrNull()
+    public async Task FindAsyncPredicateMatchReturnsFirstMatchOrNull()
     {
         await using var ctx = postgres.CreateContext();
         var target = NewPartner("Target");
@@ -238,7 +238,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetAsync_PredicateProvided_ReturnsOnlyMatchingRows()
+    public async Task GetAsyncPredicateProvidedReturnsOnlyMatchingRows()
     {
         await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(NewPartner("Keep", tier: 5), NewPartner("Drop", tier: 1));
@@ -251,7 +251,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task CountAsync_PredicateProvided_CountsMatchingRows()
+    public async Task CountAsyncPredicateProvidedCountsMatchingRows()
     {
         await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(
@@ -268,7 +268,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Theory]
     [InlineData(9, true)]
     [InlineData(99, false)]
-    public async Task ExistsAsync_TierMatch_ReportsPresence(int tier, bool expected)
+    public async Task ExistsAsyncTierMatchReportsPresence(int tier, bool expected)
     {
         await using var ctx = postgres.CreateContext();
         ctx.Partners.Add(NewPartner("A", tier: 9));
@@ -279,7 +279,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task Remove_ThenSaveChanges_DeletesEntity()
+    public async Task RemoveThenSaveChangesDeletesEntity()
     {
         await using var ctx = postgres.CreateContext();
         var partner = NewPartner();
@@ -294,7 +294,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task RemoveAsync_MatchingRows_DeletesAndReturnsCount()
+    public async Task RemoveAsyncMatchingRowsDeletesAndReturnsCount()
     {
         await using var ctx = postgres.CreateContext();
         ctx.Partners.AddRange(
@@ -313,7 +313,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task RemoveAsync_NoRowsMatch_ReturnsZero()
+    public async Task RemoveAsyncNoRowsMatchReturnsZero()
     {
         await using var ctx = postgres.CreateContext();
         ctx.Partners.Add(NewPartner("Only", tier: 3));
@@ -325,7 +325,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetByIdWithDetailsAsync_UserExists_IncludesStatus()
+    public async Task GetByIdWithDetailsAsyncUserExistsIncludesStatus()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser("Ada", "Admin");
@@ -342,7 +342,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetByIdWithDetailsAsync_UserMissing_ReturnsNull()
+    public async Task GetByIdWithDetailsAsyncUserMissingReturnsNull()
     {
         await using var ctx = postgres.CreateContext();
         var repo = new UserRepository(ctx);
@@ -353,9 +353,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Theory]
     [InlineData("user@x.test")]
     [InlineData("+34600000000")]
-    public async Task GetByEmailOrPhoneAsync_EmailOrPhoneIdentifier_ReturnsTheUser(
-        string identifier
-    )
+    public async Task GetByEmailOrPhoneAsyncEmailOrPhoneIdentifierReturnsTheUser(string identifier)
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000");
@@ -369,7 +367,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetByEmailOrPhoneAsync_UnknownIdentifier_ReturnsNull()
+    public async Task GetByEmailOrPhoneAsyncUnknownIdentifierReturnsNull()
     {
         await using var ctx = postgres.CreateContext();
         ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000"));
@@ -384,7 +382,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Theory]
     [InlineData("dup@x.test", true)]
     [InlineData("free@x.test", false)]
-    public async Task EmailExistsAsync_NoExcludeUserId_ReportsPresence(string email, bool expected)
+    public async Task EmailExistsAsyncNoExcludeUserIdReportsPresence(string email, bool expected)
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser(email: "dup@x.test");
@@ -396,7 +394,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task EmailExistsAsync_ExcludeUserIdMatchesOwner_ReturnsFalse()
+    public async Task EmailExistsAsyncExcludeUserIdMatchesOwnerReturnsFalse()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser(email: "dup@x.test");
@@ -410,7 +408,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task EmailExistsAsync_ExcludeUserIdIsOtherUser_ReturnsTrue()
+    public async Task EmailExistsAsyncExcludeUserIdIsOtherUserReturnsTrue()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser(email: "dup@x.test");
@@ -426,7 +424,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [Theory]
     [InlineData("+100", true)]
     [InlineData("+999", false)]
-    public async Task PhoneExistsAsync_NoExcludeUserId_ReportsPresence(string phone, bool expected)
+    public async Task PhoneExistsAsyncNoExcludeUserIdReportsPresence(string phone, bool expected)
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser(phone: "+100");
@@ -438,7 +436,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task PhoneExistsAsync_ExcludeUserIdMatchesOwner_ReturnsFalse()
+    public async Task PhoneExistsAsyncExcludeUserIdMatchesOwnerReturnsFalse()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser(phone: "+100");
@@ -452,7 +450,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task PhoneExistsAsync_ExcludeUserIdIsOtherUser_ReturnsTrue()
+    public async Task PhoneExistsAsyncExcludeUserIdIsOtherUserReturnsTrue()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser(phone: "+100");
@@ -466,7 +464,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task ListChildrenWithDetailsAsync_ParentHasChildren_ReturnsOrderedWithDetails()
+    public async Task ListChildrenWithDetailsAsyncParentHasChildrenReturnsOrderedWithDetails()
     {
         await using var ctx = postgres.CreateContext();
         var parent = NewUser("Parent", "P");
@@ -497,7 +495,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetForEditAsync_EventWithCategories_IncludesCategoriesOrReturnsNull()
+    public async Task GetForEditAsyncEventWithCategoriesIncludesCategoriesOrReturnsNull()
     {
         await using var ctx = postgres.CreateContext();
         var category = new EventCategoryType
@@ -527,7 +525,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     [InlineData(-5, 30, true)]
     [InlineData(10, 60, true)]
     [InlineData(10, 120, true)]
-    public async Task AnyOutsideRangeAsync_ActivityOutsideWindow_DetectsOutOfRange(
+    public async Task AnyOutsideRangeAsyncActivityOutsideWindowDetectsOutOfRange(
         int startOffsetMinutes,
         int endOffsetMinutes,
         bool expected
@@ -552,7 +550,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task AnyOutsideRangeAsync_ActivityBelongsToOtherEvent_IgnoresIt()
+    public async Task AnyOutsideRangeAsyncActivityBelongsToOtherEventIgnoresIt()
     {
         await using var ctx = postgres.CreateContext();
         var target = NewEvent("Target");
@@ -571,7 +569,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetAssignmentAsync_AssignmentExistsOrNot_ReturnsWithIncludesOrNull()
+    public async Task GetAssignmentAsyncAssignmentExistsOrNotReturnsWithIncludesOrNull()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser();
@@ -602,7 +600,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task AddAssignmentAsync_BeforeSaveChanges_StagesThenPersistsOnSave()
+    public async Task AddAssignmentAsyncBeforeSaveChangesStagesThenPersistsOnSave()
     {
         var user = NewUser();
         var role = NewRoleType();
@@ -637,7 +635,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task RemoveAssignment_ThenSaveChanges_DeletesRow()
+    public async Task RemoveAssignmentThenSaveChangesDeletesRow()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser();
@@ -664,7 +662,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task QueryAssignments_AssignmentsExist_ExposesAllRowsUntracked()
+    public async Task QueryAssignmentsAssignmentsExistExposesAllRowsUntracked()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser();
@@ -693,7 +691,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task IsInUseAsync_ThumbnailOrDescriptionReference_DetectsUsage()
+    public async Task IsInUseAsyncThumbnailOrDescriptionReferenceDetectsUsage()
     {
         await using var ctx = postgres.CreateContext();
 
@@ -716,7 +714,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetInUseAsync_MixedReferences_ReturnsOnlyReferencedCandidates()
+    public async Task GetInUseAsyncMixedReferencesReturnsOnlyReferencedCandidates()
     {
         await using var ctx = postgres.CreateContext();
 
@@ -761,7 +759,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task GetInUseAsync_EmptyInput_ReturnsEmpty()
+    public async Task GetInUseAsyncEmptyInputReturnsEmpty()
     {
         await using var ctx = postgres.CreateContext();
         var repo = new FileRepository(ctx);
@@ -772,7 +770,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task AssignmentExistsAsync_AssignmentPresentOrAbsent_ReportsExistence()
+    public async Task AssignmentExistsAsyncAssignmentPresentOrAbsentReportsExistence()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser();
@@ -799,7 +797,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task RemoveAsync_EventCategoryTypeMatchesById_DeletesImmediatelyAndReturnsOne()
+    public async Task RemoveAsyncEventCategoryTypeMatchesByIdDeletesImmediatelyAndReturnsOne()
     {
         await using var ctx = postgres.CreateContext();
         var categoryType = new EventCategoryType
@@ -822,7 +820,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task RemoveAsync_EventCategoryTypeMissing_ReturnsZero()
+    public async Task RemoveAsyncEventCategoryTypeMissingReturnsZero()
     {
         await using var ctx = postgres.CreateContext();
         var repo = new EventCategoryTypeRepository(ctx);
@@ -832,7 +830,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_AnotherEventWasFeatured_LeavesExactlyTargetFeatured()
+    public async Task SetFeaturedAsyncAnotherEventWasFeaturedLeavesExactlyTargetFeatured()
     {
         await using var ctx = postgres.CreateContext();
         var previous = NewEvent("Anterior", featured: true);
@@ -853,7 +851,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_EventMissing_ReturnsFalseWithoutChangingFlags()
+    public async Task SetFeaturedAsyncEventMissingReturnsFalseWithoutChangingFlags()
     {
         await using var ctx = postgres.CreateContext();
         var featured = NewEvent("Destacado", featured: true);
@@ -869,7 +867,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_AnotherAnnouncementWasFeatured_LeavesExactlyTargetFeatured()
+    public async Task SetFeaturedAsyncAnotherAnnouncementWasFeaturedLeavesExactlyTargetFeatured()
     {
         await using var ctx = postgres.CreateContext();
         var previous = NewAnnouncement("Anterior", featured: true);
@@ -890,7 +888,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task SetFeaturedAsync_AnnouncementMissing_ReturnsFalse()
+    public async Task SetFeaturedAsyncAnnouncementMissingReturnsFalse()
     {
         await using var ctx = postgres.CreateContext();
         var repo = new AnnouncementRepository(ctx);

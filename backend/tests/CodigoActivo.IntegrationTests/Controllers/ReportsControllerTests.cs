@@ -137,7 +137,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummaryAsync_ExistingEvent_ReturnsComputedAggregates()
+    public async Task EventSummaryAsyncExistingEventReturnsComputedAggregates()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -168,7 +168,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummaryAsync_RepeatedUserAcrossActivities_CountsDistinctVolunteersOnce()
+    public async Task EventSummaryAsyncRepeatedUserAcrossActivitiesCountsDistinctVolunteersOnce()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -200,7 +200,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummaryAsync_MissingEvent_ReturnsNotFound()
+    public async Task EventSummaryAsyncMissingEventReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -213,7 +213,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_ExistingEvent_GroupsAssignmentsPerAttendee()
+    public async Task EventAttendeesAsyncExistingEventGroupsAssignmentsPerAttendee()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -280,7 +280,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_StatusFilter_ReturnsUsersAndAssignmentsMatchingStatus()
+    public async Task EventAttendeesAsyncStatusFilterReturnsUsersAndAssignmentsMatchingStatus()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -321,7 +321,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_SortByEmail_OrdersByEmailWithNullsLast()
+    public async Task EventAttendeesAsyncSortByEmailOrdersByEmailWithNullsLast()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -337,7 +337,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_SortByBirthDateDescending_OrdersYoungestFirst()
+    public async Task EventAttendeesAsyncSortByBirthDateDescendingOrdersYoungestFirst()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -353,7 +353,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_SortByType_OrdersByUserTypeName()
+    public async Task EventAttendeesAsyncSortByTypeOrdersByUserTypeName()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -373,7 +373,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_ActivityFilter_ComputesConflictFromHiddenAssignments()
+    public async Task EventAttendeesAsyncActivityFilterComputesConflictFromHiddenAssignments()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -414,7 +414,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_GenderFilter_ReturnsOnlyMatchingAttendees()
+    public async Task EventAttendeesAsyncGenderFilterReturnsOnlyMatchingAttendees()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -433,7 +433,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_SearchFilter_MatchesGuardianData()
+    public async Task EventAttendeesAsyncSearchFilterMatchesGuardianData()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -450,7 +450,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_PageSizeOne_PagesAttendeesKeepingTotal()
+    public async Task EventAttendeesAsyncPageSizeOnePagesAttendeesKeepingTotal()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -479,7 +479,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_MissingEvent_ReturnsEmptyPage()
+    public async Task EventAttendeesAsyncMissingEventReturnsEmptyPage()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -493,7 +493,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsync_MemberUser_ReturnsForbidden()
+    public async Task EventAttendeesAsyncMemberUserReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -506,7 +506,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventBadgesAsync_ExistingEvent_ReturnsConfirmedBadgesWithGuardianAndActivities()
+    public async Task EventBadgesAsyncExistingEventReturnsConfirmedBadgesWithGuardianAndActivities()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -554,7 +554,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventBadgesAsync_MissingEvent_ReturnsNotFound()
+    public async Task EventBadgesAsyncMissingEventReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -564,7 +564,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventBadgesAsync_MemberUser_ReturnsForbidden()
+    public async Task EventBadgesAsyncMemberUserReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -574,7 +574,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventRosterAsync_ExistingEvent_GroupsConfirmedParticipantsByActivity()
+    public async Task EventRosterAsyncExistingEventGroupsConfirmedParticipantsByActivity()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -619,7 +619,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventRosterAsync_MissingEvent_ReturnsNotFound()
+    public async Task EventRosterAsyncMissingEventReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
 
@@ -629,7 +629,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventRosterAsync_MemberUser_ReturnsForbidden()
+    public async Task EventRosterAsyncMemberUserReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -639,7 +639,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DashboardAsync_EmptyDatabase_CountsUsersOnly()
+    public async Task DashboardAsyncEmptyDatabaseCountsUsersOnly()
     {
         var client = await LoginAsAdminAsync();
 
@@ -656,7 +656,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DashboardAsync_AnonymousUser_ReturnsUnauthorized()
+    public async Task DashboardAsyncAnonymousUserReturnsUnauthorized()
     {
         var client = CreateClient();
 
@@ -666,7 +666,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DashboardAsync_MemberUser_ReturnsForbidden()
+    public async Task DashboardAsyncMemberUserReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 

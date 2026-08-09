@@ -13,7 +13,7 @@ public sealed class GetRobotsTxtQueryHandlerTests
     );
 
     [Fact]
-    public async Task HandleAsync_TrailingSlashBaseUrl_ReturnsExactRulesWithTrimmedBase()
+    public async Task HandleAsyncTrailingSlashBaseUrlReturnsExactRulesWithTrimmedBase()
     {
         var robots = await sut.HandleAsync(
             new GetRobotsTxtQuery(),

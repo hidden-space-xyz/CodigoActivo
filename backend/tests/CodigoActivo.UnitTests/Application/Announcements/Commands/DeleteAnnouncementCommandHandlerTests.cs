@@ -31,7 +31,7 @@ public sealed class DeleteAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AnnouncementMissing_ReturnsNotFound()
+    public async Task HandleAsyncAnnouncementMissingReturnsNotFound()
     {
         announcements.Finds(null);
 
@@ -54,7 +54,7 @@ public sealed class DeleteAnnouncementCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ImagesEmbeddedInDescription_CleansUpAndInvalidatesCache()
+    public async Task HandleAsyncImagesEmbeddedInDescriptionCleansUpAndInvalidatesCache()
     {
         var announcement = NewAnnouncement();
         var embeddedId = Guid.NewGuid();

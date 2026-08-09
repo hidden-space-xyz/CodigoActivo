@@ -59,7 +59,7 @@ public sealed class ApiErrorResponseExtensionsTests
 
     [Theory]
     [MemberData(nameof(KindMappings))]
-    public void Create_EachErrorKind_MapsToStatusAndTitle(
+    public void CreateEachErrorKindMapsToStatusAndTitle(
         ErrorKind kind,
         int expectedStatus,
         string expectedTitle
@@ -75,7 +75,7 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void Create_OutOfRangeKind_ThrowsArgumentOutOfRangeException()
+    public void CreateOutOfRangeKindThrowsArgumentOutOfRangeException()
     {
         var error = new Error((ErrorKind)99, ErrorCode.UnexpectedError);
 
@@ -85,7 +85,7 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToOk_SuccessResult_ReturnsOkWithValue()
+    public void ToOkSuccessResultReturnsOkWithValue()
     {
         var controller = NewController();
 
@@ -97,7 +97,7 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToOk_FailureResult_ReturnsProblem()
+    public void ToOkFailureResultReturnsProblem()
     {
         var controller = NewController();
         Result<int> result = Error.NotFound(ErrorCode.PartnerNotFound);
@@ -112,7 +112,7 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToNoContent_SuccessResult_ReturnsNoContent()
+    public void ToNoContentSuccessResultReturnsNoContent()
     {
         var controller = NewController();
 
@@ -126,7 +126,7 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToNoContent_FailureResult_ReturnsProblem()
+    public void ToNoContentFailureResultReturnsProblem()
     {
         var controller = NewController();
         Result result = Error.Conflict(ErrorCode.PartnerNotFound);
@@ -139,7 +139,7 @@ public sealed class ApiErrorResponseExtensionsTests
     }
 
     [Fact]
-    public void ToProblem_ErrorWithTraceId_BuildsObjectResultWithStatusAndTrace()
+    public void ToProblemErrorWithTraceIdBuildsObjectResultWithStatusAndTrace()
     {
         var controller = NewController("trace-problem");
         var error = Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);

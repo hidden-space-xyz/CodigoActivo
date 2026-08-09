@@ -136,7 +136,8 @@ re-skinned by mapping `--el-*` to `--ca-*`.
   `Directory.Build.Analyzers.props` and `Directory.Build.targets`; per-rule severity exceptions go in
   `.editorconfig`. Warnings are errors (`TreatWarningsAsErrors`); those files carry no comments.
 - Configuration is flat env vars only — no `IOptions<T>`, no user-secrets, no `ConnectionStrings` section.
-- Test naming: `MethodUnderTest_Scenario_ExpectedBehavior`; unit tests of CQRS handlers always start
-  with `HandleAsync` — the test class name carries the use case.
+- Test naming: `MethodUnderTestScenarioExpectedBehavior` — three PascalCase segments, **no underscores**
+  (CA1707 is enforced in the test projects too); unit tests of CQRS handlers always start with
+  `HandleAsync` — the test class name carries the use case.
 - Composable file naming: features camelCase (`useLogin.ts`); entities and `shared/lib` kebab-case (`use-theme.ts`).
 - Conventional Commits (`feat:`, `fix:`, `chore:`, …).

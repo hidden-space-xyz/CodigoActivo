@@ -29,7 +29,7 @@ public sealed class ThrottledEmailSenderTests
     }
 
     [Fact]
-    public async Task SendAsync_WithinTheQuota_EnqueuesTheMessage()
+    public async Task SendAsyncWithinTheQuotaEnqueuesTheMessage()
     {
         var queue = new RecordingEmailDispatcher();
         var sender = Create(queue, new EmailGuardOptions());
@@ -40,7 +40,7 @@ public sealed class ThrottledEmailSenderTests
     }
 
     [Fact]
-    public async Task SendAsync_QuotaExceeded_ThrowsWithoutEnqueuing()
+    public async Task SendAsyncQuotaExceededThrowsWithoutEnqueuing()
     {
         var queue = new RecordingEmailDispatcher();
         var sender = Create(queue, new EmailGuardOptions { RecipientBurst = 1 });
@@ -53,7 +53,7 @@ public sealed class ThrottledEmailSenderTests
     }
 
     [Fact]
-    public async Task SendAsync_QueueFull_ThrowsAndStillSpendsTheQuota()
+    public async Task SendAsyncQueueFullThrowsAndStillSpendsTheQuota()
     {
         var queue = new RecordingEmailDispatcher { RejectAll = true };
         var sender = Create(queue, new EmailGuardOptions { RecipientBurst = 1 });

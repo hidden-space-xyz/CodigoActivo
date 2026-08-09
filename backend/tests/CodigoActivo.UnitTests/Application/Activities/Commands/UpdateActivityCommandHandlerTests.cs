@@ -71,7 +71,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityMissing_ReturnsNotFound()
+    public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
         activities.ActivityFound(null);
 
@@ -87,7 +87,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ParentEventMissing_ReturnsEventNotFound()
+    public async Task HandleAsyncParentEventMissingReturnsEventNotFound()
     {
         var activity = NewActivity();
         activities.ActivityFound(activity);
@@ -105,7 +105,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StartMissing_ReturnsScheduleRequired()
+    public async Task HandleAsyncStartMissingReturnsScheduleRequired()
     {
         var activity = NewActivity();
         activities.ActivityFound(activity);
@@ -134,7 +134,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsThumbnailNotFound()
+    public async Task HandleAsyncThumbnailMissingReturnsThumbnailNotFound()
     {
         var activity = NewActivity();
         activities.ActivityFound(activity);
@@ -152,7 +152,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ModalityMissing_ReturnsModalityTypeNotFound()
+    public async Task HandleAsyncModalityMissingReturnsModalityTypeNotFound()
     {
         var activity = NewActivity();
         activities.ActivityFound(activity);
@@ -171,7 +171,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
     {
         var eventId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
@@ -207,7 +207,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithRoleCapacities_SyncsCollection()
+    public async Task HandleAsyncWithRoleCapacitiesSyncsCollection()
     {
         var activity = NewActivity();
         activity.RoleCapacities =
@@ -253,7 +253,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NullRoleCapacities_ClearsExisting()
+    public async Task HandleAsyncNullRoleCapacitiesClearsExisting()
     {
         var activity = NewActivity();
         activity.RoleCapacities = [Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 5)];
@@ -273,7 +273,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ReplacingThumbnail_CleansUpPreviousFileAfterSave()
+    public async Task HandleAsyncReplacingThumbnailCleansUpPreviousFileAfterSave()
     {
         var activity = NewActivity();
         var previousThumbnailId = activity.ThumbnailId;
@@ -299,7 +299,7 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_KeepingSameThumbnail_DoesNotCleanUp()
+    public async Task HandleAsyncKeepingSameThumbnailDoesNotCleanUp()
     {
         var activity = NewActivity();
         activities.HasActivities(activity);

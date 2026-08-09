@@ -33,7 +33,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserNotFound_ReturnsUnauthorized()
+    public async Task HandleAsyncUserNotFoundReturnsUnauthorized()
     {
         User? missing = null;
         users
@@ -52,7 +52,7 @@ public sealed class LoginCommandHandlerTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public async Task HandleAsync_PasswordHashNotSet_ReturnsUnauthorized(string? hash)
+    public async Task HandleAsyncPasswordHashNotSetReturnsUnauthorized(string? hash)
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -68,7 +68,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PasswordDoesNotVerify_ReturnsUnauthorized()
+    public async Task HandleAsyncPasswordDoesNotVerifyReturnsUnauthorized()
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -85,10 +85,7 @@ public sealed class LoginCommandHandlerTests
 
     [Theory]
     [MemberData(nameof(BlockedStatuses))]
-    public async Task HandleAsync_NonActiveStatus_ReturnsForbidden(
-        Guid statusId,
-        ErrorCode expected
-    )
+    public async Task HandleAsyncNonActiveStatusReturnsForbidden(Guid statusId, ErrorCode expected)
     {
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -114,7 +111,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PendingUserVerificationNotRequired_ActivatesUser()
+    public async Task HandleAsyncPendingUserVerificationNotRequiredActivatesUser()
     {
         verification.Required = false;
         var user = NewUser(statusId: SeedIds.UserStatusTypes.Pending, otpCodeHash: "ABCDEF");
@@ -136,7 +133,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidCredentials_TrimsIdentifierAndRecordsLogin()
+    public async Task HandleAsyncValidCredentialsTrimsIdentifierAndRecordsLogin()
     {
         var user = NewUser();
         users.GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);

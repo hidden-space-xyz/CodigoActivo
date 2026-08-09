@@ -48,7 +48,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserMissing_ReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
 
@@ -62,7 +62,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RoleMissing_ReturnsNotFound()
+    public async Task HandleAsyncRoleMissingReturnsNotFound()
     {
         users.FindReturns(NewUser());
         TypeExists(false);
@@ -77,7 +77,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NewTypeDiffersFromCurrent_ReplacesTypeSavesAndInvalidatesCache()
+    public async Task HandleAsyncNewTypeDiffersFromCurrentReplacesTypeSavesAndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
@@ -107,7 +107,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TypeUnchanged_IsNoopAndDoesNotSave()
+    public async Task HandleAsyncTypeUnchangedIsNoopAndDoesNotSave()
     {
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();

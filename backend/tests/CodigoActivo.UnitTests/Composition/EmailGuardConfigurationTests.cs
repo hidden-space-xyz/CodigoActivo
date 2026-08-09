@@ -31,7 +31,7 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_ValidEmailGuardSettings_BindsOptionsFromConfiguration()
+    public void AddCodigoActivoValidEmailGuardSettingsBindsOptionsFromConfiguration()
     {
         var options = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -60,7 +60,7 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_MissingOrInvalidValues_FallsBackToTheShippedLimits()
+    public void AddCodigoActivoMissingOrInvalidValuesFallsBackToTheShippedLimits()
     {
         var options = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -79,7 +79,7 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivo_ReserveNotBelowTheGlobalBurst_ClampsSoAccountEmailCanStillSend()
+    public void AddCodigoActivoReserveNotBelowTheGlobalBurstClampsSoAccountEmailCanStillSend()
     {
         var options = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)

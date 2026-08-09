@@ -18,7 +18,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task List_SecondAnonymousRequest_IsServedFromOutputCache()
+    public async Task ListSecondAnonymousRequestIsServedFromOutputCache()
     {
         await SeedEventAsync();
         var client = CreateClient();
@@ -33,7 +33,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_AfterAnonymousListCached_AnonymousListReflectsNewEvent()
+    public async Task CreateAfterAnonymousListCachedAnonymousListReflectsNewEvent()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
@@ -56,7 +56,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Feature_AfterAnonymousListCached_ListShowsExclusiveFeaturedFlags()
+    public async Task FeatureAfterAnonymousListCachedListShowsExclusiveFeaturedFlags()
     {
         var firstId = await SeedEventAsync(title: "Primero", featured: true);
         var secondId = await SeedEventAsync(title: "Segundo");
@@ -80,7 +80,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Dashboard_AfterEventCreate_ReflectsNewEventCount()
+    public async Task DashboardAfterEventCreateReflectsNewEventCount()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var categoryId = await SeedCategoryTypeAsync();
@@ -102,7 +102,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateCategoryType_AfterAnonymousListCached_ListShowsRenamedCategory()
+    public async Task UpdateCategoryTypeAfterAnonymousListCachedListShowsRenamedCategory()
     {
         var categoryId = await SeedCategoryTypeAsync("Original");
         await SeedEventAsync(categoryTypeId: categoryId);
@@ -129,7 +129,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_AfterAnonymousDetailCached_AnonymousDetailShowsNewTitle()
+    public async Task UpdateAfterAnonymousDetailCachedAnonymousDetailShowsNewTitle()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var announcementId = await SeedAnnouncementAsync(thumbnailId, "Título original");
@@ -153,7 +153,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignHousehold_AfterAnonymousActivityCached_ActivityShowsHighDemand()
+    public async Task AssignHouseholdAfterAnonymousActivityCachedActivityShowsHighDemand()
     {
         var activityId = await SeedActivityWithParticipantCapacityAsync();
         var anonymous = CreateClient();
@@ -179,7 +179,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContent_AfterFileUpdate_ServesNewBytesAndRotatedETag()
+    public async Task GetContentAfterFileUpdateServesNewBytesAndRotatedETag()
     {
         var admin = await LoginAsAdminAsync();
         using var uploaded = await admin.SendUploadAsync(
@@ -215,7 +215,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_Anonymous_CachesIntoTheSizeLimitedLocalCache()
+    public async Task ListAnonymousCachesIntoTheSizeLimitedLocalCache()
     {
         await SeedEventAsync();
         var localCache = Factory
@@ -237,7 +237,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_Anonymous_EmitsNoStoreCacheControl()
+    public async Task ListAnonymousEmitsNoStoreCacheControl()
     {
         var client = CreateClient();
 
@@ -248,7 +248,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Csrf_Anonymous_EmitsNoStoreCacheControl()
+    public async Task CsrfAnonymousEmitsNoStoreCacheControl()
     {
         var client = CreateClient();
 

@@ -50,7 +50,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_Anonymous_ReturnsPagedEnvelopeWithType()
+    public async Task ListAnonymousReturnsPagedEnvelopeWithType()
     {
         await SeedResourceAsync("Alpha");
         var client = CreateClient();
@@ -69,7 +69,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByResourceTypeId_ReturnsOnlyMatchingType()
+    public async Task ListFilterByResourceTypeIdReturnsOnlyMatchingType()
     {
         await SeedResourceAsync("Guia interna");
         var externalId = await SeedResourceAsync("Curso externo", url: ExternalUrl);
@@ -89,7 +89,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByUrl_MatchesAccentAndCaseInsensitively()
+    public async Task ListFilterByUrlMatchesAccentAndCaseInsensitively()
     {
         await SeedResourceAsync("Robotica", url: "https://ejemplo.es/robótica-avanzada");
         await SeedResourceAsync("Ajedrez", url: "https://ejemplo.es/ajedrez");
@@ -104,7 +104,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_FilterByCreatedRange_UsesAppTimezoneDayBounds()
+    public async Task ListFilterByCreatedRangeUsesAppTimezoneDayBounds()
     {
         Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "UTC+02",
@@ -137,7 +137,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SortByType_OrdersByTypeName()
+    public async Task ListSortByTypeOrdersByTypeName()
     {
         await SeedResourceAsync(
             "Interno",
@@ -158,7 +158,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task List_SortByUrl_OrdersByUrlWithNullsLast()
+    public async Task ListSortByUrlOrdersByUrlWithNullsLast()
     {
         await SeedResourceAsync("SinUrl");
         await SeedResourceAsync("UrlB", url: "https://beta.test/recurso");
@@ -173,7 +173,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Types_Admin_ReturnsSeededTypesOrderedByName()
+    public async Task TypesAdminReturnsSeededTypesOrderedByName()
     {
         var client = await LoginAsAdminAsync();
 
@@ -195,7 +195,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Types_Member_ReturnsForbidden()
+    public async Task TypesMemberReturnsForbidden()
     {
         var client = await LoginAsMemberAsync();
 
@@ -205,7 +205,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_ResourceAbsent_Returns404WithErrorCode()
+    public async Task GetResourceAbsentReturns404WithErrorCode()
     {
         var client = CreateClient();
 
@@ -215,7 +215,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Get_ExternalResource_ReturnsTypeAndUrl()
+    public async Task GetExternalResourceReturnsTypeAndUrl()
     {
         var id = await SeedResourceAsync("Enlace", url: ExternalUrl);
         var client = CreateClient();
@@ -230,7 +230,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_Admin_PersistsAndReturns201WithLocation()
+    public async Task CreateAdminPersistsAndReturns201WithLocation()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -259,7 +259,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_ExternalResource_PersistsUrlWithoutDescription()
+    public async Task CreateExternalResourcePersistsUrlWithoutDescription()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -291,7 +291,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData("external-without-url")]
     [InlineData("internal-without-description")]
     [InlineData("unknown-type")]
-    public async Task Create_TypeContentMismatch_ReturnsExpectedErrorCode(string scenario)
+    public async Task CreateTypeContentMismatchReturnsExpectedErrorCode(string scenario)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -360,7 +360,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_MalformedUrl_ReturnsValidationError()
+    public async Task CreateMalformedUrlReturnsValidationError()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -379,7 +379,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_Member_ReturnsForbidden()
+    public async Task CreateMemberReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsMemberAsync();
@@ -398,7 +398,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_Anonymous_ReturnsUnauthorized()
+    public async Task CreateAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();
         var request = new CreateResourceRequest(
@@ -418,7 +418,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     [Theory]
     [InlineData("   ", "Sub")]
     [InlineData("Title", "   ")]
-    public async Task Create_BlankField_ReturnsValidationError(string title, string subtitle)
+    public async Task CreateBlankFieldReturnsValidationError(string title, string subtitle)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
@@ -437,7 +437,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Create_MissingCsrfToken_IsRejected()
+    public async Task CreateMissingCsrfTokenIsRejected()
     {
         var client = await LoginAsAdminAsync();
         var thumbnailId = await SeedThumbnailAsync();
@@ -462,7 +462,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_ReplacementThumbnail_DeletesOrphanedOldFile()
+    public async Task UpdateReplacementThumbnailDeletesOrphanedOldFile()
     {
         var id = await SeedResourceAsync("Reemplazo");
         var oldThumbnailId = (await FindAsync<Resource>(id))!.ThumbnailId;
@@ -487,7 +487,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Update_SwitchToExternal_ClearsDescriptionAndStoresUrl()
+    public async Task UpdateSwitchToExternalClearsDescriptionAndStoresUrl()
     {
         var id = await SeedResourceAsync("Cambiante");
         var thumbnailId = (await FindAsync<Resource>(id))!.ThumbnailId;
@@ -516,7 +516,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData("external-without-url")]
     [InlineData("internal-without-description")]
     [InlineData("unknown-type")]
-    public async Task Update_TypeContentMismatch_ReturnsExpectedErrorCodeAndDoesNotPersist(
+    public async Task UpdateTypeContentMismatchReturnsExpectedErrorCodeAndDoesNotPersist(
         string scenario
     )
     {
@@ -590,7 +590,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task Delete_Admin_RemovesResourceAndOrphanedThumbnail()
+    public async Task DeleteAdminRemovesResourceAndOrphanedThumbnail()
     {
         var id = await SeedResourceAsync("Doomed");
         var thumbnailId = (await FindAsync<Resource>(id))!.ThumbnailId;

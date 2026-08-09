@@ -13,7 +13,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void GetUserId_ValidNameIdentifierClaim_ReturnsGuid()
+    public void GetUserIdValidNameIdentifierClaimReturnsGuid()
     {
         var id = Guid.NewGuid();
         var principal = PrincipalWith(new Claim(ClaimTypes.NameIdentifier, id.ToString()));
@@ -22,7 +22,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void GetUserId_NameIdentifierClaimMissing_ReturnsNull()
+    public void GetUserIdNameIdentifierClaimMissingReturnsNull()
     {
         var principal = PrincipalWith(new Claim(ClaimTypes.Role, "whatever"));
 
@@ -30,7 +30,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void GetUserId_NameIdentifierUnparseable_ReturnsNull()
+    public void GetUserIdNameIdentifierUnparseableReturnsNull()
     {
         var principal = PrincipalWith(new Claim(ClaimTypes.NameIdentifier, "not-a-guid"));
 
@@ -38,7 +38,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void IsAdmin_IsAdminClaimTrue_ReturnsTrue()
+    public void IsAdminIsAdminClaimTrueReturnsTrue()
     {
         var principal = PrincipalWith(
             new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString)
@@ -48,7 +48,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void IsAdmin_IsAdminClaimFalse_ReturnsFalse()
+    public void IsAdminIsAdminClaimFalseReturnsFalse()
     {
         var principal = PrincipalWith(
             new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.FalseString)
@@ -58,7 +58,7 @@ public sealed class ClaimsPrincipalExtensionsTests
     }
 
     [Fact]
-    public void IsAdmin_IsAdminClaimAbsent_ReturnsFalse()
+    public void IsAdminIsAdminClaimAbsentReturnsFalse()
     {
         var principal = PrincipalWith(
             new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())

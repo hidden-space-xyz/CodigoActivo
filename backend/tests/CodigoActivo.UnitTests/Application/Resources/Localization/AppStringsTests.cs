@@ -15,7 +15,7 @@ public sealed class AppStringsTests
     private static readonly string[] ForbiddenMarkup = ["<", "&"];
 
     [Fact]
-    public void Get_EveryAccessor_ResolvesANonEmptyValue()
+    public void GetEveryAccessorResolvesANonEmptyValue()
     {
         foreach (var (name, value) in ReadAllMembers())
         {
@@ -24,7 +24,7 @@ public sealed class AppStringsTests
     }
 
     [Fact]
-    public void Get_EveryResourceKey_HasAnAccessorMember()
+    public void GetEveryResourceKeyHasAnAccessorMember()
     {
         var expected = ReadAllValues().Keys.Select(ToMemberName).Order(StringComparer.Ordinal);
         var actual = ReadAllMembers().Select(member => member.Name).Order(StringComparer.Ordinal);
@@ -33,7 +33,7 @@ public sealed class AppStringsTests
     }
 
     [Fact]
-    public void Get_EveryValue_ContainsOnlyWhitelistedMarkup()
+    public void GetEveryValueContainsOnlyWhitelistedMarkup()
     {
         foreach (var (key, value) in ReadAllValues())
         {
@@ -52,7 +52,7 @@ public sealed class AppStringsTests
     }
 
     [Fact]
-    public void Format_EveryCompositeValue_UsesOneHolePerParameter()
+    public void FormatEveryCompositeValueUsesOneHolePerParameter()
     {
         var values = ReadAllValues()
             .ToDictionary(pair => ToMemberName(pair.Key), pair => pair.Value, StringComparer.Ordinal);

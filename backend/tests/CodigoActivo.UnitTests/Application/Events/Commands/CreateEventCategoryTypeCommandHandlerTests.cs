@@ -24,7 +24,7 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameExists_ReturnsConflict()
+    public async Task HandleAsyncNameExistsReturnsConflict()
     {
         categoryTypes.CategoryTypeNameTaken(true);
 
@@ -45,7 +45,7 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_PersistsTrimmedTypeAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestPersistsTrimmedTypeAndInvalidatesCache()
     {
         categoryTypes.CategoryTypeNameTaken(false);
 

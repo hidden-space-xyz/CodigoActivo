@@ -25,7 +25,7 @@ public sealed class ListEventCategoryTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultSort_OrdersByNameAscending()
+    public async Task HandleAsyncDefaultSortOrdersByNameAscending()
     {
         categoryTypes.HasCategoryTypes(
             NewCategoryType("Zeta"),
@@ -42,7 +42,7 @@ public sealed class ListEventCategoryTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NameFilter_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncNameFilterIsAccentAndCaseInsensitive()
     {
         categoryTypes.HasCategoryTypes(NewCategoryType("Robótica"), NewCategoryType("Charlas"));
 
@@ -56,7 +56,7 @@ public sealed class ListEventCategoryTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ColorFilter_MatchesSubstringCaseInsensitively()
+    public async Task HandleAsyncColorFilterMatchesSubstringCaseInsensitively()
     {
         categoryTypes.HasCategoryTypes(
             NewCategoryType("Talleres", color: "#AABB11"),
@@ -72,7 +72,7 @@ public sealed class ListEventCategoryTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByColor_OrdersByColor()
+    public async Task HandleAsyncSortByColorOrdersByColor()
     {
         categoryTypes.HasCategoryTypes(
             NewCategoryType("Tercero", color: "#333333"),
@@ -89,7 +89,7 @@ public sealed class ListEventCategoryTypesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SecondPage_ReturnsRemainingItemsWithTotal()
+    public async Task HandleAsyncSecondPageReturnsRemainingItemsWithTotal()
     {
         categoryTypes.HasCategoryTypes(
             NewCategoryType("Alpha"),

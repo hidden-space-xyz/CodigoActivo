@@ -26,7 +26,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventIdFilter_ReturnsMatchingActivity()
+    public async Task HandleAsyncEventIdFilterReturnsMatchingActivity()
     {
         var eventId = Guid.NewGuid();
         activities.HasActivities(NewActivity("Mine", eventId: eventId), NewActivity("Other"));
@@ -40,7 +40,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_TitleSearch_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncTitleSearchIsAccentAndCaseInsensitive()
     {
         activities.HasActivities(NewActivity("Reunión Ávila"), NewActivity("Banco"));
 
@@ -53,7 +53,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ExplicitDescendingSort_OrdersDescending()
+    public async Task HandleAsyncExplicitDescendingSortOrdersDescending()
     {
         activities.HasActivities(NewActivity("Alpha"), NewActivity("Zeta"), NewActivity("Mint"));
 
@@ -66,7 +66,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ModalityTypeIdFilter_ReturnsMatchingActivity()
+    public async Task HandleAsyncModalityTypeIdFilterReturnsMatchingActivity()
     {
         var modalityId = Guid.NewGuid();
         activities.HasActivities(
@@ -85,7 +85,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByModalityName_OrdersByModalityName()
+    public async Task HandleAsyncSortByModalityNameOrdersByModalityName()
     {
         activities.HasActivities(
             NewActivity("Tercera", modalityName: "Presencial"),
@@ -105,7 +105,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LocationSearch_IsAccentAndCaseInsensitive()
+    public async Task HandleAsyncLocationSearchIsAccentAndCaseInsensitive()
     {
         activities.HasActivities(
             NewActivity("Con acento", location: "Salón Ávila"),
@@ -121,7 +121,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityDateRangeFilter_KeepsActivitiesOverlappingRange()
+    public async Task HandleAsyncActivityDateRangeFilterKeepsActivitiesOverlappingRange()
     {
         activities.HasActivities(
             NewActivity(
@@ -156,7 +156,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ActivityDateFromFilter_UsesAppTimeZoneDayStart()
+    public async Task HandleAsyncActivityDateFromFilterUsesAppTimeZoneDayStart()
     {
         clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "UTC+02",
@@ -188,7 +188,7 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SortByLocation_OrdersByLocation()
+    public async Task HandleAsyncSortByLocationOrdersByLocation()
     {
         activities.HasActivities(
             NewActivity("Ultima", location: "Zaguán"),

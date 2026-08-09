@@ -15,7 +15,7 @@ public sealed class DateAndTimeExtensionsTests
     [InlineData(2020, 6, 15, true)]
     [InlineData(2024, 2, 29, true)]
     [InlineData(2029, 1, 1, true)]
-    public void IsMinor_BirthDateRelativeToToday_ClassifiesAge(
+    public void IsMinorBirthDateRelativeToTodayClassifiesAge(
         int year,
         int month,
         int day,
@@ -30,7 +30,7 @@ public sealed class DateAndTimeExtensionsTests
     [Theory]
     [InlineData(2026, 2, 28, true)]
     [InlineData(2026, 3, 1, false)]
-    public void IsMinor_LeapDayBirthDateInCommonYear_TurnsAdultOnMarchFirst(
+    public void IsMinorLeapDayBirthDateInCommonYearTurnsAdultOnMarchFirst(
         int year,
         int month,
         int day,

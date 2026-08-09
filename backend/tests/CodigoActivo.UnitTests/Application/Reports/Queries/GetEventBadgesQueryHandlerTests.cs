@@ -75,7 +75,7 @@ public sealed class GetEventBadgesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventMissing_ReturnsNotFound()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         events.HasEvents();
 
@@ -91,7 +91,7 @@ public sealed class GetEventBadgesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ConfirmedAssignmentsWithGuardian_GroupsPerUser()
+    public async Task HandleAsyncConfirmedAssignmentsWithGuardianGroupsPerUser()
     {
         var createdAt = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
 
@@ -149,7 +149,7 @@ public sealed class GetEventBadgesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoConfirmedAssignments_ReturnsEmptyBadges()
+    public async Task HandleAsyncNoConfirmedAssignmentsReturnsEmptyBadges()
     {
         events.HasEvents(
             new Event

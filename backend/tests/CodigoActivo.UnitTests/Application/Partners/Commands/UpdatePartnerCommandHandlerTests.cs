@@ -35,7 +35,7 @@ public sealed class UpdatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PartnerMissing_ReturnsNotFound()
+    public async Task HandleAsyncPartnerMissingReturnsNotFound()
     {
         partners.Finds(null);
         var request = new UpdatePartnerRequest(
@@ -57,7 +57,7 @@ public sealed class UpdatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailMissing_ReturnsBadRequest()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequest()
     {
         var partner = NewPartner();
         partners.Finds(partner);
@@ -81,7 +81,7 @@ public sealed class UpdatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ValidRequest_MutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
     {
         var partner = NewPartner("Old", tier: 1);
         partners.Finds(partner);
@@ -117,7 +117,7 @@ public sealed class UpdatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailReplaced_CleansUpPreviousFileAfterSave()
+    public async Task HandleAsyncThumbnailReplacedCleansUpPreviousFileAfterSave()
     {
         var partner = NewPartner();
         var previousThumbnailId = partner.ThumbnailId;
@@ -143,7 +143,7 @@ public sealed class UpdatePartnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ThumbnailUnchanged_DoesNotCleanUp()
+    public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUp()
     {
         var partner = NewPartner();
         partners.Finds(partner);

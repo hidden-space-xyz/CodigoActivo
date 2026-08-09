@@ -35,7 +35,7 @@ public sealed class EmailLayoutContractTests
 
     [Theory]
     [MemberData(nameof(Templates))]
-    public void Create_EveryTemplate_EmbedsTheLogoItReferences(string name)
+    public void CreateEveryTemplateEmbedsTheLogoItReferences(string name)
     {
         var message = Build(name);
 
@@ -52,7 +52,7 @@ public sealed class EmailLayoutContractTests
 
     [Theory]
     [MemberData(nameof(Templates))]
-    public void Create_EveryTemplate_UsesTheSharedShell(string name)
+    public void CreateEveryTemplateUsesTheSharedShell(string name)
     {
         Build(name)
             .HtmlBody.Should()
@@ -65,7 +65,7 @@ public sealed class EmailLayoutContractTests
 
     [Theory]
     [MemberData(nameof(Templates))]
-    public void Create_EveryTemplate_CarriesTheCommonFooter(string name)
+    public void CreateEveryTemplateCarriesTheCommonFooter(string name)
     {
         var message = Build(name);
 
@@ -87,7 +87,7 @@ public sealed class EmailLayoutContractTests
 
     [Theory]
     [MemberData(nameof(Templates))]
-    public void Create_EveryTemplate_TellsTheReaderWhetherItCanBeAnswered(string name)
+    public void CreateEveryTemplateTellsTheReaderWhetherItCanBeAnswered(string name)
     {
         var message = Build(name);
         var expected =

@@ -63,7 +63,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_StatusFilter_OnlyMailsMatchingAttendees()
+    public async Task HandleAsyncStatusFilterOnlyMailsMatchingAttendees()
     {
         users.HasUsers(
             NewAttendee("Ana", "ana@test.local", SeedIds.AssignmentStatusTypes.Confirmed),
@@ -85,7 +85,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnknownEvent_ReturnsNotFound()
+    public async Task HandleAsyncUnknownEventReturnsNotFound()
     {
         events
             .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
