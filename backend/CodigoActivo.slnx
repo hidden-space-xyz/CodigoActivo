@@ -1,4 +1,15 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.Analyzers.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/Solution Items/src/">
+    <File Path="src/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Solution Items/tests/">
+    <File Path="tests/Directory.Build.props" />
+  </Folder>
   <Folder Name="/docker/">
     <File Path="../.env" />
     <File Path="../.env.example" />
