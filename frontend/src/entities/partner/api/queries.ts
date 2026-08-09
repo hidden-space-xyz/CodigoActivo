@@ -5,7 +5,7 @@ import { getSponsorsRequest } from './requests'
 
 export function useSponsors() {
   const query = useQuery({
-    queryKey: partnerQueryKeys.sponsors,
+    queryKey: partnerQueryKeys.sponsors(),
     queryFn: () => getSponsorsRequest(),
   })
 

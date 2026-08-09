@@ -61,6 +61,23 @@ a {
   margin: 0 auto;
 }
 
+.ca-list-card {
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 16px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.ca-list-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--ca-border-strong);
+}
+
 @keyframes ca-blink {
   0%,
   49% {

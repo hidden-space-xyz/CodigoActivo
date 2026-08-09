@@ -8,7 +8,7 @@ defineProps<{ announcement: AnnouncementSummary }>()
 <template>
   <RouterLink
     :to="{ name: 'announcement-detail', params: { announcementId: announcement.id } }"
-    class="announcement-card"
+    class="ca-list-card announcement-card"
   >
     <ListThumbnail :thumbnail-id="announcement.thumbnailId" :alt="announcement.title" />
 
@@ -25,20 +25,6 @@ defineProps<{ announcement: AnnouncementSummary }>()
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 16px;
-  padding: 16px;
-  text-decoration: none;
-  color: inherit;
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.announcement-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--ca-border-strong);
 }
 
 .announcement-card__date {

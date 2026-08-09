@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
 
-import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
+import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import { useCreateEventCategoryType, useEventCategoryTypesList } from '@/entities/catalog'
 import type {
   CreateEventRequest,
@@ -12,10 +12,10 @@ import type {
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
 import { EMPTY_DOC_JSON, getErrorMessage, parseDateOnly, toDateOnly } from '@/shared/lib'
+import { DEFAULT_CATEGORY_COLOR } from '@/shared/config'
 
 const DATE_FORMAT = 'DD/MM/YYYY'
 const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
-const DEFAULT_CATEGORY_COLOR = '#6366F1'
 
 const props = defineProps<{ visible: boolean; event: EventResponse | null; saving: boolean }>()
 
@@ -276,7 +276,7 @@ async function save(): Promise<void> {
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.description') }}</label>
-        <RichTextEditor v-model="form.description" />
+        <RichTextEditor v-model="form.description" :upload="uploadFileRequest" />
       </div>
       <div class="form__row">
         <div class="form__field">

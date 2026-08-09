@@ -16,9 +16,7 @@ const theme = ref<Theme>(currentThemeFromDom())
 function syncBrowserChrome(): void {
   const meta = document.querySelector('meta[name="theme-color"]')
   if (!meta) return
-  const background = getComputedStyle(document.documentElement)
-    .getPropertyValue('--ca-bg')
-    .trim()
+  const background = getComputedStyle(document.documentElement).getPropertyValue('--ca-bg').trim()
   if (background) meta.setAttribute('content', background)
 }
 

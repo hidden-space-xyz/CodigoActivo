@@ -20,7 +20,8 @@ const stats = [
         <div class="hero__badge">● {{ $t('pages.home.hero.badge', { year: FOUNDING_YEAR }) }}</div>
         <h1 class="hero__title">
           {{ $t('pages.home.hero.titleLine1') }}<br />{{ $t('pages.home.hero.titleLine2') }}
-          <span style="color: var(--ca-orange)">{{ $t('pages.home.hero.titleHighlight') }}</span>.
+          <span style="color: var(--ca-orange)">{{ $t('pages.home.hero.titleHighlight') }}</span
+          >.
         </h1>
         <p class="hero__subtitle">{{ $t('pages.home.hero.subtitle') }}</p>
 

@@ -3,14 +3,17 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { useI18n } from 'vue-i18n'
 
-import { postApiFiles } from '@/shared/api/generated/endpoints/files/files'
 import { fileContentUrl, parseRichText, richTextExtensions, serializeRichText } from '@/shared/lib'
 
 import AppIcon from './AppIcon.vue'
 
 const { t } = useI18n()
 
-const props = defineProps<{ modelValue?: string | null; invalid?: boolean }>()
+const props = defineProps<{
+  modelValue?: string | null
+  invalid?: boolean
+  upload: (file: File) => Promise<string | undefined>
+}>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -49,8 +52,8 @@ async function onFileChange(event: Event): Promise<void> {
   uploading.value = true
   uploadError.value = ''
   try {
-    const response = await postApiFiles({ file })
-    const url = fileContentUrl(response.data.id)
+    const fileId = await props.upload(file)
+    const url = fileContentUrl(fileId)
     if (url) editor.value.chain().focus().setImage({ src: url, alt: file.name }).run()
   } catch {
     uploadError.value = t('editor.uploadError')

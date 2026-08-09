@@ -3,11 +3,10 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, ColumnSearch } from '@/shared/ui'
 
-import { useEventCategories } from '../model/categories'
+import { useEventCategories } from '../model/useEventCategories'
 import type { EventCategoryTypeResponse } from '@/shared/api/generated/models'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
-
-const DEFAULT_CATEGORY_COLOR = '#6366F1'
+import { DEFAULT_CATEGORY_COLOR } from '@/shared/config'
 
 const { t } = useI18n()
 const { table, create, update, remove } = useEventCategories()

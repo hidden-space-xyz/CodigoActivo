@@ -2,32 +2,30 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import {
-  deleteApiEventsEventId,
-  getApiEvents,
-  getApiEventsEventId,
-  patchApiEventsEventIdFeature,
-  postApiEvents,
-  putApiEventsEventId,
-} from '@/shared/api/generated/endpoints/events/events'
 import type {
   CreateEventRequest,
   EventListItemResponse,
-  EventResponse,
   GetApiEventsParams,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { toPage, unwrapOrNull } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
-import { eventQueryKeys } from '@/entities/event'
+import {
+  createEventRequest,
+  deleteEventRequest,
+  eventQueryKeys,
+  getEventAdminRequest,
+  getEventsAdminPageRequest,
+  toggleEventFeatureRequest,
+  updateEventRequest,
+} from '@/entities/event'
 
 export function useEventsAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: eventQueryKeys.all })
 
   const table = useServerTable<EventListItemResponse, GetApiEventsParams>({
-    queryKey: [...eventQueryKeys.all, 'admin'],
-    fetchPage: (params) => getApiEvents(params).then(toPage),
+    queryKey: eventQueryKeys.adminTable(),
+    fetchPage: (params) => getEventsAdminPageRequest(params),
     defaultSort: { field: 'eventStartsAt', order: 1 },
     columns: {
       title: { type: 'text' },
@@ -39,27 +37,27 @@ export function useEventsAdmin() {
   })
 
   const create = useMutation({
-    mutationFn: (body: CreateEventRequest) => postApiEvents(body).then((r) => r.data),
+    mutationFn: (body: CreateEventRequest) => createEventRequest(body),
     onSuccess: invalidate,
   })
 
   const update = useMutation({
     mutationFn: (vars: { id: string; body: UpdateEventRequest }) =>
-      putApiEventsEventId(vars.id, vars.body).then((r) => r.data),
+      updateEventRequest(vars.id, vars.body),
     onSuccess: invalidate,
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiEventsEventId(id),
+    mutationFn: (id: string) => deleteEventRequest(id),
     onSuccess: invalidate,
   })
 
   const feature = useMutation({
-    mutationFn: (id: string) => patchApiEventsEventIdFeature(id).then((r) => r.data),
+    mutationFn: (id: string) => toggleEventFeatureRequest(id),
     onSuccess: invalidate,
   })
 
-  const fetchOne = (id: string) => unwrapOrNull<EventResponse>(getApiEventsEventId(id))
+  const fetchOne = (id: string) => getEventAdminRequest(id)
 
   return { table, create, update, remove, feature, fetchOne }
 }
@@ -67,6 +65,6 @@ export function useEventsAdmin() {
 export function useEvent(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventQueryKeys.adminDetail(toValue(eventId))),
-    queryFn: () => unwrapOrNull<EventResponse>(getApiEventsEventId(toValue(eventId))),
+    queryFn: () => getEventAdminRequest(toValue(eventId)),
   })
 }

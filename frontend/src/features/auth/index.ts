@@ -1,5 +1,5 @@
 export { useAuth } from './model/useAuth'
 export { useLogin } from './model/useLogin'
 export { useForgotPassword } from './model/useForgotPassword'
-export { useResetPassword, type ResetPasswordState } from './model/useResetPassword'
+export { useResetPassword } from './model/useResetPassword'
 export { redirectIfAuthenticated, requireAdmin, requireAuth } from './model/guards'

@@ -1,16 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import { postApiEventsCategoryType } from '@/shared/api/generated/endpoints/events/events'
 import type { CreateEventCategoryTypeRequest } from '@/shared/api/generated/models'
 
 import { catalogQueryKeys } from './query-keys'
+import { createEventCategoryTypeRequest } from './requests'
 
 export function useCreateEventCategoryType() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: CreateEventCategoryTypeRequest) =>
-      postApiEventsCategoryType(body).then((r) => r.data),
+    mutationFn: (body: CreateEventCategoryTypeRequest) => createEventCategoryTypeRequest(body),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: catalogQueryKeys.eventCategoryTypes }),
+      queryClient.invalidateQueries({ queryKey: catalogQueryKeys.eventCategoryTypes() }),
   })
 }

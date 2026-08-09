@@ -3,7 +3,7 @@ import { createApp } from 'vue'
 import App from '@/app/App.vue'
 import { registerProviders } from '@/app/config'
 
-import '@/assets/styles/main.css'
+import '@/app/styles/main.css'
 
 const app = createApp(App)
 

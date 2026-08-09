@@ -1,30 +1,28 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import {
-  deleteApiResourcesResourceId,
-  getApiResources,
-  getApiResourcesResourceId,
-  postApiResources,
-  putApiResourcesResourceId,
-} from '@/shared/api/generated/endpoints/resources/resources'
 import type {
   CreateResourceRequest,
   GetApiResourcesParams,
   ResourceListItemResponse,
-  ResourceResponse,
   UpdateResourceRequest,
 } from '@/shared/api/generated/models'
-import { toPage, unwrapOrNull } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
-import { resourceQueryKeys } from '@/entities/resource'
+import {
+  createResourceRequest,
+  deleteResourceRequest,
+  getResourceAdminRequest,
+  getResourcesAdminPageRequest,
+  resourceQueryKeys,
+  updateResourceRequest,
+} from '@/entities/resource'
 
 export function useResourcesAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: resourceQueryKeys.all })
 
   const table = useServerTable<ResourceListItemResponse, GetApiResourcesParams>({
-    queryKey: [...resourceQueryKeys.all, 'admin'],
-    fetchPage: (params) => getApiResources(params).then(toPage),
+    queryKey: resourceQueryKeys.adminTable(),
+    fetchPage: (params) => getResourcesAdminPageRequest(params),
     defaultSort: { field: 'createdAt', order: -1 },
     columns: {
       title: { type: 'text' },
@@ -36,22 +34,22 @@ export function useResourcesAdmin() {
   })
 
   const create = useMutation({
-    mutationFn: (body: CreateResourceRequest) => postApiResources(body).then((r) => r.data),
+    mutationFn: (body: CreateResourceRequest) => createResourceRequest(body),
     onSuccess: invalidate,
   })
 
   const update = useMutation({
     mutationFn: (vars: { id: string; body: UpdateResourceRequest }) =>
-      putApiResourcesResourceId(vars.id, vars.body).then((r) => r.data),
+      updateResourceRequest(vars.id, vars.body),
     onSuccess: invalidate,
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiResourcesResourceId(id),
+    mutationFn: (id: string) => deleteResourceRequest(id),
     onSuccess: invalidate,
   })
 
-  const fetchOne = (id: string) => unwrapOrNull<ResourceResponse>(getApiResourcesResourceId(id))
+  const fetchOne = (id: string) => getResourceAdminRequest(id)
 
   return { table, create, update, remove, fetchOne }
 }

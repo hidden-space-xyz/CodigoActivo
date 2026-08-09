@@ -19,6 +19,23 @@ export interface EventActivity {
   readonly highDemandRoleIds: readonly string[]
 }
 
+export interface ActivityRoleCapacity {
+  readonly roleTypeId: string
+  readonly desiredCount: number | null
+}
+
+export interface ActivityDetail {
+  readonly id: string
+  readonly title: string
+  readonly description: string
+  readonly location: string
+  readonly modalityId: string
+  readonly startsAt: string | null
+  readonly endsAt: string | null
+  readonly thumbnailId: string
+  readonly roleCapacities: readonly ActivityRoleCapacity[]
+}
+
 export interface ActivityAssignment {
   readonly activityId: string
   readonly status: string

@@ -7,7 +7,7 @@ import { formatTimeRange } from '@/shared/lib'
 
 import type { ActivityRole } from '@/entities/activity'
 
-import type { TimelineActivity } from '../model/activity-timeline.types'
+import type { TimelineActivity } from '../model/types'
 
 const props = defineProps<{
   activity: TimelineActivity

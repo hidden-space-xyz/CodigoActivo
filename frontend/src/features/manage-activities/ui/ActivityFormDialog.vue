@@ -3,8 +3,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import { AppButton as Button } from '@/shared/ui'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
+import type { ActivityDetail } from '@/entities/activity'
 import type {
-  ActivityResponse,
   ActivityRoleCapacityRequest,
   CreateActivityRequest,
   UpdateActivityRequest,
@@ -19,7 +19,7 @@ const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
 
 const props = defineProps<{
   visible: boolean
-  activity: ActivityResponse | null
+  activity: ActivityDetail | null
   modalityTypes: ActivityModalityTypeResponse[]
   roleTypes: ActivityRoleTypeResponse[]
   saving: boolean
@@ -105,19 +105,15 @@ function populate(): void {
   form.description = props.activity?.description ?? ''
   form.location = props.activity?.location ?? ''
   form.modalityId = props.activity?.modalityId ?? ''
-  form.activityStartsAt = props.activity?.activityStartsAt
-    ? new Date(props.activity.activityStartsAt)
-    : null
-  form.activityEndsAt = props.activity?.activityEndsAt
-    ? new Date(props.activity.activityEndsAt)
-    : null
+  form.activityStartsAt = props.activity?.startsAt ? new Date(props.activity.startsAt) : null
+  form.activityEndsAt = props.activity?.endsAt ? new Date(props.activity.endsAt) : null
   populateDesiredCounts()
 }
 
 function populateDesiredCounts(): void {
   const saved = new Map(
     (props.activity?.roleCapacities ?? []).map((item) => [
-      item.activityRoleTypeId ?? '',
+      item.roleTypeId,
       item.desiredCount ?? undefined,
     ]),
   )

@@ -2,7 +2,12 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { CertificatesSection, HistorySection, MinorsSection, ProfileSection } from '@/features/account'
+import {
+  CertificatesSection,
+  HistorySection,
+  MinorsSection,
+  ProfileSection,
+} from '@/features/account'
 import { AppIcon, SectionEyebrow } from '@/shared/ui'
 
 const TABS = ['profile', 'history', 'certificates'] as const

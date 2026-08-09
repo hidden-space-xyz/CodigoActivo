@@ -1,7 +1,7 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 
-import { getApiReportsDashboardAnalytics } from '@/shared/api/generated/endpoints/reports/reports'
+import { eventReportQueryKeys, getDashboardAnalyticsRequest } from '@/entities/event'
 
 export function useDashboardAnalytics(range: MaybeRefOrGetter<{ from: string; to: string }>) {
   const params = computed(() => {
@@ -10,10 +10,10 @@ export function useDashboardAnalytics(range: MaybeRefOrGetter<{ from: string; to
   })
 
   return useQuery({
-    queryKey: computed(
-      () => ['dashboard', 'analytics', params.value.from, params.value.to] as const,
+    queryKey: computed(() =>
+      eventReportQueryKeys.dashboardAnalytics(params.value.from, params.value.to),
     ),
-    queryFn: () => getApiReportsDashboardAnalytics(params.value).then((response) => response.data),
+    queryFn: () => getDashboardAnalyticsRequest(params.value),
     placeholderData: keepPreviousData,
   })
 }

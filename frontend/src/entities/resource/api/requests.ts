@@ -1,8 +1,17 @@
 import {
+  deleteApiResourcesResourceId,
   getApiResources,
   getApiResourcesResourceId,
+  postApiResources,
+  putApiResourcesResourceId,
 } from '@/shared/api/generated/endpoints/resources/resources'
-import type { ResourceResponse } from '@/shared/api/generated/models'
+import type {
+  CreateResourceRequest,
+  GetApiResourcesParams,
+  ResourceListItemResponse,
+  ResourceResponse,
+  UpdateResourceRequest,
+} from '@/shared/api/generated/models'
 import { toPage, unwrapOrNull } from '@/shared/api'
 import type { PagedListPage } from '@/shared/lib'
 
@@ -21,4 +30,26 @@ export async function getResourcesPageRequest(
 export async function getResourceByIdRequest(id: string): Promise<LearningResource | null> {
   const response = await unwrapOrNull<ResourceResponse>(getApiResourcesResourceId(id))
   return response ? toLearningResource(response) : null
+}
+
+export function getResourcesAdminPageRequest(
+  params: GetApiResourcesParams,
+): Promise<{ items: ResourceListItemResponse[]; total: number }> {
+  return getApiResources(params).then(toPage)
+}
+
+export function getResourceAdminRequest(id: string) {
+  return unwrapOrNull<ResourceResponse>(getApiResourcesResourceId(id))
+}
+
+export function createResourceRequest(body: CreateResourceRequest) {
+  return postApiResources(body).then((r) => r.data)
+}
+
+export function updateResourceRequest(id: string, body: UpdateResourceRequest) {
+  return putApiResourcesResourceId(id, body).then((r) => r.data)
+}
+
+export function deleteResourceRequest(id: string) {
+  return deleteApiResourcesResourceId(id)
 }

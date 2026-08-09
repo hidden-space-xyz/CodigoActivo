@@ -16,7 +16,7 @@ function csvCell(value: CsvValue): string {
   return `"${guarded.replace(/"/g, '""')}"`
 }
 
-export function buildCsv(headers: readonly string[], rows: readonly CsvValue[][]): string {
+function buildCsv(headers: readonly string[], rows: readonly CsvValue[][]): string {
   const lines = [headers, ...rows].map((row) => row.map(csvCell).join(DELIMITER))
   return `${BYTE_ORDER_MARK}${lines.join(ROW_SEPARATOR)}${ROW_SEPARATOR}`
 }
@@ -62,6 +62,6 @@ export function downloadBlob(filename: string, blob: Blob): void {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-export function downloadCsv(filename: string, content: string): void {
+function downloadCsv(filename: string, content: string): void {
   downloadBlob(filename, new Blob([content], { type: 'text/csv;charset=utf-8' }))
 }

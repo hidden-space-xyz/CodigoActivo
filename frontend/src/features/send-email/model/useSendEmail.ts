@@ -2,11 +2,6 @@ import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
-import {
-  postApiEmailsEventsEventIdAttendees,
-  postApiEmailsUsers,
-  postApiEmailsUsersUserId,
-} from '@/shared/api/generated/endpoints/emails/emails'
 import type {
   PostApiEmailsEventsEventIdAttendeesParams,
   PostApiEmailsUsersBody,
@@ -14,6 +9,12 @@ import type {
   SendEmailResultResponse,
 } from '@/shared/api/generated/models'
 import { useCrudFeedback } from '@/shared/lib'
+
+import {
+  sendEmailToEventAttendeesRequest,
+  sendEmailToUserRequest,
+  sendEmailToUsersRequest,
+} from '../api/requests'
 
 export const MAX_ATTACHMENTS = 10
 export const MAX_ATTACHMENTS_BYTES = 8 * 1024 * 1024
@@ -35,12 +36,12 @@ function toBody(payload: SendEmailPayload): PostApiEmailsUsersBody {
 export function useSendEmail() {
   const sendToUser = useMutation({
     mutationFn: (vars: { userId: string; payload: SendEmailPayload }) =>
-      postApiEmailsUsersUserId(vars.userId, toBody(vars.payload)).then((r) => r.data),
+      sendEmailToUserRequest(vars.userId, toBody(vars.payload)),
   })
 
   const sendToUsers = useMutation({
     mutationFn: (vars: { params: PostApiEmailsUsersParams; payload: SendEmailPayload }) =>
-      postApiEmailsUsers(toBody(vars.payload), vars.params).then((r) => r.data),
+      sendEmailToUsersRequest(toBody(vars.payload), vars.params),
   })
 
   const sendToEventAttendees = useMutation({
@@ -48,10 +49,7 @@ export function useSendEmail() {
       eventId: string
       params: PostApiEmailsEventsEventIdAttendeesParams
       payload: SendEmailPayload
-    }) =>
-      postApiEmailsEventsEventIdAttendees(vars.eventId, toBody(vars.payload), vars.params).then(
-        (r) => r.data,
-      ),
+    }) => sendEmailToEventAttendeesRequest(vars.eventId, toBody(vars.payload), vars.params),
   })
 
   return { sendToUser, sendToUsers, sendToEventAttendees }

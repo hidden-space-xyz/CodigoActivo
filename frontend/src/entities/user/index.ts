@@ -1,5 +1,6 @@
+export type { UpdateUserInput, User } from './model/types'
 export { userQueryKeys } from './api/query-keys'
-export { genderLabel, genderOptions, type GenderOption } from './model/gender'
+export { genderLabel, genderOptions } from './model/gender'
 export {
   changeUserTypeRequest,
   deleteUserRequest,

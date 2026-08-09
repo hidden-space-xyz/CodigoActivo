@@ -1,28 +1,27 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import {
-  deleteApiPartnersPartnerId,
-  getApiPartners,
-  postApiPartners,
-  putApiPartnersPartnerId,
-} from '@/shared/api/generated/endpoints/partners/partners'
 import type {
   CreatePartnerRequest,
   GetApiPartnersParams,
   PartnerResponse,
   UpdatePartnerRequest,
 } from '@/shared/api/generated/models'
-import { toPage } from '@/shared/api'
 import { useServerTable } from '@/shared/lib'
-import { partnerQueryKeys } from '@/entities/partner'
+import {
+  createPartnerRequest,
+  deletePartnerRequest,
+  getPartnersPageRequest,
+  partnerQueryKeys,
+  updatePartnerRequest,
+} from '@/entities/partner'
 
 export function usePartners() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: partnerQueryKeys.all })
 
   const table = useServerTable<PartnerResponse, GetApiPartnersParams>({
-    queryKey: [...partnerQueryKeys.all, 'admin'],
-    fetchPage: (params) => getApiPartners(params).then(toPage),
+    queryKey: partnerQueryKeys.adminTable(),
+    fetchPage: (params) => getPartnersPageRequest(params),
     defaultSort: { field: 'tier', order: 1 },
     columns: {
       name: { type: 'text' },
@@ -33,19 +32,18 @@ export function usePartners() {
   })
 
   const create = useMutation({
-    mutationFn: (body: CreatePartnerRequest) =>
-      postApiPartners(body).then((response) => response.data),
+    mutationFn: (body: CreatePartnerRequest) => createPartnerRequest(body),
     onSuccess: invalidate,
   })
 
   const update = useMutation({
     mutationFn: (vars: { id: string; body: UpdatePartnerRequest }) =>
-      putApiPartnersPartnerId(vars.id, vars.body).then((response) => response.data),
+      updatePartnerRequest(vars.id, vars.body),
     onSuccess: invalidate,
   })
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteApiPartnersPartnerId(id),
+    mutationFn: (id: string) => deletePartnerRequest(id),
     onSuccess: invalidate,
   })
 

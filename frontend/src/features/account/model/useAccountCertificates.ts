@@ -36,7 +36,10 @@ export function useAccountCertificates() {
     return certificate !== null && busy.value.has(`${certificateKey(certificate)}:${format}`)
   }
 
-  async function download(certificate: AccountCertificate, format: CertificateFormat): Promise<void> {
+  async function download(
+    certificate: AccountCertificate,
+    format: CertificateFormat,
+  ): Promise<void> {
     const key = `${certificateKey(certificate)}:${format}`
     if (busy.value.has(key)) return
 

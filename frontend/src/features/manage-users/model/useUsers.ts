@@ -10,11 +10,8 @@ import {
   updateUserRequest,
   userQueryKeys,
 } from '@/entities/user'
-import type {
-  GetApiUsersParams,
-  UpdateUserRequest,
-  UserResponse,
-} from '@/shared/api/generated/models'
+import type { UpdateUserInput, User } from '@/entities/user'
+import type { GetApiUsersParams } from '@/shared/api/generated/models'
 import { fetchAllPages, useServerTable } from '@/shared/lib'
 
 export interface UserRelationFilter {
@@ -28,8 +25,8 @@ export function useUsers() {
 
   const relationFilter = ref<UserRelationFilter | null>(null)
 
-  const table = useServerTable<UserResponse, GetApiUsersParams>({
-    queryKey: [...userQueryKeys.all, 'table'],
+  const table = useServerTable<User, GetApiUsersParams>({
+    queryKey: userQueryKeys.adminTable(),
     fetchPage: (params) => getUsersPageRequest(params),
     defaultSort: { field: 'firstName', order: 1 },
     columns: {
@@ -45,7 +42,7 @@ export function useUsers() {
   })
 
   const update = useMutation({
-    mutationFn: (vars: { id: string; body: UpdateUserRequest }) =>
+    mutationFn: (vars: { id: string; body: UpdateUserInput }) =>
       updateUserRequest(vars.id, vars.body),
     onSuccess: invalidate,
   })
@@ -71,7 +68,7 @@ export function useUsers() {
     return getUserRequest(id)
   }
 
-  function fetchAllUsers(): Promise<UserResponse[]> {
+  function fetchAllUsers(): Promise<User[]> {
     return fetchAllPages((params) => getUsersPageRequest(params as GetApiUsersParams), {
       ...table.filterParams.value,
       sort: table.sortParam.value,

@@ -6,7 +6,10 @@ defineProps<{ event: PastEvent }>()
 </script>
 
 <template>
-  <RouterLink :to="{ name: 'event-detail', params: { eventId: event.id } }" class="past-card">
+  <RouterLink
+    :to="{ name: 'event-detail', params: { eventId: event.id } }"
+    class="ca-list-card past-card"
+  >
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
     <div class="past-card__body">
       <div class="past-card__top">
@@ -30,20 +33,6 @@ defineProps<{ event: PastEvent }>()
 <style scoped>
 .past-card {
   display: block;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 16px;
-  padding: 16px;
-  text-decoration: none;
-  color: inherit;
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.past-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--ca-border-strong);
 }
 
 .past-card__body {

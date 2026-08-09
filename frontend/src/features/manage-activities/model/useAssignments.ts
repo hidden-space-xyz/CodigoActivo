@@ -2,14 +2,11 @@ import type { MaybeRefOrGetter } from 'vue'
 import { toValue } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import {
-  patchApiActivitiesActivityIdUserIdChangeRole,
-  patchApiActivitiesActivityIdUserIdChangeStatus,
-} from '@/shared/api/generated/endpoints/activities/activities'
 import type {
   ChangeAssignmentRoleRequest,
   ChangeAssignmentStatusRequest,
 } from '@/shared/api/generated/models'
+import { changeAssignmentRoleRequest, changeAssignmentStatusRequest } from '@/entities/activity'
 import { eventReportQueryKeys } from '@/entities/event'
 
 export function useAssignments(eventId: MaybeRefOrGetter<string>) {
@@ -24,18 +21,13 @@ export function useAssignments(eventId: MaybeRefOrGetter<string>) {
       activityId: string
       userId: string
       body: ChangeAssignmentStatusRequest
-    }) =>
-      patchApiActivitiesActivityIdUserIdChangeStatus(vars.activityId, vars.userId, vars.body).then(
-        (r) => r.data,
-      ),
+    }) => changeAssignmentStatusRequest(vars.activityId, vars.userId, vars.body),
     onSuccess: invalidate,
   })
 
   const changeRole = useMutation({
     mutationFn: (vars: { activityId: string; userId: string; body: ChangeAssignmentRoleRequest }) =>
-      patchApiActivitiesActivityIdUserIdChangeRole(vars.activityId, vars.userId, vars.body).then(
-        (r) => r.data,
-      ),
+      changeAssignmentRoleRequest(vars.activityId, vars.userId, vars.body),
     onSuccess: invalidate,
   })
 

@@ -9,7 +9,10 @@ import { formatDateRange, fullName, useCrudFeedback } from '@/shared/lib'
 const feedback = useCrudFeedback()
 const { certificates, entries, preview, isBusy, open, close, download } = useAccountCertificates()
 
-async function onDownload(certificate: AccountCertificate, format: CertificateFormat): Promise<void> {
+async function onDownload(
+  certificate: AccountCertificate,
+  format: CertificateFormat,
+): Promise<void> {
   try {
     await download(certificate, format)
   } catch (error) {
@@ -124,6 +127,17 @@ async function onDownload(certificate: AccountCertificate, format: CertificateFo
 }
 
 .cert-tile {
+  /* Fixed print-like palette: the tile mirrors the paper certificate, so it deliberately
+     does not follow the --ca-* theme tokens (dark mode remaps those). */
+  --cert-orange: #f9a320;
+  --cert-orange-glow: rgb(249 163 32 / 0.16);
+  --cert-lime: #7cb518;
+  --cert-azure: #159fde;
+  --cert-ink: #8f5900;
+  --cert-ink-soft: rgb(143 89 0 / 0.28);
+  --cert-ink-border: rgb(143 89 0 / 0.45);
+  --cert-paper: #fdfbf7;
+  --cert-paper-shade: #f4efe6;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--ca-border-soft);
@@ -159,8 +173,8 @@ async function onDownload(certificate: AccountCertificate, format: CertificateFo
   display: block;
   height: 76px;
   background:
-    radial-gradient(120% 160% at 100% 0%, rgb(249 163 32 / 0.16), transparent 60%),
-    linear-gradient(150deg, #fdfbf7, #f4efe6);
+    radial-gradient(120% 160% at 100% 0%, var(--cert-orange-glow), transparent 60%),
+    linear-gradient(150deg, var(--cert-paper), var(--cert-paper-shade));
   border-bottom: 1px solid var(--ca-border-soft);
 }
 
@@ -169,7 +183,12 @@ async function onDownload(certificate: AccountCertificate, format: CertificateFo
   inset: 8px 12px auto;
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #f9a320 0 34%, #7cb518 34% 67%, #159fde 67% 100%);
+  background: linear-gradient(
+    90deg,
+    var(--cert-orange) 0 34%,
+    var(--cert-lime) 34% 67%,
+    var(--cert-azure) 67% 100%
+  );
   opacity: 0.85;
 }
 
@@ -177,7 +196,7 @@ async function onDownload(certificate: AccountCertificate, format: CertificateFo
   position: absolute;
   inset: auto 12px 12px;
   height: 1px;
-  background: rgb(143 89 0 / 0.28);
+  background: var(--cert-ink-soft);
 }
 
 .cert-tile__seal {
@@ -189,10 +208,10 @@ async function onDownload(certificate: AccountCertificate, format: CertificateFo
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid rgb(143 89 0 / 0.45);
+  border: 1px solid var(--cert-ink-border);
   border-radius: 50%;
   background: rgb(255 255 255 / 0.6);
-  color: #8f5900;
+  color: var(--cert-ink);
   font-family: var(--ca-font-mono);
   font-size: 11px;
   font-weight: 600;

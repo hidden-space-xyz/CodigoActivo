@@ -6,7 +6,10 @@ import {
 import type { FileResponse } from '@/shared/api/generated/models'
 import { unwrapOrNull } from '@/shared/api'
 
-export async function uploadThumbnail(file: File, existingId?: string | null): Promise<string> {
+export async function uploadThumbnailRequest(
+  file: File,
+  existingId?: string | null,
+): Promise<string> {
   if (existingId) {
     await putApiFilesFileId(existingId, { file })
     return existingId
@@ -18,4 +21,9 @@ export async function uploadThumbnail(file: File, existingId?: string | null): P
 export async function getThumbnailNameRequest(id: string): Promise<string> {
   const meta = await unwrapOrNull<FileResponse>(getApiFilesFileId(id))
   return `${meta?.name ?? ''}${meta?.extension ?? ''}`
+}
+
+export async function uploadFileRequest(file: File): Promise<string | undefined> {
+  const response = await postApiFiles({ file })
+  return response.data.id
 }

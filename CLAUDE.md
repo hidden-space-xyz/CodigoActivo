@@ -104,10 +104,18 @@ Feature-Sliced Design under `src/`: `app/` → `pages/` → `widgets/` → `feat
 public API via `index.ts` (Steiger enforces all of this). `@` → `./src` is the only path alias.
 
 **API client**: Orval generates `src/shared/api/generated/` from the committed `frontend/swagger.json`.
-**Never hand-edit generated files** — `npm run api:generate` wipes the folder. Each entity wraps the
-generated request functions in `api/requests.ts`, maps DTO → domain in `api/mapper.ts`, and exposes
-hand-written TanStack Query composables in `api/queries.ts` / `api/mutations.ts`. The generated
-vue-query hooks are deliberately ignored.
+**Never hand-edit generated files** — `npm run api:generate` wipes the folder. Generated endpoint
+functions are imported **only** from `api/requests.ts` wrapper files (entity or feature) — nowhere
+else. Each entity wraps the generated request functions in `api/requests.ts`, maps DTO → domain in
+`api/mapper.ts`, and exposes hand-written TanStack Query composables in `api/queries.ts` /
+`api/mutations.ts`. The generated vue-query hooks are deliberately ignored.
+
+**Composable placement**: entity-scoped TanStack composables (public/catalog reads, single-aggregate
+mutations) live in the entity's `api/queries.ts` / `api/mutations.ts`. Anything that needs the session,
+another entity, or a feature workflow (admin tables/forms, signup orchestration) lives in a feature
+slice's `model/` — never in a page: page `model/` holds only view-shaping helpers and types.
+Query keys always come from the entity's `api/query-keys.ts` factory — an `all` root array named after
+the entity plus functions that spread it; never assemble key arrays inline at call sites.
 
 **Session**: module-level reactive singleton (no Pinia) resolving `GET /api/auth/me`. Authorization is a
 boolean admin flag, not roles. Theming via `--ca-*` CSS variables (`.ca-dark` on `<html>`), Element Plus
