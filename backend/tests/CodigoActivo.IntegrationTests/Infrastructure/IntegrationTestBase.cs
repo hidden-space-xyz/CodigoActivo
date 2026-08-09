@@ -21,6 +21,7 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
 
     public virtual ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         return ValueTask.CompletedTask;
     }
 

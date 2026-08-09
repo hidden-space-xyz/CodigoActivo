@@ -20,7 +20,7 @@ Detailed docs: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTIN
 **Backend** (run from `backend/`):
 
 ```bash
-dotnet build                                   # analyzers report violations as WARNINGS, never errors
+dotnet build                                   # analyzer violations fail the build (TreatWarningsAsErrors)
 dotnet run --project src/CodigoActivo.API      # http://localhost:5150, Swagger at /swagger (Development only)
 dotnet test                                    # unit + integration tests
 dotnet test tests/CodigoActivo.UnitTests       # one project (integration tests need Docker)
@@ -132,10 +132,9 @@ re-skinned by mapping `--el-*` to `--ca-*`.
   I18n key in `es.ts` (`$t` / `useI18n()` / `i18n.global.t`).
 - Type colocation is intentional: all repository interfaces in one file, request+response DTOs per
   aggregate in one `*Dtos.cs`, one use case per file. Private fields are `camelCase`, no leading underscore.
-- Formatting: CSharpier (backend), Prettier (frontend). Analyzer config
-  (`Directory.Build.Analyzers.props`, `Directory.Build.targets`, `SonarLint.xml`, `.editorconfig` lines
-  3–176) is shared byte-for-byte with the BackupZCrypt repo — change one repo and you must change the
-  other; repo-local `.editorconfig` exceptions go after line 176; those files carry no comments.
+- Formatting: CSharpier (backend), Prettier (frontend). Analyzer config lives in
+  `Directory.Build.Analyzers.props` and `Directory.Build.targets`; per-rule severity exceptions go in
+  `.editorconfig`. Warnings are errors (`TreatWarningsAsErrors`); those files carry no comments.
 - Configuration is flat env vars only — no `IOptions<T>`, no user-secrets, no `ConnectionStrings` section.
 - Test naming: `MethodUnderTest_Scenario_ExpectedBehavior`; unit tests of CQRS handlers always start
   with `HandleAsync` — the test class name carries the use case.
