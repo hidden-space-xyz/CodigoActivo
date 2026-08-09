@@ -51,7 +51,7 @@ and member sign-up, plus an **admin back-office** where the team runs it all.
 | -------------- | ---------------------------------------------------------------------------------------------------------------- |
 | **Backend**    | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · MailKit · Serilog · Swashbuckle (OpenAPI)             |
 | **Frontend**   | Vue 3 · Vite · TypeScript · Element Plus · TanStack Query · Vue I18n · TipTap · Chart.js · Orval (typed API client)  |
-| **Quality**    | Meziantou.Analyzer · SonarAnalyzer · CSharpier · ESLint · Prettier · `vue-tsc` · Steiger                         |
+| **Quality**    | .NET analyzers (CA/IDE, warnings as errors) · CSharpier · ESLint · Prettier · `vue-tsc` · Steiger                |
 | **Testing**    | xUnit v3 · AwesomeAssertions · NSubstitute · Testcontainers (PostgreSQL)                                         |
 | **Deployment** | Docker · Docker Compose · nginx                                                                                  |
 

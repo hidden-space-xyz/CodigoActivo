@@ -57,8 +57,8 @@ set `http://localhost:5150` to reach a local backend.
 **Backend** (run from `backend/`)
 
 ```bash
-dotnet build                                   # build + analyzers; violations are WARNINGS, never errors,
-                                               # and are re-reported on every build (even an up-to-date one)
+dotnet build                                   # build + analyzers; any violation FAILS the build
+                                               # (TreatWarningsAsErrors), re-checked on every build
 dotnet run --project src/CodigoActivo.API      # run the API
 dotnet test                                    # unit + integration tests (integration needs Docker, see Testing below)
 
@@ -115,12 +115,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 - Type colocation is intentional (all repository interfaces in one file, request+response DTOs per aggregate
   in one `*Dtos.cs`, and one use case per file: the `Command`/`Query` record colocated with its sealed
   `Handler`); private fields are `camelCase` with no leading underscore.
-- Formatting is CSharpier; Meziantou.Analyzer + SonarAnalyzer + the SDK's CA/IDE rules run in-build and report
-  as warnings. The configuration is shared byte-for-byte with the BackupZCrypt repository
-  (`backend/Directory.Build.Analyzers.props`, `backend/Directory.Build.targets`, `backend/SonarLint.xml`, and lines
-  3–176 of `backend/.editorconfig`) — **change one repo and you must change the other**. Repo-local exceptions belong
-  in the `.editorconfig` sections after line 176. None of these files carries comments; document a deviation in
-  `backend/CLAUDE.md` instead of inline.
+- Formatting is CSharpier; the SDK's CA/IDE rules run in-build and **warnings are errors**
+  (`TreatWarningsAsErrors`). The configuration lives in `backend/Directory.Build.Analyzers.props` and
+  `backend/Directory.Build.targets`; per-rule severity exceptions belong in `backend/.editorconfig`. None of
+  these files carries comments; document a deviation in `backend/CLAUDE.md` instead of inline.
 
 **Frontend**
 
