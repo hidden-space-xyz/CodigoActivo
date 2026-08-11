@@ -37,8 +37,7 @@ public sealed class ChangePasswordCommandHandler(
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        user.PasswordHash = hasher.Hash(command.Request.NewPassword);
-        user.UpdatedAt = clock.UtcNow;
+        user.ResetPassword(hasher.Hash(command.Request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }

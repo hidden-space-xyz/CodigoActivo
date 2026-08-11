@@ -97,4 +97,26 @@ public sealed class ChangePasswordCommandHandlerTests
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task HandleAsyncValidCurrentPasswordClearsPendingPasswordReset()
+    {
+        var user = NewUser();
+        user.PasswordHash = hasher.Hash("correct");
+        clock.UtcNow = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
+        user.IssuePasswordResetCode(hasher.Hash("otp"), clock.UtcNow, TimeSpan.FromMinutes(15));
+        users.FindReturns(user);
+        var request = new ChangePasswordRequest("correct", "brandnew");
+
+        var result = await sut.HandleAsync(
+            new ChangePasswordCommand(Guid.NewGuid(), request),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        user.PasswordResetCodeHash.Should().BeNull();
+        user.PasswordResetExpiresAt.Should().BeNull();
+        user.PasswordResetLastSentAt.Should().BeNull();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
 }
