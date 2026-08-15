@@ -15,8 +15,9 @@
 </p>
 
 <p align="center">
-<img alt="Release" src="https://img.shields.io/github/v/release/hidden-space-xyz/CodigoActivo?style=for-the-badge&color=2EA44F&logo=github&logoColor=white" />
-<img alt="CI" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white" />
+<img alt="API Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-API&style=for-the-badge&label=API&color=2EA44F&logo=github&logoColor=white" />
+<img alt="UI Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-UI&style=for-the-badge&label=UI&color=2EA44F&logo=github&logoColor=white" />
+<img alt="CI" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/docker-publish.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white" />
 <img alt="CodeQL" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/codeql.yml?style=for-the-badge&label=CodeQL&logo=github&logoColor=white" />
 </p>
 
