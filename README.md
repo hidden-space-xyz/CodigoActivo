@@ -78,16 +78,18 @@ Two independently developed apps that ship together as a **same-origin** stack. 
 ### Deploy it
 
 The root [`docker-compose.yml`](docker-compose.yml) pulls the released images from GHCR and
-references no local files — copying that single file to any machine with Docker is a full deployment:
+references no local files — copy that single file plus a `.env` built from the
+[`.env.example`](.env.example) template to any machine with Docker and it runs:
 
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
-printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -base64 32)" > .env
+curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
+nano .env                    # set POSTGRES_PASSWORD; adjust APP_BASE_URL, DEMO_MODE, SMTP, …
 docker compose up -d         # site → http://localhost:8080
 ```
 
-Set `APP_BASE_URL` and SMTP in `.env` for a real server — full variable list, TLS notes, version
-pinning and upgrades in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+The template boots a **demo-seeded** site — full variable list, TLS notes, version pinning and
+upgrades in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ### Run it for development
 
@@ -104,6 +106,7 @@ Or run the apps directly, with hot reload:
 
 ```bash
 # Backend — the connection is built from POSTGRES_* env vars, and a bare `dotnet run` does NOT read the root .env
+cp .env.example .env                                       # set POSTGRES_PASSWORD — compose reads it for the db
 docker compose up -d db                                    # Postgres on 127.0.0.1:5432
 export POSTGRES_PASSWORD=...                               # PowerShell: $env:POSTGRES_PASSWORD="..."
 cd backend && dotnet run --project src/CodigoActivo.API    # http://localhost:5150
