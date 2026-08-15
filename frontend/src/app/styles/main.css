@@ -78,6 +78,16 @@ a {
   border-color: var(--ca-border-strong);
 }
 
+.ca-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ca-row-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
 @keyframes ca-blink {
   0%,
   49% {

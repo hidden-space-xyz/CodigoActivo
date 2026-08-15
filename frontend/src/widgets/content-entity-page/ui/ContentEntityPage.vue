@@ -213,9 +213,9 @@ function confirmDelete(item: ContentItem): void {
         </template>
         <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="170" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="160" align="center" fixed="right">
         <template #default="{ row }">
-          <div class="row-actions">
+          <div class="ca-row-actions">
             <Button
               v-if="controller.canFeature"
               :icon="row.featured ? 'star-fill' : 'star'"
@@ -323,18 +323,13 @@ function confirmDelete(item: ContentItem): void {
 </template>
 
 <style scoped>
-.row-actions {
-  display: flex;
-  gap: 2px;
-}
-
 .title-cell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.row-actions :deep(.is-featured) {
+.ca-row-actions :deep(.is-featured .el-icon) {
   color: var(--ca-orange);
 }
 

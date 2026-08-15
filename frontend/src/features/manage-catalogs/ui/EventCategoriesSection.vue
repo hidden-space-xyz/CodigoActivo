@@ -132,9 +132,9 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
           <ColorTag :value="row.name ?? ''" :color="row.color" />
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="120">
+      <el-table-column :label="$t('common.actions')" width="120" align="center">
         <template #default="{ row }">
-          <div class="catalog__actions">
+          <div class="ca-row-actions">
             <Button
               icon="pencil"
               text
@@ -230,11 +230,6 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
   font-size: 18px;
   font-weight: 600;
   color: var(--ca-text-bright);
-}
-
-.catalog__actions {
-  display: flex;
-  gap: 2px;
 }
 
 .table-pagination {

@@ -195,9 +195,9 @@ function confirmDelete(resource: ResourceListItemResponse): void {
         </template>
         <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="170" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="120" align="center" fixed="right">
         <template #default="{ row }">
-          <div class="row-actions">
+          <div class="ca-row-actions">
             <Button
               icon="pencil"
               text
@@ -236,12 +236,6 @@ function confirmDelete(resource: ResourceListItemResponse): void {
 </template>
 
 <style scoped>
-.row-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
 .table-pagination {
   margin-top: 14px;
   justify-content: flex-end;

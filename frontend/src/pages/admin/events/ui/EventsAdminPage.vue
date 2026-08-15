@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
+  AppButton as Button,
   AppIcon,
   ColorTag,
   ColumnFilterDate,
@@ -227,10 +228,11 @@ function confirmDelete(event: EventListItemResponse): void {
         </template>
       </el-table-column>
 
-      <el-table-column :label="$t('common.actions')" width="150" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="200" align="center" fixed="right">
         <template #default="{ row }">
-          <div class="row-actions">
-            <el-button
+          <div class="ca-row-actions">
+            <Button
+              :icon="row.featured ? 'star-fill' : 'star'"
               text
               circle
               type="primary"
@@ -242,38 +244,33 @@ function confirmDelete(event: EventListItemResponse): void {
               :disabled="row.featured || feature.isPending.value"
               :class="{ 'is-featured': row.featured }"
               @click="onFeature(row)"
-            >
-              <template #icon><AppIcon :name="row.featured ? 'star-fill' : 'star'" /></template>
-            </el-button>
+            />
             <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: row.id } }">
-              <el-button
+              <Button
+                icon="cog"
                 text
                 circle
                 type="primary"
                 :aria-label="$t('pages.admin.events.aria.manage')"
-              >
-                <template #icon><AppIcon name="cog" /></template>
-              </el-button>
+              />
             </RouterLink>
-            <el-button
+            <Button
+              icon="pencil"
               text
               circle
               type="primary"
               :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
               @click="openEdit(row)"
-            >
-              <template #icon><AppIcon name="pencil" /></template>
-            </el-button>
-            <el-button
+            />
+            <Button
+              icon="trash"
               text
               circle
               type="danger"
               :aria-label="$t('common.delete')"
               @click="confirmDelete(row)"
-            >
-              <template #icon><AppIcon name="trash" /></template>
-            </el-button>
+            />
           </div>
         </template>
       </el-table-column>
@@ -303,16 +300,6 @@ function confirmDelete(event: EventListItemResponse): void {
   padding: 14px 4px 0;
 }
 
-.row-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.row-actions :deep(.el-button + .el-button) {
-  margin-left: 0;
-}
-
 .title-cell {
   display: inline-flex;
   align-items: center;
@@ -325,7 +312,7 @@ function confirmDelete(event: EventListItemResponse): void {
   gap: 4px;
 }
 
-.is-featured :deep(.el-icon) {
+.ca-row-actions :deep(.is-featured .el-icon) {
   color: var(--ca-orange);
 }
 
