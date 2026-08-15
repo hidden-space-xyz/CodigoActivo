@@ -8,5 +8,4 @@ Dockerfile      text eol=lf
 .env.example    text eol=lf
 Directory.Build.Analyzers.props text eol=lf
 Directory.Build.targets         text eol=lf
-SonarLint.xml                   text eol=lf
 .editorconfig                   text eol=lf

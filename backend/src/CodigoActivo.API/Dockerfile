@@ -14,7 +14,7 @@ EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /source
-COPY Directory.Packages.props Directory.Build.Analyzers.props Directory.Build.targets SonarLint.xml ./
+COPY Directory.Packages.props Directory.Build.Analyzers.props Directory.Build.targets ./
 COPY src/Directory.Build.props src/
 COPY src/CodigoActivo.Domain/CodigoActivo.Domain.csproj                 src/CodigoActivo.Domain/
 COPY src/CodigoActivo.Application/CodigoActivo.Application.csproj       src/CodigoActivo.Application/
