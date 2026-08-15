@@ -21,9 +21,7 @@ services:
     security_opt: [no-new-privileges:true]
 
   api:
-    build:
-      context: ./backend
-      dockerfile: src/CodigoActivo.API/Dockerfile
+    image: ghcr.io/hidden-space-xyz/codigoactivo-backend:latest
     restart: unless-stopped
     stop_grace_period: 30s
     depends_on:
@@ -62,8 +60,7 @@ services:
     cap_drop: [ALL]
 
   web:
-    build:
-      context: ./frontend
+    image: ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest
     restart: unless-stopped
     depends_on:
       api:

@@ -2,6 +2,10 @@ name: codigoactivo
 
 services:
   api:
+    image: codigoactivo-api-dev
+    build:
+      context: ./backend
+      dockerfile: src/CodigoActivo.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
     ports:
@@ -13,6 +17,9 @@ services:
       - seccomp:unconfined
 
   web:
+    image: codigoactivo-web-dev
+    build:
+      context: ./frontend
     depends_on:
       api:
         condition: service_started

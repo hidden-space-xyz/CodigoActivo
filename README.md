@@ -75,19 +75,32 @@ Two independently developed apps that ship together as a **same-origin** stack. 
 
 ## 🚀 Quick start
 
-Fastest path — run the whole stack in Docker:
+### Deploy it
+
+The root [`docker-compose.yml`](docker-compose.yml) pulls the released images from GHCR and
+references no local files — copying that single file to any machine with Docker is a full deployment:
+
+```bash
+curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
+printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -base64 32)" > .env
+docker compose up -d         # site → http://localhost:8080
+```
+
+Set `APP_BASE_URL` and SMTP in `.env` for a real server — full variable list, TLS notes, version
+pinning and upgrades in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+### Run it for development
+
+From a clone, the same command merges `docker-compose.override.yml`, the **development** overlay: it
+builds both images from source instead of pulling them, publishes the database and the API, and
+relaxes the container hardening:
 
 ```bash
 cp .env.example .env         # set at least POSTGRES_PASSWORD, or the stack refuses to start
 docker compose up --build    # SPA → http://localhost:8080 · API → http://localhost:5150 (Swagger at /swagger)
 ```
 
-> [!IMPORTANT]
-> That command also merges `docker-compose.override.yml`, the **development** overlay: it publishes the
-> database, exposes the API and relaxes the container hardening. Deploy with
-> `docker compose -f docker-compose.yml up -d --build` — see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
-
-Or run the apps directly for development, with hot reload:
+Or run the apps directly, with hot reload:
 
 ```bash
 # Backend — the connection is built from POSTGRES_* env vars, and a bare `dotnet run` does NOT read the root .env

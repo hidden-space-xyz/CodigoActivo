@@ -52,9 +52,10 @@ npm run api:generate   # Orval: regenerate typed client from swagger.json
 
 There is **no frontend test suite** — `npm run typecheck` + `npm run lint` + `npm run lint:fsd` are the gate.
 
-**Full stack in Docker**: `docker compose up --build` (dev overlay: API on 5150, DB published).
-Production must use `docker compose -f docker-compose.yml up -d --build` — a bare `up` merges the
-development override that relaxes container hardening.
+**Full stack in Docker**: `docker compose up --build` (the dev override builds both images from
+source; API on 5150, DB published). The root `docker-compose.yml` alone is the deployment file — it
+pulls the published GHCR images, no build; production from a clone must use
+`docker compose -f docker-compose.yml up -d` to skip the dev override.
 
 ## Backend architecture
 
