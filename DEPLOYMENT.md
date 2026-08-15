@@ -1,7 +1,9 @@
 # Deployment
 
-The app is deployed as a **Docker Compose** stack. All configuration and secrets come from a single,
-git-ignored root `.env` file (copy `.env.example`). For local development without containers, see
+The app is deployed as a **Docker Compose** stack running the released images from GitHub Container
+Registry. The root `docker-compose.yml` references no local files, so that single file — copied
+anywhere — is a complete deployment; all configuration and secrets come from a git-ignored `.env`
+file next to it (template: `.env.example`). For local development without containers, see
 [CONTRIBUTING.md](CONTRIBUTING.md#local-setup); for the security rationale behind the hardening below, see
 [SECURITY.md](SECURITY.md).
 
@@ -12,8 +14,12 @@ git-ignored root `.env` file (copy `.env.example`). For local development withou
 | Service | Image / build                                        | Role                                                                                         |
 | ------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **db**  | `postgres:17-alpine`                                 | PostgreSQL. On the **internal** `backend` network only (not published in production).         |
-| **api** | built from `backend/src/CodigoActivo.API/Dockerfile` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
-| **web** | built from `frontend/Dockerfile` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${HTTP_PORT:-8080}:8080`. |
+| **api** | `ghcr.io/hidden-space-xyz/codigoactivo-backend` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
+| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${HTTP_PORT:-8080}:8080`. |
+
+The two app images are the ones CI publishes on release ([Published images](#published-images)); the
+development override builds them from the working tree instead (see
+[Local / debug overlay](#local--debug-overlay)).
 
 **Networks**: `frontend` (bridge) and `backend` (internal — the DB is unreachable from outside).
 **Volumes**: `db-data` (database), `api-files` (uploads), `api-logs` (Serilog output),
@@ -45,15 +51,30 @@ the git release tag — so a run that fails before tagging is simply retried by 
 
 ## Production
 
+Copy `docker-compose.yml` to the server (no clone needed), put a `.env` next to it, and start the
+stack:
+
 ```bash
-cp .env.example .env                              # set POSTGRES_PASSWORD, APP_BASE_URL, timezone, SMTP, …
-docker compose -f docker-compose.yml up -d --build
+curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
+printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -base64 32)" > .env
+docker compose up -d
+```
+
+`POSTGRES_PASSWORD` is the only required variable — set `APP_BASE_URL`, SMTP and the rest for a real
+deployment ([Environment variables](#environment-variables), template: `.env.example`). The compose
+file tracks `latest`; to pin a release, replace `latest` with a version from the release tags
+(`v1.2.3-API` → `ghcr.io/hidden-space-xyz/codigoactivo-backend:1.2.3`). To upgrade:
+
+```bash
+docker compose pull && docker compose up -d
 ```
 
 > [!WARNING]
-> **Always pass `-f docker-compose.yml`.** A bare `docker compose up` also merges
-> `docker-compose.override.yml` (the development overlay described below), which relaxes the container
-> hardening and exposes the database — you do not want that on a server.
+> **Deploying from a clone instead?** Then always pass `-f docker-compose.yml`: inside the repo a
+> bare `docker compose up` also merges `docker-compose.override.yml` (the development overlay
+> described below), which builds from source, relaxes the container hardening and exposes the
+> database — you do not want that on a server. A standalone copy of `docker-compose.yml` has no
+> override to worry about.
 
 ### TLS / reverse proxy
 
@@ -70,8 +91,12 @@ cross-site needs.
 
 ## Local / debug overlay
 
-`docker compose up` (without `-f`) auto-merges `docker-compose.override.yml`:
+Inside the repo, `docker compose up --build` (without `-f`) auto-merges `docker-compose.override.yml`,
+which turns the deployment stack into the development one:
 
+- `api` and `web` are **built from the working tree** (`backend/src/CodigoActivo.API/Dockerfile`,
+  `frontend/Dockerfile`) and tagged `codigoactivo-api-dev` / `codigoactivo-web-dev` instead of pulling
+  the GHCR images.
 - `api` switches to `ASPNETCORE_ENVIRONMENT=Development` and is published on `5150:8080` (Swagger at
   `/swagger`), with hardening relaxed (`read_only: false`, `SYS_PTRACE`) so a debugger can attach.
 - `db` is published on `127.0.0.1:5432` and the `backend` network is made non-internal.
