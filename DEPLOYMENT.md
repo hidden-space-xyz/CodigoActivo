@@ -26,6 +26,23 @@ than being chowned to the runtime user: the unprivileged nginx user (uid 101) ha
 them and must never be able to modify them. `frontend/Dockerfile` carries no comments, so that is
 recorded here.
 
+## Published images
+
+Every push to `master` runs the `Docker Publish` workflow (`.github/workflows/docker-publish.yml`),
+which builds and pushes the two images to GitHub Container Registry as two independent pipelines —
+each versioned inside its own project:
+
+| Image                                            | Version source                                                        | Release tag  |
+| ------------------------------------------------ | --------------------------------------------------------------------- | ------------ |
+| `ghcr.io/hidden-space-xyz/codigoactivo-backend`  | `<Version>` in `backend/src/CodigoActivo.API/CodigoActivo.API.csproj` | `vX.X.X-API` |
+| `ghcr.io/hidden-space-xyz/codigoactivo-frontend` | `version` in `frontend/package.json`                                  | `vX.X.X-UI`  |
+
+For each image the workflow reads its version (strictly `X.X.X` — anything else fails the run) and
+**skips the build entirely if that version's release tag already exists** on the repository. Bumping
+the version in a project is what releases that image; merging to `master` without bumping publishes
+nothing. When it does build, it pushes the `<version>` and `latest` image tags and only then creates
+the git release tag — so a run that fails before tagging is simply retried by the next merge.
+
 ## Production
 
 ```bash
