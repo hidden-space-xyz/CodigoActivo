@@ -387,9 +387,9 @@ function confirmDelete(user: User): void {
           />
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="220" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="200" align="center" fixed="right">
         <template #default="{ row }">
-          <div class="row-actions">
+          <div class="ca-row-actions">
             <Button
               icon="pencil"
               text
@@ -486,11 +486,6 @@ function confirmDelete(user: User): void {
 </template>
 
 <style scoped>
-.row-actions {
-  display: flex;
-  gap: 2px;
-}
-
 .table-pagination {
   margin-top: 14px;
   justify-content: flex-end;

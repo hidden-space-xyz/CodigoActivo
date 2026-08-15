@@ -239,9 +239,9 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
               </div>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('common.actions')" width="120" fixed="right">
+          <el-table-column :label="$t('common.actions')" width="120" align="center" fixed="right">
             <template #default="{ row }">
-              <div class="row-actions">
+              <div class="ca-row-actions">
                 <Button
                   icon="pencil"
                   text
@@ -350,11 +350,6 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 .paginator {
   margin-top: 14px;
   justify-content: flex-end;
-}
-
-.row-actions {
-  display: flex;
-  gap: 2px;
 }
 
 .modality-cell {
