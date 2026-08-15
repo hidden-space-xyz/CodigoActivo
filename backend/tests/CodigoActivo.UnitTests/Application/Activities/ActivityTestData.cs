@@ -254,7 +254,9 @@ internal static class ActivityTestData
         Guid activityId,
         DateTimeOffset signupStart,
         DateTimeOffset signupEnd,
-        DateTimeOffset? earlySignupStart = null
+        DateTimeOffset? earlySignupStart = null,
+        Guid? eventId = null,
+        Guid? termsDocumentId = null
     )
     {
         activities
@@ -270,6 +272,7 @@ internal static class ActivityTestData
                         Location = "Sala A",
                         ActivityStartsAt = ActivityStartsAt,
                         ActivityEndsAt = ActivityEndsAt,
+                        EventId = eventId ?? Guid.Empty,
                         Event = new Event
                         {
                             Title = "e",
@@ -277,9 +280,21 @@ internal static class ActivityTestData
                             EarlySignupStartsAt = earlySignupStart,
                             SignupStartsAt = signupStart,
                             SignupEndsAt = signupEnd,
+                            TermsDocumentId = termsDocumentId,
                         },
                     },
                 }.AsQueryable()
+            );
+    }
+
+    public static void TermsAccepted(this IEventRepository events, Guid? acceptedTermsDocumentId)
+    {
+        events
+            .GetTermsAcceptanceAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(
+                acceptedTermsDocumentId is { } termsDocumentId
+                    ? new EventTermsAcceptance { TermsDocumentId = termsDocumentId }
+                    : null
             );
     }
 

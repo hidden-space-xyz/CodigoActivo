@@ -35,6 +35,8 @@ public class FileRepository(CodigoActivoDbContext context)
                 SELECT 1 FROM announcements WHERE description::text LIKE {pattern}
                 UNION ALL
                 SELECT 1 FROM resources WHERE description::text LIKE {pattern}
+                UNION ALL
+                SELECT 1 FROM terms_documents WHERE description::text LIKE {pattern}
             ) AS "Value"
             """;
 
@@ -90,6 +92,9 @@ public class FileRepository(CodigoActivoDbContext context)
                 UNION ALL
                 SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
                 FROM resources
+                UNION ALL
+                SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
+                FROM terms_documents
             ) AS refs
             """;
         var embeddedRefs = await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct);

@@ -1,4 +1,4 @@
-export type { UpcomingEvent } from './model/types'
+export type { EventTermsInfo, UpcomingEvent } from './model/types'
 export {
   useEventDetail,
   useHomeEvents,
@@ -18,6 +18,7 @@ export {
   getEventRosterRequest,
   getEventsAdminPageRequest,
   getEventSummaryRequest,
+  getEventTermsAcceptanceRequest,
   toggleEventFeatureRequest,
   updateEventRequest,
 } from './api/requests'

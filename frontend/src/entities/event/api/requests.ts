@@ -3,6 +3,7 @@ import {
   getApiEvents,
   getApiEventsEventId,
   getApiEventsEventIdRatings,
+  getApiEventsEventIdTermsAcceptance,
   getApiEventsPastYears,
   patchApiEventsEventIdFeature,
   postApiEvents,
@@ -70,6 +71,11 @@ async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
 export async function getEventByIdRequest(id: string): Promise<EventDetail | null> {
   const event = await unwrapOrNull<EventResponse>(getApiEventsEventId(id))
   return event ? toEventDetail(event) : null
+}
+
+export async function getEventTermsAcceptanceRequest(eventId: string): Promise<boolean> {
+  const { data } = await getApiEventsEventIdTermsAcceptance(eventId)
+  return data.accepted ?? false
 }
 
 export async function getHomeEventsRequest(): Promise<HomeEvents> {

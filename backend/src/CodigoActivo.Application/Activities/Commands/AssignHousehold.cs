@@ -20,6 +20,7 @@ public sealed class AssignHouseholdCommandHandler(
     IActivityRepository activities,
     IUserRepository users,
     SignupGate signupGate,
+    TermsGate termsGate,
     ActivitySignupNotifier notifier,
     ListAssignmentStatusTypesQueryHandler statusTypes,
     IQueryExecutor executor,
@@ -88,6 +89,17 @@ public sealed class AssignHouseholdCommandHandler(
         )
         {
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
+        }
+
+        var terms = await termsGate.EnsureAcceptedAsync(
+            command.ActivityId,
+            command.ActingUserId,
+            request.AcceptTerms,
+            ct
+        );
+        if (terms.IsFailure)
+        {
+            return terms.Error!;
         }
 
         var alreadyAssigned = (

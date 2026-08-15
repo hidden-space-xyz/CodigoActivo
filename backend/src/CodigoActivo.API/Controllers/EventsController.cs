@@ -64,6 +64,28 @@ public class EventsController : ApiControllerBase
         return Ok(await handler.HandleAsync(new ListEventCategoryTypesQuery(query), ct));
     }
 
+    [HttpGet("termsDocument")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<PagedResult<TermsDocumentResponse>>> TermsDocumentsAsync(
+        [FromQuery] TermsDocumentListQuery query,
+        [FromServices] ListTermsDocumentsQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return Ok(await handler.HandleAsync(new ListTermsDocumentsQuery(query), ct));
+    }
+
+    [HttpGet("{eventId:guid}/terms-acceptance")]
+    [Authorize]
+    public async Task<ActionResult<EventTermsAcceptanceResponse>> TermsAcceptanceAsync(
+        Guid eventId,
+        [FromServices] GetEventTermsAcceptanceQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return Ok(await handler.HandleAsync(new GetEventTermsAcceptanceQuery(eventId, UserId), ct));
+    }
+
     [HttpPost]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventResponse>> CreateAsync(
@@ -178,6 +200,44 @@ public class EventsController : ApiControllerBase
     {
         return ToNoContent(
             await handler.HandleAsync(new DeleteEventCategoryTypeCommand(eventCategoryTypeId), ct)
+        );
+    }
+
+    [HttpPost("termsDocument")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<TermsDocumentResponse>> CreateTermsDocumentAsync(
+        [FromBody] CreateTermsDocumentRequest request,
+        [FromServices] CreateTermsDocumentCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await handler.HandleAsync(new CreateTermsDocumentCommand(request), ct));
+    }
+
+    [HttpPut("termsDocument/{termsDocumentId:guid}")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<TermsDocumentResponse>> UpdateTermsDocumentAsync(
+        Guid termsDocumentId,
+        [FromBody] UpdateTermsDocumentRequest request,
+        [FromServices] UpdateTermsDocumentCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(
+            await handler.HandleAsync(new UpdateTermsDocumentCommand(termsDocumentId, request), ct)
+        );
+    }
+
+    [HttpDelete("termsDocument/{termsDocumentId:guid}")]
+    [AllowOnlyAdmin]
+    public async Task<IActionResult> DeleteTermsDocumentAsync(
+        Guid termsDocumentId,
+        [FromServices] DeleteTermsDocumentCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteTermsDocumentCommand(termsDocumentId), ct)
         );
     }
 }

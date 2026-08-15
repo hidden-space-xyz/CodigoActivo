@@ -28,6 +28,9 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<EventCategoryType> EventCategoryTypes => Set<EventCategoryType>();
     public DbSet<EventCategory> EventCategories => Set<EventCategory>();
 
+    public DbSet<TermsDocument> TermsDocuments => Set<TermsDocument>();
+    public DbSet<EventTermsAcceptance> EventTermsAcceptances => Set<EventTermsAcceptance>();
+
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<ResourceType> ResourceTypes => Set<ResourceType>();
     public DbSet<Announcement> Announcements => Set<Announcement>();

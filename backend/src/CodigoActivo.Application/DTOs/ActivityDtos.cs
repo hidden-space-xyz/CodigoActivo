@@ -84,10 +84,11 @@ public record AssignmentResponse(
 
 public record AssignmentStatusResponse(Guid Id, string Name);
 
-public record AssignRequest([Required] Guid ActivityRoleTypeId);
+public record AssignRequest([Required] Guid ActivityRoleTypeId, bool AcceptTerms = false);
 
 public record AssignHouseholdRequest(
-    [Required] IReadOnlyList<HouseholdAssignmentRequest> Assignments
+    [Required] IReadOnlyList<HouseholdAssignmentRequest> Assignments,
+    bool AcceptTerms = false
 );
 
 public record HouseholdAssignmentRequest(

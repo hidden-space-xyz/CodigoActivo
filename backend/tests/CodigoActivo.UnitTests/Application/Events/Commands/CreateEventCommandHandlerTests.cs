@@ -18,6 +18,8 @@ public sealed class CreateEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly ITermsDocumentRepository termsDocuments =
+        Substitute.For<ITermsDocumentRepository>();
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly TestClock clock = new();
@@ -30,6 +32,7 @@ public sealed class CreateEventCommandHandlerTests
         sut = new CreateEventCommandHandler(
             events,
             files,
+            termsDocuments,
             new EventCategoryChecker(categoryTypes),
             clock,
             uow,
@@ -62,6 +65,54 @@ public sealed class CreateEventCommandHandlerTests
             });
     }
 
+    [Fact]
+    public async Task HandleAsyncUnknownTermsDocumentReturnsTermsDocumentNotFound()
+    {
+        files.ThumbnailExists(true);
+        categoryTypes.HasCategoryCount(1);
+        termsDocuments.TermsDocumentExists(false);
+
+        var result = await sut.HandleAsync(
+            new CreateEventCommand(
+                CreateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: Guid.NewGuid()),
+                Guid.NewGuid()
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncKnownTermsDocumentPersistsEventWithTermsReference()
+    {
+        var termsDocumentId = Guid.NewGuid();
+        files.ThumbnailExists(true);
+        categoryTypes.HasCategoryCount(1);
+        termsDocuments.TermsDocumentExists(true);
+        CaptureCreatedEvents();
+
+        var result = await sut.HandleAsync(
+            new CreateEventCommand(
+                CreateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: termsDocumentId),
+                Guid.NewGuid()
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await events
+            .Received(1)
+            .AddAsync(
+                Arg.Is<Event>(e => e != null && e.TermsDocumentId == termsDocumentId),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
     public static TheoryData<CreateEventRequest> MissingScheduleDateRequests()
     {
         var eventStart = new DateOnly(2026, 8, 1);
@@ -79,7 +130,8 @@ public sealed class CreateEventCommandHandlerTests
             SignupStartsAt: signupStart,
             SignupEndsAt: signupEnd,
             ThumbnailId: Guid.NewGuid(),
-            CategoryTypeIds: [Guid.NewGuid()]
+            CategoryTypeIds: [Guid.NewGuid()],
+            TermsDocumentId: null
         );
 
         return

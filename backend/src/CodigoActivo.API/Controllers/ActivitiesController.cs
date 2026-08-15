@@ -159,7 +159,7 @@ public class ActivitiesController : ApiControllerBase
     {
         return ToOk(
             await handler.HandleAsync(
-                new AssignActivityCommand(activityId, userId, request, IsAdmin),
+                new AssignActivityCommand(activityId, userId, UserId, request, IsAdmin),
                 ct
             )
         );

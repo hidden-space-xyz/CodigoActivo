@@ -81,7 +81,8 @@ internal static class EventTestData
         DateTimeOffset? signupStart = null,
         DateTimeOffset? signupEnd = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
-        Guid? thumbnailId = null
+        Guid? thumbnailId = null,
+        Guid? termsDocumentId = null
     )
     {
         return new(
@@ -94,7 +95,8 @@ internal static class EventTestData
             SignupStartsAt: signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             SignupEndsAt: signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
-            CategoryTypeIds: categoryTypeIds
+            CategoryTypeIds: categoryTypeIds,
+            TermsDocumentId: termsDocumentId
         );
     }
 
@@ -107,7 +109,8 @@ internal static class EventTestData
         IReadOnlyList<Guid>? categoryTypeIds = null,
         Guid? thumbnailId = null,
         string title = "  New title  ",
-        string description = "{}"
+        string description = "{}",
+        Guid? termsDocumentId = null
     )
     {
         return new(
@@ -120,7 +123,8 @@ internal static class EventTestData
             SignupStartsAt: signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             SignupEndsAt: signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
-            CategoryTypeIds: categoryTypeIds
+            CategoryTypeIds: categoryTypeIds,
+            TermsDocumentId: termsDocumentId
         );
     }
 
@@ -158,5 +162,66 @@ internal static class EventTestData
                 Arg.Any<CancellationToken>()
             )
             .Returns(taken);
+    }
+
+    public static TermsDocument NewTermsDocument(
+        string name = "Términos generales",
+        string description = "{}"
+    )
+    {
+        return new()
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Description = description,
+        };
+    }
+
+    public static void HasTermsDocuments(
+        this ITermsDocumentRepository termsDocuments,
+        params TermsDocument[] items
+    )
+    {
+        termsDocuments.Query().Returns(items.AsQueryable());
+    }
+
+    public static void TermsDocumentExists(
+        this ITermsDocumentRepository termsDocuments,
+        bool exists
+    )
+    {
+        termsDocuments
+            .ExistsAsync(
+                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(exists);
+    }
+
+    public static void TermsDocumentFound(
+        this ITermsDocumentRepository termsDocuments,
+        TermsDocument? termsDocument
+    )
+    {
+        termsDocuments
+            .FindAsync(
+                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(termsDocument);
+    }
+
+    public static void TermsDocumentInUse(this IEventRepository events, bool inUse)
+    {
+        events
+            .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(inUse);
+    }
+
+    public static void TermsDocumentAccepted(this IEventRepository events, bool accepted)
+    {
+        events
+            .HasTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(accepted);
     }
 }

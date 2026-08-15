@@ -110,6 +110,15 @@ public static class MappingExtensions
         );
     }
 
+    public static TermsDocumentResponse ToResponse(this TermsDocument termsDocument)
+    {
+        return new TermsDocumentResponse(
+            termsDocument.Id,
+            termsDocument.Name,
+            termsDocument.Description
+        );
+    }
+
     public static EventRatingResponse ToResponse(this EventRating rating)
     {
         return new EventRatingResponse(

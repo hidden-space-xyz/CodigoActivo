@@ -40,6 +40,7 @@ public sealed class DemoDataSeederTests
         graph.Resources.Should().HaveCount(20);
         graph.Partners.Should().HaveCount(10);
         graph.CategoryTypes.Should().HaveCount(8);
+        graph.TermsDocuments.Should().HaveCount(2);
         graph.Files.Should().HaveCount(180);
     }
 
@@ -119,6 +120,20 @@ public sealed class DemoDataSeederTests
                 assignment.CreatedAt.Should().BeOnOrBefore(ev.SignupEndsAt);
                 assignment.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
             });
+    }
+
+    [Fact]
+    public void BuildGraphDefaultEveryEventReferencesSeededTermsDocument()
+    {
+        var termsDocumentIds = graph.TermsDocuments.Select(t => t.Id).ToHashSet();
+        var referencedIds = graph
+            .Events.Where(e => e.TermsDocumentId is not null)
+            .Select(e => e.TermsDocumentId!.Value)
+            .ToHashSet();
+
+        graph.TermsDocuments.Select(t => t.Name).Should().OnlyHaveUniqueItems();
+        graph.Events.Should().OnlyContain(e => e.TermsDocumentId != null);
+        referencedIds.Should().BeEquivalentTo(termsDocumentIds);
     }
 
     [Fact]
@@ -342,7 +357,8 @@ public sealed class DemoDataSeederTests
         var richText = graph
             .Events.Select(e => e.Description)
             .Concat(graph.Announcements.Select(a => a.Description))
-            .Concat(graph.Resources.Where(r => r.Url is null).Select(r => r.Description));
+            .Concat(graph.Resources.Where(r => r.Url is null).Select(r => r.Description))
+            .Concat(graph.TermsDocuments.Select(t => t.Description));
 
         richText
             .Should()

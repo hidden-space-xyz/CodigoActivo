@@ -5,6 +5,7 @@ export const eventQueryKeys = {
   pastYears: () => [...eventQueryKeys.all, 'past-years'] as const,
   past: (year: string) => [...eventQueryKeys.all, 'past', year] as const,
   detail: (id: string) => [...eventQueryKeys.all, 'detail', id] as const,
+  termsAcceptance: (id: string) => [...eventQueryKeys.all, 'terms-acceptance', id] as const,
   adminTable: () => [...eventQueryKeys.all, 'admin'] as const,
   adminDetail: (id: string) => [...eventQueryKeys.all, 'admin-detail', id] as const,
   ratings: () => [...eventQueryKeys.all, 'ratings'] as const,

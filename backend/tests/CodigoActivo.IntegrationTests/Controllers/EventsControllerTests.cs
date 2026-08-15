@@ -102,7 +102,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             thumbnailId,
-            categoryTypeIds
+            categoryTypeIds,
+            null
         );
     }
 
@@ -127,7 +128,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             thumbnailId,
-            categoryTypeIds
+            categoryTypeIds,
+            null
         );
     }
 

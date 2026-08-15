@@ -17,6 +17,7 @@ public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
     IFileRepository files,
+    ITermsDocumentRepository termsDocuments,
     IOrphanFileCleaner orphanCleaner,
     EventCategoryChecker categoryChecker,
     IClock clock,
@@ -77,6 +78,14 @@ public sealed class UpdateEventCommandHandler(
             return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
         }
 
+        if (
+            request.TermsDocumentId is { } termsDocumentId
+            && !await termsDocuments.ExistsAsync(x => x.Id == termsDocumentId, ct)
+        )
+        {
+            return Error.BadRequest(ErrorCode.TermsDocumentNotFound);
+        }
+
         var previousThumbnailId = ev.ThumbnailId;
         var previousDescription = ev.Description;
 
@@ -89,6 +98,7 @@ public sealed class UpdateEventCommandHandler(
         ev.SignupStartsAt = schedule.Value.SignupStartsAt;
         ev.SignupEndsAt = schedule.Value.SignupEndsAt;
         ev.ThumbnailId = request.ThumbnailId;
+        ev.TermsDocumentId = request.TermsDocumentId;
         ev.UpdatedAt = clock.UtcNow;
         ev.UpdatedBy = command.UserId;
 

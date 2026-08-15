@@ -129,13 +129,61 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task UpdateTermsDocumentAfterAnonymousDetailCachedDetailShowsUpdatedTerms()
+    {
+        var termsDocumentId = await SeedTermsDocumentAsync("Términos originales");
+        var eventId = await SeedEventAsync(termsDocumentId: termsDocumentId);
+        var anonymous = CreateClient();
+
+        using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/events/{eventId}"), Ct);
+        var before = await warm.ReadJsonAsync<EventResponse>(Ct);
+        before!.TermsDocument!.Name.Should().Be("Términos originales");
+
+        var admin = await LoginAsAdminAsync();
+        using var renamed = await admin.PutJsonAsync(
+            $"/api/events/termsDocument/{termsDocumentId}",
+            new UpdateTermsDocumentRequest("Términos corregidos", "{}"),
+            Ct
+        );
+        renamed.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var after = await anonymous.GetAsync(TestUri.Rel($"/api/events/{eventId}"), Ct);
+        var body = await after.ReadJsonAsync<EventResponse>(Ct);
+        body!.TermsDocument!.Name.Should().Be("Términos corregidos");
+    }
+
+    [Fact]
+    public async Task CreateTermsDocumentAfterAdminListCachedListShowsNewDocument()
+    {
+        var admin = await LoginAsAdminAsync();
+
+        using var warm = await admin.GetAsync(TestUri.Rel("/api/events/termsDocument"), Ct);
+        warm.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var name = $"Términos {Guid.NewGuid():N}";
+        using var created = await admin.PostJsonAsync(
+            "/api/events/termsDocument",
+            new CreateTermsDocumentRequest(name, "{}"),
+            Ct
+        );
+        created.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var after = await admin.GetAsync(TestUri.Rel("/api/events/termsDocument"), Ct);
+        var page = await after.ReadJsonAsync<PagedResult<TermsDocumentResponse>>(Ct);
+        page!.Items.Should().Contain(t => t.Name == name);
+    }
+
+    [Fact]
     public async Task UpdateAfterAnonymousDetailCachedAnonymousDetailShowsNewTitle()
     {
         var thumbnailId = await SeedThumbnailAsync();
         var announcementId = await SeedAnnouncementAsync(thumbnailId, "Título original");
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/announcements/{announcementId}"), Ct);
+        using var warm = await anonymous.GetAsync(
+            TestUri.Rel($"/api/announcements/{announcementId}"),
+            Ct
+        );
         var before = await warm.ReadJsonAsync<AnnouncementResponse>(Ct);
         before!.Title.Should().Be("Título original");
 
@@ -147,7 +195,10 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync(TestUri.Rel($"/api/announcements/{announcementId}"), Ct);
+        using var after = await anonymous.GetAsync(
+            TestUri.Rel($"/api/announcements/{announcementId}"),
+            Ct
+        );
         var body = await after.ReadJsonAsync<AnnouncementResponse>(Ct);
         body!.Title.Should().Be("Título corregido");
     }
@@ -173,7 +224,10 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         assigned.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync(TestUri.Rel($"/api/activities/{activityId}"), Ct);
+        using var after = await anonymous.GetAsync(
+            TestUri.Rel($"/api/activities/{activityId}"),
+            Ct
+        );
         var body = await after.ReadJsonAsync<ActivityResponse>(Ct);
         body!.RoleCapacities.Single().IsHighDemand.Should().BeTrue();
     }
@@ -191,7 +245,10 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var file = await uploaded.ReadJsonAsync<FileResponse>(Ct);
 
         var anonymous = CreateClient();
-        using var first = await anonymous.GetAsync(TestUri.Rel($"/api/files/{file!.Id}/content"), Ct);
+        using var first = await anonymous.GetAsync(
+            TestUri.Rel($"/api/files/{file!.Id}/content"),
+            Ct
+        );
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         var firstEtag = first.Headers.ETag!.Tag;
 
@@ -207,7 +264,10 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var second = await anonymous.GetAsync(TestUri.Rel($"/api/files/{file.Id}/content"), Ct);
+        using var second = await anonymous.GetAsync(
+            TestUri.Rel($"/api/files/{file.Id}/content"),
+            Ct
+        );
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         (await second.Content.ReadAsByteArrayAsync(Ct)).Should().Equal(updatedBytes);
         second.Headers.ETag!.Tag.Should().NotBe(firstEtag);
@@ -274,7 +334,8 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
             new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             thumbnailId,
-            categoryTypeIds
+            categoryTypeIds,
+            null
         );
     }
 
@@ -374,7 +435,8 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     private async Task<Guid> SeedEventAsync(
         string title = "Evento",
         bool featured = false,
-        Guid? categoryTypeId = null
+        Guid? categoryTypeId = null,
+        Guid? termsDocumentId = null
     )
     {
         var thumbnailId = await SeedThumbnailAsync();
@@ -394,11 +456,30 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
                 SignupEndsAt = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
                 Featured = featured,
                 ThumbnailId = thumbnailId,
+                TermsDocumentId = termsDocumentId,
                 CreatedAt = SeededAt,
                 CreatedBy = TestSeedData.Users.AdminId,
             };
             ev.Categories.Add(new EventCategory { EventCategoryTypeId = categoryId });
             db.Events.Add(ev);
+            return Task.CompletedTask;
+        });
+        return id;
+    }
+
+    private async Task<Guid> SeedTermsDocumentAsync(string? name = null)
+    {
+        var id = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.TermsDocuments.Add(
+                new TermsDocument
+                {
+                    Id = id,
+                    Name = name ?? Guid.NewGuid().ToString("N"),
+                    Description = "{}",
+                }
+            );
             return Task.CompletedTask;
         });
         return id;

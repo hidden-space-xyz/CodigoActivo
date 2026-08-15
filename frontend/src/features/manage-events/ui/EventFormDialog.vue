@@ -4,11 +4,16 @@ import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
 
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
-import { useCreateEventCategoryType, useEventCategoryTypesList } from '@/entities/catalog'
+import {
+  useCreateEventCategoryType,
+  useEventCategoryTypesList,
+  useTermsDocumentsList,
+} from '@/entities/catalog'
 import type {
   CreateEventRequest,
   EventCategoryTypeResponse,
   EventResponse,
+  TermsDocumentResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
 import { EMPTY_DOC_JSON, getErrorMessage, parseDateOnly, toDateOnly } from '@/shared/lib'
@@ -31,6 +36,7 @@ interface EventForm {
   subtitle: string
   description: string
   categoryIds: string[]
+  termsDocumentId: string
   eventStartsAt: Date | null
   eventEndsAt: Date | null
   earlySignupStartsAt: Date | null
@@ -43,6 +49,7 @@ const form = reactive<EventForm>({
   subtitle: '',
   description: '',
   categoryIds: [],
+  termsDocumentId: '',
   eventStartsAt: null,
   eventEndsAt: null,
   earlySignupStartsAt: null,
@@ -64,6 +71,9 @@ const categoryOptions = computed<EventCategoryTypeResponse[]>(
   () => categoriesQuery.data.value ?? [],
 )
 const categoriesMissing = computed(() => form.categoryIds.length === 0)
+
+const termsQuery = useTermsDocumentsList()
+const termsOptions = computed<TermsDocumentResponse[]>(() => termsQuery.data.value ?? [])
 
 const createCategory = useCreateEventCategoryType()
 const catDialogVisible = ref(false)
@@ -174,6 +184,7 @@ watch(
     form.categoryIds = (props.event?.categories ?? [])
       .map((cat) => cat.categoryTypeId)
       .filter((id): id is string => !!id)
+    form.termsDocumentId = props.event?.termsDocument?.id ?? ''
     form.eventStartsAt = parseDateOnly(props.event?.eventStartsAt)
     form.eventEndsAt = parseDateOnly(props.event?.eventEndsAt)
     form.earlySignupStartsAt = parse(props.event?.earlySignupStartsAt)
@@ -212,6 +223,7 @@ async function save(): Promise<void> {
     signupStartsAt: signupStartsAt.toISOString(),
     signupEndsAt: signupEndsAt.toISOString(),
     thumbnailId,
+    termsDocumentId: form.termsDocumentId || null,
   } satisfies CreateEventRequest)
 }
 </script>
@@ -273,6 +285,23 @@ async function save(): Promise<void> {
         <small v-if="submitted && categoriesMissing" class="form__error">{{
           $t('features.manageEvents.errors.categoriesRequired')
         }}</small>
+      </div>
+      <div class="form__field">
+        <label>{{ $t('features.manageEvents.fields.termsDocument') }}</label>
+        <el-select
+          v-model="form.termsDocumentId"
+          clearable
+          filterable
+          :placeholder="$t('features.manageEvents.termsPlaceholder')"
+        >
+          <el-option
+            v-for="terms in termsOptions"
+            :key="terms.id ?? ''"
+            :label="terms.name ?? ''"
+            :value="terms.id ?? ''"
+          />
+        </el-select>
+        <small class="form__hint">{{ $t('features.manageEvents.hints.termsDocument') }}</small>
       </div>
       <div class="form__field">
         <label>{{ $t('features.manageEvents.fields.description') }}</label>

@@ -7,4 +7,5 @@
 
 export interface AssignRequest {
   activityRoleTypeId?: string;
+  acceptTerms?: boolean;
 }

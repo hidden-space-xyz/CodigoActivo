@@ -19,10 +19,11 @@ import type {
   HouseholdMember,
   OverlapCheck,
 } from '@/entities/activity'
+import { eventQueryKeys, getEventTermsAcceptanceRequest } from '@/entities/event'
 import { useSession } from '@/entities/session'
 import { i18n } from '@/shared/i18n'
 
-export function useEventActivities(eventId: () => string) {
+export function useEventActivities(eventId: () => string, hasTerms: () => boolean) {
   const session = useSession()
   const queryClient = useQueryClient()
 
@@ -33,6 +34,7 @@ export function useEventActivities(eventId: () => string) {
   const assignedKey = computed(() => activityQueryKeys.myAssignments(eventId()))
   const membersKey = activityQueryKeys.householdMembers()
   const householdKey = computed(() => activityQueryKeys.householdAssignments(eventId()))
+  const termsAcceptanceKey = computed(() => eventQueryKeys.termsAcceptance(eventId()))
 
   const activities = useQuery({
     queryKey: activitiesKey,
@@ -64,6 +66,12 @@ export function useEventActivities(eventId: () => string) {
     queryKey: activityQueryKeys.signupRoles(),
     queryFn: () => getSignupRolesRequest(),
     enabled: isAuthenticated,
+  })
+
+  const termsAccepted = useQuery({
+    queryKey: termsAcceptanceKey,
+    queryFn: () => getEventTermsAcceptanceRequest(eventId()),
+    enabled: computed(() => isAuthenticated.value && hasTerms()),
   })
 
   const rolesByUserId = computed(() => {
@@ -103,19 +111,36 @@ export function useEventActivities(eventId: () => string) {
     void queryClient.invalidateQueries({ queryKey: householdKey.value })
   }
 
+  function invalidateAfterSignup(): void {
+    invalidate()
+    void queryClient.invalidateQueries({ queryKey: termsAcceptanceKey.value })
+  }
+
   const assign = useMutation({
-    mutationFn: (vars: { activityId: string; activityRoleTypeId: string }) => {
+    mutationFn: (vars: {
+      activityId: string
+      activityRoleTypeId: string
+      acceptTerms: boolean
+    }) => {
       if (!userId.value)
         return Promise.reject(new Error(i18n.global.t('features.activitySignup.notAuthenticated')))
-      return assignActivityRequest(vars.activityId, userId.value, vars.activityRoleTypeId)
+      return assignActivityRequest(
+        vars.activityId,
+        userId.value,
+        vars.activityRoleTypeId,
+        vars.acceptTerms,
+      )
     },
-    onSuccess: invalidate,
+    onSuccess: invalidateAfterSignup,
   })
 
   const assignHousehold = useMutation({
-    mutationFn: (vars: { activityId: string; assignments: HouseholdAssignmentInput[] }) =>
-      assignHouseholdRequest(vars.activityId, vars.assignments),
-    onSuccess: invalidate,
+    mutationFn: (vars: {
+      activityId: string
+      assignments: HouseholdAssignmentInput[]
+      acceptTerms: boolean
+    }) => assignHouseholdRequest(vars.activityId, vars.assignments, vars.acceptTerms),
+    onSuccess: invalidateAfterSignup,
   })
 
   const unassign = useMutation({
@@ -144,6 +169,7 @@ export function useEventActivities(eventId: () => string) {
     assignHousehold,
     unassign,
     verifyOverlaps,
+    termsAccepted,
     isAuthenticated,
   }
 }

@@ -19,4 +19,45 @@ public class EventRepository(CodigoActivoDbContext context)
     {
         return SetExclusiveFeaturedAsync(Set, id, ct);
     }
+
+    public Task<EventTermsAcceptance?> GetTermsAcceptanceAsync(
+        Guid eventId,
+        Guid userId,
+        CancellationToken ct = default
+    )
+    {
+        return Context.EventTermsAcceptances.FirstOrDefaultAsync(
+            x => x.EventId == eventId && x.UserId == userId,
+            ct
+        );
+    }
+
+    public Task<bool> TermsAcceptanceExistsAsync(
+        Guid eventId,
+        Guid userId,
+        Guid termsDocumentId,
+        CancellationToken ct = default
+    )
+    {
+        return Context.EventTermsAcceptances.AnyAsync(
+            x => x.EventId == eventId && x.UserId == userId && x.TermsDocumentId == termsDocumentId,
+            ct
+        );
+    }
+
+    public Task<bool> HasTermsAcceptancesAsync(Guid termsDocumentId, CancellationToken ct = default)
+    {
+        return Context.EventTermsAcceptances.AnyAsync(
+            x => x.TermsDocumentId == termsDocumentId,
+            ct
+        );
+    }
+
+    public async Task AddTermsAcceptanceAsync(
+        EventTermsAcceptance acceptance,
+        CancellationToken ct = default
+    )
+    {
+        await Context.EventTermsAcceptances.AddAsync(acceptance, ct);
+    }
 }

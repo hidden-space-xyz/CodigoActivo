@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { EventCategoriesSection } from '@/features/manage-catalogs'
+import { EventCategoriesSection, TermsDocumentsSection } from '@/features/manage-catalogs'
 import { AdminPageHeader } from '@/shared/ui'
 </script>
 
@@ -12,6 +12,7 @@ import { AdminPageHeader } from '@/shared/ui'
 
     <div class="catalogs-grid">
       <EventCategoriesSection />
+      <TermsDocumentsSection />
     </div>
   </div>
 </template>

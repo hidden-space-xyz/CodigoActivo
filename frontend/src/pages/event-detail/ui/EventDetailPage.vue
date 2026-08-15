@@ -186,6 +186,7 @@ useSeo(seo)
             :event-id="eventId"
             :signup-open="signupAllowed"
             :early-only="earlySignupOnly"
+            :terms="event.terms"
           />
         </div>
       </section>

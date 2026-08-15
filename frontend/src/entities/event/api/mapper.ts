@@ -7,6 +7,7 @@ import type {
   EventDetail,
   EventStatus,
   EventStatusKind,
+  EventTermsInfo,
   PastEvent,
   UpcomingEvent,
 } from '../model/types'
@@ -78,6 +79,16 @@ export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
   }
 }
 
+function toTermsInfo(event: EventResponse): EventTermsInfo | null {
+  const terms = event.termsDocument
+  if (!terms?.id) return null
+  return {
+    id: terms.id,
+    name: terms.name ?? '',
+    description: terms.description ?? '',
+  }
+}
+
 export function toEventDetail(event: EventResponse): EventDetail {
   const status = toStatus(event)
   return {
@@ -95,6 +106,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
     signupOpen: status.kind === 'signupOpen',
     earlySignupOpen: status.kind === 'earlySignupOpen',
     categories: toCategoryTags(event),
+    terms: toTermsInfo(event),
   }
 }
 

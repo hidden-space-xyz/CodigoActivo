@@ -32,6 +32,12 @@ export interface PastEvent {
   readonly categories: readonly EventCategoryTag[]
 }
 
+export interface EventTermsInfo {
+  readonly id: string
+  readonly name: string
+  readonly description: string
+}
+
 export interface EventDetail {
   readonly id: string
   readonly title: string
@@ -47,6 +53,7 @@ export interface EventDetail {
   readonly signupOpen: boolean
   readonly earlySignupOpen: boolean
   readonly categories: readonly EventCategoryTag[]
+  readonly terms: EventTermsInfo | null
 }
 
 export interface HomeEvents {
