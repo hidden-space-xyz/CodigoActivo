@@ -1,9 +1,10 @@
 # Deployment
 
 The app is deployed as a **Docker Compose** stack running the released images from GitHub Container
-Registry. The root `docker-compose.yml` references no local files, so that single file — copied
-anywhere — is a complete deployment; all configuration and secrets come from a git-ignored `.env`
-file next to it (template: `.env.example`). For local development without containers, see
+Registry. The root `docker-compose.yml` references no local files and carries no configuration of its
+own, so that single file — copied anywhere — is a complete deployment; every variable resolves from a
+git-ignored `.env` file next to it, created from the `.env.example` template. For local development
+without containers, see
 [CONTRIBUTING.md](CONTRIBUTING.md#local-setup); for the security rationale behind the hardening below, see
 [SECURITY.md](SECURITY.md).
 
@@ -15,7 +16,7 @@ file next to it (template: `.env.example`). For local development without contai
 | ------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **db**  | `postgres:17-alpine`                                 | PostgreSQL. On the **internal** `backend` network only (not published in production).         |
 | **api** | `ghcr.io/hidden-space-xyz/codigoactivo-backend` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
-| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${HTTP_PORT:-8080}:8080`. |
+| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${HTTP_PORT}:8080`. |
 
 The two app images are the ones CI publishes on release ([Published images](#published-images)); the
 development override builds them from the working tree instead (see
@@ -51,18 +52,26 @@ the git release tag — so a run that fails before tagging is simply retried by 
 
 ## Production
 
-Copy `docker-compose.yml` to the server (no clone needed), put a `.env` next to it, and start the
-stack:
+Copy `docker-compose.yml` to the server (no clone needed), create its `.env` from the `.env.example`
+template, and start the stack:
 
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
-printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -base64 32)" > .env
+curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
+nano .env
 docker compose up -d
 ```
 
-`POSTGRES_PASSWORD` is the only required variable — set `APP_BASE_URL`, SMTP and the rest for a real
-deployment ([Environment variables](#environment-variables), template: `.env.example`). The compose
-file tracks `latest`; to pin a release, replace `latest` with a version from the release tags
+The template ships working values for a first boot ([Environment variables](#environment-variables));
+adjust at least these before starting:
+
+- `POSTGRES_PASSWORD` — Postgres refuses to initialize with it empty (e.g. `openssl rand -base64 32`);
+- `APP_BASE_URL` — the public `https://` URL, used in links, outgoing emails and the sitemap;
+- `DEMO_MODE` — the template ships `true` so a first boot comes up with demo content; set `false` for
+  any real deployment ([Demo mode](#demo-mode));
+- the `SMTP_*` block, or the app cannot send any email.
+
+The compose file tracks `latest`; to pin a release, replace `latest` with a version from the release tags
 (`v1.2.3-API` → `ghcr.io/hidden-space-xyz/codigoactivo-backend:1.2.3`). To upgrade:
 
 ```bash
@@ -85,7 +94,7 @@ docker compose pull && docker compose up -d
 
 The API has forwarded headers enabled and, in Production, issues `Secure` cookies and redirects
 HTTP → HTTPS. `APP_BASE_URL` is used in links, outgoing emails and every URL of the generated
-`/sitemap.xml` and `/robots.txt` — if it is left at the compose fallback (`https://localhost`),
+`/sitemap.xml` and `/robots.txt` — if it is left at the template's `https://example.org` placeholder,
 search engines receive a sitemap full of unusable URLs. Set `AUTH_SAMESITE` to match your
 cross-site needs.
 
@@ -106,29 +115,35 @@ which turns the deployment stack into the development one:
 
 ## Environment variables
 
-Runtime configuration is supplied as flat environment variables (template: `.env.example`). Compose injects
-them into the `api` service; the connection string is built from `POSTGRES_*` in code.
+Runtime configuration is supplied as flat environment variables. The compose file defines **no values
+and no fallbacks** — each variable below is passed 1:1 from `.env`, so that file always starts as a
+copy of `.env.example` (whose shipped values are the last column). The connection string is built from
+`POSTGRES_*` in code.
 
-| Variable                        | Description                                                        | Default                         |
+| Variable                        | Description                                                        | `.env.example` ships            |
 | ------------------------------- | ----------------------------------------------------------------- | ------------------------------- |
-| `POSTGRES_HOST`                 | Database host                                                      | `localhost` (`db` in Compose)   |
+| `POSTGRES_HOST`                 | Database host (code falls back to `localhost` for a bare `dotnet run`) | `db`                       |
 | `POSTGRES_PORT`                 | Database port                                                     | `5432`                          |
 | `POSTGRES_DB`                   | Database name                                                     | `codigoactivo`                  |
 | `POSTGRES_USER`                 | Database user                                                     | `codigoactivo`                  |
-| `POSTGRES_PASSWORD`             | Database password — **required** (e.g. `openssl rand -base64 32`) | *(none)*                        |
-| `APP_BASE_URL`                  | Public base URL used in links, outgoing emails and the generated sitemap/robots | `http://localhost:5173`         |
-| `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | host local (image sets `Europe/Madrid`) |
+| `POSTGRES_PASSWORD`             | Database password — **required**, Postgres refuses to initialize with it empty (e.g. `openssl rand -base64 32`) | *(empty)* |
+| `PGDATA`                        | Data directory inside the `db-data` volume                        | `/var/lib/postgresql/data/pgdata` |
+| `ASPNETCORE_ENVIRONMENT`        | ASP.NET Core environment — keep `Production` on servers (the dev override forces `Development`) | `Production` |
+| `ASPNETCORE_URLS`               | Address the API binds inside the container — must stay `http://+:8080`, nginx proxies to `api:8080` | `http://+:8080` |
+| `APP_BASE_URL`                  | Public base URL used in links, outgoing emails and the generated sitemap/robots (code falls back to `http://localhost:5173`) | `https://example.org` |
+| `HTTP_PORT`                     | Host port the `web` container publishes                           | `8080`                          |
+| `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | `Europe/Madrid`                 |
+| `DEMO_MODE`                     | Seed/purge realistic demo data on startup (see below) — set `false` for real deployments | `true` |
 | `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite` — `Lax` / `Strict` / `None`        | `Lax`                           |
-| `DEMO_MODE`                     | Seed/purge realistic demo data on startup (see below)             | `false`                         |
-| `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login                     | `true` in code; `.env.example` ships `false` |
-| `SMTP_HOST`                     | SMTP server — **required if verification is enabled**, and to send any email at all | *(none)*                        |
+| `LOG_TO_FILE`                   | Also write Serilog output as JSON files under `/app/logs` (the `api-logs` volume) | `true`         |
+| `FILE_STORAGE_ROOT`             | Directory for uploaded files — the `api-files` volume mounts here | `/app/files`                    |
+| `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login (`true` in code when unset) | `false`                |
+| `SMTP_HOST`                     | SMTP server — **required if verification is enabled**, and to send any email at all | *(empty)*     |
 | `SMTP_PORT`                     | SMTP port                                                         | `587`                           |
 | `SMTP_SECURITY`                 | `StartTls` / `SslOnConnect` / `None` / `Auto`                     | `StartTls`                      |
-| `SMTP_USERNAME` · `SMTP_PASSWORD` | SMTP credentials                                                | *(none)*                        |
-| `SMTP_FROM_ADDRESS`             | Sender address — **required if verification is enabled**, and to send any email at all | *(none)*                        |
-| `SMTP_FROM_NAME`                | Sender display name                                               | `Código Activo`                 |
-| `FILE_STORAGE_ROOT`             | Directory for uploaded files                                     | `files` (`/app/files` in container) |
-| `HTTP_PORT`                     | Host port the `web` container publishes                          | `8080`                          |
+| `SMTP_USERNAME` · `SMTP_PASSWORD` | SMTP credentials                                                | *(empty)*                       |
+| `SMTP_FROM_ADDRESS`             | Sender address — **required if verification is enabled**, and to send any email at all | *(empty)* |
+| `SMTP_FROM_NAME`                | Sender display name                                               | *(empty)*                       |
 
 A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsettings.json` (Serilog levels,
 `Auth:CookieName` = `CodigoActivo.Session`, `Auth:ExpireHours` = `8`, `FileStorage:MaxSizeBytes` = 10 MiB,
@@ -216,8 +231,9 @@ to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped*
 
 Setting `DEMO_MODE=true` seeds a full, realistic demo dataset on startup via `DemoDataSeeder` (it downloads
 placeholder images from picsum.photos and creates demo accounts, including an admin with the password
-`Demo1234!`). Flipping it back to `false` **removes** the demo data on the next startup. It is off by
-default and backend-only.
+`Demo1234!`). Flipping it back to `false` **removes** the demo data on the next startup. It is
+backend-only, and while the code default is `false`, **`.env.example` ships it `true`** so an
+evaluation boot comes up populated — flip it to `false` for any real deployment.
 
 > [!CAUTION]
 > Never enable `DEMO_MODE` in a real deployment — the demo admin uses a well-known password (`Demo1234!`).

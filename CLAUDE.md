@@ -31,8 +31,9 @@ dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --star
 ```
 
 The DB connection is built in code from `POSTGRES_HOST/PORT/DB/USER/PASSWORD` env vars — a bare
-`dotnet run` does **not** read the root `.env` (that file is for Docker Compose). Easiest setup:
-`docker compose up -d db` then set `POSTGRES_PASSWORD` in the environment.
+`dotnet run` does **not** read the root `.env` (that file is for Docker Compose). Easiest setup: copy
+`.env.example` to `.env` and set `POSTGRES_PASSWORD`, `docker compose up -d db`, then set
+`POSTGRES_PASSWORD` in the environment.
 
 Integration tests provision their own throwaway PostgreSQL via Testcontainers (Docker daemon required,
 no env vars, no pre-created DB). Set `CODIGOACTIVO_TEST_DB_CONNECTION` to reuse an empty disposable
@@ -55,7 +56,9 @@ There is **no frontend test suite** — `npm run typecheck` + `npm run lint` + `
 **Full stack in Docker**: `docker compose up --build` (the dev override builds both images from
 source; API on 5150, DB published). The root `docker-compose.yml` alone is the deployment file — it
 pulls the published GHCR images, no build; production from a clone must use
-`docker compose -f docker-compose.yml up -d` to skip the dev override.
+`docker compose -f docker-compose.yml up -d` to skip the dev override. The compose file carries no
+env values or fallbacks of its own: everything resolves from the root `.env`, always created by
+copying `.env.example` and adjusting values.
 
 ## Backend architecture
 
