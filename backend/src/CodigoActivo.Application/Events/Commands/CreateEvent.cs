@@ -14,6 +14,7 @@ public sealed record CreateEventCommand(CreateEventRequest Request, Guid UserId)
 public sealed class CreateEventCommandHandler(
     IEventRepository events,
     IFileRepository files,
+    ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
     IClock clock,
     IUnitOfWork uow,
@@ -51,6 +52,14 @@ public sealed class CreateEventCommandHandler(
             return categories.Error!;
         }
 
+        if (
+            request.TermsDocumentId is { } termsDocumentId
+            && !await termsDocuments.ExistsAsync(x => x.Id == termsDocumentId, ct)
+        )
+        {
+            return Error.BadRequest(ErrorCode.TermsDocumentNotFound);
+        }
+
         var ev = new Event
         {
             Title = request.Title.Trim(),
@@ -62,6 +71,7 @@ public sealed class CreateEventCommandHandler(
             SignupStartsAt = schedule.Value.SignupStartsAt,
             SignupEndsAt = schedule.Value.SignupEndsAt,
             ThumbnailId = request.ThumbnailId,
+            TermsDocumentId = request.TermsDocumentId,
             CreatedAt = clock.UtcNow,
             CreatedBy = command.UserId,
         };

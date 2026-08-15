@@ -49,9 +49,10 @@ Five projects with strict, one-directional dependencies:
 ### The domain model (DDD, pragmatic)
 
 - **Aggregates**: seven roots (`User`, `Event`, `Activity`, `Announcement`, `Resource`, `Partner`,
-  `FileEntity`) plus seven seeded lookup catalogs. The composite-key children (`EventCategory`,
-  `ActivityRoleCapacity`, `ActivityUserRoleAssignment`) have no repository and no surrogate id —
-  they are loaded and mutated only through their root.
+  `FileEntity`) plus the lookup catalogs (six seeded ones and the admin-managed
+  `EventCategoryType` and `TermsDocument`). The composite-key children (`EventCategory`,
+  `ActivityRoleCapacity`, `ActivityUserRoleAssignment`, `EventTermsAcceptance`) have no repository
+  and no surrogate id — they are loaded and mutated only through their root.
 - **One repository interface per aggregate root** (`Domain/Repositories/IDbRepositories.cs`);
   `IUnitOfWork` exposes the single `SaveChangesAsync` that commits a use case's staged changes
   (root + children) atomically — it resolves to the same scoped `DbContext` the repositories share.
@@ -84,8 +85,9 @@ sealed `<Message>Handler` implementing `ICommandHandler<,>` or `IQueryHandler<,>
 `[FromServices]` — there is no dispatcher and no MediatR. Binding DTOs (`*ListQuery`, `*Request`)
 never implement the message interfaces; the controller wraps them, together with the caller's
 identity, into the message. Cross-handler logic lives in per-aggregate collaborators
-(`SignupGate`, `ActivityValidator`, `ActivitySignupNotifier`, `AccountEmails`, `OtpValidator`,
-`EventCategoryChecker`, `FileUploadValidator`, `OrphanFileCleaner`, `ManualEmailDispatcher`).
+(`SignupGate`, `TermsGate`, `ActivityValidator`, `ActivitySignupNotifier`, `AccountEmails`,
+`OtpValidator`, `EventCategoryChecker`, `FileUploadValidator`, `OrphanFileCleaner`,
+`ManualEmailDispatcher`).
 The two sides use different mechanisms and never mix:
 
 - **Queries** compose untracked `IQueryable`s (`Repository.Query()` is `AsNoTracking`) projected

@@ -19,6 +19,8 @@ public sealed class UpdateEventCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly ITermsDocumentRepository termsDocuments =
+        Substitute.For<ITermsDocumentRepository>();
     private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
@@ -33,6 +35,7 @@ public sealed class UpdateEventCommandHandlerTests
             events,
             activities,
             files,
+            termsDocuments,
             orphanCleaner,
             new EventCategoryChecker(categoryTypes),
             clock,
@@ -63,6 +66,50 @@ public sealed class UpdateEventCommandHandlerTests
 
                 return 1;
             });
+    }
+
+    [Fact]
+    public async Task HandleAsyncUnknownTermsDocumentReturnsTermsDocumentNotFound()
+    {
+        var ev = NewEvent();
+        PrepareUpdate(ev);
+        termsDocuments.TermsDocumentExists(false);
+
+        var result = await sut.HandleAsync(
+            new UpdateEventCommand(
+                ev.Id,
+                UpdateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: Guid.NewGuid()),
+                Guid.NewGuid()
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncKnownTermsDocumentUpdatesTermsReference()
+    {
+        var ev = NewEvent();
+        var termsDocumentId = Guid.NewGuid();
+        PrepareUpdate(ev);
+        termsDocuments.TermsDocumentExists(true);
+
+        var result = await sut.HandleAsync(
+            new UpdateEventCommand(
+                ev.Id,
+                UpdateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: termsDocumentId),
+                Guid.NewGuid()
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        ev.TermsDocumentId.Should().Be(termsDocumentId);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

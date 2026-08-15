@@ -7,6 +7,7 @@ import {
   getAssignmentStatusTypesRequest,
   getEventCategoryTypesRequest,
   getResourceTypesRequest,
+  getTermsDocumentsRequest,
   getUserStatusTypesRequest,
   getUserTypesRequest,
 } from './requests'
@@ -57,5 +58,12 @@ export function useResourceTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.resourceTypes(),
     queryFn: () => getResourceTypesRequest(),
+  })
+}
+
+export function useTermsDocumentsList() {
+  return useQuery({
+    queryKey: catalogQueryKeys.termsDocuments(),
+    queryFn: () => getTermsDocumentsRequest(),
   })
 }

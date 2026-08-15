@@ -2,19 +2,29 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AppButton as Button, AppIcon } from '@/shared/ui'
+import { useQueryClient } from '@tanstack/vue-query'
+import { AppButton as Button, AppIcon, RichTextContent } from '@/shared/ui'
 
 import { useEventActivities } from '@/features/activity-signup'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
 import type { TimelineActivity, TimelineMemberAssignment } from '../model/types'
-import type { ActivityOverlap } from '@/entities/activity'
+import type { ActivityOverlap, HouseholdAssignmentInput } from '@/entities/activity'
+import { eventQueryKeys } from '@/entities/event'
+import type { EventTermsInfo } from '@/entities/event'
+import { ApiError } from '@/shared/api'
 import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
 
-const props = defineProps<{ eventId: string; signupOpen: boolean; earlyOnly?: boolean }>()
+const props = defineProps<{
+  eventId: string
+  signupOpen: boolean
+  earlyOnly?: boolean
+  terms?: EventTermsInfo | null
+}>()
 
 const router = useRouter()
 const { t } = useI18n()
 const feedback = useCrudFeedback()
+const queryClient = useQueryClient()
 const {
   activities,
   assigned,
@@ -30,8 +40,12 @@ const {
   assignHousehold,
   unassign,
   verifyOverlaps,
+  termsAccepted,
   isAuthenticated,
-} = useEventActivities(() => props.eventId)
+} = useEventActivities(
+  () => props.eventId,
+  () => !!props.terms,
+)
 
 interface Cluster {
   start: Date
@@ -128,6 +142,30 @@ const householdDialog = reactive<{
   rows: HouseholdRow[]
 }>({ visible: false, activity: null, rows: [] })
 
+type TermsPendingAction =
+  | { kind: 'self'; activityId: string; roleId: string }
+  | { kind: 'household'; activityId: string; assignments: HouseholdAssignmentInput[] }
+
+const termsDialog = reactive<{ visible: boolean; action: TermsPendingAction | null }>({
+  visible: false,
+  action: null,
+})
+
+const termsPending = computed(() => !!props.terms && termsAccepted.data.value === false)
+
+function handleSignupError(error: unknown, action: TermsPendingAction): void {
+  if (error instanceof ApiError && error.code === 'EventTermsAcceptanceRequired') {
+    void queryClient.invalidateQueries({ queryKey: eventQueryKeys.detail(props.eventId) })
+    void queryClient.invalidateQueries({ queryKey: eventQueryKeys.termsAcceptance(props.eventId) })
+    if (props.terms) {
+      termsDialog.action = action
+      termsDialog.visible = true
+      return
+    }
+  }
+  feedback.error(error, t('pages.eventDetail.toast.signupFailed'))
+}
+
 function goLogin(): void {
   void router.push({ name: 'login', query: { redirect: `/events/${props.eventId}` } })
 }
@@ -159,21 +197,43 @@ function confirmOverlapSignup(): void {
 }
 
 function doAssign(activityId: string, roleId: string): void {
+  if (termsPending.value) {
+    termsDialog.action = { kind: 'self', activityId, roleId }
+    termsDialog.visible = true
+    busyId.value = null
+    return
+  }
+  executeAssign(activityId, roleId, false)
+}
+
+function executeAssign(activityId: string, roleId: string, acceptTerms: boolean): void {
   busyId.value = activityId
   assign.mutate(
-    { activityId, activityRoleTypeId: roleId },
+    { activityId, activityRoleTypeId: roleId, acceptTerms },
     {
       onSuccess: () =>
         feedback.success(
           t('pages.eventDetail.toast.signupSuccess'),
           t('pages.eventDetail.toast.signupSent'),
         ),
-      onError: (error) => feedback.error(error, t('pages.eventDetail.toast.signupFailed')),
+      onError: (error) => handleSignupError(error, { kind: 'self', activityId, roleId }),
       onSettled: () => {
         busyId.value = null
       },
     },
   )
+}
+
+function confirmTerms(): void {
+  const action = termsDialog.action
+  termsDialog.visible = false
+  termsDialog.action = null
+  if (!action) return
+  if (action.kind === 'self') {
+    executeAssign(action.activityId, action.roleId, true)
+    return
+  }
+  mutateHousehold(action.activityId, action.assignments, true)
 }
 
 function openHousehold(activity: TimelineActivity): void {
@@ -225,9 +285,23 @@ function confirmHousehold(): void {
     return
   }
 
-  busyId.value = activity.id
+  if (termsPending.value) {
+    termsDialog.action = { kind: 'household', activityId: activity.id, assignments }
+    termsDialog.visible = true
+    return
+  }
+
+  mutateHousehold(activity.id, assignments, false)
+}
+
+function mutateHousehold(
+  activityId: string,
+  assignments: HouseholdAssignmentInput[],
+  acceptTerms: boolean,
+): void {
+  busyId.value = activityId
   assignHousehold.mutate(
-    { activityId: activity.id, assignments },
+    { activityId, assignments, acceptTerms },
     {
       onSuccess: () => {
         householdDialog.visible = false
@@ -236,7 +310,7 @@ function confirmHousehold(): void {
           t('pages.eventDetail.toast.signupSent'),
         )
       },
-      onError: (error) => feedback.error(error, t('pages.eventDetail.toast.signupFailed')),
+      onError: (error) => handleSignupError(error, { kind: 'household', activityId, assignments }),
       onSettled: () => {
         busyId.value = null
       },
@@ -447,6 +521,30 @@ function onUnassign(activity: TimelineActivity): void {
         />
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="termsDialog.visible"
+      :title="$t('pages.eventDetail.terms.header')"
+      width="min(680px, 94vw)"
+      append-to-body
+    >
+      <p class="terms__lead">
+        {{ $t('pages.eventDetail.terms.lead') }}
+        <b>{{ terms?.name }}</b>
+      </p>
+      <div class="terms__content">
+        <RichTextContent :content="terms?.description ?? ''" />
+      </div>
+      <p class="terms__q">{{ $t('pages.eventDetail.terms.question') }}</p>
+      <template #footer>
+        <Button :label="$t('common.cancel')" text @click="termsDialog.visible = false" />
+        <Button
+          :label="$t('pages.eventDetail.terms.accept')"
+          type="primary"
+          @click="confirmTerms"
+        />
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -480,6 +578,27 @@ function onUnassign(activity: TimelineActivity): void {
 
 .activities :deep(.overlap-dialog) {
   max-width: 480px;
+}
+
+.terms__lead {
+  color: var(--ca-text);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+
+.terms__content {
+  max-height: 48vh;
+  overflow-y: auto;
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.terms__q {
+  color: var(--ca-text);
+  font-weight: 600;
 }
 
 .timeline {

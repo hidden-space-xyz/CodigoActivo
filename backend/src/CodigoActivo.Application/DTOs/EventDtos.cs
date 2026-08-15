@@ -19,7 +19,8 @@ public record EventResponse(
     Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured,
-    IReadOnlyList<EventCategoryResponse> Categories
+    IReadOnlyList<EventCategoryResponse> Categories,
+    TermsDocumentResponse? TermsDocument
 )
 {
     public EventResponse()
@@ -39,7 +40,8 @@ public record EventResponse(
             null,
             Guid.Empty,
             false,
-            []
+            [],
+            null
         ) { }
 }
 
@@ -97,7 +99,8 @@ public record CreateEventRequest(
     [Required] DateTimeOffset? SignupStartsAt,
     [Required] DateTimeOffset? SignupEndsAt,
     Guid ThumbnailId,
-    IReadOnlyList<Guid>? CategoryTypeIds
+    IReadOnlyList<Guid>? CategoryTypeIds,
+    Guid? TermsDocumentId
 );
 
 public record UpdateEventRequest(
@@ -110,7 +113,8 @@ public record UpdateEventRequest(
     [Required] DateTimeOffset? SignupStartsAt,
     [Required] DateTimeOffset? SignupEndsAt,
     Guid ThumbnailId,
-    IReadOnlyList<Guid>? CategoryTypeIds
+    IReadOnlyList<Guid>? CategoryTypeIds,
+    Guid? TermsDocumentId
 );
 
 public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
@@ -128,3 +132,21 @@ public record UpdateEventCategoryTypeRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
     [Required] [MaxLength(9)] [RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
 );
+
+public record TermsDocumentResponse(Guid Id, string Name, string Description)
+{
+    public TermsDocumentResponse()
+        : this(Guid.Empty, string.Empty, string.Empty) { }
+}
+
+public record CreateTermsDocumentRequest(
+    [Required] [MaxLength(120)] [NotBlank] string Name,
+    [Required] [JsonString] string Description
+);
+
+public record UpdateTermsDocumentRequest(
+    [Required] [MaxLength(120)] [NotBlank] string Name,
+    [Required] [JsonString] string Description
+);
+
+public record EventTermsAcceptanceResponse(bool Accepted);

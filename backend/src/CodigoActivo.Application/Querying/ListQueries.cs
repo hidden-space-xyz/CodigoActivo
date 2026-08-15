@@ -38,6 +38,11 @@ public sealed class EventCategoryTypeListQuery : PageQuery
     public string? Color { get; set; }
 }
 
+public sealed class TermsDocumentListQuery : PageQuery
+{
+    public string? Name { get; set; }
+}
+
 public sealed class EventAttendeeListQuery : PageQuery
 {
     public string? Search { get; set; }

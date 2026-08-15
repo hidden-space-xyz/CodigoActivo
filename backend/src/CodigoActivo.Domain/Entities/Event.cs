@@ -20,6 +20,9 @@ public class Event : AuditableEntity, IFeaturable
     public Guid ThumbnailId { get; set; }
     public FileEntity Thumbnail { get; set; } = null!;
 
+    public Guid? TermsDocumentId { get; set; }
+    public TermsDocument? TermsDocument { get; set; }
+
     public ICollection<Activity> Activities { get; set; } = [];
     public ICollection<EventCategory> Categories { get; set; } = [];
     public ICollection<EventRating> Ratings { get; set; } = [];

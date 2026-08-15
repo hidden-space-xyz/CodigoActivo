@@ -33,6 +33,15 @@ public static class Projections
                     Color = category.EventCategoryType.Color,
                 })
                 .ToList(),
+            TermsDocument =
+                @event.TermsDocument == null
+                    ? null
+                    : new TermsDocumentResponse
+                    {
+                        Id = @event.TermsDocument.Id,
+                        Name = @event.TermsDocument.Name,
+                        Description = @event.TermsDocument.Description,
+                    },
         };
 
     public static readonly Expression<Func<Event, EventListItemResponse>> EventListItem =
@@ -273,6 +282,14 @@ public static class Projections
         Name = categoryType.Name,
         Color = categoryType.Color,
     };
+
+    public static readonly Expression<Func<TermsDocument, TermsDocumentResponse>> TermsDocument =
+        termsDocument => new TermsDocumentResponse
+        {
+            Id = termsDocument.Id,
+            Name = termsDocument.Name,
+            Description = termsDocument.Description,
+        };
 
     public static readonly Expression<
         Func<ActivityModalityType, ActivityModalityTypeResponse>

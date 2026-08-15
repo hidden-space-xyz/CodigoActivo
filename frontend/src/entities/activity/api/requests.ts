@@ -108,21 +108,25 @@ export async function assignActivityRequest(
   activityId: string,
   userId: string,
   roleId: string,
+  acceptTerms = false,
 ): Promise<void> {
   await patchApiActivitiesActivityIdUserIdAssign(activityId, userId, {
     activityRoleTypeId: roleId,
+    acceptTerms,
   })
 }
 
 export async function assignHouseholdRequest(
   activityId: string,
   assignments: readonly HouseholdAssignmentInput[],
+  acceptTerms = false,
 ): Promise<void> {
   await postApiActivitiesActivityIdAssignHousehold(activityId, {
     assignments: assignments.map((assignment) => ({
       userId: assignment.userId,
       activityRoleTypeId: assignment.roleId,
     })),
+    acceptTerms,
   })
 }
 

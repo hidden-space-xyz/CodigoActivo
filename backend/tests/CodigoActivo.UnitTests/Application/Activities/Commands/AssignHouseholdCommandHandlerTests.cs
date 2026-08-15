@@ -21,6 +21,7 @@ public sealed class AssignHouseholdCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IAssignmentStatusTypeRepository statuses =
         Substitute.For<IAssignmentStatusTypeRepository>();
     private readonly IActivityRoleTypeRepository roleTypes =
@@ -38,6 +39,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             activities,
             users,
             new SignupGate(activities, users, executor, clock),
+            new TermsGate(activities, events, executor, clock),
             new ActivitySignupNotifier(
                 activities,
                 users,
@@ -189,6 +191,96 @@ public sealed class AssignHouseholdCommandHandlerTests
             );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncTermsRequiredWithoutAcceptFlagReturnsTermsAcceptanceRequired()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(
+            activityId,
+            OpenStart,
+            OpenEnd,
+            eventId: Guid.NewGuid(),
+            termsDocumentId: Guid.NewGuid()
+        );
+        users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
+        events.TermsAccepted(null);
+
+        var result = await sut.HandleAsync(
+            new AssignHouseholdCommand(
+                activityId,
+                actingUserId,
+                new AssignHouseholdRequest([new(childId, SeedIds.ActivityRoleTypes.Participant)]),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncTermsRequiredWithAcceptFlagPersistsAcceptanceForActingUser()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(
+            activityId,
+            OpenStart,
+            OpenEnd,
+            eventId: eventId,
+            termsDocumentId: termsDocumentId
+        );
+        users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        events.TermsAccepted(null);
+        statuses.RequestedStatusNamed("Solicitado");
+
+        var result = await sut.HandleAsync(
+            new AssignHouseholdCommand(
+                activityId,
+                actingUserId,
+                new AssignHouseholdRequest(
+                    [new(childId, SeedIds.ActivityRoleTypes.Participant)],
+                    AcceptTerms: true
+                ),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle();
+        await events
+            .Received(1)
+            .AddTermsAcceptanceAsync(
+                Arg.Is<EventTermsAcceptance>(a =>
+                    a != null
+                    && a.EventId == eventId
+                    && a.UserId == actingUserId
+                    && a.TermsDocumentId == termsDocumentId
+                    && a.AcceptedAt == Now
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -9,4 +9,5 @@ import type { HouseholdAssignmentRequest } from './householdAssignmentRequest';
 export interface AssignHouseholdRequest {
   /** @nullable */
   assignments?: HouseholdAssignmentRequest[] | null;
+  acceptTerms?: boolean;
 }

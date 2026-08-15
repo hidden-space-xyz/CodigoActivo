@@ -4,6 +4,7 @@ public static class CacheTags
 {
     public const string Events = "events";
     public const string EventCategoryTypes = "event-category-types";
+    public const string TermsDocuments = "terms-documents";
     public const string Announcements = "announcements";
     public const string Resources = "resources";
     public const string Partners = "partners";
@@ -36,6 +37,7 @@ public static class CacheTags
     [
         Events,
         EventCategoryTypes,
+        TermsDocuments,
         Announcements,
         Resources,
         Partners,

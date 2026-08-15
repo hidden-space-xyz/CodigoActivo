@@ -227,6 +227,12 @@ export const es = {
     EventRatingNotFinished: 'Solo puedes valorar eventos que ya han terminado.',
     EventRatingAttendanceRequired:
       'Solo puedes valorar eventos en los que has participado con una inscripción confirmada.',
+    EventTermsAcceptanceRequired:
+      'Debes aceptar los términos y condiciones del evento para apuntarte.',
+    TermsDocumentNotFound: 'No se encontraron los términos y condiciones.',
+    TermsDocumentNameAlreadyExists: 'Ya existen unos términos y condiciones con ese nombre.',
+    TermsDocumentInUse:
+      'No se pueden eliminar estos términos y condiciones porque hay eventos que los usan o personas que ya los han aceptado.',
 
     ResourceNotFound: 'No se encontró el recurso.',
     ResourceThumbnailNotFound: 'No se encontró la imagen del recurso.',
@@ -915,6 +921,12 @@ export const es = {
         question: '¿Quieres apuntarte de todos modos?',
         enrollAnyway: 'Apuntarme igualmente',
       },
+      terms: {
+        header: 'Términos y condiciones',
+        lead: 'Para apuntarte a las actividades de este evento primero debes leer y aceptar:',
+        question: '¿Aceptas estos términos y condiciones?',
+        accept: 'Aceptar y apuntarme',
+      },
       toast: {
         signupSuccess: 'Te has apuntado a la actividad.',
         signupSent: 'Inscripción enviada',
@@ -951,6 +963,7 @@ export const es = {
         title: 'Título',
         subtitle: 'Subtítulo',
         categories: 'Categorías',
+        termsDocument: 'Términos y condiciones (opcional)',
         description: 'Descripción',
         eventStart: 'Inicio del evento',
         eventEnd: 'Fin del evento',
@@ -958,9 +971,12 @@ export const es = {
         signupStart: 'Apertura de inscripción',
         signupEnd: 'Cierre de inscripción',
       },
+      termsPlaceholder: 'Sin términos y condiciones',
       hints: {
         earlySignupStart:
           'Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.',
+        termsDocument:
+          'Si los seleccionas, cada persona deberá aceptarlos al apuntarse a su primera actividad del evento. Se gestionan en Configuración.',
       },
       errors: {
         categoriesRequired: 'Selecciona al menos una categoría.',
@@ -1091,6 +1107,22 @@ export const es = {
       deleteHeader: 'Eliminar categoría',
       deleteMessage:
         '¿Seguro que quieres eliminar "{name}"? Se quitará de los eventos que la usen.',
+      terms: {
+        title: 'Términos y condiciones',
+        newButton: 'Nuevos',
+        loadError: 'No se pudieron cargar los términos y condiciones.',
+        empty: 'Sin términos y condiciones.',
+        editHeader: 'Editar términos y condiciones',
+        newHeader: 'Nuevos términos y condiciones',
+        content: 'Contenido',
+        contentRequired: 'El contenido es obligatorio.',
+        updated: 'Términos y condiciones actualizados.',
+        created: 'Términos y condiciones creados.',
+        deleted: 'Términos y condiciones eliminados.',
+        deleteHeader: 'Eliminar términos y condiciones',
+        deleteMessage:
+          '¿Seguro que quieres eliminar "{name}"? Solo es posible si ningún evento los usa y nadie los ha aceptado.',
+      },
     },
     account: {
       notAuthenticated: 'No autenticado',

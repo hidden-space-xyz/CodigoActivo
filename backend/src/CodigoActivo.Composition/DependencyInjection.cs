@@ -411,6 +411,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityRoleTypeRepository, ActivityRoleTypeRepository>();
         services.AddScoped<IAssignmentStatusTypeRepository, AssignmentStatusTypeRepository>();
         services.AddScoped<IEventCategoryTypeRepository, EventCategoryTypeRepository>();
+        services.AddScoped<ITermsDocumentRepository, TermsDocumentRepository>();
         services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
     }
@@ -508,6 +509,8 @@ public static class DependencyInjection
         services.AddScoped<GetEventByIdQueryHandler>();
         services.AddScoped<GetPastEventYearsQueryHandler>();
         services.AddScoped<ListEventCategoryTypesQueryHandler>();
+        services.AddScoped<ListTermsDocumentsQueryHandler>();
+        services.AddScoped<GetEventTermsAcceptanceQueryHandler>();
         services.AddScoped<CreateEventCommandHandler>();
         services.AddScoped<UpdateEventCommandHandler>();
         services.AddScoped<DeleteEventCommandHandler>();
@@ -515,6 +518,9 @@ public static class DependencyInjection
         services.AddScoped<CreateEventCategoryTypeCommandHandler>();
         services.AddScoped<UpdateEventCategoryTypeCommandHandler>();
         services.AddScoped<DeleteEventCategoryTypeCommandHandler>();
+        services.AddScoped<CreateTermsDocumentCommandHandler>();
+        services.AddScoped<UpdateTermsDocumentCommandHandler>();
+        services.AddScoped<DeleteTermsDocumentCommandHandler>();
         services.AddScoped<EventCategoryChecker>();
     }
 
@@ -538,6 +544,7 @@ public static class DependencyInjection
         services.AddScoped<ChangeAssignmentStatusCommandHandler>();
         services.AddScoped<ChangeAssignmentRoleCommandHandler>();
         services.AddScoped<SignupGate>();
+        services.AddScoped<TermsGate>();
         services.AddScoped<ActivityValidator>();
         services.AddScoped<ActivitySignupNotifier>();
     }

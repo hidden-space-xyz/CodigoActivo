@@ -42,13 +42,7 @@ public sealed class DemoDataSeeder(
         int? EarlyOpensDaysBeforeStart,
         int OpensDaysBeforeStart,
         int ClosesDaysBeforeStart
-    )[] SignupWindows =
-    [
-        (110, 95, 5),
-        (null, 45, 25),
-        (65, 50, 5),
-        (37, 30, 3),
-    ];
+    )[] SignupWindows = [(110, 95, 5), (null, 45, 25), (65, 50, 5), (37, 30, 3)];
 
     private static readonly string[] CategoryColors =
     [
@@ -104,6 +98,12 @@ public sealed class DemoDataSeeder(
 
             context.Files.AddRange(graph.Files);
             context.EventCategoryTypes.AddRange(graph.CategoryTypes);
+            var existingTermsDocumentIds = await context
+                .TermsDocuments.Select(t => t.Id)
+                .ToListAsync(ct);
+            context.TermsDocuments.AddRange(
+                graph.TermsDocuments.Where(t => !existingTermsDocumentIds.Contains(t.Id))
+            );
             await context.SaveChangesAsync(ct);
 
             context.Events.AddRange(graph.Events);
@@ -166,6 +166,10 @@ public sealed class DemoDataSeeder(
             .Range(0, DemoCategories.Length)
             .Select(CategoryId)
             .ToList();
+        var demoTermsDocumentIds = Enumerable
+            .Range(0, DemoTermsDocuments.Length)
+            .Select(TermsDocumentId)
+            .ToList();
         var ownedEventIds = await context
             .Events.Where(e => e.CreatedBy == AdminId)
             .Select(e => e.Id)
@@ -178,6 +182,11 @@ public sealed class DemoDataSeeder(
         await context
             .ActivityUserRoleAssignments.Where(x =>
                 ownedActivityIds.Contains(x.ActivityId) || demoUserIds.Contains(x.UserId)
+            )
+            .ExecuteDeleteAsync(ct);
+        await context
+            .EventTermsAcceptances.Where(x =>
+                ownedEventIds.Contains(x.EventId) || demoUserIds.Contains(x.UserId)
             )
             .ExecuteDeleteAsync(ct);
         await context
@@ -198,6 +207,14 @@ public sealed class DemoDataSeeder(
             .EventCategoryTypes.Where(c =>
                 demoCategoryIds.Contains(c.Id)
                 && !context.EventCategories.Any(ec => ec.EventCategoryTypeId == c.Id)
+            )
+            .ExecuteDeleteAsync(ct);
+
+        await context
+            .TermsDocuments.Where(t =>
+                demoTermsDocumentIds.Contains(t.Id)
+                && !context.Events.Any(e => e.TermsDocumentId == t.Id)
+                && !context.EventTermsAcceptances.Any(a => a.TermsDocumentId == t.Id)
             )
             .ExecuteDeleteAsync(ct);
 
@@ -305,6 +322,19 @@ public sealed class DemoDataSeeder(
             categoryIdByName[DemoCategories[i]] = CategoryId(i);
         }
 
+        var termsDocuments = new List<TermsDocument>(DemoTermsDocuments.Length);
+        for (var i = 0; i < DemoTermsDocuments.Length; i++)
+        {
+            termsDocuments.Add(
+                new TermsDocument
+                {
+                    Id = TermsDocumentId(i),
+                    Name = DemoTermsDocuments[i].Name,
+                    Description = BuildRichText(DemoTermsDocuments[i].Description, null, null),
+                }
+            );
+        }
+
         var files = new List<FileEntity>();
         var events = new List<Event>(DemoEvents.Length);
         var eventCategories = new List<EventCategory>();
@@ -321,12 +351,7 @@ public sealed class DemoDataSeeder(
             var end = start.AddDays(duration - 1);
             var (earlyOpensDaysBeforeStart, opensDaysBeforeStart, closesDaysBeforeStart) =
                 SignupWindows[e % SignupWindows.Length];
-            var signupOpensAt = ToUtc(
-                clock.TimeZone,
-                start.AddDays(-opensDaysBeforeStart),
-                9,
-                0
-            );
+            var signupOpensAt = ToUtc(clock.TimeZone, start.AddDays(-opensDaysBeforeStart), 9, 0);
             var signupClosesAt = ToUtc(
                 clock.TimeZone,
                 start.AddDays(-closesDaysBeforeStart),
@@ -358,6 +383,7 @@ public sealed class DemoDataSeeder(
                     SignupEndsAt = signupClosesAt,
                     Featured = e is FeaturedEventIndex,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
+                    TermsDocumentId = ResolveTermsDocumentId(e),
                     CreatedAt = eventCreatedAt,
                     CreatedBy = AdminId,
                 }
@@ -394,7 +420,11 @@ public sealed class DemoDataSeeder(
                         ActivityEndsAt = activityStart.AddMinutes(90),
                         EventId = eventId,
                         ActivityModalityTypeId = ResolveModalityId(activity.Modality),
-                        ThumbnailId = NewFile(files, $"evento-{label}-actividad-{activityLabel}.jpg", now),
+                        ThumbnailId = NewFile(
+                            files,
+                            $"evento-{label}-actividad-{activityLabel}.jpg",
+                            now
+                        ),
                         CreatedAt = eventCreatedAt.AddMinutes(a * 20),
                         CreatedBy = AdminId,
                         RoleCapacities = [.. BuildRoleCapacities(globalIndex)],
@@ -502,6 +532,7 @@ public sealed class DemoDataSeeder(
             users,
             files,
             categoryTypes,
+            termsDocuments,
             events,
             eventCategories,
             activities,
@@ -544,11 +575,12 @@ public sealed class DemoDataSeeder(
 
     private static IEnumerable<ActivityRoleCapacity> BuildRoleCapacities(int globalIndex)
     {
-        return RoleCapacityPlans[globalIndex % 3].Select(plan => new ActivityRoleCapacity
-        {
-            ActivityRoleTypeId = plan.RoleTypeId,
-            DesiredCount = plan.DesiredCount,
-        });
+        return RoleCapacityPlans[globalIndex % 3]
+            .Select(plan => new ActivityRoleCapacity
+            {
+                ActivityRoleTypeId = plan.RoleTypeId,
+                DesiredCount = plan.DesiredCount,
+            });
     }
 
     private static IEnumerable<ActivityUserRoleAssignment> BuildAssignments(
@@ -774,6 +806,16 @@ public sealed class DemoDataSeeder(
         return MakeId(3, index);
     }
 
+    private static Guid TermsDocumentId(int index)
+    {
+        return MakeId(4, index);
+    }
+
+    private static Guid ResolveTermsDocumentId(int eventIndex)
+    {
+        return TermsDocumentId(eventIndex % DemoTermsDocuments.Length);
+    }
+
     private static Guid ResolveUserTypeId(UserKind kind)
     {
         return kind switch
@@ -891,6 +933,8 @@ public sealed class DemoDataSeeder(
 
     private sealed record ContentSeed(string Title, string Subtitle, string[] Description);
 
+    private sealed record TermsDocumentSeed(string Name, string[] Description);
+
     private sealed record ExternalResourceSeed(string Title, string Subtitle, string Url);
 
     private sealed record PartnerSeed(string Name, int Tier, string? Web);
@@ -988,6 +1032,46 @@ public sealed class DemoDataSeeder(
         "Impresión 3D",
         "Infantil",
         CategoryComunidad,
+    ];
+
+    private static readonly TermsDocumentSeed[] DemoTermsDocuments =
+    [
+        new(
+            "Normas generales de participación",
+            [
+                "La participación en las actividades de la asociación implica un compromiso de respeto hacia el resto de participantes, "
+                    + "el equipo de voluntariado y los espacios que nos acogen. Queremos que cada sesión sea un lugar seguro y agradable "
+                    + "para aprender, así que no se tolerarán faltas de respeto, actitudes discriminatorias ni comportamientos que "
+                    + "impidan el normal desarrollo de la actividad.",
+                "Te pedimos puntualidad tanto a la llegada como a la recogida. El material que la asociación pone a disposición de cada "
+                    + "participante (kits, portátiles, herramientas) debe devolverse al final de cada sesión en el mismo estado en el que "
+                    + "se entregó; cualquier incidencia debe comunicarse a la persona responsable de la actividad en el momento en que se "
+                    + "produzca.",
+                "Si no vas a poder asistir a una sesión, avísanos con la mayor antelación posible desde tu cuenta o respondiendo al correo "
+                    + "de confirmación. Las plazas son limitadas y una ausencia comunicada a tiempo permite que otra persona pueda "
+                    + "aprovecharla. La inscripción podrá cancelarse en caso de ausencias reiteradas sin justificar.",
+                "Al inscribirte en la primera actividad de un evento aceptas estas normas para todas las actividades de ese evento. "
+                    + "La aceptación queda registrada junto a tu inscripción y puedes consultar el texto vigente en cualquier momento "
+                    + "desde la página del evento.",
+            ]
+        ),
+        new(
+            "Autorización de imagen y normas para menores",
+            [
+                "Durante las actividades el equipo de la asociación puede tomar fotografías y grabaciones en las que aparezcan las "
+                    + "personas participantes. Estas imágenes se utilizan exclusivamente para difundir la labor de la asociación en su "
+                    + "página web, redes sociales y memorias de actividad, siempre sin ánimo de lucro y sin asociarlas a datos "
+                    + "personales.",
+                "En el caso de menores de edad, la inscripción debe realizarla su padre, madre o tutor legal desde su propia cuenta, y "
+                    + "supone la autorización expresa para la participación del menor en la actividad y para el uso de imagen descrito en "
+                    + "el punto anterior. Los menores estarán acompañados por el equipo de voluntariado durante toda la sesión.",
+                "La entrega y recogida de menores debe hacerse dentro del horario de la actividad por la persona adulta responsable. Si "
+                    + "la recogida la realizará otra persona, es imprescindible comunicarlo por adelantado al equipo de la actividad.",
+                "Puedes revocar la autorización de imagen o ejercer los derechos de acceso, rectificación y supresión escribiendo a la "
+                    + "asociación desde el correo con el que estás registrado. La revocación no afectará a los materiales ya publicados "
+                    + "cuya retirada resulte técnicamente desproporcionada, que dejarán de utilizarse en nuevas publicaciones.",
+            ]
+        ),
     ];
 
     private static readonly EventSeed[] DemoEvents =
@@ -2508,6 +2592,7 @@ internal sealed record DemoGraph(
     List<User> Users,
     List<FileEntity> Files,
     List<EventCategoryType> CategoryTypes,
+    List<TermsDocument> TermsDocuments,
     List<Event> Events,
     List<EventCategory> EventCategories,
     List<Activity> Activities,

@@ -25,4 +25,6 @@ export interface CreateEventRequest {
   thumbnailId?: string;
   /** @nullable */
   categoryTypeIds?: string[] | null;
+  /** @nullable */
+  termsDocumentId?: string | null;
 }

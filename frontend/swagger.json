@@ -1790,6 +1790,113 @@
         }
       }
     },
+    "/api/events/termsDocument": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsDocumentResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTermsDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsDocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/terms-acceptance": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventTermsAcceptanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/events/{eventId}/feature": {
       "patch": {
         "tags": [
@@ -1957,6 +2064,66 @@
         "parameters": [
           {
             "name": "eventCategoryTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/events/termsDocument/{termsDocumentId}": {
+      "put": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "termsDocumentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTermsDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsDocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "termsDocumentId",
             "in": "path",
             "required": true,
             "schema": {
@@ -3576,6 +3743,9 @@
               "$ref": "#/components/schemas/HouseholdAssignmentRequest"
             },
             "nullable": true
+          },
+          "acceptTerms": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -3586,6 +3756,9 @@
           "activityRoleTypeId": {
             "type": "string",
             "format": "uuid"
+          },
+          "acceptTerms": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -3879,6 +4052,11 @@
               "format": "uuid"
             },
             "nullable": true
+          },
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3936,6 +4114,20 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTermsDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -4267,6 +4459,10 @@
           "EventEarlySignupNotBeforeSignup",
           "EventRatingNotFinished",
           "EventRatingAttendanceRequired",
+          "EventTermsAcceptanceRequired",
+          "TermsDocumentNotFound",
+          "TermsDocumentNameAlreadyExists",
+          "TermsDocumentInUse",
           "ResourceNotFound",
           "ResourceThumbnailNotFound",
           "ResourceTypeNotFound",
@@ -5025,6 +5221,9 @@
               "$ref": "#/components/schemas/EventCategoryResponse"
             },
             "nullable": true
+          },
+          "termsDocument": {
+            "$ref": "#/components/schemas/TermsDocumentResponse"
           }
         },
         "additionalProperties": false
@@ -5217,6 +5416,15 @@
               "$ref": "#/components/schemas/EventRoleTypeSummaryResponse"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsAcceptanceResponse": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -5749,6 +5957,49 @@
         },
         "additionalProperties": false
       },
+      "TermsDocumentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TermsDocumentResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermsDocumentResponse"
+            },
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "TimeOverlapResponse": {
         "type": "object",
         "properties": {
@@ -5895,6 +6146,11 @@
               "format": "uuid"
             },
             "nullable": true
+          },
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5952,6 +6208,20 @@
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateTermsDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -12,6 +12,7 @@ namespace CodigoActivo.Application.Activities.Commands;
 public sealed record AssignActivityCommand(
     Guid ActivityId,
     Guid UserId,
+    Guid ActingUserId,
     AssignRequest Request,
     bool IsAdmin
 ) : ICommand<Result<AssignmentResponse>>;
@@ -20,6 +21,7 @@ public sealed class AssignActivityCommandHandler(
     IActivityRepository activities,
     IUserRepository users,
     SignupGate signupGate,
+    TermsGate termsGate,
     ActivitySignupNotifier notifier,
     ListAssignmentStatusTypesQueryHandler statusTypes,
     IQueryExecutor executor,
@@ -61,6 +63,20 @@ public sealed class AssignActivityCommandHandler(
         if (await activities.AssignmentExistsAsync(command.UserId, command.ActivityId, ct))
         {
             return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
+        }
+
+        if (!command.IsAdmin || command.ActingUserId == command.UserId)
+        {
+            var terms = await termsGate.EnsureAcceptedAsync(
+                command.ActivityId,
+                command.ActingUserId,
+                command.Request.AcceptTerms,
+                ct
+            );
+            if (terms.IsFailure)
+            {
+                return terms.Error!;
+            }
         }
 
         var assignment = new ActivityUserRoleAssignment
