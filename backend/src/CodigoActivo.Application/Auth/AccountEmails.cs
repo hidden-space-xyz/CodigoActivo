@@ -20,7 +20,6 @@ public sealed class AccountEmails(
         var message = VerificationEmail.Create(
             user.Email!,
             user.FirstName,
-            otpCode,
             BuildAccountUrl(VerificationPath, user.Id, otpCode),
             BuildSiteUrl(),
             verification.OtpLifetime

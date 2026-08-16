@@ -47,7 +47,7 @@ and member sign-up, plus an **admin back-office** where the team runs it all.
   tabs, plus a printable roster and badges), announcements, resources, partners, users and catalogs.
   Users and event attendees export to CSV.
 - **Email** — admins write plain-text mail with attachments to one member or to everyone matching the
-  current filters; activity signups and the admin's decision on them notify members automatically,
+  current filters; the admin's decision on an activity signup notifies the member automatically,
   always reaching the guardian's address when the enrolled person is a dependent minor.
 - **Spanish UI, fully driven by Vue I18n** — no string is hardcoded, so a second language is a drop-in
   locale file.

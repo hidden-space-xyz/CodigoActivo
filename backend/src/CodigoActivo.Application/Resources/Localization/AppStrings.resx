@@ -76,17 +76,14 @@ Equipo de Código Activo</value>
   <data name="emails.verification.introHtml" xml:space="preserve">
     <value>Gracias por registrarte en &lt;b&gt;Código Activo&lt;/b&gt;. Para activar tu cuenta, pulsa el botón:</value>
   </data>
-  <data name="emails.verification.codePrompt" xml:space="preserve">
-    <value>O, si lo prefieres, copia este código en la página de registro:</value>
-  </data>
   <data name="emails.verification.buttonLabel" xml:space="preserve">
     <value>Verificar mi cuenta</value>
   </data>
   <data name="emails.verification.expiryText" xml:space="preserve">
-    <value>El enlace y el código caducan en {0} minutos.</value>
+    <value>El enlace caduca en {0} minutos.</value>
   </data>
   <data name="emails.verification.expiryHtml" xml:space="preserve">
-    <value>El enlace y el código caducan en &lt;b&gt;{0} minutos&lt;/b&gt;.</value>
+    <value>El enlace caduca en &lt;b&gt;{0} minutos&lt;/b&gt;.</value>
   </data>
   <data name="emails.verification.ignoreNote" xml:space="preserve">
     <value>Si no has creado una cuenta en Código Activo, puedes ignorar este mensaje.</value>
@@ -114,33 +111,6 @@ Equipo de Código Activo</value>
   </data>
   <data name="emails.passwordReset.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado este cambio, puedes ignorar este mensaje; tu contraseña seguirá siendo la misma.</value>
-  </data>
-  <data name="emails.activitySignup.subject" xml:space="preserve">
-    <value>Inscripción recibida: {0}</value>
-  </data>
-  <data name="emails.activitySignup.heading" xml:space="preserve">
-    <value>Inscripción recibida</value>
-  </data>
-  <data name="emails.activitySignup.intro" xml:space="preserve">
-    <value>Hemos recibido tu solicitud de inscripción y ya ha quedado registrada.</value>
-  </data>
-  <data name="emails.activitySignup.pending" xml:space="preserve">
-    <value>La organización la revisará y te avisaremos por correo en cuanto la plaza quede confirmada. Por ahora no necesitas hacer nada más.</value>
-  </data>
-  <data name="emails.activitySignup.participantsLabel" xml:space="preserve">
-    <value>Personas inscritas:</value>
-  </data>
-  <data name="emails.activitySignup.participantText" xml:space="preserve">
-    <value>- {0} ({1})</value>
-  </data>
-  <data name="emails.activitySignup.participantHtml" xml:space="preserve">
-    <value>{0} — &lt;b&gt;{1}&lt;/b&gt;</value>
-  </data>
-  <data name="emails.activitySignup.accountPrompt" xml:space="preserve">
-    <value>Puedes consultar el estado de tus inscripciones cuando quieras desde tu área personal:</value>
-  </data>
-  <data name="emails.activitySignup.buttonLabel" xml:space="preserve">
-    <value>Ver mis inscripciones</value>
   </data>
   <data name="emails.activityDecision.confirmedSubject" xml:space="preserve">
     <value>Inscripción confirmada: {0}</value>

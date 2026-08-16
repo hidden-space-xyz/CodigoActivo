@@ -22,15 +22,7 @@ public sealed class EmailLayoutContractTests
 
     public static TheoryData<string> Templates()
     {
-        return
-        [
-            "verification",
-            "passwordReset",
-            "activitySignup",
-            "decisionConfirmed",
-            "decisionDenied",
-            "manual",
-        ];
+        return ["verification", "passwordReset", "decisionConfirmed", "decisionDenied", "manual"];
     }
 
     [Theory]
@@ -105,7 +97,6 @@ public sealed class EmailLayoutContractTests
             "verification" => VerificationEmail.Create(
                 "ada@test.com",
                 "Ada",
-                "123456",
                 $"{Site}/verify-account",
                 Site,
                 TimeSpan.FromMinutes(15)
@@ -116,15 +107,6 @@ public sealed class EmailLayoutContractTests
                 $"{Site}/reset-password",
                 Site,
                 TimeSpan.FromMinutes(30)
-            ),
-            "activitySignup" => ActivitySignupEmail.Create(
-                "ada@test.com",
-                "Ada",
-                Details,
-                [new ActivitySignupParticipant("Ada Lovelace", "Participante")],
-                TimeZoneInfo.Utc,
-                $"{Site}/account",
-                Site
             ),
             "decisionConfirmed" => ActivitySignupDecisionEmail.Confirmed(
                 "ada@test.com",

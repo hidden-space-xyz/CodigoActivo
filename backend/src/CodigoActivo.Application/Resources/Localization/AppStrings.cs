@@ -22,18 +22,6 @@ public static class AppStrings
 
     public static string EmailsActivityDecisionSignupPhraseSelf => Get("emails.activityDecision.signupPhraseSelf");
 
-    public static string EmailsActivitySignupAccountPrompt => Get("emails.activitySignup.accountPrompt");
-
-    public static string EmailsActivitySignupButtonLabel => Get("emails.activitySignup.buttonLabel");
-
-    public static string EmailsActivitySignupHeading => Get("emails.activitySignup.heading");
-
-    public static string EmailsActivitySignupIntro => Get("emails.activitySignup.intro");
-
-    public static string EmailsActivitySignupParticipantsLabel => Get("emails.activitySignup.participantsLabel");
-
-    public static string EmailsActivitySignupPending => Get("emails.activitySignup.pending");
-
     public static string EmailsDetailsActivityLabel => Get("emails.details.activityLabel");
 
     public static string EmailsDetailsEventLabel => Get("emails.details.eventLabel");
@@ -76,8 +64,6 @@ public static class AppStrings
 
     public static string EmailsVerificationButtonLabel => Get("emails.verification.buttonLabel");
 
-    public static string EmailsVerificationCodePrompt => Get("emails.verification.codePrompt");
-
     public static string EmailsVerificationHeading => Get("emails.verification.heading");
 
     public static string EmailsVerificationIgnoreNote => Get("emails.verification.ignoreNote");
@@ -115,21 +101,6 @@ public static class AppStrings
     public static string EmailsActivityDecisionSignupPhraseNamed(string participantName)
     {
         return Format("emails.activityDecision.signupPhraseNamed", participantName);
-    }
-
-    public static string EmailsActivitySignupParticipantHtml(string fullName, string roleName)
-    {
-        return Format("emails.activitySignup.participantHtml", fullName, roleName);
-    }
-
-    public static string EmailsActivitySignupParticipantText(string fullName, string roleName)
-    {
-        return Format("emails.activitySignup.participantText", fullName, roleName);
-    }
-
-    public static string EmailsActivitySignupSubject(string activityTitle)
-    {
-        return Format("emails.activitySignup.subject", activityTitle);
     }
 
     public static string EmailsDetailsRowText(string label, string value)

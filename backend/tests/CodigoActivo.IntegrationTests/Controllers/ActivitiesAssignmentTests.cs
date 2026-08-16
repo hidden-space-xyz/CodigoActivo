@@ -226,7 +226,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignHouseholdSelfAndChildEmailsOneSignupSummaryToTheMember()
+    public async Task AssignHouseholdSelfAndChildSendsNoEmail()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -242,14 +242,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var message = Factory.EmailSender.Sent.Should().ContainSingle().Which;
-        message.ToAddress.Should().Be(TestSeedData.MemberEmail);
-        message.Subject.Should().Be("Inscripción recibida: Actividad");
-        message
-            .TextBody.Should()
-            .Contain("Marta Miembro (Líder)")
-            .And.Contain("Mateo Miembro (Participante)")
-            .And.Contain("Evento");
+        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]

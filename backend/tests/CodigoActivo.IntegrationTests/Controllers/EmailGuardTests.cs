@@ -78,40 +78,50 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         return activityId;
     }
 
-    private static async Task<int> DriveSignupLoopAsync(
-        HttpClient client,
+    private static async Task<int> DriveDecisionLoopAsync(
+        WebApplicationFactory<Program> host,
         Guid activityId,
         int iterations
     )
     {
-        var url = $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}";
+        var member = await LoginAsync(host, TestSeedData.MemberCredentials);
+        using var assign = await member.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            Ct
+        );
+        assign.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var admin = await LoginAsync(host, TestSeedData.AdminCredentials);
+        var url = $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/change-status";
         var accepted = 0;
 
         for (var i = 0; i < iterations; i++)
         {
-            using var assign = await client.PatchJsonAsync(
-                $"{url}/assign",
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            var statusId =
+                i % 2 == 0
+                    ? SeedIds.AssignmentStatusTypes.Confirmed
+                    : SeedIds.AssignmentStatusTypes.Denied;
+
+            using var response = await admin.PatchJsonAsync(
+                url,
+                new ChangeAssignmentStatusRequest(statusId),
                 Ct
             );
-            assign.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
             accepted++;
-
-            using var unassign = await client.PatchJsonAsync($"{url}/unassign", ct: Ct);
-            unassign.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
         return accepted;
     }
 
     [Fact]
-    public async Task AssignRepeatedSignupLoopKeepsSucceedingButStopsMailingTheMember()
+    public async Task ChangeStatusRepeatedDecisionLoopKeepsSucceedingButStopsMailingTheMember()
     {
         var host = ArmedGuard();
         var activityId = await SeedActivityAsync();
-        var client = await LoginAsync(host, TestSeedData.MemberCredentials);
 
-        var accepted = await DriveSignupLoopAsync(client, activityId, iterations: 6);
+        var accepted = await DriveDecisionLoopAsync(host, activityId, iterations: 6);
 
         accepted.Should().Be(6, "delivery must never fail the write");
         Factory
@@ -124,8 +134,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     {
         var host = ArmedGuard();
         var activityId = await SeedActivityAsync();
-        var member = await LoginAsync(host, TestSeedData.MemberCredentials);
-        await DriveSignupLoopAsync(member, activityId, iterations: 6);
+        await DriveDecisionLoopAsync(host, activityId, iterations: 6);
         Factory.EmailSender.Clear();
 
         var admin = await LoginAsync(host, TestSeedData.AdminCredentials);

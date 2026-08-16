@@ -57,9 +57,6 @@ public static class EmailStyles
     public const string Paragraph =
         Font + $"margin:0 0 16px 0;font-size:15px;line-height:1.65;color:{EmailBranding.Text};";
 
-    public const string TightParagraph =
-        Font + $"margin:0 0 10px 0;font-size:15px;line-height:1.65;color:{EmailBranding.Text};";
-
     public const string Muted =
         Font + $"margin:0 0 16px 0;font-size:13px;line-height:1.6;color:{EmailBranding.TextMuted};";
 
@@ -72,14 +69,6 @@ public static class EmailStyles
 
     public const string FallbackLink = $"color:{EmailBranding.PrimaryInk};word-break:break-all;";
 
-    public const string OtpCell =
-        "padding:18px 16px;border-radius:10px;"
-        + $"background-color:{EmailBranding.PrimarySoft};border:1px solid {EmailBranding.PrimaryEdge};";
-
-    public const string OtpCode =
-        $"font-family:{EmailBranding.MonoStack};font-size:26px;font-weight:700;"
-        + $"letter-spacing:4px;color:{EmailBranding.PrimaryInk};";
-
     public const string PanelCell =
         "padding:4px 18px;border-radius:10px;"
         + $"background-color:{EmailBranding.Panel};border:1px solid {EmailBranding.Border};";
@@ -90,12 +79,6 @@ public static class EmailStyles
 
     public const string CalloutText =
         Font + $"margin:0;font-size:14px;line-height:1.6;color:{EmailBranding.Text};";
-
-    public const string BulletMark =
-        Font + $"padding:0 0 8px 0;font-size:15px;line-height:1.6;color:{EmailBranding.Primary};";
-
-    public const string BulletText =
-        Font + $"padding:0 0 8px 0;font-size:15px;line-height:1.6;color:{EmailBranding.Text};";
 
     public const string DetailsLabel =
         Font + "padding:11px 16px 11px 0;font-size:13px;line-height:1.5;vertical-align:top;"

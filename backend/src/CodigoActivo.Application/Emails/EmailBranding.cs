@@ -8,7 +8,6 @@ public static class EmailBranding
 {
     public const string FontStack =
         "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
-    public const string MonoStack = "'JetBrains Mono','Courier New',Courier,monospace";
 
     public const string Canvas = "#f5f5f5";
     public const string Surface = "#ffffff";
@@ -24,14 +23,12 @@ public static class EmailBranding
     public const string Primary = "#f9a320";
     public const string PrimaryInk = "#8f5900";
     public const string PrimarySoft = "#fef3e2";
-    public const string PrimaryEdge = "#fddfb1";
     public const string OnPrimary = "#2a1400";
 
     public const string LogoContentId = "codigoactivo-logo";
     public const string LogoFileName = "codigo-activo.png";
 
     public static readonly EmailAccent Brand = new(Primary, PrimarySoft, PrimaryInk);
-    public static readonly EmailAccent Info = new("#159fde", "#e1f3fb", "#0b6fa0");
     public static readonly EmailAccent Success = new("#2e9e57", "#e4f2e9", "#257f46");
     public static readonly EmailAccent Danger = new("#d84a3b", "#fae8e6", "#c13b2e");
 

@@ -55,24 +55,6 @@ public static class EmailBlocks
         return new EmailBlock(html, url);
     }
 
-    public static EmailBlock Code(string prompt, string code)
-    {
-        var encoded = WebUtility.HtmlEncode(code);
-
-        var html = $"""
-            {Paragraph(WebUtility.HtmlEncode(prompt))}
-            {TableOpen}
-            <tr>
-            <td class="ca-otp" align="center" style="{EmailStyles.OtpCell}">
-            <span class="ca-code" style="{EmailStyles.OtpCode}">{encoded}</span>
-            </td>
-            </tr>
-            </table>
-            """;
-
-        return new EmailBlock(html, $"{prompt}\n\n{code}");
-    }
-
     public static EmailBlock Callout(string text, EmailAccent accent)
     {
         var accentEdge = $"border-left:4px solid {accent.Line};";
@@ -103,31 +85,6 @@ public static class EmailBlocks
             </tr>
             </table>
             """;
-
-        return new EmailBlock(html, text);
-    }
-
-    public static EmailBlock Bullets(string label, IReadOnlyList<EmailBlock> items)
-    {
-        var rows = string.Concat(
-            items.Select(item => $"""
-                <tr>
-                <td width="16" valign="top" style="{EmailStyles.BulletMark}">&bull;</td>
-                <td class="ca-text" valign="top" style="{EmailStyles.BulletText}">{item.Html}</td>
-                </tr>
-                """)
-        );
-
-        var encodedLabel = WebUtility.HtmlEncode(label);
-
-        var html = $"""
-            <p class="ca-text" style="{EmailStyles.TightParagraph}">{encodedLabel}</p>
-            {TableOpen}
-            {rows}
-            </table>
-            """;
-
-        var text = string.Join("\n", new[] { label }.Concat(items.Select(item => item.Text)));
 
         return new EmailBlock(html, text);
     }

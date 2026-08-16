@@ -22,7 +22,6 @@ public sealed class AssignActivityCommandHandler(
     IUserRepository users,
     SignupGate signupGate,
     TermsGate termsGate,
-    ActivitySignupNotifier notifier,
     ListAssignmentStatusTypesQueryHandler statusTypes,
     IQueryExecutor executor,
     IClock clock,
@@ -90,13 +89,6 @@ public sealed class AssignActivityCommandHandler(
         await activities.AddAssignmentAsync(assignment, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-
-        await notifier.NotifySignupAsync(
-            command.ActivityId,
-            command.UserId,
-            [new SignupLine(command.UserId, command.Request.ActivityRoleTypeId)],
-            ct
-        );
 
         var requestedStatus = await GetRequestedStatusAsync(ct);
         return new AssignmentResponse(

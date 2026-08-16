@@ -1,33 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-
 import { BaseButton } from '@/shared/ui'
 
 const props = defineProps<{
   minorCount: number
   email: string
   requiresVerification: boolean
-  isVerified: boolean
-  isVerifying: boolean
   isResending: boolean
-  verifyError: string | null
   resendCooldown: number
-  resendCount: number
 }>()
-const emit = defineEmits<{ reset: []; verify: [otp: string]; resend: [] }>()
-
-const otp = ref('')
-
-watch(
-  () => props.resendCount,
-  () => {
-    otp.value = ''
-  },
-)
-
-function submitVerify(): void {
-  if (otp.value.trim()) emit('verify', otp.value.trim())
-}
+const emit = defineEmits<{ reset: []; resend: [] }>()
 </script>
 
 <template>
@@ -47,43 +28,18 @@ function submitVerify(): void {
       {{ $t('features.register.success.reminder') }}
     </p>
 
-    <div v-if="isVerified || !props.requiresVerification" class="reg-success__verified">
-      {{
-        props.requiresVerification
-          ? $t('features.register.success.verifiedRequired')
-          : $t('features.register.success.verifiedActive')
-      }}
+    <div v-if="!props.requiresVerification" class="reg-success__verified">
+      {{ $t('features.register.success.verifiedActive') }}
       <BaseButton :to="{ name: 'login' }" variant="primary" class="reg-success__login">
         {{ $t('common.login') }}
       </BaseButton>
     </div>
 
-    <form v-else class="reg-success__verify" @submit.prevent="submitVerify">
+    <div v-else class="reg-success__verify">
       <p class="reg-success__verify-intro">
         {{ $t('features.register.success.verifyIntroBefore') }} <b>{{ email }}</b
         >{{ $t('features.register.success.verifyIntroAfter') }}
       </p>
-      <label class="reg-success__verify-label" for="reg-otp">{{
-        $t('features.register.success.otpLabel')
-      }}</label>
-      <div class="reg-success__verify-row">
-        <el-input
-          id="reg-otp"
-          v-model="otp"
-          autocomplete="off"
-          autocapitalize="none"
-          autocorrect="off"
-          spellcheck="false"
-          :placeholder="$t('features.register.success.otpPlaceholder')"
-          :class="{ 'ca-invalid': verifyError !== null }"
-        />
-        <BaseButton type="submit" variant="primary" :loading="isVerifying" :disabled="!otp.trim()">
-          {{ $t('features.register.success.verify') }}
-        </BaseButton>
-      </div>
-      <small v-if="verifyError" class="reg-success__verify-error" role="alert">
-        {{ verifyError }}
-      </small>
       <p class="reg-success__resend">
         {{ $t('features.register.success.resendPrompt') }}
         <BaseButton
@@ -100,7 +56,7 @@ function submitVerify(): void {
           }}
         </BaseButton>
       </p>
-    </form>
+    </div>
 
     <div class="reg-success__actions">
       <BaseButton :to="{ name: 'home' }" variant="primary">
@@ -204,34 +160,6 @@ function submitVerify(): void {
 .reg-success__verify-intro b {
   color: var(--ca-text);
   overflow-wrap: anywhere;
-}
-
-.reg-success__verify-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-  margin-bottom: 8px;
-}
-
-.reg-success__verify-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.reg-success__verify-error {
-  display: block;
-  margin-top: 8px;
-  color: var(--ca-danger);
-  font-size: 13px;
-}
-
-.ca-invalid {
-  --el-input-border-color: var(--ca-danger);
-  --el-input-hover-border-color: var(--ca-danger);
-  --el-input-focus-border-color: var(--ca-danger);
 }
 
 .reg-success__resend {

@@ -118,8 +118,6 @@ public static class EmailLayout
                 border-bottom-color: #2a2a31 !important;
               }
               .ca-row { border-top-color: #2a2a31 !important; }
-              .ca-otp { background-color: #2b1e08 !important; border-color: #6b5011 !important; }
-              .ca-code { color: #f9a320 !important; }
               .ca-brand, .ca-h1 { color: #f3f4f6 !important; }
               .ca-text, .ca-value { color: #e6e7ea !important; }
               .ca-muted, .ca-label { color: #9a9ba1 !important; }

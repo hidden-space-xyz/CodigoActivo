@@ -284,9 +284,9 @@ export const es = {
     RegisterEmailOrPhoneAlreadyInUse: 'El correo electrónico o el teléfono ya están en uso.',
     RegisterMinorBirthDateNotMinor:
       'La fecha de nacimiento indicada no corresponde a un menor de edad.',
-    OtpInvalidOrExpired: 'El código de verificación no es válido o ha expirado.',
-    OtpResendNotAllowed: 'No se puede reenviar el código de verificación para esta cuenta.',
-    OtpResendCooldownActive: 'Espera un momento antes de solicitar un nuevo código.',
+    OtpInvalidOrExpired: 'El enlace de verificación no es válido o ha expirado.',
+    OtpResendNotAllowed: 'No se puede reenviar el correo de verificación para esta cuenta.',
+    OtpResendCooldownActive: 'Espera un momento antes de solicitar un nuevo enlace.',
     PasswordResetInvalidOrExpired:
       'El enlace para restablecer la contraseña no es válido o ha caducado. Solicita uno nuevo.',
 
@@ -1237,24 +1237,18 @@ export const es = {
           'Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes posible para conocernos más.',
         reminder:
           'Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la sección de eventos.',
-        verifiedRequired: 'Tu cuenta ha sido verificada. Ya puedes iniciar sesión.',
         verifiedActive: 'Tu cuenta está activa. Ya puedes iniciar sesión.',
         verifyIntroBefore: 'Te hemos enviado un correo electrónico de verificación a',
-        verifyIntroAfter:
-          '. Pulsa el enlace del mensaje para activar tu cuenta, o pega aquí el código que aparece en el correo.',
-        otpLabel: 'Código de verificación',
-        otpPlaceholder: 'Pega aquí el código del correo',
-        verify: 'Verificar',
+        verifyIntroAfter: '. Pulsa el enlace del mensaje para activar tu cuenta.',
         resendPrompt: '¿No has recibido el correo? Revisa la carpeta de spam o',
-        resendCountdown: 'reenviar código ({s}s)',
-        resend: 'reenviar código',
+        resendCountdown: 'reenviar el correo ({s}s)',
+        resend: 'reenviar el correo',
         viewEvents: 'Ver eventos',
         registerAnother: 'Registrar a otra persona',
       },
       toast: {
-        codeResentDetail: 'Te hemos enviado un nuevo código de verificación.',
-        codeResentSummary: 'Código reenviado',
         linkResentDetail: 'Te hemos enviado un nuevo enlace de verificación. Revisa tu correo.',
+        linkResentSummary: 'Correo reenviado',
       },
       verify: {
         incompleteLink: 'El enlace de verificación no es válido o está incompleto.',

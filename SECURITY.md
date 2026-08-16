@@ -84,24 +84,24 @@ configured SMTP server (`SMTP_HOST` + `SMTP_FROM_ADDRESS`), or the API refuses t
 
 ### Automatic signup notifications
 
-Signing up for an activity emails an acknowledgement that the request is pending, and an admin confirming or
-rejecting it emails the outcome. Both are queued by `ActivitySignupNotifier` *after* the write has been committed
-and delivered by the background dispatcher described below, so no signup request waits on SMTP.
+Signing up for an activity sends no email; the only automatic notification is the outcome an admin emails by
+confirming or rejecting the request. It is queued by `ActivitySignupNotifier` *after* the status change has
+been committed and delivered by the background dispatcher described below, so no request waits on SMTP.
 
 - **The address never comes from the request.** It is resolved server-side from the enrolled account, and a
   dependent minor — who has no address of their own — resolves to their guardian. A caller cannot redirect a
   notification anywhere.
-- **Delivery failures are logged and swallowed.** An SMTP outage must not fail or roll back a signup that is
-  already persisted, and the SMTP error must never reach an API response. With `SMTP_HOST` unset the signup
-  still succeeds; only the notification is lost (and logged as an error).
+- **Delivery failures are logged and swallowed.** An SMTP outage must not fail or roll back a status change
+  that is already persisted, and the SMTP error must never reach an API response. With `SMTP_HOST` unset the
+  status change still succeeds; only the notification is lost (and logged as an error).
 - **Every interpolated value is HTML-encoded** into the same branded template the other flows use, so a
   member's name or an activity title cannot inject markup into the outgoing mail.
-Send volume is bounded by the outbound email guard described next — `assign` → `unassign` → `assign` still
-recreates the row every time, but it stops producing mail once the recipient's budget is spent.
+Send volume is bounded by the outbound email guard described next — flipping a decision back and forth
+re-sends the outcome every time, but it stops producing mail once the recipient's budget is spent.
 
 ### The outbound email guard
 
-Every **automatic** send — account verification, password reset and both activity notifications — passes
+Every **automatic** send — account verification, password reset and the signup decision notification — passes
 through one guard before it reaches the SMTP relay, so a new email flow is rate-limited by construction
 rather than by remembering to add a cooldown. Admin-written email is exempt (see *Admin-sent email*).
 
@@ -129,7 +129,7 @@ Three properties are deliberate:
   cannot buy free attempts, and a **full queue is treated exactly like a denial** — the quota stays spent and
   every caller's existing `catch` handles it unchanged.
 - **A denial never fails the write, and never leaks.** `ForgotPasswordAsync` still returns its unconditional
-  success (the anti-enumeration invariant); activity signups still commit; registration still returns 201
+  success (the anti-enumeration invariant); signup decisions still commit; registration still returns 201
   without disarming the account's resend cooldown. The single flow that reports anything is
   `POST /api/auth/{userId}/resend-verification`, which answers the existing `409 OtpResendCooldownActive` —
   indistinguishable from that account's own cooldown, so no new oracle is added and no API contract changes.

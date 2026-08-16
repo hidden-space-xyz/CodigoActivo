@@ -13,18 +13,13 @@ const {
   submittedEmail,
   submittedMinorCount,
   requiresVerification,
-  isVerified,
-  verifyError,
   resendCooldown,
-  resendCount,
   confirmAdult,
   backToGate,
   submit,
-  verify,
   resend,
   reset,
   isSubmitting,
-  isVerifying,
   isResending,
 } = useRegistration()
 </script>
@@ -54,13 +49,8 @@ const {
           :minor-count="submittedMinorCount"
           :email="submittedEmail"
           :requires-verification="requiresVerification"
-          :is-verified="isVerified"
-          :is-verifying="isVerifying"
           :is-resending="isResending"
-          :verify-error="verifyError"
           :resend-cooldown="resendCooldown"
-          :resend-count="resendCount"
-          @verify="verify"
           @resend="resend"
           @reset="reset"
         />
