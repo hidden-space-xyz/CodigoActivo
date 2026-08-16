@@ -140,7 +140,7 @@ re-skinned by mapping `--el-*` to `--ca-*`.
 - **No hardcoded user-facing strings, either side.** Backend: every member/admin-visible string is a key
   in `Application/Resources/Localization/AppStrings.resx` via the typed `AppStrings` accessor
   (composites are methods with typed parameters — no `string.Format` at call sites); exception messages,
-  Serilog templates and seeded catalog text are deliberately excluded. Frontend: every string is a Vue
+  log templates and seeded catalog text are deliberately excluded. Frontend: every string is a Vue
   I18n key in `es.ts` (`$t` / `useI18n()` / `i18n.global.t`).
 - Type colocation is intentional: all repository interfaces in one file, request+response DTOs per
   aggregate in one `*Dtos.cs`, one use case per file. Private fields are `camelCase`, no leading underscore.

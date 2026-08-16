@@ -38,7 +38,6 @@ services:
       APP_BASE_URL: ${APP_BASE_URL}
       APP_TIMEZONE: ${APP_TIMEZONE}
       DEMO_MODE: ${DEMO_MODE}
-      LOG_TO_FILE: ${LOG_TO_FILE}
       AUTH_SAMESITE: ${AUTH_SAMESITE}
       FILE_STORAGE_ROOT: ${FILE_STORAGE_ROOT}
       ACCOUNT_VERIFICATION_REQUIRED: ${ACCOUNT_VERIFICATION_REQUIRED}
@@ -51,7 +50,6 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME}
     volumes:
       - api-files:${FILE_STORAGE_ROOT}
-      - api-logs:/app/logs
       - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
     networks: [backend, frontend]
     read_only: true
@@ -83,5 +81,4 @@ networks:
 volumes:
   db-data:
   api-files:
-  api-logs:
   api-dataprotection:

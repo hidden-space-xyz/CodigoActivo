@@ -23,8 +23,9 @@ development override builds them from the working tree instead (see
 [Local / debug overlay](#local--debug-overlay)).
 
 **Networks**: `frontend` (bridge) and `backend` (internal — the DB is unreachable from outside).
-**Volumes**: `db-data` (database), `api-files` (uploads), `api-logs` (Serilog output),
-`api-dataprotection` (ASP.NET Data Protection keys). Both `api` and `web` run as non-root with
+**Volumes**: `db-data` (database), `api-files` (uploads), `api-dataprotection` (ASP.NET Data
+Protection keys). Logs go to stdout only — read them with `docker compose logs`, no volume involved.
+Both `api` and `web` run as non-root with
 capabilities dropped; the `api` container additionally runs with a read-only filesystem and a
 `HEALTHCHECK` against `/api/auth/csrf` (the `web` container checks `/healthz`).
 
@@ -135,7 +136,6 @@ copy of `.env.example` (whose shipped values are the last column). The connectio
 | `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | `Europe/Madrid`                 |
 | `DEMO_MODE`                     | Seed/purge realistic demo data on startup (see below) — set `false` for real deployments | `true` |
 | `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite` — `Lax` / `Strict` / `None`        | `Lax`                           |
-| `LOG_TO_FILE`                   | Also write Serilog output as JSON files under `/app/logs` (the `api-logs` volume) | `true`         |
 | `FILE_STORAGE_ROOT`             | Directory for uploaded files — the `api-files` volume mounts here | `/app/files`                    |
 | `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login (`true` in code when unset) | `false`                |
 | `SMTP_HOST`                     | SMTP server — **required if verification is enabled**, and to send any email at all | *(empty)*     |
@@ -145,7 +145,7 @@ copy of `.env.example` (whose shipped values are the last column). The connectio
 | `SMTP_FROM_ADDRESS`             | Sender address — **required if verification is enabled**, and to send any email at all | *(empty)* |
 | `SMTP_FROM_NAME`                | Sender display name                                               | *(empty)*                       |
 
-A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsettings.json` (Serilog levels,
+A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsettings.json` (log levels,
 `Auth:CookieName` = `CodigoActivo.Session`, `Auth:ExpireHours` = `8`, `FileStorage:MaxSizeBytes` = 10 MiB,
 `AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`, `ManualEmail:MaxRecipients`
 = `500`, `ManualEmail:MaxAttachments` = `10`, `ManualEmail:MaxAttachmentsBytes` = 8 MiB, plus the
