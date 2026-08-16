@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json.Serialization;
 using CodigoActivo.API.Caching;
 using CodigoActivo.API.Extensions;
@@ -14,185 +13,132 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
-using Serilog.Context;
-using Serilog.Events;
-using Serilog.Formatting.Compact;
 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
-    .CreateBootstrapLogger();
+var builder = WebApplication.CreateBuilder(args);
 
-try
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options =>
 {
-    Log.Information("Starting CodigoActivo API");
+    options.IncludeScopes = true;
+    options.SingleLine = true;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff zzz ";
+});
 
-    var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCodigoActivo(builder.Configuration);
 
-    builder.Host.UseSerilog(
-        (context, services, loggerConfiguration) =>
-        {
-            loggerConfiguration
-                .ReadFrom.Configuration(context.Configuration)
-                .ReadFrom.Services(services)
-                .Enrich.FromLogContext();
-
-            if (context.Configuration.GetValue("LOG_TO_FILE", true))
-            {
-                loggerConfiguration.WriteTo.File(
-                    new RenderedCompactJsonFormatter(),
-                    Path.Combine(
-                        context.HostingEnvironment.ContentRootPath,
-                        "logs",
-                        "codigoactivo-.log"
-                    ),
-                    rollingInterval: RollingInterval.Day,
-                    retainedFileCountLimit: 14
-                );
-            }
-
-            loggerConfiguration.WriteTo.Console(new RenderedCompactJsonFormatter());
-        }
-    );
-
-    builder.Services.AddCodigoActivo(builder.Configuration);
-
-    builder
-        .Services.AddControllers()
-        .AddJsonOptions(options =>
-            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
-        )
-        .ConfigureApiBehaviorOptions(options =>
-        {
-            options.InvalidModelStateResponseFactory = context =>
-            {
-                var (statusCode, body) = ApiErrorResponseExtensions.Create(
-                    Error.BadRequest(ErrorCode.RequestValidationFailed),
-                    context.HttpContext
-                );
-                return new ObjectResult(body) { StatusCode = statusCode };
-            };
-        });
-
-    builder.Services.AddAntiforgery(options =>
+builder
+    .Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
+    )
+    .ConfigureApiBehaviorOptions(options =>
     {
-        options.HeaderName = "X-CSRF-TOKEN";
-        options.Cookie.Name = "CodigoActivo.Csrf";
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var (statusCode, body) = ApiErrorResponseExtensions.Create(
+                Error.BadRequest(ErrorCode.RequestValidationFailed),
+                context.HttpContext
+            );
+            return new ObjectResult(body) { StatusCode = statusCode };
+        };
+    });
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "CodigoActivo.Csrf";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = ResolveSameSite(builder.Configuration["AUTH_SAMESITE"]);
+});
+
+builder
+    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
         options.Cookie.SameSite = ResolveSameSite(builder.Configuration["AUTH_SAMESITE"]);
-    });
-
-    builder
-        .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(options =>
-        {
-            options.Cookie.Name =
-                builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-                ? CookieSecurePolicy.SameAsRequest
-                : CookieSecurePolicy.Always;
-            options.Cookie.SameSite = ResolveSameSite(builder.Configuration["AUTH_SAMESITE"]);
-            options.SlidingExpiration = true;
-            options.ExpireTimeSpan = TimeSpan.FromHours(
-                builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
-            );
-
-            options.Events.OnRedirectToLogin = ctx =>
-                ctx.HttpContext.WriteApiErrorAsync(
-                    Error.Unauthorized(ErrorCode.AuthenticationRequired)
-                );
-            options.Events.OnRedirectToAccessDenied = ctx =>
-                ctx.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
-        });
-
-    builder.Services.AddAuthorizationBuilder()
-        .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
-
-    var outputCacheLifetime = TimeSpan.FromMinutes(1);
-    builder.Services.AddOutputCache(options =>
-    {
-        foreach (var tag in CacheTags.OutputCached)
-        {
-            options.AddPolicy(tag, policy => policy.Expire(outputCacheLifetime).Tag(tag));
-        }
-
-        options.AddPolicy(
-            OutputCachePolicies.Seo,
-            policy =>
-                policy
-                    .Expire(outputCacheLifetime)
-                    .Tag(CacheTags.Events, CacheTags.Announcements, CacheTags.Resources)
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(
+            builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
         );
-    });
-    builder.Services.AddSingleton<ICacheInvalidator, HttpCacheInvalidator>();
 
-    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddProblemDetails();
-
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(c =>
-    {
-        c.OperationFilter<JsonResponseMediaTypeFilter>();
-        c.OperationFilter<CamelCaseQueryParametersFilter>();
-        c.DocumentFilter<ApiErrorResponseDocumentFilter>();
+        options.Events.OnRedirectToLogin = ctx =>
+            ctx.HttpContext.WriteApiErrorAsync(
+                Error.Unauthorized(ErrorCode.AuthenticationRequired)
+            );
+        options.Events.OnRedirectToAccessDenied = ctx =>
+            ctx.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
     });
 
-    var app = builder.Build();
+builder
+    .Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
-    await InitializeDatabaseAsync(app, app.Lifetime.ApplicationStopping);
-    LogEmailGuardState(app);
-
-    app.Use(
-        async (httpContext, next) =>
-        {
-            using (LogContext.PushProperty("CorrelationId", httpContext.TraceIdentifier))
-            {
-                await next();
-            }
-        }
-    );
-
-    app.UseSerilogRequestLogging(options =>
+var outputCacheLifetime = TimeSpan.FromMinutes(1);
+builder.Services.AddOutputCache(options =>
+{
+    foreach (var tag in CacheTags.OutputCached)
     {
-        options.GetLevel = static (httpContext, _, ex) => ResolveRequestLogLevel(httpContext, ex);
-    });
-
-    app.UseExceptionHandler();
-
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CodigoActivo API v1"));
+        options.AddPolicy(tag, policy => policy.Expire(outputCacheLifetime).Tag(tag));
     }
 
-    app.UseHttpsRedirection();
+    options.AddPolicy(
+        OutputCachePolicies.Seo,
+        policy =>
+            policy
+                .Expire(outputCacheLifetime)
+                .Tag(CacheTags.Events, CacheTags.Announcements, CacheTags.Resources)
+    );
+});
+builder.Services.AddSingleton<ICacheInvalidator, HttpCacheInvalidator>();
 
-    app.UseMiddleware<CacheControlMiddleware>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    app.UseMiddleware<CsrfValidationMiddleware>();
-
-    app.UseOutputCache();
-
-    app.MapControllers();
-
-    await app.RunAsync();
-}
-catch (Exception ex) when (ex is not HostAbortedException)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
 {
-    Log.Fatal(ex, "CodigoActivo API terminated unexpectedly");
-    throw;
-}
-finally
+    c.OperationFilter<JsonResponseMediaTypeFilter>();
+    c.OperationFilter<CamelCaseQueryParametersFilter>();
+    c.DocumentFilter<ApiErrorResponseDocumentFilter>();
+});
+
+await using var app = builder.Build();
+
+await InitializeDatabaseAsync(app, app.Lifetime.ApplicationStopping);
+LogEmailGuardState(app);
+
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+app.UseExceptionHandler();
+
+if (app.Environment.IsDevelopment())
 {
-    await Log.CloseAndFlushAsync();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CodigoActivo API v1"));
 }
+
+app.UseHttpsRedirection();
+
+app.UseMiddleware<CacheControlMiddleware>();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseMiddleware<CsrfValidationMiddleware>();
+
+app.UseOutputCache();
+
+app.MapControllers();
+
+await app.RunAsync();
 
 static SameSiteMode ResolveSameSite(string? value)
 {
@@ -202,17 +148,6 @@ static SameSiteMode ResolveSameSite(string? value)
         "strict" => SameSiteMode.Strict,
         "lax" => SameSiteMode.Lax,
         _ => SameSiteMode.Lax,
-    };
-}
-
-static LogEventLevel ResolveRequestLogLevel(HttpContext httpContext, Exception? ex)
-{
-    return httpContext.Response.StatusCode switch
-    {
-        _ when ex is not null => LogEventLevel.Error,
-        >= StatusCodes.Status500InternalServerError => LogEventLevel.Error,
-        >= StatusCodes.Status400BadRequest => LogEventLevel.Warning,
-        _ => LogEventLevel.Information,
     };
 }
 

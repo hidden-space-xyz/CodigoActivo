@@ -85,7 +85,6 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         builder.UseSetting("DEMO_MODE", "false");
         builder.UseSetting("SMTP_HOST", "smtp.test");
         builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
-        builder.UseSetting("LOG_TO_FILE", "false");
 
         builder.ConfigureTestServices(services =>
         {
