@@ -238,6 +238,39 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncEmailDeliveryFailsStillPersistsTheStatusChange()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        users.TargetUser(userId, SeedIds.UserTypes.Participant);
+        roleTypes.CatalogRoles();
+        var assignment = Assignment(
+            userId,
+            activityId,
+            roleTypeId: SeedIds.ActivityRoleTypes.Volunteer,
+            statusId: SeedIds.AssignmentStatusTypes.Requested
+        );
+        activities.ExistingAssignment(assignment);
+        StatusFound(SeedIds.AssignmentStatusTypes.Confirmed, "Confirmado");
+        emailSender.ThrowOnSend = new InvalidOperationException("smtp is down");
+
+        var result = await sut.HandleAsync(
+            new ChangeAssignmentStatusCommand(
+                activityId,
+                userId,
+                new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed)
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        assignment.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task HandleAsyncSameStatusReappliedDoesNotSendEmail()
     {
         var activityId = Guid.NewGuid();

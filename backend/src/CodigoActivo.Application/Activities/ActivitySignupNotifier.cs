@@ -9,8 +9,6 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Activities;
 
-public readonly record struct SignupLine(Guid UserId, Guid RoleTypeId);
-
 public sealed class ActivitySignupNotifier(
     IActivityRepository activities,
     IUserRepository users,
@@ -23,81 +21,6 @@ public sealed class ActivitySignupNotifier(
 )
 {
     private const string EventPath = "/events";
-    private const string AccountPath = "/account";
-
-    public async Task NotifySignupAsync(
-        Guid activityId,
-        Guid recipientUserId,
-        IReadOnlyList<SignupLine> lines,
-        CancellationToken ct
-    )
-    {
-        try
-        {
-            var details = await GetEmailDetailsAsync(activityId, ct);
-            if (details is null)
-            {
-                return;
-            }
-
-            var contacts = await GetContactsAsync(
-                [.. lines.Select(line => line.UserId).Append(recipientUserId).Distinct()],
-                ct
-            );
-            if (
-                !contacts.TryGetValue(recipientUserId, out var target)
-                || ResolveRecipient(target) is not { } recipient
-            )
-            {
-                return;
-            }
-
-            var roleNames = await GetRoleNamesAsync(ct);
-            var participants = new List<ActivitySignupParticipant>(lines.Count);
-            foreach (var line in lines)
-            {
-                if (contacts.TryGetValue(line.UserId, out var contact))
-                {
-                    participants.Add(
-                        new ActivitySignupParticipant(
-                            contact.FullName,
-                            roleNames.GetValueOrDefault(line.RoleTypeId, string.Empty)
-                        )
-                    );
-                }
-            }
-
-            if (participants.Count is 0)
-            {
-                return;
-            }
-
-            await emailSender.SendAsync(
-                ActivitySignupEmail.Create(
-                    recipient.Address,
-                    recipient.Name,
-                    details,
-                    participants,
-                    clock.TimeZone,
-                    BuildUrl(AccountPath),
-                    BuildSiteUrl()
-                ),
-                ct
-            );
-        }
-        catch (EmailRateLimitedException)
-        {
-            return;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogError(
-                ex,
-                "Failed to send the signup confirmation email for activity {ActivityId}",
-                activityId
-            );
-        }
-    }
 
     public async Task NotifyDecisionAsync(
         Guid activityId,

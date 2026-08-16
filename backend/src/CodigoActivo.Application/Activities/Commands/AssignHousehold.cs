@@ -21,7 +21,6 @@ public sealed class AssignHouseholdCommandHandler(
     IUserRepository users,
     SignupGate signupGate,
     TermsGate termsGate,
-    ActivitySignupNotifier notifier,
     ListAssignmentStatusTypesQueryHandler statusTypes,
     IQueryExecutor executor,
     IClock clock,
@@ -147,12 +146,6 @@ public sealed class AssignHouseholdCommandHandler(
         if (created.Count > 0)
         {
             await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-            await notifier.NotifySignupAsync(
-                command.ActivityId,
-                command.ActingUserId,
-                created.ConvertAll(item => new SignupLine(item.UserId, item.RoleTypeId)),
-                ct
-            );
         }
 
         return Result.Success<IReadOnlyList<AssignmentResponse>>(created);

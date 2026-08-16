@@ -36,7 +36,7 @@ export function useAccountVerification() {
     onSuccess: () => {
       feedback.success(
         t('features.register.toast.linkResentDetail'),
-        t('features.register.toast.codeResentSummary'),
+        t('features.register.toast.linkResentSummary'),
       )
     },
     onError: (error) => {

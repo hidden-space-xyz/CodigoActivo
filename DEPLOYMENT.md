@@ -222,7 +222,7 @@ to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped*
 > replica multiplies every cap by the replica count.
 >
 > Because automatic mail is now delivered in the background, a broken `SMTP_*` configuration no longer shows
-> up as a failing request — the signup or registration succeeds and the failure surfaces later as repeated
+> up as a failing request — the registration or signup decision succeeds and the failure surfaces later as repeated
 > `Error`s from the dispatcher naming the `{Kind}` and `{Recipient}` it could not deliver. Two more lines are
 > worth alerting on: an `Error` saying the queue "is full" (the relay has been down long enough to back up
 > 1000 messages) and a `Warning` at shutdown saying messages "were left undelivered".

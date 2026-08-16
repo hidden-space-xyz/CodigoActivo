@@ -4,13 +4,11 @@ using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
@@ -24,12 +22,9 @@ public sealed class AssignActivityCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IAssignmentStatusTypeRepository statuses =
         Substitute.For<IAssignmentStatusTypeRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes =
-        Substitute.For<IActivityRoleTypeRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
-    private readonly RecordingEmailSender emailSender = new();
     private readonly AssignActivityCommandHandler sut;
 
     public AssignActivityCommandHandlerTests()
@@ -40,16 +35,6 @@ public sealed class AssignActivityCommandHandlerTests
             users,
             new SignupGate(activities, users, executor, clock),
             new TermsGate(activities, events, executor, clock),
-            new ActivitySignupNotifier(
-                activities,
-                users,
-                executor,
-                clock,
-                emailSender,
-                new ApplicationOptions { BaseUrl = "https://app.test" },
-                new ListActivityRoleTypesQueryHandler(roleTypes, executor, new FakeHybridCache()),
-                NullLogger<ActivitySignupNotifier>.Instance
-            ),
             new ListAssignmentStatusTypesQueryHandler(statuses, executor, new FakeHybridCache()),
             executor,
             clock,
@@ -1009,68 +994,5 @@ public sealed class AssignActivityCommandHandlerTests
                 TestContext.Current.CancellationToken
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncValidRequestSendsPendingSignupEmailToTheUser()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
-        roleTypes.CatalogRoles();
-
-        await sut.HandleAsync(
-            new AssignActivityCommand(
-                activityId,
-                userId,
-                userId,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Volunteer),
-                IsAdmin: false
-            ),
-            TestContext.Current.CancellationToken
-        );
-
-        var message = emailSender.Sent.Should().ContainSingle().Which;
-        message.ToAddress.Should().Be("test@user.test");
-        message.ToName.Should().Be("Test");
-        message.Subject.Should().Be("Inscripción recibida: Taller de robótica");
-        message
-            .TextBody.Should()
-            .Contain("Test User (Voluntario)")
-            .And.Contain("20/07/2026, de 16:00 a 18:30 h")
-            .And.Contain("https://app.test/account");
-    }
-
-    [Fact]
-    public async Task HandleAsyncDependentMinorSendsPendingSignupEmailToTheGuardian()
-    {
-        var activityId = Guid.NewGuid();
-        var childId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetChildOf(childId, SeedIds.UserTypes.Member);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
-        roleTypes.CatalogRoles();
-
-        await sut.HandleAsync(
-            new AssignActivityCommand(
-                activityId,
-                childId,
-                childId,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
-                IsAdmin: false
-            ),
-            TestContext.Current.CancellationToken
-        );
-
-        var message = emailSender.Sent.Should().ContainSingle().Which;
-        message.ToAddress.Should().Be("ada@parent.test");
-        message.ToName.Should().Be("Ada");
-        message.TextBody.Should().Contain("Kid One (Participante)");
     }
 }

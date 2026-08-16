@@ -8,7 +8,6 @@ public static class VerificationEmail
     public static EmailMessage Create(
         string toAddress,
         string toName,
-        string code,
         string verificationUrl,
         string siteUrl,
         TimeSpan lifetime
@@ -31,7 +30,6 @@ public static class VerificationEmail
                     AppStrings.EmailsVerificationIntroText
                 ),
                 EmailBlocks.Action(AppStrings.EmailsVerificationButtonLabel, verificationUrl),
-                EmailBlocks.Code(AppStrings.EmailsVerificationCodePrompt, code),
                 EmailBlocks.Prose(
                     AppStrings.EmailsVerificationExpiryHtml(minutes),
                     AppStrings.EmailsVerificationExpiryText(minutes)
