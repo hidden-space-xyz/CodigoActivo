@@ -8,7 +8,7 @@ commands, and the conventions the build enforces. For the design behind the code
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 20+](https://nodejs.org/) and npm
+- [Node.js 24+](https://nodejs.org/) and npm
 - [PostgreSQL](https://www.postgresql.org/) — a local install, or the Dockerized `db` service (below)
 - [Docker](https://www.docker.com/) — required by the backend integration tests, which start their own PostgreSQL
 - EF Core tools (for migrations): `dotnet tool install -g dotnet-ef`
