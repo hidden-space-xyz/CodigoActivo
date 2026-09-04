@@ -84,7 +84,7 @@ references no local files — copy that single file plus a `.env` built from the
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
 curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
-nano .env                    # set a strong DB password, real HTTPS URL, SMTP and bootstrap admin
+nano .env                    # set DB/certificate secrets, URL, SMTP, mode and bootstrap admin credentials
 docker compose up -d         # production binds the web listener to 127.0.0.1 by default
 ```
 
@@ -99,7 +99,7 @@ builds both images from source instead of pulling them, publishes the database a
 relaxes the container hardening:
 
 ```bash
-cp .env.example .env         # set at least POSTGRES_PASSWORD, or the stack refuses to start
+cp .env.example .env         # set POSTGRES_PASSWORD and the initial admin email/password
 docker compose up --build    # SPA → http://localhost:8080 · API → http://localhost:5150 (Swagger at /swagger)
 ```
 
@@ -110,6 +110,8 @@ Or run the apps directly, with hot reload:
 cp .env.example .env                                       # set POSTGRES_PASSWORD — compose reads it for the db
 docker compose up -d db                                    # Postgres on 127.0.0.1:5432
 export POSTGRES_PASSWORD=...                               # PowerShell: $env:POSTGRES_PASSWORD="..."
+export DEMO_MODE=false
+export BOOTSTRAP_ADMIN_EMAIL=admin@example.test BOOTSTRAP_ADMIN_PASSWORD=...
 cd backend && dotnet run --project src/CodigoActivo.API    # http://localhost:5150
 
 # Frontend

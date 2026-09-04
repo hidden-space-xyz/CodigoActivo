@@ -32,8 +32,9 @@ dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --star
 
 The DB connection is built in code from `POSTGRES_HOST/PORT/DB/USER/PASSWORD` env vars — a bare
 `dotnet run` does **not** read the root `.env` (that file is for Docker Compose). Easiest setup: copy
-`.env.example` to `.env` and set `POSTGRES_PASSWORD`, `docker compose up -d db`, then set
-`POSTGRES_PASSWORD` in the environment.
+`.env.example` to `.env` and set `POSTGRES_PASSWORD`, `docker compose up -d db`, then set the database,
+deployment mode and bootstrap-administrator variables in the environment. Environment-variable names
+in `.env` are always uppercase.
 
 Integration tests provision their own throwaway PostgreSQL via Testcontainers (Docker daemon required,
 no env vars, no pre-created DB). Set `CODIGOACTIVO_TEST_DB_CONNECTION` to reuse an empty disposable

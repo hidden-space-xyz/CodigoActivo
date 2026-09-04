@@ -9,16 +9,6 @@ public static class ProductionConfigurationValidator
     {
         var errors = new List<string>();
 
-        if (config.GetValue("DEMO_MODE", false))
-        {
-            errors.Add("DEMO_MODE must be false");
-        }
-
-        if (!config.GetValue("ACCOUNT_VERIFICATION_REQUIRED", true))
-        {
-            errors.Add("ACCOUNT_VERIFICATION_REQUIRED must be true");
-        }
-
         var databasePassword = config["POSTGRES_PASSWORD"];
         if (string.IsNullOrEmpty(databasePassword) || databasePassword.Length < 16)
         {
@@ -47,32 +37,6 @@ public static class ProductionConfigurationValidator
             errors.Add(
                 "APP_BASE_URL must be the public HTTPS origin without a path, query or fragment"
             );
-        }
-
-        var sameSite = config["AUTH_SAMESITE"]?.Trim();
-        if (
-            !string.IsNullOrEmpty(sameSite)
-            && !string.Equals(sameSite, "Lax", StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(sameSite, "Strict", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            errors.Add("AUTH_SAMESITE must be Lax or Strict");
-        }
-
-        if (
-            !int.TryParse(config["Auth:MaxConcurrentCredentialRequests"], out var credentialLimit)
-            || credentialLimit is < 1 or > 32
-        )
-        {
-            errors.Add("AUTH_MAX_CONCURRENT_CREDENTIAL_REQUESTS must be between 1 and 32");
-        }
-
-        if (
-            !int.TryParse(config["Auth:MaxQueuedCredentialRequests"], out var credentialQueueLimit)
-            || credentialQueueLimit is < 100 or > 1_000
-        )
-        {
-            errors.Add("AUTH_MAX_QUEUED_CREDENTIAL_REQUESTS must be between 100 and 1000");
         }
 
         var smtpSecurity = config["SMTP_SECURITY"]?.Trim();
@@ -109,12 +73,6 @@ public static class ProductionConfigurationValidator
         if (smtpUsernameMissing != smtpPasswordMissing)
         {
             errors.Add("SMTP_USERNAME and SMTP_PASSWORD must either both be set or both be empty");
-        }
-
-        var bootstrapEmail = config["BOOTSTRAP_ADMIN_EMAIL"]?.Trim();
-        if (!string.IsNullOrEmpty(bootstrapEmail) && !IsSingleEmailAddress(bootstrapEmail))
-        {
-            errors.Add("BOOTSTRAP_ADMIN_EMAIL must be a single valid email address");
         }
 
         if (errors.Count > 0)

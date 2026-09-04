@@ -14,9 +14,9 @@ without containers, see
 
 | Service | Image / build                                        | Role                                                                                         |
 | ------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **db**  | `postgres:17.11-alpine3.24`                          | PostgreSQL. On the **internal** `backend` network only (not published in production).         |
+| **db**  | `postgres:18.4-alpine3.24`                           | PostgreSQL 18. On the **internal** `backend` network only (not published in production).      |
 | **api** | `ghcr.io/hidden-space-xyz/codigoactivo-backend:latest` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
-| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${BIND_ADDRESS}:${HTTP_PORT}` (loopback by default). |
+| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `127.0.0.1:8080`. |
 
 The two app images are the ones CI publishes on release ([Published images](#published-images)); the
 development override builds them from the working tree instead (see
@@ -24,7 +24,8 @@ development override builds them from the working tree instead (see
 
 **Networks**: `frontend` (bridge) and `backend` (internal — the DB is unreachable from outside).
 **Volumes**: `db-data` (database), `api-files` (uploads), `api-dataprotection` (ASP.NET Data
-Protection keys). Logs go to stdout only — read them with `docker compose logs`, no volume involved.
+Protection keys), and `api-state` (the immutable deployment-mode selection). Logs go to stdout only —
+read them with `docker compose logs`, no volume involved.
 Both `api` and `web` run as non-root with
 capabilities dropped; the `api` container additionally runs with a read-only filesystem and a
 `HEALTHCHECK` against `/api/auth/csrf` (the `web` container checks `/healthz`).
@@ -69,11 +70,17 @@ least these before starting ([Environment variables](#environment-variables)):
 
 - `POSTGRES_PASSWORD` — use at least 16 random characters (e.g. `openssl rand -base64 32`);
 - `DATA_PROTECTION_CERTIFICATE_PASSWORD` — a separate random secret of at least 32 characters; it
-  encrypts the certificate that protects session and antiforgery keys in the persistent volume;
+  encrypts the Ed25519 private key used to sign the encrypted session and antiforgery key ring;
 - `APP_BASE_URL` — the public `https://` URL, used in links, outgoing emails and the sitemap;
-- `BOOTSTRAP_ADMIN_EMAIL` — on a new database, an address you control and will register first;
-- the `SMTP_*` block, including `StartTls` or `SslOnConnect`, so account verification works;
-- `BIND_ADDRESS` — keep `127.0.0.1` when the TLS proxy runs on the same host.
+- `DEMO_MODE` — choose `true` or `false` permanently for this set of volumes;
+- `ACCOUNT_VERIFICATION_REQUIRED` — choose whether new accounts must verify their email;
+- `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` — credentials for the administrator that
+  startup creates as the first user in a new database;
+- the `SMTP_*` block, including `StartTls` or `SslOnConnect`, for email delivery;
+
+The PostgreSQL 18 image uses `/var/lib/postgresql/18/docker` inside a volume mounted at
+`/var/lib/postgresql`. This project intentionally includes no PostgreSQL 17 compatibility or in-place upgrade
+path; discard any pre-release local `db-data` volume with `docker compose down -v` before the first start.
 
 To upgrade the two first-party application images to the latest successful release:
 
@@ -91,16 +98,15 @@ docker compose pull && docker compose up -d
 ### TLS / reverse proxy
 
 > [!IMPORTANT]
-> The `web` container terminates **plain HTTP** on `${HTTP_PORT}`. Put it behind an external
+> The `web` container terminates **plain HTTP** on fixed `127.0.0.1:8080`. Put it behind an external
 > TLS-terminating reverse proxy that sets `X-Forwarded-Proto`, and set `APP_BASE_URL` to the public
 > `https://` URL.
 
 The API has forwarded headers enabled and, in Production, issues `Secure` cookies and redirects
 HTTP → HTTPS. `APP_BASE_URL` is used in links, outgoing emails and every URL of the generated
 `/sitemap.xml` and `/robots.txt` — if it is left at the template's `https://example.org` placeholder,
-search engines receive a sitemap full of unusable URLs and Production refuses to start. Keep
-`AUTH_SAMESITE=Lax` (or use `Strict` after testing the login flows); the same-origin deployment does not
-support `None` in Production.
+search engines receive a sitemap full of unusable URLs and Production refuses to start. Session and CSRF
+cookies use the fixed `SameSite=Lax` policy required by the same-origin deployment.
 
 ## Local / debug overlay
 
@@ -119,10 +125,11 @@ which turns the deployment stack into the development one:
 
 ## Environment variables
 
-Runtime configuration is supplied as flat environment variables. The compose file defines **no values
-and no fallbacks** — each variable below is passed 1:1 from `.env`, so that file always starts as a
-copy of `.env.example` (whose shipped values are the last column). The connection string is built from
-`POSTGRES_*` in code.
+Administrator-controlled runtime configuration is supplied as flat environment variables. Each variable
+below is passed 1:1 from `.env`, so that file always starts as a copy of `.env.example` (whose shipped values
+are the last column). Application paths, listener settings, cookie policy and credential-work limits are
+fixed in code or Compose. The PostgreSQL data path remains administrator-configurable, and the connection
+string is built from `POSTGRES_*` in code.
 
 | Variable                        | Description                                                        | `.env.example` ships            |
 | ------------------------------- | ----------------------------------------------------------------- | ------------------------------- |
@@ -131,20 +138,14 @@ copy of `.env.example` (whose shipped values are the last column). The connectio
 | `POSTGRES_DB`                   | Database name                                                     | `codigoactivo`                  |
 | `POSTGRES_USER`                 | Database user                                                     | `codigoactivo`                  |
 | `POSTGRES_PASSWORD`             | Database password — **required**, Postgres refuses to initialize with it empty (e.g. `openssl rand -base64 32`) | *(empty)* |
-| `DATA_PROTECTION_CERTIFICATE_PASSWORD` | Separate 32+ character secret used to encrypt the locally generated certificate that protects the Data Protection key ring | *(empty)* |
-| `PGDATA`                        | Data directory inside the `db-data` volume                        | `/var/lib/postgresql/data/pgdata` |
-| `ASPNETCORE_ENVIRONMENT`        | ASP.NET Core environment — keep `Production` on servers (the dev override forces `Development`) | `Production` |
+| `DATA_PROTECTION_CERTIFICATE_PASSWORD` | Separate 32+ character secret used to encrypt the private key of the locally generated Ed25519 certificate | *(empty)* |
+| `PGDATA`                        | PostgreSQL 18 data directory inside the `db-data` volume           | `/var/lib/postgresql/18/docker` |
 | `APP_BASE_URL`                  | Public base URL used in links, outgoing emails and the generated sitemap/robots (code falls back to `http://localhost:5173`) | `https://example.org` |
-| `BIND_ADDRESS`                  | Host interface for the web listener; keep loopback behind a local TLS proxy | `127.0.0.1` |
-| `HTTP_PORT`                     | Host port the `web` container publishes                           | `8080`                          |
 | `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | `Europe/Madrid`                 |
-| `DEMO_MODE`                     | Seed realistic demo data outside Production; disabling it with demo data present requires recreating all persistent volumes | `false` |
-| `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite`; Production accepts `Lax` or `Strict` | `Lax`                        |
-| `AUTH_MAX_CONCURRENT_CREDENTIAL_REQUESTS` | Per-instance cap on simultaneous Argon2id requests; Production accepts 1–32 | `4` |
-| `AUTH_MAX_QUEUED_CREDENTIAL_REQUESTS` | Queue behind the Argon2id concurrency cap; Production accepts 100–1000 | `128` |
-| `FILE_STORAGE_ROOT`             | Directory for uploaded files — the `api-files` volume mounts here | `/app/files`                    |
-| `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login; mandatory in Production | `true`                 |
-| `BOOTSTRAP_ADMIN_EMAIL`         | Exact email promoted during registration only when no usable admin exists; needed for a new production DB | *(empty)* |
+| `DEMO_MODE`                     | Initial deployment mode (`true` for demo, `false` for normal); valid in Development and Production and immutable after first start | `false` |
+| `ACCOUNT_VERIFICATION_REQUIRED` | Optionally require email (OTP) verification before login in any environment | `true`                 |
+| `BOOTSTRAP_ADMIN_EMAIL`         | Email of the administrator created as the first user of an empty database | *(empty)* |
+| `BOOTSTRAP_ADMIN_PASSWORD`      | 12–128 character password for that initial administrator          | *(empty)* |
 | `SMTP_HOST`                     | SMTP server — **required if verification is enabled**, and to send any email at all | *(empty)*     |
 | `SMTP_PORT`                     | SMTP port                                                         | `587`                           |
 | `SMTP_SECURITY`                 | `StartTls` / `SslOnConnect` / `None` / `Auto`                     | `StartTls`                      |
@@ -157,12 +158,13 @@ A handful of app-internal knobs live in `backend/src/CodigoActivo.API/appsetting
 `AccountVerification:OtpLifetimeMinutes` = `15`, `ResendCooldownSeconds` = `60`, `ManualEmail:MaxRecipients`
 = `500`, `ManualEmail:MaxAttachments` = `10`, `ManualEmail:MaxAttachmentsBytes` = 8 MiB, plus the
 `EmailGuard` and `EmailQueue` sections below). Override any of them, if needed, with the standard .NET
-`Section__Key` environment-variable convention (e.g. `Auth__ExpireHours`).
+`Section__Key` environment-variable convention. Keep every variable name in `.env` uppercase (for
+example, `AUTH__EXPIREHOURS`).
 
 > [!IMPORTANT]
-> `Section__Key` overrides only reach the API if the variable is actually passed into the container. The
+> `SECTION__KEY` overrides only reach the API if the variable is actually passed into the container. The
 > `api` service in `docker-compose.yml` declares an **explicit list** of environment variables and has no
-> `env_file:`, so putting `Auth__ExpireHours` or `EmailGuard__RecipientBurst` in the root `.env` has no
+> `env_file:`, so putting `AUTH__EXPIREHOURS` or `EMAILGUARD__RECIPIENTBURST` in the root `.env` has no
 > effect on the Docker stack until you add the name to that list. Only the flat variables in the table
 > above are wired through.
 
@@ -215,7 +217,7 @@ to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped*
 > [!NOTE]
 > The admin "send email" endpoints are multipart too, and reuse that same transport limit for the whole
 > request (subject + body + **all** attachments), so keep `ManualEmail:MaxAttachmentsBytes` below it. The
-> attachments are never written to `FILE_STORAGE_ROOT`. A bulk send is synchronous — one message per
+> attachments are never written to `/app/files`. A bulk send is synchronous — one message per
 > recipient over a single SMTP connection — and nginx allows it up to `proxy_read_timeout 300s`
 > (`frontend/docker/proxy-api.conf`); `ManualEmail:MaxRecipients` is what keeps a single send inside it.
 
@@ -236,40 +238,38 @@ to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped*
 
 ## Demo mode
 
-Setting `DEMO_MODE=true` outside Production seeds a full, realistic demo dataset on startup via `DemoDataSeeder` (it downloads
-placeholder images from picsum.photos and creates demo accounts, including an admin with the password
-`Demo1234!`). It is backend-only and defaults to `false`; `.env.example` also ships it disabled.
+On the first start, the API writes the selected `DEMO_MODE` value to its fixed internal path
+`/app/state/deployment-mode` in the `api-state` volume. This location is not configurable. Every later start
+must present the same value; changing `.env` alone makes startup fail.
+This lock is independent of `ASPNETCORE_ENVIRONMENT`, so demo and normal mode can each run in Development or
+Production.
 
-There is deliberately no selective cleanup. If the API finds the demo marker while `DEMO_MODE=false`, startup
-fails and instructs the operator to delete the `db-data`, `api-files` and `api-dataprotection` volumes. This
-prevents demo credentials or files from surviving a partial cleanup. Leaving demo mode therefore requires a
-full reset of all persistent application data:
+With `DEMO_MODE=true`, `DemoDataSeeder` adds a full, realistic dataset after the initial administrator. It
+downloads placeholder images from picsum.photos and creates demo accounts, including an additional demo admin
+with the password `Demo1234!`. To select a different mode, recreate the complete stack and all named volumes:
 
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 
-The first command irreversibly deletes the database, uploads and Data Protection keys. Use it only for a demo
-stack whose data is disposable.
+The first command irreversibly deletes the database, uploads, Data Protection keys and the mode file. On the
+next start, the current `DEMO_MODE` value becomes the new permanent selection.
 
 > [!CAUTION]
-> Never enable `DEMO_MODE` in a real deployment — the demo admin uses a well-known password (`Demo1234!`).
-> The API now rejects that configuration before migrations or seeding run in Production.
+> Production permits demo mode, but the seeded accounts use the public password `Demo1234!`. Treat such a
+> deployment as public, disposable demonstration data and never store private information in it.
 
 ## First administrator
 
-An empty production database needs an explicit, verified path to administration:
+An empty database requires `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`. During startup, after the
+catalogs are available and before any demo seed runs or HTTP traffic is accepted, the API inserts an active
+administrator with those credentials. Its initial profile name is “Administrador Código Activo”, its gender
+is “Other”, and its placeholder birth date is 2000-01-01; it can edit those profile fields after login.
 
-1. Set `BOOTSTRAP_ADMIN_EMAIL` to an email address you control and configure working SMTP.
-2. Start the stack and register that exact email with a unique 12+ character password.
-3. Complete the emailed verification before logging in.
-4. Confirm the account can reach an admin endpoint, then remove `BOOTSTRAP_ADMIN_EMAIL` from `.env` and
-   recreate the API container with `docker compose up -d`.
-
-The first arbitrary registrant is never made admin. The bootstrap address is promoted only if no usable admin
-exists; later registrations cannot use it to gain privilege. Production refuses to start when neither a usable
-admin nor a bootstrap address exists.
+If at least one user already exists, both bootstrap variables are ignored completely on every later restart.
+Changing them cannot create, replace, promote or reset an account. Public registration always creates a
+non-administrator, so the bootstrap account is necessarily the first user inserted into a new database.
 
 ## Production release gate
 
@@ -277,8 +277,8 @@ Before exposing the TLS virtual host, all of the following must be true:
 
 - CI is green, including backend integration tests against PostgreSQL, frontend build/lint/format, npm audit
   and CodeQL; review Dependabot alerts.
-- `APP_BASE_URL` is the final clean HTTPS origin, `DEMO_MODE=false`, verification is enabled and SMTP is
-  encrypted and tested.
+- `APP_BASE_URL` is the final clean HTTPS origin, the persisted `DEMO_MODE` selection and optional account
+  verification setting are intentional, and SMTP is encrypted and tested.
 - `POSTGRES_PASSWORD` and SMTP credentials are newly generated production secrets; `.env` is readable only by
   the deployment account and is not copied into images or backups without encryption.
 - `DATA_PROTECTION_CERTIFICATE_PASSWORD` is newly generated, stored separately from volume backups and
@@ -287,19 +287,17 @@ Before exposing the TLS virtual host, all of the following must be true:
   proxy is internet-facing and it overwrites `X-Forwarded-For`/`X-Forwarded-Proto`.
 - The first-party API/UI images use the `latest` release published after a successful CI run; the database,
   uploads and Data Protection key volumes have tested backup and restore procedures.
-- Register, verify, login, password reset, upload/download authorization, admin demotion and account blocking
-  are smoke-tested through the public HTTPS URL.
+- Register, login, password reset, upload/download authorization, admin demotion and account blocking are
+  smoke-tested through the public HTTPS URL; include account verification when it is enabled.
 
 ## Data & backups
 
 > [!IMPORTANT]
-> The named volumes hold all state. Back up `db-data` (database) and `api-files` (uploads) regularly, and
-> keep `api-dataprotection` stable across restarts so existing session/antiforgery cookies stay valid. The
-> key ring is encrypted at rest by a self-signed RSA certificate generated in that volume on first start;
-> the certificate's private key is itself encrypted with `DATA_PROTECTION_CERTIFICATE_PASSWORD`. Back up the
-> volume and that password separately. If upgrading from a release that wrote plaintext Data Protection keys,
-> stop the API and rotate only `api-dataprotection` before starting this release; this intentionally logs out
-> existing sessions. The API fails closed instead of continuing with a plaintext legacy key ring. The
+> The named volumes hold all state. Back up `db-data` (database), `api-files` (uploads), `api-state` (the
+> immutable mode selection) and `api-dataprotection` regularly. The Data Protection key ring is wrapped with
+> AES-256-GCM and every wrapper is signed by a self-signed Ed25519 certificate generated in the latter volume;
+> the Ed25519 private key is encrypted with `DATA_PROTECTION_CERTIFICATE_PASSWORD`. Back up that volume and
+> password separately. The
 > one exception is outbound email still sitting in the in-memory queue: it is deliberately not persisted, so
 > a restart that outlasts the drain window drops it. Nothing user-visible depends on it — the write that
 > triggered the mail is already committed, and members can always request a new verification code.

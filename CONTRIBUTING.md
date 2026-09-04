@@ -25,10 +25,12 @@ The DB connection string is built in code from `POSTGRES_HOST` / `POSTGRES_PORT`
 The simplest path is to run just the database in Docker and point the API at it:
 
 ```bash
-cp .env.example .env               # set POSTGRES_PASSWORD
+cp .env.example .env               # set POSTGRES_PASSWORD and bootstrap admin credentials
 docker compose up db               # Postgres published on 127.0.0.1:5432
 
 export POSTGRES_PASSWORD=...        # same value as in .env (PowerShell: $env:POSTGRES_PASSWORD="...")
+export DEMO_MODE=false
+export BOOTSTRAP_ADMIN_EMAIL=admin@example.test BOOTSTRAP_ADMIN_PASSWORD=...
 cd backend && dotnet run --project src/CodigoActivo.API
 ```
 
@@ -135,7 +137,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 ## Testing
 
 - **Backend**: xUnit v3, AwesomeAssertions, NSubstitute. Integration tests run against a **real** PostgreSQL that
-  the test run provisions itself: a throwaway `postgres:17.11-alpine3.24` container (Testcontainers) is started once,
+  the test run provisions itself: a throwaway `postgres:18.4-alpine3.24` container (Testcontainers) is started once,
   migrated, shared by the whole assembly, and destroyed at the end. No `POSTGRES_*` env vars and no pre-created
   database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
   `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse
