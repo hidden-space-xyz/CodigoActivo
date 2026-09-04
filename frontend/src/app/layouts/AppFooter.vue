@@ -54,6 +54,15 @@ const currentYear = new Date().getFullYear()
               <AppIcon name="linkedin" />
               LinkedIn
             </a>
+            <a
+              :href="CONTACT.social.youtube"
+              target="_blank"
+              rel="noopener"
+              class="footer__social-link"
+            >
+              <AppIcon name="youtube" />
+              YouTube
+            </a>
           </div>
         </div>
       </div>
