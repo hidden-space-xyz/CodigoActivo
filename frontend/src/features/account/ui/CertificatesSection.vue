@@ -127,8 +127,6 @@ async function onDownload(
 }
 
 .cert-tile {
-  /* Fixed print-like palette: the tile mirrors the paper certificate, so it deliberately
-     does not follow the --ca-* theme tokens (dark mode remaps those). */
   --cert-orange: #f9a320;
   --cert-orange-glow: rgb(249 163 32 / 0.16);
   --cert-lime: #7cb518;

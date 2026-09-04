@@ -159,9 +159,6 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
 
   const tableQuery = useQuery({
     queryKey: computed(() => [...options.queryKey, params.value]),
-    // params is stitched together from column keys and extraParams at runtime, so its shape
-    // cannot be proven to match TParams; explicit param names are still checked via the
-    // ServerTableColumn<TParams> constraint.
     queryFn: () => options.fetchPage(params.value as unknown as TParams),
     placeholderData: keepPreviousData,
     enabled: computed(() => options.enabled?.() ?? true),
