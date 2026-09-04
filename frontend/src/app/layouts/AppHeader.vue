@@ -215,6 +215,7 @@ function isActive(routeName: string): boolean {
   font-weight: 600;
   color: var(--ca-text-muted);
   text-decoration: none;
+  white-space: nowrap;
   animation: ca-navitem-in 0.5s ease both;
   transition: color 0.18s ease;
 }
@@ -260,6 +261,7 @@ function isActive(routeName: string): boolean {
   font-size: 14px;
   padding: 10px 18px;
   border-radius: 10px;
+  white-space: nowrap;
 }
 
 .header__greeting {

@@ -436,7 +436,7 @@ public static class DependencyInjection
 
         var storageOptions = new FileStorageOptions
         {
-            RootPath = Path.Combine(AppContext.BaseDirectory, "files"),
+            RootPath = "/app/files",
         };
         services.AddSingleton(storageOptions);
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();
