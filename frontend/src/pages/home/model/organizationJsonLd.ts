@@ -16,6 +16,11 @@ export function organizationJsonLd(): Record<string, unknown> {
       addressLocality: 'León',
       addressCountry: 'ES',
     },
-    sameAs: [CONTACT.social.instagram, CONTACT.social.facebook, CONTACT.social.linkedin],
+    sameAs: [
+      CONTACT.social.instagram,
+      CONTACT.social.facebook,
+      CONTACT.social.linkedin,
+      CONTACT.social.youtube,
+    ],
   }
 }

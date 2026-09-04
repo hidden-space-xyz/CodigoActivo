@@ -15,5 +15,6 @@ export const CONTACT = {
     instagram: 'https://www.instagram.com/codigoactivo_',
     facebook: 'https://www.facebook.com/codigoactivo',
     linkedin: 'https://www.linkedin.com/company/codigoactivo',
+    youtube: 'https://www.youtube.com/@campeonatocodigoactivo9489',
   },
 } as const
