@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@tanstack/vue-query": "^5.101.4",
+    "@tanstack/vue-query": "^5.102.8",
     "@tiptap/core": "^3.29.2",
     "@tiptap/extension-color": "^3.29.2",
     "@tiptap/extension-highlight": "^3.29.2",
