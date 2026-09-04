@@ -9,6 +9,7 @@ example/
 !.env.*.example
 *.local
 *.pfx
+*.key
 *.publishsettings
 
 .DS_Store

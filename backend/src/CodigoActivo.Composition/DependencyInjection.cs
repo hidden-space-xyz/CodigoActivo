@@ -90,13 +90,6 @@ public static class DependencyInjection
                     : baseUrl.TrimEnd('/'),
             }
         );
-        services.AddSingleton(
-            new RegistrationOptions
-            {
-                BootstrapAdminEmail = configuration["BOOTSTRAP_ADMIN_EMAIL"]
-                    .NormalizeEmailOrNull(),
-            }
-        );
     }
 
     private static bool IsVerificationRequired(IConfiguration configuration)
@@ -382,6 +375,7 @@ public static class DependencyInjection
         services.AddSingleton<IQueryExecutor, QueryExecutor>();
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<InitialAdministratorSeeder>();
         services.AddScoped<DemoDataSeeder>();
     }
 
@@ -442,7 +436,7 @@ public static class DependencyInjection
 
         var storageOptions = new FileStorageOptions
         {
-            RootPath = configuration["FILE_STORAGE_ROOT"] ?? "files",
+            RootPath = Path.Combine(AppContext.BaseDirectory, "files"),
         };
         services.AddSingleton(storageOptions);
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();

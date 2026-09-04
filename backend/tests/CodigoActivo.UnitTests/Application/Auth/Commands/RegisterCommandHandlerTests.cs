@@ -25,7 +25,6 @@ public sealed class RegisterCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
-    private readonly RegistrationOptions registration = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RegisterCommandHandler sut;
@@ -38,7 +37,6 @@ public sealed class RegisterCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             verification,
-            registration,
             new AccountEmails(emailSender, verification, passwordReset, application),
             NullLogger<RegisterCommandHandler>.Instance,
             cacheInvalidator
@@ -92,38 +90,6 @@ public sealed class RegisterCommandHandlerTests
     {
         return uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    private static bool IsRegisteredBootstrapAdmin(
-        User? user,
-        DateTimeOffset now,
-        TimeSpan otpLifetime
-    )
-    {
-        if (user is null)
-        {
-            return false;
-        }
-
-        var hasIdentity =
-            string.Equals(user.FirstName, "Ana", StringComparison.Ordinal)
-            && string.Equals(user.LastName, "Ruiz", StringComparison.Ordinal)
-            && string.Equals(user.Email, "ana@test.com", StringComparison.Ordinal)
-            && string.Equals(user.Phone, "+34123456789", StringComparison.Ordinal);
-        var hasCredentials =
-            string.Equals(user.PasswordHash, "fake:password123", StringComparison.Ordinal)
-            && user.OtpCodeHash is not null
-            && user.OtpCodeHash.StartsWith(FakePasswordHasher.Prefix, StringComparison.Ordinal);
-        var hasCatalog =
-            user.IsAdmin
-            && user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
-            && user.UserTypeId == SeedIds.UserTypes.Participant;
-        var hasSchedule =
-            user.OtpExpiresAt == now + otpLifetime
-            && user.OtpLastSentAt == now
-            && user.CreatedAt == now;
-
-        return hasIdentity && hasCredentials && hasCatalog && hasSchedule;
     }
 
     private static bool IsPendingParticipantAdult(User? user)
@@ -261,35 +227,6 @@ public sealed class RegisterCommandHandlerTests
         await users.Received(1)
             .AddAsync(Arg.Is<User>(u => IsPendingParticipantAdult(u)), Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncConfiguredBootstrapAccountBecomesAdminWhenNoUsableAdminExists()
-    {
-        clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
-        registration.BootstrapAdminEmail = "ana@test.com";
-        ExistsReturns(false, false);
-        users
-            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser());
-        users
-            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister()),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await users
-            .Received(1)
-            .AddAsync(
-                Arg.Is<User>(u =>
-                    IsRegisteredBootstrapAdmin(u, clock.UtcNow, verification.OtpLifetime)
-                ),
-                Arg.Any<CancellationToken>()
-            );
     }
 
     [Fact]

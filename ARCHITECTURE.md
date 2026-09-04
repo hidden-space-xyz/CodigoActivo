@@ -180,9 +180,11 @@ entities extend base classes (`IdentifiableEntity`, `AuditableEntity`, `NamedEnt
 Closed value sets that are not admin-managed are domain enums stored as **strings**
 (`HasConversion<string>()`, e.g. `User.Gender`), so the column reads the same as the JSON contract;
 admin-managed lookups stay catalog tables instead.
-On startup the API always applies migrations, then runs the idempotent `DatabaseSeeder` (lookup catalogs
-keyed by fixed GUIDs in `DomainConstants.SeedIds`). Optional demo data is handled by a separate
-`DemoDataSeeder` — see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode).
+On startup the API first locks the demo/normal choice in a persistent file, applies migrations, and runs the
+idempotent `DatabaseSeeder` (lookup catalogs keyed by fixed GUIDs in `DomainConstants.SeedIds`). If the user
+table is empty it then inserts the initial administrator from environment credentials, guaranteeing that this
+is the first account. Optional demo data is added last by `DemoDataSeeder` — see
+[DEPLOYMENT.md](DEPLOYMENT.md#demo-mode).
 
 ## Frontend — Feature-Sliced Design
 

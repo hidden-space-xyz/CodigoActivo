@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
@@ -23,6 +24,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     private static readonly DateTimeOffset ClockOrigin = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
     private readonly string fileStorageRoot = CreateFileStorageRoot();
+    private readonly string deploymentModeFile = CreateDeploymentModeFilePath();
     private readonly List<WebApplicationFactory<Program>> derived = [];
 
     private WebApplicationFactory<Program>? verificationDisabled;
@@ -81,13 +83,17 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     {
         builder.UseEnvironment("Development");
 
-        builder.UseSetting("AUTH_SAMESITE", "Lax");
         builder.UseSetting("DEMO_MODE", "false");
+        builder.UseSetting("BOOTSTRAP_ADMIN_EMAIL", "bootstrap@codigoactivo.test");
+        builder.UseSetting("BOOTSTRAP_ADMIN_PASSWORD", "bootstrap-password-123");
         builder.UseSetting("SMTP_HOST", "smtp.test");
         builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
 
         builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<DeploymentModeLock>();
+            services.AddSingleton(new DeploymentModeLock(deploymentModeFile));
+
             UseTestDatabase(services);
 
             services.RemoveAll<IPasswordHasher>();
@@ -197,6 +203,11 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     {
         await base.DisposeAsync();
         TryDeleteDirectory(fileStorageRoot);
+        var deploymentStateRoot = Path.GetDirectoryName(deploymentModeFile);
+        if (deploymentStateRoot is not null)
+        {
+            TryDeleteDirectory(deploymentStateRoot);
+        }
     }
 
     private static string CreateFileStorageRoot()
@@ -208,6 +219,16 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         );
         Directory.CreateDirectory(root);
         return root;
+    }
+
+    private static string CreateDeploymentModeFilePath()
+    {
+        return Path.Combine(
+            Path.GetTempPath(),
+            "codigoactivo-tests",
+            Guid.NewGuid().ToString("N"),
+            "deployment-mode"
+        );
     }
 
     private static void TryDeleteDirectory(string path)

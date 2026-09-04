@@ -22,7 +22,6 @@ public sealed class RegisterCommandHandler(
     IClock clock,
     IPasswordHasher hasher,
     AccountVerificationOptions verification,
-    RegistrationOptions registration,
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
     ICacheInvalidator cacheInvalidator
@@ -56,20 +55,6 @@ public sealed class RegisterCommandHandler(
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
         }
 
-        var isBootstrapAdmin =
-            string.Equals(
-                email,
-                registration.BootstrapAdminEmail,
-                StringComparison.OrdinalIgnoreCase
-            )
-            && !await users.ExistsAsync(
-                u =>
-                    u.IsAdmin
-                    && u.PasswordHash != null
-                    && u.UserStatusTypeId == SeedIds.UserStatusTypes.Active,
-                ct
-            );
-
         var minorRequests = request.Minors ?? [];
         if (minorRequests.Count > MaxMinorRegistrations)
         {
@@ -95,7 +80,7 @@ public sealed class RegisterCommandHandler(
             UserStatusTypeId = verification.Required
                 ? SeedIds.UserStatusTypes.Pending
                 : SeedIds.UserStatusTypes.Active,
-            IsAdmin = isBootstrapAdmin,
+            IsAdmin = false,
             UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = now,
         };

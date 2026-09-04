@@ -15,24 +15,23 @@ is supported.
 
 ### Authentication & authorization
 
-- Auth is a **session cookie** (`HttpOnly`; `Secure` and `__Host-`-prefixed in Production; `SameSite` from
-  `AUTH_SAMESITE`, default `Lax`; fixed 8-hour expiry). Every authenticated request revalidates the account
+- Auth is a **session cookie** (`HttpOnly`; `Secure` and `__Host-`-prefixed in Production; fixed `SameSite=Lax`
+  and 8-hour expiry). Every authenticated request revalidates the account
   status, password fingerprint and admin flag against the database, so blocking or demoting an account and
   changing its password revoke or reduce an existing session immediately. There is no JWT and no
   cross-origin token — the whole app is same-origin.
 - Authorization is a **boolean admin flag** (an `isAdmin` claim), not roles. Endpoints are guarded by the
   custom attributes `[AllowOnlyAdmin]` and `[AllowOnlySelf]` (self = the target user *or* their dependent
   child). `UserType`/`UserStatusType` are domain lookups, not authorization roles.
-- Credential endpoints combine a per-IP request window with a per-instance concurrency cap (default `4` in
-  Production) and a bounded FIFO queue (default `128`). This lets 100 simultaneous users wait instead of
+- Credential endpoints combine a per-IP request window with a fixed per-instance concurrency cap of `4`
+  and a bounded FIFO queue of `128`. This lets simultaneous users wait instead of
   receiving a capacity error while preventing unbounded memory-hard work. Passwords, verification codes and
   password-reset codes all use the same bounded Argon2id implementation.
 
 > [!IMPORTANT]
-> Registration never promotes the first arbitrary user. For an empty production database, set
-> `BOOTSTRAP_ADMIN_EMAIL` to an address you control before startup and register that exact address. It is
-> promoted only while no usable administrator exists and must still complete email verification. Production
-> refuses to start without an existing usable administrator or this explicit bootstrap address.
+> Registration never grants administrator access. On an empty database, startup creates the first and active
+> administrator directly from `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`, before accepting HTTP
+> traffic or inserting demo users. Once any user exists, both variables are ignored and cannot alter accounts.
 
 ### CSRF protection
 
@@ -64,10 +63,11 @@ and the web listener binds to loopback by default, which establishes that trust 
 TLS-terminating reverse proxy that sets `X-Forwarded-Proto` — see
 [DEPLOYMENT.md](DEPLOYMENT.md#tls--reverse-proxy).
 
-Production startup fails closed when the public URL is not a clean HTTPS origin, demo mode is enabled,
-account verification is disabled, the database password is weak, `SameSite` is unsafe, SMTP transport or
-sender configuration is invalid/unencrypted, the Data Protection certificate password is weak, bootstrap
-email is invalid, or no administrative access path exists.
+Production startup fails closed when the public URL is not a clean HTTPS origin, the database password is
+weak, SMTP transport or sender configuration is invalid/unencrypted, or the Data Protection certificate
+password is weak. Account verification is optional in every environment. Demo mode is permitted in every
+ASP.NET Core environment; the independent persistent mode lock prevents switching an initialized deployment.
+Bootstrap credentials are validated only for an empty user table and ignored otherwise.
 
 ### Secrets management
 
@@ -86,8 +86,9 @@ The production Compose stack (`docker-compose.yml`) runs with:
   dropped**, and `no-new-privileges`;
 - the **web (nginx) container** running unprivileged; and
 - **Data Protection keys** persisted to the `api-dataprotection` volume so cookies survive restarts. In
-  Production the XML key ring is encrypted with a generated RSA certificate whose PFX private key is protected
-  by the separate `DATA_PROTECTION_CERTIFICATE_PASSWORD`; startup rejects legacy plaintext keys.
+  Production, each XML key is wrapped with AES-256-GCM and signed by a generated Ed25519 certificate. Its
+  private key is encrypted by the separate `DATA_PROTECTION_CERTIFICATE_PASSWORD`;
+- the immutable demo/normal selection persisted to the separate `api-state` volume.
 
 > [!WARNING]
 > The `docker-compose.override.yml` development overlay deliberately relaxes this hardening and exposes the
@@ -95,15 +96,16 @@ The production Compose stack (`docker-compose.yml`) runs with:
 
 ### File uploads
 
-Uploads are size-limited (10 MiB by default, `FileStorage:MaxSizeBytes`) and stored under
-`FILE_STORAGE_ROOT`. Email attachments are the one multipart path that is **not** stored: they are streamed,
+Uploads are size-limited (10 MiB by default, `FileStorage:MaxSizeBytes`) and stored under the fixed
+`/app/files` container path. Email attachments are the one multipart path that is **not** stored: they are streamed,
 attached to the outgoing message and discarded — they never get a row, a file on disk or a content URL.
 
 ### Optional email verification
 
 When `ACCOUNT_VERIFICATION_REQUIRED=true`, new accounts must confirm an emailed one-time code (OTP) before
-they can log in; the OTP lifetime and resend cooldown are configurable. Enabling verification requires a
-configured SMTP server (`SMTP_HOST` + `SMTP_FROM_ADDRESS`), or the API refuses to start.
+they can log in; the OTP lifetime and resend cooldown are configurable. This measure is optional in every
+environment. Enabling it requires a configured SMTP server (`SMTP_HOST` + `SMTP_FROM_ADDRESS`), or the API
+refuses to start.
 
 ### Automatic signup notifications
 
@@ -202,7 +204,7 @@ which is what protects the relay itself.
 
 Admins can write a message to a single member or to everyone matching the filters currently applied in the
 users table or an event's attendee list. The endpoints (`POST /api/emails/...`) are `[AllowOnlyAdmin]`, so
-this capability is one more reason to keep the bootstrap address and administrator sessions protected.
+this capability is one more reason to protect the bootstrap credentials and administrator sessions.
 
 - **Recipients are resolved server-side** from the same filter objects the list endpoints take. The client
   never supplies addresses, so an admin cannot mail someone the filters do not select.
@@ -233,6 +235,6 @@ this capability is one more reason to keep the bootstrap address and administrat
 
 > [!CAUTION]
 > `DEMO_MODE` seeds demo accounts with a **well-known password** (`Demo1234!`). It is off by default and
-> Production rejects `DEMO_MODE=true` at startup. If demo data exists when the flag is disabled, startup also
-> fails: all persistent volumes must be deleted rather than attempting a partial cleanup. See
+> is valid in both Development and Production. The first selection is persisted; a conflicting value on a
+> later start fails, and changing modes requires deleting every container and named volume. See
 > [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode).

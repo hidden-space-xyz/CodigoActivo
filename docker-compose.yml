@@ -2,15 +2,14 @@ name: codigoactivo
 
 services:
   db:
-    image: postgres:17.11-alpine3.24
+    image: postgres:18.4-alpine3.24
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: ${PGDATA}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql
     networks: [backend]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -28,7 +27,6 @@ services:
       db:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -38,12 +36,9 @@ services:
       APP_BASE_URL: ${APP_BASE_URL}
       APP_TIMEZONE: ${APP_TIMEZONE}
       DEMO_MODE: ${DEMO_MODE}
-      AUTH_SAMESITE: ${AUTH_SAMESITE}
-      Auth__MaxConcurrentCredentialRequests: ${AUTH_MAX_CONCURRENT_CREDENTIAL_REQUESTS:-4}
-      Auth__MaxQueuedCredentialRequests: ${AUTH_MAX_QUEUED_CREDENTIAL_REQUESTS:-128}
-      FILE_STORAGE_ROOT: ${FILE_STORAGE_ROOT}
       ACCOUNT_VERIFICATION_REQUIRED: ${ACCOUNT_VERIFICATION_REQUIRED}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_SECURITY: ${SMTP_SECURITY}
@@ -52,8 +47,9 @@ services:
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME}
     volumes:
-      - api-files:${FILE_STORAGE_ROOT}
+      - api-files:/app/files
       - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
+      - api-state:/app/state
     networks: [backend, frontend]
     read_only: true
     tmpfs: [/tmp]
@@ -67,7 +63,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT}:8080"
+      - "127.0.0.1:8080:8080"
     networks: [frontend]
     read_only: true
     tmpfs: [/tmp]
@@ -85,3 +81,4 @@ volumes:
   db-data:
   api-files:
   api-dataprotection:
+  api-state:

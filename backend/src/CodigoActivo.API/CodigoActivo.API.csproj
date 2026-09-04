@@ -9,6 +9,7 @@
     <None Remove="files\**" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
@@ -20,5 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="CodigoActivo.IntegrationTests" />
+    <InternalsVisibleTo Include="CodigoActivo.UnitTests" />
   </ItemGroup>
 </Project>
