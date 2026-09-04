@@ -15,15 +15,24 @@ is supported.
 
 ### Authentication & authorization
 
-- Auth is a **session cookie** (`HttpOnly`; `Secure` in Production; `SameSite` from `AUTH_SAMESITE`, default
-  `Lax`; sliding 8-hour expiry). There is no JWT and no cross-origin token — the whole app is same-origin.
+- Auth is a **session cookie** (`HttpOnly`; `Secure` and `__Host-`-prefixed in Production; `SameSite` from
+  `AUTH_SAMESITE`, default `Lax`; fixed 8-hour expiry). Every authenticated request revalidates the account
+  status, password fingerprint and admin flag against the database, so blocking or demoting an account and
+  changing its password revoke or reduce an existing session immediately. There is no JWT and no
+  cross-origin token — the whole app is same-origin.
 - Authorization is a **boolean admin flag** (an `isAdmin` claim), not roles. Endpoints are guarded by the
   custom attributes `[AllowOnlyAdmin]` and `[AllowOnlySelf]` (self = the target user *or* their dependent
   child). `UserType`/`UserStatusType` are domain lookups, not authorization roles.
+- Credential endpoints combine a per-IP request window with a per-instance concurrency cap (default `4` in
+  Production) and a bounded FIFO queue (default `128`). This lets 100 simultaneous users wait instead of
+  receiving a capacity error while preventing unbounded memory-hard work. Passwords, verification codes and
+  password-reset codes all use the same bounded Argon2id implementation.
 
-> [!WARNING]
-> The **first user ever registered is auto-promoted to admin**. Create that account yourself before exposing
-> the site publicly — otherwise anyone who registers first gains admin.
+> [!IMPORTANT]
+> Registration never promotes the first arbitrary user. For an empty production database, set
+> `BOOTSTRAP_ADMIN_EMAIL` to an address you control before startup and register that exact address. It is
+> promoted only while no usable administrator exists and must still complete email verification. Production
+> refuses to start without an existing usable administrator or this explicit bootstrap address.
 
 ### CSRF protection
 
@@ -33,28 +42,40 @@ transparently.
 
 ### Passwords
 
-Passwords are hashed with **Argon2id** (Konscious.Security.Cryptography). Plaintext passwords are never
-stored or logged.
+Passwords are at least 12 and at most 128 characters and are hashed with **Argon2id**
+(Konscious.Security.Cryptography). Plaintext passwords are never stored or logged. Login performs a fallback
+Argon2 verification even for an unknown account, reducing identifier-enumeration timing differences; the
+credential endpoints are rate-limited both at nginx and in the API.
 
 ### Input validation & error handling
 
 Requests are validated with DataAnnotations plus custom attributes. Every failure is returned in one uniform
 shape — `ApiErrorResponse(Title, Status, Code, TraceId)` with a string `ErrorCode` — so stack traces and
 internal details never leak to clients. A `TraceId`/correlation id ties a client error back to the
-server logs.
+server logs. User-supplied links accept only absolute HTTP(S) URLs without credentials. Rich-text JSON is
+rendered only after a strict node, mark, attribute, nesting and size allowlist; embedded images can reference
+only this application's UUID file endpoint.
 
 ### Transport security
 
-The API enables forwarded headers and, in Production, redirects HTTP → HTTPS and marks cookies `Secure`.
-Deploy it behind a TLS-terminating reverse proxy that sets `X-Forwarded-Proto` — see
+The API accepts one forwarded proxy hop, enables forwarded headers before HTTPS enforcement and, in
+Production, redirects HTTP → HTTPS and marks cookies `Secure`. The application container is not host-published
+and the web listener binds to loopback by default, which establishes that trust boundary. Deploy it behind a
+TLS-terminating reverse proxy that sets `X-Forwarded-Proto` — see
 [DEPLOYMENT.md](DEPLOYMENT.md#tls--reverse-proxy).
+
+Production startup fails closed when the public URL is not a clean HTTPS origin, demo mode is enabled,
+account verification is disabled, the database password is weak, `SameSite` is unsafe, SMTP transport or
+sender configuration is invalid/unencrypted, the Data Protection certificate password is weak, bootstrap
+email is invalid, or no administrative access path exists.
 
 ### Secrets management
 
 All secrets are supplied as **flat environment variables**, kept in the git-ignored root `.env` (template:
 `.env.example`). Nothing sensitive is committed: there are no `dotnet user-secrets` and no credentials in
 `appsettings.json`. Rotate `POSTGRES_PASSWORD` and SMTP credentials as usual by updating `.env` and
-redeploying.
+redeploying. Treat `DATA_PROTECTION_CERTIFICATE_PASSWORD` as an independent recovery secret and keep it
+separate from backups of `api-dataprotection`.
 
 ### Container hardening
 
@@ -64,7 +85,9 @@ The production Compose stack (`docker-compose.yml`) runs with:
 - the **API as a non-root user** (uid 1654) with a **read-only filesystem**, **all Linux capabilities
   dropped**, and `no-new-privileges`;
 - the **web (nginx) container** running unprivileged; and
-- **Data Protection keys** persisted to the `api-dataprotection` volume so cookies survive restarts.
+- **Data Protection keys** persisted to the `api-dataprotection` volume so cookies survive restarts. In
+  Production the XML key ring is encrypted with a generated RSA certificate whose PFX private key is protected
+  by the separate `DATA_PROTECTION_CERTIFICATE_PASSWORD`; startup rejects legacy plaintext keys.
 
 > [!WARNING]
 > The `docker-compose.override.yml` development overlay deliberately relaxes this hardening and exposes the
@@ -170,14 +193,16 @@ response reports how many messages were delivered and how many failed.
   token, once. The operational consequence is that a misconfigured `SMTP_*` no longer shows up as a failing
   request; it shows up as repeated delivery errors from the worker.
 
-nginx's two `limit_req` zones stay in place. They absorb floods before the API is reached and are the only
-control over requests that never produce an email; the guard counts messages, which is what protects the relay.
+nginx's two `limit_req` zones stay in place. The credential zone accepts a burst of 100 requests from one
+shared public IP, and the general API zone accepts a burst of 500, leaving headroom for 100 users behind the
+same NAT while still absorbing sustained floods before the API is reached. The email guard counts messages,
+which is what protects the relay itself.
 
 ### Admin-sent email
 
 Admins can write a message to a single member or to everyone matching the filters currently applied in the
 users table or an event's attendee list. The endpoints (`POST /api/emails/...`) are `[AllowOnlyAdmin]`, so
-this capability is one more reason to heed the first-user-becomes-admin warning above.
+this capability is one more reason to keep the bootstrap address and administrator sessions protected.
 
 - **Recipients are resolved server-side** from the same filter objects the list endpoints take. The client
   never supplies addresses, so an admin cannot mail someone the filters do not select.
@@ -208,4 +233,6 @@ this capability is one more reason to heed the first-user-becomes-admin warning 
 
 > [!CAUTION]
 > `DEMO_MODE` seeds demo accounts with a **well-known password** (`Demo1234!`). It is off by default and
-> must never be enabled in a real deployment — see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode).
+> Production rejects `DEMO_MODE=true` at startup. If demo data exists when the flag is disabled, startup also
+> fails: all persistent volumes must be deleted rather than attempting a partial cleanup. See
+> [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode).

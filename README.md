@@ -84,12 +84,13 @@ references no local files — copy that single file plus a `.env` built from the
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
 curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
-nano .env                    # set POSTGRES_PASSWORD; adjust APP_BASE_URL, DEMO_MODE, SMTP, …
-docker compose up -d         # site → http://localhost:8080
+nano .env                    # set a strong DB password, real HTTPS URL, SMTP and bootstrap admin
+docker compose up -d         # production binds the web listener to 127.0.0.1 by default
 ```
 
-The template boots a **demo-seeded** site — full variable list, TLS notes, version pinning and
-upgrades in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+The template is deliberately fail-safe: demo mode is off and placeholder/missing production values stop
+startup until you replace them. See the full variable list, TLS notes, bootstrap process and release checklist
+in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ### Run it for development
 

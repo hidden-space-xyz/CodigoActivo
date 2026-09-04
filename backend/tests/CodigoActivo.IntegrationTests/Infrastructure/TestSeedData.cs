@@ -8,7 +8,7 @@ public sealed record TestCredentials(string Identifier, string Password);
 
 public static class TestSeedData
 {
-    public const string Password = "Str0ngPass!";
+    public const string Password = "Str0ngPass!23";
     public const string PasswordHash = FakePasswordHasher.Prefix + Password;
 
     public static class Users

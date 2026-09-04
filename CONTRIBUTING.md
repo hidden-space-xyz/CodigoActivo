@@ -135,7 +135,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 ## Testing
 
 - **Backend**: xUnit v3, AwesomeAssertions, NSubstitute. Integration tests run against a **real** PostgreSQL that
-  the test run provisions itself: a throwaway `postgres:17-alpine` container (Testcontainers) is started once,
+  the test run provisions itself: a throwaway `postgres:17.11-alpine3.24` container (Testcontainers) is started once,
   migrated, shared by the whole assembly, and destroyed at the end. No `POSTGRES_*` env vars and no pre-created
   database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
   `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse

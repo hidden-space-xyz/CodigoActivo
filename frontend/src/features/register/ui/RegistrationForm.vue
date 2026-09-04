@@ -18,7 +18,7 @@ const model = props.form
 const submitted = ref(false)
 const confirmTouched = ref(false)
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(model.email.trim()))
-const passwordTooShort = computed(() => model.password.length < 8)
+const passwordTooShort = computed(() => model.password.length < 12)
 const passwordsMismatch = computed(() => model.confirmPassword !== model.password)
 const showMismatch = computed(
   () => (submitted.value || confirmTouched.value) && passwordsMismatch.value,

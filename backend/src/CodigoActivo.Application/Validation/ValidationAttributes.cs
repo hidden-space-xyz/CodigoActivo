@@ -37,6 +37,24 @@ public sealed class JsonStringAttribute : ValidationAttribute
 }
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class HttpUrlAttribute : ValidationAttribute
+{
+    public override bool IsValid(object? value)
+    {
+        if (value is null)
+        {
+            return true;
+        }
+
+        return value is string text
+            && Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            && !string.IsNullOrWhiteSpace(uri.IdnHost)
+            && string.IsNullOrEmpty(uri.UserInfo);
+    }
+}
+
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)

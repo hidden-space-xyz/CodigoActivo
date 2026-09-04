@@ -70,6 +70,31 @@ public sealed class ValidationAttributesTests : IDisposable
     }
 
     [Theory]
+    [InlineData("https://example.org/path?q=1")]
+    [InlineData("http://localhost:8080")]
+    public void IsValidHttpUrlAcceptsHttpAndHttps(string value)
+    {
+        new HttpUrlAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    [InlineData("//example.org/path")]
+    [InlineData("https://user:password@example.org/path")]
+    [InlineData("not a url")]
+    public void IsValidHttpUrlRejectsUnsafeOrAmbiguousUrls(string value)
+    {
+        new HttpUrlAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidHttpUrlAllowsNullOptionalValue()
+    {
+        new HttpUrlAttribute().IsValid(null).Should().BeTrue();
+    }
+
+    [Theory]
     [InlineData(2026, 7, 5)]
     [InlineData(2027, 1, 1)]
     public void GetValidationResultNotDefaultOrFutureDateFutureDateFails(

@@ -12,6 +12,7 @@ using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Files.Queries;
@@ -86,7 +87,14 @@ public static class DependencyInjection
             {
                 BaseUrl = string.IsNullOrWhiteSpace(baseUrl)
                     ? ApplicationOptions.DefaultBaseUrl
-                    : baseUrl,
+                    : baseUrl.TrimEnd('/'),
+            }
+        );
+        services.AddSingleton(
+            new RegistrationOptions
+            {
+                BootstrapAdminEmail = configuration["BOOTSTRAP_ADMIN_EMAIL"]
+                    .NormalizeEmailOrNull(),
             }
         );
     }
@@ -573,6 +581,7 @@ public static class DependencyInjection
 
     private static void AddAuthHandlers(IServiceCollection services)
     {
+        services.AddSingleton<CredentialTimingProtector>();
         services.AddScoped<GetCurrentUserQueryHandler>();
         services.AddScoped<LoginCommandHandler>();
         services.AddScoped<RegisterCommandHandler>();

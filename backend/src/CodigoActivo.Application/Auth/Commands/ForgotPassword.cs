@@ -70,7 +70,11 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
-        user.IssuePasswordResetCode(hasher.Hash(code), now, passwordReset.CodeLifetime);
+        user.IssuePasswordResetCode(
+            hasher.Hash(code),
+            now,
+            passwordReset.CodeLifetime
+        );
         await uow.SaveChangesAsync(ct);
 
         return Result.Success();

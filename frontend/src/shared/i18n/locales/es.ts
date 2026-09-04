@@ -46,8 +46,8 @@ export const es = {
   validation: {
     emailInvalid: 'Introduce un correo válido.',
     emailFormat: 'El correo no tiene un formato válido.',
-    passwordMin: 'La contraseña debe tener al menos 8 caracteres.',
-    newPasswordMin: 'La nueva contraseña debe tener al menos 8 caracteres.',
+    passwordMin: 'La contraseña debe tener al menos 12 caracteres.',
+    newPasswordMin: 'La nueva contraseña debe tener al menos 12 caracteres.',
     passwordsMismatch: 'Las contraseñas no coinciden.',
     genderRequired: 'Selecciona un género.',
   },

@@ -20,7 +20,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     private static RegisterRequest NewAdultRequest(
         string email = NewAdultEmail,
         string phone = "+34600000099",
-        string password = "Str0ngPass!",
+        string password = "Str0ngPass!23",
         string firstName = "Nadia",
         DateOnly? birthDate = null,
         Gender gender = Gender.Female,
@@ -147,7 +147,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 lastName = "Nueva",
                 email = NewAdultEmail,
                 phone = "+34600000099",
-                password = "Str0ngPass!",
+                password = "Str0ngPass!23",
                 birthDate = "1996-01-15",
             },
             Ct
@@ -169,7 +169,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 lastName = "Nueva",
                 email = NewAdultEmail,
                 phone = "+34600000099",
-                password = "Str0ngPass!",
+                password = "Str0ngPass!23",
                 birthDate = "1996-01-15",
                 gender = "Female",
                 minors = new[]
@@ -189,8 +189,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Theory]
-    [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!")]
-    [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!")]
+    [InlineData("   ", "valid@codigoactivo.test", "+34600000098", "Str0ngPass!23")]
+    [InlineData("Nadia", "not-an-email", "+34600000098", "Str0ngPass!23")]
     [InlineData("Nadia", "valid@codigoactivo.test", "+34600000098", "short")]
     public async Task RegisterInvalidBodyReturnsValidationError(
         string firstName,
@@ -281,7 +281,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(NewAdultEmail, "Str0ngPass!"),
+            new LoginRequest(NewAdultEmail, "Str0ngPass!23"),
             Ct
         );
 
@@ -517,6 +517,51 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
         body.Email.Should().Be(TestSeedData.AdminEmail);
         body.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task MeAccountBlockedAfterLoginRevokesExistingSession()
+    {
+        var client = await LoginAsMemberAsync();
+        await Factory.SeedAsync(async db =>
+        {
+            var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
+            user!.UserStatusTypeId = SeedIds.UserStatusTypes.Blocked;
+        });
+
+        var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task AdminDemotedAfterLoginLosesPrivilegeOnExistingSession()
+    {
+        var client = await LoginAsAdminAsync();
+        await Factory.SeedAsync(async db =>
+        {
+            var admin = await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct);
+            admin!.IsAdmin = false;
+        });
+
+        var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task PasswordChangedAfterLoginRevokesExistingSession()
+    {
+        var client = await LoginAsMemberAsync();
+        await Factory.SeedAsync(async db =>
+        {
+            var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
+            user!.PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password";
+        });
+
+        var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

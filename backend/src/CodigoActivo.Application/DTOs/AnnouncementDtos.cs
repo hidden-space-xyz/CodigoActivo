@@ -60,13 +60,13 @@ public record AnnouncementListItemResponse(
 public record CreateAnnouncementRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] string Description,
+    [JsonString] [MaxLength(262144)] string Description,
     Guid ThumbnailId
 );
 
 public record UpdateAnnouncementRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] string Description,
+    [JsonString] [MaxLength(262144)] string Description,
     Guid ThumbnailId
 );

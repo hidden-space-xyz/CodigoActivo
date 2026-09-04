@@ -1,6 +1,6 @@
 {
   "name": "codigo-activo-frontend",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "engines": {
@@ -56,5 +56,10 @@
     "typescript": "~6.0.3",
     "vite": "^8.2.0",
     "vue-tsc": "^3.3.9"
+  },
+  "overrides": {
+    "fast-uri": "^3.1.6",
+    "js-yaml": "^4.3.1",
+    "nanoid": "^3.3.18"
   }
 }
