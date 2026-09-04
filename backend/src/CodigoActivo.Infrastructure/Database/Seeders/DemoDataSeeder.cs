@@ -63,6 +63,13 @@ public sealed class DemoDataSeeder(
         [],
     ];
 
+    public Task<bool> IsSeededAsync(CancellationToken ct = default)
+    {
+        return context.Database.IsRelational()
+            ? context.Users.AnyAsync(u => u.Id == AdminId, ct)
+            : Task.FromResult(false);
+    }
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         if (!context.Database.IsRelational())
@@ -70,7 +77,7 @@ public sealed class DemoDataSeeder(
             return;
         }
 
-        if (await context.Users.AnyAsync(u => u.Id == AdminId, ct))
+        if (await IsSeededAsync(ct))
         {
             logger.LogInformation("Demo data already present, skipping demo seed");
             return;
@@ -144,133 +151,6 @@ public sealed class DemoDataSeeder(
                 graph.Ratings.Count,
                 graph.Files.Count
             );
-        }
-    }
-
-    public async Task RemoveAsync(CancellationToken ct = default)
-    {
-        if (!context.Database.IsRelational())
-        {
-            return;
-        }
-
-        if (!await context.Users.AnyAsync(u => u.Id == AdminId, ct))
-        {
-            return;
-        }
-
-        logger.LogInformation("Removing demo data");
-
-        var demoUserIds = Enumerable.Range(0, UserSeeds.Length).Select(UserId).ToList();
-        var demoCategoryIds = Enumerable
-            .Range(0, DemoCategories.Length)
-            .Select(CategoryId)
-            .ToList();
-        var demoTermsDocumentIds = Enumerable
-            .Range(0, DemoTermsDocuments.Length)
-            .Select(TermsDocumentId)
-            .ToList();
-        var ownedEventIds = await context
-            .Events.Where(e => e.CreatedBy == AdminId)
-            .Select(e => e.Id)
-            .ToListAsync(ct);
-        var ownedActivityIds = await context
-            .Activities.Where(a => a.CreatedBy == AdminId)
-            .Select(a => a.Id)
-            .ToListAsync(ct);
-
-        await context
-            .ActivityUserRoleAssignments.Where(x =>
-                ownedActivityIds.Contains(x.ActivityId) || demoUserIds.Contains(x.UserId)
-            )
-            .ExecuteDeleteAsync(ct);
-        await context
-            .EventTermsAcceptances.Where(x =>
-                ownedEventIds.Contains(x.EventId) || demoUserIds.Contains(x.UserId)
-            )
-            .ExecuteDeleteAsync(ct);
-        await context
-            .EventRatings.Where(r =>
-                ownedEventIds.Contains(r.EventId) || demoUserIds.Contains(r.UserId)
-            )
-            .ExecuteDeleteAsync(ct);
-        await context
-            .EventCategories.Where(x => ownedEventIds.Contains(x.EventId))
-            .ExecuteDeleteAsync(ct);
-        await context.Activities.Where(a => a.CreatedBy == AdminId).ExecuteDeleteAsync(ct);
-        await context.Events.Where(e => e.CreatedBy == AdminId).ExecuteDeleteAsync(ct);
-        await context.Announcements.Where(a => a.CreatedBy == AdminId).ExecuteDeleteAsync(ct);
-        await context.Resources.Where(r => r.CreatedBy == AdminId).ExecuteDeleteAsync(ct);
-        await context.Partners.Where(p => p.CreatedBy == AdminId).ExecuteDeleteAsync(ct);
-
-        await context
-            .EventCategoryTypes.Where(c =>
-                demoCategoryIds.Contains(c.Id)
-                && !context.EventCategories.Any(ec => ec.EventCategoryTypeId == c.Id)
-            )
-            .ExecuteDeleteAsync(ct);
-
-        await context
-            .TermsDocuments.Where(t =>
-                demoTermsDocumentIds.Contains(t.Id)
-                && !context.Events.Any(e => e.TermsDocumentId == t.Id)
-                && !context.EventTermsAcceptances.Any(a => a.TermsDocumentId == t.Id)
-            )
-            .ExecuteDeleteAsync(ct);
-
-        var reclaimableFiles = await context
-            .Files.Where(f => f.UploadedBy == AdminId)
-            .Where(f => !context.Events.Any(e => e.ThumbnailId == f.Id))
-            .Where(f => !context.Activities.Any(a => a.ThumbnailId == f.Id))
-            .Where(f => !context.Announcements.Any(a => a.ThumbnailId == f.Id))
-            .Where(f => !context.Resources.Any(r => r.ThumbnailId == f.Id))
-            .Where(f => !context.Partners.Any(p => p.ThumbnailId == f.Id))
-            .Select(f => new { f.Id, f.Extension })
-            .ToListAsync(ct);
-        var reclaimableFileIds = reclaimableFiles.ConvertAll(f => f.Id);
-        await context.Files.Where(f => reclaimableFileIds.Contains(f.Id)).ExecuteDeleteAsync(ct);
-
-        await context
-            .Users.Where(u => demoUserIds.Contains(u.Id) && u.ParentId != null)
-            .ExecuteDeleteAsync(ct);
-        await context
-            .Users.Where(u => demoUserIds.Contains(u.Id) && u.Id != AdminId)
-            .ExecuteDeleteAsync(ct);
-        await RemoveOrNeutralizeAdminAsync(ct);
-
-        foreach (var file in reclaimableFiles)
-        {
-            storage.Delete($"{file.Id}.{file.Extension}");
-        }
-
-        logger.LogInformation("Demo data removed");
-    }
-
-    private async Task RemoveOrNeutralizeAdminAsync(CancellationToken ct)
-    {
-        try
-        {
-            await context.Users.Where(u => u.Id == AdminId).ExecuteDeleteAsync(ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogWarning(
-                ex,
-                "Demo admin still referenced by non-demo data; disabling the account instead of deleting it"
-            );
-            string? clearedText = null;
-            DateTimeOffset? clearedTimestamp = null;
-            await context
-                .Users.Where(u => u.Id == AdminId)
-                .ExecuteUpdateAsync(
-                    setters =>
-                        setters
-                            .SetProperty(u => u.UserStatusTypeId, SeedIds.UserStatusTypes.Blocked)
-                            .SetProperty(u => u.PasswordHash, clearedText)
-                            .SetProperty(u => u.OtpCodeHash, clearedText)
-                            .SetProperty(u => u.OtpExpiresAt, clearedTimestamp),
-                    ct
-                );
         }
     }
 

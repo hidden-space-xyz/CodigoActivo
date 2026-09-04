@@ -92,7 +92,7 @@ public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Col
 public record CreateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] string Description,
+    [JsonString] [MaxLength(262144)] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,
@@ -106,7 +106,7 @@ public record CreateEventRequest(
 public record UpdateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] string Description,
+    [JsonString] [MaxLength(262144)] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,
@@ -141,12 +141,12 @@ public record TermsDocumentResponse(Guid Id, string Name, string Description)
 
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [JsonString] string Description
+    [Required] [JsonString] [MaxLength(262144)] string Description
 );
 
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [JsonString] string Description
+    [Required] [JsonString] [MaxLength(262144)] string Description
 );
 
 public record EventTermsAcceptanceResponse(bool Accepted);

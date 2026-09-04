@@ -15,7 +15,7 @@ public sealed class LoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    CredentialTimingProtector credentialTiming,
     AccountVerificationOptions verification
 ) : ICommandHandler<LoginCommand, Result<UserResponse>>
 {
@@ -29,8 +29,10 @@ public sealed class LoginCommandHandler(
 
         if (
             user is null
-            || string.IsNullOrEmpty(user.PasswordHash)
-            || !hasher.Verify(command.Request.Password, user.PasswordHash)
+            || !credentialTiming.Verify(
+                command.Request.Password,
+                string.IsNullOrEmpty(user.PasswordHash) ? null : user.PasswordHash
+            )
         )
         {
             return Error.Unauthorized(ErrorCode.InvalidCredentials);

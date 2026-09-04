@@ -22,11 +22,14 @@ public sealed class RegisterCommandHandler(
     IClock clock,
     IPasswordHasher hasher,
     AccountVerificationOptions verification,
+    RegistrationOptions registration,
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<RegisterCommand, Result<RegisterResponse>>
 {
+    private const int MaxMinorRegistrations = 20;
+
     public async Task<Result<RegisterResponse>> HandleAsync(
         RegisterCommand command,
         CancellationToken ct = default
@@ -41,8 +44,6 @@ public sealed class RegisterCommandHandler(
             return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
         }
 
-        var isFirstUser = !await users.ExistsAsync(_ => true, ct);
-
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
@@ -55,7 +56,26 @@ public sealed class RegisterCommandHandler(
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
         }
 
+        var isBootstrapAdmin =
+            string.Equals(
+                email,
+                registration.BootstrapAdminEmail,
+                StringComparison.OrdinalIgnoreCase
+            )
+            && !await users.ExistsAsync(
+                u =>
+                    u.IsAdmin
+                    && u.PasswordHash != null
+                    && u.UserStatusTypeId == SeedIds.UserStatusTypes.Active,
+                ct
+            );
+
         var minorRequests = request.Minors ?? [];
+        if (minorRequests.Count > MaxMinorRegistrations)
+        {
+            return Error.BadRequest(ErrorCode.RequestValidationFailed);
+        }
+
         if (minorRequests.Any(minor => !minor.BirthDate.IsMinor(today)))
         {
             return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
@@ -75,7 +95,7 @@ public sealed class RegisterCommandHandler(
             UserStatusTypeId = verification.Required
                 ? SeedIds.UserStatusTypes.Pending
                 : SeedIds.UserStatusTypes.Active,
-            IsAdmin = isFirstUser,
+            IsAdmin = isBootstrapAdmin,
             UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = now,
         };

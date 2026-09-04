@@ -25,6 +25,7 @@ public sealed class RegisterCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
+    private readonly RegistrationOptions registration = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RegisterCommandHandler sut;
@@ -37,6 +38,7 @@ public sealed class RegisterCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             verification,
+            registration,
             new AccountEmails(emailSender, verification, passwordReset, application),
             NullLogger<RegisterCommandHandler>.Instance,
             cacheInvalidator
@@ -92,7 +94,11 @@ public sealed class RegisterCommandHandlerTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private static bool IsRegisteredFirstAdmin(User? user, DateTimeOffset now, TimeSpan otpLifetime)
+    private static bool IsRegisteredBootstrapAdmin(
+        User? user,
+        DateTimeOffset now,
+        TimeSpan otpLifetime
+    )
     {
         if (user is null)
         {
@@ -188,7 +194,7 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncEmailOrPhoneInUseReturnsConflict()
     {
-        ExistsReturns(false, true);
+        ExistsReturns(true);
 
         var result = await sut.HandleAsync(
             new RegisterCommand(NewRegister()),
@@ -217,10 +223,25 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncFirstUserBecomesAdminWithParticipantType()
+    public async Task HandleAsyncTooManyMinorsReturnsBadRequest()
+    {
+        ExistsReturns(false, false);
+        var minors = Enumerable.Range(0, 21).Select(_ => NewMinor()).ToList();
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(NewRegister(minors: minors)),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RequestValidationFailed);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncFirstOrdinaryUserIsNotPromotedToAdmin()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
-        ExistsReturns(false, false);
+        ExistsReturns(false);
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(NewUser());
@@ -237,15 +258,38 @@ public sealed class RegisterCommandHandlerTests
         result.Value.Minors.Should().BeEmpty();
         result.Value.RequiresVerification.Should().BeTrue();
 
+        await users.Received(1)
+            .AddAsync(Arg.Is<User>(u => IsPendingParticipantAdult(u)), Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncConfiguredBootstrapAccountBecomesAdminWhenNoUsableAdminExists()
+    {
+        clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
+        registration.BootstrapAdminEmail = "ana@test.com";
+        ExistsReturns(false, false);
+        users
+            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(NewUser());
+        users
+            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(NewRegister()),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
         await users
             .Received(1)
             .AddAsync(
                 Arg.Is<User>(u =>
-                    IsRegisteredFirstAdmin(u, clock.UtcNow, verification.OtpLifetime)
+                    IsRegisteredBootstrapAdmin(u, clock.UtcNow, verification.OtpLifetime)
                 ),
                 Arg.Any<CancellationToken>()
             );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -340,7 +384,7 @@ public sealed class RegisterCommandHandlerTests
     public async Task HandleAsyncSubsequentUserWithMinorCreatesAdultAndMinorAsParticipants()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
-        ExistsReturns(true, false);
+        ExistsReturns(false);
         users
             .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(NewUser());

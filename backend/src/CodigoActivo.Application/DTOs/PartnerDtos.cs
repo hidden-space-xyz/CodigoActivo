@@ -35,7 +35,7 @@ public record CreatePartnerRequest(
     [Required] [MaxLength(200)] [NotBlank] string Name,
     [Required] DateOnly? FromDate,
     [Range(0, int.MaxValue)] int Tier,
-    [Url] [MaxLength(500)] string? Website,
+    [HttpUrl] [MaxLength(500)] string? Website,
     Guid ThumbnailId
 );
 
@@ -43,6 +43,6 @@ public record UpdatePartnerRequest(
     [Required] [MaxLength(200)] [NotBlank] string Name,
     [Required] DateOnly? FromDate,
     [Range(0, int.MaxValue)] int Tier,
-    [Url] [MaxLength(500)] string? Website,
+    [HttpUrl] [MaxLength(500)] string? Website,
     Guid ThumbnailId
 );

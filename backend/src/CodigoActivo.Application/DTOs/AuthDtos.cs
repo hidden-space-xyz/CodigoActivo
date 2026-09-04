@@ -4,7 +4,10 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.DTOs;
 
-public record LoginRequest([Required] string Identifier, [Required] string Password);
+public record LoginRequest(
+    [Required] [MaxLength(256)] [NotBlank] string Identifier,
+    [Required] [MaxLength(128)] [NotBlank] string Password
+);
 
 public record CsrfTokenResponse(string Token, string HeaderName);
 
@@ -13,10 +16,10 @@ public record RegisterRequest(
     [Required] [MaxLength(120)] [NotBlank] string LastName,
     [Required] [EmailAddress] [MaxLength(256)] string Email,
     [Required] [Phone] [MaxLength(40)] string Phone,
-    [Required] [MinLength(8)] [MaxLength(128)] string Password,
+    [Required] [MinLength(12)] [MaxLength(128)] [NotBlank] string Password,
     [NotDefaultOrFutureDate] DateOnly BirthDate,
     [EnumDataType(typeof(Gender))] Gender Gender,
-    IReadOnlyList<RegisterMinorRequest>? Minors
+    [MaxLength(20)] IReadOnlyList<RegisterMinorRequest>? Minors
 );
 
 public record RegisterMinorRequest(
@@ -38,5 +41,5 @@ public record ForgotPasswordRequest([Required] [EmailAddress] [MaxLength(256)] s
 
 public record ResetPasswordRequest(
     [Required] [MaxLength(64)] [NotBlank] string Otp,
-    [Required] [MinLength(8)] [MaxLength(128)] string NewPassword
+    [Required] [MinLength(12)] [MaxLength(128)] [NotBlank] string NewPassword
 );

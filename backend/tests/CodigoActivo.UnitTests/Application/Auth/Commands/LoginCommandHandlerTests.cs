@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
@@ -23,7 +24,14 @@ public sealed class LoginCommandHandlerTests
 
     public LoginCommandHandlerTests()
     {
-        sut = new LoginCommandHandler(users, uow, clock, new FakePasswordHasher(), verification);
+        var hasher = new FakePasswordHasher();
+        sut = new LoginCommandHandler(
+            users,
+            uow,
+            clock,
+            new CredentialTimingProtector(hasher),
+            verification
+        );
     }
 
     private Task<int> AssertNotSavedAsync()

@@ -26,7 +26,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
             "Nueva",
             NewAdultEmail,
             "+34600000099",
-            "Str0ngPass!",
+            "Str0ngPass!23",
             new DateOnly(1996, 1, 15),
             Gender.Female,
             Minors: null
@@ -64,7 +64,7 @@ public sealed class AuthControllerVerificationDisabledTests(CodigoActivoWebAppFa
 
         var login = await client.PostJsonAsync(
             "/api/auth/login",
-            new LoginRequest(NewAdultEmail, "Str0ngPass!"),
+            new LoginRequest(NewAdultEmail, "Str0ngPass!23"),
             Ct
         );
 

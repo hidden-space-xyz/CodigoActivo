@@ -76,8 +76,8 @@ public record ResourceListItemResponse(
 public record CreateResourceRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] string? Description,
-    [Url] [MaxLength(500)] string? Url,
+    [JsonString] [MaxLength(262144)] string? Description,
+    [HttpUrl] [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId
 );
@@ -85,8 +85,8 @@ public record CreateResourceRequest(
 public record UpdateResourceRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] string? Description,
-    [Url] [MaxLength(500)] string? Url,
+    [JsonString] [MaxLength(262144)] string? Description,
+    [HttpUrl] [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId
 );

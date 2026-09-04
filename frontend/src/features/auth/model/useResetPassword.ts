@@ -32,7 +32,7 @@ export function useResetPassword(userId: string | null, code: string | null) {
   function submit(): void {
     errorMessage.value = null
     canRequestNewLink.value = false
-    if (form.password.length < 8) {
+    if (form.password.length < 12) {
       errorMessage.value = t('validation.newPasswordMin')
       return
     }

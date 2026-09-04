@@ -14,9 +14,9 @@ without containers, see
 
 | Service | Image / build                                        | Role                                                                                         |
 | ------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **db**  | `postgres:17-alpine`                                 | PostgreSQL. On the **internal** `backend` network only (not published in production).         |
-| **api** | `ghcr.io/hidden-space-xyz/codigoactivo-backend` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
-| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${HTTP_PORT}:8080`. |
+| **db**  | `postgres:17.11-alpine3.24`                          | PostgreSQL. On the **internal** `backend` network only (not published in production).         |
+| **api** | `ghcr.io/hidden-space-xyz/codigoactivo-backend:latest` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
+| **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `${BIND_ADDRESS}:${HTTP_PORT}` (loopback by default). |
 
 The two app images are the ones CI publishes on release ([Published images](#published-images)); the
 development override builds them from the working tree instead (see
@@ -36,9 +36,9 @@ recorded here.
 
 ## Published images
 
-Every push to `master` runs the `Docker Publish` workflow (`.github/workflows/docker-publish.yml`),
-which builds and pushes the two images to GitHub Container Registry as two independent pipelines —
-each versioned inside its own project:
+Every push to `master` first runs the `CI` workflow. Only a successful CI completion triggers `Docker Publish`
+(`.github/workflows/docker-publish.yml`), which scans, builds and pushes the two images to GitHub Container
+Registry as two independent pipelines — each versioned inside its own project:
 
 | Image                                            | Version source                                                        | Release tag  |
 | ------------------------------------------------ | --------------------------------------------------------------------- | ------------ |
@@ -48,8 +48,9 @@ each versioned inside its own project:
 For each image the workflow reads its version (strictly `X.X.X` — anything else fails the run) and
 **skips the build entirely if that version's release tag already exists** on the repository. Bumping
 the version in a project is what releases that image; merging to `master` without bumping publishes
-nothing. When it does build, it pushes the `<version>` and `latest` image tags and only then creates
-the git release tag — so a run that fails before tagging is simply retried by the next merge.
+nothing. When it does build, it pushes the `<version>` and `latest` image tags with provenance and an SBOM,
+and only then creates the git release tag — so a run that fails before tagging is simply retried by the next
+merge. Compose intentionally follows `latest` for both first-party application images.
 
 ## Production
 
@@ -63,17 +64,18 @@ nano .env
 docker compose up -d
 ```
 
-The template ships working values for a first boot ([Environment variables](#environment-variables));
-adjust at least these before starting:
+The template intentionally contains placeholders and the API refuses an unsafe Production startup. Adjust at
+least these before starting ([Environment variables](#environment-variables)):
 
-- `POSTGRES_PASSWORD` — Postgres refuses to initialize with it empty (e.g. `openssl rand -base64 32`);
+- `POSTGRES_PASSWORD` — use at least 16 random characters (e.g. `openssl rand -base64 32`);
+- `DATA_PROTECTION_CERTIFICATE_PASSWORD` — a separate random secret of at least 32 characters; it
+  encrypts the certificate that protects session and antiforgery keys in the persistent volume;
 - `APP_BASE_URL` — the public `https://` URL, used in links, outgoing emails and the sitemap;
-- `DEMO_MODE` — the template ships `true` so a first boot comes up with demo content; set `false` for
-  any real deployment ([Demo mode](#demo-mode));
-- the `SMTP_*` block, or the app cannot send any email.
+- `BOOTSTRAP_ADMIN_EMAIL` — on a new database, an address you control and will register first;
+- the `SMTP_*` block, including `StartTls` or `SslOnConnect`, so account verification works;
+- `BIND_ADDRESS` — keep `127.0.0.1` when the TLS proxy runs on the same host.
 
-The compose file tracks `latest`; to pin a release, replace `latest` with a version from the release tags
-(`v1.2.3-API` → `ghcr.io/hidden-space-xyz/codigoactivo-backend:1.2.3`). To upgrade:
+To upgrade the two first-party application images to the latest successful release:
 
 ```bash
 docker compose pull && docker compose up -d
@@ -96,8 +98,9 @@ docker compose pull && docker compose up -d
 The API has forwarded headers enabled and, in Production, issues `Secure` cookies and redirects
 HTTP → HTTPS. `APP_BASE_URL` is used in links, outgoing emails and every URL of the generated
 `/sitemap.xml` and `/robots.txt` — if it is left at the template's `https://example.org` placeholder,
-search engines receive a sitemap full of unusable URLs. Set `AUTH_SAMESITE` to match your
-cross-site needs.
+search engines receive a sitemap full of unusable URLs and Production refuses to start. Keep
+`AUTH_SAMESITE=Lax` (or use `Strict` after testing the login flows); the same-origin deployment does not
+support `None` in Production.
 
 ## Local / debug overlay
 
@@ -128,16 +131,20 @@ copy of `.env.example` (whose shipped values are the last column). The connectio
 | `POSTGRES_DB`                   | Database name                                                     | `codigoactivo`                  |
 | `POSTGRES_USER`                 | Database user                                                     | `codigoactivo`                  |
 | `POSTGRES_PASSWORD`             | Database password — **required**, Postgres refuses to initialize with it empty (e.g. `openssl rand -base64 32`) | *(empty)* |
+| `DATA_PROTECTION_CERTIFICATE_PASSWORD` | Separate 32+ character secret used to encrypt the locally generated certificate that protects the Data Protection key ring | *(empty)* |
 | `PGDATA`                        | Data directory inside the `db-data` volume                        | `/var/lib/postgresql/data/pgdata` |
 | `ASPNETCORE_ENVIRONMENT`        | ASP.NET Core environment — keep `Production` on servers (the dev override forces `Development`) | `Production` |
-| `ASPNETCORE_URLS`               | Address the API binds inside the container — must stay `http://+:8080`, nginx proxies to `api:8080` | `http://+:8080` |
 | `APP_BASE_URL`                  | Public base URL used in links, outgoing emails and the generated sitemap/robots (code falls back to `http://localhost:5173`) | `https://example.org` |
+| `BIND_ADDRESS`                  | Host interface for the web listener; keep loopback behind a local TLS proxy | `127.0.0.1` |
 | `HTTP_PORT`                     | Host port the `web` container publishes                           | `8080`                          |
 | `APP_TIMEZONE`                  | IANA/Windows time zone for the app clock                          | `Europe/Madrid`                 |
-| `DEMO_MODE`                     | Seed/purge realistic demo data on startup (see below) — set `false` for real deployments | `true` |
-| `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite` — `Lax` / `Strict` / `None`        | `Lax`                           |
+| `DEMO_MODE`                     | Seed realistic demo data outside Production; disabling it with demo data present requires recreating all persistent volumes | `false` |
+| `AUTH_SAMESITE`                 | Session/CSRF cookie `SameSite`; Production accepts `Lax` or `Strict` | `Lax`                        |
+| `AUTH_MAX_CONCURRENT_CREDENTIAL_REQUESTS` | Per-instance cap on simultaneous Argon2id requests; Production accepts 1–32 | `4` |
+| `AUTH_MAX_QUEUED_CREDENTIAL_REQUESTS` | Queue behind the Argon2id concurrency cap; Production accepts 100–1000 | `128` |
 | `FILE_STORAGE_ROOT`             | Directory for uploaded files — the `api-files` volume mounts here | `/app/files`                    |
-| `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login (`true` in code when unset) | `false`                |
+| `ACCOUNT_VERIFICATION_REQUIRED` | Require email (OTP) verification before login; mandatory in Production | `true`                 |
+| `BOOTSTRAP_ADMIN_EMAIL`         | Exact email promoted during registration only when no usable admin exists; needed for a new production DB | *(empty)* |
 | `SMTP_HOST`                     | SMTP server — **required if verification is enabled**, and to send any email at all | *(empty)*     |
 | `SMTP_PORT`                     | SMTP port                                                         | `587`                           |
 | `SMTP_SECURITY`                 | `StartTls` / `SslOnConnect` / `None` / `Auto`                     | `StartTls`                      |
@@ -229,20 +236,70 @@ to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped*
 
 ## Demo mode
 
-Setting `DEMO_MODE=true` seeds a full, realistic demo dataset on startup via `DemoDataSeeder` (it downloads
+Setting `DEMO_MODE=true` outside Production seeds a full, realistic demo dataset on startup via `DemoDataSeeder` (it downloads
 placeholder images from picsum.photos and creates demo accounts, including an admin with the password
-`Demo1234!`). Flipping it back to `false` **removes** the demo data on the next startup. It is
-backend-only, and while the code default is `false`, **`.env.example` ships it `true`** so an
-evaluation boot comes up populated — flip it to `false` for any real deployment.
+`Demo1234!`). It is backend-only and defaults to `false`; `.env.example` also ships it disabled.
+
+There is deliberately no selective cleanup. If the API finds the demo marker while `DEMO_MODE=false`, startup
+fails and instructs the operator to delete the `db-data`, `api-files` and `api-dataprotection` volumes. This
+prevents demo credentials or files from surviving a partial cleanup. Leaving demo mode therefore requires a
+full reset of all persistent application data:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+The first command irreversibly deletes the database, uploads and Data Protection keys. Use it only for a demo
+stack whose data is disposable.
 
 > [!CAUTION]
 > Never enable `DEMO_MODE` in a real deployment — the demo admin uses a well-known password (`Demo1234!`).
+> The API now rejects that configuration before migrations or seeding run in Production.
+
+## First administrator
+
+An empty production database needs an explicit, verified path to administration:
+
+1. Set `BOOTSTRAP_ADMIN_EMAIL` to an email address you control and configure working SMTP.
+2. Start the stack and register that exact email with a unique 12+ character password.
+3. Complete the emailed verification before logging in.
+4. Confirm the account can reach an admin endpoint, then remove `BOOTSTRAP_ADMIN_EMAIL` from `.env` and
+   recreate the API container with `docker compose up -d`.
+
+The first arbitrary registrant is never made admin. The bootstrap address is promoted only if no usable admin
+exists; later registrations cannot use it to gain privilege. Production refuses to start when neither a usable
+admin nor a bootstrap address exists.
+
+## Production release gate
+
+Before exposing the TLS virtual host, all of the following must be true:
+
+- CI is green, including backend integration tests against PostgreSQL, frontend build/lint/format, npm audit
+  and CodeQL; review Dependabot alerts.
+- `APP_BASE_URL` is the final clean HTTPS origin, `DEMO_MODE=false`, verification is enabled and SMTP is
+  encrypted and tested.
+- `POSTGRES_PASSWORD` and SMTP credentials are newly generated production secrets; `.env` is readable only by
+  the deployment account and is not copied into images or backups without encryption.
+- `DATA_PROTECTION_CERTIFICATE_PASSWORD` is newly generated, stored separately from volume backups and
+  included in the secret-recovery procedure; losing it invalidates every protected session key.
+- The web port remains loopback-only unless a firewall provides an equivalent trust boundary; only the TLS
+  proxy is internet-facing and it overwrites `X-Forwarded-For`/`X-Forwarded-Proto`.
+- The first-party API/UI images use the `latest` release published after a successful CI run; the database,
+  uploads and Data Protection key volumes have tested backup and restore procedures.
+- Register, verify, login, password reset, upload/download authorization, admin demotion and account blocking
+  are smoke-tested through the public HTTPS URL.
 
 ## Data & backups
 
 > [!IMPORTANT]
 > The named volumes hold all state. Back up `db-data` (database) and `api-files` (uploads) regularly, and
 > keep `api-dataprotection` stable across restarts so existing session/antiforgery cookies stay valid. The
+> key ring is encrypted at rest by a self-signed RSA certificate generated in that volume on first start;
+> the certificate's private key is itself encrypted with `DATA_PROTECTION_CERTIFICATE_PASSWORD`. Back up the
+> volume and that password separately. If upgrading from a release that wrote plaintext Data Protection keys,
+> stop the API and rotate only `api-dataprotection` before starting this release; this intentionally logs out
+> existing sessions. The API fails closed instead of continuing with a plaintext legacy key ring. The
 > one exception is outbound email still sitting in the in-memory queue: it is deliberately not persisted, so
 > a restart that outlasts the drain window drops it. Nothing user-visible depends on it — the write that
 > triggered the mail is already committed, and members can always request a new verification code.

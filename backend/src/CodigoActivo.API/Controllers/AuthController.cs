@@ -1,14 +1,15 @@
-using System.Security.Claims;
 using CodigoActivo.API.Controllers.Abstractions;
-using CodigoActivo.API.Extensions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.Auth.Queries;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -31,6 +32,7 @@ public class AuthController : ApiControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<RegisterResponse>> RegisterAsync(
         [FromBody] RegisterRequest request,
         [FromServices] RegisterCommandHandler handler,
@@ -45,6 +47,7 @@ public class AuthController : ApiControllerBase
 
     [HttpPatch("{userId:guid}/verify")]
     [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<UserResponse>> VerifyAsync(
         Guid userId,
         [FromBody] VerifyRequest request,
@@ -57,6 +60,7 @@ public class AuthController : ApiControllerBase
 
     [HttpPost("{userId:guid}/resend-verification")]
     [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ResendVerificationAsync(
         Guid userId,
         [FromServices] ResendVerificationCommandHandler handler,
@@ -68,6 +72,7 @@ public class AuthController : ApiControllerBase
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ForgotPasswordAsync(
         [FromBody] ForgotPasswordRequest request,
         [FromServices] ForgotPasswordCommandHandler handler,
@@ -79,6 +84,7 @@ public class AuthController : ApiControllerBase
 
     [HttpPatch("{userId:guid}/reset-password")]
     [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ResetPasswordAsync(
         Guid userId,
         [FromBody] ResetPasswordRequest request,
@@ -93,6 +99,7 @@ public class AuthController : ApiControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<UserResponse>> LoginAsync(
         [FromBody] LoginRequest request,
         [FromServices] LoginCommandHandler handler,
@@ -106,10 +113,17 @@ public class AuthController : ApiControllerBase
         }
 
         var user = result.Value;
+        var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
+        var principal = await sessionTickets.CreatePrincipalAsync(user.Id, ct);
+        if (principal is null)
+        {
+            return ToProblem(Error.Unauthorized(ErrorCode.InvalidCredentials));
+        }
+
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            BuildPrincipal(user),
-            new AuthenticationProperties { IsPersistent = false }
+            principal,
+            new AuthenticationProperties { IsPersistent = false, AllowRefresh = false }
         );
         return Ok(user);
     }
@@ -130,29 +144,5 @@ public class AuthController : ApiControllerBase
     )
     {
         return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(UserId), ct));
-    }
-
-    private static ClaimsPrincipal BuildPrincipal(UserResponse user)
-    {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-        };
-        if (!string.IsNullOrEmpty(user.Email))
-        {
-            claims.Add(new Claim(ClaimTypes.Email, user.Email));
-        }
-
-        if (user.IsAdmin)
-        {
-            claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
-        }
-
-        var identity = new ClaimsIdentity(
-            claims,
-            CookieAuthenticationDefaults.AuthenticationScheme
-        );
-        return new ClaimsPrincipal(identity);
     }
 }

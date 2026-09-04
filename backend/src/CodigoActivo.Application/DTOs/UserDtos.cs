@@ -61,8 +61,8 @@ public record UpdateUserRequest(
 );
 
 public record ChangePasswordRequest(
-    [Required] string CurrentPassword,
-    [Required] [MinLength(8)] [MaxLength(128)] string NewPassword
+    [Required] [MaxLength(128)] [NotBlank] string CurrentPassword,
+    [Required] [MinLength(12)] [MaxLength(128)] [NotBlank] string NewPassword
 );
 
 public record UserStatusTypeResponse(Guid Id, string Name, string Description, string Color)

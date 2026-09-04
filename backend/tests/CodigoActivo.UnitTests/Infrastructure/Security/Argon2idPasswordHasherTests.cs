@@ -56,8 +56,19 @@ public sealed class Argon2idPasswordHasherTests
     [InlineData("argon2id$3$65536$x$c2FsdA==$aGFzaA==")]
     [InlineData("argon2id$3$65536$4$!!!$aGFzaA==")]
     [InlineData("argon2id$3$65536$4$c2FsdA==$!!!")]
+    [InlineData("argon2id$30$65536$4$MDEyMzQ1Njc4OWFiY2RlZg==$MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")]
+    [InlineData("argon2id$3$1073741824$4$MDEyMzQ1Njc4OWFiY2RlZg==$MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")]
+    [InlineData("argon2id$3$65536$4000$MDEyMzQ1Njc4OWFiY2RlZg==$MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")]
     public void VerifyMalformedHashStringReturnsFalse(string malformed)
     {
+        sut.Verify("anything", malformed).Should().BeFalse();
+    }
+
+    [Fact]
+    public void VerifyOversizedEncodedHashReturnsFalseWithoutAllocatingFromItsContents()
+    {
+        var malformed = $"argon2id$3$65536$4${new string('A', 1_000_000)}$aGFzaA==";
+
         sut.Verify("anything", malformed).Should().BeFalse();
     }
 }

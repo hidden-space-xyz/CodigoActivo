@@ -80,7 +80,7 @@ function openPassword(): void {
 
 function savePassword(): void {
   passwordError.value = ''
-  if (passwordForm.next.length < 8) {
+  if (passwordForm.next.length < 12) {
     passwordError.value = t('validation.newPasswordMin')
     return
   }
