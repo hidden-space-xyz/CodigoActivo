@@ -4,11 +4,7 @@ namespace CodigoActivo.API.Security;
 
 public sealed class DeploymentModeLock
 {
-    private static readonly string PersistentFilePath = Path.Combine(
-        AppContext.BaseDirectory,
-        "state",
-        "deployment-mode"
-    );
+    private const string PersistentFilePath = "/app/state/deployment-mode";
     private readonly string filePath;
 
     public DeploymentModeLock()
@@ -33,30 +29,33 @@ public sealed class DeploymentModeLock
 
         Directory.CreateDirectory(directory);
         var configuredValue = configuredMode ? "demo" : "normal";
-        try
+        if (!File.Exists(filePath))
         {
-            using var stream = new FileStream(
-                filePath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.Read,
-                bufferSize: 4096,
-                FileOptions.WriteThrough
-            );
-            var contents = Encoding.UTF8.GetBytes(configuredValue + "\n");
-            stream.Write(contents);
-            stream.Flush(flushToDisk: true);
-
-            if (OperatingSystem.IsLinux())
+            try
             {
-                File.SetUnixFileMode(
+                using var stream = new FileStream(
                     filePath,
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.Read,
+                    bufferSize: 4096,
+                    FileOptions.WriteThrough
                 );
+                var contents = Encoding.UTF8.GetBytes(configuredValue + "\n");
+                stream.Write(contents);
+                stream.Flush(flushToDisk: true);
+
+                if (OperatingSystem.IsLinux())
+                {
+                    File.SetUnixFileMode(
+                        filePath,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite
+                    );
+                }
             }
-        }
-        catch (IOException) when (File.Exists(filePath))
-        {
+            catch (IOException) when (File.Exists(filePath))
+            {
+            }
         }
 
         var persistedValue = File.ReadAllText(filePath, Encoding.UTF8).Trim();

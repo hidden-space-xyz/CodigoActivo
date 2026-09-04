@@ -127,9 +127,9 @@ which turns the deployment stack into the development one:
 
 Administrator-controlled runtime configuration is supplied as flat environment variables. Each variable
 below is passed 1:1 from `.env`, so that file always starts as a copy of `.env.example` (whose shipped values
-are the last column). Application paths, listener settings, cookie policy and credential-work limits are
-fixed in code or Compose. The PostgreSQL data path remains administrator-configurable, and the connection
-string is built from `POSTGRES_*` in code.
+are the last column). Listener settings, persistent application paths, cookie policy and credential-work
+limits are fixed in code or Compose. The PostgreSQL data path remains administrator-configurable, and the
+connection string is built from `POSTGRES_*` in code.
 
 | Variable                        | Description                                                        | `.env.example` ships            |
 | ------------------------------- | ----------------------------------------------------------------- | ------------------------------- |
@@ -238,9 +238,9 @@ to its default — and, unlike `EmailGuard`, an out-of-range value is **clamped*
 
 ## Demo mode
 
-On the first start, the API writes the selected `DEMO_MODE` value to its fixed internal path
-`/app/state/deployment-mode` in the `api-state` volume. This location is not configurable. Every later start
-must present the same value; changing `.env` alone makes startup fail.
+On the first start, the API writes the selected `DEMO_MODE` value to the fixed
+`/app/state/deployment-mode` path in the `api-state` volume. Every later start must present the same value;
+changing `.env` alone makes startup fail.
 This lock is independent of `ASPNETCORE_ENVIRONMENT`, so demo and normal mode can each run in Development or
 Production.
 

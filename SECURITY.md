@@ -97,7 +97,7 @@ The production Compose stack (`docker-compose.yml`) runs with:
 ### File uploads
 
 Uploads are size-limited (10 MiB by default, `FileStorage:MaxSizeBytes`) and stored under the fixed
-`/app/files` container path. Email attachments are the one multipart path that is **not** stored: they are streamed,
+`/app/files` path. Email attachments are the one multipart path that is **not** stored: they are streamed,
 attached to the outgoing message and discarded — they never get a row, a file on disk or a content URL.
 
 ### Optional email verification
