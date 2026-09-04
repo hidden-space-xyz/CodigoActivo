@@ -51,6 +51,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         administrator.PasswordHash.Should().Be("fake:bootstrap-password-123");
         administrator.IsAdmin.Should().BeTrue();
         administrator.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        administrator.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
         administrator.CreatedAt.Should().Be(CreatedAt);
     }
 

@@ -59,7 +59,7 @@ public sealed class InitialAdministratorSeeder(
             BirthDate = new DateOnly(2000, 1, 1),
             Gender = Gender.Other,
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Participant,
+            UserTypeId = SeedIds.UserTypes.Member,
             IsAdmin = true,
             CreatedAt = clock.UtcNow,
         };
