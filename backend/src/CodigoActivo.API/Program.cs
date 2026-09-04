@@ -53,8 +53,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.ForwardLimit = 1;
 
-    // The production API is not host-published and only receives traffic from the nginx container.
-    // Docker assigns that proxy a dynamic address, so a stable KnownProxies entry is not available.
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -343,7 +341,6 @@ static X509Certificate2 LoadOrCreateDataProtectionCertificate(
         }
         catch (IOException) when (File.Exists(certificatePath))
         {
-            // Another replica won the first-start race; load its certificate below.
         }
         finally
         {

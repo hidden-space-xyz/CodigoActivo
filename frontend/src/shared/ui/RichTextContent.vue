@@ -9,6 +9,5 @@ const html = computed(() => renderRichTextHtml(props.content))
 </script>
 
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
-  <div class="rich-text" v-html="html" />
+  <div class="rich-text" :innerHTML="html" />
 </template>

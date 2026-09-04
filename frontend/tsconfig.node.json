@@ -15,6 +15,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "//": "orval.config.ts is intentionally excluded: it is a future, inert file that imports the not-yet-installed 'orval' package. It is type-checked only once Orval is added.",
   "include": ["vite.config.ts"]
 }
