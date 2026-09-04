@@ -265,7 +265,8 @@ next start, the current `DEMO_MODE` value becomes the new permanent selection.
 An empty database requires `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`. During startup, after the
 catalogs are available and before any demo seed runs or HTTP traffic is accepted, the API inserts an active
 administrator with those credentials. Its initial profile name is “Administrador Código Activo”, its gender
-is “Other”, and its placeholder birth date is 2000-01-01; it can edit those profile fields after login.
+is “Other”, its role is “Socio”, and its placeholder birth date is 2000-01-01; it can edit those profile
+fields after login.
 
 If at least one user already exists, both bootstrap variables are ignored completely on every later restart.
 Changing them cannot create, replace, promote or reset an account. Public registration always creates a
