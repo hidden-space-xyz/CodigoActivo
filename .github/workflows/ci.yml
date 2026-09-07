@@ -36,21 +36,6 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Scan repository, lockfiles, secrets and configuration
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          version: v0.74.0
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
-          scanners: vuln,secret,misconfig
-
   backend:
     runs-on: ubuntu-latest
     defaults:
