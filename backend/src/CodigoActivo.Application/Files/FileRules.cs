@@ -16,7 +16,8 @@ public static class FileNaming
 
     public static string SanitizeName(string? fileName)
     {
-        var name = Path.GetFileName(fileName ?? string.Empty).Trim();
+        var normalizedFileName = (fileName ?? string.Empty).Replace('\\', '/');
+        var name = Path.GetFileName(normalizedFileName).Trim();
         if (string.IsNullOrEmpty(name))
         {
             name = AppStrings.FilesFallbackFileName;
