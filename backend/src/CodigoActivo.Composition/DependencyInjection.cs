@@ -434,9 +434,12 @@ public static class DependencyInjection
         };
         services.AddSingleton(uploadOptions);
 
+        var configuredRootPath = configuration["FileStorage:RootPath"];
         var storageOptions = new FileStorageOptions
         {
-            RootPath = "/app/files",
+            RootPath = string.IsNullOrWhiteSpace(configuredRootPath)
+                ? "/app/files"
+                : configuredRootPath,
         };
         services.AddSingleton(storageOptions);
         services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();

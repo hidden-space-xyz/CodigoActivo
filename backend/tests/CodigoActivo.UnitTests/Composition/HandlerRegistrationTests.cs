@@ -36,6 +36,7 @@ public sealed class HandlerRegistrationTests
                 new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
                     ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
+                    ["FileStorage:RootPath"] = Path.GetTempPath(),
                 }
             )
             .Build();
