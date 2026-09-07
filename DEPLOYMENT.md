@@ -277,7 +277,7 @@ non-administrator, so the bootstrap account is necessarily the first user insert
 Before exposing the TLS virtual host, all of the following must be true:
 
 - CI is green, including backend integration tests against PostgreSQL, frontend build/lint/format, npm audit
-  and CodeQL; review Dependabot alerts.
+  and CodeQL; review the dependency audit results.
 - `APP_BASE_URL` is the final clean HTTPS origin, the persisted `DEMO_MODE` selection and optional account
   verification setting are intentional, and SMTP is encrypted and tested.
 - `POSTGRES_PASSWORD` and SMTP credentials are newly generated production secrets; `.env` is readable only by
