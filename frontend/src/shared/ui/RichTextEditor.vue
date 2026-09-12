@@ -12,6 +12,7 @@ const { t } = useI18n()
 const props = defineProps<{
   modelValue?: string | null
   invalid?: boolean
+  label: string
   upload: (file: File) => Promise<string | undefined>
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -25,6 +26,12 @@ const placeholderVar = computed(() => JSON.stringify(t('editor.placeholder')))
 const editor = useEditor({
   extensions: richTextExtensions(),
   content: parseRichText(props.modelValue),
+  editorProps: {
+    attributes: {
+      'aria-label': props.label,
+      'aria-multiline': 'true',
+    },
+  },
   onUpdate: ({ editor }) => emit('update:modelValue', serializeRichText(editor.getJSON())),
 })
 
@@ -358,7 +365,15 @@ onBeforeUnmount(() => editor.value?.destroy())
 
     <EditorContent v-if="editor" :editor="editor" class="rt__content rich-text" />
 
-    <input ref="fileInput" type="file" accept="image/*" class="rt__file" @change="onFileChange" />
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      class="rt__file"
+      aria-hidden="true"
+      tabindex="-1"
+      @change="onFileChange"
+    />
     <small v-if="uploadError" class="rt__error">{{ uploadError }}</small>
   </div>
 </template>
@@ -416,6 +431,11 @@ onBeforeUnmount(() => editor.value?.destroy())
     color 0.15s ease;
 }
 
+.rt__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .rt__btn:hover:not(:disabled) {
   background: var(--ca-bg-elevated);
   color: var(--ca-text-bright);
@@ -428,11 +448,6 @@ onBeforeUnmount(() => editor.value?.destroy())
 
 .rt__btn--danger:hover:not(:disabled) {
   color: var(--ca-danger-ink);
-}
-
-.rt__btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .rt__color {

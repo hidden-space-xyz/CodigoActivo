@@ -16,7 +16,6 @@ import { UserFormDialog, useUsers } from '@/features/manage-users'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { genderLabel } from '@/entities/user'
 import type { UpdateUserInput, User } from '@/entities/user'
-import type { PostApiEmailsUsersParams } from '@/shared/api/generated/models'
 import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
@@ -196,10 +195,7 @@ const {
   targetAll: () => t('pages.admin.users.email.targetFiltered', table.total.value),
   bulkPending: () => sendToUsers.isPending.value,
   sendAll: (payload, handlers) =>
-    sendToUsers.mutate(
-      { params: table.filterParams.value as PostApiEmailsUsersParams, payload },
-      handlers,
-    ),
+    sendToUsers.mutate({ params: table.filterParams.value, payload }, handlers),
   onError: (error) => feedback.error(error),
 })
 
@@ -257,8 +253,8 @@ function confirmDelete(user: User): void {
     </div>
 
     <el-table
-      v-bind="table.tableProps.value"
       v-loading="table.loading.value"
+      v-bind="table.tableProps.value"
       @sort-change="table.onSortChange"
     >
       <template #empty>
@@ -452,8 +448,9 @@ function confirmDelete(user: User): void {
       width="min(92vw, 420px)"
     >
       <div class="form__field">
-        <label>{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
+        <label for="user-type">{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
         <el-select
+          id="user-type"
           v-model="selectedUserTypeId"
           :placeholder="$t('pages.admin.users.typeDialog.placeholder')"
           class="form__select"

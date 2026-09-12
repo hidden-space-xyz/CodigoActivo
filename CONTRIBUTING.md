@@ -76,9 +76,12 @@ dotnet ef migrations add <Name> \
 npm run dev          # dev server with HMR
 npm run build        # vue-tsc typecheck + production build
 npm run typecheck    # vue-tsc typecheck only
-npm run lint         # ESLint (lint:fix to autofix)
-npm run lint:fsd     # Steiger — Feature-Sliced Design layer rules
-npm run format       # Prettier
+npm run lint         # typed ESLint + Vue I18n + accessibility; warnings fail (lint:fix to autofix)
+npm run lint:fsd     # Steiger — Feature-Sliced Design rules; warnings fail
+npm run lint:styles  # Stylelint for CSS and Vue styles (lint:styles:fix to autofix)
+npm run lint:unused  # Knip — unused files, exports and dependencies
+npm run format       # Prettier across the complete frontend
+npm run check        # complete frontend quality gate used by CI
 npm run api:generate # regenerate the typed API client from swagger.json (Orval)
 ```
 
@@ -130,7 +133,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
   I18n key in `src/shared/i18n/locales/es.ts` (`$t` in templates, `useI18n()` in `<script setup>`,
   `i18n.global.t` outside setup). There is a single `es` locale on purpose; going bilingual must stay a
   drop-in `en.ts` next to it, which only works if nothing bypasses i18n.
-- TypeScript is very strict; Prettier formats the code.
+- TypeScript is very strict. Typed ESLint, Vue I18n and accessibility rules, Stylelint, Knip,
+  Steiger and Prettier are all enforced by `npm run check`; warnings fail the gate.
 - Composable file naming: **features** use camelCase (`useLogin.ts`); **entities and `shared/lib`** use
   kebab-case (`use-theme.ts`).
 
@@ -145,13 +149,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
   three PascalCase segments with **no underscores**, e.g. `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`;
   in unit tests of CQRS handlers the first segment is always `HandleAsync` — the test class name carries the
   use case. Underscores are not allowed: CA1707 is enforced in the test projects like everywhere else.
-- **Frontend**: there is no automated test suite; rely on `npm run typecheck` and `npm run lint`.
+- **Frontend**: there is no automated test suite; `npm run check` is the mandatory static quality gate.
 
 ## Commits & pull requests
 
 - Follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, …), matching
   the existing history.
-- Keep the build green: `dotnet build` / `dotnet test` and `npm run build` / `npm run lint:fsd` must pass.
+- Keep the build green: `dotnet build` / `dotnet test` and `npm run check` must pass.
 - Update the docs when you change architecture, tech stack, testing conventions, security posture, or the
   deployment/config surface.
 

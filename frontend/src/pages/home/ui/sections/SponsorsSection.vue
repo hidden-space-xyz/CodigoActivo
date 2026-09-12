@@ -45,8 +45,6 @@ function distanceOf(offset: number): number {
 
       <div
         class="sponsors__carousel"
-        @mouseenter="pause"
-        @mouseleave="resume"
         @touchstart.passive="pause"
         @touchend.passive="resume"
         @touchcancel.passive="resume"
@@ -74,6 +72,10 @@ function distanceOf(offset: number): number {
               :class="`sponsor--d${distanceOf(card.offset)}`"
               :style="{ '--offset': String(card.offset) }"
               :aria-hidden="distanceOf(card.offset) === 3 ? 'true' : undefined"
+              @mouseenter="pause"
+              @mouseleave="resume"
+              @focusin="pause"
+              @focusout="resume"
             >
               <div
                 class="sponsor__logo"

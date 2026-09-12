@@ -46,13 +46,16 @@ database instead.
 npm run dev            # dev server on http://localhost:5173 (proxies /api to VITE_API_PROXY_TARGET)
 npm run build          # vue-tsc typecheck + production build
 npm run typecheck      # vue-tsc only
-npm run lint           # ESLint (lint:fix to autofix)
-npm run lint:fsd       # Steiger — enforces the FSD layer rules
-npm run format         # Prettier
+npm run lint           # typed ESLint + i18n + accessibility; warnings fail (lint:fix to autofix)
+npm run lint:fsd       # Steiger — enforces FSD; warnings fail
+npm run lint:styles    # Stylelint for CSS and Vue styles
+npm run lint:unused    # Knip — unused files, exports and dependencies
+npm run format         # Prettier across the complete frontend
+npm run check          # complete frontend quality gate used by CI
 npm run api:generate   # Orval: regenerate typed client from swagger.json
 ```
 
-There is **no frontend test suite** — `npm run typecheck` + `npm run lint` + `npm run lint:fsd` are the gate.
+There is **no frontend test suite** — `npm run check` is the mandatory static quality gate.
 
 **Full stack in Docker**: `docker compose up --build` (the dev override builds both images from
 source; API on 5150, DB published). The root `docker-compose.yml` alone is the deployment file — it

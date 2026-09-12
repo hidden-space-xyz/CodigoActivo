@@ -10,14 +10,22 @@ type Variant = 'primary' | 'ghost' | 'light' | 'link'
 const props = withDefaults(
   defineProps<{
     variant?: Variant
-    to?: RouteLocationRaw
-    href?: string
+    to?: RouteLocationRaw | undefined
+    href?: string | undefined
     type?: 'button' | 'submit'
     block?: boolean
     disabled?: boolean
     loading?: boolean
   }>(),
-  { variant: 'primary', type: 'button', block: false, disabled: false, loading: false },
+  {
+    variant: 'primary',
+    to: undefined,
+    href: undefined,
+    type: 'button',
+    block: false,
+    disabled: false,
+    loading: false,
+  },
 )
 
 const isButton = computed(() => !props.to && !props.href)

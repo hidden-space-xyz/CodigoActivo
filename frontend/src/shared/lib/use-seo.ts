@@ -101,9 +101,7 @@ function applySeo(path: string, seo: SeoData): void {
 }
 
 function withoutUndefined(seo: SeoData): SeoData {
-  return Object.fromEntries(
-    Object.entries(seo).filter(([, value]) => value !== undefined),
-  ) as SeoData
+  return Object.fromEntries(Object.entries(seo).filter(([, value]) => value !== undefined))
 }
 
 export function applyRouteSeo(to: RouteLocationNormalized): void {

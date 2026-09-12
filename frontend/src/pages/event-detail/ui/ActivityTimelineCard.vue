@@ -319,14 +319,14 @@ function onSignup(): void {
   line-height: 1;
 }
 
-.act__member-remove:hover:not(:disabled) {
-  color: var(--ca-text-bright);
-  border-color: var(--ca-danger);
-}
-
 .act__member-remove:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.act__member-remove:hover:not(:disabled) {
+  color: var(--ca-text-bright);
+  border-color: var(--ca-danger);
 }
 
 .act__actions {

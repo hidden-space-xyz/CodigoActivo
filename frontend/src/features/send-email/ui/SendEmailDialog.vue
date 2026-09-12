@@ -122,8 +122,9 @@ function send(): void {
 
     <form class="form" @submit.prevent="send">
       <div class="form__field">
-        <label>{{ $t('features.sendEmail.subject') }}</label>
+        <label for="send-email-subject">{{ $t('features.sendEmail.subject') }}</label>
         <el-input
+          id="send-email-subject"
           v-model="subject"
           :maxlength="SUBJECT_MAX_LENGTH"
           :class="{ 'ca-invalid': submitted && subjectInvalid }"
@@ -135,8 +136,9 @@ function send(): void {
       </div>
 
       <div class="form__field">
-        <label>{{ $t('features.sendEmail.body') }}</label>
+        <label for="send-email-body">{{ $t('features.sendEmail.body') }}</label>
         <el-input
+          id="send-email-body"
           v-model="body"
           type="textarea"
           :maxlength="BODY_MAX_LENGTH"
@@ -151,8 +153,10 @@ function send(): void {
       </div>
 
       <div class="form__field">
-        <label>{{ $t('features.sendEmail.attachments.label') }}</label>
-        <div class="attachments">
+        <div id="send-email-attachments-label" class="form__label">
+          {{ $t('features.sendEmail.attachments.label') }}
+        </div>
+        <div class="attachments" role="group" aria-labelledby="send-email-attachments-label">
           <Button
             :label="$t('features.sendEmail.attachments.add')"
             icon="paperclip"
@@ -176,6 +180,8 @@ function send(): void {
           type="file"
           multiple
           class="attachments__input"
+          aria-hidden="true"
+          tabindex="-1"
           @change="onFilesPicked"
         />
         <ul v-if="attachments.length > 0" class="attachments__list">
@@ -231,7 +237,8 @@ function send(): void {
   gap: 6px;
 }
 
-.form__field label {
+.form__field label,
+.form__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

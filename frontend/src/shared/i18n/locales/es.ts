@@ -72,6 +72,8 @@ export const es = {
 
   layout: {
     brandAria: 'Código Activo',
+    brandNameStart: 'Código',
+    brandNameEnd: 'Activo',
     navAria: 'Principal',
     footerTagline:
       "Programación para tod{'@'}s. Asociación sin ánimo de lucro · León · desde 2016.",
@@ -82,6 +84,10 @@ export const es = {
     closeMenu: 'Cerrar menú',
     menuTitle: 'Menú',
     adminMenuTitle: 'Administración',
+    socialInstagram: 'Instagram',
+    socialFacebook: 'Facebook',
+    socialLinkedIn: 'LinkedIn',
+    socialYouTube: 'YouTube',
   },
 
   seo: {
@@ -1388,5 +1394,3 @@ export const es = {
     },
   },
 }
-
-export default es

@@ -159,8 +159,8 @@ function confirmDelete(item: ContentItem): void {
     </AdminPageHeader>
 
     <el-table
-      v-bind="table.tableProps.value"
       v-loading="table.loading.value"
+      v-bind="table.tableProps.value"
       @sort-change="table.onSortChange"
     >
       <template #empty>
@@ -272,28 +272,40 @@ function confirmDelete(item: ContentItem): void {
     >
       <form class="form" @submit.prevent="save">
         <div class="form__field">
-          <label>{{ $t('widgets.contentEntityPage.form.title') }}</label>
+          <label for="content-entity-title">{{ $t('widgets.contentEntityPage.form.title') }}</label>
           <el-input
+            id="content-entity-title"
             v-model="form.title"
             :maxlength="200"
             :class="{ 'form__input--invalid': submitted && !form.title.trim() }"
           />
         </div>
         <div class="form__field">
-          <label>{{ $t('widgets.contentEntityPage.form.subtitle') }}</label>
+          <label for="content-entity-subtitle">{{
+            $t('widgets.contentEntityPage.form.subtitle')
+          }}</label>
           <el-input
+            id="content-entity-subtitle"
             v-model="form.subtitle"
             :maxlength="300"
             :class="{ 'form__input--invalid': submitted && !form.subtitle.trim() }"
           />
         </div>
         <div class="form__field">
-          <label>{{ $t('widgets.contentEntityPage.form.description') }}</label>
-          <RichTextEditor v-model="form.description" :upload="uploadFileRequest" />
+          <div class="form__label">{{ $t('widgets.contentEntityPage.form.description') }}</div>
+          <RichTextEditor
+            v-model="form.description"
+            :label="$t('widgets.contentEntityPage.form.description')"
+            :upload="uploadFileRequest"
+          />
         </div>
         <div class="form__field">
-          <label>{{ $t('common.image') }}</label>
+          <div id="content-entity-image-label" class="form__label">
+            {{ $t('common.image') }}
+          </div>
           <ThumbnailField
+            role="group"
+            aria-labelledby="content-entity-image-label"
             :existing-thumbnail-id="editing?.thumbnailId"
             :invalid="submitted && missingThumbnail"
             @update:file="pickedFile = $event"
@@ -362,7 +374,8 @@ function confirmDelete(item: ContentItem): void {
   gap: 6px;
 }
 
-.form__field label {
+.form__field label,
+.form__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

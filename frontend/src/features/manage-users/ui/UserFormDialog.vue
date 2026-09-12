@@ -107,16 +107,18 @@ function save(): void {
     <form class="form" @submit.prevent="save">
       <div class="form__row">
         <div class="form__field">
-          <label>{{ $t('common.firstName') }}</label>
+          <label for="user-first-name">{{ $t('common.firstName') }}</label>
           <el-input
+            id="user-first-name"
             v-model="form.firstName"
             :maxlength="120"
             :class="{ 'ca-invalid': submitted && !form.firstName.trim() }"
           />
         </div>
         <div class="form__field">
-          <label>{{ $t('common.lastName') }}</label>
+          <label for="user-last-name">{{ $t('common.lastName') }}</label>
           <el-input
+            id="user-last-name"
             v-model="form.lastName"
             :maxlength="120"
             :class="{ 'ca-invalid': submitted && !form.lastName.trim() }"
@@ -124,8 +126,9 @@ function save(): void {
         </div>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.birthDate') }}</label>
+        <label for="user-birth-date">{{ $t('common.birthDate') }}</label>
         <el-date-picker
+          id="user-birth-date"
           v-model="form.birthDate"
           type="date"
           :format="DATE_FORMAT"
@@ -137,8 +140,12 @@ function save(): void {
         }}</small>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.gender') }}</label>
-        <el-select v-model="form.gender" :class="{ 'ca-invalid': submitted && !form.gender }">
+        <label for="user-gender">{{ $t('common.gender') }}</label>
+        <el-select
+          id="user-gender"
+          v-model="form.gender"
+          :class="{ 'ca-invalid': submitted && !form.gender }"
+        >
           <el-option
             v-for="option in genders"
             :key="option.value"
@@ -151,11 +158,12 @@ function save(): void {
         }}</small>
       </div>
       <div class="form__field">
-        <label
+        <label for="user-email"
           >{{ $t('common.email')
           }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label
         >
         <el-input
+          id="user-email"
           v-model="form.email"
           type="email"
           :maxlength="256"
@@ -168,11 +176,12 @@ function save(): void {
         }}</small>
       </div>
       <div class="form__field">
-        <label
+        <label for="user-phone"
           >{{ $t('common.phone')
           }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label
         >
         <el-input
+          id="user-phone"
           v-model="form.phone"
           type="tel"
           :maxlength="40"

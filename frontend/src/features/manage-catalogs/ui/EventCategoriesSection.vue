@@ -100,8 +100,8 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
     </div>
 
     <el-table
-      v-bind="table.tableProps.value"
       v-loading="table.loading.value"
+      v-bind="table.tableProps.value"
       @sort-change="table.onSortChange"
     >
       <template #empty>
@@ -174,16 +174,19 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
     >
       <form class="catalog__form" @submit.prevent="save">
         <div class="catalog__field">
-          <label>{{ $t('common.name') }}</label>
+          <label for="event-category-name">{{ $t('common.name') }}</label>
           <el-input
+            id="event-category-name"
             v-model="form.name"
             :maxlength="120"
             :class="{ 'ca-invalid': submitted && !form.name.trim() }"
           />
         </div>
         <div class="catalog__field">
-          <label>{{ $t('features.manageCatalogs.color') }}</label>
-          <div class="catalog__color">
+          <div id="event-category-color-label" class="catalog__label">
+            {{ $t('features.manageCatalogs.color') }}
+          </div>
+          <div class="catalog__color" role="group" aria-labelledby="event-category-color-label">
             <el-color-picker
               :model-value="colorHex"
               color-format="hex"
@@ -250,7 +253,8 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
   gap: 6px;
 }
 
-.catalog__field label {
+.catalog__field label,
+.catalog__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

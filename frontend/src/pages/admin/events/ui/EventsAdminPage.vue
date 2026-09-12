@@ -77,7 +77,7 @@ async function openEdit(event: EventListItemResponse): Promise<void> {
 function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
   if (selected.value?.id) {
     update.mutate(
-      { id: selected.value.id, body: body as UpdateEventRequest },
+      { id: selected.value.id, body: body },
       {
         onSuccess: () => {
           feedback.success(t('pages.admin.events.toasts.updated'))
@@ -88,7 +88,7 @@ function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
     )
     return
   }
-  create.mutate(body as CreateEventRequest, {
+  create.mutate(body, {
     onSuccess: () => {
       feedback.success(t('pages.admin.events.toasts.created'))
       dialogVisible.value = false
@@ -127,8 +127,8 @@ function confirmDelete(event: EventListItemResponse): void {
     </AdminPageHeader>
 
     <el-table
-      v-bind="table.tableProps.value"
       v-loading="table.loading.value"
+      v-bind="table.tableProps.value"
       @sort-change="table.onSortChange"
     >
       <template #empty>

@@ -11,7 +11,6 @@ export default defineConfig({
       schemas: './src/shared/api/generated/models',
       client: 'vue-query',
       clean: true,
-      prettier: false,
       override: {
         mutator: {
           path: './src/shared/api/http-client.ts',

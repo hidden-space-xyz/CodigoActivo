@@ -8,7 +8,7 @@ import type {
   DashboardTimeSeriesResponse,
 } from '@/shared/api/generated/models'
 
-export interface SeriesStyle {
+interface SeriesStyle {
   label: string
   color: (palette: ChartPalette) => string
   soft: (palette: ChartPalette) => string
@@ -376,7 +376,7 @@ export function doughnutOptions(palette: ChartPalette): ChartOptions<'doughnut'>
         ...tooltipBox(palette),
         callbacks: {
           label: (item: TooltipItem<'doughnut'>) => {
-            const data = item.dataset.data as number[]
+            const data = item.dataset.data
             const total = data.reduce(
               (sum, value, index) =>
                 item.chart.getDataVisibility(index) ? sum + (value ?? 0) : sum,
