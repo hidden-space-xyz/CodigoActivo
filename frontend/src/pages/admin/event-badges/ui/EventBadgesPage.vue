@@ -205,6 +205,11 @@ function printSheets(): void {
 .back-row {
   max-width: 210mm;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .back {
@@ -475,21 +480,11 @@ function printSheets(): void {
     margin: 0;
     box-shadow: none;
     break-after: page;
-    page-break-after: always;
   }
 
   .sheet:last-child {
     break-after: auto;
-    page-break-after: auto;
   }
-}
-
-.back-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .print-btn {

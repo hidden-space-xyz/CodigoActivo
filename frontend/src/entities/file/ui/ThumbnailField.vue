@@ -121,7 +121,15 @@ onBeforeUnmount(revokeObjectUrl)
 
     <small v-if="sizeError" class="thumb__error">{{ sizeError }}</small>
 
-    <input ref="fileInput" type="file" accept="image/*" class="thumb__input" @change="onChange" />
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      class="thumb__input"
+      aria-hidden="true"
+      tabindex="-1"
+      @change="onChange"
+    />
   </div>
 </template>
 

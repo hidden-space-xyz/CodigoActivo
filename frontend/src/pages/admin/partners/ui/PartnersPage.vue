@@ -39,7 +39,7 @@ function openEdit(partner: PartnerResponse): void {
 function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
   if (selected.value?.id) {
     update.mutate(
-      { id: selected.value.id, body: body as UpdatePartnerRequest },
+      { id: selected.value.id, body: body },
       {
         onSuccess: () => {
           feedback.success(t('pages.admin.partners.toasts.updated'))
@@ -50,7 +50,7 @@ function onSubmit(body: CreatePartnerRequest | UpdatePartnerRequest): void {
     )
     return
   }
-  create.mutate(body as CreatePartnerRequest, {
+  create.mutate(body, {
     onSuccess: () => {
       feedback.success(t('pages.admin.partners.toasts.created'))
       dialogVisible.value = false
@@ -91,8 +91,8 @@ function confirmDelete(partner: PartnerResponse): void {
     </AdminPageHeader>
 
     <el-table
-      v-bind="table.tableProps.value"
       v-loading="table.loading.value"
+      v-bind="table.tableProps.value"
       @sort-change="table.onSortChange"
     >
       <template #empty>

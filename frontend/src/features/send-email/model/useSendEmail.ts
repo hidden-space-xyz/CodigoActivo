@@ -55,7 +55,7 @@ export function useSendEmail() {
   return { sendToUser, sendToUsers, sendToEventAttendees }
 }
 
-export function useSendEmailFeedback() {
+function useSendEmailFeedback() {
   const { t } = useI18n()
   const feedback = useCrudFeedback()
 
@@ -73,7 +73,7 @@ export function useSendEmailFeedback() {
   return { reportSendResult }
 }
 
-export interface SendEmailHandlers {
+interface SendEmailHandlers {
   readonly onSuccess: (result: SendEmailResultResponse) => void
   readonly onError: (error: unknown) => void
 }

@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { toDateOnly } from './format'
 import { useMediaQuery } from './use-theme'
 
-export type ServerTableFieldType = 'text' | 'number' | 'dateRange'
+type ServerTableFieldType = 'text' | 'number' | 'dateRange'
 export type ServerTableSortOrder = 'ascending' | 'descending'
 
 const ROWS_PER_PAGE_OPTIONS = [25, 50, 100]
@@ -20,7 +20,7 @@ export interface ServerTableColumn<TParams = Record<string, unknown>> {
   readonly toParam?: Extract<keyof TParams, string>
 }
 
-export type ServerTableFilterValue =
+type ServerTableFilterValue =
   string | number | boolean | Date | readonly (Date | string | null)[] | null | undefined
 
 export interface ServerTableFilter {

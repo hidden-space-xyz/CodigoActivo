@@ -19,7 +19,7 @@ export interface EventActivity {
   readonly highDemandRoleIds: readonly string[]
 }
 
-export interface ActivityRoleCapacity {
+interface ActivityRoleCapacity {
   readonly roleTypeId: string
   readonly desiredCount: number | null
 }

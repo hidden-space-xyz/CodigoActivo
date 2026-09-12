@@ -7,12 +7,7 @@ export class ApiError extends Error {
   readonly traceId?: string | undefined
   readonly code?: ErrorCode | undefined
 
-  constructor(
-    status: number,
-    message: string,
-    traceId?: string | undefined,
-    code?: ErrorCode | undefined,
-  ) {
+  constructor(status: number, message: string, traceId?: string, code?: ErrorCode) {
     super(message)
     this.name = 'ApiError'
     this.status = status

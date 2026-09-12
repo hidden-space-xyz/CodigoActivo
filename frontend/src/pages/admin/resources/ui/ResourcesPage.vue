@@ -61,7 +61,7 @@ async function openEdit(resource: ResourceListItemResponse): Promise<void> {
 function onSubmit(body: CreateResourceRequest | UpdateResourceRequest): void {
   if (selected.value?.id) {
     update.mutate(
-      { id: selected.value.id, body: body as UpdateResourceRequest },
+      { id: selected.value.id, body: body },
       {
         onSuccess: () => {
           feedback.success(t('pages.admin.resources.toasts.updated'))
@@ -72,7 +72,7 @@ function onSubmit(body: CreateResourceRequest | UpdateResourceRequest): void {
     )
     return
   }
-  create.mutate(body as CreateResourceRequest, {
+  create.mutate(body, {
     onSuccess: () => {
       feedback.success(t('pages.admin.resources.toasts.created'))
       dialogVisible.value = false
@@ -114,8 +114,8 @@ function confirmDelete(resource: ResourceListItemResponse): void {
     </AdminPageHeader>
 
     <el-table
-      v-bind="table.tableProps.value"
       v-loading="table.loading.value"
+      v-bind="table.tableProps.value"
       @sort-change="table.onSortChange"
     >
       <template #empty>

@@ -112,7 +112,7 @@ export function parseRichText(value?: string | null): JSONContent {
   try {
     const parsed: unknown = JSON.parse(value)
     if (parsed && typeof parsed === 'object' && (parsed as JSONContent).type === 'doc') {
-      return sanitizeRichText(parsed as JSONContent)
+      return sanitizeRichText(parsed)
     }
     return { type: 'doc', content: [] }
   } catch {

@@ -7,7 +7,10 @@ withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
 <template>
   <div class="brand" :class="`brand--${size}`">
     <img class="brand__mark" :src="logoMark" alt="" aria-hidden="true" width="30" height="30" />
-    <div class="brand__word">Código<span class="brand__accent">Activo</span></div>
+    <div class="brand__word">
+      {{ $t('layout.brandNameStart')
+      }}<span class="brand__accent">{{ $t('layout.brandNameEnd') }}</span>
+    </div>
   </div>
 </template>
 

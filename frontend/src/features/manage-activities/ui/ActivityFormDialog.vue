@@ -188,16 +188,20 @@ async function save(): Promise<void> {
   >
     <form class="form" @submit.prevent="save">
       <div class="form__field">
-        <label>{{ $t('features.manageActivities.fields.title') }}</label>
+        <label for="activity-title">{{ $t('features.manageActivities.fields.title') }}</label>
         <el-input
+          id="activity-title"
           v-model="form.title"
           :maxlength="200"
           :class="{ 'ca-invalid': submitted && !form.title.trim() }"
         />
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageActivities.fields.description') }}</label>
+        <label for="activity-description">{{
+          $t('features.manageActivities.fields.description')
+        }}</label>
         <el-input
+          id="activity-description"
           v-model="form.description"
           type="textarea"
           :maxlength="4000"
@@ -207,8 +211,11 @@ async function save(): Promise<void> {
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>{{ $t('features.manageActivities.fields.modality') }}</label>
+          <label for="activity-modality">{{
+            $t('features.manageActivities.fields.modality')
+          }}</label>
           <el-select
+            id="activity-modality"
             v-model="form.modalityId"
             :placeholder="$t('features.manageActivities.modalityPlaceholder')"
             :class="{ 'ca-invalid': submitted && modalityMissing }"
@@ -225,8 +232,11 @@ async function save(): Promise<void> {
           }}</small>
         </div>
         <div class="form__field">
-          <label>{{ $t('features.manageActivities.fields.location') }}</label>
+          <label for="activity-location">{{
+            $t('features.manageActivities.fields.location')
+          }}</label>
           <el-input
+            id="activity-location"
             v-model="form.location"
             :maxlength="200"
             :class="{ 'ca-invalid': submitted && locationMissing }"
@@ -238,8 +248,9 @@ async function save(): Promise<void> {
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>{{ $t('features.manageActivities.fields.start') }}</label>
+          <label for="activity-start">{{ $t('features.manageActivities.fields.start') }}</label>
           <el-date-picker
+            id="activity-start"
             v-model="form.activityStartsAt"
             type="datetime"
             :format="DATE_TIME_FORMAT"
@@ -251,8 +262,9 @@ async function save(): Promise<void> {
           }}</small>
         </div>
         <div class="form__field">
-          <label>{{ $t('features.manageActivities.fields.end') }}</label>
+          <label for="activity-end">{{ $t('features.manageActivities.fields.end') }}</label>
           <el-date-picker
+            id="activity-end"
             v-model="form.activityEndsAt"
             type="datetime"
             :format="DATE_TIME_FORMAT"
@@ -273,12 +285,15 @@ async function save(): Promise<void> {
         $t('features.manageActivities.errors.outsideEvent')
       }}</small>
       <div v-if="roleTypes.length" class="form__field">
-        <label>{{ $t('features.manageActivities.fields.desiredCounts') }}</label>
-        <div class="form__capacities">
+        <div id="activity-capacities-label" class="form__label">
+          {{ $t('features.manageActivities.fields.desiredCounts') }}
+        </div>
+        <div class="form__capacities" role="group" aria-labelledby="activity-capacities-label">
           <div v-for="role in roleTypes" :key="role.id ?? ''" class="form__capacity">
             <span class="form__capacity-name">{{ role.name }}</span>
             <el-input-number
               v-model="desiredCounts[role.id ?? '']"
+              :aria-label="role.name ?? undefined"
               :min="1"
               :max="10000"
               controls-position="right"
@@ -291,8 +306,10 @@ async function save(): Promise<void> {
         </small>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.image') }}</label>
+        <div id="activity-image-label" class="form__label">{{ $t('common.image') }}</div>
         <ThumbnailField
+          role="group"
+          aria-labelledby="activity-image-label"
           :existing-thumbnail-id="activity?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
@@ -336,7 +353,8 @@ async function save(): Promise<void> {
   gap: 6px;
 }
 
-.form__field label {
+.form__field label,
+.form__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

@@ -134,24 +134,27 @@ async function save(): Promise<void> {
   >
     <form class="form form--scroll" @submit.prevent="save">
       <div class="form__field">
-        <label>{{ $t('features.manageResources.title') }}</label>
+        <label for="resource-title">{{ $t('features.manageResources.title') }}</label>
         <el-input
+          id="resource-title"
           v-model="form.title"
           :maxlength="200"
           :class="{ 'ca-invalid': submitted && !form.title.trim() }"
         />
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageResources.subtitle') }}</label>
+        <label for="resource-subtitle">{{ $t('features.manageResources.subtitle') }}</label>
         <el-input
+          id="resource-subtitle"
           v-model="form.subtitle"
           :maxlength="300"
           :class="{ 'ca-invalid': submitted && !form.subtitle.trim() }"
         />
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageResources.type') }}</label>
+        <label for="resource-type">{{ $t('features.manageResources.type') }}</label>
         <el-select
+          id="resource-type"
           v-model="form.resourceTypeId"
           :placeholder="$t('features.manageResources.typePlaceholder')"
           :loading="typesQuery.isLoading.value"
@@ -172,15 +175,20 @@ async function save(): Promise<void> {
         }}</small>
       </div>
       <div v-if="selectedType && !isExternal" class="form__field">
-        <label>{{ $t('features.manageResources.description') }}</label>
-        <RichTextEditor v-model="form.description" :upload="uploadFileRequest" />
+        <div class="form__label">{{ $t('features.manageResources.description') }}</div>
+        <RichTextEditor
+          v-model="form.description"
+          :label="$t('features.manageResources.description')"
+          :upload="uploadFileRequest"
+        />
         <small v-if="submitted && descriptionMissing" class="form__error">{{
           $t('features.manageResources.descriptionRequired')
         }}</small>
       </div>
       <div v-if="isExternal" class="form__field">
-        <label>{{ $t('features.manageResources.url') }}</label>
+        <label for="resource-url">{{ $t('features.manageResources.url') }}</label>
         <el-input
+          id="resource-url"
           v-model="form.url"
           :maxlength="500"
           :placeholder="$t('features.manageResources.urlPlaceholder')"
@@ -194,8 +202,10 @@ async function save(): Promise<void> {
         }}</small>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.image') }}</label>
+        <div id="resource-image-label" class="form__label">{{ $t('common.image') }}</div>
         <ThumbnailField
+          role="group"
+          aria-labelledby="resource-image-label"
           :existing-thumbnail-id="resource?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
@@ -238,7 +248,8 @@ async function save(): Promise<void> {
   gap: 6px;
 }
 
-.form__field label {
+.form__field label,
+.form__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

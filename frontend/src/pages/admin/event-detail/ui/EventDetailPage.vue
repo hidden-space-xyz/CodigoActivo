@@ -102,7 +102,7 @@ async function openEditActivity(activity: ActivityResponse): Promise<void> {
 function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): void {
   if (selectedActivity.value?.id) {
     activities.update.mutate(
-      { id: selectedActivity.value.id, body: body as UpdateActivityRequest },
+      { id: selectedActivity.value.id, body: body },
       {
         onSuccess: () => {
           feedback.success(t('pages.admin.eventDetail.toast.activityUpdated'))
@@ -113,7 +113,7 @@ function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): 
     )
     return
   }
-  activities.create.mutate(body as CreateActivityRequest, {
+  activities.create.mutate(body, {
     onSuccess: () => {
       feedback.success(t('pages.admin.eventDetail.toast.activityCreated'))
       activityDialogVisible.value = false
@@ -185,8 +185,8 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
     <el-tabs v-model="activeTab" class="tabs">
       <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.activities')" name="activities">
         <el-table
-          v-bind="activities.table.tableProps.value"
           v-loading="activities.table.loading.value"
+          v-bind="activities.table.tableProps.value"
           @sort-change="activities.table.onSortChange"
         >
           <template #empty>

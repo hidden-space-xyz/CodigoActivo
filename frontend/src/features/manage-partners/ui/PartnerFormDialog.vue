@@ -125,8 +125,10 @@ async function save(): Promise<void> {
       </div>
 
       <div class="form__field">
-        <label>{{ $t('common.image') }}</label>
+        <div id="partner-image-label" class="form__label">{{ $t('common.image') }}</div>
         <ThumbnailField
+          role="group"
+          aria-labelledby="partner-image-label"
           :existing-thumbnail-id="partner?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
@@ -164,7 +166,8 @@ async function save(): Promise<void> {
   gap: 6px;
 }
 
-.form__field label {
+.form__field label,
+.form__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

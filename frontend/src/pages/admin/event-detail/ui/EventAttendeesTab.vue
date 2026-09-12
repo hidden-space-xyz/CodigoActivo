@@ -15,7 +15,6 @@ import type {
   ActivityResponse,
   EventAttendeeAssignmentResponse,
   EventAttendeeResponse,
-  PostApiEmailsEventsEventIdAttendeesParams,
 } from '@/shared/api/generated/models'
 import { AppButton as Button, AppIcon, ColorTag, DataState } from '@/shared/ui'
 import type { CsvValue } from '@/shared/lib'
@@ -181,7 +180,7 @@ const {
     sendToEventAttendees.mutate(
       {
         eventId: props.eventId,
-        params: attendees.filterParams() as PostApiEmailsEventsEventIdAttendeesParams,
+        params: attendees.filterParams(),
         payload,
       },
       handlers,
@@ -563,8 +562,9 @@ function submitChangeRole(): void {
         }}
       </p>
       <div class="form__field">
-        <label>{{ $t('pages.admin.eventDetail.attendees.role') }}</label>
+        <label for="attendee-role">{{ $t('pages.admin.eventDetail.attendees.role') }}</label>
         <el-select
+          id="attendee-role"
           v-model="selectedRoleId"
           :placeholder="$t('pages.admin.eventDetail.attendees.selectRole')"
         >
@@ -611,8 +611,9 @@ function submitChangeRole(): void {
         }}
       </p>
       <div class="form__field">
-        <label>{{ $t('common.status') }}</label>
+        <label for="attendee-status">{{ $t('common.status') }}</label>
         <el-select
+          id="attendee-status"
           v-model="selectedStatusId"
           :placeholder="$t('pages.admin.eventDetail.attendees.selectStatus')"
         >

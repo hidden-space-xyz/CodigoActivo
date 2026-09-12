@@ -3,8 +3,8 @@ import { logoMarkLarge } from '@/shared/branding'
 import { i18n } from '@/shared/i18n'
 import { downloadBlob, fullName, parseDateOnly } from '@/shared/lib'
 
-export const SHEET_WIDTH_MM = 297
-export const SHEET_HEIGHT_MM = 210
+const SHEET_WIDTH_MM = 297
+const SHEET_HEIGHT_MM = 210
 export const SHEET_RATIO = SHEET_WIDTH_MM / SHEET_HEIGHT_MM
 
 const EXPORT_PX_PER_MM = 11.811
@@ -912,7 +912,7 @@ function slug(value: string): string {
   )
 }
 
-export function certificateFileName(certificate: AccountCertificate, extension: string): string {
+function certificateFileName(certificate: AccountCertificate, extension: string): string {
   const prefix = i18n.global.t('features.account.certificates.fileNamePrefix')
   return `${slug(prefix)}-${slug(certificate.eventTitle)}-${slug(fullName(certificate))}.${extension}`
 }

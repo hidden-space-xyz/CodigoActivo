@@ -238,25 +238,28 @@ async function save(): Promise<void> {
   >
     <form class="form form--scroll" @submit.prevent="save">
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.fields.title') }}</label>
+        <label for="event-title">{{ $t('features.manageEvents.fields.title') }}</label>
         <el-input
+          id="event-title"
           v-model="form.title"
           :maxlength="200"
           :class="{ 'ca-invalid': submitted && !form.title.trim() }"
         />
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.fields.subtitle') }}</label>
+        <label for="event-subtitle">{{ $t('features.manageEvents.fields.subtitle') }}</label>
         <el-input
+          id="event-subtitle"
           v-model="form.subtitle"
           :maxlength="300"
           :class="{ 'ca-invalid': submitted && !form.subtitle.trim() }"
         />
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.fields.categories') }}</label>
+        <label for="event-categories">{{ $t('features.manageEvents.fields.categories') }}</label>
         <div class="form__cats">
           <el-select
+            id="event-categories"
             v-model="form.categoryIds"
             multiple
             filterable
@@ -287,8 +290,11 @@ async function save(): Promise<void> {
         }}</small>
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.fields.termsDocument') }}</label>
+        <label for="event-terms-document">{{
+          $t('features.manageEvents.fields.termsDocument')
+        }}</label>
         <el-select
+          id="event-terms-document"
           v-model="form.termsDocumentId"
           clearable
           filterable
@@ -304,13 +310,18 @@ async function save(): Promise<void> {
         <small class="form__hint">{{ $t('features.manageEvents.hints.termsDocument') }}</small>
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.fields.description') }}</label>
-        <RichTextEditor v-model="form.description" :upload="uploadFileRequest" />
+        <div class="form__label">{{ $t('features.manageEvents.fields.description') }}</div>
+        <RichTextEditor
+          v-model="form.description"
+          :label="$t('features.manageEvents.fields.description')"
+          :upload="uploadFileRequest"
+        />
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>{{ $t('features.manageEvents.fields.eventStart') }}</label>
+          <label for="event-start">{{ $t('features.manageEvents.fields.eventStart') }}</label>
           <el-date-picker
+            id="event-start"
             v-model="form.eventStartsAt"
             type="date"
             :format="DATE_FORMAT"
@@ -321,8 +332,9 @@ async function save(): Promise<void> {
           }}</small>
         </div>
         <div class="form__field">
-          <label>{{ $t('features.manageEvents.fields.eventEnd') }}</label>
+          <label for="event-end">{{ $t('features.manageEvents.fields.eventEnd') }}</label>
           <el-date-picker
+            id="event-end"
             v-model="form.eventEndsAt"
             type="date"
             :format="DATE_FORMAT"
@@ -340,8 +352,11 @@ async function save(): Promise<void> {
         </div>
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.fields.earlySignupStart') }}</label>
+        <label for="event-early-signup-start">{{
+          $t('features.manageEvents.fields.earlySignupStart')
+        }}</label>
         <el-date-picker
+          id="event-early-signup-start"
           v-model="form.earlySignupStartsAt"
           type="datetime"
           clearable
@@ -358,8 +373,11 @@ async function save(): Promise<void> {
       </div>
       <div class="form__row">
         <div class="form__field">
-          <label>{{ $t('features.manageEvents.fields.signupStart') }}</label>
+          <label for="event-signup-start">{{
+            $t('features.manageEvents.fields.signupStart')
+          }}</label>
           <el-date-picker
+            id="event-signup-start"
             v-model="form.signupStartsAt"
             type="datetime"
             :format="DATE_TIME_FORMAT"
@@ -375,8 +393,9 @@ async function save(): Promise<void> {
           }}</small>
         </div>
         <div class="form__field">
-          <label>{{ $t('features.manageEvents.fields.signupEnd') }}</label>
+          <label for="event-signup-end">{{ $t('features.manageEvents.fields.signupEnd') }}</label>
           <el-date-picker
+            id="event-signup-end"
             v-model="form.signupEndsAt"
             type="datetime"
             :format="DATE_TIME_FORMAT"
@@ -394,8 +413,10 @@ async function save(): Promise<void> {
         </div>
       </div>
       <div class="form__field">
-        <label>{{ $t('common.image') }}</label>
+        <div id="event-image-label" class="form__label">{{ $t('common.image') }}</div>
         <ThumbnailField
+          role="group"
+          aria-labelledby="event-image-label"
           :existing-thumbnail-id="event?.thumbnailId"
           :invalid="submitted && missingThumbnail"
           @update:file="pickedFile = $event"
@@ -426,16 +447,19 @@ async function save(): Promise<void> {
   >
     <form class="form" @submit.prevent="submitNewCategory">
       <div class="form__field">
-        <label>{{ $t('common.name') }}</label>
+        <label for="event-category-new-name">{{ $t('common.name') }}</label>
         <el-input
+          id="event-category-new-name"
           v-model="newCat.name"
           :maxlength="120"
           :class="{ 'ca-invalid': catSubmitted && !newCat.name.trim() }"
         />
       </div>
       <div class="form__field">
-        <label>{{ $t('features.manageEvents.categoryDialog.colorLabel') }}</label>
-        <div class="form__cat-color">
+        <div id="event-category-new-color-label" class="form__label">
+          {{ $t('features.manageEvents.categoryDialog.colorLabel') }}
+        </div>
+        <div class="form__cat-color" role="group" aria-labelledby="event-category-new-color-label">
           <el-color-picker
             :model-value="newCatHex"
             color-format="hex"
@@ -492,7 +516,8 @@ async function save(): Promise<void> {
   gap: 6px;
 }
 
-.form__field label {
+.form__field label,
+.form__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ca-text-muted);

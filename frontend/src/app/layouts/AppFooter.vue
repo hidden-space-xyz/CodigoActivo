@@ -34,7 +34,7 @@ const currentYear = new Date().getFullYear()
               class="footer__social-link"
             >
               <AppIcon name="instagram" />
-              Instagram
+              {{ $t('layout.socialInstagram') }}
             </a>
             <a
               :href="CONTACT.social.facebook"
@@ -43,7 +43,7 @@ const currentYear = new Date().getFullYear()
               class="footer__social-link"
             >
               <AppIcon name="facebook" />
-              Facebook
+              {{ $t('layout.socialFacebook') }}
             </a>
             <a
               :href="CONTACT.social.linkedin"
@@ -52,7 +52,7 @@ const currentYear = new Date().getFullYear()
               class="footer__social-link"
             >
               <AppIcon name="linkedin" />
-              LinkedIn
+              {{ $t('layout.socialLinkedIn') }}
             </a>
             <a
               :href="CONTACT.social.youtube"
@@ -61,7 +61,7 @@ const currentYear = new Date().getFullYear()
               class="footer__social-link"
             >
               <AppIcon name="youtube" />
-              YouTube
+              {{ $t('layout.socialYouTube') }}
             </a>
           </div>
         </div>
@@ -137,6 +137,10 @@ const currentYear = new Date().getFullYear()
   transition: color 0.15s ease;
 }
 
+.footer__social-link .app-icon {
+  font-size: 13px;
+}
+
 a.footer__link--icon:hover .app-icon {
   color: var(--ca-text-bright);
 }
@@ -155,10 +159,6 @@ a.footer__link--icon:hover .app-icon {
   gap: 6px;
   color: var(--ca-text-muted);
   text-decoration: none;
-}
-
-.footer__social-link .app-icon {
-  font-size: 13px;
 }
 
 .footer__social-link:hover {
