@@ -7,7 +7,7 @@ namespace CodigoActivo.UnitTests.API.Security;
 
 public sealed class DeploymentModeLockTests : IDisposable
 {
-    private readonly string directory = Path.Combine(
+    private readonly string directory = Path.Join(
         Path.GetTempPath(),
         "codigoactivo-mode-tests",
         Guid.NewGuid().ToString("N")
@@ -18,7 +18,7 @@ public sealed class DeploymentModeLockTests : IDisposable
     [InlineData(false, "normal")]
     public void LockFirstStartPersistsConfiguredMode(bool demoMode, string expected)
     {
-        var path = Path.Combine(directory, "deployment-mode");
+        var path = Path.Join(directory, "deployment-mode");
 
         var result = new DeploymentModeLock(path).Lock(BuildConfiguration(demoMode.ToString()));
 
@@ -29,7 +29,7 @@ public sealed class DeploymentModeLockTests : IDisposable
     [Fact]
     public void LockSameModeOnRestartKeepsSelection()
     {
-        var path = Path.Combine(directory, "deployment-mode");
+        var path = Path.Join(directory, "deployment-mode");
         var configuration = BuildConfiguration("true");
         var modeLock = new DeploymentModeLock(path);
         modeLock.Lock(configuration);
@@ -42,7 +42,7 @@ public sealed class DeploymentModeLockTests : IDisposable
     [Fact]
     public void LockDifferentModeOnRestartFails()
     {
-        var path = Path.Combine(directory, "deployment-mode");
+        var path = Path.Join(directory, "deployment-mode");
         var modeLock = new DeploymentModeLock(path);
         modeLock.Lock(BuildConfiguration("true"));
 
@@ -59,7 +59,7 @@ public sealed class DeploymentModeLockTests : IDisposable
     [InlineData("yes")]
     public void LockInvalidConfiguredModeFails(string? value)
     {
-        var path = Path.Combine(directory, "deployment-mode");
+        var path = Path.Join(directory, "deployment-mode");
 
         var act = () => new DeploymentModeLock(path).Lock(BuildConfiguration(value));
 

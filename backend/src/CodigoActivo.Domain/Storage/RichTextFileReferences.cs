@@ -17,13 +17,15 @@ public static partial class RichTextFileReferences
             return ids;
         }
 
-        foreach (Match match in ContentUrl.Matches(richTextJson))
-        {
-            if (Guid.TryParse(match.Groups["id"].Value, out var id))
-            {
-                ids.Add(id);
-            }
-        }
+        ids.UnionWith(
+            ContentUrl
+                .Matches(richTextJson)
+                .Select(match =>
+                    Guid.TryParse(match.Groups["id"].Value, out var id) ? id : (Guid?)null
+                )
+                .Where(id => id.HasValue)
+                .Select(id => id.GetValueOrDefault())
+        );
 
         return ids;
     }

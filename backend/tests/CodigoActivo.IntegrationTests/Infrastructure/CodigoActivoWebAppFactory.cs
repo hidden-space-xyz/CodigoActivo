@@ -212,7 +212,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
     private static string CreateFileStorageRoot()
     {
-        var root = Path.Combine(
+        var root = Path.Join(
             Path.GetTempPath(),
             "codigoactivo-tests",
             Guid.NewGuid().ToString("N")
@@ -223,7 +223,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
     private static string CreateDeploymentModeFilePath()
     {
-        return Path.Combine(
+        return Path.Join(
             Path.GetTempPath(),
             "codigoactivo-tests",
             Guid.NewGuid().ToString("N"),

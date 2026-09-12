@@ -58,12 +58,10 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
                         u.Parent.Email,
                         u.Parent.Phone
                     ),
-                u.Assignments.Where(a =>
-                        a.Activity.EventId == eventId
-                        && (activityId == null || a.ActivityId == activityId)
-                        && (roleTypeId == null || a.ActivityRoleTypeId == roleTypeId)
-                        && (statusId == null || a.AssignmentStatusId == statusId)
-                    )
+                u.Assignments.Where(a => a.Activity.EventId == eventId)
+                    .Where(a => activityId == null || a.ActivityId == activityId)
+                    .Where(a => roleTypeId == null || a.ActivityRoleTypeId == roleTypeId)
+                    .Where(a => statusId == null || a.AssignmentStatusId == statusId)
                     .OrderBy(a => a.Activity.ActivityStartsAt)
                     .ThenBy(a => a.Activity.Title)
                     .Select(a => new EventAttendeeAssignmentResponse(

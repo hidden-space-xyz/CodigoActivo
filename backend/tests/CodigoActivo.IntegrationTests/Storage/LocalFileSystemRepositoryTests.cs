@@ -12,7 +12,7 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
 
     private readonly bool fallbackExistedBeforeTest = Directory.Exists(FallbackRoot);
 
-    private readonly string rootPath = Path.Combine(
+    private readonly string rootPath = Path.Join(
         Path.GetTempPath(),
         "codigoactivo-storage-tests",
         Guid.NewGuid().ToString("N")
@@ -61,8 +61,9 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     public async Task SaveAsyncSavedFileOpenReadAsyncRoundTripsBytes()
     {
         var payload = Encoding.UTF8.GetBytes("hello storage");
+        await using var payloadStream = new MemoryStream(payload);
 
-        await sut.SaveAsync("greeting.txt", new MemoryStream(payload), Ct);
+        await sut.SaveAsync("greeting.txt", payloadStream, Ct);
 
         await using var stream = await sut.OpenReadAsync("greeting.txt", Ct);
         Assert.NotNull(stream);
@@ -74,9 +75,15 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [Fact]
     public async Task SaveAsyncNameAlreadyOnDiskOverwritesTheWholeFile()
     {
-        await sut.SaveAsync("dup.bin", new MemoryStream([1, 2, 3, 4, 5, 6]), Ct);
+        await using (var original = new MemoryStream([1, 2, 3, 4, 5, 6]))
+        {
+            await sut.SaveAsync("dup.bin", original, Ct);
+        }
 
-        await sut.SaveAsync("dup.bin", new MemoryStream([9, 9]), Ct);
+        await using (var replacement = new MemoryStream([9, 9]))
+        {
+            await sut.SaveAsync("dup.bin", replacement, Ct);
+        }
 
         await using var stream = await sut.OpenReadAsync("dup.bin", Ct);
         Assert.NotNull(stream);
@@ -96,7 +103,8 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [Fact]
     public async Task DeleteExistingFileRemovesFile()
     {
-        await sut.SaveAsync("temp.dat", new MemoryStream([1, 2, 3]), Ct);
+        await using var content = new MemoryStream([1, 2, 3]);
+        await sut.SaveAsync("temp.dat", content, Ct);
 
         sut.Delete("temp.dat");
 
@@ -131,7 +139,8 @@ public sealed class LocalFileSystemRepositoryTests : IDisposable
     [InlineData("nested/escape.txt")]
     public async Task SaveAsyncBlankOrPathTraversalNameThrowsArgumentException(string name)
     {
-        await sut.Invoking(s => s.SaveAsync(name, new MemoryStream([0]), Ct))
+        await using var content = new MemoryStream([0]);
+        await sut.Invoking(s => s.SaveAsync(name, content, Ct))
             .Should()
             .ThrowAsync<ArgumentException>()
             .WithParameterName("storedName");

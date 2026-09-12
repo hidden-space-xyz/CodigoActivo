@@ -56,14 +56,32 @@ public static class UserFilters
         var roleTypeId = query.RoleTypeId;
         var statusId = query.StatusId;
 
-        source = source.Where(u =>
-            u.Assignments.Any(a =>
-                a.Activity.EventId == eventId
-                && (activityId == null || a.ActivityId == activityId)
-                && (roleTypeId == null || a.ActivityRoleTypeId == roleTypeId)
-                && (statusId == null || a.AssignmentStatusId == statusId)
-            )
-        );
+        var matchingAssignments = source
+            .SelectMany(user => user.Assignments)
+            .Where(assignment => assignment.Activity.EventId == eventId);
+        if (activityId is { } selectedActivityId)
+        {
+            matchingAssignments = matchingAssignments.Where(assignment =>
+                assignment.ActivityId == selectedActivityId
+            );
+        }
+
+        if (roleTypeId is { } selectedRoleTypeId)
+        {
+            matchingAssignments = matchingAssignments.Where(assignment =>
+                assignment.ActivityRoleTypeId == selectedRoleTypeId
+            );
+        }
+
+        if (statusId is { } selectedStatusId)
+        {
+            matchingAssignments = matchingAssignments.Where(assignment =>
+                assignment.AssignmentStatusId == selectedStatusId
+            );
+        }
+
+        var attendeeIds = matchingAssignments.Select(assignment => assignment.UserId).Distinct();
+        source = source.Where(user => attendeeIds.Contains(user.Id));
 
         if (query.UserTypeId is { } userTypeId)
         {

@@ -182,9 +182,8 @@ public sealed class GetDashboardAnalyticsQueryHandler(
         {
             var before = 0;
             var perBucket = new int[buckets.Count];
-            foreach (var ts in createdAts)
+            foreach (var day in createdAts.Select(LocalDate))
             {
-                var day = LocalDate(ts);
                 if (day < start)
                 {
                     before++;

@@ -62,7 +62,8 @@ public sealed class CreateFileCommandHandlerTests
     [Fact]
     public async Task HandleAsyncUploadEmptyReturnsValidationError()
     {
-        var upload = new FileUpload(new MemoryStream(), "empty.png", 0);
+        using var content = new MemoryStream();
+        var upload = new FileUpload(content, "empty.png", 0);
 
         var result = await sut.HandleAsync(
             new CreateFileCommand(upload, Guid.NewGuid()),

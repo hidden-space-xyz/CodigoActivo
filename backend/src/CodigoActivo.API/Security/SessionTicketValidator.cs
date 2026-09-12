@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -87,6 +88,7 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
         if (user.IsAdmin)
         {
             claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+            claims.Add(new Claim(ClaimTypes.Role, AllowOnlyAdminAttribute.AdminRole));
         }
 
         return new ClaimsPrincipal(

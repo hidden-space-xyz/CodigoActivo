@@ -12,16 +12,18 @@ public sealed class CamelCaseQueryParametersFilter : IOperationFilter
             return;
         }
 
-        foreach (var parameter in operation.Parameters)
+        foreach (
+            var concrete in operation.Parameters
+                .OfType<OpenApiParameter>()
+                .Where(parameter =>
+                    parameter.In is ParameterLocation.Query
+                    && !string.IsNullOrEmpty(parameter.Name)
+                    && char.IsUpper(parameter.Name[0])
+                )
+        )
         {
-            if (
-                parameter is OpenApiParameter { In: ParameterLocation.Query } concrete
-                && !string.IsNullOrEmpty(concrete.Name)
-                && char.IsUpper(concrete.Name[0])
-            )
-            {
-                concrete.Name = char.ToLowerInvariant(concrete.Name[0]) + concrete.Name[1..];
-            }
+            var name = concrete.Name!;
+            concrete.Name = char.ToLowerInvariant(name[0]) + name[1..];
         }
     }
 }

@@ -45,8 +45,8 @@ public sealed class Ed25519CertificateStore
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
 
         directory.Create();
-        var certificatePath = Path.Combine(directory.FullName, "key-encryption-ed25519.cer");
-        var privateKeyPath = Path.Combine(directory.FullName, "key-encryption-ed25519.key");
+        var certificatePath = Path.Join(directory.FullName, "key-encryption-ed25519.cer");
+        var privateKeyPath = Path.Join(directory.FullName, "key-encryption-ed25519.key");
         var certificateExists = File.Exists(certificatePath);
         var privateKeyExists = File.Exists(privateKeyPath);
 
@@ -293,19 +293,28 @@ public sealed class Ed25519CertificateStore
 
     private static byte[] Decode(string value, int expectedSize, string field)
     {
+        byte[] decoded;
         try
         {
-            var decoded = Convert.FromBase64String(value);
-            if (decoded.Length == expectedSize)
-            {
-                return decoded;
-            }
+            decoded = Convert.FromBase64String(value);
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
+            throw new CryptographicException(
+                $"The Ed25519 private key {field} is invalid.",
+                ex
+            );
         }
 
-        throw new CryptographicException($"The Ed25519 private key {field} is invalid.");
+        if (decoded.Length == expectedSize)
+        {
+            return decoded;
+        }
+
+        CryptographicOperations.ZeroMemory(decoded);
+        throw new CryptographicException(
+            $"The Ed25519 private key {field} has an invalid length."
+        );
     }
 
     private static void WriteNewFile(string path, byte[] contents, bool privateFile)
@@ -480,18 +489,25 @@ public sealed class Ed25519XmlEncryptor(Ed25519CertificateStore certificateStore
             throw new CryptographicException("The encrypted Data Protection key is invalid.");
         }
 
+        byte[] decoded;
         try
         {
-            var decoded = Convert.FromBase64String(element.Value);
-            if (expectedSize is null || decoded.Length == expectedSize)
-            {
-                return decoded;
-            }
+            decoded = Convert.FromBase64String(element.Value);
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
+            throw new CryptographicException(
+                "The encrypted Data Protection key is invalid.",
+                ex
+            );
         }
 
+        if (expectedSize is null || decoded.Length == expectedSize)
+        {
+            return decoded;
+        }
+
+        CryptographicOperations.ZeroMemory(decoded);
         throw new CryptographicException("The encrypted Data Protection key is invalid.");
     }
 

@@ -1,4 +1,7 @@
 using CodigoActivo.Infrastructure.Database.Context;
+using Docker.DotNet;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
@@ -58,18 +61,43 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
         {
             await container.StartAsync(TestCancellation.Ct);
         }
-        catch (Exception ex)
+        catch (DockerUnavailableException ex)
         {
-            throw new InvalidOperationException(
-                "Could not start the PostgreSQL test container. The integration tests need a running "
-                    + "Docker daemon (Docker Desktop with the Linux engine). Start Docker and retry, or "
-                    + $"set {ExternalConnectionEnvVar} to an Npgsql connection string pointing at an "
-                    + "empty, disposable PostgreSQL database to reuse instead of spawning a container.",
-                ex
-            );
+            throw CreateContainerStartException(ex);
+        }
+        catch (DockerApiException ex)
+        {
+            throw CreateContainerStartException(ex);
+        }
+        catch (ContainerNotRunningException ex)
+        {
+            throw CreateContainerStartException(ex);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw CreateContainerStartException(ex);
+        }
+        catch (TimeoutException ex)
+        {
+            throw CreateContainerStartException(ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw CreateContainerStartException(ex);
         }
 
         return container.GetConnectionString();
+    }
+
+    private static InvalidOperationException CreateContainerStartException(Exception inner)
+    {
+        return new InvalidOperationException(
+            "Could not start the PostgreSQL test container. The integration tests need a running "
+                + "Docker daemon (Docker Desktop with the Linux engine). Start Docker and retry, or "
+                + $"set {ExternalConnectionEnvVar} to an Npgsql connection string pointing at an "
+                + "empty, disposable PostgreSQL database to reuse instead of spawning a container.",
+            inner
+        );
     }
 
     public CodigoActivoDbContext CreateContext()

@@ -31,31 +31,7 @@ public sealed class DeploymentModeLock
         var configuredValue = configuredMode ? "demo" : "normal";
         if (!File.Exists(filePath))
         {
-            try
-            {
-                using var stream = new FileStream(
-                    filePath,
-                    FileMode.CreateNew,
-                    FileAccess.Write,
-                    FileShare.Read,
-                    bufferSize: 4096,
-                    FileOptions.WriteThrough
-                );
-                var contents = Encoding.UTF8.GetBytes(configuredValue + "\n");
-                stream.Write(contents);
-                stream.Flush(flushToDisk: true);
-
-                if (OperatingSystem.IsLinux())
-                {
-                    File.SetUnixFileMode(
-                        filePath,
-                        UnixFileMode.UserRead | UnixFileMode.UserWrite
-                    );
-                }
-            }
-            catch (IOException) when (File.Exists(filePath))
-            {
-            }
+            CreateLockFile(configuredValue);
         }
 
         var persistedValue = File.ReadAllText(filePath, Encoding.UTF8).Trim();
@@ -75,6 +51,37 @@ public sealed class DeploymentModeLock
         }
 
         return configuredMode;
+    }
+
+    private void CreateLockFile(string configuredValue)
+    {
+        try
+        {
+            using var stream = new FileStream(
+                filePath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.Read,
+                bufferSize: 4096,
+                FileOptions.WriteThrough
+            );
+            var contents = Encoding.UTF8.GetBytes(configuredValue + "\n");
+            stream.Write(contents);
+            stream.Flush(flushToDisk: true);
+
+            if (OperatingSystem.IsLinux())
+            {
+                File.SetUnixFileMode(
+                    filePath,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite
+                );
+            }
+        }
+        catch (IOException) when (File.Exists(filePath))
+        {
+            // A concurrent process created the immutable lock first. The caller validates it next.
+            return;
+        }
     }
 
     private static bool ReadConfiguredMode(string? value)
