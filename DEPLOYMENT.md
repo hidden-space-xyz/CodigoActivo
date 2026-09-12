@@ -14,7 +14,7 @@ without containers, see
 
 | Service | Image / build                                        | Role                                                                                         |
 | ------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **db**  | `postgres:18.4-alpine3.24`                           | PostgreSQL 18. On the **internal** `backend` network only (not published in production).      |
+| **db**  | `postgres:18-alpine`                                 | PostgreSQL 18. On the **internal** `backend` network only (not published in production).      |
 | **api** | `ghcr.io/hidden-space-xyz/codigoactivo-backend:latest` | ASP.NET Core API, listens on `:8080`, `ASPNETCORE_ENVIRONMENT=Production`, hardened container. |
 | **web** | `ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest` (nginx unprivileged) | Serves the SPA and reverse-proxies `/api` (plus the root `/sitemap.xml` and `/robots.txt`) → `api:8080`. Published on `127.0.0.1:8080`. |
 

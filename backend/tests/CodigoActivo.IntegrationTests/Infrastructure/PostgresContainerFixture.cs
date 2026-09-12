@@ -27,7 +27,7 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
     {
         if (string.IsNullOrWhiteSpace(externalConnectionString))
         {
-            container = new PostgreSqlBuilder("postgres:18.4-alpine3.24")
+            container = new PostgreSqlBuilder("postgres:18-alpine")
                 .WithDatabase("codigoactivo")
                 .WithUsername("codigoactivo")
                 .WithPassword("codigoactivo")
