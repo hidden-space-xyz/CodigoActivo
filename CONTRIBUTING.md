@@ -8,7 +8,7 @@ commands, and the conventions the build enforces. For the design behind the code
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 24+](https://nodejs.org/) and npm
+- [Node.js 26.x](https://nodejs.org/) and npm
 - [PostgreSQL](https://www.postgresql.org/) — a local install, or the Dockerized `db` service (below)
 - [Docker](https://www.docker.com/) — required by the backend integration tests, which start their own PostgreSQL
 - EF Core tools (for migrations): `dotnet tool install -g dotnet-ef`
@@ -137,7 +137,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 ## Testing
 
 - **Backend**: xUnit v3, AwesomeAssertions, NSubstitute. Integration tests run against a **real** PostgreSQL that
-  the test run provisions itself: a throwaway `postgres:18.4-alpine3.24` container (Testcontainers) is started once,
+  the test run provisions itself: a throwaway `postgres:18-alpine` container (Testcontainers) is started once,
   migrated, shared by the whole assembly, and destroyed at the end. No `POSTGRES_*` env vars and no pre-created
   database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
   `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse
