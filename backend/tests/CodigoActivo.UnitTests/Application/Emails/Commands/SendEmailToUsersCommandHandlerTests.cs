@@ -13,8 +13,9 @@ using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
 
 namespace CodigoActivo.UnitTests.Application.Emails.Commands;
 
-public sealed class SendEmailToUsersCommandHandlerTests
+public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
 {
+    private readonly List<MemoryStream> attachmentStreams = [];
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly ManualEmailOptions options = new();
@@ -30,14 +31,24 @@ public sealed class SendEmailToUsersCommandHandlerTests
         );
     }
 
-    private static EmailAttachmentUpload Attachment(string name = "acta.pdf", int size = 4)
+    private EmailAttachmentUpload Attachment(string name = "acta.pdf", int size = 4)
     {
+        var content = new MemoryStream(Encoding.UTF8.GetBytes(new string('x', size)));
+        attachmentStreams.Add(content);
         return new(
-            new MemoryStream(Encoding.UTF8.GetBytes(new string('x', size))),
+            content,
             name,
             "text/plain",
             size
         );
+    }
+
+    public void Dispose()
+    {
+        foreach (var stream in attachmentStreams)
+        {
+            stream.Dispose();
+        }
     }
 
     [Fact]

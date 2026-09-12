@@ -74,7 +74,7 @@ public sealed class LocalFileSystemRepository : ILocalFileSystemRepository
             throw new ArgumentException("Invalid stored file name.", nameof(storedName));
         }
 
-        var fullPath = Path.GetFullPath(Path.Combine(rootPath, storedName));
+        var fullPath = Path.GetFullPath(Path.Join(rootPath, storedName));
         return !fullPath.StartsWith(rootPath, StringComparison.Ordinal)
             ? throw new ArgumentException("Invalid stored file name.", nameof(storedName))
             : fullPath;

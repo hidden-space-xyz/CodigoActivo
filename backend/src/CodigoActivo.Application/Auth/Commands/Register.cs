@@ -94,9 +94,8 @@ public sealed class RegisterCommandHandler(
 
         await users.AddAsync(adult, ct);
 
-        foreach (var minor in minorRequests)
-        {
-            var child = new User
+        var pendingMinors = minorRequests
+            .Select(minor => new User
             {
                 FirstName = minor.FirstName.Trim(),
                 LastName = minor.LastName.Trim(),
@@ -106,7 +105,10 @@ public sealed class RegisterCommandHandler(
                 UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
                 UserTypeId = SeedIds.UserTypes.Participant,
                 CreatedAt = now,
-            };
+            })
+            .ToList();
+        foreach (var child in pendingMinors)
+        {
             await users.AddAsync(child, ct);
         }
 

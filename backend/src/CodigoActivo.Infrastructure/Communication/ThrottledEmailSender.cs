@@ -17,7 +17,7 @@ public sealed class ThrottledEmailSender(
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         var decision = limiter.TryConsume(message.Kind, message.ToAddress);
-        Report(decision, message);
+        Report(decision);
 
         if (decision.Scope is not EmailLimitScope.None)
         {
@@ -27,10 +27,8 @@ public sealed class ThrottledEmailSender(
         if (!dispatcher.TryEnqueue(message))
         {
             logger.LogError(
-                "The outbound email queue is full at {Capacity} messages; a {Kind} message to {Recipient} was held back",
-                queueOptions.Capacity,
-                message.Kind,
-                message.ToAddress
+                "The outbound email queue is full at {Capacity} messages; an email was held back",
+                queueOptions.Capacity
             );
             throw new EmailRateLimitedException(EmailLimitScope.Global);
         }
@@ -38,15 +36,13 @@ public sealed class ThrottledEmailSender(
         return Task.CompletedTask;
     }
 
-    private void Report(EmailSendDecision decision, EmailMessage message)
+    private void Report(EmailSendDecision decision)
     {
         switch (decision.Alert)
         {
             case EmailGuardAlert.RecipientThrottled:
                 logger.LogWarning(
-                    "The outbound email quota is now holding mail for {Recipient}; a {Kind} message was not sent",
-                    message.ToAddress,
-                    message.Kind
+                    "The per-recipient outbound email quota is now holding mail; an email was not sent"
                 );
                 break;
             case EmailGuardAlert.GlobalBudgetLow:
@@ -57,10 +53,8 @@ public sealed class ThrottledEmailSender(
                 break;
             case EmailGuardAlert.GlobalBudgetExhausted:
                 logger.LogError(
-                    "The global outbound email budget is exhausted and a {Kind} message to {Recipient} was denied; automatic mail is held "
-                        + "until the budget refills, admin-written email is unaffected",
-                    message.Kind,
-                    message.ToAddress
+                    "The global outbound email budget is exhausted and an email was denied; automatic mail is held "
+                        + "until the budget refills, admin-written email is unaffected"
                 );
                 break;
             case EmailGuardAlert.TrackingSaturated:

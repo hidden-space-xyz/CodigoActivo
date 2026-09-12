@@ -77,21 +77,11 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                 UploadedBy = AuthorId,
             }
         );
-
-        for (var i = 0; i < 5; i++)
-        {
-            ctx.Users.Add(NewUser(Guid.NewGuid(), $"User{i.ToString(CultureInfo.InvariantCulture)}"));
-        }
+        AddUsers(ctx);
 
         var firstEvent = NewEvent("Evento 1");
         ctx.Events.AddRange(firstEvent, NewEvent("Evento 2"));
-
-        for (var i = 0; i < 3; i++)
-        {
-            ctx.Activities.Add(
-                NewActivity(firstEvent.Id, $"Actividad {i.ToString(CultureInfo.InvariantCulture)}")
-            );
-        }
+        AddActivities(ctx, firstEvent.Id);
 
         ctx.Resources.Add(
             new Resource
@@ -106,11 +96,41 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                 CreatedBy = AuthorId,
             }
         );
+        AddAnnouncements(ctx);
+        AddPartners(ctx);
+    }
 
-        for (var i = 0; i < 4; i++)
-        {
-            ctx.Announcements.Add(
-                new Announcement
+    private static void AddUsers(CodigoActivoDbContext ctx)
+    {
+        ctx.Users.AddRange(
+            Enumerable.Range(0, 5)
+                .Select(i =>
+                    NewUser(
+                        Guid.NewGuid(),
+                        $"User{i.ToString(CultureInfo.InvariantCulture)}"
+                    )
+                )
+        );
+    }
+
+    private static void AddActivities(CodigoActivoDbContext ctx, Guid eventId)
+    {
+        ctx.Activities.AddRange(
+            Enumerable.Range(0, 3)
+                .Select(i =>
+                    NewActivity(
+                        eventId,
+                        $"Actividad {i.ToString(CultureInfo.InvariantCulture)}"
+                    )
+                )
+        );
+    }
+
+    private static void AddAnnouncements(CodigoActivoDbContext ctx)
+    {
+        ctx.Announcements.AddRange(
+            Enumerable.Range(0, 4)
+                .Select(i => new Announcement
                 {
                     Id = Guid.NewGuid(),
                     Title = $"Anuncio {i.ToString(CultureInfo.InvariantCulture)}",
@@ -119,14 +139,15 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                     ThumbnailId = ThumbId,
                     CreatedAt = Fixed,
                     CreatedBy = AuthorId,
-                }
-            );
-        }
+                })
+        );
+    }
 
-        for (var i = 0; i < 5; i++)
-        {
-            ctx.Partners.Add(
-                new Partner
+    private static void AddPartners(CodigoActivoDbContext ctx)
+    {
+        ctx.Partners.AddRange(
+            Enumerable.Range(0, 5)
+                .Select(i => new Partner
                 {
                     Id = Guid.NewGuid(),
                     Name = $"Socio {i.ToString(CultureInfo.InvariantCulture)}",
@@ -135,9 +156,8 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                     ThumbnailId = ThumbId,
                     CreatedAt = Fixed,
                     CreatedBy = AuthorId,
-                }
-            );
-        }
+                })
+        );
     }
 
     private static User NewUser(Guid id, string firstName)

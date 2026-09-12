@@ -34,11 +34,18 @@ public sealed class RequestLoggingMiddleware(
             level,
             exception,
             "HTTP {Method} {Path} responded {StatusCode} in {Elapsed:0.0000} ms",
-            context.Request.Method,
-            context.Request.Path.Value,
+            SanitizeForLog(context.Request.Method),
+            SanitizeForLog(context.Request.Path.Value),
             context.Response.StatusCode,
             elapsed.TotalMilliseconds
         );
+    }
+
+    private static string SanitizeForLog(string? value)
+    {
+        return string.IsNullOrEmpty(value)
+            ? string.Empty
+            : value.Replace('\r', '_').Replace('\n', '_');
     }
 
     private static LogLevel ResolveLevel(int statusCode, Exception? exception)

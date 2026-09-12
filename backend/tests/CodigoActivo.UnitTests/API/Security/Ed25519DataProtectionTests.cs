@@ -14,7 +14,7 @@ public sealed class Ed25519DataProtectionTests : IDisposable
 {
     private const string Password = "a-strong-ed25519-certificate-password";
 
-    private readonly string directory = Path.Combine(
+    private readonly string directory = Path.Join(
         Path.GetTempPath(),
         "codigoactivo-ed25519-tests",
         Guid.NewGuid().ToString("N")
@@ -76,8 +76,8 @@ public sealed class Ed25519DataProtectionTests : IDisposable
     [Fact]
     public void DataProtectionProviderPersistsAndReloadsEd25519ProtectedKeyRing()
     {
-        var certificateDirectory = new DirectoryInfo(Path.Combine(directory, "certificate"));
-        var keysDirectory = new DirectoryInfo(Path.Combine(directory, "keys"));
+        var certificateDirectory = new DirectoryInfo(Path.Join(directory, "certificate"));
+        var keysDirectory = new DirectoryInfo(Path.Join(directory, "keys"));
         var store = Ed25519CertificateStore.LoadOrCreate(certificateDirectory, Password);
         string protectedValue;
         using (var services = BuildDataProtectionProvider(store, keysDirectory))
