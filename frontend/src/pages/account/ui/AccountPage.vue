@@ -87,7 +87,7 @@ const tab = computed<AccountTab>({
 .account-head {
   position: relative;
   overflow: hidden;
-  padding: 64px var(--ca-gutter) 16px;
+  padding: 48px var(--ca-gutter) 12px;
 }
 
 .account-head__glow {
@@ -134,7 +134,7 @@ const tab = computed<AccountTab>({
 
 @media (max-width: 640px) {
   .account-head {
-    padding-top: 40px;
+    padding-top: 32px;
   }
 
   .account-panel {

@@ -28,7 +28,7 @@ const { featured, items, isLoading } = useHomeEvents()
 
 <style scoped>
 .home-section {
-  padding: 40px var(--ca-gutter) 8px;
+  padding: 28px var(--ca-gutter) 8px;
 }
 
 .home-section__head {

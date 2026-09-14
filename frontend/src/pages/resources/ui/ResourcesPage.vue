@@ -37,7 +37,7 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
 
 <style scoped>
 .resources-head {
-  padding: 64px var(--ca-gutter) 24px;
+  padding: 48px var(--ca-gutter) 20px;
 }
 
 .resources-grid-section {

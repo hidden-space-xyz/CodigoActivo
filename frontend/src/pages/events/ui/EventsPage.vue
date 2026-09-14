@@ -101,11 +101,11 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
 
 <style scoped>
 .events-head {
-  padding: 64px var(--ca-gutter) 16px;
+  padding: 48px var(--ca-gutter) 12px;
 }
 
 .events-section {
-  padding: 32px var(--ca-gutter);
+  padding: 24px var(--ca-gutter);
 }
 
 .events-section--past {
