@@ -108,6 +108,10 @@ a {
   color: var(--ca-action-blue);
 }
 
+.el-button.ca-action-icon--assignment .el-icon {
+  color: var(--ca-action-pink);
+}
+
 .el-button.ca-action-icon--email .el-icon {
   color: var(--ca-action-purple);
 }

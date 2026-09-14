@@ -50,7 +50,8 @@
   --ca-action-yellow: #ca8a04;
   --ca-action-green: #16a34a;
   --ca-action-blue: #2563eb;
-  --ca-action-purple: #9333ea;
+  --ca-action-purple: #8b5cf6;
+  --ca-action-pink: #f472b6;
   --ca-action-orange: #f97316;
 
   --ca-info: var(--ca-azure);

@@ -474,7 +474,7 @@ function submitChangeRole(): void {
               </template>
               <Button
                 v-if="attendee.email"
-                icon="send"
+                icon="envelope"
                 text
                 circle
                 size="small"
@@ -516,6 +516,7 @@ function submitChangeRole(): void {
                   text
                   circle
                   size="small"
+                  class="ca-action-icon--assignment"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeRole')"
                   @click="openChangeRole(attendee, assignment)"
                 />
@@ -524,6 +525,7 @@ function submitChangeRole(): void {
                   text
                   circle
                   size="small"
+                  class="ca-action-icon--assignment"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeStatus')"
                   @click="openChangeStatus(attendee, assignment)"
                 />
@@ -769,6 +771,7 @@ function submitChangeRole(): void {
 
 .attendee__contact {
   display: flex;
+  align-items: center;
   gap: 18px;
   flex-wrap: wrap;
   font-size: 13.5px;
