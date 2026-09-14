@@ -4,7 +4,7 @@ import {
   FeaturedAnnouncementCard,
   useHomeAnnouncements,
 } from '@/entities/announcement'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BaseButton } from '@/shared/ui'
 
 const { featured, items: recent, isLoading } = useHomeAnnouncements()
 </script>
@@ -13,13 +13,7 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
   <section v-if="isLoading || featured" class="home-section">
     <div class="ca-container">
       <div class="home-section__head">
-        <div>
-          <SectionEyebrow
-            :text="$t('pages.home.announcements.eyebrow')"
-            color="var(--ca-orange-ink)"
-          />
-          <h2 class="home-section__title">{{ $t('pages.home.announcements.title') }}</h2>
-        </div>
+        <h2 class="home-section__title">{{ $t('pages.home.announcements.title') }}</h2>
         <BaseButton variant="link" :to="{ name: 'announcements' }">
           {{ $t('pages.home.announcements.viewAll') }}
         </BaseButton>

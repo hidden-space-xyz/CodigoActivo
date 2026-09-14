@@ -8,7 +8,7 @@ import {
   MinorsSection,
   ProfileSection,
 } from '@/features/account'
-import { AppIcon, SectionEyebrow } from '@/shared/ui'
+import { AppIcon, PageHeading } from '@/shared/ui'
 
 const TABS = ['profile', 'history', 'certificates'] as const
 type AccountTab = (typeof TABS)[number]
@@ -37,11 +37,7 @@ const tab = computed<AccountTab>({
     <section class="account-head">
       <div class="account-head__glow" aria-hidden="true" />
       <div class="ca-container--narrow account-head__inner">
-        <SectionEyebrow :text="$t('pages.account.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="account-head__title">{{ $t('pages.account.title') }}</h1>
-        <p class="account-head__intro">
-          {{ $t('pages.account.intro') }}
-        </p>
+        <PageHeading :title="$t('pages.account.title')" :description="$t('pages.account.intro')" />
       </div>
     </section>
 
@@ -104,22 +100,6 @@ const tab = computed<AccountTab>({
   position: relative;
 }
 
-.account-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 42px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
-.account-head__intro {
-  margin-top: 14px;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-  max-width: 560px;
-}
-
 .account-body {
   padding: 24px var(--ca-gutter) 80px;
 }
@@ -155,10 +135,6 @@ const tab = computed<AccountTab>({
 @media (max-width: 640px) {
   .account-head {
     padding-top: 40px;
-  }
-
-  .account-head__title {
-    font-size: 32px;
   }
 
   .account-panel {

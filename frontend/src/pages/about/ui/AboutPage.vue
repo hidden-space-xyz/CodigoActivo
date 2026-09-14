@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { ActivityStep, useOrganizationContent, ValueCard } from '@/entities/organization'
 import { CONTACT } from '@/shared/config'
-import { AppIcon, BaseButton, SectionEyebrow } from '@/shared/ui'
+import { AppIcon, BaseButton } from '@/shared/ui'
 
 const { values, activities } = useOrganizationContent()
 
@@ -15,10 +15,9 @@ const joinVisible = ref(false)
     <section class="about-hero">
       <div class="about-hero__glow" aria-hidden="true" />
       <div class="about-hero__inner">
-        <SectionEyebrow :text="$t('pages.about.eyebrowUs')" color="var(--ca-azure-ink)" />
         <h1 class="about-hero__title">
           {{ $t('pages.about.hero.titleLine1') }}<br />{{ $t('pages.about.hero.titleLine2') }}
-          <span style="color: var(--ca-azure)">{{ $t('pages.about.hero.titleHighlight') }}</span>
+          <span style="color: var(--ca-orange)">{{ $t('pages.about.hero.titleHighlight') }}</span>
         </h1>
         <p class="about-hero__lead">
           {{ $t('pages.about.hero.lead') }}
@@ -38,7 +37,6 @@ const joinVisible = ref(false)
           {{ $t('pages.about.what.photoPlaceholder') }}
         </div>
         <div>
-          <SectionEyebrow :text="$t('pages.about.eyebrowWhat')" color="var(--ca-lime-ink)" />
           <h2 class="about-what__title">{{ $t('pages.about.what.title') }}</h2>
           <div class="about-what__list">
             <ActivityStep v-for="activity in activities" :key="activity.id" :activity="activity" />

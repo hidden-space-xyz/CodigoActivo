@@ -289,7 +289,6 @@
   },
   "pages": {
     "announcements": {
-      "eyebrow": "// anuncios",
       "title": "Anuncios",
       "intro": "Novedades y comunicaciones de la comunidad de Código Activo.",
       "empty": "Todavía no hay anuncios."
@@ -300,8 +299,6 @@
       "notFoundTitle": "Anuncio no encontrado"
     },
     "about": {
-      "eyebrowUs": "// nosotros",
-      "eyebrowWhat": "// qué hacemos",
       "hero": {
         "titleLine1": "Hacemos que programar",
         "titleLine2": "sea de",
@@ -324,7 +321,6 @@
       }
     },
     "account": {
-      "eyebrow": "// mi cuenta",
       "title": "Mi área de usuario",
       "intro": "Gestiona tus datos, tu contraseña, los menores a tu cargo, tu historial de eventos y tus diplomas.",
       "tabs": {
@@ -339,16 +335,12 @@
       "text": "La página que buscas no existe o ha cambiado de dirección. Vuelve al inicio para seguir navegando."
     },
     "events": {
-      "eyebrowEvents": "// eventos",
       "title": "Eventos",
       "intro": "Todo lo que tenemos por delante y todo lo que ya hemos hecho juntos. Explora los próximos eventos y el archivo.",
-      "eyebrowUpcoming": "// próximamente",
       "upcomingTitle": "Próximos eventos",
-      "eyebrowArchive": "// archivo",
       "pastTitle": "Eventos anteriores"
     },
     "resources": {
-      "eyebrow": "// recursos",
       "title": "Aprende por tu cuenta",
       "intro": "Material de nuestros talleres, abierto y gratuito."
     },
@@ -822,12 +814,10 @@
         }
       },
       "announcements": {
-        "eyebrow": "// anuncios",
         "title": "Anuncios",
         "viewAll": "Ver todas los anuncios →"
       },
       "events": {
-        "eyebrow": "// eventos",
         "title": "Eventos",
         "viewAll": "Ver todos los eventos →"
       },

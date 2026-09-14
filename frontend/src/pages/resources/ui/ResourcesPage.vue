@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ResourceCard, useResources } from '@/entities/resource'
-import { AppButton, SectionEyebrow } from '@/shared/ui'
+import { AppButton, PageHeading } from '@/shared/ui'
 
 const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources()
 </script>
@@ -9,9 +9,10 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
   <div>
     <section class="resources-head">
       <div class="ca-container">
-        <SectionEyebrow :text="$t('pages.resources.eyebrow')" color="var(--ca-lime-ink)" />
-        <h1 class="resources-head__title">{{ $t('pages.resources.title') }}</h1>
-        <p class="resources-head__intro">{{ $t('pages.resources.intro') }}</p>
+        <PageHeading
+          :title="$t('pages.resources.title')"
+          :description="$t('pages.resources.intro')"
+        />
       </div>
     </section>
 
@@ -37,22 +38,6 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
 <style scoped>
 .resources-head {
   padding: 64px var(--ca-gutter) 24px;
-}
-
-.resources-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
-.resources-head__intro {
-  margin-top: 14px;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-  max-width: 600px;
 }
 
 .resources-grid-section {

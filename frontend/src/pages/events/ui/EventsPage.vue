@@ -8,7 +8,7 @@ import {
   useUpcomingEventsPaged,
 } from '@/entities/event'
 import EventBoard from './EventBoard.vue'
-import { AppButton, SectionEyebrow, YearFilter } from '@/shared/ui'
+import { AppButton, PageHeading, YearFilter } from '@/shared/ui'
 
 const {
   items: upcomingEvents,
@@ -49,18 +49,13 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
   <div>
     <section class="events-head">
       <div class="ca-container">
-        <SectionEyebrow :text="$t('pages.events.eyebrowEvents')" color="var(--ca-orange-ink)" />
-        <h1 class="events-head__title">{{ $t('pages.events.title') }}</h1>
-        <p class="events-head__intro">
-          {{ $t('pages.events.intro') }}
-        </p>
+        <PageHeading :title="$t('pages.events.title')" :description="$t('pages.events.intro')" />
       </div>
     </section>
 
     <section class="events-section">
       <div class="ca-container">
         <div class="events-section__head">
-          <SectionEyebrow :text="$t('pages.events.eyebrowUpcoming')" color="var(--ca-lime-ink)" />
           <h2 class="events-section__title">{{ $t('pages.events.upcomingTitle') }}</h2>
         </div>
         <p v-if="isLoadingUpcoming" class="events-loading">{{ $t('common.loading') }}</p>
@@ -79,7 +74,6 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
     <section class="events-section events-section--past">
       <div class="ca-container">
         <div class="events-section__head">
-          <SectionEyebrow :text="$t('pages.events.eyebrowArchive')" color="var(--ca-orange-ink)" />
           <h2 class="events-section__title">{{ $t('pages.events.pastTitle') }}</h2>
           <YearFilter
             class="events-section__filter"
@@ -108,22 +102,6 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
 <style scoped>
 .events-head {
   padding: 64px var(--ca-gutter) 16px;
-}
-
-.events-head__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 46px;
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
-}
-
-.events-head__intro {
-  margin-top: 14px;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-  max-width: 560px;
 }
 
 .events-section {
