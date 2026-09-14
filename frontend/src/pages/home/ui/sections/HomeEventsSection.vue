@@ -10,7 +10,7 @@ const { featured, items, isLoading } = useHomeEvents()
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
-        <BaseButton variant="link" :to="{ name: 'events' }">
+        <BaseButton variant="link" class="home-section__view-all" :to="{ name: 'events' }">
           {{ $t('pages.home.events.viewAll') }}
         </BaseButton>
       </div>
@@ -46,6 +46,14 @@ const { featured, items, isLoading } = useHomeEvents()
   font-weight: 700;
   color: var(--ca-text-bright);
   letter-spacing: -0.02em;
+}
+
+.base-button--link.home-section__view-all {
+  color: var(--ca-orange);
+}
+
+.base-button--link.home-section__view-all:hover {
+  color: var(--ca-orange-strong);
 }
 
 .home-section__grid {

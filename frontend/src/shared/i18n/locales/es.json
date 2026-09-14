@@ -341,8 +341,8 @@
       "pastTitle": "Eventos anteriores"
     },
     "resources": {
-      "title": "Aprende por tu cuenta",
-      "intro": "Material de nuestros talleres, abierto y gratuito."
+      "title": "Recursos",
+      "intro": "Material educativo propio y enlaces de interés."
     },
     "resourceDetail": {
       "back": "← Volver a recursos",
@@ -815,7 +815,7 @@
       },
       "announcements": {
         "title": "Anuncios",
-        "viewAll": "Ver todas los anuncios →"
+        "viewAll": "Ver todos los anuncios →"
       },
       "events": {
         "title": "Eventos",
@@ -1264,6 +1264,11 @@
         "badge": "★ Anuncio destacado",
         "publishedLabel": "Publicado",
         "readMore": "Leer más →"
+      }
+    },
+    "resource": {
+      "card": {
+        "dateLabel": "Publicado"
       }
     },
     "organization": {
