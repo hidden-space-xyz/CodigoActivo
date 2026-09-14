@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PastEvent } from '../model/types'
-import { ColorTag, ListThumbnail } from '@/shared/ui'
+import { CardDate, ColorTag, ListThumbnail } from '@/shared/ui'
+import EventCardFooter from './EventCardFooter.vue'
 
 defineProps<{ event: PastEvent }>()
 </script>
@@ -11,53 +12,29 @@ defineProps<{ event: PastEvent }>()
     class="ca-list-card past-card"
   >
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
-    <div class="past-card__body">
-      <div class="past-card__top">
-        <span class="past-card__status">{{ event.status.label }}</span>
-        <span class="past-card__date">{{ event.date }}</span>
-      </div>
-      <h3 class="past-card__title">{{ event.title }}</h3>
-      <div class="past-card__event">{{ event.eventName }}</div>
-      <div v-if="event.categories.length" class="past-card__cats">
-        <ColorTag
-          v-for="cat in event.categories"
-          :key="cat.id"
-          :value="cat.name"
-          :color="cat.color"
-        />
-      </div>
+
+    <CardDate :label="$t('entities.event.card.dateLabel')" :value="event.date" />
+    <h3 class="past-card__title">{{ event.title }}</h3>
+    <div v-if="event.eventName" class="past-card__event">«{{ event.eventName }}»</div>
+    <div v-if="event.categories.length" class="past-card__cats">
+      <ColorTag
+        v-for="cat in event.categories"
+        :key="cat.id"
+        :value="cat.name"
+        :color="cat.color"
+      />
     </div>
+
+    <EventCardFooter :status="event.status" />
   </RouterLink>
 </template>
 
 <style scoped>
 .past-card {
-  display: block;
-}
-
-.past-card__body {
-  padding: 14px 4px 4px;
-}
-
-.past-card__top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.past-card__status {
-  font-family: var(--ca-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ca-text-dim);
-}
-
-.past-card__date {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-faint-2);
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
 }
 
 .past-card__title {
@@ -71,8 +48,8 @@ defineProps<{ event: PastEvent }>()
 .past-card__event {
   font-size: 14.5px;
   line-height: 1.5;
+  margin-top: -6px;
   color: var(--ca-text-muted);
-  margin-top: 5px;
 }
 
 .past-card__cats {

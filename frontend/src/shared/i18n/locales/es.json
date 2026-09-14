@@ -336,7 +336,7 @@
     },
     "events": {
       "title": "Eventos",
-      "intro": "Todo lo que tenemos por delante y todo lo que ya hemos hecho juntos. Explora los próximos eventos y el archivo.",
+      "intro": "Todo lo que tenemos por delante y todo lo que ya hemos hecho juntos.",
       "upcomingTitle": "Próximos eventos",
       "pastTitle": "Eventos anteriores"
     },
@@ -1243,7 +1243,7 @@
         "finished": "Finalizado"
       },
       "card": {
-        "moreInfo": "Más info →"
+        "dateLabel": "Fecha"
       },
       "featured": {
         "badge": "★ Evento destacado",
@@ -1257,6 +1257,9 @@
       }
     },
     "announcement": {
+      "card": {
+        "dateLabel": "Publicado"
+      },
       "featured": {
         "badge": "★ Anuncio destacado",
         "publishedLabel": "Publicado",

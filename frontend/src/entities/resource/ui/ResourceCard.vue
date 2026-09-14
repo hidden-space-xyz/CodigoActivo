@@ -22,14 +22,12 @@ const linkAttrs = computed(() =>
   >
     <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 
-    <ColorTag
-      v-if="resource.typeName"
-      class="resource-card__type"
-      :value="resource.typeName"
-      :color="resource.typeColor"
-    />
     <h3 class="resource-card__title">{{ resource.title }}</h3>
     <p v-if="resource.subtitle" class="resource-card__subtitle">{{ resource.subtitle }}</p>
+
+    <div v-if="resource.typeName" class="resource-card__type">
+      <ColorTag :value="resource.typeName" :color="resource.typeColor" />
+    </div>
   </component>
 </template>
 
@@ -41,8 +39,9 @@ const linkAttrs = computed(() =>
 }
 
 .resource-card__type {
-  align-self: flex-start;
-  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .resource-card__title {
