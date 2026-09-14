@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UpcomingEvent } from '../model/types'
-import { ColorTag, ListThumbnail } from '@/shared/ui'
+import { CardDate, ColorTag, ListThumbnail } from '@/shared/ui'
+import EventCardFooter from './EventCardFooter.vue'
 
 defineProps<{ event: UpcomingEvent }>()
 </script>
@@ -12,6 +13,7 @@ defineProps<{ event: UpcomingEvent }>()
   >
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
 
+    <CardDate :label="$t('entities.event.card.dateLabel')" :value="event.date" />
     <h3 class="event-card__title">{{ event.title }}</h3>
     <div v-if="event.slogan" class="event-card__slogan">«{{ event.slogan }}»</div>
 
@@ -24,14 +26,7 @@ defineProps<{ event: UpcomingEvent }>()
       />
     </div>
 
-    <div class="event-card__date">{{ event.date }}</div>
-
-    <div class="event-card__footer">
-      <span class="event-card__status" :class="`event-card__status--${event.status.kind}`">
-        {{ event.status.label }}
-      </span>
-      <span class="event-card__more">{{ $t('entities.event.card.moreInfo') }}</span>
-    </div>
+    <EventCardFooter :status="event.status" />
   </RouterLink>
 </template>
 
@@ -62,54 +57,5 @@ defineProps<{ event: UpcomingEvent }>()
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.event-card__date {
-  margin-top: auto;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ca-text);
-}
-
-.event-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--ca-border);
-}
-
-.event-card__status {
-  font-family: var(--ca-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.event-card__status--earlySignupOpen {
-  color: var(--ca-orange);
-}
-
-.event-card__status--signupOpen {
-  color: var(--ca-success-ink);
-}
-
-.event-card__status--signupClosed {
-  color: var(--ca-warning-ink);
-}
-
-.event-card__status--upcoming {
-  color: var(--ca-info-ink);
-}
-
-.event-card__status--finished {
-  color: var(--ca-text-dim);
-}
-
-.event-card__more {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ca-orange-ink);
 }
 </style>
