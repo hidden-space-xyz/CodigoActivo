@@ -274,9 +274,9 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultContainsExactlyOneAdmin()
+    public void BuildGraphDefaultContainsNoAdmins()
     {
-        graph.Users.Should().ContainSingle(u => u.IsAdmin);
+        graph.Users.Should().NotContain(u => u.IsAdmin);
     }
 
     [Fact]
@@ -316,12 +316,13 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultFileIdsAreUniqueAndUploadedByTheAdmin()
+    public void BuildGraphDefaultFileIdsAreUniqueAndUploadedByTheDemoContentAuthor()
     {
-        var adminId = graph.Users.Single(u => u.IsAdmin).Id;
+        var demoAuthor = graph.Users.Single(u => u.FirstName == "Lucía");
 
         graph.Files.Select(f => f.Id).Should().OnlyHaveUniqueItems();
-        graph.Files.Should().OnlyContain(f => f.UploadedBy == adminId);
+        demoAuthor.IsAdmin.Should().BeFalse();
+        graph.Files.Should().OnlyContain(f => f.UploadedBy == demoAuthor.Id);
     }
 
     [Fact]

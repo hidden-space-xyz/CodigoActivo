@@ -36,7 +36,7 @@ public sealed class DemoDataSeeder(
     private const string CategoryFormacion = "Formación";
     private const string CategoryComunidad = "Comunidad";
 
-    private static Guid AdminId => UserId(0);
+    private static Guid DemoAuthorId => UserId(0);
 
     private static readonly (
         int? EarlyOpensDaysBeforeStart,
@@ -66,7 +66,7 @@ public sealed class DemoDataSeeder(
     public Task<bool> IsSeededAsync(CancellationToken ct = default)
     {
         return context.Database.IsRelational()
-            ? context.Users.AnyAsync(u => u.Id == AdminId, ct)
+            ? context.Users.AnyAsync(u => u.Id == DemoAuthorId, ct)
             : Task.FromResult(false);
     }
 
@@ -204,7 +204,7 @@ public sealed class DemoDataSeeder(
                         ? SeedIds.UserStatusTypes.Dependent
                         : SeedIds.UserStatusTypes.Active,
                     UserTypeId = ResolveUserTypeId(seed.Kind),
-                    IsAdmin = seed.Kind is UserKind.Admin,
+                    IsAdmin = false,
                     LastLoginAt = isChild ? null : now.AddDays(-(index % 9)),
                     CreatedAt = SpreadCreatedAt(now, index, UserSeeds.Length, 450, 35),
                 };
@@ -312,7 +312,7 @@ public sealed class DemoDataSeeder(
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
                     TermsDocumentId = ResolveTermsDocumentId(eventIndex),
                     CreatedAt = eventCreatedAt,
-                    CreatedBy = AdminId,
+                    CreatedBy = DemoAuthorId,
                 }
             );
 
@@ -357,7 +357,7 @@ public sealed class DemoDataSeeder(
                             now
                         ),
                         CreatedAt = eventCreatedAt.AddMinutes(activityIndex * 20d),
-                        CreatedBy = AdminId,
+                        CreatedBy = DemoAuthorId,
                         RoleCapacities = [.. BuildRoleCapacities(globalIndex)],
                     }
                 );
@@ -410,7 +410,7 @@ public sealed class DemoDataSeeder(
                     Featured = index is FeaturedAnnouncementIndex,
                     ThumbnailId = NewFile(files, $"noticia-{label}-portada.jpg", now),
                     CreatedAt = now.AddDays(-(index * 6) - 3),
-                    CreatedBy = AdminId,
+                    CreatedBy = DemoAuthorId,
                 };
             })
             .ToList();
@@ -430,7 +430,7 @@ public sealed class DemoDataSeeder(
                 ResourceTypeId = SeedIds.ResourceTypes.Internal,
                 ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
                 CreatedAt = now.AddDays(-(index * 8) - 5),
-                CreatedBy = AdminId,
+                CreatedBy = DemoAuthorId,
             };
         });
         var externalResources = DemoExternalResources.Select((seed, index) =>
@@ -446,7 +446,7 @@ public sealed class DemoDataSeeder(
                 ResourceTypeId = SeedIds.ResourceTypes.External,
                 ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
                 CreatedAt = now.AddDays(-(globalIndex * 8) - 5),
-                CreatedBy = AdminId,
+                CreatedBy = DemoAuthorId,
             };
         });
         return internalResources.Concat(externalResources).ToList();
@@ -471,7 +471,7 @@ public sealed class DemoDataSeeder(
                     FromDate = clock.Today.AddMonths(-(6 + (index * 4))),
                     ThumbnailId = NewFile(files, $"partner-{label}-logo.jpg", now),
                     CreatedAt = SpreadCreatedAt(now, index, DemoPartners.Length, 720, 30),
-                    CreatedBy = AdminId,
+                    CreatedBy = DemoAuthorId,
                 };
             })
             .ToList();
@@ -500,7 +500,7 @@ public sealed class DemoDataSeeder(
                 Name = name,
                 Extension = "jpg",
                 UploadedAt = now,
-                UploadedBy = AdminId,
+                UploadedBy = DemoAuthorId,
             }
         );
         return id;
@@ -755,7 +755,7 @@ public sealed class DemoDataSeeder(
         {
             UserKind.Sponsor => SeedIds.UserTypes.Sponsor,
             UserKind.Child => SeedIds.UserTypes.Participant,
-            UserKind.Admin or UserKind.Member => SeedIds.UserTypes.Member,
+            UserKind.Member => SeedIds.UserTypes.Member,
             _ => SeedIds.UserTypes.Member,
         };
     }
@@ -826,7 +826,6 @@ public sealed class DemoDataSeeder(
 
     private enum UserKind
     {
-        Admin,
         Member,
         Sponsor,
         Child,
@@ -2500,7 +2499,7 @@ public sealed class DemoDataSeeder(
     ];
     private static readonly UserSeed[] UserSeeds =
     [
-        new("Lucía", "Fernández Ruiz", UserKind.Admin, Gender.Female, 1986, null),
+        new("Lucía", "Fernández Ruiz", UserKind.Member, Gender.Female, 1986, null),
         new("Marcos", "Serrano Vidal", UserKind.Member, Gender.Male, 1984, null),
         new("Elena", "Navarro Gil", UserKind.Member, Gender.Female, 1990, null),
         new("Javier", "Molina Castro", UserKind.Member, Gender.Male, 1979, null),
