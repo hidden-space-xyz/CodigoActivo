@@ -65,7 +65,7 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
 
 <style scoped>
 .announcements-head {
-  padding: 64px var(--ca-gutter) 24px;
+  padding: 48px var(--ca-gutter) 20px;
 }
 
 .announcements-list-section {

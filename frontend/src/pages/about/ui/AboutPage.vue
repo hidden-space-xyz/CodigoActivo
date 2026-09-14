@@ -87,7 +87,7 @@ const joinVisible = ref(false)
 
 <style scoped>
 .about-hero {
-  padding: 72px var(--ca-gutter) 40px;
+  padding: 48px var(--ca-gutter) 32px;
   position: relative;
   overflow: hidden;
 }
@@ -133,7 +133,7 @@ const joinVisible = ref(false)
 }
 
 .about-what {
-  padding: 48px var(--ca-gutter);
+  padding: 36px var(--ca-gutter);
 }
 
 .about-what__grid {
