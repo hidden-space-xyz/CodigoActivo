@@ -58,7 +58,7 @@
     "about": "Nosotros"
   },
   "adminNav": {
-    "dashboard": "Panel",
+    "dashboard": "Métricas",
     "events": "Eventos",
     "announcements": "Anuncios",
     "partners": "Patrocinadores",
@@ -666,7 +666,7 @@
       },
       "dashboard": {
         "header": {
-          "title": "Panel",
+          "title": "Métricas",
           "subtitle": "Crecimiento y actividad de la plataforma"
         },
         "error": "No se pudieron cargar las estadísticas.",

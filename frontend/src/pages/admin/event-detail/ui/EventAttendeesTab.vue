@@ -368,6 +368,7 @@ function submitChangeRole(): void {
         :label="$t('pages.admin.eventDetail.attendees.email.bulkLabel')"
         :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"
         icon="envelope"
+        class="ca-action-icon--email"
         :disabled="attendees.table.total.value === 0"
         @click="openEmail(null)"
       />
@@ -477,6 +478,7 @@ function submitChangeRole(): void {
                 text
                 circle
                 size="small"
+                class="ca-action-icon--email"
                 :aria-label="$t('pages.admin.eventDetail.attendees.email.rowLabel')"
                 @click="openEmail(attendee)"
               />

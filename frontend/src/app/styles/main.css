@@ -88,6 +88,34 @@ a {
   margin-left: 0;
 }
 
+.ca-row-actions .el-button .el-icon {
+  color: #ffffff;
+}
+
+.ca-row-actions .el-button.el-button--warning .el-icon {
+  color: var(--ca-action-yellow);
+}
+
+.ca-row-actions .el-button.el-button--success .el-icon {
+  color: var(--ca-action-green);
+}
+
+.ca-row-actions .el-button.el-button--danger .el-icon {
+  color: var(--ca-action-red);
+}
+
+.el-button.ca-action-icon--change-type .el-icon {
+  color: var(--ca-action-blue);
+}
+
+.el-button.ca-action-icon--email .el-icon {
+  color: var(--ca-action-purple);
+}
+
+.el-button.ca-action-icon--manage .el-icon {
+  color: var(--ca-action-orange);
+}
+
 @keyframes ca-blink {
   0%,
   49% {

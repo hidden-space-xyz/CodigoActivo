@@ -219,7 +219,7 @@ function confirmDelete(item: ContentItem): void {
             <Button
               v-if="controller.canFeature"
               :icon="row.featured ? 'star-fill' : 'star'"
-              type="primary"
+              type="warning"
               text
               circle
               :aria-label="
@@ -233,7 +233,7 @@ function confirmDelete(item: ContentItem): void {
             />
             <Button
               icon="pencil"
-              type="primary"
+              type="success"
               text
               circle
               :aria-label="$t('common.edit')"
@@ -342,7 +342,7 @@ function confirmDelete(item: ContentItem): void {
 }
 
 .ca-row-actions :deep(.is-featured .el-icon) {
-  color: var(--ca-orange);
+  color: var(--ca-action-yellow);
 }
 
 .table-pagination {

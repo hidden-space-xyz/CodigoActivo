@@ -46,6 +46,13 @@
   --ca-danger-ink: #c13b2e;
   --ca-danger-soft: rgba(216, 74, 59, 0.13);
 
+  --ca-action-red: #dc2626;
+  --ca-action-yellow: #ca8a04;
+  --ca-action-green: #16a34a;
+  --ca-action-blue: #2563eb;
+  --ca-action-purple: #9333ea;
+  --ca-action-orange: #f97316;
+
   --ca-info: var(--ca-azure);
   --ca-info-ink: var(--ca-azure-ink);
   --ca-info-soft: var(--ca-azure-soft);

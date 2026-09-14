@@ -14,7 +14,6 @@ interface TileMeta {
   key: string
   label: string
   icon: string
-  color: string
 }
 
 const TREND_ICONS: Record<string, string> = {
@@ -23,42 +22,42 @@ const TREND_ICONS: Record<string, string> = {
   flat: 'minus',
 }
 
+const TREND_COLORS: Record<string, string> = {
+  up: 'var(--ca-success-ink)',
+  down: 'var(--ca-danger-ink)',
+  flat: 'var(--ca-action-yellow)',
+}
+
 const TILES: readonly TileMeta[] = [
   {
     key: 'users',
     label: t('pages.admin.dashboard.kpi.users'),
     icon: 'users',
-    color: 'var(--ca-azure)',
   },
   {
     key: 'members',
     label: t('pages.admin.dashboard.kpi.members'),
     icon: 'id-card',
-    color: 'var(--ca-orange)',
   },
   {
     key: 'inscriptions',
     label: t('pages.admin.dashboard.kpi.inscriptions'),
     icon: 'check-square',
-    color: 'var(--ca-lime)',
   },
   {
     key: 'events',
     label: t('pages.admin.dashboard.kpi.events'),
     icon: 'calendar',
-    color: 'var(--ca-orange)',
   },
   {
     key: 'resources',
     label: t('pages.admin.dashboard.kpi.resources'),
     icon: 'book',
-    color: 'var(--ca-azure)',
   },
   {
     key: 'announcements',
     label: t('pages.admin.dashboard.kpi.announcements'),
     icon: 'megaphone',
-    color: 'var(--ca-lime)',
   },
 ]
 
@@ -71,7 +70,15 @@ const tiles = computed(() => {
     const previous = kpi?.previousRange ?? 0
     const trend = inRange === previous ? 'flat' : inRange > previous ? 'up' : 'down'
     const percent = previous > 0 ? ((inRange - previous) / previous) * 100 : null
-    return { ...meta, total, inRange, trend, trendIcon: TREND_ICONS[trend] ?? 'minus', percent }
+    return {
+      ...meta,
+      total,
+      inRange,
+      trend,
+      trendColor: TREND_COLORS[trend] ?? TREND_COLORS.flat,
+      trendIcon: TREND_ICONS[trend] ?? 'minus',
+      percent,
+    }
   })
 })
 </script>
@@ -82,7 +89,7 @@ const tiles = computed(() => {
       v-for="tile in tiles"
       :key="tile.key"
       class="kpi-card"
-      :style="{ '--accent': tile.color }"
+      :style="{ '--accent': tile.trendColor }"
     >
       <div class="kpi-card__top">
         <span class="kpi-card__icon"><AppIcon :name="tile.icon" /></span>
@@ -158,8 +165,8 @@ const tiles = computed(() => {
 }
 
 .kpi-card__delta--flat {
-  color: var(--ca-text-muted);
-  background: var(--ca-surface-2);
+  color: var(--ca-action-yellow);
+  background: var(--ca-warning-soft);
 }
 
 .kpi-card__value {

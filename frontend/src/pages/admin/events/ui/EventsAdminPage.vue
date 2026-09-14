@@ -235,7 +235,7 @@ function confirmDelete(event: EventListItemResponse): void {
               :icon="row.featured ? 'star-fill' : 'star'"
               text
               circle
-              type="primary"
+              type="warning"
               :aria-label="
                 row.featured
                   ? $t('pages.admin.events.aria.featured')
@@ -251,6 +251,7 @@ function confirmDelete(event: EventListItemResponse): void {
                 text
                 circle
                 type="primary"
+                class="ca-action-icon--manage"
                 :aria-label="$t('pages.admin.events.aria.manage')"
               />
             </RouterLink>
@@ -258,7 +259,7 @@ function confirmDelete(event: EventListItemResponse): void {
               icon="pencil"
               text
               circle
-              type="primary"
+              type="success"
               :aria-label="$t('common.edit')"
               :disabled="loadingDetail"
               @click="openEdit(row)"
@@ -313,7 +314,7 @@ function confirmDelete(event: EventListItemResponse): void {
 }
 
 .ca-row-actions :deep(.is-featured .el-icon) {
-  color: var(--ca-orange);
+  color: var(--ca-action-yellow);
 }
 
 .signup-early {
