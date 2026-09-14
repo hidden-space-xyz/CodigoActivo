@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { EventCard, FeaturedEventCard, useHomeEvents } from '@/entities/event'
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BaseButton } from '@/shared/ui'
 
 const { featured, items, isLoading } = useHomeEvents()
 </script>
@@ -9,10 +9,7 @@ const { featured, items, isLoading } = useHomeEvents()
   <section v-if="isLoading || featured" class="home-section">
     <div class="ca-container">
       <div class="home-section__head">
-        <div>
-          <SectionEyebrow :text="$t('pages.home.events.eyebrow')" color="var(--ca-orange-ink)" />
-          <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
-        </div>
+        <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
         <BaseButton variant="link" :to="{ name: 'events' }">
           {{ $t('pages.home.events.viewAll') }}
         </BaseButton>
