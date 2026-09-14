@@ -14,7 +14,7 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ $t('pages.home.announcements.title') }}</h2>
-        <BaseButton variant="link" :to="{ name: 'announcements' }">
+        <BaseButton variant="link" class="home-section__view-all" :to="{ name: 'announcements' }">
           {{ $t('pages.home.announcements.viewAll') }}
         </BaseButton>
       </div>
@@ -36,7 +36,7 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
 
 <style scoped>
 .home-section {
-  padding: 28px var(--ca-gutter) 8px;
+  padding: 16px var(--ca-gutter) 8px;
 }
 
 .home-section__head {
@@ -54,6 +54,14 @@ const { featured, items: recent, isLoading } = useHomeAnnouncements()
   font-weight: 700;
   color: var(--ca-text-bright);
   letter-spacing: -0.02em;
+}
+
+.base-button--link.home-section__view-all {
+  color: var(--ca-orange);
+}
+
+.base-button--link.home-section__view-all:hover {
+  color: var(--ca-orange-strong);
 }
 
 .home-section__grid {

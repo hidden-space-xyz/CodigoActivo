@@ -1,4 +1,5 @@
 import type { ResourceListItemResponse, ResourceResponse } from '@/shared/api/generated/models'
+import { formatDate } from '@/shared/lib'
 
 import type { LearningResource, LearningResourceSummary } from '../model/types'
 
@@ -9,8 +10,7 @@ export function toLearningResourceSummary(
     id: response.id ?? '',
     title: response.title ?? '',
     subtitle: response.subtitle ?? '',
-    typeName: response.type?.name ?? '',
-    typeColor: response.type?.color ?? '',
+    date: response.createdAt ? formatDate(response.createdAt) : '',
     url: response.url ?? null,
     thumbnailId: response.thumbnailId ?? '',
   }

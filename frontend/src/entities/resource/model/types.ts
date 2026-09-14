@@ -2,8 +2,7 @@ export interface LearningResourceSummary {
   readonly id: string
   readonly title: string
   readonly subtitle: string
-  readonly typeName: string
-  readonly typeColor: string
+  readonly date: string
   readonly url: string | null
   readonly thumbnailId: string
 }
