@@ -91,7 +91,9 @@ function distanceOf(offset: number): number {
                 />
                 <span v-else>{{ initials(card.sponsor.name).toUpperCase() }}</span>
               </div>
-              <div class="sponsor__name">{{ card.sponsor.name }}</div>
+              <div v-if="card.offset === 0" class="sponsor__name">
+                {{ card.sponsor.name }}
+              </div>
             </component>
           </div>
         </div>
@@ -123,7 +125,7 @@ function distanceOf(offset: number): number {
   color: var(--ca-text);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 30px;
+  margin-bottom: 12px;
 }
 
 .sponsors__carousel {
@@ -262,19 +264,30 @@ function distanceOf(offset: number): number {
 }
 
 @media (max-width: 640px) {
+  .sponsors__carousel {
+    gap: 0;
+  }
+
+  .sponsors__arrow {
+    display: none;
+  }
+
   .sponsors__track {
     height: 180px;
   }
+
   .sponsor__logo {
     width: 92px;
     height: 92px;
     font-size: 30px;
   }
+
   .sponsor__name {
     font-size: 15px;
     white-space: normal;
     text-align: center;
   }
+
   .sponsor--d0 .sponsor__name {
     font-size: 17px;
     transform: translateY(7px);
