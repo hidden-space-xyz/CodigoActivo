@@ -245,8 +245,9 @@ This lock is independent of `ASPNETCORE_ENVIRONMENT`, so demo and normal mode ca
 Production.
 
 With `DEMO_MODE=true`, `DemoDataSeeder` adds a full, realistic dataset after the initial administrator. It
-downloads placeholder images from picsum.photos and creates demo accounts, including an additional demo admin
-with the password `Demo1234!`. To select a different mode, recreate the complete stack and all named volumes:
+downloads placeholder images from picsum.photos and creates demo accounts with the password `Demo1234!`; the
+only administrator is the initial account created from `BOOTSTRAP_ADMIN_EMAIL` and
+`BOOTSTRAP_ADMIN_PASSWORD`. To select a different mode, recreate the complete stack and all named volumes:
 
 ```bash
 docker compose down -v
