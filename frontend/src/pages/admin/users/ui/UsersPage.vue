@@ -233,6 +233,7 @@ function confirmDelete(user: User): void {
           :label="$t('pages.admin.users.email.bulkLabel')"
           :tooltip="$t('pages.admin.users.email.bulkTooltip')"
           icon="envelope"
+          class="ca-action-icon--email"
           :disabled="table.total.value === 0"
           @click="openEmail(null)"
         />
@@ -388,6 +389,7 @@ function confirmDelete(user: User): void {
           <div class="ca-row-actions">
             <Button
               icon="pencil"
+              type="success"
               text
               circle
               :aria-label="$t('common.edit')"
@@ -397,6 +399,7 @@ function confirmDelete(user: User): void {
               icon="sync"
               text
               circle
+              class="ca-action-icon--change-type"
               :aria-label="$t('pages.admin.users.aria.changeType')"
               @click="openChangeType(row)"
             />
@@ -405,6 +408,7 @@ function confirmDelete(user: User): void {
               icon="envelope"
               text
               circle
+              class="ca-action-icon--email"
               :aria-label="$t('pages.admin.users.aria.sendEmail')"
               @click="openEmail(row)"
             />

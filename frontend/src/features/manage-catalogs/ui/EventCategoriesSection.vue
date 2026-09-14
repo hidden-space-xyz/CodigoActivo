@@ -137,6 +137,7 @@ function confirmDelete(item: EventCategoryTypeResponse): void {
           <div class="ca-row-actions">
             <Button
               icon="pencil"
+              type="success"
               text
               circle
               :aria-label="$t('common.edit')"
