@@ -3,6 +3,13 @@ import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import { withVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import vueAccessibility from 'eslint-plugin-vuejs-accessibility'
+import * as jsoncParser from 'jsonc-eslint-parser'
+
+const disableTypeChecked = Array.isArray(vueTsConfigs.disableTypeChecked)
+  ? vueTsConfigs.disableTypeChecked[0]
+  : vueTsConfigs.disableTypeChecked
+
+if (!disableTypeChecked) throw new Error('Missing disable-type-checked ESLint configuration')
 
 export default withVueTs(
   {
@@ -17,6 +24,7 @@ export default withVueTs(
       'coverage/**',
       'src/shared/api/generated/**',
       '**/*.{json,json5,yaml,yml}',
+      '!src/shared/i18n/locales/*.json',
     ],
   },
   pluginVue.configs['flat/recommended'],
@@ -27,6 +35,15 @@ export default withVueTs(
     plugins: {
       '@intlify/vue-i18n': vueI18n,
     },
+    settings: {
+      'vue-i18n': {
+        localeDir: {
+          pattern: './src/shared/i18n/locales/*.json',
+          localeKey: 'file',
+        },
+        messageSyntaxVersion: '^11.0.0',
+      },
+    },
     rules: {
       '@intlify/vue-i18n/no-deprecated-i18n-component': 'error',
       '@intlify/vue-i18n/no-deprecated-i18n-place-attr': 'error',
@@ -35,6 +52,7 @@ export default withVueTs(
       '@intlify/vue-i18n/no-deprecated-tc': 'error',
       '@intlify/vue-i18n/no-deprecated-v-t': 'error',
       '@intlify/vue-i18n/no-i18n-t-path-prop': 'error',
+      '@intlify/vue-i18n/no-missing-keys': 'error',
       '@intlify/vue-i18n/no-raw-text': [
         'error',
         {
@@ -54,6 +72,38 @@ export default withVueTs(
           },
         },
       ],
+    },
+  },
+  {
+    ...disableTypeChecked,
+    name: 'app/i18n-locales',
+    files: ['src/shared/i18n/locales/*.json'],
+    languageOptions: {
+      ...disableTypeChecked.languageOptions,
+      parser: jsoncParser,
+    },
+    rules: {
+      ...disableTypeChecked.rules,
+      '@intlify/vue-i18n/no-duplicate-keys-in-locale': 'error',
+      '@intlify/vue-i18n/no-html-messages': 'error',
+      '@intlify/vue-i18n/no-unused-keys': [
+        'error',
+        {
+          src: './src',
+          extensions: ['.ts', '.vue'],
+          // These namespaces are resolved through TranslationKey-typed maps or backend ErrorCode values.
+          ignores: [
+            '/^nav\\./u',
+            '/^adminNav\\./u',
+            '/^seo\\.routes\\./u',
+            '/^errors\\./u',
+            '/^features\\.account\\.certificates\\.sheet\\./u',
+            '/^entities\\.event\\.status\\./u',
+            '/^entities\\.user\\.gender\\./u',
+          ],
+        },
+      ],
+      '@intlify/vue-i18n/valid-message-syntax': 'error',
     },
   },
   eslintConfigPrettier,

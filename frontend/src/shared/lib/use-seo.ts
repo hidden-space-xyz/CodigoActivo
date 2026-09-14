@@ -1,11 +1,11 @@
 import { toValue, watchEffect, type MaybeRefOrGetter } from 'vue'
 import { useRoute, type RouteLocationNormalized } from 'vue-router'
 
-import { i18n } from '@/shared/i18n'
+import { i18n, type TranslationKey } from '@/shared/i18n'
 
 export interface SeoRouteMeta {
-  readonly titleKey?: string | undefined
-  readonly descriptionKey?: string | undefined
+  readonly titleKey?: TranslationKey | undefined
+  readonly descriptionKey?: TranslationKey | undefined
   readonly noindex?: boolean | undefined
 }
 

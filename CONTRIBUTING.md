@@ -83,6 +83,7 @@ npm run lint:unused  # Knip — unused files, exports and dependencies
 npm run format       # Prettier across the complete frontend
 npm run check        # complete frontend quality gate used by CI
 npm run api:generate # regenerate the typed API client from swagger.json (Orval)
+npm run api:check    # verify that the committed API client matches swagger.json
 ```
 
 ## Changing the API
@@ -93,7 +94,7 @@ The apps are contractually linked; keep both sides in sync in the same change:
 2. Refresh `frontend/swagger.json` from the running backend's Swagger endpoint.
 3. Run `npm run api:generate` — Orval wipes and regenerates `src/shared/api/generated/`.
 4. If you added a failure mode, add the `ErrorCode` member in the backend and its Spanish message under
-   the `errors.*` namespace in `frontend/src/shared/i18n/locales/es.ts`.
+   the `errors.*` namespace in `frontend/src/shared/i18n/locales/es.json`.
 
 > [!CAUTION]
 > Never hand-edit anything under `src/shared/api/generated/` — `npm run api:generate` wipes and rewrites the
@@ -130,9 +131,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-cont
 - **Never** hand-edit `src/shared/api/generated/`.
 - Import across slices only through a slice's `index.ts`; Steiger enforces the FSD layer rules.
 - The UI is **Spanish**, but **never hardcode a string in a component** — every user-facing string is a Vue
-  I18n key in `src/shared/i18n/locales/es.ts` (`$t` in templates, `useI18n()` in `<script setup>`,
+  I18n key in `src/shared/i18n/locales/es.json` (`$t` in templates, `useI18n()` in `<script setup>`,
   `i18n.global.t` outside setup). There is a single `es` locale on purpose; going bilingual must stay a
-  drop-in `en.ts` next to it, which only works if nothing bypasses i18n.
+  drop-in `en.json` next to it, which only works if nothing bypasses i18n. ESLint rejects missing,
+  duplicated, unused or invalid messages; typed dynamic keys cover the namespaces resolved at runtime.
 - TypeScript is very strict. Typed ESLint, Vue I18n and accessibility rules, Stylelint, Knip,
   Steiger and Prettier are all enforced by `npm run check`; warnings fail the gate.
 - Composable file naming: **features** use camelCase (`useLogin.ts`); **entities and `shared/lib`** use

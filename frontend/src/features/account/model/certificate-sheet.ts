@@ -1,6 +1,6 @@
 import type { AccountCertificate } from '@/entities/account'
 import { logoMarkLarge } from '@/shared/branding'
-import { i18n } from '@/shared/i18n'
+import { i18n, type TranslationKey } from '@/shared/i18n'
 import { downloadBlob, fullName, parseDateOnly } from '@/shared/lib'
 
 const SHEET_WIDTH_MM = 297
@@ -61,8 +61,13 @@ function tracking(sizePt: number, em: number): number {
   return sizePt * PT_TO_MM * em
 }
 
-function t(key: string): string {
-  return i18n.global.t(`features.account.certificates.sheet.${key}`)
+type SheetKey<Key> = Key extends `features.account.certificates.sheet.${infer Suffix}`
+  ? Suffix
+  : never
+
+function sheetText(key: SheetKey<TranslationKey>): string {
+  const translationKey: TranslationKey = `features.account.certificates.sheet.${key}`
+  return i18n.global.t(translationKey)
 }
 
 let logoPromise: Promise<HTMLImageElement | null> | null = null
@@ -294,7 +299,7 @@ function drawMicrotext(ctx: CanvasRenderingContext2D): void {
   const span = MICROTEXT_INSET
   const width = SHEET_WIDTH_MM - span * 2
   const height = SHEET_HEIGHT_MM - span * 2
-  const unit = `${t('microtext').toLocaleUpperCase('es-ES')}  ·  `
+  const unit = `${sheetText('microtext').toLocaleUpperCase('es-ES')}  ·  `
 
   ctx.save()
   ctx.font = font(500, 3.1, MONO_FAMILY)
@@ -541,7 +546,7 @@ function drawCrest(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null)
 }
 
 function drawEyebrow(ctx: CanvasRenderingContext2D): void {
-  const text = `// ${t('eyebrow')}`.toLocaleUpperCase('es-ES')
+  const text = `// ${sheetText('eyebrow')}`.toLocaleUpperCase('es-ES')
   const gap = tracking(9.5, 0.14)
 
   ctx.font = font(600, 9.5, MONO_FAMILY)
@@ -736,8 +741,8 @@ function drawSeal(ctx: CanvasRenderingContext2D): void {
 
   ctx.fillStyle = ENGRAVE
   ctx.font = font(500, 5.6, MONO_FAMILY)
-  arcText(ctx, t('sealTop').toLocaleUpperCase('es-ES'), 11.1, -Math.PI / 2, 0.32, true)
-  arcText(ctx, t('sealBottom').toLocaleUpperCase('es-ES'), 11.1, Math.PI / 2, 0.32, false)
+  arcText(ctx, sheetText('sealTop').toLocaleUpperCase('es-ES'), 11.1, -Math.PI / 2, 0.32, true)
+  arcText(ctx, sheetText('sealBottom').toLocaleUpperCase('es-ES'), 11.1, Math.PI / 2, 0.32, false)
 
   ctx.font = font(600, 16, MONO_FAMILY)
   ctx.textAlign = 'center'
@@ -769,8 +774,15 @@ function drawFooter(ctx: CanvasRenderingContext2D, certificate: AccountCertifica
 
   ctx.font = font(500, 6.5, MONO_FAMILY)
   ctx.fillStyle = INK_META
-  fillTracked(ctx, t('issuerLabel').toLocaleUpperCase('es-ES'), 30, 166, labelGap, 'left')
-  fillTracked(ctx, t('registryLabel').toLocaleUpperCase('es-ES'), 267, 166, labelGap, 'right')
+  fillTracked(ctx, sheetText('issuerLabel').toLocaleUpperCase('es-ES'), 30, 166, labelGap, 'left')
+  fillTracked(
+    ctx,
+    sheetText('registryLabel').toLocaleUpperCase('es-ES'),
+    267,
+    166,
+    labelGap,
+    'right',
+  )
 
   ctx.font = font(500, 9, MONO_FAMILY)
   ctx.textAlign = 'left'
@@ -778,7 +790,7 @@ function drawFooter(ctx: CanvasRenderingContext2D, certificate: AccountCertifica
   ctx.fillStyle = LIME
   ctx.fillText(prompt, 30, 173.5)
   ctx.fillStyle = INK_TITLE
-  ctx.fillText(t('issuerValue'), 30 + ctx.measureText(prompt).width, 173.5)
+  ctx.fillText(sheetText('issuerValue'), 30 + ctx.measureText(prompt).width, 173.5)
 
   ctx.font = font(400, 9, MONO_FAMILY)
   const quote = ctx.measureText('"').width
@@ -810,7 +822,7 @@ function drawBody(ctx: CanvasRenderingContext2D, certificate: AccountCertificate
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
 
-  drawComment(ctx, t('preamble'), 75)
+  drawComment(ctx, sheetText('preamble'), 75)
 
   const name = fullName(certificate)
   const namePt = fitSize(ctx, name, 188, 700, DISPLAY_FAMILY, 32, 16)
@@ -821,7 +833,7 @@ function drawBody(ctx: CanvasRenderingContext2D, certificate: AccountCertificate
 
   drawNameRule(ctx, nameWidth)
 
-  drawComment(ctx, t('connector'), 116)
+  drawComment(ctx, sheetText('connector'), 116)
 
   const titlePt = fitSize(ctx, certificate.eventTitle, 400, 600, DISPLAY_FAMILY, 19, 13)
   const titleLines = wrapLines(ctx, certificate.eventTitle, 200, 2)

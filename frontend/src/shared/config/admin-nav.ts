@@ -1,5 +1,7 @@
+import type { TranslationKey } from '@/shared/i18n'
+
 export interface AdminNavItem {
-  readonly labelKey: string
+  readonly labelKey: TranslationKey
   readonly routeName: string
   readonly icon: string
 }

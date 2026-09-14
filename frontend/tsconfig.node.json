@@ -23,6 +23,7 @@
     "orval.config.ts",
     "steiger.config.ts",
     "stylelint.config.js",
+    "scripts/**/*.ts",
     "vite.config.ts"
   ]
 }
