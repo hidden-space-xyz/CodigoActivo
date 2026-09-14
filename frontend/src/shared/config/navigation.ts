@@ -1,6 +1,8 @@
+import type { TranslationKey } from '@/shared/i18n'
+
 interface NavItem {
   readonly routeName: string
-  readonly labelKey: string
+  readonly labelKey: TranslationKey
 }
 
 export const PRIMARY_NAV: readonly NavItem[] = [

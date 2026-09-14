@@ -1,5 +1,7 @@
 import { defineConfig } from 'orval'
 
+const generatedRoot = process.env.ORVAL_GENERATED_ROOT ?? './src/shared/api/generated'
+
 export default defineConfig({
   codigoActivo: {
     input: {
@@ -7,8 +9,8 @@ export default defineConfig({
     },
     output: {
       mode: 'tags-split',
-      target: './src/shared/api/generated/endpoints',
-      schemas: './src/shared/api/generated/models',
+      target: `${generatedRoot}/endpoints`,
+      schemas: `${generatedRoot}/models`,
       client: 'vue-query',
       clean: true,
       override: {

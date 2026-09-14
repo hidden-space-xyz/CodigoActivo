@@ -1,5 +1,5 @@
 import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
-import { i18n } from '@/shared/i18n'
+import { i18n, type TranslationKey } from '@/shared/i18n'
 import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
 
 import type {
@@ -45,7 +45,7 @@ function resolveStatusKind(event: EventListItemResponse): EventStatusKind {
   return 'signupOpen'
 }
 
-const STATUS_LABEL_KEYS: Record<EventStatusKind, string> = {
+const STATUS_LABEL_KEYS: Record<EventStatusKind, TranslationKey> = {
   upcoming: 'entities.event.status.upcoming',
   earlySignupOpen: 'entities.event.status.earlySignupOpen',
   signupOpen: 'entities.event.status.signupOpen',

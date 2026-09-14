@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEventRatingsTable } from '@/features/manage-events'
 import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
+import type { TranslationKey } from '@/shared/i18n'
 import { DataState } from '@/shared/ui'
 import { formatDateTime } from '@/shared/lib'
 
@@ -14,12 +15,17 @@ const ratings = useEventRatingsTable(
   () => props.active,
 )
 
-function answers(rating: EventRatingListItemResponse): { key: string; value: string }[] {
-  return [
-    { key: 'mostLiked', value: rating.mostLiked ?? '' },
-    { key: 'leastLiked', value: rating.leastLiked ?? '' },
-    { key: 'suggestions', value: rating.suggestions ?? '' },
-  ].filter((answer) => answer.value.trim() !== '')
+function answers(rating: EventRatingListItemResponse): {
+  labelKey: TranslationKey
+  value: string
+}[] {
+  const candidates: { labelKey: TranslationKey; value: string }[] = [
+    { labelKey: 'entities.event.ratingQuestions.mostLiked', value: rating.mostLiked ?? '' },
+    { labelKey: 'entities.event.ratingQuestions.leastLiked', value: rating.leastLiked ?? '' },
+    { labelKey: 'entities.event.ratingQuestions.suggestions', value: rating.suggestions ?? '' },
+  ]
+
+  return candidates.filter((answer) => answer.value.trim() !== '')
 }
 </script>
 
@@ -49,8 +55,8 @@ function answers(rating: EventRatingListItemResponse): { key: string; value: str
           </div>
 
           <dl v-if="answers(rating).length > 0" class="opinion__answers">
-            <template v-for="answer in answers(rating)" :key="answer.key">
-              <dt>{{ $t(`entities.event.ratingQuestions.${answer.key}`) }}</dt>
+            <template v-for="answer in answers(rating)" :key="answer.labelKey">
+              <dt>{{ $t(answer.labelKey) }}</dt>
               <dd>{{ answer.value }}</dd>
             </template>
           </dl>

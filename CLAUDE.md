@@ -53,6 +53,7 @@ npm run lint:unused    # Knip — unused files, exports and dependencies
 npm run format         # Prettier across the complete frontend
 npm run check          # complete frontend quality gate used by CI
 npm run api:generate   # Orval: regenerate typed client from swagger.json
+npm run api:check      # verify generated client matches swagger.json without modifying it
 ```
 
 There is **no frontend test suite** — `npm run check` is the mandatory static quality gate.
@@ -135,7 +136,7 @@ re-skinned by mapping `--el-*` to `--ca-*`.
 2. Refresh `frontend/swagger.json` from the running backend's Development-only Swagger endpoint.
 3. `npm run api:generate`.
 4. New failure mode → new `ErrorCode` member in the backend **and** a Spanish message under the
-   `errors.*` namespace in `frontend/src/shared/i18n/locales/es.ts`.
+   `errors.*` namespace in `frontend/src/shared/i18n/locales/es.json`.
 
 ## Conventions the build/tests enforce
 
@@ -145,7 +146,8 @@ re-skinned by mapping `--el-*` to `--ca-*`.
   in `Application/Resources/Localization/AppStrings.resx` via the typed `AppStrings` accessor
   (composites are methods with typed parameters — no `string.Format` at call sites); exception messages,
   log templates and seeded catalog text are deliberately excluded. Frontend: every string is a Vue
-  I18n key in `es.ts` (`$t` / `useI18n()` / `i18n.global.t`).
+  I18n key in `es.json` (`$t` / `useI18n()` / `i18n.global.t`); ESLint validates missing,
+  duplicated, unused and invalid messages, while dynamic keys are constrained by `TranslationKey`.
 - Type colocation is intentional: all repository interfaces in one file, request+response DTOs per
   aggregate in one `*Dtos.cs`, one use case per file. Private fields are `camelCase`, no leading underscore.
 - Formatting: CSharpier (backend), Prettier (frontend). Analyzer config lives in

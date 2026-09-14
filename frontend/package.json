@@ -19,8 +19,9 @@
     "lint:unused": "knip",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run build && npm run lint && npm run lint:fsd && npm run lint:styles && npm run lint:unused && npm run format:check",
-    "api:generate": "orval --config ./orval.config.ts"
+    "check": "npm run api:check && npm run build && npm run lint && npm run lint:fsd && npm run lint:styles && npm run lint:unused && npm run format:check",
+    "api:generate": "orval --config ./orval.config.ts --fail-on-warnings",
+    "api:check": "node ./scripts/check-api-client.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2",
@@ -56,6 +57,7 @@
     "eslint-config-prettier": "^10",
     "eslint-plugin-vue": "^10",
     "eslint-plugin-vuejs-accessibility": "^2.6.0",
+    "jsonc-eslint-parser": "^3.3.0",
     "knip": "^6.35.1",
     "orval": "^8",
     "postcss-html": "^2.0.0",
