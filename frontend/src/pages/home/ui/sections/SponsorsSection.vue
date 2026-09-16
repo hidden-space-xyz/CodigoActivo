@@ -88,6 +88,7 @@ function distanceOf(offset: number): number {
                   :alt="card.sponsor.name"
                   class="sponsor__logo-img"
                   loading="lazy"
+                  decoding="async"
                 />
                 <span v-else>{{ initials(card.sponsor.name).toUpperCase() }}</span>
               </div>

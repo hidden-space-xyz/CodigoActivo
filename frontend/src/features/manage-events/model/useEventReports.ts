@@ -98,8 +98,6 @@ export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.badges(toValue(eventId))),
     queryFn: () => getEventBadgesRequest(toValue(eventId)),
-    staleTime: 0,
-    refetchOnMount: 'always',
   })
 }
 
@@ -107,7 +105,5 @@ export function useEventRoster(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.roster(toValue(eventId))),
     queryFn: () => getEventRosterRequest(toValue(eventId)),
-    staleTime: 0,
-    refetchOnMount: 'always',
   })
 }

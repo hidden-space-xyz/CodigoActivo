@@ -12,7 +12,14 @@ const url = computed(() => fileContentUrl(props.thumbnailId))
 
 <template>
   <div class="list-thumb">
-    <img v-if="url" :src="url" :alt="alt ?? ''" class="list-thumb__img" loading="lazy" />
+    <img
+      v-if="url"
+      :src="url"
+      :alt="alt ?? ''"
+      class="list-thumb__img"
+      loading="lazy"
+      decoding="async"
+    />
     <div v-else class="list-thumb__placeholder" aria-hidden="true">
       <AppIcon name="image" />
     </div>

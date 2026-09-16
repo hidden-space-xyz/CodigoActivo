@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Controllers;
@@ -27,6 +28,7 @@ public class AuthController : ApiControllerBase
     /// <returns>An HTTP response containing a csrf token, or an error response.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
+    [OutputCache(NoStore = true)]
     public ActionResult<CsrfTokenResponse> Csrf([FromServices] IAntiforgery antiforgery)
     {
         var tokens = antiforgery.GetAndStoreTokens(HttpContext);

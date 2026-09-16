@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { useI18n } from 'vue-i18n'
 
-import { fileContentUrl, parseRichText, richTextExtensions, serializeRichText } from '@/shared/lib'
+import { fileContentUrl } from '@/shared/lib'
+import { parseRichText, richTextExtensions, serializeRichText } from '@/shared/lib/richtext'
 
 import AppIcon from './AppIcon.vue'
 

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppButton as Button, ColumnSearch, RichTextEditor } from '@/shared/ui'
+import { AppButton as Button, ColumnSearch } from '@/shared/ui'
+import RichTextEditor from '@/shared/ui/RichTextEditor.vue'
 
 import { uploadFileRequest } from '@/entities/file'
 import { useTermsDocuments } from '../model/useTermsDocuments'
 import type { TermsDocumentResponse } from '@/shared/api/generated/models'
-import { isRichTextBlank, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { isRichTextBlank } from '@/shared/lib/richtext'
 
 const { t } = useI18n()
 const { table, create, update, remove } = useTermsDocuments()

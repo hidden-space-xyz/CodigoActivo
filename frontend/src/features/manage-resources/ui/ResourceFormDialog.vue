@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { AppButton as Button, RichTextEditor } from '@/shared/ui'
+import { AppButton as Button } from '@/shared/ui'
+import RichTextEditor from '@/shared/ui/RichTextEditor.vue'
 
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import { useResourceTypesList } from '@/entities/catalog'
@@ -10,7 +11,7 @@ import type {
   ResourceTypeResponse,
   UpdateResourceRequest,
 } from '@/shared/api/generated/models'
-import { isRichTextBlank } from '@/shared/lib'
+import { isRichTextBlank } from '@/shared/lib/richtext'
 
 const props = defineProps<{
   visible: boolean

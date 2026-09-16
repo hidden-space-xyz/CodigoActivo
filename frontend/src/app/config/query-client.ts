@@ -3,10 +3,13 @@ import { QueryClient } from '@tanstack/vue-query'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // The API owns response caching. Keep data only while it is being observed by a view.
       staleTime: 0,
-      gcTime: 30 * 60 * 1000,
+      gcTime: 0,
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnMount: 'always',
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: 'always',
     },
   },
 })

@@ -124,6 +124,9 @@ builder
 var outputCacheLifetime = TimeSpan.FromMinutes(1);
 builder.Services.AddOutputCache(options =>
 {
+    options.SizeLimit = CacheLimits.LocalCacheSizeBytes;
+    options.MaximumBodySize = CacheLimits.MaximumPayloadBytes;
+
     foreach (var tag in CacheTags.OutputCached)
     {
         options.AddPolicy(tag, policy => policy.Expire(outputCacheLifetime).Tag(tag));
