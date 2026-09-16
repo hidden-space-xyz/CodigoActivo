@@ -86,6 +86,7 @@ public sealed class ListAnnouncementsQueryHandler(
             source = source.Where(a => a.CreatedAt < createdUpper);
         }
 
+        source = source.WhereContains(a => a.Title + " " + a.Subtitle, query.Search);
         source = source.WhereContains(a => a.Title, query.Title);
         source = source.WhereContains(a => a.Subtitle, query.Subtitle);
 

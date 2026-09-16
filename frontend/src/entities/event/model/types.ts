@@ -32,6 +32,12 @@ export interface PastEvent {
   readonly categories: readonly EventCategoryTag[]
 }
 
+export interface PastEventFilters {
+  readonly year: string
+  readonly search: string
+  readonly categoryId: string
+}
+
 export interface EventTermsInfo {
   readonly id: string
   readonly name: string

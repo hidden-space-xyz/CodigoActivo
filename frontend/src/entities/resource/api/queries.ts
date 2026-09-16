@@ -6,10 +6,12 @@ import { usePagedList } from '@/shared/lib'
 import { resourceQueryKeys } from './query-keys'
 import { getResourceByIdRequest, getResourcesPageRequest } from './requests'
 
-export function useResources() {
+export function useResources(search: MaybeRefOrGetter<string>) {
+  const term = computed(() => toValue(search))
+
   const list = usePagedList({
-    queryKey: () => resourceQueryKeys.list(),
-    fetchPage: (page, pageSize) => getResourcesPageRequest(page, pageSize),
+    queryKey: () => resourceQueryKeys.list(term.value),
+    fetchPage: (page, pageSize) => getResourcesPageRequest(term.value, page, pageSize),
   })
 
   return {

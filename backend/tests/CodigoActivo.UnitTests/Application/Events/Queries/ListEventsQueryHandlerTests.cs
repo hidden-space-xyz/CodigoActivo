@@ -295,6 +295,60 @@ public sealed class ListEventsQueryHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncSearchMatchesTitleOrSubtitle()
+    {
+        events.HasEvents(
+            NewEvent("Robótica creativa", subtitle: "Taller"),
+            NewEvent("Campus", subtitle: "Talleres de robótica"),
+            NewEvent("Ajedrez", subtitle: "Torneo")
+        );
+
+        var result = await sut.HandleAsync(
+            new ListEventsQuery(new EventListQuery { Search = " ROBOTICA " }),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(e => e.Title).Should().BeEquivalentTo("Robótica creativa", "Campus");
+    }
+
+    [Fact]
+    public async Task HandleAsyncSearchCombinesWithYearAndCategoryFilters()
+    {
+        var categoryId = Guid.NewGuid();
+        events.HasEvents(
+            WithCategory(
+                NewEvent("Robótica 2025", starts: new DateOnly(2025, 5, 1), ends: new DateOnly(2025, 5, 2)),
+                categoryId,
+                "Talleres"
+            ),
+            WithCategory(
+                NewEvent("Robótica 2024", starts: new DateOnly(2024, 5, 1), ends: new DateOnly(2024, 5, 2)),
+                categoryId,
+                "Talleres"
+            ),
+            WithCategory(
+                NewEvent("Robótica charla", starts: new DateOnly(2025, 6, 1), ends: new DateOnly(2025, 6, 2)),
+                Guid.NewGuid(),
+                "Charlas"
+            )
+        );
+
+        var result = await sut.HandleAsync(
+            new ListEventsQuery(
+                new EventListQuery
+                {
+                    Search = "robotica",
+                    Year = 2025,
+                    CategoryTypeId = categoryId,
+                }
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Robótica 2025");
+    }
+
+    [Fact]
     public async Task HandleAsyncDescendingTitleSortOrdersResults()
     {
         events.HasEvents(NewEvent("Alpha"), NewEvent("Zeta"), NewEvent("Mint"));

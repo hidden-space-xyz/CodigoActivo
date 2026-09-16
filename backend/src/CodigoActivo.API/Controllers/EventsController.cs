@@ -58,6 +58,23 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Lists the category types assigned to at least one past event.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the event category types, or an error response.</returns>
+    [HttpGet("past-categories")]
+    [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Events)]
+    public async Task<ActionResult<IReadOnlyList<EventCategoryTypeResponse>>> PastCategoriesAsync(
+        [FromServices] GetPastEventCategoryTypesQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return Ok(await handler.HandleAsync(new GetPastEventCategoryTypesQuery(), ct));
+    }
+
+    /// <summary>
     /// Gets the requested event.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>

@@ -3,12 +3,14 @@ import { computed, ref, watch } from 'vue'
 
 import {
   PastEventCard,
+  usePastEventCategories,
   usePastEventsPaged,
   usePastEventYears,
   useUpcomingEventsPaged,
 } from '@/entities/event'
 import EventBoard from './EventBoard.vue'
-import { AppButton, PageHeading, YearFilter } from '@/shared/ui'
+import EventCategoryFilter from './EventCategoryFilter.vue'
+import { AppButton, PageHeading, SearchInput, YearFilter } from '@/shared/ui'
 
 const {
   items: upcomingEvents,
@@ -19,7 +21,10 @@ const {
 } = useUpcomingEventsPaged()
 
 const { years, isLoading: isLoadingYears } = usePastEventYears()
+const { categories } = usePastEventCategories()
 const selectedYear = ref('')
+const search = ref('')
+const categoryId = ref('')
 
 watch(
   years,
@@ -40,9 +45,16 @@ const {
   loadMore: loadMorePast,
   isLoading: isLoadingPastEvents,
   isFetchingMore: isFetchingMorePast,
-} = usePastEventsPaged(() => selectedYear.value)
+} = usePastEventsPaged(() => ({
+  year: selectedYear.value,
+  search: search.value,
+  categoryId: categoryId.value,
+}))
 
 const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents.value)
+const hasNoPastResults = computed(
+  () => selectedYear.value !== '' && !isLoadingPast.value && pastEvents.value.length === 0,
+)
 </script>
 
 <template>
@@ -75,14 +87,27 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
       <div class="ca-container">
         <div class="events-section__head">
           <h2 class="events-section__title">{{ $t('pages.events.pastTitle') }}</h2>
-          <YearFilter
-            class="events-section__filter"
-            :years="years"
-            :selected="selectedYear"
-            @select="setYear"
-          />
+          <div v-if="years.length" class="events-filters">
+            <YearFilter :years="years" :selected="selectedYear" @select="setYear" />
+            <div class="events-filters__fields">
+              <SearchInput
+                v-model="search"
+                class="events-filters__search"
+                :label="$t('common.searchByTitleOrSubtitle')"
+              />
+              <EventCategoryFilter
+                v-if="categories.length"
+                v-model="categoryId"
+                class="events-filters__category"
+                :categories="categories"
+              />
+            </div>
+          </div>
         </div>
         <p v-if="isLoadingPast" class="events-loading">{{ $t('common.loading') }}</p>
+        <p v-else-if="hasNoPastResults" class="events-loading">
+          {{ $t('pages.events.noResults') }}
+        </p>
         <div v-else class="events-grid">
           <PastEventCard v-for="event in pastEvents" :key="event.id" :event="event" />
         </div>
@@ -124,8 +149,34 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
   letter-spacing: -0.02em;
 }
 
-.events-section__filter {
+.events-filters {
   margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.events-filters__fields {
+  display: flex;
+  flex: 1 1 420px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  max-width: 600px;
+}
+
+.events-filters__search {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.events-filters__category {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 260px;
 }
 
 .events-grid {
@@ -143,5 +194,16 @@ const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents
   margin-top: 28px;
   display: flex;
   justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .events-filters__fields {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .events-filters__category {
+    max-width: none;
+  }
 }
 </style>

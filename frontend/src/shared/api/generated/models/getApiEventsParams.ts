@@ -7,6 +7,7 @@
 import type { EventScope } from './eventScope';
 
 export type GetApiEventsParams = {
+search?: string;
 title?: string;
 subtitle?: string;
 featured?: boolean;

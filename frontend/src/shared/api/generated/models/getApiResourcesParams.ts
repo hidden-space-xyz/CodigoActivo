@@ -6,6 +6,7 @@
  */
 
 export type GetApiResourcesParams = {
+search?: string;
 title?: string;
 subtitle?: string;
 resourceTypeId?: string;

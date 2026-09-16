@@ -109,6 +109,7 @@ public sealed class ListEventsQueryHandler(
             source = source.Where(e => e.SignupStartsAt < signupUpper);
         }
 
+        source = source.WhereContains(e => e.Title + " " + e.Subtitle, query.Search);
         source = source.WhereContains(e => e.Title, query.Title);
         source = source.WhereContains(e => e.Subtitle, query.Subtitle);
 

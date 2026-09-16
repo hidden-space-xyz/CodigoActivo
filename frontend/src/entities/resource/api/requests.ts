@@ -19,10 +19,16 @@ import type { LearningResource, LearningResourceSummary } from '../model/types'
 import { toLearningResource, toLearningResourceSummary } from './mapper'
 
 export async function getResourcesPageRequest(
+  search: string,
   page: number,
   pageSize: number,
 ): Promise<PagedListPage<LearningResourceSummary>> {
-  const result = await getApiResources({ sort: '-createdAt', page, pageSize })
+  const result = await getApiResources({
+    ...(search ? { search } : {}),
+    sort: '-createdAt',
+    page,
+    pageSize,
+  })
   const { items, total } = toPage(result)
   return { items: items.map(toLearningResourceSummary), total }
 }
