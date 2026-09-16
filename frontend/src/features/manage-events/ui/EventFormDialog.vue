@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppButton as Button, ColorTag, RichTextEditor } from '@/shared/ui'
+import { AppButton as Button, ColorTag } from '@/shared/ui'
+import RichTextEditor from '@/shared/ui/RichTextEditor.vue'
 
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import {
@@ -16,7 +17,8 @@ import type {
   TermsDocumentResponse,
   UpdateEventRequest,
 } from '@/shared/api/generated/models'
-import { EMPTY_DOC_JSON, getErrorMessage, parseDateOnly, toDateOnly } from '@/shared/lib'
+import { getErrorMessage, parseDateOnly, toDateOnly } from '@/shared/lib'
+import { EMPTY_DOC_JSON } from '@/shared/lib/richtext'
 import { DEFAULT_CATEGORY_COLOR } from '@/shared/config'
 
 const DATE_FORMAT = 'DD/MM/YYYY'

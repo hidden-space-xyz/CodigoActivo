@@ -6,16 +6,11 @@ import { useI18n } from 'vue-i18n'
 import { useEventDetail } from '@/entities/event'
 import { useSession } from '@/entities/session'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
-import { BaseButton, ColorTag, RichTextContent } from '@/shared/ui'
+import { BaseButton, ColorTag } from '@/shared/ui'
+import RichTextContent from '@/shared/ui/RichTextContent.vue'
 import { i18n } from '@/shared/i18n'
-import {
-  absoluteUrl,
-  fileContentUrl,
-  isRichTextEmpty,
-  richTextExcerpt,
-  useSeo,
-  type SeoData,
-} from '@/shared/lib'
+import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
+import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
 const props = defineProps<{ eventId: string }>()
 

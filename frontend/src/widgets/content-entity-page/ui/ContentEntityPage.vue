@@ -7,12 +7,13 @@ import {
   ColumnFilterDate,
   ColumnSearch,
   ListThumbnail,
-  RichTextEditor,
 } from '@/shared/ui'
+import RichTextEditor from '@/shared/ui/RichTextEditor.vue'
 
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import type { ContentController, ContentItem, ContentRequest } from '../model/use-content-entity'
-import { EMPTY_DOC_JSON, formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { EMPTY_DOC_JSON } from '@/shared/lib/richtext'
 
 const props = defineProps<{
   title: string

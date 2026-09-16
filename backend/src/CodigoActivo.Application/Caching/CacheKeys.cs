@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace CodigoActivo.Application.Caching;
@@ -8,7 +9,7 @@ namespace CodigoActivo.Application.Caching;
 public static class CacheKeys
 {
     /// <summary>
-    /// Builds a stable cache key from a prefix and serialized query.
+    /// Builds a stable, bounded cache key from a prefix and query fingerprint.
     /// </summary>
     /// <typeparam name="TQuery">Type of query handled by the component.</typeparam>
     /// <param name="prefix">The prefix value.</param>
@@ -16,6 +17,8 @@ public static class CacheKeys
     /// <returns>The generated text.</returns>
     public static string For<TQuery>(string prefix, TQuery query)
     {
-        return $"{prefix}:{JsonSerializer.Serialize(query)}";
+        var payload = JsonSerializer.SerializeToUtf8Bytes(query);
+        var fingerprint = Convert.ToHexStringLower(SHA256.HashData(payload));
+        return $"{prefix}:{fingerprint}";
     }
 }

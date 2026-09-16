@@ -7,6 +7,7 @@ using CodigoActivo.Application.Announcements.Queries;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.Auth.Queries;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Events;
@@ -52,9 +53,6 @@ namespace CodigoActivo.Composition;
 /// </summary>
 public static class DependencyInjection
 {
-    private const long LocalCacheSizeLimitBytes = 64 * 1024 * 1024;
-    private const long MaximumCachedPayloadBytes = 1024 * 1024;
-
     /// <summary>
     /// Adds a codigo activo to the current unit of work.
     /// </summary>
@@ -81,8 +79,10 @@ public static class DependencyInjection
 
     private static void AddCaching(IServiceCollection services)
     {
-        services.AddMemoryCache(options => options.SizeLimit = LocalCacheSizeLimitBytes);
-        services.AddHybridCache(options => options.MaximumPayloadBytes = MaximumCachedPayloadBytes);
+        services.AddMemoryCache(options => options.SizeLimit = CacheLimits.LocalCacheSizeBytes);
+        services.AddHybridCache(options =>
+            options.MaximumPayloadBytes = CacheLimits.MaximumPayloadBytes
+        );
     }
 
     private static void AddApplicationOptions(

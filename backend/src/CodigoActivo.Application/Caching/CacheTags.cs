@@ -52,6 +52,7 @@ public static class CacheTags
     public static readonly IReadOnlyList<string> DashboardSources =
     [
         Events,
+        EventCategoryTypes,
         Activities,
         Resources,
         Announcements,

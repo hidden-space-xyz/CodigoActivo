@@ -5,15 +5,10 @@ import { useRoute } from 'vue-router'
 
 import { useAnnouncementDetail } from '@/entities/announcement'
 import { i18n } from '@/shared/i18n'
-import { BaseButton, RichTextContent } from '@/shared/ui'
-import {
-  absoluteUrl,
-  fileContentUrl,
-  isRichTextEmpty,
-  richTextExcerpt,
-  useSeo,
-  type SeoData,
-} from '@/shared/lib'
+import { BaseButton } from '@/shared/ui'
+import RichTextContent from '@/shared/ui/RichTextContent.vue'
+import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
+import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
 const props = defineProps<{ announcementId: string }>()
 

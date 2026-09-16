@@ -312,10 +312,27 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        using var response = await client.GetAsync(TestUri.Rel("/api/auth/csrf"), Ct);
+        using var first = await client.GetAsync(TestUri.Rel("/api/auth/csrf"), Ct);
+        using var second = await client.GetAsync(TestUri.Rel("/api/auth/csrf"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Headers.CacheControl!.NoStore.Should().BeTrue();
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        first.Headers.CacheControl!.NoStore.Should().BeTrue();
+        second.StatusCode.Should().Be(HttpStatusCode.OK);
+        second.Headers.CacheControl!.NoStore.Should().BeTrue();
+        second.Headers.Age.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CurrentUserIsNeverServedFromOutputCache()
+    {
+        var member = await LoginAsMemberAsync();
+
+        using var first = await member.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        using var second = await member.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        second.StatusCode.Should().Be(HttpStatusCode.OK);
+        second.Headers.Age.Should().BeNull();
     }
 
     private static CreateEventRequest BuildCreateEvent(

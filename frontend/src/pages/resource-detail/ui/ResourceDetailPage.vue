@@ -3,14 +3,10 @@ import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useResourceDetail } from '@/entities/resource'
-import { BaseButton, RichTextContent } from '@/shared/ui'
-import {
-  fileContentUrl,
-  isRichTextEmpty,
-  richTextExcerpt,
-  useSeo,
-  type SeoData,
-} from '@/shared/lib'
+import { BaseButton } from '@/shared/ui'
+import RichTextContent from '@/shared/ui/RichTextContent.vue'
+import { fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
+import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
 const props = defineProps<{ resourceId: string }>()
 
