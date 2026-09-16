@@ -41,9 +41,17 @@ differences.
 
 Credential routes have layered resource controls:
 
-- nginx limits them to 120 requests per minute per client IP, with a burst of 100;
-- the API applies the same 120-per-minute production window;
-- memory-hard credential work has a process-wide concurrency limit of four and a FIFO queue of 128.
+- nginx rejects credential floods above 10 requests per second per client IP, with a burst of 100;
+- the API enforces 120 requests per minute per client IP in every environment;
+- memory-hard credential work has a process-wide concurrency limit of four and a short FIFO queue of 16.
+
+Normal API traffic uses different limits because an IP may represent many legitimate users. nginx provides
+an outer flood boundary of 200 requests per second per IP with a burst of 500. In every environment, after
+authentication, the API applies a sliding one-minute budget of 300 requests per user, or 3,000 requests per
+IP for anonymous traffic. At most 128 API requests execute concurrently and another 256 may wait briefly.
+Database-intensive report routes have an additional 30-request-per-minute budget per authenticated user,
+with 16 executing and 32 waiting process-wide. Multipart file writes allow 30 requests per minute per user,
+with 12 executing and 12 waiting process-wide. Rejected API requests include `Retry-After`.
 
 These are per-instance controls. Scaling API replicas multiplies their aggregate capacity.
 
@@ -154,9 +162,11 @@ filters used by user and attendee lists; the client never supplies arbitrary add
 separate message, dependent minors without their own address are skipped, and attachments remain transient.
 
 Administrator mail deliberately bypasses the automatic-message limiter and is delivered synchronously so the
-response can report delivered, failed and skipped counts. Protect administrator accounts accordingly. These
-requests remain subject to nginx's general API limit, application recipient/attachment limits and the
-five-minute nginx upstream timeout.
+response can report delivered, failed and skipped counts. Protect administrator accounts accordingly.
+Single-recipient messages allow 30 requests per minute per administrator, with ten active and ten waiting
+process-wide. Bulk messages allow five requests per minute per administrator and two active dispatches
+without a waiting queue. All requests remain subject to nginx's general API limit, application
+recipient/attachment limits and the five-minute nginx upstream timeout.
 
 ## Demo mode
 

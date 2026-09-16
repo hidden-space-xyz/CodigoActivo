@@ -3,8 +3,10 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Reports.Queries;
+using CodigoActivo.API.Security;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -13,6 +15,7 @@ namespace CodigoActivo.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/reports")]
+[EnableRateLimiting(SecurityPolicies.Reports)]
 public class ReportsController : ApiControllerBase
 {
     /// <summary>

@@ -67,6 +67,10 @@ services:
     networks: [frontend]
     read_only: true
     tmpfs: [/tmp]
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
 

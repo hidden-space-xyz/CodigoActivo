@@ -4,31 +4,37 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Enforces the configured limits for credential concurrency.
+/// Creates process-wide concurrency limits for endpoints that use a named rate-limit policy.
 /// </summary>
-public static class CredentialConcurrencyLimiter
+public static class EndpointConcurrencyLimiter
 {
     /// <summary>
-    /// Creates a credential concurrency limiter from the validated request.
+    /// Creates a concurrency limiter for the selected endpoint policy.
     /// </summary>
-    /// <param name="permitLimit">Number of permit allowed or reported.</param>
-    /// <param name="queueLimit">Number of queue allowed or reported.</param>
-    /// <returns>The resulting http context value.</returns>
-    public static PartitionedRateLimiter<HttpContext> Create(int permitLimit, int queueLimit)
+    /// <param name="policyName">Policy whose endpoints consume the shared capacity.</param>
+    /// <param name="permitLimit">Requests allowed to execute concurrently.</param>
+    /// <param name="queueLimit">Requests allowed to wait for execution capacity.</param>
+    /// <returns>The configured partitioned limiter.</returns>
+    public static PartitionedRateLimiter<HttpContext> Create(
+        string policyName,
+        int permitLimit,
+        int queueLimit
+    )
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
         ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);
         ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
 
         return PartitionedRateLimiter.Create<HttpContext, string>(context =>
         {
-            var policy = context
+            var endpointPolicy = context
                 .GetEndpoint()
                 ?.Metadata.GetMetadata<EnableRateLimitingAttribute>()
                 ?.PolicyName;
 
-            return string.Equals(policy, SecurityPolicies.Credentials, StringComparison.Ordinal)
+            return string.Equals(endpointPolicy, policyName, StringComparison.Ordinal)
                 ? RateLimitPartition.GetConcurrencyLimiter(
-                    SecurityPolicies.Credentials,
+                    policyName,
                     _ =>
                         new ConcurrencyLimiterOptions
                         {

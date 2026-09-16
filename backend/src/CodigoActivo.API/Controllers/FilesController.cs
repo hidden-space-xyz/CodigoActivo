@@ -1,6 +1,7 @@
 using System.Globalization;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Files;
@@ -9,6 +10,7 @@ using CodigoActivo.Application.Files.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Net.Http.Headers;
 
 namespace CodigoActivo.API.Controllers;
@@ -85,6 +87,7 @@ public class FilesController : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
+    [EnableRateLimiting(SecurityPolicies.FileUploads)]
     public async Task<ActionResult<FileResponse>> CreateAsync(
         IFormFile? file,
         [FromServices] CreateFileCommandHandler handler,
@@ -109,6 +112,7 @@ public class FilesController : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
+    [EnableRateLimiting(SecurityPolicies.FileUploads)]
     public async Task<ActionResult<FileResponse>> UpdateAsync(
         Guid fileId,
         IFormFile? file,

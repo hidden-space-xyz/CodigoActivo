@@ -9,6 +9,7 @@ RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:1-alpine AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/security-headers.conf docker/proxy-api.conf /etc/nginx/snippets/
 USER 101

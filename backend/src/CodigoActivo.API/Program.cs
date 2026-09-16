@@ -142,29 +142,114 @@ builder.Services.AddOutputCache(options =>
 });
 builder.Services.AddSingleton<ICacheInvalidator, HttpCacheInvalidator>();
 
+const int AuthenticatedRequestsPerMinute = 300;
+const int AnonymousRequestsPerMinutePerIp = 3_000;
+const int CredentialRequestsPerMinutePerIp = 120;
+const int ReportRequestsPerMinutePerUser = 30;
+const int SingleRecipientEmailRequestsPerMinutePerUser = 30;
+const int BulkEmailRequestsPerMinutePerUser = 5;
+const int FileUploadRequestsPerMinutePerUser = 30;
+const int MaxConcurrentApiRequests = 128;
+const int MaxQueuedApiRequests = 256;
 const int MaxConcurrentCredentialRequests = 4;
-const int MaxQueuedCredentialRequests = 128;
+const int MaxQueuedCredentialRequests = 16;
+const int MaxConcurrentReportRequests = 16;
+const int MaxQueuedReportRequests = 32;
+const int MaxConcurrentSingleRecipientEmailRequests = 10;
+const int MaxQueuedSingleRecipientEmailRequests = 10;
+const int MaxConcurrentBulkEmailRequests = 2;
+const int MaxQueuedBulkEmailRequests = 0;
+const int MaxConcurrentFileUploadRequests = 12;
+const int MaxQueuedFileUploadRequests = 12;
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.GlobalLimiter = CredentialConcurrencyLimiter.Create(
-        MaxConcurrentCredentialRequests,
-        MaxQueuedCredentialRequests
+    options.OnRejected = (context, _) =>
+    {
+        if (
+            context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            && retryAfter > TimeSpan.Zero
+        )
+        {
+            context.HttpContext.Response.Headers.RetryAfter = Math
+                .Ceiling(retryAfter.TotalSeconds)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            context.HttpContext.Response.Headers.RetryAfter = "1";
+        }
+
+        return ValueTask.CompletedTask;
+    };
+    options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+        ClientRequestRateLimiter.CreateGlobal(
+            AuthenticatedRequestsPerMinute,
+            AnonymousRequestsPerMinutePerIp
+        ),
+        ClientRequestRateLimiter.CreateConcurrency(
+            MaxConcurrentApiRequests,
+            MaxQueuedApiRequests
+        ),
+        EndpointConcurrencyLimiter.Create(
+            SecurityPolicies.Credentials,
+            MaxConcurrentCredentialRequests,
+            MaxQueuedCredentialRequests
+        ),
+        EndpointConcurrencyLimiter.Create(
+            SecurityPolicies.Reports,
+            MaxConcurrentReportRequests,
+            MaxQueuedReportRequests
+        ),
+        EndpointConcurrencyLimiter.Create(
+            SecurityPolicies.SingleRecipientEmail,
+            MaxConcurrentSingleRecipientEmailRequests,
+            MaxQueuedSingleRecipientEmailRequests
+        ),
+        EndpointConcurrencyLimiter.Create(
+            SecurityPolicies.BulkEmail,
+            MaxConcurrentBulkEmailRequests,
+            MaxQueuedBulkEmailRequests
+        ),
+        EndpointConcurrencyLimiter.Create(
+            SecurityPolicies.FileUploads,
+            MaxConcurrentFileUploadRequests,
+            MaxQueuedFileUploadRequests
+        )
     );
     options.AddPolicy(
         SecurityPolicies.Credentials,
         context =>
-            RateLimitPartition.GetFixedWindowLimiter(
+            RateLimitPartition.GetSlidingWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ =>
-                    new FixedWindowRateLimiterOptions
+                    new SlidingWindowRateLimiterOptions
                     {
-                        PermitLimit = builder.Environment.IsDevelopment() ? 10_000 : 120,
+                        PermitLimit = CredentialRequestsPerMinutePerIp,
                         Window = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 6,
                         QueueLimit = 0,
                         AutoReplenishment = true,
                     }
             )
+    );
+    options.AddPolicy(
+        SecurityPolicies.Reports,
+        ClientRequestRateLimiter.CreateAuthenticatedPolicy(ReportRequestsPerMinutePerUser)
+    );
+    options.AddPolicy(
+        SecurityPolicies.SingleRecipientEmail,
+        ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+            SingleRecipientEmailRequestsPerMinutePerUser
+        )
+    );
+    options.AddPolicy(
+        SecurityPolicies.BulkEmail,
+        ClientRequestRateLimiter.CreateAuthenticatedPolicy(BulkEmailRequestsPerMinutePerUser)
+    );
+    options.AddPolicy(
+        SecurityPolicies.FileUploads,
+        ClientRequestRateLimiter.CreateAuthenticatedPolicy(FileUploadRequestsPerMinutePerUser)
     );
 });
 
@@ -202,9 +287,8 @@ app.UseMiddleware<CacheControlMiddleware>();
 
 app.UseRouting();
 
-app.UseRateLimiter();
-
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.UseMiddleware<CsrfValidationMiddleware>();
