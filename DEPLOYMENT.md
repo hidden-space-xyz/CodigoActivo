@@ -38,6 +38,25 @@ Both application containers run as non-root, drop Linux capabilities, use `no-ne
 read-only root filesystems with explicit writable mounts. Health checks target `/api/auth/csrf` for the API
 and `/healthz` for nginx.
 
+### Capacity and rate limits
+
+nginx is configured with 8,192 connections per worker, a 4,000-active-client-connection server boundary and
+a 2,000-active-connection allowance per IP. Its per-IP request limits are flood controls sized to tolerate
+mobile carrier NAT and VPN concentration; application quotas are enforced by ASP.NET Core per authenticated
+user wherever an identity is available. The `web` container raises its open-file limit to 65,536 so the
+configured worker capacity is effective.
+
+The shipped budgets are a baseline for one 4-core, 8-GiB host running the Compose stack. They target 1,000
+concurrently active users with ordinary, staggered SPA interaction, not 1,000 simultaneous password hashes
+or long-running requests. Credential concurrency stays at four because each Argon2id operation allocates
+64 MiB; excess work queues only 16 requests before returning `429`. Across the API, 128 requests may execute
+and 256 wait. Reports allow 16 concurrent executions, while file writes allow 12 so ten administrators can
+upload simultaneously without saturating the process. Synchronous administrator email is limited to two
+active bulk dispatches because one request may contact up to 500 recipients; single-recipient messages allow
+ten active dispatches. Validate the target on production-equivalent storage, PostgreSQL and SMTP
+infrastructure with a workload that includes login, cached public reads, authenticated reads, writes, uploads
+and reports. Rate limits protect capacity but do not establish it.
+
 ## First production start
 
 ```bash

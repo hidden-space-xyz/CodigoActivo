@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Validation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -31,6 +33,7 @@ public class EmailsController : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
+    [EnableRateLimiting(SecurityPolicies.SingleRecipientEmail)]
     public async Task<ActionResult<SendEmailResultResponse>> SendToUserAsync(
         Guid userId,
         [FromForm]
@@ -70,6 +73,7 @@ public class EmailsController : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
+    [EnableRateLimiting(SecurityPolicies.BulkEmail)]
     public async Task<ActionResult<SendEmailResultResponse>> SendToUsersAsync(
         [FromQuery] UserListQuery query,
         [FromForm]
@@ -110,6 +114,7 @@ public class EmailsController : ApiControllerBase
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
+    [EnableRateLimiting(SecurityPolicies.BulkEmail)]
     public async Task<ActionResult<SendEmailResultResponse>> SendToEventAttendeesAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,

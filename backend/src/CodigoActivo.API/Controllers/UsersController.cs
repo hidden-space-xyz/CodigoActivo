@@ -1,5 +1,6 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Users.Commands;
@@ -7,6 +8,7 @@ using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Controllers;
 
@@ -175,6 +177,7 @@ public class UsersController : ApiControllerBase
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPatch("{userId:guid}/password")]
     [AllowOnlySelf]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<IActionResult> ChangePasswordAsync(
         Guid userId,
         [FromBody] ChangePasswordRequest request,
