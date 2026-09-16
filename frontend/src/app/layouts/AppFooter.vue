@@ -30,12 +30,12 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
 
         <div class="footer__group">
           <div class="footer__heading">{{ $t('layout.footerFollow') }}</div>
-          <div class="footer__social">
+          <div class="footer__channels">
             <a
               :href="CONTACT.social.instagram"
               target="_blank"
               rel="noopener"
-              class="footer__social-link"
+              class="footer__channel-link"
             >
               <AppIcon name="instagram" />
               {{ $t('layout.socialInstagram') }}
@@ -44,7 +44,7 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
               :href="CONTACT.social.facebook"
               target="_blank"
               rel="noopener"
-              class="footer__social-link"
+              class="footer__channel-link"
             >
               <AppIcon name="facebook" />
               {{ $t('layout.socialFacebook') }}
@@ -53,7 +53,7 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
               :href="CONTACT.social.linkedin"
               target="_blank"
               rel="noopener"
-              class="footer__social-link"
+              class="footer__channel-link"
             >
               <AppIcon name="linkedin" />
               {{ $t('layout.socialLinkedIn') }}
@@ -62,7 +62,7 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
               :href="CONTACT.social.youtube"
               target="_blank"
               rel="noopener"
-              class="footer__social-link"
+              class="footer__channel-link"
             >
               <AppIcon name="youtube" />
               {{ $t('layout.socialYouTube') }}
@@ -152,7 +152,7 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
 }
 
 .footer__links,
-.footer__social {
+.footer__channels {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -162,7 +162,7 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
 }
 
 .footer__link,
-.footer__social-link {
+.footer__channel-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -175,12 +175,12 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
 }
 
 .footer__link:hover,
-.footer__social-link:hover {
+.footer__channel-link:hover {
   color: var(--ca-orange-ink);
 }
 
 .footer__link--icon .app-icon,
-.footer__social-link .app-icon {
+.footer__channel-link .app-icon {
   font-size: 14px;
   color: var(--ca-orange-ink);
   transition: color 0.15s ease;
@@ -219,11 +219,11 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
   }
 
   .footer__links,
-  .footer__social {
+  .footer__channels {
     gap: 6px;
   }
 
-  .footer__social-link {
+  .footer__channel-link {
     min-height: var(--ca-tap);
   }
 }
