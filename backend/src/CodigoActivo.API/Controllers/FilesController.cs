@@ -13,10 +13,20 @@ using Microsoft.Net.Http.Headers;
 
 namespace CodigoActivo.API.Controllers;
 
+/// <summary>
+/// Exposes HTTP endpoints for querying and managing files.
+/// </summary>
 [ApiController]
 [Route("api/files")]
 public class FilesController : ApiControllerBase
 {
+    /// <summary>
+    /// Gets the requested file.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a file, or an error response.</returns>
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
@@ -29,6 +39,13 @@ public class FilesController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new GetFileByIdQuery(fileId), ct));
     }
 
+    /// <summary>
+    /// Gets the requested content.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpGet("{fileId:guid}/content")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
@@ -57,6 +74,13 @@ public class FilesController : ApiControllerBase
         return File(content.Content, content.ContentType, lastModified, etag);
     }
 
+    /// <summary>
+    /// Creates a file from the validated request.
+    /// </summary>
+    /// <param name="file">The file value.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a file, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -73,6 +97,14 @@ public class FilesController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Updates the selected file with the validated request.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="file">The file value.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a file, or an error response.</returns>
     [HttpPut("{fileId:guid}")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -89,6 +121,13 @@ public class FilesController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Deletes the selected file.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpDelete("{fileId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(

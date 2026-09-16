@@ -4,9 +4,16 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for event terms acceptance.
+/// </summary>
 public sealed class EventTermsAcceptanceConfiguration
     : IEntityTypeConfiguration<EventTermsAcceptance>
 {
+    /// <summary>
+    /// Configures the database mapping for event terms acceptance.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EventTermsAcceptance> builder)
     {
         builder.HasKey(x => new { x.EventId, x.UserId });

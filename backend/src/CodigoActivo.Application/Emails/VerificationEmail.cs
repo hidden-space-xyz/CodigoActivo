@@ -3,8 +3,20 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
 
+/// <summary>
+/// Builds the email content for verification.
+/// </summary>
 public static class VerificationEmail
 {
+    /// <summary>
+    /// Creates a verification email from the validated request.
+    /// </summary>
+    /// <param name="toAddress">The to address value.</param>
+    /// <param name="toName">The to name value.</param>
+    /// <param name="verificationUrl">The verification url value.</param>
+    /// <param name="siteUrl">The site url value.</param>
+    /// <param name="lifetime">The lifetime value.</param>
+    /// <returns>The resulting email message value.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

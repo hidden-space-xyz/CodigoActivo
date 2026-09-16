@@ -8,14 +8,30 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Resources.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve resource by identifier.
+/// </summary>
+/// <param name="ResourceId">Identifier of the resource.</param>
 public sealed record GetResourceByIdQuery(Guid ResourceId) : IQuery<Result<ResourceResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve resource by identifier.
+/// </summary>
+/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetResourceByIdQueryHandler(
     IResourceRepository resources,
     IQueryExecutor executor,
     HybridCache cache
 ) : IQueryHandler<GetResourceByIdQuery, Result<ResourceResponse>>
 {
+    /// <summary>
+    /// Handles the request to retrieve resource by identifier.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a resource on success, or an application error on failure.</returns>
     public Task<Result<ResourceResponse>> HandleAsync(
         GetResourceByIdQuery query,
         CancellationToken ct = default

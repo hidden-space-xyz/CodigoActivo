@@ -1,6 +1,10 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)../Directory.Build.props" />
 
+  <PropertyGroup>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

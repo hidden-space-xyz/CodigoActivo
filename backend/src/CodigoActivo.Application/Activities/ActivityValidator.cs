@@ -5,6 +5,15 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities;
 
+/// <summary>
+/// Validates activity input before it is processed.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="files">Repository used to persist and retrieve files.</param>
+/// <param name="modalityTypes">Repository used to persist and retrieve modality types.</param>
+/// <param name="roleTypes">Repository used to persist and retrieve role types.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ActivityValidator(
     IEventRepository events,
     IFileRepository files,

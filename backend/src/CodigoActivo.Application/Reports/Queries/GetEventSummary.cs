@@ -6,8 +6,19 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve event summary.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventSummaryQuery(Guid EventId) : IQuery<Result<EventSummaryResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve event summary.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="roleTypes">Repository used to persist and retrieve role types.</param>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class GetEventSummaryQueryHandler(
     IEventRepository events,
     IActivityRoleTypeRepository roleTypes,
@@ -15,6 +26,12 @@ public sealed class GetEventSummaryQueryHandler(
     IQueryExecutor executor
 ) : IQueryHandler<GetEventSummaryQuery, Result<EventSummaryResponse>>
 {
+    /// <summary>
+    /// Handles the request to retrieve event summary.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an event summary on success, or an application error on failure.</returns>
     public async Task<Result<EventSummaryResponse>> HandleAsync(
         GetEventSummaryQuery query,
         CancellationToken ct = default

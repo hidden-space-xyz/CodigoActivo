@@ -9,6 +9,13 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
+/// <summary>
+/// Creates the initial initial administrator records when they are missing.
+/// </summary>
+/// <param name="context">Database context used for persistence.</param>
+/// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class InitialAdministratorSeeder(
     CodigoActivoDbContext context,
     IPasswordHasher passwordHasher,
@@ -16,6 +23,13 @@ public sealed class InitialAdministratorSeeder(
     ILogger<InitialAdministratorSeeder> logger
 )
 {
+    /// <summary>
+    /// Creates the required initial administrator records when they do not exist.
+    /// </summary>
+    /// <param name="configuredEmail">The configured email value.</param>
+    /// <param name="configuredPassword">The configured password value.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SeedAsync(
         string? configuredEmail,
         string? configuredPassword,

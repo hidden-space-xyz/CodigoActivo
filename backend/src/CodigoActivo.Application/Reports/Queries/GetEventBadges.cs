@@ -7,14 +7,30 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve event badges.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventBadgesQuery(Guid EventId) : IQuery<Result<EventBadgesResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve event badges.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class GetEventBadgesQueryHandler(
     IEventRepository events,
     IActivityRepository activities,
     IQueryExecutor executor
 ) : IQueryHandler<GetEventBadgesQuery, Result<EventBadgesResponse>>
 {
+    /// <summary>
+    /// Handles the request to retrieve event badges.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an event badges on success, or an application error on failure.</returns>
     public async Task<Result<EventBadgesResponse>> HandleAsync(
         GetEventBadgesQuery query,
         CancellationToken ct = default

@@ -3,6 +3,9 @@ using System.Reflection;
 
 namespace CodigoActivo.Application.Querying;
 
+/// <summary>
+/// Normalizes search terms and applies database text matching.
+/// </summary>
 public static class TextSearch
 {
     private static readonly (string Accented, string Plain)[] Folds =
@@ -29,6 +32,11 @@ public static class TextSearch
         [typeof(string)]
     )!;
 
+    /// <summary>
+    /// Normalizes a search term for case-insensitive matching.
+    /// </summary>
+    /// <param name="value">Value to validate or convert.</param>
+    /// <returns>The generated text.</returns>
     public static string Normalize(string value)
     {
         var normalized = value.Trim().ToLowerInvariant();
@@ -40,6 +48,13 @@ public static class TextSearch
         return normalized;
     }
 
+    /// <summary>
+    /// Determines whether the normalized source contains the search term.
+    /// </summary>
+    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
+    /// <param name="selector">The selector value.</param>
+    /// <param name="term">The term value.</param>
+    /// <returns>The resulting t, bool value.</returns>
     public static Expression<Func<T, bool>> Contains<T>(
         Expression<Func<T, string?>> selector,
         string term
@@ -67,6 +82,14 @@ public static class TextSearch
         return Expression.Lambda<Func<T, bool>>(body, selector.Parameters);
     }
 
+    /// <summary>
+    /// Filters the source to rows where contains.
+    /// </summary>
+    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="selector">The selector value.</param>
+    /// <param name="term">The term value.</param>
+    /// <returns>The resulting t value.</returns>
     public static IQueryable<T> WhereContains<T>(
         this IQueryable<T> source,
         Expression<Func<T, string?>> selector,

@@ -3,8 +3,15 @@ using System.Net.Mail;
 
 namespace CodigoActivo.API.Security;
 
+/// <summary>
+/// Validates production configuration input before it is processed.
+/// </summary>
 public static class ProductionConfigurationValidator
 {
+    /// <summary>
+    /// Validates the production configuration state and rejects unsafe configuration.
+    /// </summary>
+    /// <param name="config">Application configuration to validate or consume.</param>
     public static void Validate(IConfiguration config)
     {
         var errors = new List<string>();

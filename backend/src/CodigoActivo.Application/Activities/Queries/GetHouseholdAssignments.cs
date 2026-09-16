@@ -5,14 +5,30 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve household assignments.
+/// </summary>
+/// <param name="ActingUserId">Identifier of the acting user.</param>
+/// <param name="EventId">Identifier of the event.</param>
 public sealed record GetHouseholdAssignmentsQuery(Guid ActingUserId, Guid EventId)
     : IQuery<IReadOnlyList<HouseholdMemberAssignmentResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve household assignments.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class GetHouseholdAssignmentsQueryHandler(
     IActivityRepository activities,
     IQueryExecutor executor
 ) : IQueryHandler<GetHouseholdAssignmentsQuery, IReadOnlyList<HouseholdMemberAssignmentResponse>>
 {
+    /// <summary>
+    /// Handles the request to retrieve household assignments.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching household member assignment items.</returns>
     public async Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> HandleAsync(
         GetHouseholdAssignmentsQuery query,
         CancellationToken ct = default

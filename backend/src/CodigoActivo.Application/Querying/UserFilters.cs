@@ -2,8 +2,17 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Querying;
 
+/// <summary>
+/// Applies reusable user visibility and attendance filters to database queries.
+/// </summary>
 public static class UserFilters
 {
+    /// <summary>
+    /// Applies the user filters rules to the supplied target.
+    /// </summary>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <returns>The resulting user value.</returns>
     public static IQueryable<User> Apply(IQueryable<User> source, UserListQuery query)
     {
         if (query.Id is { } id)
@@ -46,6 +55,13 @@ public static class UserFilters
         return source.WhereContains(u => u.Phone, query.Phone);
     }
 
+    /// <summary>
+    /// Filters users to those attending the selected event.
+    /// </summary>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <returns>The resulting user value.</returns>
     public static IQueryable<User> ApplyEventAttendees(
         IQueryable<User> source,
         Guid eventId,

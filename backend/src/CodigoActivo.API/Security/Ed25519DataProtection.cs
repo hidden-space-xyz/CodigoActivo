@@ -15,6 +15,9 @@ using Org.BouncyCastle.X509;
 
 namespace CodigoActivo.API.Security;
 
+/// <summary>
+/// Loads and maintains the persisted ed25519 certificate material.
+/// </summary>
 public sealed class Ed25519CertificateStore
 {
     private const int PasswordIterations = 600_000;
@@ -34,8 +37,17 @@ public sealed class Ed25519CertificateStore
         this.privateKey = privateKey;
     }
 
+    /// <summary>
+    /// Gets the certificate used to encrypt data-protection keys.
+    /// </summary>
     public X509Certificate Certificate { get; }
 
+    /// <summary>
+    /// Loads the signing certificate or creates and persists a new one.
+    /// </summary>
+    /// <param name="directory">Directory where the certificate material is stored.</param>
+    /// <param name="password">Plain-text password to hash or verify.</param>
+    /// <returns>The certificate store containing the certificate and private key.</returns>
     public static Ed25519CertificateStore LoadOrCreate(
         DirectoryInfo directory,
         string password
@@ -346,6 +358,10 @@ public sealed class Ed25519CertificateStore
     );
 }
 
+/// <summary>
+/// Encrypts ed25519 xml payloads before they are persisted.
+/// </summary>
+/// <param name="certificateStore">Store that provides the certificate used for data protection.</param>
 public sealed class Ed25519XmlEncryptor(Ed25519CertificateStore certificateStore)
     : IXmlEncryptor
 {
@@ -362,6 +378,11 @@ public sealed class Ed25519XmlEncryptor(Ed25519CertificateStore certificateStore
         "CodigoActivo Ed25519 certificate key wrapping v1"
     );
 
+    /// <summary>
+    /// Encrypts and signs the XML element for data-protection storage.
+    /// </summary>
+    /// <param name="plaintextElement">Unencrypted XML element to protect.</param>
+    /// <returns>The resulting encrypted xml info value.</returns>
     public EncryptedXmlInfo Encrypt(XElement plaintextElement)
     {
         ArgumentNullException.ThrowIfNull(plaintextElement);
@@ -522,16 +543,28 @@ public sealed class Ed25519XmlEncryptor(Ed25519CertificateStore certificateStore
     }
 }
 
+/// <summary>
+/// Decrypts persisted ed25519 xml payloads.
+/// </summary>
 public sealed class Ed25519XmlDecryptor : IXmlDecryptor
 {
     private readonly Ed25519CertificateStore certificateStore;
 
+    /// <summary>
+    /// Initializes an ed25519 xml decryptor with its required dependencies.
+    /// </summary>
+    /// <param name="services">Service collection or provider used to resolve dependencies.</param>
     public Ed25519XmlDecryptor(IServiceProvider services)
     {
         ArgumentNullException.ThrowIfNull(services);
         certificateStore = services.GetRequiredService<Ed25519CertificateStore>();
     }
 
+    /// <summary>
+    /// Verifies and decrypts the protected XML element.
+    /// </summary>
+    /// <param name="encryptedElement">Protected XML element to verify and decrypt.</param>
+    /// <returns>The resulting x element value.</returns>
     public XElement Decrypt(XElement encryptedElement)
     {
         return Ed25519XmlEncryptor.Decrypt(encryptedElement, certificateStore);

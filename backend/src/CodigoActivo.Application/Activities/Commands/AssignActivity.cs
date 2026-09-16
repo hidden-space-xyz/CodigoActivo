@@ -9,6 +9,14 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
+/// <summary>
+/// Carries the input required to assign activity.
+/// </summary>
+/// <param name="ActivityId">Identifier of the activity.</param>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="ActingUserId">Identifier of the acting user.</param>
+/// <param name="Request">Validated client request data.</param>
+/// <param name="IsAdmin">Whether admin.</param>
 public sealed record AssignActivityCommand(
     Guid ActivityId,
     Guid UserId,
@@ -17,6 +25,18 @@ public sealed record AssignActivityCommand(
     bool IsAdmin
 ) : ICommand<Result<AssignmentResponse>>;
 
+/// <summary>
+/// Executes the command to assign activity.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="signupGate">The signup gate value.</param>
+/// <param name="termsGate">The terms gate value.</param>
+/// <param name="statusTypes">Handler used to list assignment status types.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class AssignActivityCommandHandler(
     IActivityRepository activities,
     IUserRepository users,
@@ -29,6 +49,12 @@ public sealed class AssignActivityCommandHandler(
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<AssignActivityCommand, Result<AssignmentResponse>>
 {
+    /// <summary>
+    /// Handles the request to assign activity.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an assignment on success, or an application error on failure.</returns>
     public async Task<Result<AssignmentResponse>> HandleAsync(
         AssignActivityCommand command,
         CancellationToken ct = default

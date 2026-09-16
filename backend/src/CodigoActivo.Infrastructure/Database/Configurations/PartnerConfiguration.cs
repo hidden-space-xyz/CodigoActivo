@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for partner.
+/// </summary>
 public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
 {
+    /// <summary>
+    /// Configures the database mapping for partner.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Partner> builder)
     {
         builder.HasKey(p => p.Id);

@@ -9,11 +9,23 @@ using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Events.Commands;
 
+/// <summary>
+/// Carries the input required to update the terms document.
+/// </summary>
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record UpdateTermsDocumentCommand(
     Guid TermsDocumentId,
     UpdateTermsDocumentRequest Request
 ) : ICommand<Result<TermsDocumentResponse>>;
 
+/// <summary>
+/// Executes the command to update the terms document.
+/// </summary>
+/// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
+/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,
     IOrphanFileCleaner orphanCleaner,
@@ -21,6 +33,12 @@ public sealed class UpdateTermsDocumentCommandHandler(
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<UpdateTermsDocumentCommand, Result<TermsDocumentResponse>>
 {
+    /// <summary>
+    /// Handles the request to update the terms document.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a terms document on success, or an application error on failure.</returns>
     public async Task<Result<TermsDocumentResponse>> HandleAsync(
         UpdateTermsDocumentCommand command,
         CancellationToken ct = default

@@ -9,9 +9,20 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Announcements.Queries;
 
+/// <summary>
+/// Carries the criteria used to list announcements.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListAnnouncementsQuery(AnnouncementListQuery Filters)
     : IQuery<PagedResult<AnnouncementListItemResponse>>;
 
+/// <summary>
+/// Executes the query to list announcements.
+/// </summary>
+/// <param name="announcements">Repository used to persist and retrieve announcements.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListAnnouncementsQueryHandler(
     IAnnouncementRepository announcements,
     IQueryExecutor executor,
@@ -28,6 +39,12 @@ public sealed class ListAnnouncementsQueryHandler(
             .Default("-createdAt")
             .Tie(a => a.Id);
 
+    /// <summary>
+    /// Handles the request to list announcements.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged announcement list item.</returns>
     public async Task<PagedResult<AnnouncementListItemResponse>> HandleAsync(
         ListAnnouncementsQuery query,
         CancellationToken ct = default

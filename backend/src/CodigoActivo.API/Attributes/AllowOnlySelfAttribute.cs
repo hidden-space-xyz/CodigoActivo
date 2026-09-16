@@ -5,11 +5,19 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CodigoActivo.API.Attributes;
 
+/// <summary>
+/// Applies allow only self validation or authorization to the annotated target.
+/// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilter
 {
     private const string RouteKey = "userId";
 
+    /// <summary>
+    /// Authorizes the current request against the attribute requirements.
+    /// </summary>
+    /// <param name="context">Database context used for persistence.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         var services = context.HttpContext.RequestServices;

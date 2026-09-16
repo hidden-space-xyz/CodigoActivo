@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for activity role capacity.
+/// </summary>
 public class ActivityRoleCapacityConfiguration : IEntityTypeConfiguration<ActivityRoleCapacity>
 {
+    /// <summary>
+    /// Configures the database mapping for activity role capacity.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<ActivityRoleCapacity> builder)
     {
         builder.HasKey(x => new { x.ActivityId, x.ActivityRoleTypeId });

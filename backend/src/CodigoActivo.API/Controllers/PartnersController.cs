@@ -12,10 +12,20 @@ using Microsoft.AspNetCore.OutputCaching;
 
 namespace CodigoActivo.API.Controllers;
 
+/// <summary>
+/// Exposes HTTP endpoints for querying and managing partners.
+/// </summary>
 [ApiController]
 [Route("api/partners")]
 public class PartnersController : ApiControllerBase
 {
+    /// <summary>
+    /// Lists the partners that match the supplied filters.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a paged partner, or an error response.</returns>
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Partners)]
@@ -28,6 +38,13 @@ public class PartnersController : ApiControllerBase
         return Ok(await handler.HandleAsync(new ListPartnersQuery(query), ct));
     }
 
+    /// <summary>
+    /// Gets the requested partner.
+    /// </summary>
+    /// <param name="partnerId">Identifier of the partner.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a partner, or an error response.</returns>
     [HttpGet("{partnerId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Partners)]
@@ -40,6 +57,13 @@ public class PartnersController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new GetPartnerByIdQuery(partnerId), ct));
     }
 
+    /// <summary>
+    /// Creates a partner from the validated request.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a partner, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PartnerResponse>> CreateAsync(
@@ -54,6 +78,14 @@ public class PartnersController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Updates the selected partner with the validated request.
+    /// </summary>
+    /// <param name="partnerId">Identifier of the partner.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a partner, or an error response.</returns>
     [HttpPut("{partnerId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PartnerResponse>> UpdateAsync(
@@ -68,6 +100,13 @@ public class PartnersController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Deletes the selected partner.
+    /// </summary>
+    /// <param name="partnerId">Identifier of the partner.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpDelete("{partnerId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(

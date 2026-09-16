@@ -9,8 +9,20 @@ using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
+/// <summary>
+/// Carries the input required to login.
+/// </summary>
+/// <param name="Request">Validated client request data.</param>
 public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<UserResponse>>;
 
+/// <summary>
+/// Executes the command to login.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="credentialTiming">The credential timing value.</param>
+/// <param name="verification">The verification value.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -19,6 +31,12 @@ public sealed class LoginCommandHandler(
     AccountVerificationOptions verification
 ) : ICommandHandler<LoginCommand, Result<UserResponse>>
 {
+    /// <summary>
+    /// Handles the request to login.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
     public async Task<Result<UserResponse>> HandleAsync(
         LoginCommand command,
         CancellationToken ct = default

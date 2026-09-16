@@ -47,11 +47,20 @@ using Npgsql;
 
 namespace CodigoActivo.Composition;
 
+/// <summary>
+/// Registers application services and infrastructure dependencies.
+/// </summary>
 public static class DependencyInjection
 {
     private const long LocalCacheSizeLimitBytes = 64 * 1024 * 1024;
     private const long MaximumCachedPayloadBytes = 1024 * 1024;
 
+    /// <summary>
+    /// Adds a codigo activo to the current unit of work.
+    /// </summary>
+    /// <param name="services">Service collection or provider used to resolve dependencies.</param>
+    /// <param name="configuration">Application configuration to validate or consume.</param>
+    /// <returns>The resulting service collection value.</returns>
     public static IServiceCollection AddCodigoActivo(
         this IServiceCollection services,
         IConfiguration configuration

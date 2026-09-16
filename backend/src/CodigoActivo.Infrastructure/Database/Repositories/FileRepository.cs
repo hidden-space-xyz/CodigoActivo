@@ -7,6 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
+/// <summary>
+/// Persists and retrieves file data from the database.
+/// </summary>
+/// <param name="context">Database context used for persistence.</param>
 public class FileRepository(CodigoActivoDbContext context)
     : Repository<FileEntity>(context),
         IFileRepository
@@ -14,6 +18,12 @@ public class FileRepository(CodigoActivoDbContext context)
     private const string ContentUrlSqlPattern =
         "/api/files/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/content";
 
+    /// <summary>
+    /// Determines whether in use.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public async Task<bool> IsInUseAsync(Guid fileId, CancellationToken ct = default)
     {
         var marker = RichTextFileReferences.ContentUrlMarker(fileId);
@@ -43,6 +53,12 @@ public class FileRepository(CodigoActivoDbContext context)
         return await Context.Database.SqlQuery<bool>(sql).SingleAsync(ct);
     }
 
+    /// <summary>
+    /// Gets the requested in use.
+    /// </summary>
+    /// <param name="fileIds">Identifiers of the file items.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching guid items.</returns>
     public async Task<IReadOnlyList<Guid>> GetInUseAsync(
         IReadOnlyCollection<Guid> fileIds,
         CancellationToken ct = default

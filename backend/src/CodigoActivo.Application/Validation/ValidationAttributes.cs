@@ -5,18 +5,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CodigoActivo.Application.Validation;
 
+/// <summary>
+/// Applies not blank validation or authorization to the annotated target.
+/// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotBlankAttribute : ValidationAttribute
 {
+/// <inheritdoc />
     public override bool IsValid(object? value)
     {
         return value is not string text || !string.IsNullOrWhiteSpace(text);
     }
 }
 
+/// <summary>
+/// Applies json string validation or authorization to the annotated target.
+/// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class JsonStringAttribute : ValidationAttribute
 {
+/// <inheritdoc />
     public override bool IsValid(object? value)
     {
         if (value is not string text)
@@ -36,9 +44,13 @@ public sealed class JsonStringAttribute : ValidationAttribute
     }
 }
 
+/// <summary>
+/// Applies http url validation or authorization to the annotated target.
+/// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class HttpUrlAttribute : ValidationAttribute
 {
+/// <inheritdoc />
     public override bool IsValid(object? value)
     {
         if (value is null)
@@ -54,9 +66,13 @@ public sealed class HttpUrlAttribute : ValidationAttribute
     }
 }
 
+/// <summary>
+/// Applies not default or future date validation or authorization to the annotated target.
+/// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 {
+/// <inheritdoc />
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is not DateOnly date)

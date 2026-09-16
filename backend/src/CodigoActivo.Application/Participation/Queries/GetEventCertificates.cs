@@ -8,9 +8,19 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve event certificates.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
 public sealed record GetEventCertificatesQuery(Guid UserId)
     : IQuery<IReadOnlyList<EventCertificateResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve event certificates.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetEventCertificatesQueryHandler(
     IActivityRepository activities,
     IQueryExecutor executor,
@@ -21,6 +31,12 @@ public sealed class GetEventCertificatesQueryHandler(
     private const ulong FnvOffsetBasis = 14695981039346656037UL;
     private const ulong FnvPrime = 1099511628211UL;
 
+    /// <summary>
+    /// Handles the request to retrieve event certificates.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching event certificate items.</returns>
     public async Task<IReadOnlyList<EventCertificateResponse>> HandleAsync(
         GetEventCertificatesQuery query,
         CancellationToken ct = default
@@ -101,13 +117,37 @@ public sealed class GetEventCertificatesQueryHandler(
 
     private sealed record CertificateRow
     {
+        /// <summary>
+        /// Gets or sets the identifier of the associated event.
+        /// </summary>
         public Guid EventId { get; init; }
+        /// <summary>
+        /// Gets or sets the event title value.
+        /// </summary>
         public string EventTitle { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the event subtitle value.
+        /// </summary>
         public string EventSubtitle { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the date and time when the event starts.
+        /// </summary>
         public DateOnly EventStartsAt { get; init; }
+        /// <summary>
+        /// Gets or sets the date and time when the event ends.
+        /// </summary>
         public DateOnly EventEndsAt { get; init; }
+        /// <summary>
+        /// Gets or sets the identifier of the associated user.
+        /// </summary>
         public Guid UserId { get; init; }
+        /// <summary>
+        /// Gets or sets the first name value.
+        /// </summary>
         public string FirstName { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the last name value.
+        /// </summary>
         public string LastName { get; init; } = string.Empty;
     }
 }

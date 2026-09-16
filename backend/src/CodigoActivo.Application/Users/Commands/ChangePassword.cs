@@ -6,9 +6,21 @@ using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Users.Commands;
 
+/// <summary>
+/// Carries the input required to change password.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record ChangePasswordCommand(Guid UserId, ChangePasswordRequest Request)
     : ICommand<Result>;
 
+/// <summary>
+/// Executes the command to change password.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="hasher">The hasher value.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
@@ -16,6 +28,12 @@ public sealed class ChangePasswordCommandHandler(
     IUnitOfWork uow
 ) : ICommandHandler<ChangePasswordCommand, Result>
 {
+    /// <summary>
+    /// Handles the request to change password.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(
         ChangePasswordCommand command,
         CancellationToken ct = default

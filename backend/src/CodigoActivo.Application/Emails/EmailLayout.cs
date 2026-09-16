@@ -4,14 +4,34 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
 
+/// <summary>
+/// Represents an email block value used by the application.
+/// </summary>
+/// <param name="Html">The html value.</param>
+/// <param name="Text">The text value.</param>
 public sealed record EmailBlock(string Html, string Text);
 
+/// <summary>
+/// Represents an email content value used by the application.
+/// </summary>
+/// <param name="Html">The html value.</param>
+/// <param name="Text">The text value.</param>
+/// <param name="InlineImages">The inline images value.</param>
 public sealed record EmailContent(
     string Html,
     string Text,
     IReadOnlyList<EmailInlineImage> InlineImages
 );
 
+/// <summary>
+/// Parses and validates email documents.
+/// </summary>
+/// <param name="Heading">The heading value.</param>
+/// <param name="Preheader">The preheader value.</param>
+/// <param name="RecipientName">The recipient name value.</param>
+/// <param name="SiteUrl">The site url value.</param>
+/// <param name="Accent">The accent value.</param>
+/// <param name="FooterNote">The footer note value.</param>
 public sealed record EmailDocument(
     string Heading,
     string Preheader,
@@ -21,6 +41,9 @@ public sealed record EmailDocument(
     string FooterNote
 );
 
+/// <summary>
+/// Wraps transactional email content in the shared branded layout.
+/// </summary>
 public static class EmailLayout
 {
     private const string TextRule =
@@ -34,6 +57,12 @@ public static class EmailLayout
     private const string TableAttributes =
         "role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"";
 
+    /// <summary>
+    /// Builds the render output.
+    /// </summary>
+    /// <param name="document">The document value.</param>
+    /// <param name="blocks">The blocks value.</param>
+    /// <returns>The resulting email content value.</returns>
     public static EmailContent Render(EmailDocument document, IReadOnlyList<EmailBlock> blocks)
     {
         var kept = blocks.Where(block => !string.IsNullOrWhiteSpace(block.Text)).ToList();

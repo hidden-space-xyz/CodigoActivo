@@ -8,15 +8,31 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Events.Commands;
 
+/// <summary>
+/// Carries the input required to create a terms document.
+/// </summary>
+/// <param name="Request">Validated client request data.</param>
 public sealed record CreateTermsDocumentCommand(CreateTermsDocumentRequest Request)
     : ICommand<Result<TermsDocumentResponse>>;
 
+/// <summary>
+/// Executes the command to create a terms document.
+/// </summary>
+/// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreateTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<CreateTermsDocumentCommand, Result<TermsDocumentResponse>>
 {
+    /// <summary>
+    /// Handles the request to create a terms document.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a terms document on success, or an application error on failure.</returns>
     public async Task<Result<TermsDocumentResponse>> HandleAsync(
         CreateTermsDocumentCommand command,
         CancellationToken ct = default

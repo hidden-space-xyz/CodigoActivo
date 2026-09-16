@@ -2,12 +2,21 @@ using System.Buffers.Binary;
 
 namespace CodigoActivo.Application.Extensions;
 
+/// <summary>
+/// Provides reusable extension methods for stream.
+/// </summary>
 public static class StreamExtensions
 {
     private const int HeaderSize = 32;
 
     private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
+    /// <summary>
+    /// Detects the image format from the supplied content.
+    /// </summary>
+    /// <param name="content">Content stream to store or inspect.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching image format, or <see langword="null"/> when it is not found.</returns>
     public static async Task<ImageFormat?> DetectImageFormatAsync(
         this Stream content,
         CancellationToken ct = default
@@ -94,4 +103,9 @@ public static class StreamExtensions
     }
 }
 
+/// <summary>
+/// Represents an image format value used by the application.
+/// </summary>
+/// <param name="Extension">The extension value.</param>
+/// <param name="ContentType">The content type value.</param>
 public sealed record ImageFormat(string Extension, string ContentType);

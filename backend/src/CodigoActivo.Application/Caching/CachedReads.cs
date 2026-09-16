@@ -3,8 +3,23 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Caching;
 
+/// <summary>
+/// Coordinates cached reads for cached queries.
+/// </summary>
 public static class CachedReads
 {
+    /// <summary>
+    /// Gets the requested entity.
+    /// </summary>
+    /// <typeparam name="TResponse">Type used for response.</typeparam>
+    /// <param name="cache">Cache used to reuse previously computed results.</param>
+    /// <param name="executor">Query executor used to materialize database results.</param>
+    /// <param name="key">The key value.</param>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="tag">The tag value.</param>
+    /// <param name="notFound">The not found value.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a t on success, or an application error on failure.</returns>
     public static async Task<Result<TResponse>> GetEntityAsync<TResponse>(
         this HybridCache cache,
         IQueryExecutor executor,
@@ -26,6 +41,16 @@ public static class CachedReads
         return response is null ? (Result<TResponse>)Error.NotFound(notFound) : response;
     }
 
+    /// <summary>
+    /// Gets the requested catalog.
+    /// </summary>
+    /// <typeparam name="TResponse">Type used for response.</typeparam>
+    /// <param name="cache">Cache used to reuse previously computed results.</param>
+    /// <param name="executor">Query executor used to materialize database results.</param>
+    /// <param name="key">The key value.</param>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching t items.</returns>
     public static async Task<IReadOnlyList<TResponse>> GetCatalogAsync<TResponse>(
         this HybridCache cache,
         IQueryExecutor executor,

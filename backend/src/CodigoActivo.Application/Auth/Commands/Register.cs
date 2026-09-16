@@ -14,8 +14,23 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
+/// <summary>
+/// Carries the input required to register.
+/// </summary>
+/// <param name="Request">Validated client request data.</param>
 public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result<RegisterResponse>>;
 
+/// <summary>
+/// Executes the command to register.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="hasher">The hasher value.</param>
+/// <param name="verification">The verification value.</param>
+/// <param name="accountEmails">The account emails value.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class RegisterCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -29,6 +44,12 @@ public sealed class RegisterCommandHandler(
 {
     private const int MaxMinorRegistrations = 20;
 
+    /// <summary>
+    /// Handles the request to register.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a register on success, or an application error on failure.</returns>
     public async Task<Result<RegisterResponse>> HandleAsync(
         RegisterCommand command,
         CancellationToken ct = default

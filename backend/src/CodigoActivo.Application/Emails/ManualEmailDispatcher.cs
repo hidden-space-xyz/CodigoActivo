@@ -9,8 +9,20 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Emails;
 
+/// <summary>
+/// Represents a recipient value used by the application.
+/// </summary>
+/// <param name="Email">Email address to validate or locate.</param>
+/// <param name="FirstName">User's given name.</param>
 public sealed record Recipient(string? Email, string FirstName);
 
+/// <summary>
+/// Dispatches manual email work through the configured queue.
+/// </summary>
+/// <param name="emailSender">The email sender value.</param>
+/// <param name="options">Configuration values used by the component.</param>
+/// <param name="application">The application value.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ManualEmailDispatcher(
     IEmailTransport emailSender,
     ManualEmailOptions options,
@@ -20,9 +32,21 @@ public sealed class ManualEmailDispatcher(
 {
     private static readonly char[] PathSeparators = ['/', '\\'];
 
+    /// <summary>
+    /// Gets the to recipient value.
+    /// </summary>
     public static Expression<Func<User, Recipient>> ToRecipient { get; } =
         u => new Recipient(u.Email, u.FirstName);
 
+    /// <summary>
+    /// Validates and queues the manual email for delivery.
+    /// </summary>
+    /// <param name="recipients">The recipients value.</param>
+    /// <param name="skipped">The skipped value.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="attachments">The attachments value.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a send email on success, or an application error on failure.</returns>
     public async Task<Result<SendEmailResultResponse>> DispatchAsync(
         IReadOnlyList<Recipient> recipients,
         int skipped,

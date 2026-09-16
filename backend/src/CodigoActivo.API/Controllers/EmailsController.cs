@@ -10,10 +10,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers;
 
+/// <summary>
+/// Exposes HTTP endpoints for querying and managing emails.
+/// </summary>
 [ApiController]
 [Route("api/emails")]
 public class EmailsController : ApiControllerBase
 {
+    /// <summary>
+    /// Sends the to user message to its recipients.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="subject">The subject value.</param>
+    /// <param name="body">The body value.</param>
+    /// <param name="attachments">The attachments value.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a send email, or an error response.</returns>
     [HttpPost("users/{userId:guid}")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -43,6 +56,16 @@ public class EmailsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Sends the to users message to its recipients.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="subject">The subject value.</param>
+    /// <param name="body">The body value.</param>
+    /// <param name="attachments">The attachments value.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a send email, or an error response.</returns>
     [HttpPost("users")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -72,6 +95,17 @@ public class EmailsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Sends the to event attendees message to its recipients.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="subject">The subject value.</param>
+    /// <param name="body">The body value.</param>
+    /// <param name="attachments">The attachments value.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a send email, or an error response.</returns>
     [HttpPost("events/{eventId:guid}/attendees")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]

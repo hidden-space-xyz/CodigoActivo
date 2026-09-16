@@ -8,12 +8,27 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Commands;
 
+/// <summary>
+/// Carries the input required to save event rating.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record SaveEventRatingCommand(
     Guid EventId,
     Guid UserId,
     SaveEventRatingRequest Request
 ) : ICommand<Result<EventRatingResponse>>;
 
+/// <summary>
+/// Executes the command to save event rating.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="ratings">Repository used to persist and retrieve ratings.</param>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="unitOfWork">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SaveEventRatingCommandHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
@@ -23,6 +38,12 @@ public sealed class SaveEventRatingCommandHandler(
     IClock clock
 ) : ICommandHandler<SaveEventRatingCommand, Result<EventRatingResponse>>
 {
+    /// <summary>
+    /// Handles the request to save event rating.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an event rating on success, or an application error on failure.</returns>
     public async Task<Result<EventRatingResponse>> HandleAsync(
         SaveEventRatingCommand command,
         CancellationToken ct = default

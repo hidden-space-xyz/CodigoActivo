@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for event.
+/// </summary>
 public class EventConfiguration : IEntityTypeConfiguration<Event>
 {
+    /// <summary>
+    /// Configures the database mapping for event.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Event> builder)
     {
         builder.HasKey(e => e.Id);

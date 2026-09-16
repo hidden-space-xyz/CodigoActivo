@@ -5,6 +5,13 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Auth;
 
+/// <summary>
+/// Builds and sends the transactional emails for account.
+/// </summary>
+/// <param name="emailSender">The email sender value.</param>
+/// <param name="verification">The verification value.</param>
+/// <param name="passwordReset">The password reset value.</param>
+/// <param name="application">The application value.</param>
 public sealed class AccountEmails(
     IEmailSender emailSender,
     AccountVerificationOptions verification,
@@ -15,6 +22,13 @@ public sealed class AccountEmails(
     private const string VerificationPath = "/verify-account";
     private const string PasswordResetPath = "/reset-password";
 
+    /// <summary>
+    /// Sends the verification email message to its recipients.
+    /// </summary>
+    /// <param name="user">The user value.</param>
+    /// <param name="otpCode">The otp code value.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendVerificationEmailAsync(User user, string otpCode, CancellationToken ct)
     {
         var message = VerificationEmail.Create(
@@ -27,6 +41,13 @@ public sealed class AccountEmails(
         return emailSender.SendAsync(message, ct);
     }
 
+    /// <summary>
+    /// Sends the password reset email message to its recipients.
+    /// </summary>
+    /// <param name="user">The user value.</param>
+    /// <param name="code">The code value.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendPasswordResetEmailAsync(User user, string code, CancellationToken ct)
     {
         var message = PasswordResetEmail.Create(

@@ -3,6 +3,9 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Events;
 
+/// <summary>
+/// Applies the domain rules for event.
+/// </summary>
 public static class EventRules
 {
     internal static Result<EventSchedule> ValidateSchedule(
@@ -47,6 +50,11 @@ public static class EventRules
         );
     }
 
+    /// <summary>
+    /// Synchronizes the categories with the supplied identifiers.
+    /// </summary>
+    /// <param name="ev">The ev value.</param>
+    /// <param name="categoryTypeIds">Identifiers of the category type items.</param>
     public static void SyncCategories(Event ev, IReadOnlyList<Guid> categoryTypeIds)
     {
         var desired = categoryTypeIds.Distinct().ToHashSet();

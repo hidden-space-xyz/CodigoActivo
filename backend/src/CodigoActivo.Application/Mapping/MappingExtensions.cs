@@ -3,8 +3,16 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Mapping;
 
+/// <summary>
+/// Provides reusable extension methods for mapping.
+/// </summary>
 public static class MappingExtensions
 {
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="user">The user value.</param>
+    /// <returns>The resulting user value.</returns>
     public static UserResponse ToResponse(this User user)
     {
         var status = new UserStatusResponse(
@@ -33,6 +41,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="resource">The resource value.</param>
+    /// <returns>The resulting resource value.</returns>
     public static ResourceResponse ToResponse(this Resource resource)
     {
         var type = new ResourceTypeResponse(
@@ -58,6 +71,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="announcement">The announcement value.</param>
+    /// <returns>The resulting announcement value.</returns>
     public static AnnouncementResponse ToResponse(this Announcement announcement)
     {
         return new AnnouncementResponse(
@@ -74,6 +92,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="partner">The partner value.</param>
+    /// <returns>The resulting partner value.</returns>
     public static PartnerResponse ToResponse(this Partner partner)
     {
         return new PartnerResponse(
@@ -90,6 +113,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="file">The file value.</param>
+    /// <returns>The resulting file value.</returns>
     public static FileResponse ToResponse(this FileEntity file)
     {
         return new FileResponse(
@@ -101,6 +129,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="categoryType">The category type value.</param>
+    /// <returns>The resulting event category type value.</returns>
     public static EventCategoryTypeResponse ToResponse(this EventCategoryType categoryType)
     {
         return new EventCategoryTypeResponse(
@@ -110,6 +143,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="termsDocument">The terms document value.</param>
+    /// <returns>The resulting terms document value.</returns>
     public static TermsDocumentResponse ToResponse(this TermsDocument termsDocument)
     {
         return new TermsDocumentResponse(
@@ -119,6 +157,11 @@ public static class MappingExtensions
         );
     }
 
+    /// <summary>
+    /// Maps the domain value to its API response model.
+    /// </summary>
+    /// <param name="rating">The rating value.</param>
+    /// <returns>The resulting event rating value.</returns>
     public static EventRatingResponse ToResponse(this EventRating rating)
     {
         return new EventRatingResponse(

@@ -9,9 +9,19 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
+/// <summary>
+/// Carries the criteria used to list event category types.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListEventCategoryTypesQuery(EventCategoryTypeListQuery Filters)
     : IQuery<PagedResult<EventCategoryTypeResponse>>;
 
+/// <summary>
+/// Executes the query to list event category types.
+/// </summary>
+/// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListEventCategoryTypesQueryHandler(
     IEventCategoryTypeRepository categoryTypes,
     IQueryExecutor executor,
@@ -25,6 +35,12 @@ public sealed class ListEventCategoryTypesQueryHandler(
             .Default("name")
             .Tie(c => c.Id);
 
+    /// <summary>
+    /// Handles the request to list event category types.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged event category type.</returns>
     public async Task<PagedResult<EventCategoryTypeResponse>> HandleAsync(
         ListEventCategoryTypesQuery query,
         CancellationToken ct = default

@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for user type.
+/// </summary>
 public sealed class UserTypeConfiguration : IEntityTypeConfiguration<UserType>
 {
+    /// <summary>
+    /// Configures the database mapping for user type.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<UserType> builder)
     {
         builder.HasKey(x => x.Id);

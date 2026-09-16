@@ -9,9 +9,19 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Partners.Queries;
 
+/// <summary>
+/// Carries the criteria used to list partners.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListPartnersQuery(PartnerListQuery Filters)
     : IQuery<PagedResult<PartnerResponse>>;
 
+/// <summary>
+/// Executes the query to list partners.
+/// </summary>
+/// <param name="partners">Repository used to persist and retrieve partners.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListPartnersQueryHandler(
     IPartnerRepository partners,
     IQueryExecutor executor,
@@ -27,6 +37,12 @@ public sealed class ListPartnersQueryHandler(
         .Default("tier", "-fromDate")
         .Tie(p => p.Id);
 
+    /// <summary>
+    /// Handles the request to list partners.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged partner.</returns>
     public async Task<PagedResult<PartnerResponse>> HandleAsync(
         ListPartnersQuery query,
         CancellationToken ct = default

@@ -3,12 +3,23 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
+/// <summary>
+/// Represents an email send decision value used by the application.
+/// </summary>
+/// <param name="Scope">The scope value.</param>
+/// <param name="Alert">The alert value.</param>
+/// <param name="GlobalRemaining">The global remaining value.</param>
 public readonly record struct EmailSendDecision(
     EmailLimitScope Scope,
     EmailGuardAlert Alert,
     int GlobalRemaining
 );
 
+/// <summary>
+/// Enforces the configured limits for email send.
+/// </summary>
+/// <param name="options">Configuration values used by the component.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 {
     private const double GlobalLowWatermark = 0.2;
@@ -24,6 +35,9 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private DateTimeOffset? lastGlobalExhaustedAlertAt;
     private DateTimeOffset? lastSaturationAlertAt;
 
+    /// <summary>
+    /// Gets the tracked recipients value.
+    /// </summary>
     public int TrackedRecipients
     {
         get
@@ -35,6 +49,12 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         }
     }
 
+    /// <summary>
+    /// Attempts to consume capacity from the applicable email rate-limit buckets.
+    /// </summary>
+    /// <param name="kind">Email category whose limits are applied.</param>
+    /// <param name="address">Recipient address used as a rate-limit key.</param>
+    /// <returns>The resulting email send decision value.</returns>
     public EmailSendDecision TryConsume(EmailKind kind, string address)
     {
         var now = clock.UtcNow;
@@ -103,6 +123,11 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         }
     }
 
+    /// <summary>
+    /// Normalizes the supplied key value.
+    /// </summary>
+    /// <param name="address">Recipient address used as a rate-limit key.</param>
+    /// <returns>The generated text.</returns>
     public static string NormalizeKey(string address)
     {
         var trimmed = address.Trim().ToLowerInvariant();
@@ -225,31 +250,62 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 
     private sealed class RecipientState(Bucket hourly, Bucket daily)
     {
+        /// <summary>
+        /// Gets or sets the hourly value.
+        /// </summary>
         public Bucket Hourly { get; set; } = hourly;
 
+        /// <summary>
+        /// Gets or sets the daily value.
+        /// </summary>
         public Bucket Daily { get; set; } = daily;
 
+        /// <summary>
+        /// Gets or sets the throttled value.
+        /// </summary>
         public bool Throttled { get; set; }
     }
 
     private readonly record struct Bucket(double Tokens, DateTimeOffset UpdatedAt)
     {
+        /// <summary>
+        /// Creates a rate-limit decision indicating that no capacity remains.
+        /// </summary>
+        /// <param name="capacity">Maximum number of permits held by the bucket.</param>
+        /// <param name="now">Current timestamp used to calculate replenishment.</param>
+        /// <returns>The resulting bucket value.</returns>
         public static Bucket Full(double capacity, DateTimeOffset now)
         {
             return new Bucket(capacity, now);
         }
 
+        /// <summary>
+        /// Replenishes the rate-limit bucket according to elapsed time.
+        /// </summary>
+        /// <param name="now">Current timestamp used to calculate replenishment.</param>
+        /// <param name="capacity">Maximum number of permits held by the bucket.</param>
+        /// <param name="perHour">Number of permits replenished per hour.</param>
+        /// <returns>The resulting bucket value.</returns>
         public Bucket Refill(DateTimeOffset now, double capacity, double perHour)
         {
             var elapsed = now - UpdatedAt;
             return elapsed <= TimeSpan.Zero ? this : new Bucket(Math.Min(capacity, Tokens + (elapsed.TotalHours * perHour)), now);
         }
 
+        /// <summary>
+        /// Consumes one available permit from the rate-limit bucket.
+        /// </summary>
+        /// <returns>The resulting bucket value.</returns>
         public Bucket Consume()
         {
             return this with { Tokens = Tokens - 1 };
         }
 
+        /// <summary>
+        /// Determines whether the rate-limit bucket is at capacity.
+        /// </summary>
+        /// <param name="capacity">Maximum number of permits held by the bucket.</param>
+        /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
         public bool IsFull(double capacity)
         {
             return Tokens >= capacity;

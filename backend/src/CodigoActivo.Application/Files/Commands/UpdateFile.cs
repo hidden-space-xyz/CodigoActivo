@@ -8,9 +8,23 @@ using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Files.Commands;
 
+/// <summary>
+/// Carries the input required to update the file.
+/// </summary>
+/// <param name="FileId">Identifier of the file.</param>
+/// <param name="Upload">The upload value.</param>
 public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload)
     : ICommand<Result<FileResponse>>;
 
+/// <summary>
+/// Executes the command to update the file.
+/// </summary>
+/// <param name="files">Repository used to persist and retrieve files.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="validator">The validator value.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateFileCommandHandler(
     IFileRepository files,
     IUnitOfWork uow,
@@ -20,6 +34,12 @@ public sealed class UpdateFileCommandHandler(
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<UpdateFileCommand, Result<FileResponse>>
 {
+    /// <summary>
+    /// Handles the request to update the file.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a file on success, or an application error on failure.</returns>
     public async Task<Result<FileResponse>> HandleAsync(
         UpdateFileCommand command,
         CancellationToken ct = default

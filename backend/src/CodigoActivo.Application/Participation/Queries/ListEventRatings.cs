@@ -7,9 +7,20 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
+/// <summary>
+/// Carries the criteria used to list event ratings.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListEventRatingsQuery(Guid EventId, EventRatingListQuery Filters)
     : IQuery<Result<PagedResult<EventRatingListItemResponse>>>;
 
+/// <summary>
+/// Executes the query to list event ratings.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="ratings">Repository used to persist and retrieve ratings.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class ListEventRatingsQueryHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
@@ -23,6 +34,12 @@ public sealed class ListEventRatingsQueryHandler(
             .Default("-createdAt")
             .Tie(r => r.Id);
 
+    /// <summary>
+    /// Handles the request to list event ratings.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged event rating list item on success, or an application error on failure.</returns>
     public async Task<Result<PagedResult<EventRatingListItemResponse>>> HandleAsync(
         ListEventRatingsQuery query,
         CancellationToken ct = default

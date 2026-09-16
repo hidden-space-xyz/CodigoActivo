@@ -10,9 +10,20 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
+/// <summary>
+/// Carries the criteria used to list events.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListEventsQuery(EventListQuery Filters)
     : IQuery<PagedResult<EventListItemResponse>>;
 
+/// <summary>
+/// Executes the query to list events.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListEventsQueryHandler(
     IEventRepository events,
     IQueryExecutor executor,
@@ -34,6 +45,12 @@ public sealed class ListEventsQueryHandler(
             .Default("eventStartsAt")
             .Tie(e => e.Id);
 
+    /// <summary>
+    /// Handles the request to list events.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged event list item.</returns>
     public async Task<PagedResult<EventListItemResponse>> HandleAsync(
         ListEventsQuery query,
         CancellationToken ct = default
