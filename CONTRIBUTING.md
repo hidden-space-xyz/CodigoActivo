@@ -158,6 +158,8 @@ Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 
 Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Integration tests share a disposable
 PostgreSQL 18 Testcontainers instance, reset and reseed data between tests, and disable parallel execution.
+The test host lifts the email guard and the request rate limits, whose wall-clock windows would otherwise
+carry over between tests; tests that exercise them use the factory's `WithEmailGuard` or `WithRateLimits`.
 
 Before opening a pull request:
 

@@ -7,13 +7,6 @@ namespace CodigoActivo.API.Configuration;
 
 internal static class ApiRateLimitConfiguration
 {
-    private const int AuthenticatedRequestsPerMinute = 300;
-    private const int AnonymousRequestsPerMinutePerIp = 3_000;
-    private const int CredentialRequestsPerMinutePerIp = 120;
-    private const int ReportRequestsPerMinutePerUser = 30;
-    private const int SingleRecipientEmailRequestsPerMinutePerUser = 30;
-    private const int BulkEmailRequestsPerMinutePerUser = 5;
-    private const int FileUploadRequestsPerMinutePerUser = 30;
     private const int MaxConcurrentApiRequests = 128;
     private const int MaxQueuedApiRequests = 256;
     private const int MaxConcurrentCredentialRequests = 4;
@@ -29,6 +22,7 @@ internal static class ApiRateLimitConfiguration
 
     internal static void AddApiRateLimiting(this IServiceCollection services)
     {
+        services.AddSingleton(new ApiRateLimitOptions());
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -37,49 +31,54 @@ internal static class ApiRateLimitConfiguration
                 context.HttpContext.Response.Headers.RetryAfter = GetRetryAfter(context.Lease);
                 return ValueTask.CompletedTask;
             };
-            options.GlobalLimiter = CreateGlobalLimiter();
-
-            options.AddPolicy(
-                SecurityPolicies.Credentials,
-                context =>
-                    RateLimitPartition.GetSlidingWindowLimiter(
-                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                        _ =>
-                            new SlidingWindowRateLimiterOptions
-                            {
-                                PermitLimit = CredentialRequestsPerMinutePerIp,
-                                Window = TimeSpan.FromMinutes(1),
-                                SegmentsPerWindow = 6,
-                                QueueLimit = 0,
-                                AutoReplenishment = true,
-                            }
-                    )
-            );
-            options.AddPolicy(
-                SecurityPolicies.Reports,
-                ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                    ReportRequestsPerMinutePerUser
-                )
-            );
-            options.AddPolicy(
-                SecurityPolicies.SingleRecipientEmail,
-                ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                    SingleRecipientEmailRequestsPerMinutePerUser
-                )
-            );
-            options.AddPolicy(
-                SecurityPolicies.BulkEmail,
-                ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                    BulkEmailRequestsPerMinutePerUser
-                )
-            );
-            options.AddPolicy(
-                SecurityPolicies.FileUploads,
-                ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                    FileUploadRequestsPerMinutePerUser
-                )
-            );
         });
+        services.AddOptions<RateLimiterOptions>().Configure<ApiRateLimitOptions>(ConfigureLimiters);
+    }
+
+    private static void ConfigureLimiters(RateLimiterOptions options, ApiRateLimitOptions limits)
+    {
+        options.GlobalLimiter = CreateGlobalLimiter(limits);
+
+        options.AddPolicy(
+            SecurityPolicies.Credentials,
+            context =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ =>
+                        new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = limits.CredentialRequestsPerMinutePerIp,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 6,
+                            QueueLimit = 0,
+                            AutoReplenishment = true,
+                        }
+                )
+        );
+        options.AddPolicy(
+            SecurityPolicies.Reports,
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                limits.ReportRequestsPerMinutePerUser
+            )
+        );
+        options.AddPolicy(
+            SecurityPolicies.SingleRecipientEmail,
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                limits.SingleRecipientEmailRequestsPerMinutePerUser
+            )
+        );
+        options.AddPolicy(
+            SecurityPolicies.BulkEmail,
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                limits.BulkEmailRequestsPerMinutePerUser
+            )
+        );
+        options.AddPolicy(
+            SecurityPolicies.FileUploads,
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                limits.FileUploadRequestsPerMinutePerUser
+            )
+        );
     }
 
     private static string GetRetryAfter(RateLimitLease lease)
@@ -90,12 +89,14 @@ internal static class ApiRateLimitConfiguration
             : "1";
     }
 
-    private static PartitionedRateLimiter<HttpContext> CreateGlobalLimiter()
+    private static PartitionedRateLimiter<HttpContext> CreateGlobalLimiter(
+        ApiRateLimitOptions limits
+    )
     {
         return PartitionedRateLimiter.CreateChained(
             ClientRequestRateLimiter.CreateGlobal(
-                AuthenticatedRequestsPerMinute,
-                AnonymousRequestsPerMinutePerIp
+                limits.AuthenticatedRequestsPerMinute,
+                limits.AnonymousRequestsPerMinutePerIp
             ),
             ClientRequestRateLimiter.CreateConcurrency(
                 MaxConcurrentApiRequests,
