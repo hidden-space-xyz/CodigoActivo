@@ -28,8 +28,7 @@ public sealed class GetSitemapXmlQueryHandlerTests
             announcements,
             resources,
             new FakeQueryExecutor(),
-            new ApplicationOptions { BaseUrl = BaseUrl + "/" },
-            new FakeHybridCache()
+            new ApplicationOptions { BaseUrl = BaseUrl + "/" }
         );
     }
 

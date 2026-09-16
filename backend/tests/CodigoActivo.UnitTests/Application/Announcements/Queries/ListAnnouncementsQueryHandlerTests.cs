@@ -21,8 +21,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
         sut = new ListAnnouncementsQueryHandler(
             announcements,
             new FakeQueryExecutor(),
-            clock,
-            new FakeHybridCache()
+            clock
         );
     }
 

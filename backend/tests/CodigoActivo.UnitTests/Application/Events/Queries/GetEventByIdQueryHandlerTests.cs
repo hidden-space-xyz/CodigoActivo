@@ -16,7 +16,7 @@ public sealed class GetEventByIdQueryHandlerTests
 
     public GetEventByIdQueryHandlerTests()
     {
-        sut = new GetEventByIdQueryHandler(events, new FakeQueryExecutor(), new FakeHybridCache());
+        sut = new GetEventByIdQueryHandler(events, new FakeQueryExecutor());
     }
 
     [Fact]

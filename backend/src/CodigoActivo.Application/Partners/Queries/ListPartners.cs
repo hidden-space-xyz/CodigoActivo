@@ -1,11 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Partners.Queries;
 
@@ -21,11 +19,9 @@ public sealed record ListPartnersQuery(PartnerListQuery Filters)
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListPartnersQueryHandler(
     IPartnerRepository partners,
-    IQueryExecutor executor,
-    HybridCache cache
+    IQueryExecutor executor
 ) : IQueryHandler<ListPartnersQuery, PagedResult<PartnerResponse>>
 {
     private static readonly SortMap<PartnerResponse> Sort = new SortMap<PartnerResponse>()
@@ -43,18 +39,12 @@ public sealed class ListPartnersQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged partner.</returns>
-    public async Task<PagedResult<PartnerResponse>> HandleAsync(
+    public Task<PagedResult<PartnerResponse>> HandleAsync(
         ListPartnersQuery query,
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
-            CacheKeys.For("partners:list", query.Filters),
-            token => new ValueTask<PagedResult<PartnerResponse>>(FetchAsync(query.Filters, token)),
-            CachePolicies.PublicContent,
-            [CacheTags.Partners],
-            ct
-        );
+        return FetchAsync(query.Filters, ct);
     }
 
     private Task<PagedResult<PartnerResponse>> FetchAsync(

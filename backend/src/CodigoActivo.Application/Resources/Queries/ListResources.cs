@@ -1,11 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Resources.Queries;
 
@@ -22,12 +20,10 @@ public sealed record ListResourcesQuery(ResourceListQuery Filters)
 /// <param name="resources">Repository used to persist and retrieve resources.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListResourcesQueryHandler(
     IResourceRepository resources,
     IQueryExecutor executor,
-    IClock clock,
-    HybridCache cache
+    IClock clock
 ) : IQueryHandler<ListResourcesQuery, PagedResult<ResourceListItemResponse>>
 {
     private static readonly SortMap<ResourceListItemResponse> Sort =
@@ -46,20 +42,12 @@ public sealed class ListResourcesQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged resource list item.</returns>
-    public async Task<PagedResult<ResourceListItemResponse>> HandleAsync(
+    public Task<PagedResult<ResourceListItemResponse>> HandleAsync(
         ListResourcesQuery query,
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
-            CacheKeys.For("resources:list", query.Filters),
-            token => new ValueTask<PagedResult<ResourceListItemResponse>>(
-                FetchAsync(query.Filters, token)
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Resources],
-            ct
-        );
+        return FetchAsync(query.Filters, ct);
     }
 
     private Task<PagedResult<ResourceListItemResponse>> FetchAsync(

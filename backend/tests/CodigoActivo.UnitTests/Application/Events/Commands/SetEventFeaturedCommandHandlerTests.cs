@@ -22,7 +22,7 @@ public sealed class SetEventFeaturedCommandHandlerTests
         sut = new SetEventFeaturedCommandHandler(
             events,
             cacheInvalidator,
-            new GetEventByIdQueryHandler(events, new FakeQueryExecutor(), new FakeHybridCache())
+            new GetEventByIdQueryHandler(events, new FakeQueryExecutor())
         );
     }
 

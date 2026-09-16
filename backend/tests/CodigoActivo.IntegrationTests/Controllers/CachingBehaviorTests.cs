@@ -1,11 +1,13 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -275,7 +277,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListAnonymousCachesIntoTheSizeLimitedLocalCache()
+    public async Task ListAnonymousDoesNotDuplicateResponseInApplicationCache()
     {
         await SeedEventAsync();
         var localCache = Factory
@@ -293,6 +295,30 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         localCacheOptions.SizeLimit.Should().NotBeNull();
+        localCache.Count.Should().Be(before);
+    }
+
+    [Fact]
+    public async Task CatalogReadCachesIntoTheSizeLimitedApplicationCache()
+    {
+        var admin = await LoginAsAdminAsync();
+        await Factory
+            .Services.GetRequiredService<HybridCache>()
+            .RemoveAsync("resources:types", Ct);
+        var localCache = Factory
+            .Services.GetRequiredService<IMemoryCache>()
+            .Should()
+            .BeOfType<MemoryCache>()
+            .Subject;
+        var localCacheOptions = Factory
+            .Services.GetRequiredService<IOptions<MemoryCacheOptions>>()
+            .Value;
+        var before = localCache.Count;
+
+        using var response = await admin.GetAsync(TestUri.Rel("/api/resources/types"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        localCacheOptions.SizeLimit.Should().Be(CacheLimits.LocalCacheSizeBytes);
         localCache.Count.Should().BeGreaterThan(before);
     }
 

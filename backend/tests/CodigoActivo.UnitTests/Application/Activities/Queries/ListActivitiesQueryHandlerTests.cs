@@ -20,8 +20,7 @@ public sealed class ListActivitiesQueryHandlerTests
         sut = new ListActivitiesQueryHandler(
             activities,
             new FakeQueryExecutor(),
-            clock,
-            new FakeHybridCache()
+            clock
         );
     }
 

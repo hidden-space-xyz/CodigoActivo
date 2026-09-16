@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
@@ -18,7 +17,6 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteTermsDocumentCommandHandler sut;
 
     public DeleteTermsDocumentCommandHandlerTests()
@@ -27,8 +25,7 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
             termsDocuments,
             events,
             orphanCleaner,
-            uow,
-            cacheInvalidator
+            uow
         );
     }
 
@@ -86,7 +83,7 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestRemovesInvalidatesAndCleansOrphanedFiles()
+    public async Task HandleAsyncValidRequestRemovesAndCleansOrphanedFiles()
     {
         var fileId = Guid.NewGuid();
         var termsDocument = NewTermsDocument(
@@ -103,13 +100,6 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         termsDocuments.Received(1).Remove(termsDocument);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.TermsDocuments)
-                )
-            );
         await orphanCleaner
             .Received(1)
             .DeleteOrphanedAsync(

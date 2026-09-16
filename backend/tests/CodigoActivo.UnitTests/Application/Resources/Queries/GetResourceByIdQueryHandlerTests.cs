@@ -18,8 +18,7 @@ public sealed class GetResourceByIdQueryHandlerTests
     {
         sut = new GetResourceByIdQueryHandler(
             resources,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

@@ -71,7 +71,7 @@ public sealed class UpdateTermsDocumentCommandHandler(
         termsDocument.Name = name;
         termsDocument.Description = request.Description;
         await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.TermsDocuments, CacheTags.Events);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Events);
 
         var orphanCandidates = RichTextFileReferences
             .ExtractRemoved(previousDescription, termsDocument.Description)

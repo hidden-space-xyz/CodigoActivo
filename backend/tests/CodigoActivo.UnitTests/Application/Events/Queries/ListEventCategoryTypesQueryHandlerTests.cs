@@ -19,8 +19,7 @@ public sealed class ListEventCategoryTypesQueryHandlerTests
     {
         sut = new ListEventCategoryTypesQueryHandler(
             categoryTypes,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

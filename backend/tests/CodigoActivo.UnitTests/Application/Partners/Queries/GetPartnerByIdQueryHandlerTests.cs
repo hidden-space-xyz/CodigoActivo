@@ -18,8 +18,7 @@ public sealed class GetPartnerByIdQueryHandlerTests
     {
         sut = new GetPartnerByIdQueryHandler(
             partners,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

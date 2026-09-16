@@ -37,7 +37,7 @@ public sealed class CreateEventCommandHandlerTests
             clock,
             uow,
             cacheInvalidator,
-            new GetEventByIdQueryHandler(events, new FakeQueryExecutor(), new FakeHybridCache())
+            new GetEventByIdQueryHandler(events, new FakeQueryExecutor())
         );
     }
 

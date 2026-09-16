@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Domain.Common;
@@ -15,12 +14,11 @@ public sealed class CreateTermsDocumentCommandHandlerTests
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly CreateTermsDocumentCommandHandler sut;
 
     public CreateTermsDocumentCommandHandlerTests()
     {
-        sut = new CreateTermsDocumentCommandHandler(termsDocuments, uow, cacheInvalidator);
+        sut = new CreateTermsDocumentCommandHandler(termsDocuments, uow);
     }
 
     [Fact]
@@ -45,7 +43,7 @@ public sealed class CreateTermsDocumentCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestPersistsTrimmedNameAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestPersistsTrimmedName()
     {
         termsDocuments.TermsDocumentExists(false);
 
@@ -70,12 +68,5 @@ public sealed class CreateTermsDocumentCommandHandlerTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.TermsDocuments)
-                )
-            );
     }
 }

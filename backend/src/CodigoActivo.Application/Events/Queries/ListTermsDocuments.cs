@@ -1,11 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -21,11 +19,9 @@ public sealed record ListTermsDocumentsQuery(TermsDocumentListQuery Filters)
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListTermsDocumentsQueryHandler(
     ITermsDocumentRepository termsDocuments,
-    IQueryExecutor executor,
-    HybridCache cache
+    IQueryExecutor executor
 ) : IQueryHandler<ListTermsDocumentsQuery, PagedResult<TermsDocumentResponse>>
 {
     private static readonly SortMap<TermsDocumentResponse> Sort =
@@ -40,20 +36,12 @@ public sealed class ListTermsDocumentsQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged terms document.</returns>
-    public async Task<PagedResult<TermsDocumentResponse>> HandleAsync(
+    public Task<PagedResult<TermsDocumentResponse>> HandleAsync(
         ListTermsDocumentsQuery query,
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
-            CacheKeys.For("events:terms-documents", query.Filters),
-            token => new ValueTask<PagedResult<TermsDocumentResponse>>(
-                FetchAsync(query.Filters, token)
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.TermsDocuments],
-            ct
-        );
+        return FetchAsync(query.Filters, ct);
     }
 
     private Task<PagedResult<TermsDocumentResponse>> FetchAsync(

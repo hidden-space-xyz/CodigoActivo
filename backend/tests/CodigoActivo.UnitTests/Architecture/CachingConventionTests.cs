@@ -1,11 +1,16 @@
 using System.Reflection;
 using AwesomeAssertions;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Reports.Queries;
+using CodigoActivo.Application.Resources.Queries;
+using CodigoActivo.Application.Users.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.Caching.Hybrid;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Architecture;
@@ -13,6 +18,17 @@ namespace CodigoActivo.UnitTests.Architecture;
 public sealed class CachingConventionTests
 {
     private static readonly string[] ReadMethods = ["GET", "HEAD"];
+    private static readonly Type[] ApprovedHybridCacheConsumers =
+    [
+        typeof(ListUserTypesQueryHandler),
+        typeof(ListUserStatusTypesQueryHandler),
+        typeof(ListResourceTypesQueryHandler),
+        typeof(ListActivityRoleTypesQueryHandler),
+        typeof(ListActivityModalityTypesQueryHandler),
+        typeof(ListAssignmentStatusTypesQueryHandler),
+        typeof(GetDashboardSummaryQueryHandler),
+        typeof(GetDashboardAnalyticsQueryHandler),
+    ];
 
     [Fact]
     public void AnonymousReadActionsAlwaysDeclareOutputCacheBehavior()
@@ -51,6 +67,21 @@ public sealed class CachingConventionTests
         cachedActions.Should().NotBeEmpty();
         unsafeActions.Should().BeEmpty();
         unknownPolicies.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void HybridCacheConsumersAlwaysMatchExplicitSafeSet()
+    {
+        var consumers = typeof(CachePolicies)
+            .Assembly.GetTypes()
+            .Where(type =>
+                type.GetConstructors()
+                    .SelectMany(constructor => constructor.GetParameters())
+                    .Any(parameter => parameter.ParameterType == typeof(HybridCache))
+            )
+            .ToList();
+
+        consumers.Should().BeEquivalentTo(ApprovedHybridCacheConsumers);
     }
 
     private static IEnumerable<MethodInfo> ControllerActions()

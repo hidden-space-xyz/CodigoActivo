@@ -21,8 +21,7 @@ public sealed class GetActivityByIdQueryHandlerTests
     {
         sut = new GetActivityByIdQueryHandler(
             activities,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

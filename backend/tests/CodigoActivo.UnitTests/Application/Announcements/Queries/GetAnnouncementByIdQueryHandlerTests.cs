@@ -18,8 +18,7 @@ public sealed class GetAnnouncementByIdQueryHandlerTests
     {
         sut = new GetAnnouncementByIdQueryHandler(
             announcements,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 
