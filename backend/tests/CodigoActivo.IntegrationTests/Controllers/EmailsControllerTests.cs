@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
@@ -297,6 +298,29 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SendToUsersOverPerUserLimitReturnsTooManyRequests()
+    {
+        var limits = new ApiRateLimitOptions();
+        var client = await LoginAsync(
+            Factory.WithRateLimits(limits),
+            TestSeedData.AdminCredentials
+        );
+        for (var i = 0; i < limits.BulkEmailRequestsPerMinutePerUser; i++)
+        {
+            using var accepted = await client.SendEmailFormAsync(UsersUrl);
+            accepted.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        Factory.EmailSender.Clear();
+
+        using var response = await client.SendEmailFormAsync(UsersUrl);
+
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        response.Headers.RetryAfter.Should().NotBeNull();
         Factory.EmailSender.Sent.Should().BeEmpty();
     }
 

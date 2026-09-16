@@ -47,6 +47,21 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         };
     }
 
+    private static ApiRateLimitOptions UnboundedRateLimits()
+    {
+        const int Unbounded = 1_000_000;
+        return new ApiRateLimitOptions
+        {
+            AuthenticatedRequestsPerMinute = Unbounded,
+            AnonymousRequestsPerMinutePerIp = Unbounded,
+            CredentialRequestsPerMinutePerIp = Unbounded,
+            ReportRequestsPerMinutePerUser = Unbounded,
+            SingleRecipientEmailRequestsPerMinutePerUser = Unbounded,
+            BulkEmailRequestsPerMinutePerUser = Unbounded,
+            FileUploadRequestsPerMinutePerUser = Unbounded,
+        };
+    }
+
     public WebApplicationFactory<Program> WithEmailGuard(EmailGuardOptions guard)
     {
         return Track(
@@ -55,6 +70,19 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
                 {
                     services.RemoveAll<EmailGuardOptions>();
                     services.AddSingleton(guard);
+                })
+            )
+        );
+    }
+
+    public WebApplicationFactory<Program> WithRateLimits(ApiRateLimitOptions limits)
+    {
+        return Track(
+            WithWebHostBuilder(builder =>
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<ApiRateLimitOptions>();
+                    services.AddSingleton(limits);
                 })
             )
         );
@@ -110,6 +138,9 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
             services.RemoveAll<EmailGuardOptions>();
             services.AddSingleton(UnboundedEmailGuard());
+
+            services.RemoveAll<ApiRateLimitOptions>();
+            services.AddSingleton(UnboundedRateLimits());
 
             services.RemoveAll<AccountVerificationOptions>();
             services.AddSingleton(new AccountVerificationOptions { Required = true });
