@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for resource.
+/// </summary>
 public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
 {
+    /// <summary>
+    /// Configures the database mapping for resource.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Resource> builder)
     {
         builder.HasKey(r => r.Id);

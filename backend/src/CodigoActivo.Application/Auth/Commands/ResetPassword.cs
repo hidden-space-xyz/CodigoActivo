@@ -7,9 +7,22 @@ using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
+/// <summary>
+/// Carries the input required to reset password.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record ResetPasswordCommand(Guid UserId, ResetPasswordRequest Request)
     : ICommand<Result>;
 
+/// <summary>
+/// Executes the command to reset password.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="hasher">The hasher value.</param>
+/// <param name="otpValidator">The otp validator value.</param>
 public sealed class ResetPasswordCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -18,6 +31,12 @@ public sealed class ResetPasswordCommandHandler(
     OtpValidator otpValidator
 ) : ICommandHandler<ResetPasswordCommand, Result>
 {
+    /// <summary>
+    /// Handles the request to reset password.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(
         ResetPasswordCommand command,
         CancellationToken ct = default

@@ -7,6 +7,13 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Emails.Commands;
 
+/// <summary>
+/// Carries the input required to send email to event attendees.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
+/// <param name="Request">Validated client request data.</param>
+/// <param name="Attachments">The attachments value.</param>
 public sealed record SendEmailToEventAttendeesCommand(
     Guid EventId,
     EventAttendeeListQuery Filters,
@@ -14,6 +21,14 @@ public sealed record SendEmailToEventAttendeesCommand(
     IReadOnlyList<EmailAttachmentUpload> Attachments
 ) : ICommand<Result<SendEmailResultResponse>>;
 
+/// <summary>
+/// Executes the command to send email to event attendees.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="options">Configuration values used by the component.</param>
+/// <param name="dispatcher">The dispatcher value.</param>
 public sealed class SendEmailToEventAttendeesCommandHandler(
     IUserRepository users,
     IEventRepository events,
@@ -22,6 +37,12 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
     ManualEmailDispatcher dispatcher
 ) : ICommandHandler<SendEmailToEventAttendeesCommand, Result<SendEmailResultResponse>>
 {
+    /// <summary>
+    /// Handles the request to send email to event attendees.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a send email on success, or an application error on failure.</returns>
     public async Task<Result<SendEmailResultResponse>> HandleAsync(
         SendEmailToEventAttendeesCommand command,
         CancellationToken ct = default

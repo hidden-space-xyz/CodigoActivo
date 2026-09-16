@@ -2,11 +2,17 @@ using System.Text;
 
 namespace CodigoActivo.API.Security;
 
+/// <summary>
+/// Freezes deployment mode settings after startup validation.
+/// </summary>
 public sealed class DeploymentModeLock
 {
     private const string PersistentFilePath = "/app/state/deployment-mode";
     private readonly string filePath;
 
+    /// <summary>
+    /// Initializes a deployment mode lock with its required dependencies.
+    /// </summary>
     public DeploymentModeLock()
         : this(PersistentFilePath) { }
 
@@ -16,6 +22,11 @@ public sealed class DeploymentModeLock
         this.filePath = Path.GetFullPath(filePath);
     }
 
+    /// <summary>
+    /// Validates deployment settings and prevents later mutation.
+    /// </summary>
+    /// <param name="configuration">Application configuration to validate or consume.</param>
+    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public bool Lock(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

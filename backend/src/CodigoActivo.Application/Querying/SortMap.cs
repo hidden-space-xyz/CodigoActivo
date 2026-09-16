@@ -2,6 +2,10 @@ using System.Linq.Expressions;
 
 namespace CodigoActivo.Application.Querying;
 
+/// <summary>
+/// Maps client sort keys to strongly typed query expressions.
+/// </summary>
+/// <typeparam name="T">Type of item processed by the operation.</typeparam>
 public sealed class SortMap<T>
 {
     private readonly Dictionary<string, LambdaExpression> selectors = new(
@@ -10,24 +14,48 @@ public sealed class SortMap<T>
     private IReadOnlyList<SortTerm> defaults = [];
     private LambdaExpression? tieBreaker;
 
+    /// <summary>
+    /// Adds a sort map to the current unit of work.
+    /// </summary>
+    /// <typeparam name="TKey">Type used for key.</typeparam>
+    /// <param name="key">The key value.</param>
+    /// <param name="selector">The selector value.</param>
+    /// <returns>The resulting t value.</returns>
     public SortMap<T> Add<TKey>(string key, Expression<Func<T, TKey>> selector)
     {
         selectors[key] = selector;
         return this;
     }
 
+    /// <summary>
+    /// Sets the fallback sort expression used for unknown sort keys.
+    /// </summary>
+    /// <param name="terms">The terms value.</param>
+    /// <returns>The resulting t value.</returns>
     public SortMap<T> Default(params string[] terms)
     {
         defaults = [.. terms.Select(Parse).Where(term => selectors.ContainsKey(term.Key))];
         return this;
     }
 
+    /// <summary>
+    /// Adds a deterministic tie-breaker to the sort order.
+    /// </summary>
+    /// <typeparam name="TKey">Type used for key.</typeparam>
+    /// <param name="selector">The selector value.</param>
+    /// <returns>The resulting t value.</returns>
     public SortMap<T> Tie<TKey>(Expression<Func<T, TKey>> selector)
     {
         tieBreaker = selector;
         return this;
     }
 
+    /// <summary>
+    /// Applies the sort map rules to the supplied target.
+    /// </summary>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="sort">The sort value.</param>
+    /// <returns>The resulting t value.</returns>
     public IQueryable<T> Apply(IQueryable<T> source, string? sort)
     {
         var terms = ParseAll(sort).Where(term => selectors.ContainsKey(term.Key)).ToList();

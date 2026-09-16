@@ -10,9 +10,28 @@ using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Events.Commands;
 
+/// <summary>
+/// Carries the input required to update the event.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Request">Validated client request data.</param>
+/// <param name="UserId">Identifier of the user.</param>
 public sealed record UpdateEventCommand(Guid EventId, UpdateEventRequest Request, Guid UserId)
     : ICommand<Result<EventResponse>>;
 
+/// <summary>
+/// Executes the command to update the event.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="files">Repository used to persist and retrieve files.</param>
+/// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
+/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
+/// <param name="categoryChecker">The category checker value.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="getById">Handler used to retrieve event by identifier.</param>
 public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
@@ -26,6 +45,12 @@ public sealed class UpdateEventCommandHandler(
     GetEventByIdQueryHandler getById
 ) : ICommandHandler<UpdateEventCommand, Result<EventResponse>>
 {
+    /// <summary>
+    /// Handles the request to update the event.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an event on success, or an application error on failure.</returns>
     public async Task<Result<EventResponse>> HandleAsync(
         UpdateEventCommand command,
         CancellationToken ct = default

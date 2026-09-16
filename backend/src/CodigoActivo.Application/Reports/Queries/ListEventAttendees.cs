@@ -8,9 +8,19 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
+/// <summary>
+/// Carries the criteria used to list event attendees.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListEventAttendeesQuery(Guid EventId, EventAttendeeListQuery Filters)
     : IQuery<PagedResult<EventAttendeeResponse>>;
 
+/// <summary>
+/// Executes the query to list event attendees.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQueryExecutor executor)
     : IQueryHandler<ListEventAttendeesQuery, PagedResult<EventAttendeeResponse>>
 {
@@ -25,6 +35,12 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
         .Default("firstName")
         .Tie(u => u.Id);
 
+    /// <summary>
+    /// Handles the request to list event attendees.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged event attendee.</returns>
     public async Task<PagedResult<EventAttendeeResponse>> HandleAsync(
         ListEventAttendeesQuery query,
         CancellationToken ct = default

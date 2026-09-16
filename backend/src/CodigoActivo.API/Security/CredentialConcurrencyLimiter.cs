@@ -3,8 +3,17 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Security;
 
+/// <summary>
+/// Enforces the configured limits for credential concurrency.
+/// </summary>
 public static class CredentialConcurrencyLimiter
 {
+    /// <summary>
+    /// Creates a credential concurrency limiter from the validated request.
+    /// </summary>
+    /// <param name="permitLimit">Number of permit allowed or reported.</param>
+    /// <param name="queueLimit">Number of queue allowed or reported.</param>
+    /// <returns>The resulting http context value.</returns>
     public static PartitionedRateLimiter<HttpContext> Create(int permitLimit, int queueLimit)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);

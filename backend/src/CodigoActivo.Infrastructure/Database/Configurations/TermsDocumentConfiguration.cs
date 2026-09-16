@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for terms document.
+/// </summary>
 public sealed class TermsDocumentConfiguration : IEntityTypeConfiguration<TermsDocument>
 {
+    /// <summary>
+    /// Configures the database mapping for terms document.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<TermsDocument> builder)
     {
         builder.HasKey(x => x.Id);

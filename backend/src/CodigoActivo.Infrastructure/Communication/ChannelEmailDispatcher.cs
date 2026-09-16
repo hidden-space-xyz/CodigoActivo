@@ -5,6 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
+/// <summary>
+/// Dispatches channel email work through the configured queue.
+/// </summary>
+/// <param name="transport">The transport value.</param>
+/// <param name="options">Configuration values used by the component.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ChannelEmailDispatcher(
     IEmailTransport transport,
     EmailQueueOptions options,
@@ -22,11 +28,21 @@ public sealed class ChannelEmailDispatcher(
 
     private Task? workers;
 
+    /// <summary>
+    /// Attempts to add the email to the bounded delivery queue.
+    /// </summary>
+    /// <param name="message">Email message to deliver.</param>
+    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public bool TryEnqueue(EmailMessage message)
     {
         return channel.Writer.TryWrite(message);
     }
 
+    /// <summary>
+    /// Starts processing queued email in the background.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         workers ??= Task.WhenAll(
@@ -37,6 +53,11 @@ public sealed class ChannelEmailDispatcher(
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Stops queue processing after pending work has completed.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         channel.Writer.TryComplete();

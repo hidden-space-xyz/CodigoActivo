@@ -4,6 +4,15 @@ using CodigoActivo.Application.Resources.Localization;
 
 namespace CodigoActivo.Application.Emails;
 
+/// <summary>
+/// Contains the data produced for activity email.
+/// </summary>
+/// <param name="ActivityTitle">The activity title value.</param>
+/// <param name="EventTitle">The event title value.</param>
+/// <param name="Location">The location value.</param>
+/// <param name="StartsAt">The starts at value.</param>
+/// <param name="EndsAt">The ends at value.</param>
+/// <param name="EventUrl">The event url value.</param>
 public sealed record ActivityEmailDetails(
     string ActivityTitle,
     string EventTitle,
@@ -16,6 +25,11 @@ public sealed record ActivityEmailDetails(
     private const string DateFormat = "dd/MM/yyyy";
     private const string TimeFormat = "HH:mm";
 
+    /// <summary>
+    /// Formats the activity schedule as localized human-readable text.
+    /// </summary>
+    /// <param name="timeZone">Time zone used to calculate local dates.</param>
+    /// <returns>The generated text.</returns>
     public string ScheduleText(TimeZoneInfo timeZone)
     {
         var start = TimeZoneInfo.ConvertTime(StartsAt, timeZone);
@@ -34,6 +48,12 @@ public sealed record ActivityEmailDetails(
         return AppStrings.EmailsDetailsScheduleMultiDay(startDate, startTime, endDate, endTime);
     }
 
+    /// <summary>
+    /// Converts the value to block.
+    /// </summary>
+    /// <param name="timeZone">Time zone used to calculate local dates.</param>
+    /// <param name="roleName">The role name value.</param>
+    /// <returns>The resulting email block value.</returns>
     public EmailBlock ToBlock(TimeZoneInfo timeZone, string? roleName = null)
     {
         var rows = Rows(timeZone, roleName).ToList();

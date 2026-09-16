@@ -6,9 +6,20 @@ using MimeKit;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
+/// <summary>
+/// Sends email through the configured smtp transport.
+/// </summary>
+/// <param name="options">Configuration values used by the component.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender> logger)
     : IEmailTransport
 {
+    /// <summary>
+    /// Sends the prepared smtp email sender message.
+    /// </summary>
+    /// <param name="message">Email message to deliver.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         EnsureConfigured();
@@ -20,6 +31,12 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
         await client.DisconnectAsync(quit: true, ct);
     }
 
+    /// <summary>
+    /// Sends the many message to its recipients.
+    /// </summary>
+    /// <param name="messages">Email messages to deliver as a batch.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an email batch.</returns>
     public async Task<EmailBatchResult> SendManyAsync(
         IReadOnlyList<EmailMessage> messages,
         CancellationToken ct = default

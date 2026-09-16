@@ -7,14 +7,30 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve event roster.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventRosterQuery(Guid EventId) : IQuery<Result<EventRosterResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve event roster.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class GetEventRosterQueryHandler(
     IEventRepository events,
     IActivityRepository activities,
     IQueryExecutor executor
 ) : IQueryHandler<GetEventRosterQuery, Result<EventRosterResponse>>
 {
+    /// <summary>
+    /// Handles the request to retrieve event roster.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an event roster on success, or an application error on failure.</returns>
     public async Task<Result<EventRosterResponse>> HandleAsync(
         GetEventRosterQuery query,
         CancellationToken ct = default

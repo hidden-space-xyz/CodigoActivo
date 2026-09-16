@@ -8,9 +8,24 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
+/// <summary>
+/// Carries the input required to create an activity.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Request">Validated client request data.</param>
+/// <param name="UserId">Identifier of the user.</param>
 public sealed record CreateActivityCommand(Guid EventId, CreateActivityRequest Request, Guid UserId)
     : ICommand<Result<ActivityResponse>>;
 
+/// <summary>
+/// Executes the command to create an activity.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="validator">The validator value.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="getById">Handler used to retrieve activity by identifier.</param>
 public sealed class CreateActivityCommandHandler(
     IActivityRepository activities,
     ActivityValidator validator,
@@ -20,6 +35,12 @@ public sealed class CreateActivityCommandHandler(
     GetActivityByIdQueryHandler getById
 ) : ICommandHandler<CreateActivityCommand, Result<ActivityResponse>>
 {
+    /// <summary>
+    /// Handles the request to create an activity.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an activity on success, or an application error on failure.</returns>
     public async Task<Result<ActivityResponse>> HandleAsync(
         CreateActivityCommand command,
         CancellationToken ct = default

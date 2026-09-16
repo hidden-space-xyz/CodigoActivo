@@ -10,8 +10,20 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Seo.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve sitemap xml.
+/// </summary>
 public sealed record GetSitemapXmlQuery : IQuery<string>;
 
+/// <summary>
+/// Executes the query to retrieve sitemap xml.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="announcements">Repository used to persist and retrieve announcements.</param>
+/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="application">The application value.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetSitemapXmlQueryHandler(
     IEventRepository events,
     IAnnouncementRepository announcements,
@@ -33,6 +45,12 @@ public sealed class GetSitemapXmlQueryHandler(
         "/register",
     ];
 
+    /// <summary>
+    /// Handles the request to retrieve sitemap xml.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a string.</returns>
     public async Task<string> HandleAsync(GetSitemapXmlQuery query, CancellationToken ct = default)
     {
         return await cache.GetOrCreateAsync(
@@ -115,6 +133,7 @@ public sealed class GetSitemapXmlQueryHandler(
 
     private sealed class Utf8StringWriter() : StringWriter(CultureInfo.InvariantCulture)
     {
+/// <inheritdoc />
         public override Encoding Encoding => Encoding.UTF8;
     }
 }

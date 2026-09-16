@@ -12,6 +12,14 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
+/// <summary>
+/// Creates the initial demo data records when they are missing.
+/// </summary>
+/// <param name="context">Database context used for persistence.</param>
+/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DemoDataSeeder(
     CodigoActivoDbContext context,
     ILocalFileSystemRepository storage,
@@ -20,6 +28,9 @@ public sealed class DemoDataSeeder(
     ILogger<DemoDataSeeder> logger
 )
 {
+    /// <summary>
+    /// Identifies the demo password configuration or policy value.
+    /// </summary>
     public const string DemoPassword = "Demo1234!";
 
     private const int AdultCount = 20;
@@ -63,6 +74,11 @@ public sealed class DemoDataSeeder(
         [],
     ];
 
+    /// <summary>
+    /// Determines whether the expected seed data already exists.
+    /// </summary>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public Task<bool> IsSeededAsync(CancellationToken ct = default)
     {
         return context.Database.IsRelational()
@@ -70,6 +86,11 @@ public sealed class DemoDataSeeder(
             : Task.FromResult(false);
     }
 
+    /// <summary>
+    /// Creates the required demo data records when they do not exist.
+    /// </summary>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SeedAsync(CancellationToken ct = default)
     {
         if (!context.Database.IsRelational())
@@ -826,8 +847,17 @@ public sealed class DemoDataSeeder(
 
     private enum UserKind
     {
+        /// <summary>
+        /// Selects the member option.
+        /// </summary>
         Member,
+        /// <summary>
+        /// Selects the sponsor option.
+        /// </summary>
         Sponsor,
+        /// <summary>
+        /// Selects the child option.
+        /// </summary>
         Child,
     }
 

@@ -6,8 +6,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
+/// <summary>
+/// Creates the initial database records when they are missing.
+/// </summary>
+/// <param name="context">Database context used for persistence.</param>
 public class DatabaseSeeder(CodigoActivoDbContext context)
 {
+    /// <summary>
+    /// Creates the required database records when they do not exist.
+    /// </summary>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SeedAsync(CancellationToken ct = default)
     {
         await SeedUserStatusTypesAsync(ct);

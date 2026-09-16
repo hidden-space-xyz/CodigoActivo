@@ -9,9 +9,26 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve dashboard analytics.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
     : IQuery<DashboardAnalyticsResponse>;
 
+/// <summary>
+/// Executes the query to retrieve dashboard analytics.
+/// </summary>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="announcements">Repository used to persist and retrieve announcements.</param>
+/// <param name="partners">Repository used to persist and retrieve partners.</param>
+/// <param name="eventCategoryTypes">Repository used to persist and retrieve event category types.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetDashboardAnalyticsQueryHandler(
     IEventRepository events,
     IActivityRepository activities,
@@ -31,6 +48,12 @@ public sealed class GetDashboardAnalyticsQueryHandler(
 
     private static readonly string[] GenderKeys = ["Male", "Female", "Other"];
 
+    /// <summary>
+    /// Handles the request to retrieve dashboard analytics.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a dashboard analytics.</returns>
     public async Task<DashboardAnalyticsResponse> HandleAsync(
         GetDashboardAnalyticsQuery query,
         CancellationToken ct = default

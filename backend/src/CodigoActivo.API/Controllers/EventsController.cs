@@ -14,10 +14,20 @@ using Microsoft.AspNetCore.OutputCaching;
 
 namespace CodigoActivo.API.Controllers;
 
+/// <summary>
+/// Exposes HTTP endpoints for querying and managing events.
+/// </summary>
 [ApiController]
 [Route("api/events")]
 public class EventsController : ApiControllerBase
 {
+    /// <summary>
+    /// Lists the events that match the supplied filters.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a paged event list item, or an error response.</returns>
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
@@ -30,6 +40,12 @@ public class EventsController : ApiControllerBase
         return Ok(await handler.HandleAsync(new ListEventsQuery(query), ct));
     }
 
+    /// <summary>
+    /// Executes the past years endpoint for events.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an int, or an error response.</returns>
     [HttpGet("past-years")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
@@ -41,6 +57,13 @@ public class EventsController : ApiControllerBase
         return Ok(await handler.HandleAsync(new GetPastEventYearsQuery(), ct));
     }
 
+    /// <summary>
+    /// Gets the requested event.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpGet("{eventId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Events)]
@@ -53,6 +76,13 @@ public class EventsController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new GetEventByIdQuery(eventId), ct));
     }
 
+    /// <summary>
+    /// Executes the category types endpoint for events.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a paged event category type, or an error response.</returns>
     [HttpGet("categoryType")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypesAsync(
@@ -64,6 +94,13 @@ public class EventsController : ApiControllerBase
         return Ok(await handler.HandleAsync(new ListEventCategoryTypesQuery(query), ct));
     }
 
+    /// <summary>
+    /// Executes the terms documents endpoint for events.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a paged terms document, or an error response.</returns>
     [HttpGet("termsDocument")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<TermsDocumentResponse>>> TermsDocumentsAsync(
@@ -75,6 +112,13 @@ public class EventsController : ApiControllerBase
         return Ok(await handler.HandleAsync(new ListTermsDocumentsQuery(query), ct));
     }
 
+    /// <summary>
+    /// Executes the terms acceptance endpoint for events.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event terms acceptance, or an error response.</returns>
     [HttpGet("{eventId:guid}/terms-acceptance")]
     [Authorize]
     public async Task<ActionResult<EventTermsAcceptanceResponse>> TermsAcceptanceAsync(
@@ -86,6 +130,13 @@ public class EventsController : ApiControllerBase
         return Ok(await handler.HandleAsync(new GetEventTermsAcceptanceQuery(eventId, UserId), ct));
     }
 
+    /// <summary>
+    /// Creates an event from the validated request.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventResponse>> CreateAsync(
@@ -100,6 +151,14 @@ public class EventsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Updates the selected event with the validated request.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPut("{eventId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventResponse>> UpdateAsync(
@@ -114,6 +173,13 @@ public class EventsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Deletes the selected event.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpDelete("{eventId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
@@ -125,6 +191,13 @@ public class EventsController : ApiControllerBase
         return ToNoContent(await handler.HandleAsync(new DeleteEventCommand(eventId), ct));
     }
 
+    /// <summary>
+    /// Executes the feature endpoint for events.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPatch("{eventId:guid}/feature")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventResponse>> FeatureAsync(
@@ -136,6 +209,14 @@ public class EventsController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new SetEventFeaturedCommand(eventId), ct));
     }
 
+    /// <summary>
+    /// Executes the ratings endpoint for events.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a paged event rating list item, or an error response.</returns>
     [HttpGet("{eventId:guid}/ratings")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> RatingsAsync(
@@ -148,6 +229,14 @@ public class EventsController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new ListEventRatingsQuery(eventId, query), ct));
     }
 
+    /// <summary>
+    /// Executes the save rating endpoint for events.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event rating, or an error response.</returns>
     [HttpPut("{eventId:guid}/rating")]
     [Authorize]
     public async Task<ActionResult<EventRatingResponse>> SaveRatingAsync(
@@ -162,6 +251,13 @@ public class EventsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Creates a category type.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event category type, or an error response.</returns>
     [HttpPost("categoryType")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
@@ -173,6 +269,14 @@ public class EventsController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new CreateEventCategoryTypeCommand(request), ct));
     }
 
+    /// <summary>
+    /// Updates a category type with the supplied data.
+    /// </summary>
+    /// <param name="eventCategoryTypeId">Identifier of the event category type.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an event category type, or an error response.</returns>
     [HttpPut("categoryType/{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
@@ -190,6 +294,13 @@ public class EventsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Deletes a category type when it is no longer referenced.
+    /// </summary>
+    /// <param name="eventCategoryTypeId">Identifier of the event category type.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpDelete("categoryType/{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteCategoryTypeAsync(
@@ -203,6 +314,13 @@ public class EventsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Creates a terms document.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a terms document, or an error response.</returns>
     [HttpPost("termsDocument")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<TermsDocumentResponse>> CreateTermsDocumentAsync(
@@ -214,6 +332,14 @@ public class EventsController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new CreateTermsDocumentCommand(request), ct));
     }
 
+    /// <summary>
+    /// Updates a terms document with the supplied data.
+    /// </summary>
+    /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a terms document, or an error response.</returns>
     [HttpPut("termsDocument/{termsDocumentId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<TermsDocumentResponse>> UpdateTermsDocumentAsync(
@@ -228,6 +354,13 @@ public class EventsController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Deletes a terms document when it is no longer referenced.
+    /// </summary>
+    /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpDelete("termsDocument/{termsDocumentId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteTermsDocumentAsync(

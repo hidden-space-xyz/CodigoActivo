@@ -11,10 +11,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.API.Security;
 
+/// <summary>
+/// Validates session ticket input before it is processed.
+/// </summary>
+/// <param name="db">Database context used for persistence.</param>
 public sealed class SessionTicketValidator(CodigoActivoDbContext db)
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
 
+    /// <summary>
+    /// Creates a principal.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching claims principal, or <see langword="null"/> when it is not found.</returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
         Guid userId,
         CancellationToken ct = default
@@ -24,6 +34,11 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
         return user is null ? null : BuildPrincipal(user);
     }
 
+    /// <summary>
+    /// Validates the session ticket state and rejects unsafe configuration.
+    /// </summary>
+    /// <param name="context">Database context used for persistence.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task ValidateAsync(CookieValidatePrincipalContext context)
     {
         var userId = context.Principal?.GetUserId();

@@ -9,9 +9,22 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Users.Commands;
 
+/// <summary>
+/// Carries the input required to update the user.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record UpdateUserCommand(Guid UserId, UpdateUserRequest Request)
     : ICommand<Result<UserResponse>>;
 
+/// <summary>
+/// Executes the command to update the user.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="getById">Handler used to retrieve user by identifier.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
     IClock clock,
@@ -20,6 +33,12 @@ public sealed class UpdateUserCommandHandler(
     GetUserByIdQueryHandler getById
 ) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
 {
+    /// <summary>
+    /// Handles the request to update the user.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
     public async Task<Result<UserResponse>> HandleAsync(
         UpdateUserCommand command,
         CancellationToken ct = default

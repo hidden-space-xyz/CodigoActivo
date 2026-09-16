@@ -4,6 +4,14 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
+/// <summary>
+/// Sends email through the configured throttled transport.
+/// </summary>
+/// <param name="dispatcher">The dispatcher value.</param>
+/// <param name="options">Configuration values used by the component.</param>
+/// <param name="queueOptions">The queue options value.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ThrottledEmailSender(
     IEmailDispatcher dispatcher,
     EmailGuardOptions options,
@@ -14,6 +22,12 @@ public sealed class ThrottledEmailSender(
 {
     private readonly EmailSendLimiter limiter = new(options, clock);
 
+    /// <summary>
+    /// Sends the prepared throttled email sender message.
+    /// </summary>
+    /// <param name="message">Email message to deliver.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         var decision = limiter.TryConsume(message.Kind, message.ToAddress);

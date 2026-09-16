@@ -4,8 +4,22 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
 
+/// <summary>
+/// Builds the email content for activity signup decision.
+/// </summary>
 public static class ActivitySignupDecisionEmail
 {
+    /// <summary>
+    /// Builds the email sent when an activity signup is confirmed.
+    /// </summary>
+    /// <param name="toAddress">The to address value.</param>
+    /// <param name="toName">The to name value.</param>
+    /// <param name="participantName">The participant name value.</param>
+    /// <param name="roleName">The role name value.</param>
+    /// <param name="details">The details value.</param>
+    /// <param name="timeZone">Time zone used to calculate local dates.</param>
+    /// <param name="siteUrl">The site url value.</param>
+    /// <returns>The resulting email message value.</returns>
     public static EmailMessage Confirmed(
         string toAddress,
         string toName,
@@ -37,6 +51,16 @@ public static class ActivitySignupDecisionEmail
         );
     }
 
+    /// <summary>
+    /// Builds the email sent when an activity signup is denied.
+    /// </summary>
+    /// <param name="toAddress">The to address value.</param>
+    /// <param name="toName">The to name value.</param>
+    /// <param name="participantName">The participant name value.</param>
+    /// <param name="details">The details value.</param>
+    /// <param name="timeZone">Time zone used to calculate local dates.</param>
+    /// <param name="siteUrl">The site url value.</param>
+    /// <returns>The resulting email message value.</returns>
     public static EmailMessage Denied(
         string toAddress,
         string toName,

@@ -5,16 +5,39 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Files;
 
+/// <summary>
+/// Removes orphan file data that is no longer referenced.
+/// </summary>
 public interface IOrphanFileCleaner
 {
+    /// <summary>
+    /// Deletes an if orphaned when it is no longer referenced.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default);
 
+    /// <summary>
+    /// Deletes an orphaned when it is no longer referenced.
+    /// </summary>
+    /// <param name="fileIds">Identifiers of the file items.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DeleteOrphanedAsync(
         IReadOnlyCollection<Guid> fileIds,
         CancellationToken ct = default
     );
 }
 
+/// <summary>
+/// Removes orphan file data that is no longer referenced.
+/// </summary>
+/// <param name="files">Repository used to persist and retrieve files.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class OrphanFileCleaner(
     IFileRepository files,
     IUnitOfWork uow,
@@ -23,6 +46,12 @@ public sealed class OrphanFileCleaner(
     ILogger<OrphanFileCleaner> logger
 ) : IOrphanFileCleaner
 {
+    /// <summary>
+    /// Deletes an if orphaned when it is no longer referenced.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default)
     {
         try
@@ -55,6 +84,12 @@ public sealed class OrphanFileCleaner(
         }
     }
 
+    /// <summary>
+    /// Deletes an orphaned when it is no longer referenced.
+    /// </summary>
+    /// <param name="fileIds">Identifiers of the file items.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task DeleteOrphanedAsync(
         IReadOnlyCollection<Guid> fileIds,
         CancellationToken ct = default

@@ -9,6 +9,17 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Activities;
 
+/// <summary>
+/// Builds and sends notifications for activity signup.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="emailSender">The email sender value.</param>
+/// <param name="application">The application value.</param>
+/// <param name="roleTypesQuery">Handler used to list activity role types.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ActivitySignupNotifier(
     IActivityRepository activities,
     IUserRepository users,
@@ -22,6 +33,15 @@ public sealed class ActivitySignupNotifier(
 {
     private const string EventPath = "/events";
 
+    /// <summary>
+    /// Notifies the affected users about decision.
+    /// </summary>
+    /// <param name="activityId">Identifier of the activity.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="statusId">Identifier of the status.</param>
+    /// <param name="roleTypeId">Identifier of the role type.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task NotifyDecisionAsync(
         Guid activityId,
         Guid userId,
@@ -189,6 +209,9 @@ public sealed class ActivitySignupNotifier(
         string? GuardianEmail
     )
     {
+        /// <summary>
+        /// Gets the full name value.
+        /// </summary>
         public string FullName => $"{FirstName} {LastName}".Trim();
     }
 

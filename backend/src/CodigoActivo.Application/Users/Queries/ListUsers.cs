@@ -8,9 +8,20 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Users.Queries;
 
+/// <summary>
+/// Carries the criteria used to list users.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
+/// <param name="CallerId">Identifier of the caller.</param>
+/// <param name="IsAdmin">Whether admin.</param>
 public sealed record ListUsersQuery(UserListQuery Filters, Guid CallerId, bool IsAdmin)
     : IQuery<PagedResult<UserResponse>>;
 
+/// <summary>
+/// Executes the query to list users.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class ListUsersQueryHandler(IUserRepository users, IQueryExecutor executor)
     : IQueryHandler<ListUsersQuery, PagedResult<UserResponse>>
 {
@@ -29,6 +40,12 @@ public sealed class ListUsersQueryHandler(IUserRepository users, IQueryExecutor 
         .Default("firstName")
         .Tie(u => u.Id);
 
+    /// <summary>
+    /// Handles the request to list users.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged user.</returns>
     public Task<PagedResult<UserResponse>> HandleAsync(
         ListUsersQuery query,
         CancellationToken ct = default

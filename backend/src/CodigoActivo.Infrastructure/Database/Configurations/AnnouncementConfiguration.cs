@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for announcement.
+/// </summary>
 public class AnnouncementConfiguration : IEntityTypeConfiguration<Announcement>
 {
+    /// <summary>
+    /// Configures the database mapping for announcement.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Announcement> builder)
     {
         builder.HasKey(a => a.Id);

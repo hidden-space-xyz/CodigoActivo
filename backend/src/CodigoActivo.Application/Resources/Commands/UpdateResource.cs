@@ -10,12 +10,28 @@ using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Resources.Commands;
 
+/// <summary>
+/// Carries the input required to update the resource.
+/// </summary>
+/// <param name="ResourceId">Identifier of the resource.</param>
+/// <param name="Request">Validated client request data.</param>
+/// <param name="UserId">Identifier of the user.</param>
 public sealed record UpdateResourceCommand(
     Guid ResourceId,
     UpdateResourceRequest Request,
     Guid UserId
 ) : ICommand<Result<ResourceResponse>>;
 
+/// <summary>
+/// Executes the command to update the resource.
+/// </summary>
+/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="resourceTypes">Repository used to persist and retrieve resource types.</param>
+/// <param name="files">Repository used to persist and retrieve files.</param>
+/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateResourceCommandHandler(
     IResourceRepository resources,
     IResourceTypeRepository resourceTypes,
@@ -26,6 +42,12 @@ public sealed class UpdateResourceCommandHandler(
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<UpdateResourceCommand, Result<ResourceResponse>>
 {
+    /// <summary>
+    /// Handles the request to update the resource.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a resource on success, or an application error on failure.</returns>
     public async Task<Result<ResourceResponse>> HandleAsync(
         UpdateResourceCommand command,
         CancellationToken ct = default

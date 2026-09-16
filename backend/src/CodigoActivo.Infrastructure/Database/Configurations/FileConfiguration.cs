@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for file.
+/// </summary>
 public class FileConfiguration : IEntityTypeConfiguration<FileEntity>
 {
+    /// <summary>
+    /// Configures the database mapping for file.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<FileEntity> builder)
     {
         builder.HasKey(f => f.Id);

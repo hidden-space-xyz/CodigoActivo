@@ -9,9 +9,20 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
+/// <summary>
+/// Carries the criteria used to list activities.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListActivitiesQuery(ActivityListQuery Filters)
     : IQuery<PagedResult<ActivityResponse>>;
 
+/// <summary>
+/// Executes the query to list activities.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListActivitiesQueryHandler(
     IActivityRepository activities,
     IQueryExecutor executor,
@@ -29,6 +40,12 @@ public sealed class ListActivitiesQueryHandler(
         .Default("activityStartsAt")
         .Tie(a => a.Id);
 
+    /// <summary>
+    /// Handles the request to list activities.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged activity.</returns>
     public async Task<PagedResult<ActivityResponse>> HandleAsync(
         ListActivitiesQuery query,
         CancellationToken ct = default

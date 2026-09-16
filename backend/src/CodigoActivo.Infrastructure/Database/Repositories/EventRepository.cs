@@ -6,20 +6,43 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
+/// <summary>
+/// Persists and retrieves event data from the database.
+/// </summary>
+/// <param name="context">Database context used for persistence.</param>
 public class EventRepository(CodigoActivoDbContext context)
     : Repository<Event>(context),
         IEventRepository
 {
+    /// <summary>
+    /// Gets the event with the relationships required for editing.
+    /// </summary>
+    /// <param name="id">Identifier of the target entity.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching event, or <see langword="null"/> when it is not found.</returns>
     public async Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default)
     {
         return await Set.Include(e => e.Categories).FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
+    /// <summary>
+    /// Sets the featured state.
+    /// </summary>
+    /// <param name="id">Identifier of the target entity.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default)
     {
         return SetExclusiveFeaturedAsync(Set, id, ct);
     }
 
+    /// <summary>
+    /// Gets the requested terms acceptance.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching event terms acceptance, or <see langword="null"/> when it is not found.</returns>
     public Task<EventTermsAcceptance?> GetTermsAcceptanceAsync(
         Guid eventId,
         Guid userId,
@@ -32,6 +55,14 @@ public class EventRepository(CodigoActivoDbContext context)
         );
     }
 
+    /// <summary>
+    /// Determines whether a terms acceptance already exists.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public Task<bool> TermsAcceptanceExistsAsync(
         Guid eventId,
         Guid userId,
@@ -45,6 +76,12 @@ public class EventRepository(CodigoActivoDbContext context)
         );
     }
 
+    /// <summary>
+    /// Determines whether terms acceptances exists.
+    /// </summary>
+    /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public Task<bool> HasTermsAcceptancesAsync(Guid termsDocumentId, CancellationToken ct = default)
     {
         return Context.EventTermsAcceptances.AnyAsync(
@@ -53,6 +90,12 @@ public class EventRepository(CodigoActivoDbContext context)
         );
     }
 
+    /// <summary>
+    /// Adds a terms acceptance to the current unit of work.
+    /// </summary>
+    /// <param name="acceptance">The acceptance value.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task AddTermsAcceptanceAsync(
         EventTermsAcceptance acceptance,
         CancellationToken ct = default

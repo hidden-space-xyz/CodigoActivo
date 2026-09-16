@@ -4,9 +4,16 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for assignment status type.
+/// </summary>
 public sealed class AssignmentStatusTypeConfiguration
     : IEntityTypeConfiguration<AssignmentStatusType>
 {
+    /// <summary>
+    /// Configures the database mapping for assignment status type.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<AssignmentStatusType> builder)
     {
         builder.HasKey(x => x.Id);

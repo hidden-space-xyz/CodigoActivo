@@ -2,11 +2,21 @@ using System.Diagnostics;
 
 namespace CodigoActivo.API.Middlewares;
 
+/// <summary>
+/// Processes HTTP requests to enforce request logging.
+/// </summary>
+/// <param name="next">The next value.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class RequestLoggingMiddleware(
     RequestDelegate next,
     ILogger<RequestLoggingMiddleware> logger
 )
 {
+    /// <summary>
+    /// Processes the current HTTP request and invokes the next middleware.
+    /// </summary>
+    /// <param name="context">Database context used for persistence.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task InvokeAsync(HttpContext context)
     {
         var start = Stopwatch.GetTimestamp();

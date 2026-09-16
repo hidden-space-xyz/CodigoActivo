@@ -8,8 +8,21 @@ using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
+/// <summary>
+/// Carries the input required to resend verification.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
 public sealed record ResendVerificationCommand(Guid UserId) : ICommand<Result>;
 
+/// <summary>
+/// Executes the command to resend verification.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="hasher">The hasher value.</param>
+/// <param name="verification">The verification value.</param>
+/// <param name="accountEmails">The account emails value.</param>
 public sealed class ResendVerificationCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -19,6 +32,12 @@ public sealed class ResendVerificationCommandHandler(
     AccountEmails accountEmails
 ) : ICommandHandler<ResendVerificationCommand, Result>
 {
+    /// <summary>
+    /// Handles the request to resend verification.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(
         ResendVerificationCommand command,
         CancellationToken ct = default

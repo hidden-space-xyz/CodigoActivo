@@ -9,9 +9,19 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
+/// <summary>
+/// Carries the criteria used to list terms documents.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListTermsDocumentsQuery(TermsDocumentListQuery Filters)
     : IQuery<PagedResult<TermsDocumentResponse>>;
 
+/// <summary>
+/// Executes the query to list terms documents.
+/// </summary>
+/// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListTermsDocumentsQueryHandler(
     ITermsDocumentRepository termsDocuments,
     IQueryExecutor executor,
@@ -24,6 +34,12 @@ public sealed class ListTermsDocumentsQueryHandler(
             .Default("name")
             .Tie(t => t.Id);
 
+    /// <summary>
+    /// Handles the request to list terms documents.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged terms document.</returns>
     public async Task<PagedResult<TermsDocumentResponse>> HandleAsync(
         ListTermsDocumentsQuery query,
         CancellationToken ct = default

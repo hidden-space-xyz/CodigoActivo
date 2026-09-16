@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
+/// <summary>
+/// Defines the Entity Framework mapping for activity.
+/// </summary>
 public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
 {
+    /// <summary>
+    /// Configures the database mapping for activity.
+    /// </summary>
+    /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Activity> builder)
     {
         builder.HasKey(a => a.Id);

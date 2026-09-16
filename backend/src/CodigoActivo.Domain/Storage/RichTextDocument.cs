@@ -2,8 +2,16 @@ using System.Text.Json;
 
 namespace CodigoActivo.Domain.Storage;
 
+/// <summary>
+/// Parses and validates rich text documents.
+/// </summary>
 public static class RichTextDocument
 {
+    /// <summary>
+    /// Determines whether the rich-text document contains meaningful content.
+    /// </summary>
+    /// <param name="richTextJson">Rich-text document encoded as JSON.</param>
+    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public static bool IsEmpty(string? richTextJson)
     {
         if (string.IsNullOrWhiteSpace(richTextJson))

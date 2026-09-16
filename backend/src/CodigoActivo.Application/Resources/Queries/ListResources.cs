@@ -9,9 +9,20 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Resources.Queries;
 
+/// <summary>
+/// Carries the criteria used to list resources.
+/// </summary>
+/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListResourcesQuery(ResourceListQuery Filters)
     : IQuery<PagedResult<ResourceListItemResponse>>;
 
+/// <summary>
+/// Executes the query to list resources.
+/// </summary>
+/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListResourcesQueryHandler(
     IResourceRepository resources,
     IQueryExecutor executor,
@@ -29,6 +40,12 @@ public sealed class ListResourcesQueryHandler(
             .Default("-createdAt")
             .Tie(r => r.Id);
 
+    /// <summary>
+    /// Handles the request to list resources.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a paged resource list item.</returns>
     public async Task<PagedResult<ResourceListItemResponse>> HandleAsync(
         ListResourcesQuery query,
         CancellationToken ct = default

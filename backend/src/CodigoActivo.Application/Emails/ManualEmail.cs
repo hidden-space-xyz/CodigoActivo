@@ -4,6 +4,13 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.Application.Emails;
 
+/// <summary>
+/// Represents a manual email content value used by the application.
+/// </summary>
+/// <param name="Subject">The subject value.</param>
+/// <param name="HtmlBody">The html body value.</param>
+/// <param name="TextBody">The text body value.</param>
+/// <param name="InlineImages">The inline images value.</param>
 public sealed record ManualEmailContent(
     string Subject,
     string HtmlBody,
@@ -11,12 +18,22 @@ public sealed record ManualEmailContent(
     IReadOnlyList<EmailInlineImage> InlineImages
 );
 
+/// <summary>
+/// Builds the email content for manual.
+/// </summary>
 public static class ManualEmail
 {
     private const int PreheaderLength = 140;
 
     private static readonly char[] Whitespace = [' ', '\t', '\n', '\r', '\f', '\v'];
 
+    /// <summary>
+    /// Builds the render output.
+    /// </summary>
+    /// <param name="subject">The subject value.</param>
+    /// <param name="body">The body value.</param>
+    /// <param name="siteUrl">The site url value.</param>
+    /// <returns>The resulting manual email content value.</returns>
     public static ManualEmailContent Render(string subject, string body, string siteUrl)
     {
         var paragraphs = Paragraphs(body);
@@ -41,6 +58,14 @@ public static class ManualEmail
         );
     }
 
+    /// <summary>
+    /// Creates a manual email from the validated request.
+    /// </summary>
+    /// <param name="content">Content stream to store or inspect.</param>
+    /// <param name="toAddress">The to address value.</param>
+    /// <param name="toName">The to name value.</param>
+    /// <param name="attachments">The attachments value.</param>
+    /// <returns>The resulting email message value.</returns>
     public static EmailMessage Create(
         ManualEmailContent content,
         string toAddress,

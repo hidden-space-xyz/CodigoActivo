@@ -6,12 +6,26 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
+/// <summary>
+/// Carries the input required to change assignment status.
+/// </summary>
+/// <param name="ActivityId">Identifier of the activity.</param>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record ChangeAssignmentStatusCommand(
     Guid ActivityId,
     Guid UserId,
     ChangeAssignmentStatusRequest Request
 ) : ICommand<Result<AssignmentResponse>>;
 
+/// <summary>
+/// Executes the command to change assignment status.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="statuses">Repository used to persist and retrieve statuses.</param>
+/// <param name="notifier">The notifier value.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class ChangeAssignmentStatusCommandHandler(
     IActivityRepository activities,
     IAssignmentStatusTypeRepository statuses,
@@ -20,6 +34,12 @@ public sealed class ChangeAssignmentStatusCommandHandler(
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<ChangeAssignmentStatusCommand, Result<AssignmentResponse>>
 {
+    /// <summary>
+    /// Handles the request to change assignment status.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an assignment on success, or an application error on failure.</returns>
     public async Task<Result<AssignmentResponse>> HandleAsync(
         ChangeAssignmentStatusCommand command,
         CancellationToken ct = default

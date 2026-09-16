@@ -5,8 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
+/// <summary>
+/// Persists and retrieves dashboard data from the database.
+/// </summary>
+/// <param name="context">Database context used for persistence.</param>
 public class DashboardRepository(CodigoActivoDbContext context) : IDashboardRepository
 {
+    /// <summary>
+    /// Gets the requested counts.
+    /// </summary>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains a dashboard counts.</returns>
     public async Task<DashboardCounts> GetCountsAsync(CancellationToken ct = default)
     {
         FormattableString sql = $"""

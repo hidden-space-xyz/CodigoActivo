@@ -7,12 +7,25 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
+/// <summary>
+/// Carries the input required to change assignment role.
+/// </summary>
+/// <param name="ActivityId">Identifier of the activity.</param>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
 public sealed record ChangeAssignmentRoleCommand(
     Guid ActivityId,
     Guid UserId,
     ChangeAssignmentRoleRequest Request
 ) : ICommand<Result<AssignmentResponse>>;
 
+/// <summary>
+/// Executes the command to change assignment role.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="roleTypes">Repository used to persist and retrieve role types.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class ChangeAssignmentRoleCommandHandler(
     IActivityRepository activities,
     IActivityRoleTypeRepository roleTypes,
@@ -20,6 +33,12 @@ public sealed class ChangeAssignmentRoleCommandHandler(
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<ChangeAssignmentRoleCommand, Result<AssignmentResponse>>
 {
+    /// <summary>
+    /// Handles the request to change assignment role.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains an assignment on success, or an application error on failure.</returns>
     public async Task<Result<AssignmentResponse>> HandleAsync(
         ChangeAssignmentRoleCommand command,
         CancellationToken ct = default

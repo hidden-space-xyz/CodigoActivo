@@ -5,8 +5,14 @@ using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Mapping;
 
+/// <summary>
+/// Defines reusable database projections for API response models.
+/// </summary>
 public static class Projections
 {
+    /// <summary>
+    /// Stores the shared event value.
+    /// </summary>
     public static readonly Expression<Func<Event, EventResponse>> Event =
         @event => new EventResponse
         {
@@ -44,6 +50,9 @@ public static class Projections
                     },
         };
 
+    /// <summary>
+    /// Stores the shared event list item value.
+    /// </summary>
     public static readonly Expression<Func<Event, EventListItemResponse>> EventListItem =
         @event => new EventListItemResponse
         {
@@ -71,6 +80,9 @@ public static class Projections
                 .ToList(),
         };
 
+    /// <summary>
+    /// Stores the shared announcement value.
+    /// </summary>
     public static readonly Expression<Func<Announcement, AnnouncementResponse>> Announcement =
         announcement => new AnnouncementResponse
         {
@@ -86,6 +98,9 @@ public static class Projections
             Featured = announcement.Featured,
         };
 
+    /// <summary>
+    /// Stores the shared announcement list item value.
+    /// </summary>
     public static readonly Expression<
         Func<Announcement, AnnouncementListItemResponse>
     > AnnouncementListItem = announcement => new AnnouncementListItemResponse
@@ -101,6 +116,9 @@ public static class Projections
         Featured = announcement.Featured,
     };
 
+    /// <summary>
+    /// Stores the shared resource value.
+    /// </summary>
     public static readonly Expression<Func<Resource, ResourceResponse>> Resource =
         resource => new ResourceResponse
         {
@@ -124,6 +142,9 @@ public static class Projections
             ThumbnailId = resource.ThumbnailId,
         };
 
+    /// <summary>
+    /// Stores the shared resource list item value.
+    /// </summary>
     public static readonly Expression<Func<Resource, ResourceListItemResponse>> ResourceListItem =
         resource => new ResourceListItemResponse
         {
@@ -146,6 +167,9 @@ public static class Projections
             ThumbnailId = resource.ThumbnailId,
         };
 
+    /// <summary>
+    /// Stores the shared resource type value.
+    /// </summary>
     public static readonly Expression<Func<ResourceType, ResourceTypeResponse>> ResourceType =
         resourceType => new ResourceTypeResponse
         {
@@ -156,6 +180,9 @@ public static class Projections
             IsExternal = resourceType.IsExternal,
         };
 
+    /// <summary>
+    /// Stores the shared partner value.
+    /// </summary>
     public static readonly Expression<Func<Partner, PartnerResponse>> Partner =
         partner => new PartnerResponse
         {
@@ -171,6 +198,9 @@ public static class Projections
             ThumbnailId = partner.ThumbnailId,
         };
 
+    /// <summary>
+    /// Stores the shared activity value.
+    /// </summary>
     public static readonly Expression<Func<Activity, ActivityResponse>> Activity =
         activity => new ActivityResponse
         {
@@ -204,6 +234,9 @@ public static class Projections
             UpdatedBy = activity.UpdatedBy,
         };
 
+    /// <summary>
+    /// Stores the shared user value.
+    /// </summary>
     public static readonly Expression<Func<User, UserResponse>> User = user => new UserResponse
     {
         Id = user.Id,
@@ -225,6 +258,9 @@ public static class Projections
         IsAdmin = user.IsAdmin,
     };
 
+    /// <summary>
+    /// Stores the shared user with type value.
+    /// </summary>
     public static readonly Expression<Func<User, UserResponse>> UserWithType =
         user => new UserResponse
         {
@@ -255,6 +291,9 @@ public static class Projections
             ),
         };
 
+    /// <summary>
+    /// Stores the shared activity role type value.
+    /// </summary>
     public static readonly Expression<
         Func<ActivityRoleType, ActivityRoleTypeResponse>
     > ActivityRoleType = roleType => new ActivityRoleTypeResponse
@@ -264,6 +303,9 @@ public static class Projections
         Description = roleType.Description,
     };
 
+    /// <summary>
+    /// Stores the shared assignment status type value.
+    /// </summary>
     public static readonly Expression<
         Func<AssignmentStatusType, AssignmentStatusTypeResponse>
     > AssignmentStatusType = statusType => new AssignmentStatusTypeResponse
@@ -274,6 +316,9 @@ public static class Projections
         Color = statusType.Color,
     };
 
+    /// <summary>
+    /// Stores the shared event category type value.
+    /// </summary>
     public static readonly Expression<
         Func<EventCategoryType, EventCategoryTypeResponse>
     > EventCategoryType = categoryType => new EventCategoryTypeResponse
@@ -283,6 +328,9 @@ public static class Projections
         Color = categoryType.Color,
     };
 
+    /// <summary>
+    /// Stores the shared terms document value.
+    /// </summary>
     public static readonly Expression<Func<TermsDocument, TermsDocumentResponse>> TermsDocument =
         termsDocument => new TermsDocumentResponse
         {
@@ -291,6 +339,9 @@ public static class Projections
             Description = termsDocument.Description,
         };
 
+    /// <summary>
+    /// Stores the shared activity modality type value.
+    /// </summary>
     public static readonly Expression<
         Func<ActivityModalityType, ActivityModalityTypeResponse>
     > ActivityModalityType = modalityType => new ActivityModalityTypeResponse
@@ -299,6 +350,9 @@ public static class Projections
         Name = modalityType.Name,
     };
 
+    /// <summary>
+    /// Stores the shared user status type value.
+    /// </summary>
     public static readonly Expression<Func<UserStatusType, UserStatusTypeResponse>> UserStatusType =
         statusType => new UserStatusTypeResponse
         {
@@ -308,6 +362,9 @@ public static class Projections
             Color = statusType.Color,
         };
 
+    /// <summary>
+    /// Stores the shared user type value.
+    /// </summary>
     public static readonly Expression<Func<UserType, UserTypeResponse>> UserType =
         userType => new UserTypeResponse
         {
@@ -317,6 +374,9 @@ public static class Projections
             Color = userType.Color,
         };
 
+    /// <summary>
+    /// Stores the shared event rating value.
+    /// </summary>
     public static readonly Expression<Func<EventRating, EventRatingResponse>> EventRating =
         rating => new EventRatingResponse
         {
@@ -331,6 +391,9 @@ public static class Projections
             UpdatedAt = rating.UpdatedAt,
         };
 
+    /// <summary>
+    /// Stores the shared event rating list item value.
+    /// </summary>
     public static readonly Expression<
         Func<EventRating, EventRatingListItemResponse>
     > EventRatingListItem = rating => new EventRatingListItemResponse
@@ -344,6 +407,9 @@ public static class Projections
         UpdatedAt = rating.UpdatedAt,
     };
 
+    /// <summary>
+    /// Stores the shared assigned activity value.
+    /// </summary>
     public static readonly Expression<
         Func<ActivityUserRoleAssignment, AssignedActivityResponse>
     > AssignedActivity = assignment => new AssignedActivityResponse

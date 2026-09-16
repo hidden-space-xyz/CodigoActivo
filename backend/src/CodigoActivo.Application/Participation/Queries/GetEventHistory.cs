@@ -7,9 +7,20 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
+/// <summary>
+/// Carries the criteria used to retrieve event history.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
 public sealed record GetEventHistoryQuery(Guid UserId)
     : IQuery<IReadOnlyList<EventHistoryResponse>>;
 
+/// <summary>
+/// Executes the query to retrieve event history.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="ratings">Repository used to persist and retrieve ratings.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetEventHistoryQueryHandler(
     IActivityRepository activities,
     IEventRatingRepository ratings,
@@ -17,6 +28,12 @@ public sealed class GetEventHistoryQueryHandler(
     IClock clock
 ) : IQueryHandler<GetEventHistoryQuery, IReadOnlyList<EventHistoryResponse>>
 {
+    /// <summary>
+    /// Handles the request to retrieve event history.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the matching event history items.</returns>
     public async Task<IReadOnlyList<EventHistoryResponse>> HandleAsync(
         GetEventHistoryQuery query,
         CancellationToken ct = default
@@ -141,22 +158,73 @@ public sealed class GetEventHistoryQueryHandler(
 
     private sealed record HistoryRow
     {
+        /// <summary>
+        /// Gets or sets the identifier of the associated event.
+        /// </summary>
         public Guid EventId { get; init; }
+        /// <summary>
+        /// Gets or sets the event title value.
+        /// </summary>
         public string EventTitle { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the event subtitle value.
+        /// </summary>
         public string EventSubtitle { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the date and time when the event starts.
+        /// </summary>
         public DateOnly EventStartsAt { get; init; }
+        /// <summary>
+        /// Gets or sets the date and time when the event ends.
+        /// </summary>
         public DateOnly EventEndsAt { get; init; }
+        /// <summary>
+        /// Gets or sets the identifier of the associated thumbnail.
+        /// </summary>
         public Guid ThumbnailId { get; init; }
+        /// <summary>
+        /// Gets or sets the identifier of the associated activity.
+        /// </summary>
         public Guid ActivityId { get; init; }
+        /// <summary>
+        /// Gets or sets the activity title value.
+        /// </summary>
         public string ActivityTitle { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the location value.
+        /// </summary>
         public string Location { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the modality name value.
+        /// </summary>
         public string ModalityName { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the identifier of the associated user.
+        /// </summary>
         public Guid UserId { get; init; }
+        /// <summary>
+        /// Gets or sets the first name value.
+        /// </summary>
         public string FirstName { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the last name value.
+        /// </summary>
         public string LastName { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the identifier of the associated role type.
+        /// </summary>
         public Guid RoleTypeId { get; init; }
+        /// <summary>
+        /// Gets or sets the role type name value.
+        /// </summary>
         public string RoleTypeName { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the identifier of the associated status.
+        /// </summary>
         public Guid StatusId { get; init; }
+        /// <summary>
+        /// Gets or sets the status name value.
+        /// </summary>
         public string StatusName { get; init; } = string.Empty;
     }
 }

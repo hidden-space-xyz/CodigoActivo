@@ -9,6 +9,9 @@ using Microsoft.Net.Http.Headers;
 
 namespace CodigoActivo.API.Controllers;
 
+/// <summary>
+/// Exposes HTTP endpoints for querying and managing seo.
+/// </summary>
 [ApiController]
 [Route("api")]
 [ApiExplorerSettings(IgnoreApi = true)]
@@ -16,6 +19,12 @@ public class SeoController : ApiControllerBase
 {
     private static readonly TimeSpan ClientCacheLifetime = TimeSpan.FromHours(1);
 
+    /// <summary>
+    /// Executes the sitemap endpoint for seo.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpGet("sitemap.xml")]
     [HttpHead("sitemap.xml")]
     [AllowAnonymous]
@@ -33,6 +42,12 @@ public class SeoController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Executes the robots endpoint for seo.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpGet("robots.txt")]
     [HttpHead("robots.txt")]
     [AllowAnonymous]

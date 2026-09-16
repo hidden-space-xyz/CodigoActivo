@@ -4,6 +4,13 @@ using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities;
 
+/// <summary>
+/// Evaluates whether signup is allowed by the business rules.
+/// </summary>
+/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SignupGate(
     IActivityRepository activities,
     IUserRepository users,
@@ -11,6 +18,14 @@ public sealed class SignupGate(
     IClock clock
 )
 {
+    /// <summary>
+    /// Ensures that signup open satisfies the required business rules.
+    /// </summary>
+    /// <param name="activityId">Identifier of the activity.</param>
+    /// <param name="userIds">Identifiers of the user items.</param>
+    /// <param name="isAdmin">Whether is admin.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> EnsureSignupOpenAsync(
         Guid activityId,
         IReadOnlyList<Guid> userIds,

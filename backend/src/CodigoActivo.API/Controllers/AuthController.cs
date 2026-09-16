@@ -13,10 +13,18 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Controllers;
 
+/// <summary>
+/// Exposes HTTP endpoints for querying and managing auth.
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ApiControllerBase
 {
+    /// <summary>
+    /// Executes the csrf endpoint for auth.
+    /// </summary>
+    /// <param name="antiforgery">The antiforgery value.</param>
+    /// <returns>An HTTP response containing a csrf token, or an error response.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
     public ActionResult<CsrfTokenResponse> Csrf([FromServices] IAntiforgery antiforgery)
@@ -30,6 +38,13 @@ public class AuthController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Registers a new user account from the validated request.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a register, or an error response.</returns>
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -45,6 +60,14 @@ public class AuthController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Verifies the supplied value against its stored cryptographic representation.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPatch("{userId:guid}/verify")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -58,6 +81,13 @@ public class AuthController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new VerifyUserCommand(userId, request.Otp), ct));
     }
 
+    /// <summary>
+    /// Executes the resend verification endpoint for auth.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("{userId:guid}/resend-verification")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -70,6 +100,13 @@ public class AuthController : ApiControllerBase
         return ToNoContent(await handler.HandleAsync(new ResendVerificationCommand(userId), ct));
     }
 
+    /// <summary>
+    /// Executes the forgot password endpoint for auth.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -82,6 +119,14 @@ public class AuthController : ApiControllerBase
         return ToNoContent(await handler.HandleAsync(new ForgotPasswordCommand(request), ct));
     }
 
+    /// <summary>
+    /// Resets the password using the supplied value.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPatch("{userId:guid}/reset-password")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -97,6 +142,13 @@ public class AuthController : ApiControllerBase
         );
     }
 
+    /// <summary>
+    /// Executes the login endpoint for auth.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -128,6 +180,10 @@ public class AuthController : ApiControllerBase
         return Ok(user);
     }
 
+    /// <summary>
+    /// Executes the logout endpoint for auth.
+    /// </summary>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> LogoutAsync()
@@ -136,6 +192,12 @@ public class AuthController : ApiControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Executes the me endpoint for auth.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<UserResponse>> MeAsync(
