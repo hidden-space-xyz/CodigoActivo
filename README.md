@@ -6,138 +6,130 @@
   />
 </p>
 <p align="center">
-<img alt=".NET" src="https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
-<img alt="Vue" src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" />
-<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
-<img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
-<img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
-<img alt="License" src="https://img.shields.io/badge/GPL--3.0-red?style=for-the-badge&logo=gnu&logoColor=white" />
+  <img alt=".NET" src="https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
+  <img alt="Vue" src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL_18-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/GPL--3.0-red?style=for-the-badge&logo=gnu&logoColor=white" />
 </p>
 
 <p align="center">
-<img alt="API Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-API&style=for-the-badge&label=API&color=2EA44F&logo=github&logoColor=white" />
-<img alt="UI Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-UI&style=for-the-badge&label=UI&color=2EA44F&logo=github&logoColor=white" />
-<img alt="CI" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/docker-publish.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white" />
-<img alt="CodeQL" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/codeql.yml?style=for-the-badge&label=CodeQL&logo=github&logoColor=white" />
+  <img alt="API Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-API&style=for-the-badge&label=API&color=2EA44F&logo=github&logoColor=white" />
+  <img alt="UI Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-UI&style=for-the-badge&label=UI&color=2EA44F&logo=github&logoColor=white" />
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white" />
+  <img alt="CodeQL" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/codeql.yml?style=for-the-badge&label=CodeQL&logo=githubactions&logoColor=white" />
 </p>
 
 # 🌐 &lt;Codigoactivo/&gt;
 
-**Official website for `<Codigoactivo/>`, a nonprofit association based in León.**
+Official website and management platform for `<Codigoactivo/>`, a nonprofit association in León that
+introduces young people to programming and computational thinking through free, practical activities.
 
-## 📖 Overview
+## What the application provides
 
-`<Codigoactivo/>` is a León-based nonprofit that since 2016 has helped children and young people (8–18)
-discover programming and computational thinking through free, hands-on learning — from Scratch and
-robotics to Python and artificial intelligence.
+- A public site for events, announcements, resources and information about the association.
+- Registration for adults and dependent minors, optional email verification, password recovery and a
+  self-service account area.
+- Activity enrollment, participation history, event ratings and downloadable participation certificates.
+- An administration area for content, events, activities, attendees, users, catalogs, reports and email.
+- A Spanish interface whose user-facing copy is managed through Vue I18n.
 
-This repository is its digital home: a **public site** for events, announcements, resources
-and member sign-up, plus an **admin back-office** where the team runs it all.
+## Technology
 
-## ✨ Features
+| Area     | Main technologies                                                                        |
+| -------- | ---------------------------------------------------------------------------------------- |
+| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, MailKit, OpenAPI              |
+| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval |
+| Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`         |
+| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers                                 |
+| Runtime  | Docker Compose and unprivileged nginx                                                    |
 
-- **Public site** — home, about, events, announcements, resources and partners, with rich-text content
-  and per-activity signup on each event.
-- **Member accounts** — registration (adults can enroll the minors in their care), OTP email
-  verification, password reset, and a self-service account page organised into three tabs — profile
-  (with the dependent minors), a participation history from which members rate the events they
-  attended, and the participation certificates earned by every member of the household, rendered in the
-  browser and downloadable as a print-quality PNG or PDF.
-- **Admin back-office** — dashboard with charts, events (detail with activities, attendees and ratings
-  tabs, plus a printable roster and badges), announcements, resources, partners, users and catalogs.
-  Users and event attendees export to CSV.
-- **Email** — admins write plain-text mail with attachments to one member or to everyone matching the
-  current filters; the admin's decision on an activity signup notifies the member automatically,
-  always reaching the guardian's address when the enrolled person is a dependent minor.
-- **Spanish UI, fully driven by Vue I18n** — no string is hardcoded, so a second language is a drop-in
-  locale file.
+## Repository
 
-## 🧰 Tech Stack
-
-| Layer          | Technologies                                                                                                     |
-| -------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Backend**    | ASP.NET Core (.NET 10) · EF Core · PostgreSQL · Argon2id · MailKit · Swashbuckle (OpenAPI)                       |
-| **Frontend**   | Vue 3 · Vite · TypeScript · Element Plus · TanStack Query · Vue I18n · TipTap · Chart.js · Orval (typed API client)  |
-| **Quality**    | .NET analyzers (CA/IDE, warnings as errors) · CSharpier · typed ESLint · Stylelint · Knip · Prettier · `vue-tsc` · Steiger |
-| **Testing**    | xUnit v3 · AwesomeAssertions · NSubstitute · Testcontainers (PostgreSQL)                                         |
-| **Deployment** | Docker · Docker Compose · nginx                                                                                  |
-
-## 🏗️ Repository layout
-
-```
+```text
 CodigoActivo/
-├── backend/    ASP.NET Core Web API (.NET 10, EF Core + PostgreSQL)
-└── frontend/   Vue 3 + Vite SPA (TypeScript, Feature-Sliced Design)
+├── backend/    ASP.NET Core API organized in five projects
+└── frontend/   Vue single-page application organized with Feature-Sliced Design
 ```
 
-Two independently developed apps that ship together as a **same-origin** stack. See
-**[ARCHITECTURE.md](ARCHITECTURE.md)** for the full picture.
+The browser always uses one origin. In development Vite proxies `/api`; in the container stack nginx serves
+the SPA and proxies API traffic. See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and boundaries.
 
-## 🚀 Quick start
+## Quick start with Docker
 
-### Deploy it
+### Local development stack
 
-The root [`docker-compose.yml`](docker-compose.yml) pulls the released images from GHCR and
-references no local files — copy that single file plus a `.env` built from the
-[`.env.example`](.env.example) template to any machine with Docker and it runs:
+From a clone, Docker Compose automatically merges `docker-compose.override.yml`. Create the environment file
+and choose one email setup: configure SMTP, or set `ACCOUNT_VERIFICATION_REQUIRED=false` for local work.
+
+```bash
+cp .env.example .env
+# Set POSTGRES_PASSWORD, BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD.
+# Configure SMTP_* or set ACCOUNT_VERIFICATION_REQUIRED=false.
+docker compose up --build
+```
+
+The SPA is available at <http://localhost:8080>, the API at <http://localhost:5150>, and Swagger at
+<http://localhost:5150/swagger>. The development overlay also publishes PostgreSQL on port `5432`.
+
+> [!WARNING]
+> The development overlay publishes ports on all host interfaces and relaxes API container hardening. Do not
+> use it for production.
+
+### Production stack
+
+The base Compose file pulls released images from GHCR and does not depend on the repository:
 
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
 curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
-nano .env                    # set DB/certificate secrets, URL, SMTP, mode and bootstrap admin credentials
-docker compose up -d         # production binds the web listener to 127.0.0.1 by default
+# Replace every required or placeholder value in .env.
+docker compose up -d
 ```
 
-The template is deliberately fail-safe: demo mode is off and placeholder/missing production values stop
-startup until you replace them. See the full variable list, TLS notes, bootstrap process and release checklist
-in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+Production publishes plain HTTP on host port `8080` on all interfaces. Put it behind a TLS reverse proxy and
+restrict direct access with the host firewall or an equivalent network policy. The API rejects unsafe
+production configuration. Follow [DEPLOYMENT.md](DEPLOYMENT.md) before exposing the service.
 
-### Run it for development
+## Run the applications directly
 
-From a clone, the same command merges `docker-compose.override.yml`, the **development** overlay: it
-builds both images from source instead of pulling them, publishes the database and the API, and
-relaxes the container hardening:
+Use Docker only for PostgreSQL, then run the API and frontend with hot reload:
 
 ```bash
-cp .env.example .env         # set POSTGRES_PASSWORD and the initial admin email/password
-docker compose up --build    # SPA → http://localhost:8080 · API → http://localhost:5150 (Swagger at /swagger)
+cp .env.example .env
+# Set POSTGRES_PASSWORD in .env for the db container.
+docker compose up -d db
+
+# Export real process variables; dotnet run does not read the root .env.
+export POSTGRES_PASSWORD=...
+export ACCOUNT_VERIFICATION_REQUIRED=false
+export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
+export BOOTSTRAP_ADMIN_PASSWORD=...
+cd backend
+dotnet run --project src/CodigoActivo.API
+
+cd ../frontend
+npm ci
+cp .env.example .env.local
+# Set VITE_API_PROXY_TARGET=http://localhost:5150.
+npm run dev
 ```
 
-Or run the apps directly, with hot reload:
+PowerShell uses `$env:NAME="value"` instead of `export NAME=value`. The complete setup, command and testing
+workflow is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```bash
-# Backend — the connection is built from POSTGRES_* env vars, and a bare `dotnet run` does NOT read the root .env
-cp .env.example .env                                       # set POSTGRES_PASSWORD — compose reads it for the db
-docker compose up -d db                                    # Postgres on 127.0.0.1:5432
-export POSTGRES_PASSWORD=...                               # PowerShell: $env:POSTGRES_PASSWORD="..."
-export DEMO_MODE=false
-export BOOTSTRAP_ADMIN_EMAIL=admin@example.test BOOTSTRAP_ADMIN_PASSWORD=...
-cd backend && dotnet run --project src/CodigoActivo.API    # http://localhost:5150
+## Documentation
 
-# Frontend
-cd frontend && npm ci
-cp .env.example .env.local                                 # set VITE_API_PROXY_TARGET=http://localhost:5150
-npm run dev                                                # http://localhost:5173
-```
+| Document                           | Purpose                                                      |
+| ---------------------------------- | ------------------------------------------------------------ |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System structure, dependency rules and API contract          |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, checks, migrations and contribution rules |
+| [DEPLOYMENT.md](DEPLOYMENT.md)     | Production topology, configuration, releases and backups     |
+| [SECURITY.md](SECURITY.md)         | Vulnerability reporting and the security model               |
+| [CLAUDE.md](CLAUDE.md)             | Concise repository guidance for coding agents                |
 
-> [!TIP]
-> Prerequisites, per-app commands, and the full development workflow are in
-> **[CONTRIBUTING.md](CONTRIBUTING.md)**.
-
-## 📚 Documentation
-
-| Document                               | What's inside                                                                            |
-| -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Clean-architecture backend, Feature-Sliced frontend, and the API contract linking them   |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Local setup, commands, coding conventions, testing, and the API-generation workflow      |
-| **[DEPLOYMENT.md](DEPLOYMENT.md)**     | Docker Compose stack, environment-variable reference, and production run                 |
-| **[SECURITY.md](SECURITY.md)**         | Security model, container hardening, and how to report a vulnerability                   |
-
-> [!NOTE]
-> Per-directory guidance for AI coding agents lives in the `CLAUDE.md` files
-> (root, `backend/`, `frontend/`).
-
-## 📝 License
+## License
 
 Released under the [GNU General Public License v3.0](LICENSE).
 

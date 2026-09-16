@@ -1,166 +1,167 @@
 # Contributing
 
-Thanks for helping improve `<Codigoactivo/>`. This guide covers local setup, the day-to-day
-commands, and the conventions the build enforces. For the design behind the code see
-[ARCHITECTURE.md](ARCHITECTURE.md); for the environment-variable reference see
-[DEPLOYMENT.md](DEPLOYMENT.md).
+This guide covers local setup, routine commands and repository conventions. Read
+[ARCHITECTURE.md](ARCHITECTURE.md) before changing boundaries between projects or frontend layers. Runtime
+configuration belongs in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 26.x](https://nodejs.org/) and npm
-- [PostgreSQL](https://www.postgresql.org/) — a local install, or the Dockerized `db` service (below)
-- [Docker](https://www.docker.com/) — required by the backend integration tests, which start their own PostgreSQL
-- EF Core tools (for migrations): `dotnet tool install -g dotnet-ef`
+- [Docker](https://www.docker.com/), for the local PostgreSQL service and backend integration tests
+- `dotnet-ef` when creating migrations: `dotnet tool install --global dotnet-ef`
+
+A separate PostgreSQL installation is optional.
 
 ## Local setup
 
-Configuration is read from **flat environment variables** — there are no `dotnet user-secrets` and no
-`ConnectionStrings` section. The full list with defaults lives in [DEPLOYMENT.md](DEPLOYMENT.md#environment-variables).
+### Database and backend
 
-### Backend
-
-The DB connection string is built in code from `POSTGRES_HOST` / `POSTGRES_PORT` / `POSTGRES_DB` /
-`POSTGRES_USER` / `POSTGRES_PASSWORD` (defaults: `localhost:5432`, db/user `codigoactivo`, empty password).
-The simplest path is to run just the database in Docker and point the API at it:
+Docker Compose reads the root `.env`; `dotnet run` does not. Start PostgreSQL with Compose, then provide the
+API configuration as real process environment variables:
 
 ```bash
-cp .env.example .env               # set POSTGRES_PASSWORD and bootstrap admin credentials
-docker compose up db               # Postgres published on 127.0.0.1:5432
+cp .env.example .env
+# Set POSTGRES_PASSWORD in .env.
+docker compose up -d db
 
-export POSTGRES_PASSWORD=...        # same value as in .env (PowerShell: $env:POSTGRES_PASSWORD="...")
-export DEMO_MODE=false
-export BOOTSTRAP_ADMIN_EMAIL=admin@example.test BOOTSTRAP_ADMIN_PASSWORD=...
-cd backend && dotnet run --project src/CodigoActivo.API
+export POSTGRES_PASSWORD=...
+export ACCOUNT_VERIFICATION_REQUIRED=false
+export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
+export BOOTSTRAP_ADMIN_PASSWORD=...
+cd backend
+dotnet run --project src/CodigoActivo.API
 ```
 
-The API listens on <http://localhost:5150> (add `--launch-profile https` to also serve
-<https://localhost:7039>), with Swagger at `/swagger` (Development only). On startup it **always** applies
-migrations and seeds the lookup catalogs.
+In PowerShell, set variables with `$env:POSTGRES_PASSWORD="..."` and the equivalent names above. If account
+verification remains enabled, also set valid `SMTP_HOST` and `SMTP_FROM_ADDRESS` values; verification defaults
+to enabled when the variable is absent.
 
-> [!NOTE]
-> A bare `dotnet run` does **not** read the root `.env` file — that file is consumed by Docker Compose.
-> Provide `POSTGRES_*` as real environment variables, or run the database with `docker compose up db`.
+The API starts at <http://localhost:5150>; the `https` launch profile also uses
+<https://localhost:7039>. Swagger is available at `/swagger` only in Development. Startup applies migrations,
+seeds catalogs and requires bootstrap credentials when the user table is empty.
 
 ### Frontend
 
 ```bash
 cd frontend
-npm install
-cp .env.example .env.local          # then set VITE_API_PROXY_TARGET=http://localhost:5150
-npm run dev                         # http://localhost:5173
+npm ci
+cp .env.example .env.local
+# Change VITE_API_PROXY_TARGET to http://localhost:5150.
+npm run dev
 ```
 
-The dev server proxies `/api` to `VITE_API_PROXY_TARGET`; its code fallback is `https://localhost:5001`, so
-set `http://localhost:5150` to reach a local backend.
+Vite serves <http://localhost:5173> and proxies `/api`, `/sitemap.xml` and `/robots.txt` to the configured
+backend.
+
+### Complete Docker development stack
+
+From the repository root:
+
+```bash
+cp .env.example .env
+# Set database/bootstrap values and configure SMTP, or disable account verification.
+docker compose up --build
+```
+
+Compose automatically merges `docker-compose.override.yml`: it builds both applications, serves the SPA on
+port `8080`, publishes the API on `5150` and PostgreSQL on `5432`, and relaxes API hardening for debugging.
+These ports bind to all host interfaces, so use the overlay only on a trusted development machine.
 
 ## Commands
 
-**Backend** (run from `backend/`)
+Run backend commands from `backend/`:
 
 ```bash
-dotnet build                                   # build + analyzers; any violation FAILS the build
-                                               # (TreatWarningsAsErrors), re-checked on every build
-dotnet run --project src/CodigoActivo.API      # run the API
-dotnet test                                    # unit + integration tests (integration needs Docker, see Testing below)
+dotnet restore CodigoActivo.slnx
+dotnet build CodigoActivo.slnx
+dotnet test
+dotnet test tests/CodigoActivo.UnitTests
+dotnet test tests/CodigoActivo.IntegrationTests
+dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.MethodName"
 
-# Add a migration (applied automatically on next startup):
-dotnet ef migrations add <Name> \
-  --project src/CodigoActivo.Infrastructure \
-  --startup-project src/CodigoActivo.API
+dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.API
 ```
 
-**Frontend** (run from `frontend/`)
+Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable
+PostgreSQL database.
+
+Run frontend commands from `frontend/`:
 
 ```bash
-npm run dev          # dev server with HMR
-npm run build        # vue-tsc typecheck + production build
-npm run typecheck    # vue-tsc typecheck only
-npm run lint         # typed ESLint + Vue I18n + accessibility; warnings fail (lint:fix to autofix)
-npm run lint:fsd     # Steiger — Feature-Sliced Design rules; warnings fail
-npm run lint:styles  # Stylelint for CSS and Vue styles (lint:styles:fix to autofix)
-npm run lint:unused  # Knip — unused files, exports and dependencies
-npm run format       # Prettier across the complete frontend
-npm run check        # complete frontend quality gate used by CI
-npm run api:generate # regenerate the typed API client from swagger.json (Orval)
-npm run api:check    # verify that the committed API client matches swagger.json
+npm run dev             # Vite development server
+npm run build           # Type-check and production build
+npm run typecheck       # vue-tsc only
+npm run lint            # ESLint, i18n and accessibility rules
+npm run lint:fix        # Safe ESLint fixes
+npm run lint:fsd        # Feature-Sliced Design checks
+npm run lint:styles     # Stylelint
+npm run lint:styles:fix # Stylelint fixes
+npm run lint:unused     # Knip unused-code/dependency checks
+npm run format          # Write Prettier formatting
+npm run format:check    # Verify Prettier formatting
+npm run api:generate    # Regenerate the Orval client
+npm run api:check       # Compare generated output with the committed client
+npm run check           # Complete frontend CI gate
 ```
+
+There is currently no frontend test suite; `npm run check` is its mandatory quality gate.
 
 ## Changing the API
 
-The apps are contractually linked; keep both sides in sync in the same change:
+Keep the backend, OpenAPI document and generated frontend client in one change:
 
-1. Change the DTOs / endpoints in the backend.
-2. Refresh `frontend/swagger.json` from the running backend's Swagger endpoint.
-3. Run `npm run api:generate` — Orval wipes and regenerates `src/shared/api/generated/`.
-4. If you added a failure mode, add the `ErrorCode` member in the backend and its Spanish message under
-   the `errors.*` namespace in `frontend/src/shared/i18n/locales/es.json`.
+1. Update backend endpoints, request/response records and error codes.
+2. Run the backend in Development.
+3. Replace `frontend/swagger.json` with the document from
+   `http://localhost:5150/swagger/v1/swagger.json`.
+4. Run `npm run api:generate` from `frontend/`.
+5. Add a Spanish `errors.*` message in `frontend/src/shared/i18n/locales/es.json` for every new
+   `ErrorCode`.
+6. Run `dotnet test` and `npm run check`.
 
-> [!CAUTION]
-> Never hand-edit anything under `src/shared/api/generated/` — `npm run api:generate` wipes and rewrites the
-> entire folder, so manual changes are silently lost.
+Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md#how-the-two-apps-stay-in-sync-the-api-contract) for the reasoning.
+## Backend conventions
 
-## Coding conventions
+- Keep project dependencies in the direction documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+- Put one command or query and its sealed handler in each use-case file. Controllers inject handlers; they do
+  not contain business logic.
+- Queries are no-tracking and do not mutate, commit, invalidate caches or send email. Commands commit through
+  `IUnitOfWork` and invalidate caches after the commit.
+- Never access `DateTime.Now` or `DateTime.UtcNow`; inject `IClock`.
+- Do not add `Version` attributes to `PackageReference`; versions are centralized in
+  `backend/Directory.Packages.props`.
+- Account for PostgreSQL snake-case naming in raw SQL.
+- Put wire request and response records in `Application/DTOs`, binding query types in
+  `Application/Querying`, and configuration types outside Domain.
+- User-facing backend text belongs in
+  `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`. Log messages, diagnostic
+  exceptions and seeded content are not UI text.
+- Use `camelCase` private fields without a leading underscore.
+- Keep CSharpier formatting and all SDK analyzer rules clean. Warnings are errors.
+- Name tests with three PascalCase segments and no underscores, for example
+  `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`. CQRS handler unit tests start with `HandleAsync`.
 
-> [!IMPORTANT]
-> Style is enforced at build/lint time on both sides — fix the code, don't disable the rule.
+## Frontend conventions
 
-**Backend**
+- Respect the Feature-Sliced import direction and import a slice through its `index.ts` public API.
+- Keep generated request functions behind handwritten `api/requests.ts` modules.
+- Put entity-scoped server state in the entity; put multi-entity or session-dependent workflows in a feature.
+- Build TanStack Query keys through the entity's `api/query-keys.ts` factory.
+- Do not hardcode user-facing text. Add Vue I18n keys to `src/shared/i18n/locales/es.json`.
+- Feature composables use camelCase filenames such as `useLogin.ts`; entity and `shared/lib` composables use
+  kebab-case names such as `use-theme.ts`.
+- Keep strict TypeScript, ESLint, accessibility, i18n, Stylelint, Steiger, Knip and Prettier checks green.
 
-- **Never** use `DateTime.Now` / `DateTime.UtcNow`; inject `IClock`.
-- **Never** put `Version=` on a `PackageReference` — versions are central in `Directory.Packages.props`.
-- The database is **snake_case**; account for it in raw SQL.
-- **Never hardcode user-facing prose** — every string a member or admin reads is a key in
-  `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`, reached through the `AppStrings` accessor
-  (composites are methods with typed parameters; `string.Format` never appears at a call site). Exception
-  messages, log templates, HTTP reason phrases and seeded catalog text are deliberately **excluded** — see
-  the Localization section of `backend/CLAUDE.md`, which also explains why a second backend language does not
-  work in the production container as it ships. `AppStringsTests` must stay green.
-- Type colocation is intentional (all repository interfaces in one file, request+response DTOs per aggregate
-  in one `*Dtos.cs`, and one use case per file: the `Command`/`Query` record colocated with its sealed
-  `Handler`); private fields are `camelCase` with no leading underscore.
-- Formatting is CSharpier; the SDK's CA/IDE rules run in-build and **warnings are errors**
-  (`TreatWarningsAsErrors`). The configuration lives in `backend/Directory.Build.Analyzers.props` and
-  `backend/Directory.Build.targets`; per-rule severity exceptions belong in `backend/.editorconfig`. None of
-  these files carries comments; document a deviation in `backend/CLAUDE.md` instead of inline.
+## Tests and pull requests
 
-**Frontend**
+Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Integration tests share a disposable
+PostgreSQL 18 Testcontainers instance, reset and reseed data between tests, and disable parallel execution.
 
-- **Never** hand-edit `src/shared/api/generated/`.
-- Import across slices only through a slice's `index.ts`; Steiger enforces the FSD layer rules.
-- The UI is **Spanish**, but **never hardcode a string in a component** — every user-facing string is a Vue
-  I18n key in `src/shared/i18n/locales/es.json` (`$t` in templates, `useI18n()` in `<script setup>`,
-  `i18n.global.t` outside setup). There is a single `es` locale on purpose; going bilingual must stay a
-  drop-in `en.json` next to it, which only works if nothing bypasses i18n. ESLint rejects missing,
-  duplicated, unused or invalid messages; typed dynamic keys cover the namespaces resolved at runtime.
-- TypeScript is very strict. Typed ESLint, Vue I18n and accessibility rules, Stylelint, Knip,
-  Steiger and Prettier are all enforced by `npm run check`; warnings fail the gate.
-- Composable file naming: **features** use camelCase (`useLogin.ts`); **entities and `shared/lib`** use
-  kebab-case (`use-theme.ts`).
+Before opening a pull request:
 
-## Testing
-
-- **Backend**: xUnit v3, AwesomeAssertions, NSubstitute. Integration tests run against a **real** PostgreSQL that
-  the test run provisions itself: a throwaway `postgres:18-alpine` container (Testcontainers) is started once,
-  migrated, shared by the whole assembly, and destroyed at the end. No `POSTGRES_*` env vars and no pre-created
-  database — just a running Docker daemon. Each test truncates and reseeds (parallelization is disabled). Set
-  `CODIGOACTIVO_TEST_DB_CONNECTION` to an Npgsql connection string for an empty, disposable database to reuse
-  that instead of spawning a container. Test method names follow `MethodUnderTestScenarioExpectedBehavior` —
-  three PascalCase segments with **no underscores**, e.g. `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`;
-  in unit tests of CQRS handlers the first segment is always `HandleAsync` — the test class name carries the
-  use case. Underscores are not allowed: CA1707 is enforced in the test projects like everywhere else.
-- **Frontend**: there is no automated test suite; `npm run check` is the mandatory static quality gate.
-
-## Commits & pull requests
-
-- Follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, …), matching
-  the existing history.
-- Keep the build green: `dotnet build` / `dotnet test` and `npm run check` must pass.
-- Update the docs when you change architecture, tech stack, testing conventions, security posture, or the
-  deployment/config surface.
-
-> [!NOTE]
-> AI coding agents follow separate, machine-oriented guidance in the `CLAUDE.md` files (root, `backend/`,
-> `frontend/`). Update those alongside these docs when conventions change.
+1. Run `dotnet build` and `dotnet test` from `backend/`.
+2. Run `npm run check` from `frontend/`.
+3. Update the relevant documentation when behavior, configuration, architecture or security changes.
+4. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, and so on).
