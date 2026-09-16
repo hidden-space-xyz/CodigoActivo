@@ -9,6 +9,7 @@
     "close": "Cerrar",
     "loading": "Cargando…",
     "loadMore": "Cargar más",
+    "searchByTitleOrSubtitle": "Buscar por título o subtítulo",
     "retry": "Reintentar",
     "backToHome": "Volver al inicio",
     "name": "Nombre",
@@ -291,7 +292,8 @@
     "announcements": {
       "title": "Anuncios",
       "intro": "Novedades y comunicaciones de la comunidad de Código Activo.",
-      "empty": "Todavía no hay anuncios."
+      "empty": "Todavía no hay anuncios.",
+      "noResults": "No hay anuncios que coincidan con tu búsqueda."
     },
     "announcementDetail": {
       "back": "← Volver a anuncios",
@@ -338,11 +340,15 @@
       "title": "Eventos",
       "intro": "Todo lo que tenemos por delante y todo lo que ya hemos hecho juntos.",
       "upcomingTitle": "Próximos eventos",
-      "pastTitle": "Eventos anteriores"
+      "pastTitle": "Eventos anteriores",
+      "categoryFilter": "Filtrar por categoría",
+      "allCategories": "Todas las categorías",
+      "noResults": "No hay eventos que coincidan con los filtros."
     },
     "resources": {
       "title": "Recursos",
-      "intro": "Material educativo propio y enlaces de interés."
+      "intro": "Material educativo propio y enlaces de interés.",
+      "noResults": "No hay recursos que coincidan con tu búsqueda."
     },
     "resourceDetail": {
       "back": "← Volver a recursos",

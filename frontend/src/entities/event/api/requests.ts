@@ -4,6 +4,7 @@ import {
   getApiEventsEventId,
   getApiEventsEventIdRatings,
   getApiEventsEventIdTermsAcceptance,
+  getApiEventsPastCategories,
   getApiEventsPastYears,
   patchApiEventsEventIdFeature,
   postApiEvents,
@@ -29,8 +30,15 @@ import type {
 import { FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
 import type { PagedListPage } from '@/shared/lib'
 
-import type { EventDetail, HomeEvents, PastEvent, UpcomingEvent } from '../model/types'
-import { toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
+import type {
+  EventCategoryTag,
+  EventDetail,
+  HomeEvents,
+  PastEvent,
+  PastEventFilters,
+  UpcomingEvent,
+} from '../model/types'
+import { toCategoryTag, toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
 export async function getUpcomingEventsPageRequest(
   page: number,
@@ -46,14 +54,21 @@ export async function getPastEventYearsRequest(): Promise<readonly string[]> {
   return (data ?? []).map(String)
 }
 
+export async function getPastEventCategoriesRequest(): Promise<readonly EventCategoryTag[]> {
+  const { data } = await getApiEventsPastCategories()
+  return (data ?? []).map(toCategoryTag).filter((category) => category.id)
+}
+
 export async function getPastEventsPageRequest(
-  year: string,
+  filters: PastEventFilters,
   page: number,
   pageSize: number,
 ): Promise<PagedListPage<PastEvent>> {
   const result = await getApiEvents({
     scope: 'Past',
-    year: Number(year),
+    year: Number(filters.year),
+    ...(filters.search ? { search: filters.search } : {}),
+    ...(filters.categoryId ? { categoryTypeId: filters.categoryId } : {}),
     sort: '-eventStartsAt',
     page,
     pageSize,

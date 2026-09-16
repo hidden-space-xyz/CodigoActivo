@@ -74,6 +74,7 @@ public sealed class ListResourcesQueryHandler(
             source = source.Where(r => r.CreatedAt < createdUpper);
         }
 
+        source = source.WhereContains(r => r.Title + " " + r.Subtitle, query.Search);
         source = source.WhereContains(r => r.Title, query.Title);
         source = source.WhereContains(r => r.Subtitle, query.Subtitle);
         source = source.WhereContains(r => r.Url, query.Url);

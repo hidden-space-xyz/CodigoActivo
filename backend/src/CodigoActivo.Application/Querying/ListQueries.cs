@@ -23,6 +23,10 @@ public enum EventScope
 public sealed class EventListQuery : PageQuery
 {
     /// <summary>
+    /// Gets or sets the text matched against the title or the subtitle.
+    /// </summary>
+    public string? Search { get; set; }
+    /// <summary>
     /// Gets or sets the title displayed to users.
     /// </summary>
     public string? Title { get; set; }
@@ -163,6 +167,10 @@ public sealed class EventRatingListQuery : PageQuery;
 public sealed class AnnouncementListQuery : PageQuery
 {
     /// <summary>
+    /// Gets or sets the text matched against the title or the subtitle.
+    /// </summary>
+    public string? Search { get; set; }
+    /// <summary>
     /// Gets or sets the title displayed to users.
     /// </summary>
     public string? Title { get; set; }
@@ -193,6 +201,10 @@ public sealed class AnnouncementListQuery : PageQuery
 /// </summary>
 public sealed class ResourceListQuery : PageQuery
 {
+    /// <summary>
+    /// Gets or sets the text matched against the title or the subtitle.
+    /// </summary>
+    public string? Search { get; set; }
     /// <summary>
     /// Gets or sets the title displayed to users.
     /// </summary>

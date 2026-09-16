@@ -2,12 +2,14 @@
 import { computed } from 'vue'
 
 import { AnnouncementCard, useAnnouncements } from '@/entities/announcement'
-import { AppButton, PageHeading, YearFilter } from '@/shared/ui'
+import { AppButton, PageHeading, SearchInput, YearFilter } from '@/shared/ui'
 
 const {
   years,
   selectedYear,
   setYear,
+  search,
+  setSearch,
   announcements,
   hasMore,
   loadMore,
@@ -31,17 +33,19 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
 
     <section class="announcements-list-section">
       <div class="ca-container">
-        <YearFilter
-          v-if="years.length"
-          class="announcements-years"
-          :years="years"
-          :selected="selectedYear"
-          @select="setYear"
-        />
+        <div v-if="years.length" class="announcements-filters">
+          <YearFilter :years="years" :selected="selectedYear" @select="setYear" />
+          <SearchInput
+            class="announcements-filters__search"
+            :model-value="search"
+            :label="$t('common.searchByTitleOrSubtitle')"
+            @update:model-value="setSearch"
+          />
+        </div>
 
         <p v-if="isLoading" class="announcements-loading">{{ $t('common.loading') }}</p>
         <p v-else-if="isEmpty" class="announcements-loading">
-          {{ $t('pages.announcements.empty') }}
+          {{ search ? $t('pages.announcements.noResults') : $t('pages.announcements.empty') }}
         </p>
         <div v-else class="announcements-list">
           <AnnouncementCard
@@ -72,8 +76,18 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
   padding: 30px var(--ca-gutter) 80px;
 }
 
-.announcements-years {
+.announcements-filters {
   margin-bottom: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.announcements-filters__search {
+  flex: 0 1 340px;
+  min-width: 0;
 }
 
 .announcements-list {
@@ -91,5 +105,11 @@ const isEmpty = computed(() => !isLoading.value && announcements.value.length ==
   margin-top: 28px;
   display: flex;
   justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .announcements-filters__search {
+    flex-basis: 100%;
+  }
 }
 </style>

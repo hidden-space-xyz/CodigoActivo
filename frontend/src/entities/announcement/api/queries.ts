@@ -36,10 +36,16 @@ export function useAnnouncements() {
     selectedYear.value = year
   }
 
+  const search = ref('')
+
+  function setSearch(value: string): void {
+    search.value = value
+  }
+
   const byYearList = usePagedList({
-    queryKey: () => announcementQueryKeys.byYear(selectedYear.value),
+    queryKey: () => announcementQueryKeys.byYear(selectedYear.value, search.value),
     fetchPage: (page, pageSize) =>
-      getAnnouncementsByYearPageRequest(selectedYear.value, page, pageSize),
+      getAnnouncementsByYearPageRequest(selectedYear.value, search.value, page, pageSize),
     enabled: () => selectedYear.value !== '',
   })
 
@@ -51,6 +57,8 @@ export function useAnnouncements() {
     years,
     selectedYear,
     setYear,
+    search,
+    setSearch,
     announcements: byYearList.items,
     hasMore: byYearList.hasMore,
     loadMore: byYearList.loadMore,

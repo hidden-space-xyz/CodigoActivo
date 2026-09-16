@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { ResourceCard, useResources } from '@/entities/resource'
-import { AppButton, PageHeading } from '@/shared/ui'
+import { computed, ref } from 'vue'
 
-const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources()
+import { ResourceCard, useResources } from '@/entities/resource'
+import { AppButton, PageHeading, SearchInput } from '@/shared/ui'
+
+const search = ref('')
+
+const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources(() => search.value)
+
+const hasNoResults = computed(
+  () => search.value !== '' && !isLoading.value && resources.value.length === 0,
+)
 </script>
 
 <template>
@@ -18,7 +26,18 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
 
     <section class="resources-grid-section">
       <div class="ca-container">
+        <div class="resources-filters">
+          <SearchInput
+            v-model="search"
+            class="resources-filters__search"
+            :label="$t('common.searchByTitleOrSubtitle')"
+          />
+        </div>
+
         <p v-if="isLoading" class="resources-loading">{{ $t('common.loading') }}</p>
+        <p v-else-if="hasNoResults" class="resources-loading">
+          {{ $t('pages.resources.noResults') }}
+        </p>
         <div v-else class="resources-grid">
           <ResourceCard v-for="resource in resources" :key="resource.id" :resource="resource" />
         </div>
@@ -44,6 +63,16 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
   padding: 30px var(--ca-gutter) 80px;
 }
 
+.resources-filters {
+  margin-bottom: 26px;
+  display: flex;
+}
+
+.resources-filters__search {
+  flex: 0 1 340px;
+  min-width: 0;
+}
+
 .resources-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
@@ -59,5 +88,11 @@ const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources
   margin-top: 28px;
   display: flex;
   justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .resources-filters__search {
+    flex-basis: 100%;
+  }
 }
 </style>

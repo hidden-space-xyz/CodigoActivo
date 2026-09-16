@@ -322,6 +322,85 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEventsPastYearsMutationOptions(options), queryClient);
     }
+    export type getApiEventsPastCategoriesResponse200 = {
+  data: EventCategoryTypeResponse[]
+  status: 200
+}
+
+export type getApiEventsPastCategoriesResponseSuccess = (getApiEventsPastCategoriesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsPastCategoriesResponse = (getApiEventsPastCategoriesResponseSuccess)
+
+export const getGetApiEventsPastCategoriesUrl = () => {
+
+
+
+
+  return `/api/events/past-categories`
+}
+
+export const getApiEventsPastCategories = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiEventsPastCategoriesResponse> => {
+
+  return httpClient<getApiEventsPastCategoriesResponse>(getGetApiEventsPastCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsPastCategoriesMutationKey = () => ['getApiEventsPastCategories'] as const;
+
+export const getGetApiEventsPastCategoriesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsPastCategories>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsPastCategories>>, TError,void, TContext> => {
+
+const mutationKey = getGetApiEventsPastCategoriesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsPastCategories>>, void> = () => {
+
+
+          return  getApiEventsPastCategories(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsPastCategoriesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsPastCategories>>>
+
+    export type GetApiEventsPastCategoriesMutationError = unknown
+
+
+    export const useGetApiEventsPastCategories = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsPastCategories>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEventsPastCategories>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiEventsPastCategoriesMutationOptions(options), queryClient);
+    }
     export type getApiEventsEventIdResponse200 = {
   data: EventResponse
   status: 200

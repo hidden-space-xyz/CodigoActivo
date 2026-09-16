@@ -27,11 +27,13 @@ export async function getAnnouncementYearsRequest(): Promise<readonly string[]> 
 
 export async function getAnnouncementsByYearPageRequest(
   year: string,
+  search: string,
   page: number,
   pageSize: number,
 ): Promise<PagedListPage<AnnouncementSummary>> {
   const result = await getApiAnnouncements({
     year: Number(year),
+    ...(search ? { search } : {}),
     sort: '-createdAt',
     page,
     pageSize,

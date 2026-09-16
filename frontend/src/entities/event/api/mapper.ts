@@ -1,4 +1,8 @@
-import type { EventListItemResponse, EventResponse } from '@/shared/api/generated/models'
+import type {
+  EventCategoryTypeResponse,
+  EventListItemResponse,
+  EventResponse,
+} from '@/shared/api/generated/models'
 import { i18n, type TranslationKey } from '@/shared/i18n'
 import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
 
@@ -20,6 +24,14 @@ function toCategoryTags(event: EventListItemResponse): EventCategoryTag[] {
       name: category.name ?? '',
       color: category.color ?? '',
     }))
+}
+
+export function toCategoryTag(categoryType: EventCategoryTypeResponse): EventCategoryTag {
+  return {
+    id: categoryType.id ?? '',
+    name: categoryType.name ?? '',
+    color: categoryType.color ?? '',
+  }
 }
 
 function hasEnded(eventEndsAt?: string | null): boolean {

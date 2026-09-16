@@ -40,6 +40,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         DateOnly end,
         bool featured = false,
         string title = "Evento",
+        string subtitle = "Sub",
         Guid? categoryTypeId = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
         DateTimeOffset? signupStartsAt = null,
@@ -58,7 +59,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             {
                 Id = id,
                 Title = title,
-                Subtitle = "Sub",
+                Subtitle = subtitle,
                 Description = "{}",
                 EventStartsAt = start,
                 EventEndsAt = end,
@@ -181,6 +182,71 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var years = await response.ReadJsonAsync<IReadOnlyList<int>>(Ct);
         years.Should().Equal(2025, 2024);
+    }
+
+    [Fact]
+    public async Task PastCategoriesAsyncAnonymousReturnsCategoriesOfPastEventsOrderedByName()
+    {
+        var talleres = await SeedCategoryTypeAsync("Talleres", "#AA0000");
+        var charlas = await SeedCategoryTypeAsync("Charlas", "#00AA00");
+        var futuro = await SeedCategoryTypeAsync("Futuro");
+        await SeedCategoryTypeAsync("Sin eventos");
+        await SeedEventAsync(
+            new DateOnly(2025, 5, 1),
+            new DateOnly(2025, 5, 2),
+            categoryTypeIds: [talleres, charlas]
+        );
+        await SeedEventAsync(
+            new DateOnly(2024, 5, 1),
+            new DateOnly(2024, 5, 2),
+            categoryTypeIds: [talleres]
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            categoryTypeIds: [futuro, talleres]
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(TestUri.Rel("/api/events/past-categories"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var categories = await response.ReadJsonAsync<IReadOnlyList<EventCategoryTypeResponse>>(Ct);
+        categories.Should().Equal(
+            new EventCategoryTypeResponse(charlas, "Charlas", "#00AA00"),
+            new EventCategoryTypeResponse(talleres, "Talleres", "#AA0000")
+        );
+    }
+
+    [Fact]
+    public async Task ListAsyncSearchMatchesTitleOrSubtitleIgnoringCaseAndAccents()
+    {
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            title: "Robótica creativa",
+            subtitle: "Taller"
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 3),
+            new DateOnly(2026, 8, 4),
+            title: "Campus",
+            subtitle: "Talleres de ROBÓTICA"
+        );
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 5),
+            new DateOnly(2026, 8, 6),
+            title: "Ajedrez",
+            subtitle: "Torneo"
+        );
+        var client = CreateClient();
+
+        var response = await client.GetAsync(TestUri.Rel("/api/events?search=robotica"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(Ct);
+        page!.Total.Should().Be(2);
+        page.Items.Select(e => e.Title).Should().BeEquivalentTo("Robótica creativa", "Campus");
     }
 
     [Fact]

@@ -184,6 +184,43 @@ public sealed class ListAnnouncementsQueryHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncSearchMatchesTitleOrSubtitle()
+    {
+        announcements.HasAnnouncements(
+            NewAnnouncement("Inscripciones abiertas", subtitle: "Verano"),
+            NewAnnouncement("Novedades", subtitle: "Nuevas inscripciones"),
+            NewAnnouncement("Resultados", subtitle: "Torneo")
+        );
+
+        var result = await sut.HandleAsync(
+            new ListAnnouncementsQuery(new AnnouncementListQuery { Search = "INSCRIPCIONES" }),
+            TestContext.Current.CancellationToken
+        );
+
+        result
+            .Items.Select(a => a.Title)
+            .Should()
+            .BeEquivalentTo("Inscripciones abiertas", "Novedades");
+    }
+
+    [Fact]
+    public async Task HandleAsyncSearchCombinesWithYearFilter()
+    {
+        announcements.HasAnnouncements(
+            NewAnnouncement("Reunión anual", year: 2024),
+            NewAnnouncement("Reunión de socios", year: 2025),
+            NewAnnouncement("Calendario", year: 2025)
+        );
+
+        var result = await sut.HandleAsync(
+            new ListAnnouncementsQuery(new AnnouncementListQuery { Search = "reunion", Year = 2025 }),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Should().ContainSingle().Which.Title.Should().Be("Reunión de socios");
+    }
+
+    [Fact]
     public async Task HandleAsyncExplicitTitleSortOrdersAscending()
     {
         announcements.HasAnnouncements(

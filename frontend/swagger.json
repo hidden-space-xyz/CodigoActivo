@@ -607,6 +607,13 @@
         ],
         "parameters": [
           {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "title",
             "in": "query",
             "schema": {
@@ -1456,6 +1463,13 @@
         ],
         "parameters": [
           {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "title",
             "in": "query",
             "schema": {
@@ -1610,6 +1624,28 @@
                   "items": {
                     "type": "integer",
                     "format": "int32"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/past-categories": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventCategoryTypeResponse"
                   }
                 }
               }
@@ -2823,6 +2859,13 @@
           "Resources"
         ],
         "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "title",
             "in": "query",

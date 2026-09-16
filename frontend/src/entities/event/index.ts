@@ -1,7 +1,8 @@
-export type { EventTermsInfo, UpcomingEvent } from './model/types'
+export type { EventCategoryTag, EventTermsInfo, UpcomingEvent } from './model/types'
 export {
   useEventDetail,
   useHomeEvents,
+  usePastEventCategories,
   usePastEventsPaged,
   usePastEventYears,
   useUpcomingEventsPaged,

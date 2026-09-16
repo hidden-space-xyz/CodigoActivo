@@ -6,6 +6,7 @@
  */
 
 export type GetApiAnnouncementsParams = {
+search?: string;
 title?: string;
 subtitle?: string;
 featured?: boolean;

@@ -3,10 +3,12 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { usePagedList } from '@/shared/lib'
 
+import type { PastEventFilters } from '../model/types'
 import { eventQueryKeys } from './query-keys'
 import {
   getEventByIdRequest,
   getHomeEventsRequest,
+  getPastEventCategoriesRequest,
   getPastEventsPageRequest,
   getPastEventYearsRequest,
   getUpcomingEventsPageRequest,
@@ -32,13 +34,29 @@ export function usePastEventYears() {
   }
 }
 
-export function usePastEventsPaged(year: MaybeRefOrGetter<string>) {
-  const selectedYear = computed(() => toValue(year))
+export function usePastEventCategories() {
+  const query = useQuery({
+    queryKey: eventQueryKeys.pastCategories(),
+    queryFn: () => getPastEventCategoriesRequest(),
+  })
+
+  return {
+    categories: computed(() => query.data.value ?? []),
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
+}
+
+export function usePastEventsPaged(filters: MaybeRefOrGetter<PastEventFilters>) {
+  const selected = computed(() => toValue(filters))
 
   return usePagedList({
-    queryKey: () => eventQueryKeys.past(selectedYear.value),
-    fetchPage: (page, pageSize) => getPastEventsPageRequest(selectedYear.value, page, pageSize),
-    enabled: () => selectedYear.value !== '',
+    queryKey: () => {
+      const { year, search, categoryId } = selected.value
+      return eventQueryKeys.past(year, search, categoryId)
+    },
+    fetchPage: (page, pageSize) => getPastEventsPageRequest(selected.value, page, pageSize),
+    enabled: () => selected.value.year !== '',
   })
 }
 

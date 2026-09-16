@@ -54,6 +54,23 @@ public sealed class ListResourcesQueryHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncSearchMatchesTitleOrSubtitle()
+    {
+        resources.HasResources(
+            NewResource("Guía de Scratch", subtitle: "Primeros pasos"),
+            NewResource("Fichas", subtitle: "Actividades con scratch"),
+            NewResource("Python", subtitle: "Introducción")
+        );
+
+        var result = await sut.HandleAsync(
+            new ListResourcesQuery(new ResourceListQuery { Search = "Scratch" }),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Items.Select(r => r.Title).Should().BeEquivalentTo("Guía de Scratch", "Fichas");
+    }
+
+    [Fact]
     public async Task HandleAsyncExplicitTitleSortOrdersAscendingByTitle()
     {
         resources.HasResources(NewResource("Charlie"), NewResource("Alpha"), NewResource("Bravo"));
