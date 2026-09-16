@@ -2,11 +2,9 @@ using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Seo.Queries;
 
@@ -23,14 +21,12 @@ public sealed record GetSitemapXmlQuery : IQuery<string>;
 /// <param name="resources">Repository used to persist and retrieve resources.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="application">The application value.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetSitemapXmlQueryHandler(
     IEventRepository events,
     IAnnouncementRepository announcements,
     IResourceRepository resources,
     IQueryExecutor executor,
-    ApplicationOptions application,
-    HybridCache cache
+    ApplicationOptions application
 ) : IQueryHandler<GetSitemapXmlQuery, string>
 {
     private static readonly XNamespace Xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9";
@@ -51,15 +47,9 @@ public sealed class GetSitemapXmlQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a string.</returns>
-    public async Task<string> HandleAsync(GetSitemapXmlQuery query, CancellationToken ct = default)
+    public Task<string> HandleAsync(GetSitemapXmlQuery query, CancellationToken ct = default)
     {
-        return await cache.GetOrCreateAsync(
-            "sitemap",
-            token => new ValueTask<string>(BuildSitemapXmlAsync(token)),
-            CachePolicies.PublicContent,
-            [CacheTags.Events, CacheTags.Announcements, CacheTags.Resources],
-            ct
-        );
+        return BuildSitemapXmlAsync(ct);
     }
 
     private async Task<string> BuildSitemapXmlAsync(CancellationToken ct)

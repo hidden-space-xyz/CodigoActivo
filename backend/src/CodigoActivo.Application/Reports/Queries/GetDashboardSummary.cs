@@ -47,7 +47,7 @@ public sealed class GetDashboardSummaryQueryHandler(
                 );
             },
             CachePolicies.Dashboard,
-            CacheTags.DashboardSources,
+            CacheTags.DashboardSummarySources,
             ct
         );
     }

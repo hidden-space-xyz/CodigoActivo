@@ -18,8 +18,7 @@ public sealed class GetAnnouncementYearsQueryHandlerTests
     {
         sut = new GetAnnouncementYearsQueryHandler(
             announcements,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

@@ -14,10 +14,6 @@ public static class CacheTags
     /// </summary>
     public const string EventCategoryTypes = "event-category-types";
     /// <summary>
-    /// Identifies the terms documents configuration or policy value.
-    /// </summary>
-    public const string TermsDocuments = "terms-documents";
-    /// <summary>
     /// Identifies the announcements configuration or policy value.
     /// </summary>
     public const string Announcements = "announcements";
@@ -47,17 +43,25 @@ public static class CacheTags
     public const string Catalogs = "catalogs";
 
     /// <summary>
-    /// Stores the shared dashboard sources value.
+    /// Stores the sources used by dashboard counts.
     /// </summary>
-    public static readonly IReadOnlyList<string> DashboardSources =
+    public static readonly IReadOnlyList<string> DashboardSummarySources =
     [
         Events,
-        EventCategoryTypes,
         Activities,
         Resources,
         Announcements,
         Partners,
         Users,
+    ];
+
+    /// <summary>
+    /// Stores the sources used by dashboard analytics.
+    /// </summary>
+    public static readonly IReadOnlyList<string> DashboardAnalyticsSources =
+    [
+        .. DashboardSummarySources,
+        EventCategoryTypes,
     ];
 
     /// <summary>
@@ -80,7 +84,6 @@ public static class CacheTags
     [
         Events,
         EventCategoryTypes,
-        TermsDocuments,
         Announcements,
         Resources,
         Partners,

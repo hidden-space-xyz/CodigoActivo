@@ -96,9 +96,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null
-                    && tags.Contains(CacheTags.TermsDocuments)
-                    && tags.Contains(CacheTags.Events)
+                    tags != null && tags.Contains(CacheTags.Events)
                 )
             );
         await orphanCleaner

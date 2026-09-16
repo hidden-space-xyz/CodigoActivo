@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Common;
@@ -20,11 +19,9 @@ public sealed record CreateTermsDocumentCommand(CreateTermsDocumentRequest Reque
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreateTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    IUnitOfWork uow
 ) : ICommandHandler<CreateTermsDocumentCommand, Result<TermsDocumentResponse>>
 {
     /// <summary>
@@ -49,7 +46,6 @@ public sealed class CreateTermsDocumentCommandHandler(
         var termsDocument = new TermsDocument { Name = name, Description = request.Description };
         await termsDocuments.AddAsync(termsDocument, ct);
         await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.TermsDocuments);
         return termsDocument.ToResponse();
     }
 }

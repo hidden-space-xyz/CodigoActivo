@@ -1,11 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Announcements.Queries;
 
@@ -22,12 +20,10 @@ public sealed record ListAnnouncementsQuery(AnnouncementListQuery Filters)
 /// <param name="announcements">Repository used to persist and retrieve announcements.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListAnnouncementsQueryHandler(
     IAnnouncementRepository announcements,
     IQueryExecutor executor,
-    IClock clock,
-    HybridCache cache
+    IClock clock
 ) : IQueryHandler<ListAnnouncementsQuery, PagedResult<AnnouncementListItemResponse>>
 {
     private static readonly SortMap<AnnouncementListItemResponse> Sort =
@@ -45,20 +41,12 @@ public sealed class ListAnnouncementsQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged announcement list item.</returns>
-    public async Task<PagedResult<AnnouncementListItemResponse>> HandleAsync(
+    public Task<PagedResult<AnnouncementListItemResponse>> HandleAsync(
         ListAnnouncementsQuery query,
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
-            CacheKeys.For("announcements:list", query.Filters),
-            token => new ValueTask<PagedResult<AnnouncementListItemResponse>>(
-                FetchAsync(query.Filters, token)
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Announcements],
-            ct
-        );
+        return FetchAsync(query.Filters, ct);
     }
 
     private Task<PagedResult<AnnouncementListItemResponse>> FetchAsync(

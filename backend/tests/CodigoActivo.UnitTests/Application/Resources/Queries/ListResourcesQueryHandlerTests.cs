@@ -20,8 +20,7 @@ public sealed class ListResourcesQueryHandlerTests
         sut = new ListResourcesQueryHandler(
             resources,
             new FakeQueryExecutor(),
-            clock,
-            new FakeHybridCache()
+            clock
         );
     }
 

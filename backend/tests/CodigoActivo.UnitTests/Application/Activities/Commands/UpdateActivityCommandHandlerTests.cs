@@ -41,7 +41,7 @@ public sealed class UpdateActivityCommandHandlerTests
             clock,
             uow,
             cacheInvalidator,
-            new GetActivityByIdQueryHandler(activities, executor, new FakeHybridCache())
+            new GetActivityByIdQueryHandler(activities, executor)
         );
     }
 

@@ -18,8 +18,7 @@ public sealed class ListPartnersQueryHandlerTests
     {
         sut = new ListPartnersQueryHandler(
             partners,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

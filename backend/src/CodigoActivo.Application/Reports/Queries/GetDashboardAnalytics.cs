@@ -80,7 +80,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
             $"reports:dashboard:analytics:{start:yyyy-MM-dd}:{end:yyyy-MM-dd}:{granularity}",
             async token => await BuildAnalyticsAsync(start, end, granularity, token),
             CachePolicies.Dashboard,
-            CacheTags.DashboardSources,
+            CacheTags.DashboardAnalyticsSources,
             ct
         );
     }

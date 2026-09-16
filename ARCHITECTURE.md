@@ -60,7 +60,8 @@ Queries:
 - Start from no-tracking `IQueryable` sources.
 - Project to response shapes in the database, using shared expressions or handler-local projections.
 - Materialize through `IQueryExecutor`.
-- May use `HybridCache` for public and catalog reads.
+- May use `HybridCache` only for immutable catalogs and expensive non-personal aggregates. Public HTTP
+  response caching belongs to the API layer.
 - Never mutate data, save changes or invalidate caches.
 
 Commands:
@@ -70,6 +71,20 @@ Commands:
 - Invalidate affected cache tags only after a successful commit.
 - May call an aggregate query handler to return a fresh read-after-write response; queries never call
   commands.
+
+### Caching
+
+- HTTP output caching is restricted to read-only public endpoints. Every anonymous GET or HEAD declares
+  either a named output-cache policy or an explicit `no-store` decision; endpoints that require
+  authentication and user-specific responses are never output cached.
+- `HybridCache` is limited to immutable catalogs and non-personal dashboard aggregates. Public list,
+  detail and SEO queries are not cached a second time inside Application.
+- Both in-memory cache layers are capped at 64 MiB and skip individual payloads larger than 1 MiB. This
+  keeps large file responses and unexpectedly large projections from consuming the cache.
+- Commands invalidate dependency tags only after a successful commit. The invalidator evicts both
+  application entries and HTTP output entries for those tags.
+- Both stores are process-local and the current deployment assumes one API replica. A multi-replica
+  deployment must add a shared cache store and cross-instance invalidation before scaling the API out.
 
 `RemoveAsync` and `SetFeaturedAsync` are deliberate set-based operations that execute immediately. Do not
 combine either with other staged mutations that are expected to share one transaction.

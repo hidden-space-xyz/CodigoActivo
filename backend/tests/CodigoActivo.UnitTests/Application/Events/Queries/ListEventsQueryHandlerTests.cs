@@ -21,8 +21,7 @@ public sealed class ListEventsQueryHandlerTests
         sut = new ListEventsQueryHandler(
             events,
             new FakeQueryExecutor(),
-            clock,
-            new FakeHybridCache()
+            clock
         );
     }
 

@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
@@ -20,13 +19,11 @@ public sealed record DeleteTermsDocumentCommand(Guid TermsDocumentId) : ICommand
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,
     IEventRepository events,
     IOrphanFileCleaner orphanCleaner,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    IUnitOfWork uow
 ) : ICommandHandler<DeleteTermsDocumentCommand, Result>
 {
     /// <summary>
@@ -59,7 +56,6 @@ public sealed class DeleteTermsDocumentCommandHandler(
 
         termsDocuments.Remove(termsDocument);
         await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.TermsDocuments);
 
         var orphanCandidates = RichTextFileReferences.Extract(termsDocument.Description).ToList();
         await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);

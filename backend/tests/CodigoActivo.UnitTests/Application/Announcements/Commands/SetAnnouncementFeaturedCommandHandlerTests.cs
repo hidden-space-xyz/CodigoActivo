@@ -25,8 +25,7 @@ public sealed class SetAnnouncementFeaturedCommandHandlerTests
             cacheInvalidator,
             new GetAnnouncementByIdQueryHandler(
                 announcements,
-                new FakeQueryExecutor(),
-                new FakeHybridCache()
+                new FakeQueryExecutor()
             )
         );
     }

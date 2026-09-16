@@ -1,12 +1,9 @@
-using System.Globalization;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -23,12 +20,10 @@ public sealed record ListEventsQuery(EventListQuery Filters)
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListEventsQueryHandler(
     IEventRepository events,
     IQueryExecutor executor,
-    IClock clock,
-    HybridCache cache
+    IClock clock
 ) : IQueryHandler<ListEventsQuery, PagedResult<EventListItemResponse>>
 {
     private static readonly SortMap<EventListItemResponse> Sort =
@@ -51,21 +46,12 @@ public sealed class ListEventsQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged event list item.</returns>
-    public async Task<PagedResult<EventListItemResponse>> HandleAsync(
+    public Task<PagedResult<EventListItemResponse>> HandleAsync(
         ListEventsQuery query,
         CancellationToken ct = default
     )
     {
-        var dayKey = clock.Today.DayNumber.ToString(CultureInfo.InvariantCulture);
-        return await cache.GetOrCreateAsync(
-            CacheKeys.For($"events:list:{dayKey}", query.Filters),
-            token => new ValueTask<PagedResult<EventListItemResponse>>(
-                FetchAsync(query.Filters, token)
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.Events],
-            ct
-        );
+        return FetchAsync(query.Filters, ct);
     }
 
     private Task<PagedResult<EventListItemResponse>> FetchAsync(

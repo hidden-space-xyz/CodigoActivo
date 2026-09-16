@@ -19,8 +19,7 @@ public sealed class ListTermsDocumentsQueryHandlerTests
     {
         sut = new ListTermsDocumentsQueryHandler(
             termsDocuments,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
+            new FakeQueryExecutor()
         );
     }
 

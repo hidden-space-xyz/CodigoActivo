@@ -1,11 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -21,11 +19,9 @@ public sealed record ListEventCategoryTypesQuery(EventCategoryTypeListQuery Filt
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListEventCategoryTypesQueryHandler(
     IEventCategoryTypeRepository categoryTypes,
-    IQueryExecutor executor,
-    HybridCache cache
+    IQueryExecutor executor
 ) : IQueryHandler<ListEventCategoryTypesQuery, PagedResult<EventCategoryTypeResponse>>
 {
     private static readonly SortMap<EventCategoryTypeResponse> Sort =
@@ -41,20 +37,12 @@ public sealed class ListEventCategoryTypesQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged event category type.</returns>
-    public async Task<PagedResult<EventCategoryTypeResponse>> HandleAsync(
+    public Task<PagedResult<EventCategoryTypeResponse>> HandleAsync(
         ListEventCategoryTypesQuery query,
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
-            CacheKeys.For("events:category-types", query.Filters),
-            token => new ValueTask<PagedResult<EventCategoryTypeResponse>>(
-                FetchAsync(query.Filters, token)
-            ),
-            CachePolicies.PublicContent,
-            [CacheTags.EventCategoryTypes],
-            ct
-        );
+        return FetchAsync(query.Filters, ct);
     }
 
     private Task<PagedResult<EventCategoryTypeResponse>> FetchAsync(

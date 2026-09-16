@@ -1,9 +1,6 @@
-using System.Globalization;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -18,12 +15,10 @@ public sealed record GetPastEventYearsQuery : IQuery<IReadOnlyList<int>>;
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetPastEventYearsQueryHandler(
     IEventRepository events,
     IQueryExecutor executor,
-    IClock clock,
-    HybridCache cache
+    IClock clock
 ) : IQueryHandler<GetPastEventYearsQuery, IReadOnlyList<int>>
 {
     /// <summary>
@@ -32,19 +27,12 @@ public sealed class GetPastEventYearsQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the matching int items.</returns>
-    public async Task<IReadOnlyList<int>> HandleAsync(
+    public Task<IReadOnlyList<int>> HandleAsync(
         GetPastEventYearsQuery query,
         CancellationToken ct = default
     )
     {
-        var dayKey = clock.Today.DayNumber.ToString(CultureInfo.InvariantCulture);
-        return await cache.GetOrCreateAsync(
-            $"events:past-years:{dayKey}",
-            token => new ValueTask<IReadOnlyList<int>>(FetchAsync(token)),
-            CachePolicies.PublicContent,
-            [CacheTags.Events],
-            ct
-        );
+        return FetchAsync(ct);
     }
 
     private Task<IReadOnlyList<int>> FetchAsync(CancellationToken ct)
