@@ -96,6 +96,64 @@ public class UserRepository(CodigoActivoDbContext context)
             .ToListAsync(ct);
     }
 
+    /// <summary>
+    /// Determines whether published content still credits the user or any minor under their
+    /// guardianship as its author, uploader or last editor.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    public async Task<bool> HasAuthoredContentAsync(Guid userId, CancellationToken ct = default)
+    {
+        var household = Set.AsNoTracking()
+            .Where(u => u.Id == userId || u.ParentId == userId)
+            .Select(u => u.Id);
+
+        return await Context
+                .Activities.AsNoTracking()
+                .AnyAsync(
+                    a =>
+                        household.Contains(a.CreatedBy)
+                        || (a.UpdatedBy != null && household.Contains(a.UpdatedBy.Value)),
+                    ct
+                )
+            || await Context
+                .Announcements.AsNoTracking()
+                .AnyAsync(
+                    a =>
+                        household.Contains(a.CreatedBy)
+                        || (a.UpdatedBy != null && household.Contains(a.UpdatedBy.Value)),
+                    ct
+                )
+            || await Context
+                .Events.AsNoTracking()
+                .AnyAsync(
+                    e =>
+                        household.Contains(e.CreatedBy)
+                        || (e.UpdatedBy != null && household.Contains(e.UpdatedBy.Value)),
+                    ct
+                )
+            || await Context
+                .Partners.AsNoTracking()
+                .AnyAsync(
+                    p =>
+                        household.Contains(p.CreatedBy)
+                        || (p.UpdatedBy != null && household.Contains(p.UpdatedBy.Value)),
+                    ct
+                )
+            || await Context
+                .Resources.AsNoTracking()
+                .AnyAsync(
+                    r =>
+                        household.Contains(r.CreatedBy)
+                        || (r.UpdatedBy != null && household.Contains(r.UpdatedBy.Value)),
+                    ct
+                )
+            || await Context
+                .Files.AsNoTracking()
+                .AnyAsync(f => household.Contains(f.UploadedBy), ct);
+    }
+
     private IQueryable<User> QueryWithDetails(bool tracked = false)
     {
         var query = tracked ? Set : Set.AsNoTracking();

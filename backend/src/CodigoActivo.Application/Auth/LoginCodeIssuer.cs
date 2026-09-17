@@ -33,7 +33,35 @@ public sealed class LoginCodeIssuer(
     /// <param name="now">Current timestamp.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result indicates success or contains the application error.</returns>
-    public async Task<Result> IssueAsync(User user, DateTimeOffset now, CancellationToken ct)
+    public Task<Result> IssueAsync(User user, DateTimeOffset now, CancellationToken ct)
+    {
+        return IssueCoreAsync(user, now, accountEmails.SendLoginCodeEmailAsync, ct);
+    }
+
+    /// <summary>
+    /// Emails a fresh code that confirms deleting the account and stages its hash on the entity.
+    /// The code lives in the same fields as the login code, so it shares its lifetime, its resend
+    /// cooldown and the second-factor lockout. The caller commits.
+    /// </summary>
+    /// <param name="user">User whose account deletion receives the code.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    public Task<Result> IssueAccountDeletionAsync(
+        User user,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        return IssueCoreAsync(user, now, accountEmails.SendAccountDeletionCodeEmailAsync, ct);
+    }
+
+    private async Task<Result> IssueCoreAsync(
+        User user,
+        DateTimeOffset now,
+        Func<User, string, CancellationToken, Task> send,
+        CancellationToken ct
+    )
     {
         if (string.IsNullOrWhiteSpace(user.Email))
         {
@@ -43,7 +71,7 @@ public sealed class LoginCodeIssuer(
         var code = GenerateCode();
         try
         {
-            await accountEmails.SendLoginCodeEmailAsync(user, code, ct);
+            await send(user, code, ct);
         }
         catch (EmailRateLimitedException)
         {
@@ -51,7 +79,7 @@ public sealed class LoginCodeIssuer(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Failed to send the login code email for user {UserId}", user.Id);
+            logger.LogError(ex, "Failed to send the one-time code email for user {UserId}", user.Id);
             return Error.Conflict(ErrorCode.EmailSendFailed);
         }
 

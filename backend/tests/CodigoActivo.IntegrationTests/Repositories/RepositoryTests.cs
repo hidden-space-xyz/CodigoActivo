@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
+using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
@@ -894,5 +895,131 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var repo = new AnnouncementRepository(ctx);
 
         (await repo.SetFeaturedAsync(Guid.NewGuid(), Ct)).Should().BeFalse();
+    }
+
+    private static void AddAuthoredContent(
+        CodigoActivoDbContext ctx,
+        string source,
+        Guid ownerId,
+        Guid childId
+    )
+    {
+        switch (source)
+        {
+            case "announcement":
+                var announcement = NewAnnouncement("Nota del socio");
+                announcement.CreatedBy = ownerId;
+                ctx.Announcements.Add(announcement);
+                break;
+            case "event":
+                var ev = NewEvent("Evento retocado");
+                ev.UpdatedBy = childId;
+                ctx.Events.Add(ev);
+                break;
+            case "activity":
+                var parent = NewEvent("Evento contenedor");
+                ctx.Events.Add(parent);
+                var activity = NewActivity(parent.Id, "Taller del menor");
+                activity.CreatedBy = childId;
+                ctx.Activities.Add(activity);
+                break;
+            case "partner":
+                var partner = NewPartner("Colaborador");
+                partner.CreatedBy = ownerId;
+                ctx.Partners.Add(partner);
+                break;
+            case "resource":
+                var resource = NewResource("Recurso retocado");
+                resource.UpdatedBy = ownerId;
+                ctx.Resources.Add(resource);
+                break;
+            default:
+                ctx.Files.Add(
+                    new FileEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "subida",
+                        Extension = "png",
+                        UploadedAt = Fixed,
+                        UploadedBy = childId,
+                    }
+                );
+                break;
+        }
+    }
+
+    private static async Task<(User Owner, User Child)> SeedHouseholdAsync(
+        CodigoActivoDbContext ctx
+    )
+    {
+        var owner = NewUser("Owner", "Household");
+        var child = NewUser("Child", "Household", parentId: owner.Id);
+        ctx.Users.AddRange(owner, child);
+        await ctx.SaveChangesAsync(Ct);
+        return (owner, child);
+    }
+
+    [Theory]
+    [InlineData("announcement")]
+    [InlineData("event")]
+    [InlineData("activity")]
+    [InlineData("partner")]
+    [InlineData("resource")]
+    [InlineData("file")]
+    public async Task HasAuthoredContentAsyncHouseholdIsCreditedOnContentReturnsTrue(string source)
+    {
+        await using var ctx = postgres.CreateContext();
+        var (owner, child) = await SeedHouseholdAsync(ctx);
+        AddAuthoredContent(ctx, source, owner.Id, child.Id);
+        await ctx.SaveChangesAsync(Ct);
+        ctx.ChangeTracker.Clear();
+        var repo = new UserRepository(ctx);
+
+        (await repo.HasAuthoredContentAsync(owner.Id, Ct)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task HasAuthoredContentAsyncOnlyTheChildAuthoredReturnsTrueForBoth()
+    {
+        await using var ctx = postgres.CreateContext();
+        var (owner, child) = await SeedHouseholdAsync(ctx);
+        var announcement = NewAnnouncement("Nota del menor");
+        announcement.CreatedBy = child.Id;
+        ctx.Announcements.Add(announcement);
+        await ctx.SaveChangesAsync(Ct);
+        ctx.ChangeTracker.Clear();
+        var repo = new UserRepository(ctx);
+
+        (await repo.HasAuthoredContentAsync(owner.Id, Ct))
+            .Should()
+            .BeTrue("a guardian is deleted together with their minors");
+        (await repo.HasAuthoredContentAsync(child.Id, Ct)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task HasAuthoredContentAsyncSomebodyElseAuthoredEverythingReturnsFalse()
+    {
+        await using var ctx = postgres.CreateContext();
+        var (owner, _) = await SeedHouseholdAsync(ctx);
+        var parentEvent = NewEvent("Evento ajeno");
+        ctx.Events.Add(parentEvent);
+        ctx.Activities.Add(NewActivity(parentEvent.Id, "Taller ajeno"));
+        ctx.Announcements.Add(NewAnnouncement("Nota ajena"));
+        ctx.Partners.Add(NewPartner("Colaborador ajeno"));
+        ctx.Resources.Add(NewResource("Recurso ajeno"));
+        await ctx.SaveChangesAsync(Ct);
+        ctx.ChangeTracker.Clear();
+        var repo = new UserRepository(ctx);
+
+        (await repo.HasAuthoredContentAsync(owner.Id, Ct)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HasAuthoredContentAsyncUnknownUserReturnsFalse()
+    {
+        await using var ctx = postgres.CreateContext();
+        var repo = new UserRepository(ctx);
+
+        (await repo.HasAuthoredContentAsync(Guid.NewGuid(), Ct)).Should().BeFalse();
     }
 }

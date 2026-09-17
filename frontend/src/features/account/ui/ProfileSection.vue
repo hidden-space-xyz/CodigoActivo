@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
-import { useSession } from '@/entities/session'
 import { genderLabel, genderOptions } from '@/entities/user'
 import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton } from '@/shared/ui'
@@ -12,8 +11,7 @@ import { formatDate, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
-const session = useSession()
-const { profile, updateProfile, changePassword, deleteOwnAccount } = useAccount()
+const { profile, updateProfile, changePassword } = useAccount()
 
 const maxBirthDateIso = todayIso()
 const user = computed(() => profile.data.value ?? null)
@@ -104,14 +102,6 @@ function savePassword(): void {
     },
   )
 }
-
-const deleteVisible = ref(false)
-
-function confirmDeleteAccount(): void {
-  deleteOwnAccount.mutate(undefined, {
-    onError: (error) => feedback.error(error),
-  })
-}
 </script>
 
 <template>
@@ -125,9 +115,6 @@ function confirmDeleteAccount(): void {
         <BaseButton variant="ghost" @click="openPassword">{{
           $t('features.account.profile.changePassword')
         }}</BaseButton>
-        <BaseButton v-if="!session.isAdmin" variant="ghost" @click="deleteVisible = true">
-          {{ $t('features.account.profile.deleteAccount') }}
-        </BaseButton>
       </div>
     </div>
 
@@ -272,29 +259,6 @@ function confirmDeleteAccount(): void {
         </div>
       </form>
     </el-dialog>
-
-    <el-dialog
-      v-model="deleteVisible"
-      :title="$t('features.account.profile.deleteAccount')"
-      width="min(90vw, 460px)"
-      :close-on-click-modal="false"
-    >
-      <p class="acc-confirm">
-        {{ $t('features.account.profile.deleteConfirm') }}
-      </p>
-      <div class="acc-form__actions">
-        <BaseButton variant="link" type="button" @click="deleteVisible = false">{{
-          $t('common.cancel')
-        }}</BaseButton>
-        <BaseButton
-          variant="primary"
-          :loading="deleteOwnAccount.isPending.value"
-          @click="confirmDeleteAccount"
-        >
-          {{ $t('common.delete') }}
-        </BaseButton>
-      </div>
-    </el-dialog>
   </section>
 </template>
 
@@ -399,12 +363,6 @@ function confirmDeleteAccount(): void {
 
 .ca-invalid :deep(.el-select__wrapper) {
   box-shadow: 0 0 0 1px var(--ca-danger) inset;
-}
-
-.acc-confirm {
-  color: var(--ca-text);
-  line-height: 1.6;
-  margin: 0 0 16px;
 }
 
 @media (max-width: 640px) {

@@ -81,6 +81,25 @@ public sealed class AccountEmails(
         return emailSender.SendAsync(message, ct);
     }
 
+    /// <summary>
+    /// Sends the email carrying the one-time code that confirms deleting an account.
+    /// </summary>
+    /// <param name="user">The user value.</param>
+    /// <param name="code">Plain code the user must type; it is never stored.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task SendAccountDeletionCodeEmailAsync(User user, string code, CancellationToken ct)
+    {
+        var message = AccountDeletionCodeEmail.Create(
+            user.Email!,
+            user.FirstName,
+            code,
+            BuildSiteUrl(),
+            twoFactor.ChallengeLifetime
+        );
+        return emailSender.SendAsync(message, ct);
+    }
+
     private string BuildSiteUrl()
     {
         return application.BaseUrl.TrimEnd('/');

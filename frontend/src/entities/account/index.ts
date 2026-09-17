@@ -1,6 +1,7 @@
 export type {
   AddMinorInput,
   ChangePasswordInput,
+  DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
   UpdateMinorInput,
@@ -27,6 +28,7 @@ export {
   getAccountCertificatesRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
+  requestAccountDeletionCodeRequest,
   saveAccountEventRatingRequest,
   updateAccountChildRequest,
   updateAccountProfileRequest,

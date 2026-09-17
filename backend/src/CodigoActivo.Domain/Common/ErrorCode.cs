@@ -217,6 +217,14 @@ public enum ErrorCode
     /// </summary>
     UserDeleteAdminForbidden,
     /// <summary>
+    /// Selects the user self delete requires verification option.
+    /// </summary>
+    UserSelfDeleteRequiresVerification,
+    /// <summary>
+    /// Selects the user delete authored content exists option.
+    /// </summary>
+    UserDeleteAuthoredContentExists,
+    /// <summary>
     /// Selects the user cannot remove last admin option.
     /// </summary>
     UserCannotRemoveLastAdmin,

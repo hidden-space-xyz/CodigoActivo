@@ -61,6 +61,8 @@ export const ErrorCode = {
   FileUploadUnsupportedFormat: 'FileUploadUnsupportedFormat',
   UserNotFound: 'UserNotFound',
   UserDeleteAdminForbidden: 'UserDeleteAdminForbidden',
+  UserSelfDeleteRequiresVerification: 'UserSelfDeleteRequiresVerification',
+  UserDeleteAuthoredContentExists: 'UserDeleteAuthoredContentExists',
   UserCannotRemoveLastAdmin: 'UserCannotRemoveLastAdmin',
   UserTypeNotFound: 'UserTypeNotFound',
   ParentUserNotFound: 'ParentUserNotFound',

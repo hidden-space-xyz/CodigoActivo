@@ -61,6 +61,21 @@ factor is locked for 15 minutes (`TwoFactorLocked`), which makes the 6-digit spa
 per-IP credential rate limits. A successful code resets the counter. Enrollment URIs and shared keys are only
 returned to the authenticated owner over HTTPS and never logged.
 
+Account deletion: erasing one's own account from the account panel requires the current password **and**
+the second factor on `POST /api/me/deletion` — an emailed 6-digit code, or the authenticator code for users
+enrolled in an application. Email users request the code with their password on `POST /api/me/deletion/code`;
+it is stored in the same fields as the login code and therefore shares its storage, 10-minute lifetime,
+60-second resend cooldown and lockout counter, and the route is refused (`TwoFactorResendNotAllowed`) for
+authenticator users, who read their code from the application. Both routes are credential routes. A
+successful deletion signs the caller out of the session and challenge schemes and removes, through database
+cascade, the user, every minor under their guardianship and all of their participation rows (activity
+assignments, event ratings and terms acceptances). It is refused with `UserDeleteAuthoredContentExists`
+while published content still credits the household as author, uploader or last editor, and administrators
+cannot delete themselves at all (`UserDeleteAdminForbidden`); they must be demoted first.
+`DELETE /api/users/{id}` therefore refuses the caller's own identifier
+(`UserSelfDeleteRequiresVerification`) and stays available only for an administrator removing somebody else
+and a guardian removing one of their minors.
+
 Recovery: an administrator can reset a user's second factor to email (`POST /api/users/{id}/two-factor/reset`)
 after re-entering their own password; this also removes the authenticator and any lockout. Losing the Data
 Protection keys makes stored authenticator secrets unreadable, so back them up (see below); affected users
@@ -78,8 +93,8 @@ stored or logged in plaintext. Login performs fallback Argon2 work for unknown i
 differences.
 
 Credential routes (both login steps and the code resend, registration, verification, password recovery and
-change, authenticator enrollment and removal, administrator grants and second-factor resets) have layered
-resource controls:
+change, authenticator enrollment and removal, administrator grants, second-factor resets and the two
+self-service account-deletion steps) have layered resource controls:
 
 - nginx rejects credential floods above 10 requests per second per client IP, with a burst of 100;
 - the API enforces 120 requests per minute per client IP in every environment;
@@ -199,9 +214,10 @@ count are bounded by application settings.
 ### Verification, reset and activity notifications
 
 New accounts must always confirm an emailed OTP before their first login; there is no switch. Verification
-and password-reset codes expire after 15 minutes by default and have a 60-second resend cooldown. Login codes
-expire after 10 minutes with the same cooldown. Because every login of an email-method user sends a message,
-SMTP must be configured in every environment; the API refuses to start otherwise.
+and password-reset codes expire after 15 minutes by default and have a 60-second resend cooldown. Login
+codes, and the account-deletion codes that share their storage, expire after 10 minutes with the same
+cooldown. Because every login of an email-method user sends a message, SMTP must be configured in every
+environment; the API refuses to start otherwise.
 
 Activity signup itself sends no message. Confirming or rejecting a signup after the status change commits
 queues an outcome email. A dependent minor's notification resolves to the guardian address on the server;
@@ -212,8 +228,8 @@ the background dispatcher.
 
 ### Automatic-message limiter
 
-Every automatic verification, password-reset, login-code and activity-decision email passes through
-`ThrottledEmailSender` before entering the queue.
+Every automatic verification, password-reset, second-factor-code (login and account deletion) and
+activity-decision email passes through `ThrottledEmailSender` before entering the queue.
 
 - Each normalized destination has burst, hourly and daily budgets.
 - The process has a global budget with capacity reserved for credential email.

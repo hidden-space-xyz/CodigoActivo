@@ -133,6 +133,27 @@ Equipo de Código Activo</value>
   <data name="emails.loginCode.ignoreNote" xml:space="preserve">
     <value>Si no has intentado iniciar sesión, alguien conoce tu contraseña: cámbiala cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
+  <data name="emails.accountDeletionCode.subject" xml:space="preserve">
+    <value>Confirma la eliminación de tu cuenta de Código Activo</value>
+  </data>
+  <data name="emails.accountDeletionCode.heading" xml:space="preserve">
+    <value>Eliminar tu cuenta</value>
+  </data>
+  <data name="emails.accountDeletionCode.introText" xml:space="preserve">
+    <value>Hemos recibido una solicitud para eliminar tu cuenta de Código Activo y todos sus datos, incluidos los de los menores a tu cargo. Introduce este código para confirmarla:</value>
+  </data>
+  <data name="emails.accountDeletionCode.introHtml" xml:space="preserve">
+    <value>Hemos recibido una solicitud para eliminar tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt; y todos sus datos, incluidos los de los menores a tu cargo. Introduce este código para confirmarla:</value>
+  </data>
+  <data name="emails.accountDeletionCode.expiryText" xml:space="preserve">
+    <value>El código caduca en {0} minutos y solo sirve una vez.</value>
+  </data>
+  <data name="emails.accountDeletionCode.expiryHtml" xml:space="preserve">
+    <value>El código caduca en &lt;b&gt;{0} minutos&lt;/b&gt; y solo sirve una vez.</value>
+  </data>
+  <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
+    <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y cambia tu contraseña cuanto antes. Nunca compartas este código con nadie.</value>
+  </data>
   <data name="emails.activityDecision.confirmedSubject" xml:space="preserve">
     <value>Inscripción confirmada: {0}</value>
   </data>

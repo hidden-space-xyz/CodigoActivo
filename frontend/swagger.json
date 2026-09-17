@@ -2539,6 +2539,48 @@
         }
       }
     },
+    "/api/me/deletion/code": {
+      "post": {
+        "tags": [
+          "Me"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/me/deletion": {
+      "post": {
+        "tags": [
+          "Me"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/partners": {
       "get": {
         "tags": [
@@ -3640,6 +3682,16 @@
   },
   "components": {
     "schemas": {
+      "AccountDeletionCodeRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ActivityModalityTypeResponse": {
         "type": "object",
         "properties": {
@@ -4664,6 +4716,20 @@
         },
         "additionalProperties": false
       },
+      "DeleteAccountRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "DisableAuthenticatorRequest": {
         "type": "object",
         "properties": {
@@ -4732,6 +4798,8 @@
           "FileUploadUnsupportedFormat",
           "UserNotFound",
           "UserDeleteAdminForbidden",
+          "UserSelfDeleteRequiresVerification",
+          "UserDeleteAuthoredContentExists",
           "UserCannotRemoveLastAdmin",
           "UserTypeNotFound",
           "ParentUserNotFound",

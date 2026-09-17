@@ -108,7 +108,8 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes the selected user.
+    /// Deletes the selected user. The caller's own account is refused here: erasing it requires
+    /// the password and the second factor through <c>POST /api/me/deletion</c>.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -122,7 +123,7 @@ public class UsersController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new DeleteUserCommand(userId), ct));
+        return ToNoContent(await handler.HandleAsync(new DeleteUserCommand(userId, UserId), ct));
     }
 
     /// <summary>

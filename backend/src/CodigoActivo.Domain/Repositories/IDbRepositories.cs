@@ -73,6 +73,16 @@ public interface IUserRepository : IDbRepository<User>
         Guid parentId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Determines whether published content still credits the user or any minor under their
+    /// guardianship as its author, uploader or last editor. Such rows keep the account alive
+    /// because they reference it with a restricted foreign key.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    public Task<bool> HasAuthoredContentAsync(Guid userId, CancellationToken ct = default);
 }
 
 /// <summary>

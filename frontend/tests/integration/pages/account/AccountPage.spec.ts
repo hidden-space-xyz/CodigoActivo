@@ -77,6 +77,7 @@ describe('account page', () => {
     expect(activePanelText()).toContain(t('features.account.profile.lead'))
     expect(activePanelText()).toContain(t('features.account.twoFactor.title'))
     expect(activePanelText()).toContain(t('features.account.minors.title'))
+    expect(activePanelText()).toContain(t('features.account.deleteAccount.title'))
     expect(wrapper.text()).not.toContain('Campus de verano')
   })
 

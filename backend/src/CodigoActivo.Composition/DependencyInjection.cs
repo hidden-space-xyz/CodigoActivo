@@ -612,6 +612,8 @@ public static class DependencyInjection
         services.AddScoped<AddChildCommandHandler>();
         services.AddScoped<ChangePasswordCommandHandler>();
         services.AddScoped<ResetTwoFactorCommandHandler>();
+        services.AddScoped<RequestAccountDeletionCodeCommandHandler>();
+        services.AddScoped<DeleteOwnAccountCommandHandler>();
     }
 
     private static void AddAuthHandlers(IServiceCollection services)
