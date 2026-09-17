@@ -17,10 +17,12 @@ jobs:
       previous: ${{ steps.meta.outputs.previous }}
       image-prefix: ${{ steps.meta.outputs.image-prefix }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout source
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: 26
       - name: Resolve shared version
@@ -40,16 +42,16 @@ jobs:
       matrix:
         include:
           - name: API
-            image: backend
             context: backend
             dockerfile: backend/src/CodigoActivo.API/Dockerfile
           - name: UI
-            image: frontend
             context: frontend
             dockerfile: frontend/Dockerfile
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
+      - name: Checkout source
+        uses: actions/checkout@v7
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -64,13 +66,13 @@ jobs:
           push: true
           provenance: mode=max
           sbom: true
-          tags: ${{ needs.version.outputs.image-prefix }}-${{ matrix.image }}:${{ needs.version.outputs.version }}
+          tags: ${{ needs.version.outputs.image-prefix }}-${{ matrix.context }}:${{ needs.version.outputs.version }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          cache-from: type=gha,scope=${{ matrix.context }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.context }}
 
   release:
     needs: [version, publish]
@@ -83,10 +85,12 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
       IMAGE_PREFIX: ${{ needs.version.outputs.image-prefix }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout source
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: 26
       - name: Recheck version before publishing the release
@@ -96,7 +100,8 @@ jobs:
         env:
           CURRENT_VERSION: ${{ steps.current.outputs.version }}
         run: test "$CURRENT_VERSION" = "$VERSION"
-      - uses: docker/setup-buildx-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
         if: steps.current.outputs.changed == 'true'
       - name: Log in to GitHub Container Registry
         if: steps.current.outputs.changed == 'true'

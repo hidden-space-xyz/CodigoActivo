@@ -204,7 +204,10 @@ debugger-oriented privileges. Visual Studio uses the same Compose project throug
 
 Only pushes to `master` start CI (including merged PRs). `develop` and unmerged PRs run nothing.
 Backend build/unit/integration tests and frontend checks must pass before CodeQL scans both languages.
+CI groups related checks by phase; versioning and security-gate tests run in their own job.
 CodeQL high/critical security findings (score >= 7), error-level findings or analysis failures block publishing.
+C# analysis uses a full .NET 10 build under CodeQL tracing, including source generators and test projects;
+JavaScript/TypeScript uses the build-free analysis mode.
 The gate logs diagnostic messages and available source locations; SARIF reports are retained for 14 days
 as `codeql-sarif-<language>` workflow artifacts, including failed runs when reports were generated.
 The CodeQL and Docker workflows are reusable stages; neither runs independently or on a schedule.
