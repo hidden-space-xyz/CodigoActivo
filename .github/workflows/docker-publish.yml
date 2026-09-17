@@ -1,13 +1,7 @@
 name: Docker Publish
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [ "master" ]
-
-concurrency:
-  group: ${{ github.workflow }}
+  workflow_call:
 
 permissions:
   contents: write
@@ -15,7 +9,7 @@ permissions:
 
 jobs:
   publish:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     name: Publish ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -26,39 +20,23 @@ jobs:
             image: backend
             context: backend
             dockerfile: backend/src/CodigoActivo.API/Dockerfile
-            version-command: sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' backend/src/CodigoActivo.API/CodigoActivo.API.csproj
           - name: UI
             image: frontend
             context: frontend
             dockerfile: frontend/Dockerfile
-            version-command: jq -r .version frontend/package.json
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
 
       - name: Resolve version
         id: meta
-        run: |
-          version="$(${{ matrix.version-command }})"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Invalid ${{ matrix.name }} version '$version' (expected X.X.X)"
-            exit 1
-          fi
-          tag="v${version}-${{ matrix.name }}"
-          if git ls-remote --exit-code origin "refs/tags/${tag}" > /dev/null; then
-            echo "${tag} already released, skipping publish"
-            changed=false
-          else
-            changed=true
-          fi
-          {
-            echo "version=${version}"
-            echo "tag=${tag}"
-            echo "changed=${changed}"
-            echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-${{ matrix.image }}"
-          } >> "$GITHUB_OUTPUT"
+        run: node .github/scripts/release-version.mjs ${{ matrix.name }} ${{ matrix.context }}
 
       - name: Set up Docker Buildx
         if: steps.meta.outputs.changed == 'true'
@@ -90,8 +68,16 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-      - name: Push release tag
+      - name: Create tag and GitHub release
         if: steps.meta.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          PREVIOUS_TAG: ${{ steps.meta.outputs.previous }}
         run: |
-          git tag "${{ steps.meta.outputs.tag }}"
-          git push origin "${{ steps.meta.outputs.tag }}"
+          args=()
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            args+=(--notes-start-tag "$PREVIOUS_TAG")
+          fi
+          gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" \
+            --title "$RELEASE_TAG" --generate-notes "${args[@]}"
