@@ -9,10 +9,13 @@ namespace CodigoActivo.Application.Users.Commands;
 /// Carries the input required to delete the user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record DeleteUserCommand(Guid UserId) : ICommand<Result>;
+/// <param name="ActingUserId">Identifier of the user that asked for the deletion.</param>
+public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the user.
+/// Executes the command to delete the user. It serves an administrator removing somebody else and
+/// a guardian removing one of their minors; deleting one's own account goes through
+/// <see cref="DeleteOwnAccountCommand"/>, which also demands the password and the second factor.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -40,6 +43,11 @@ public sealed class DeleteUserCommandHandler(
         if (user.IsAdmin)
         {
             return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
+        }
+
+        if (command.UserId == command.ActingUserId)
+        {
+            return Error.Forbidden(ErrorCode.UserSelfDeleteRequiresVerification);
         }
 
         users.Remove(user);

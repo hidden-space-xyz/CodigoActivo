@@ -24,6 +24,14 @@ export interface DisableAuthenticatorInput {
   code: string
 }
 
+/** Values needed to delete the signed-in user's own account; both are verified by the API. */
+export interface DeleteAccountInput {
+  /** Current password, re-entered so a stolen session cannot erase the account. */
+  currentPassword: string
+  /** Second-factor code: the emailed confirmation code or the one the authenticator shows. */
+  code: string
+}
+
 /** Form values for registering a minor in the household; minors have no email or phone. */
 export interface AddMinorInput {
   firstName: string

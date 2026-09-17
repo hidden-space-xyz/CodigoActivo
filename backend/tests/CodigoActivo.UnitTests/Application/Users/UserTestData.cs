@@ -25,7 +25,8 @@ internal static class UserTestData
         Guid? typeId = null,
         Guid? statusId = null,
         string typeName = "Socio",
-        string statusName = "Active"
+        string statusName = "Active",
+        string? passwordHash = null
     )
     {
         return new()
@@ -35,6 +36,7 @@ internal static class UserTestData
             LastName = last,
             Email = email,
             Phone = phone,
+            PasswordHash = passwordHash,
             BirthDate = dob ?? AdultDob,
             Gender = Gender.Male,
             ParentId = parentId,

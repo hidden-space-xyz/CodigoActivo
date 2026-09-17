@@ -17,6 +17,31 @@ public static class AppStrings
     private static readonly ResourceManager Manager = new(BaseName, typeof(AppStrings).Assembly);
 
     /// <summary>
+    /// Gets the emails account deletion code heading value.
+    /// </summary>
+    public static string EmailsAccountDeletionCodeHeading => Get("emails.accountDeletionCode.heading");
+
+    /// <summary>
+    /// Gets the emails account deletion code ignore note value.
+    /// </summary>
+    public static string EmailsAccountDeletionCodeIgnoreNote => Get("emails.accountDeletionCode.ignoreNote");
+
+    /// <summary>
+    /// Gets the emails account deletion code intro html value.
+    /// </summary>
+    public static string EmailsAccountDeletionCodeIntroHtml => Get("emails.accountDeletionCode.introHtml");
+
+    /// <summary>
+    /// Gets the emails account deletion code intro text value.
+    /// </summary>
+    public static string EmailsAccountDeletionCodeIntroText => Get("emails.accountDeletionCode.introText");
+
+    /// <summary>
+    /// Gets the emails account deletion code subject value.
+    /// </summary>
+    public static string EmailsAccountDeletionCodeSubject => Get("emails.accountDeletionCode.subject");
+
+    /// <summary>
     /// Gets the emails activity decision confirmed button label value.
     /// </summary>
     public static string EmailsActivityDecisionConfirmedButtonLabel => Get("emails.activityDecision.confirmedButtonLabel");
@@ -210,6 +235,26 @@ public static class AppStrings
     /// Gets the files fallback file name value.
     /// </summary>
     public static string FilesFallbackFileName => Get("files.fallbackFileName");
+
+    /// <summary>
+    /// Formats the localized emails account deletion code expiry html text with the supplied values.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsAccountDeletionCodeExpiryHtml(int minutes)
+    {
+        return Format("emails.accountDeletionCode.expiryHtml", minutes);
+    }
+
+    /// <summary>
+    /// Formats the localized emails account deletion code expiry text text with the supplied values.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsAccountDeletionCodeExpiryText(int minutes)
+    {
+        return Format("emails.accountDeletionCode.expiryText", minutes);
+    }
 
     /// <summary>
     /// Formats the localized emails activity decision confirmed intro text with the supplied values.

@@ -36,7 +36,7 @@ public sealed class DeleteUserCommandHandlerTests
         users.FindReturns(NewUser(id: id, isAdmin: true));
 
         var result = await sut.HandleAsync(
-            new DeleteUserCommand(id),
+            new DeleteUserCommand(id, Guid.NewGuid()),
             TestContext.Current.CancellationToken
         );
 
@@ -51,11 +51,30 @@ public sealed class DeleteUserCommandHandlerTests
         users.FindReturns(null);
 
         var result = await sut.HandleAsync(
-            new DeleteUserCommand(Guid.NewGuid()),
+            new DeleteUserCommand(Guid.NewGuid(), Guid.NewGuid()),
             TestContext.Current.CancellationToken
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        await AssertNotSavedAsync();
+        await cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncActingUserIsTheTargetReturnsForbidden()
+    {
+        var user = NewUser(isAdmin: false);
+        users.FindReturns(user);
+
+        var result = await sut.HandleAsync(
+            new DeleteUserCommand(user.Id, user.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserSelfDeleteRequiresVerification);
+        users.DidNotReceiveWithAnyArgs().Remove(Arg.Any<User>());
         await AssertNotSavedAsync();
         await cacheInvalidator
             .DidNotReceive()
@@ -69,7 +88,7 @@ public sealed class DeleteUserCommandHandlerTests
         users.FindReturns(user);
 
         var result = await sut.HandleAsync(
-            new DeleteUserCommand(user.Id),
+            new DeleteUserCommand(user.Id, Guid.NewGuid()),
             TestContext.Current.CancellationToken
         );
 

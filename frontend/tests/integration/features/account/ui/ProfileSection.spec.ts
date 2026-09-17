@@ -2,7 +2,6 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElDialog, ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useSession } from '@/entities/session'
 import { genderLabel } from '@/entities/user'
 import ProfileSection from '@/features/account/ui/ProfileSection.vue'
 import type { UserResponse } from '@/shared/api/generated/models'
@@ -18,7 +17,7 @@ import {
   openDialogs,
 } from '../../../../support/fixtures/account/dom'
 import { omit } from '../../../../support/fixtures/account/account'
-import { buildAuthUser, buildUserResponse } from '../../../../support/fixtures/user'
+import { buildUserResponse } from '../../../../support/fixtures/user'
 import { renderWithProviders, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
 
@@ -119,19 +118,13 @@ describe('ProfileSection', () => {
     expect(wrapper.text()).not.toContain(t('common.loading'))
   })
 
-  it('offers account deletion to members but not to administrators', async () => {
+  it('no longer offers account deletion from the profile actions', async () => {
     serveProfile()
+
     await renderSection()
-    expect(buttonsByText(document.body, t('features.account.profile.deleteAccount'))).toHaveLength(
-      1,
-    )
 
-    useSession().setUser(buildAuthUser({ isAdmin: true }))
-    await flushPromises()
-
-    expect(buttonsByText(document.body, t('features.account.profile.deleteAccount'))).toHaveLength(
-      0,
-    )
+    expect(buttonsByText(document.body, t('features.account.deleteAccount.action'))).toHaveLength(0)
+    expect(document.body.textContent).not.toContain(t('features.account.deleteAccount.lead'))
   })
 
   it('edits the profile with trimmed values, confirms and closes the dialog', async () => {
@@ -313,44 +306,6 @@ describe('ProfileSection', () => {
     expect(openDialogs()).toHaveLength(0)
   })
 
-  it('deletes the account after confirmation, signs out and goes home', async () => {
-    serveProfile()
-    const calls: string[] = []
-    server.use(
-      http.delete('/api/users/:userId', ({ request }) => {
-        calls.push(`DELETE ${new URL(request.url).pathname}`)
-        return new HttpResponse(null, { status: 204 })
-      }),
-      http.post('/api/auth/logout', () => {
-        calls.push('logout')
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
-    const { router } = await renderSection({ user: {}, route: '/account' })
-
-    await click(buttonByText(document.body, t('features.account.profile.deleteAccount')))
-    const dialog = dialogByTitle(t('features.account.profile.deleteAccount'))
-    expect(dialog.textContent).toContain(t('features.account.profile.deleteConfirm'))
-    await click(buttonByText(dialog, t('common.delete')))
-
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
-    expect(calls).toEqual(['DELETE /api/users/user-1', 'logout'])
-    expect(useSession().isAuthenticated).toBe(false)
-  })
-
-  it('keeps the account when deletion is cancelled', async () => {
-    serveProfile()
-    await renderSection()
-
-    await click(buttonByText(document.body, t('features.account.profile.deleteAccount')))
-    await click(
-      buttonByText(dialogByTitle(t('features.account.profile.deleteAccount')), t('common.cancel')),
-    )
-
-    expect(openDialogs()).toHaveLength(0)
-    expect(useSession().isAuthenticated).toBe(true)
-  })
-
   it('closes each dialog when it is dismissed', async () => {
     serveProfile()
     const { wrapper } = await renderSection()
@@ -370,26 +325,5 @@ describe('ProfileSection', () => {
     await openPasswordDialog()
     await dismiss(t('features.account.profile.changePassword'))
     expect(openDialogs()).toHaveLength(0)
-
-    await click(buttonByText(document.body, t('features.account.profile.deleteAccount')))
-    await dismiss(t('features.account.profile.deleteAccount'))
-    expect(openDialogs()).toHaveLength(0)
-  })
-
-  it('notifies when the account cannot be deleted', async () => {
-    serveProfile()
-    server.use(http.delete('/api/users/:userId', () => apiError(500)))
-    const { router } = await renderSection({ user: {}, route: '/account' })
-
-    await click(buttonByText(document.body, t('features.account.profile.deleteAccount')))
-    await click(
-      buttonByText(dialogByTitle(t('features.account.profile.deleteAccount')), t('common.delete')),
-    )
-
-    await vi.waitFor(() => expect(notificationTexts()).toHaveLength(1))
-    expect(notificationTexts()[0]).toContain(t('errors.generic'))
-    expect(notificationTexts()[0]).toContain('trace-123')
-    expect(router.currentRoute.value.name).toBe('account')
-    expect(useSession().isAuthenticated).toBe(true)
   })
 })

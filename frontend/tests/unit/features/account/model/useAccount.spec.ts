@@ -8,7 +8,7 @@ import { useAccount } from '@/features/account/model/useAccount'
 import { buildChildResponse } from '../../../../support/fixtures/account/account'
 import { buildUserResponse } from '../../../../support/fixtures/user'
 import { t } from '../../../../support/render'
-import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import { http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
 
 import { withSetup } from './with-setup'
 
@@ -117,9 +117,14 @@ describe('useAccount', () => {
     await expect(
       result.changePassword.mutateAsync({ currentPassword: 'a', newPassword: 'b' }),
     ).rejects.toThrow(t('features.account.notAuthenticated'))
-    await expect(result.deleteOwnAccount.mutateAsync()).rejects.toThrow(
-      t('features.account.notAuthenticated'),
-    )
+    await expect(
+      result.addChild.mutateAsync({
+        firstName: 'Byron',
+        lastName: 'Lovelace',
+        birthDate: '2015-03-02',
+        gender: 'Male',
+      }),
+    ).rejects.toThrow(t('features.account.notAuthenticated'))
   })
 
   it('changes the password of the signed-in user', async () => {
@@ -195,52 +200,20 @@ describe('useAccount', () => {
     await vi.waitFor(() => expect(queries.length).toBeGreaterThan(1))
   })
 
-  it('deletes the account, signs out, clears cached data and goes home', async () => {
-    const calls: string[] = []
+  it('does not expose a self-deletion mutation any more', async () => {
     serveProfile()
     serveChildren([])
-    server.use(
-      http.delete('/api/users/:userId', ({ params }) => {
-        calls.push(`delete:${String(params.userId)}`)
-        return new HttpResponse(null, { status: 204 })
-      }),
-      http.post('/api/auth/logout', () => {
-        calls.push('logout')
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
 
-    const { result, router, queryClient } = await withSetup(() => useAccount(), {
-      user: {},
-      route: '/account',
-    })
-    await vi.waitFor(() => expect(result.profile.isSuccess.value).toBe(true))
-    queryClient.setQueryData(['cached', 'elsewhere'], 'stale')
+    const { result } = await withSetup(() => useAccount(), { user: {} })
 
-    await result.deleteOwnAccount.mutateAsync()
-
-    expect(calls).toEqual(['delete:user-1', 'logout'])
-    expect(useSession().user).toBeNull()
-    expect(queryClient.getQueryData(['cached', 'elsewhere'])).toBeUndefined()
-    expect(router.currentRoute.value.name).toBe('home')
-  })
-
-  it('still clears the session and leaves when signing out fails after deletion', async () => {
-    serveProfile()
-    serveChildren([])
-    server.use(
-      http.delete('/api/users/:userId', () => new HttpResponse(null, { status: 204 })),
-      http.post('/api/auth/logout', () => apiError(500)),
-    )
-
-    const { result, router } = await withSetup(() => useAccount(), {
-      user: {},
-      route: '/account',
-    })
-
-    await expect(result.deleteOwnAccount.mutateAsync()).rejects.toMatchObject({ status: 500 })
-
-    expect(useSession().user).toBeNull()
-    expect(router.currentRoute.value.name).toBe('home')
+    expect(Object.keys(result)).toEqual([
+      'profile',
+      'children',
+      'updateProfile',
+      'changePassword',
+      'addChild',
+      'updateChild',
+      'deleteChild',
+    ])
   })
 })

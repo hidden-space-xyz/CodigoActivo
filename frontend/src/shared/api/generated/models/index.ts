@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './accountDeletionCodeRequest';
 export * from './activityModalityTypeResponse';
 export * from './activityResponse';
 export * from './activityResponsePagedResult';
@@ -47,6 +48,7 @@ export * from './dashboardSliceResponse';
 export * from './dashboardSummaryResponse';
 export * from './dashboardTimeSeriesResponse';
 export * from './dashboardTopEventResponse';
+export * from './deleteAccountRequest';
 export * from './disableAuthenticatorRequest';
 export * from './errorCode';
 export * from './eventAttendeeAssignmentResponse';

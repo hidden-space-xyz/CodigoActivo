@@ -5,7 +5,12 @@ import {
   postApiAuthTwoFactorEmail,
 } from '@/shared/api/generated/endpoints/auth/auth'
 import { putApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
-import { getApiMeCertificates, getApiMeEventHistory } from '@/shared/api/generated/endpoints/me/me'
+import {
+  getApiMeCertificates,
+  getApiMeEventHistory,
+  postApiMeDeletion,
+  postApiMeDeletionCode,
+} from '@/shared/api/generated/endpoints/me/me'
 import {
   deleteApiUsersUserId,
   getApiUsers,
@@ -18,6 +23,7 @@ import { toPage, unwrapOrNull } from '@/shared/api'
 import type {
   AddMinorInput,
   ChangePasswordInput,
+  DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
   UpdateMinorInput,
@@ -71,9 +77,22 @@ export async function updateAccountProfileRequest(
   return toAccountProfile(response.data)
 }
 
-/** Deletes the user account identified by `userId`. */
-export async function deleteAccountRequest(userId: string): Promise<void> {
-  await deleteApiUsersUserId(userId)
+/**
+ * Asks the API to email the confirmation code that authorizes deleting the own account
+ * (`POST /api/me/deletion/code`). The password is verified first and nothing is deleted yet; users
+ * with an authenticator application get no email and read the code from their app instead.
+ */
+export async function requestAccountDeletionCodeRequest(currentPassword: string): Promise<void> {
+  await postApiMeDeletionCode({ currentPassword })
+}
+
+/**
+ * Deletes the signed-in user's own account with the password and the second-factor code
+ * (`POST /api/me/deletion`). The API also removes the minors under their guardianship and ends
+ * the session.
+ */
+export async function deleteAccountRequest(input: DeleteAccountInput): Promise<void> {
+  await postApiMeDeletion({ currentPassword: input.currentPassword, code: input.code })
 }
 
 /** Changes the password; the API verifies `currentPassword` before applying the new one. */

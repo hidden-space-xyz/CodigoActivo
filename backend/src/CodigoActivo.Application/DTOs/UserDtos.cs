@@ -101,6 +101,24 @@ public record SetAdminRequest(bool IsAdmin, [MaxLength(128)] string? CurrentPass
 public record ResetTwoFactorRequest([Required] [MaxLength(128)] [NotBlank] string CurrentPassword);
 
 /// <summary>
+/// Contains the client-supplied data used to request the code that confirms account deletion.
+/// </summary>
+/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the request.</param>
+public record AccountDeletionCodeRequest(
+    [Required] [MaxLength(128)] [NotBlank] string CurrentPassword
+);
+
+/// <summary>
+/// Contains the client-supplied data used to delete the signed-in user's own account.
+/// </summary>
+/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the deletion.</param>
+/// <param name="Code">Code from the email or the authenticator application.</param>
+public record DeleteAccountRequest(
+    [Required] [MaxLength(128)] [NotBlank] string CurrentPassword,
+    [Required] [MaxLength(16)] [NotBlank] string Code
+);
+
+/// <summary>
 /// Contains the client-supplied data used to update the user.
 /// </summary>
 /// <param name="FirstName">User's given name.</param>

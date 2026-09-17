@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import {
   CertificatesSection,
+  DeleteAccountSection,
   HistorySection,
   MinorsSection,
   ProfileSection,
@@ -58,6 +59,8 @@ const tab = computed<AccountTab>({
               <TwoFactorSection />
               <hr class="account-divider" />
               <MinorsSection />
+              <hr class="account-divider" />
+              <DeleteAccountSection />
             </el-tab-pane>
 
             <el-tab-pane name="history" lazy>

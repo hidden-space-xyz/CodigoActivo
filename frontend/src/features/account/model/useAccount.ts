@@ -1,6 +1,5 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
@@ -8,7 +7,6 @@ import {
   addAccountChildRequest,
   changeAccountPasswordRequest,
   deleteAccountChildRequest,
-  deleteAccountRequest,
   getAccountChildrenRequest,
   getAccountProfileRequest,
   updateAccountChildRequest,
@@ -22,18 +20,17 @@ import type {
   UpdateMinorInput,
   UpdateProfileInput,
 } from '@/entities/account'
-import { getCurrentUserRequest, logoutRequest, useSession } from '@/entities/session'
+import { getCurrentUserRequest, useSession } from '@/entities/session'
 
 /**
  * Signed-in user's profile, minors and account mutations. Profile updates refresh the session
- * user; minor changes also invalidate household members for activity signup; deleting the account
- * logs out, clears the session and query cache, and navigates home.
+ * user and minor changes also invalidate household members for activity signup. Deleting the own
+ * account lives in `useDeleteAccount`, because it needs the password and the second factor.
  */
 export function useAccount() {
   const { t } = useI18n()
   const session = useSession()
   const queryClient = useQueryClient()
-  const router = useRouter()
 
   const userId = computed(() => session.user?.id ?? null)
   const profileKey = accountQueryKeys.me()
@@ -96,19 +93,6 @@ export function useAccount() {
     onSuccess: invalidateChildren,
   })
 
-  const deleteOwnAccount = useMutation({
-    mutationFn: () => withUserId((id) => deleteAccountRequest(id)),
-    onSuccess: async () => {
-      try {
-        await logoutRequest()
-      } finally {
-        session.clear()
-        queryClient.clear()
-        await router.push({ name: 'home' })
-      }
-    },
-  })
-
   return {
     profile,
     children,
@@ -117,6 +101,5 @@ export function useAccount() {
     addChild,
     updateChild,
     deleteChild,
-    deleteOwnAccount,
   }
 }

@@ -12,6 +12,7 @@ import {
   getAccountChildrenRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
+  requestAccountDeletionCodeRequest,
   saveAccountEventRatingRequest,
   updateAccountChildRequest,
   updateAccountProfileRequest,
@@ -177,7 +178,7 @@ describe('account requests', () => {
     expect(csrf).toBe(TEST_CSRF_TOKEN)
   })
 
-  it('deletes the account and a child through the user endpoint', async () => {
+  it('deletes a minor through the user endpoint', async () => {
     const deleted: string[] = []
     server.use(
       http.delete('/api/users/:userId', ({ params }) => {
@@ -186,9 +187,56 @@ describe('account requests', () => {
       }),
     )
 
-    await expect(deleteAccountRequest('user-1')).resolves.toBeUndefined()
     await expect(deleteAccountChildRequest('child-1')).resolves.toBeUndefined()
-    expect(deleted).toEqual(['user-1', 'child-1'])
+    expect(deleted).toEqual(['child-1'])
+  })
+
+  it('asks for the deletion code and deletes the own account with the password and the code', async () => {
+    const calls: { url: string; body: unknown; csrf: string | null }[] = []
+    const record = async (request: Request) =>
+      calls.push({
+        url: new URL(request.url).pathname,
+        body: await request.json(),
+        csrf: request.headers.get('X-CSRF-TOKEN'),
+      })
+    server.use(
+      http.post('/api/me/deletion/code', async ({ request }) => {
+        await record(request)
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.post('/api/me/deletion', async ({ request }) => {
+        await record(request)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(requestAccountDeletionCodeRequest('secret')).resolves.toBeUndefined()
+    await expect(
+      deleteAccountRequest({ currentPassword: 'secret', code: '123456' }),
+    ).resolves.toBeUndefined()
+
+    expect(calls).toEqual([
+      { url: '/api/me/deletion/code', body: { currentPassword: 'secret' }, csrf: TEST_CSRF_TOKEN },
+      {
+        url: '/api/me/deletion',
+        body: { currentPassword: 'secret', code: '123456' },
+        csrf: TEST_CSRF_TOKEN,
+      },
+    ])
+  })
+
+  it('surfaces the API error when the own account cannot be deleted', async () => {
+    server.use(
+      http.post('/api/me/deletion/code', () => apiError(409, 'TwoFactorResendCooldownActive')),
+      http.post('/api/me/deletion', () => apiError(409, 'UserDeleteAuthoredContentExists')),
+    )
+
+    await expect(requestAccountDeletionCodeRequest('secret')).rejects.toMatchObject({
+      code: 'TwoFactorResendCooldownActive',
+    })
+    await expect(
+      deleteAccountRequest({ currentPassword: 'secret', code: '123456' }),
+    ).rejects.toMatchObject({ status: 409, code: 'UserDeleteAuthoredContentExists' })
   })
 
   it('sends the current and new password', async () => {
