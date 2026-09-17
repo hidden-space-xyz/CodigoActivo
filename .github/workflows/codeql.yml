@@ -30,8 +30,18 @@ jobs:
         id: analyze
         with:
           category: /language:${{ matrix.language }}
+          output: ${{ runner.temp }}/codeql-results
           wait-for-processing: true
       - name: Block releases on high, critical or error findings
         env:
           SARIF_DIRECTORY: ${{ steps.analyze.outputs.sarif-output }}
         run: node .github/scripts/check-codeql.mjs "$SARIF_DIRECTORY"
+      - name: Preserve CodeQL diagnostic reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: ${{ runner.temp }}/codeql-results/*.sarif
+          if-no-files-found: warn
+          overwrite: true
+          retention-days: 14
