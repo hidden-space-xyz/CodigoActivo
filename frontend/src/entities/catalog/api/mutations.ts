@@ -5,6 +5,9 @@ import type { CreateEventCategoryTypeRequest } from '@/shared/api/generated/mode
 import { catalogQueryKeys } from './query-keys'
 import { createEventCategoryTypeRequest } from './requests'
 
+/**
+ * Creates an event category from the event form and invalidates the category list and admin table.
+ */
 export function useCreateEventCategoryType() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -7,11 +7,18 @@ import { BaseButton } from '@/shared/ui'
 import { todayIso, yearsAgoIso } from '@/shared/lib'
 
 const props = defineProps<{
+  /** Reactive form state owned by the parent; the component edits it in place. */
   form: RegistrationForm
+  /** Shows a loading state on the submit button while registering. */
   isSubmitting: boolean
 }>()
 
-const emit = defineEmits<{ submit: []; back: [] }>()
+const emit = defineEmits<{
+  /** Fired once every field validates; the data is already in `form`. */
+  submit: []
+  /** Fired when the user returns to the age gate. */
+  back: []
+}>()
 
 const model = props.form
 

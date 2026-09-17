@@ -13,11 +13,14 @@ import {
 
 import { useCatalog } from './useCatalog'
 
+/** Body sent when creating or updating an event category. */
 export interface EventCategoryInput {
   name: string
+  /** Hex color with a leading `#`, e.g. `#f9a320`. */
   color: string
 }
 
+/** Admin table (filterable by name and color) and CRUD mutations for event categories. */
 export function useEventCategories() {
   const table = useServerTable<EventCategoryTypeResponse, GetApiEventsCategoryTypeParams>({
     queryKey: catalogQueryKeys.eventCategoryTypesTable(),

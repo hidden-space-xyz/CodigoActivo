@@ -9,6 +9,10 @@ import type {
 import { changeAssignmentRoleRequest, changeAssignmentStatusRequest } from '@/entities/activity'
 import { eventReportQueryKeys } from '@/entities/event'
 
+/**
+ * Admin mutations that change a participant's assignment status or role in an activity, refreshing
+ * the event's report summary and attendee reports afterwards.
+ */
 export function useAssignments(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const invalidate = () => {

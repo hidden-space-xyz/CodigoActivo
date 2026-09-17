@@ -2,13 +2,23 @@
 import { BaseButton } from '@/shared/ui'
 
 const props = defineProps<{
+  /** Minors registered with the adult; the enrolled-minors message is hidden when 0. */
   minorCount: number
+  /** Address the verification email was sent to. */
   email: string
+  /** Shows resend-verification instructions instead of the login link. */
   requiresVerification: boolean
+  /** Shows a loading state on the resend button. */
   isResending: boolean
+  /** Seconds until resending is allowed again; 0 enables the button. */
   resendCooldown: number
 }>()
-const emit = defineEmits<{ reset: []; resend: [] }>()
+const emit = defineEmits<{
+  /** Fired when the user starts a new registration. */
+  reset: []
+  /** Fired when the user asks for another verification email. */
+  resend: []
+}>()
 </script>
 
 <template>

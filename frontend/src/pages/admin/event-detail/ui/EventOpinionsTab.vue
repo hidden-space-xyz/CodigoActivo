@@ -6,7 +6,9 @@ import { DataState } from '@/shared/ui'
 import { formatDateTime } from '@/shared/lib'
 
 const props = defineProps<{
+  /** Event whose attendee ratings and written feedback are listed. */
   eventId: string
+  /** Whether this tab is selected; ratings are only fetched while it is. */
   active: boolean
 }>()
 

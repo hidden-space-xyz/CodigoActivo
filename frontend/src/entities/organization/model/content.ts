@@ -1,5 +1,6 @@
 import { i18n } from '@/shared/i18n'
 
+/** Core value card on the About page; `soft` is the translucent icon background color. */
 export interface OrganizationValue {
   readonly id: string
   readonly title: string
@@ -8,6 +9,10 @@ export interface OrganizationValue {
   readonly soft: string
 }
 
+/**
+ * Recurring activity type shown as a numbered step; `number` is the zero-padded badge text and
+ * `color`/`soft` are its text and translucent background colors.
+ */
 export interface OrganizationActivity {
   readonly id: string
   readonly title: string
@@ -83,6 +88,10 @@ const ACTIVITIES: readonly OrganizationActivity[] = [
   },
 ]
 
+/**
+ * Returns the static organization values and activities. Texts are translated once at module load,
+ * not reactively.
+ */
 export function useOrganizationContent() {
   return { values: VALUES, activities: ACTIVITIES }
 }

@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/vue-query'
 
 import { forgotPasswordRequest } from '../api/requests'
 
+/** Forgot-password form: submits the trimmed email and flips `sent` once the API accepts it. */
 export function useForgotPassword() {
   const form = reactive({ email: '' })
   const sent = ref(false)

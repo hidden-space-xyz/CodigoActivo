@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { OrganizationActivity } from '../model/content'
 
-defineProps<{ activity: OrganizationActivity }>()
+defineProps<{
+  /** Activity rendered as a numbered, color-coded step. */
+  activity: OrganizationActivity
+}>()
 </script>
 
 <template>

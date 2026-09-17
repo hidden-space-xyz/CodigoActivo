@@ -18,17 +18,26 @@ import { toDateOnly } from '@/shared/lib'
 const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
 
 const props = defineProps<{
+  /** Opens the dialog; opening it (or changing `activity`) repopulates the form. */
   visible: boolean
+  /** Activity being edited; `null` opens the dialog in create mode. */
   activity: ActivityDetail | null
+  /** Modality options for the required modality select. */
   modalityTypes: ActivityModalityTypeResponse[]
+  /** Roles offered a desired-count input; counts below 1 are left out of the request. */
   roleTypes: ActivityRoleTypeResponse[]
+  /** Shows a loading state on the save button while the parent persists the activity. */
   saving: boolean
+  /** Event start as an ISO string; days before it cannot be picked. */
   eventStart?: string | null
+  /** Event end as an ISO string; days after it cannot be picked. */
   eventEnd?: string | null
 }>()
 
 const emit = defineEmits<{
+  /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
+  /** Fired with the trimmed request body once the form validates and the thumbnail is uploaded. */
   submit: [body: CreateActivityRequest | UpdateActivityRequest]
 }>()
 

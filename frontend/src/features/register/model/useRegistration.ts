@@ -7,10 +7,16 @@ import { scrollToTop, useCrudFeedback } from '@/shared/lib'
 import { registerRequest, resendVerificationRequest } from '../api/requests'
 import { createEmptyRegistrationForm, type RegistrationForm } from './registration-form'
 
+/** Screen of the registration flow: adult confirmation, data entry, or the result. */
 export type RegistrationStep = 'age-gate' | 'form' | 'success'
 
 const RESEND_COOLDOWN_SECONDS = 60
 
+/**
+ * Drives the registration flow through its steps, scrolling to the top on each change. After a
+ * registration that requires verification, resending the email is locked by a 60-second cooldown
+ * (restarted on every resend). `reset` clears the form and returns to the age gate.
+ */
 export function useRegistration() {
   const { t } = useI18n()
   const feedback = useCrudFeedback()

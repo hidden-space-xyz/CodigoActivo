@@ -1,3 +1,4 @@
+/** Query keys for public announcement data; `byYear` also varies by the search text. */
 export const announcementQueryKeys = {
   all: ['announcements'] as const,
   publicDetail: (id: string) => [...announcementQueryKeys.all, 'public', id] as const,

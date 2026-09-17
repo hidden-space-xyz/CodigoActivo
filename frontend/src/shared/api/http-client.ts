@@ -2,9 +2,13 @@ import { ErrorCode } from '@/shared/api/generated/models'
 
 const UNSAFE_METHODS: ReadonlySet<string> = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
+/** Thrown by `httpClient` for any non-2xx response, with the backend problem details it exposed. */
 export class ApiError extends Error {
+  /** HTTP status code of the failed response. */
   readonly status: number
+  /** Server trace identifier, shown to users so support can locate the request in the logs. */
   readonly traceId?: string | undefined
+  /** Backend business error code; drives the localized `errors.*` message when present. */
   readonly code?: ErrorCode | undefined
 
   constructor(status: number, message: string, traceId?: string, code?: ErrorCode) {
@@ -20,6 +24,7 @@ let csrfToken: string | null = null
 let csrfHeaderName = 'X-CSRF-TOKEN'
 let csrfTokenPromise: Promise<void> | null = null
 
+/** Drops the cached CSRF token so the next unsafe request fetches a new one (e.g. after login). */
 export function resetCsrfToken(): void {
   csrfToken = null
 }
@@ -113,6 +118,12 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
   return { status: response.status, data, headers: response.headers } as T
 }
 
+/**
+ * Orval mutator behind every generated endpoint. Sends cookies, disables HTTP caching, attaches the
+ * CSRF header to POST/PUT/PATCH/DELETE and retries once with a fresh token on `InvalidCsrfToken`.
+ * Resolves to `{ status, data, headers }`, where `data` is parsed JSON, text or a non-empty `Blob`
+ * and `undefined` for empty bodies; throws `ApiError` for non-2xx responses.
+ */
 export const httpClient = <T>(url: string, init: RequestInit = {}): Promise<T> => {
   return request<T>(url, init, true)
 }

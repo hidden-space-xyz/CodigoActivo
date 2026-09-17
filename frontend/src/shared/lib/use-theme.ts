@@ -1,6 +1,7 @@
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
+/** Color scheme applied through the `ca-dark` class on the root element. */
 export type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'ca-theme'
@@ -31,6 +32,11 @@ function apply(next: Theme): void {
   } catch {}
 }
 
+/**
+ * App-wide theme state. The initial value comes from the root class set by `public/theme-init.js`;
+ * changing it toggles `ca-dark` and Element Plus `dark`, syncs the `theme-color` meta and persists
+ * the choice to `localStorage`.
+ */
 export function useTheme() {
   const setTheme = (next: Theme): void => apply(next)
   const toggleTheme = (): void => apply(theme.value === 'dark' ? 'light' : 'dark')
@@ -44,6 +50,7 @@ export function useTheme() {
 
 const mediaQueries = new Map<string, Readonly<Ref<boolean>>>()
 
+/** Readonly ref tracking a CSS media query; one shared listener per query string, never removed. */
 export function useMediaQuery(query: string): Readonly<Ref<boolean>> {
   const cached = mediaQueries.get(query)
   if (cached) return cached

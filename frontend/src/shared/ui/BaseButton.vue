@@ -9,12 +9,19 @@ type Variant = 'primary' | 'ghost' | 'light' | 'link'
 
 const props = withDefaults(
   defineProps<{
+    /** Visual style; `link` is a borderless text button with an enlarged tap target. */
     variant?: Variant
+    /** Renders a `RouterLink` to this route; takes precedence over `href`. */
     to?: RouteLocationRaw | undefined
+    /** Renders a plain `<a>` with this URL when `to` is not set. */
     href?: string | undefined
+    /** Native button type; ignored when rendered as a link. */
     type?: 'button' | 'submit'
+    /** Stretches the button to the full width of its container. */
     block?: boolean
+    /** Disables the native button; links stay clickable. */
     disabled?: boolean
+    /** Shows a spinner before the slot, sets `aria-busy` and disables a native button. */
     loading?: boolean
   }>(),
   {

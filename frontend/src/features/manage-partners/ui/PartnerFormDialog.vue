@@ -13,13 +13,21 @@ import { parseDateOnly, toDateOnly } from '@/shared/lib'
 const DATE_FORMAT = 'DD/MM/YYYY'
 
 const props = defineProps<{
+  /** Opens the dialog; each time it opens the form is repopulated from `partner`. */
   visible: boolean
+  /** Partner being edited; `null` opens the dialog in create mode. */
   partner: PartnerResponse | null
+  /** Shows a loading state on the save button while the parent persists the partner. */
   saving: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
+  /**
+   * Fired once the form validates and the thumbnail is uploaded; `fromDate` is date-only and a
+   * blank website is sent as `null`.
+   */
   submit: [body: CreatePartnerRequest | UpdatePartnerRequest]
 }>()
 

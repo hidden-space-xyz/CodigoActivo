@@ -2,6 +2,7 @@ import pluginVue from 'eslint-plugin-vue'
 import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import { withVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import jsdoc from 'eslint-plugin-jsdoc'
 import vueAccessibility from 'eslint-plugin-vuejs-accessibility'
 import * as jsoncParser from 'jsonc-eslint-parser'
 
@@ -10,6 +11,29 @@ const disableTypeChecked = Array.isArray(vueTsConfigs.disableTypeChecked)
   : vueTsConfigs.disableTypeChecked
 
 if (!disableTypeChecked) throw new Error('Missing disable-type-checked ESLint configuration')
+
+// Test names must explain themselves, so tests are exempt from documentation rules.
+const testSources = ['src/**/*.{spec,test}.ts', 'src/**/__tests__/**']
+
+// Mirrors CS1591 in the backend: top-level exports and public class members form a module's public API.
+const publicApiContexts = [
+  'Program > ExportDefaultDeclaration',
+  'Program > ExportNamedDeclaration > ClassDeclaration',
+  'Program > ExportNamedDeclaration > FunctionDeclaration',
+  'Program > ExportNamedDeclaration > TSDeclareFunction',
+  'Program > ExportNamedDeclaration > TSEnumDeclaration',
+  'Program > ExportNamedDeclaration > TSInterfaceDeclaration',
+  'Program > ExportNamedDeclaration > TSTypeAliasDeclaration',
+  'Program > ExportNamedDeclaration[declaration.type="VariableDeclaration"]',
+  'ExportNamedDeclaration > ClassDeclaration > ClassBody > MethodDefinition[kind!="constructor"][accessibility!="private"][accessibility!="protected"]',
+  'ExportNamedDeclaration > ClassDeclaration > ClassBody > PropertyDefinition[accessibility!="private"][accessibility!="protected"]',
+]
+
+// Props, emits and exposed members form a component's public API.
+const componentApiContexts = [
+  'CallExpression[callee.name="defineEmits"] > TSTypeParameterInstantiation > TSTypeLiteral > TSPropertySignature',
+  'CallExpression[callee.name="defineExpose"] > ObjectExpression > Property',
+]
 
 export default withVueTs(
   {
@@ -70,6 +94,56 @@ export default withVueTs(
           required: {
             some: ['id', 'nesting'],
           },
+        },
+      ],
+    },
+  },
+  {
+    name: 'app/documentation',
+    files: ['src/**/*.{ts,vue}'],
+    ignores: testSources,
+    plugins: {
+      jsdoc,
+    },
+    settings: {
+      jsdoc: {
+        mode: 'typescript',
+      },
+    },
+    rules: {
+      'jsdoc/check-alignment': 'error',
+      'jsdoc/check-param-names': 'error',
+      'jsdoc/check-tag-names': 'error',
+      'jsdoc/empty-tags': 'error',
+      'jsdoc/informative-docs': 'error',
+      'jsdoc/no-blank-block-descriptions': 'error',
+      'jsdoc/no-blank-blocks': 'error',
+      'jsdoc/no-types': 'error',
+      'jsdoc/require-description': 'error',
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          require: {
+            FunctionDeclaration: false,
+          },
+          contexts: publicApiContexts,
+        },
+      ],
+    },
+  },
+  {
+    name: 'app/documentation-components',
+    files: ['src/**/*.vue'],
+    ignores: testSources,
+    rules: {
+      'vue/require-prop-comment': ['error', { type: 'JSDoc' }],
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          require: {
+            FunctionDeclaration: false,
+          },
+          contexts: [...publicApiContexts, ...componentApiContexts],
         },
       ],
     },

@@ -1,3 +1,4 @@
+/** Query keys for the signed-in account; invalidating `all` refreshes every account query. */
 export const accountQueryKeys = {
   all: ['account'] as const,
   me: () => [...accountQueryKeys.all, 'me'] as const,

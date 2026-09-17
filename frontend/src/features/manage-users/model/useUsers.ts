@@ -14,11 +14,19 @@ import type { UpdateUserInput, User } from '@/entities/user'
 import type { GetApiUsersParams } from '@/shared/api/generated/models'
 import { fetchAllPages, useServerTable } from '@/shared/lib'
 
+/** Narrows the users table to a relative of one user, such as their tutor or their dependents. */
 export interface UserRelationFilter {
+  /** Localized text shown in the active-filter chip. */
   readonly label: string
+  /** Query parameters merged into every table request, e.g. `{ parentId }`. */
   readonly params: GetApiUsersParams
 }
 
+/**
+ * Admin users table with column filters and an optional relation filter, plus update, delete,
+ * user-type and admin-flag mutations that invalidate all user queries. `fetchAllUsers` loads every
+ * page with the current filters and sort (for exports).
+ */
 export function useUsers() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: userQueryKeys.all })

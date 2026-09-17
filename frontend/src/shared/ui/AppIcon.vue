@@ -232,7 +232,12 @@ const CUSTOM_ICONS: Record<string, CustomIcon> = {
 
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{ name: string; spin?: boolean }>()
+const props = defineProps<{
+  /** Key in `ELEMENT_ICONS` or `CUSTOM_ICONS`; an unknown key renders nothing. */
+  name: string
+  /** Rotates the icon continuously, e.g. for the `spinner` loading indicator. */
+  spin?: boolean
+}>()
 
 const elementIcon = computed<Component | undefined>(() => ELEMENT_ICONS[props.name])
 const customIcon = computed<CustomIcon | undefined>(() => CUSTOM_ICONS[props.name])

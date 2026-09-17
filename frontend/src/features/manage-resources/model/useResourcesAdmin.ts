@@ -16,6 +16,10 @@ import {
   updateResourceRequest,
 } from '@/entities/resource'
 
+/**
+ * Admin resources table (newest first) with create, update and delete mutations that invalidate all
+ * resource queries; `fetchOne` loads a resource's full admin detail for editing.
+ */
 export function useResourcesAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: resourceQueryKeys.all })

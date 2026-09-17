@@ -2,6 +2,7 @@ import { computed } from 'vue'
 
 import { useTheme } from './use-theme'
 
+/** Resolved `--ca-*` color values for chart libraries that cannot read CSS variables. */
 export interface ChartPalette {
   orange: string
   orangeSoft: string
@@ -27,6 +28,7 @@ function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
+/** Reactive chart palette read from the document's computed styles, recomputed on theme changes. */
 export function useChartTheme() {
   const { theme } = useTheme()
 

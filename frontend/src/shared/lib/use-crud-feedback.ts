@@ -17,6 +17,10 @@ function errorMessage(detail: string, trace: string): VNode {
   return h('div', [h('div', detail), h('div', { style: TRACE_STYLE }, trace)])
 }
 
+/**
+ * Top-right toast notifications for mutation outcomes. `error` shows the localized API error
+ * message plus, for `ApiError`s with a trace id, a reference users can report. Call it in `setup`.
+ */
 export function useCrudFeedback() {
   const { t } = useI18n()
 

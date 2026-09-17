@@ -3,7 +3,10 @@ import type { UpcomingEvent } from '../model/types'
 import { CardDate, ColorTag, ListThumbnail } from '@/shared/ui'
 import EventCardFooter from './EventCardFooter.vue'
 
-defineProps<{ event: UpcomingEvent }>()
+defineProps<{
+  /** Upcoming event rendered as a card linking to its detail page. */
+  event: UpcomingEvent
+}>()
 </script>
 
 <template>

@@ -5,6 +5,7 @@ import { downloadBlob, fullName, parseDateOnly } from '@/shared/lib'
 
 const SHEET_WIDTH_MM = 297
 const SHEET_HEIGHT_MM = 210
+/** Width/height ratio of the landscape A4 sheet; sizes the preview stage before it paints. */
 export const SHEET_RATIO = SHEET_WIDTH_MM / SHEET_HEIGHT_MM
 
 const EXPORT_PX_PER_MM = 11.811
@@ -904,6 +905,10 @@ async function renderTo(
   paint(ctx, certificate, logo)
 }
 
+/**
+ * Paints the certificate onto an on-screen canvas at preview resolution, scaled by the device pixel
+ * ratio (capped at 2). Waits for the logo and fonts, and rejects if no 2D context is available.
+ */
 export async function renderCertificatePreview(
   canvas: HTMLCanvasElement,
   certificate: AccountCertificate,
@@ -1007,6 +1012,7 @@ function buildPdf(width: number, height: number, image: Uint8Array): Blob {
   return new Blob(parts, { type: 'application/pdf' })
 }
 
+/** Renders the certificate off-screen at 300 DPI and downloads it as a PNG. */
 export async function downloadCertificatePng(certificate: AccountCertificate): Promise<void> {
   const canvas = document.createElement('canvas')
   try {
@@ -1023,6 +1029,10 @@ export async function downloadCertificatePng(certificate: AccountCertificate): P
   }
 }
 
+/**
+ * Renders the certificate at 300 DPI and downloads it as a single-page A4 PDF built in the browser,
+ * embedding the canvas as a deflate-compressed RGB image (no text layer).
+ */
 export async function downloadCertificatePdf(certificate: AccountCertificate): Promise<void> {
   const canvas = document.createElement('canvas')
   try {

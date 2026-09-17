@@ -6,6 +6,7 @@ import { formatDate } from '@/shared/lib'
 
 import type { Announcement, AnnouncementSummary } from '../model/types'
 
+/** Maps a list item for cards, formatting `createdAt` into the display `date`. */
 export function toAnnouncementSummary(response: AnnouncementListItemResponse): AnnouncementSummary {
   return {
     id: response.id ?? '',
@@ -17,6 +18,7 @@ export function toAnnouncementSummary(response: AnnouncementListItemResponse): A
   }
 }
 
+/** Maps the full announcement for the detail page, keeping the raw ISO timestamps as well. */
 export function toAnnouncement(response: AnnouncementResponse): Announcement {
   return {
     ...toAnnouncementSummary(response),

@@ -11,6 +11,10 @@ import {
   getHomeAnnouncementsRequest,
 } from './requests'
 
+/**
+ * Drives the public announcements archive: loads the available years, keeps a valid year selected
+ * (the first one by default) and pages that year's announcements, newest first, filtered by search.
+ */
 export function useAnnouncements() {
   const yearsQuery = useQuery({
     queryKey: announcementQueryKeys.years(),
@@ -68,6 +72,7 @@ export function useAnnouncements() {
   }
 }
 
+/** Home page block: up to four announcements, featured first; `featured` is `null` if none. */
 export function useHomeAnnouncements() {
   const query = useQuery({
     queryKey: announcementQueryKeys.home(),
@@ -82,6 +87,7 @@ export function useHomeAnnouncements() {
   }
 }
 
+/** Loads a public announcement by id; `notFound` turns true once the API answers 404. */
 export function useAnnouncementDetail(announcementId: MaybeRefOrGetter<string>) {
   const id = computed(() => toValue(announcementId))
 

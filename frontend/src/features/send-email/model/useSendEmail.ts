@@ -16,9 +16,12 @@ import {
   sendEmailToUsersRequest,
 } from '../api/requests'
 
+/** Maximum number of files attached to one email. */
 export const MAX_ATTACHMENTS = 10
+/** Maximum combined attachment size in bytes (8 MiB). */
 export const MAX_ATTACHMENTS_BYTES = 8 * 1024 * 1024
 
+/** Email composed in the dialog; subject and body are trimmed before sending. */
 export interface SendEmailPayload {
   readonly subject: string
   readonly body: string
@@ -33,6 +36,10 @@ function toBody(payload: SendEmailPayload): PostApiEmailsUsersBody {
     : { subject, body }
 }
 
+/**
+ * Mutations that email one user, all filtered users, or filtered event attendees. Attachments are
+ * sent only when present. No toasts or cache changes; see `useSendEmailDialog` for feedback.
+ */
 export function useSendEmail() {
   const sendToUser = useMutation({
     mutationFn: (vars: { userId: string; payload: SendEmailPayload }) =>
@@ -78,15 +85,26 @@ interface SendEmailHandlers {
   readonly onError: (error: unknown) => void
 }
 
+/** How a list page plugs its rows and bulk send into `useSendEmailDialog`. */
 export interface SendEmailDialogOptions<T> {
+  /** User id to email; when `undefined` the single-recipient send is skipped. */
   readonly idOf: (recipient: T) => string | undefined
+  /** Localized recipient description shown and confirmed in the dialog for one row. */
   readonly targetOne: (recipient: T) => string
+  /** Localized description of the bulk audience, e.g. the filtered row count. */
   readonly targetAll: () => string
+  /** Whether the page's bulk mutation is in flight. */
   readonly bulkPending: () => boolean
+  /** Sends to the page's current filtered audience, calling `handlers` when it settles. */
   readonly sendAll: (payload: SendEmailPayload, handlers: SendEmailHandlers) => void
   readonly onError: (error: unknown) => void
 }
 
+/**
+ * State for `SendEmailDialog` on a list page. `open(row)` targets one recipient and `open(null)`
+ * the whole filtered audience. After sending, toasts report sent, failed and skipped counts, and
+ * the dialog closes only if at least one email was sent.
+ */
 export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
   const { sendToUser } = useSendEmail()
   const { reportSendResult } = useSendEmailFeedback()

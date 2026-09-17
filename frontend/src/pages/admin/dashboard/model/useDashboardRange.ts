@@ -3,13 +3,16 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/shared/i18n'
 import { toDateOnly } from '@/shared/lib'
 
+/** Dashboard date range selection; `custom` means the dates come from the date picker. */
 export type RangePreset = '30d' | '90d' | '12m' | 'custom'
 
+/** Preset button in the dashboard range filter. */
 export interface RangeOption {
   value: RangePreset
   label: string
 }
 
+/** Fixed presets offered by the range filter, with translated labels; `custom` is not listed. */
 export const RANGE_OPTIONS: readonly RangeOption[] = [
   { value: '30d', label: i18n.global.t('pages.admin.dashboard.range.preset30d') },
   { value: '90d', label: i18n.global.t('pages.admin.dashboard.range.preset90d') },
@@ -34,6 +37,12 @@ function monthsAgo(months: number): Date {
   return date
 }
 
+/**
+ * Dashboard range state, defaulting to the last 12 months. `range` yields inclusive `YYYY-MM-DD`
+ * bounds ending today (local time); presets span 30 days, 90 days or 12 months. Picking a preset
+ * clears the custom dates, and clearing the custom dates falls back to `12m`. A custom range
+ * without an end date ends today.
+ */
 export function useDashboardRange() {
   const preset = ref<RangePreset>('12m')
   const customRange = ref<(Date | null)[] | null>(null)

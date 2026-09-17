@@ -16,10 +16,15 @@ import { formatDateTime, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
 import { EMPTY_DOC_JSON } from '@/shared/lib/richtext'
 
 const props = defineProps<{
+  /** Page heading. */
   title: string
+  /** Text under the page heading. */
   subtitle: string
+  /** Label of the create button, also used as the create dialog title. */
   newLabel: string
+  /** Singular entity name used in the edit title, delete confirmation and not-found toast. */
   entityLabel: string
+  /** Table state and mutations from `useContentEntity`. */
   controller: ContentController
 }>()
 

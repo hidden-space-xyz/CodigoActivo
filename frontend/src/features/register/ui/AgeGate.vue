@@ -3,7 +3,10 @@ import { ref } from 'vue'
 
 import { BaseButton } from '@/shared/ui'
 
-const emit = defineEmits<{ confirm: [] }>()
+const emit = defineEmits<{
+  /** Fired when the visitor confirms being an adult; declining is handled inside the component. */
+  confirm: []
+}>()
 
 const declined = ref(false)
 </script>

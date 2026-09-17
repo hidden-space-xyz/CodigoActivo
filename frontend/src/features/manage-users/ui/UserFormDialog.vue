@@ -9,10 +9,22 @@ import { ageFrom, parseDateOnly, toDateOnly } from '@/shared/lib'
 
 const DATE_FORMAT = 'DD/MM/YYYY'
 
-const props = defineProps<{ visible: boolean; user: User | null; saving: boolean }>()
+const props = defineProps<{
+  /** Opens the dialog; each time it opens the form is repopulated from `user`. */
+  visible: boolean
+  /** User being edited; the dialog only edits existing users. */
+  user: User | null
+  /** Shows a loading state on the save button while the parent persists the changes. */
+  saving: boolean
+}>()
 
 const emit = defineEmits<{
+  /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
+  /**
+   * Fired with the validated changes. Email and phone are required for adults only, blank values
+   * are sent as `null`, and the user's current `parentId` is preserved.
+   */
   submit: [body: UpdateUserInput]
 }>()
 

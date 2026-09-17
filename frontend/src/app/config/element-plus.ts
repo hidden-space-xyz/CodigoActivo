@@ -11,6 +11,10 @@ const options = {
   size: 'default',
 } as unknown as ConfigProviderContext
 
+/**
+ * Element Plus plugin and its Spanish locale options. Importing this module also loads the base
+ * styles, the dark-mode variables and the project overrides.
+ */
 export const elementPlus = {
   plugin: ElementPlus,
   options,

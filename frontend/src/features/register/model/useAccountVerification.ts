@@ -6,8 +6,13 @@ import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
 
 import { resendVerificationRequest, verifyRegistrationRequest } from '../api/requests'
 
+/** Progress of verifying the emailed link: in flight, activated, or failed/incomplete. */
 export type LinkVerificationState = 'verifying' | 'success' | 'error'
 
+/**
+ * Verification page flow: `verify` checks the link's user id and code (an incomplete link fails
+ * without calling the API), and `resend` requests a new link, reporting the result as a toast.
+ */
 export function useAccountVerification() {
   const { t } = useI18n()
   const feedback = useCrudFeedback()

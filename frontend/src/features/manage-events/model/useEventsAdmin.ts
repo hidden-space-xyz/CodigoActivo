@@ -19,6 +19,10 @@ import {
   updateEventRequest,
 } from '@/entities/event'
 
+/**
+ * Admin events table (text, category and date-range column filters) with create, update, delete and
+ * featured-toggle mutations; every mutation invalidates all event queries.
+ */
 export function useEventsAdmin() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: eventQueryKeys.all })
@@ -62,6 +66,7 @@ export function useEventsAdmin() {
   return { table, create, update, remove, feature, fetchOne }
 }
 
+/** Admin detail of a single event, refetched when `eventId` changes. */
 export function useEvent(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventQueryKeys.adminDetail(toValue(eventId))),

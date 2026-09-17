@@ -12,6 +12,7 @@ function toCatalogRef(item?: UserStatusResponse | UserTypeSummaryResponse): User
   return { id: item.id ?? '', name: item.name ?? '', color: item.color ?? null }
 }
 
+/** Maps a user for the admin screens; missing status or type become `null`. */
 export function toUser(user: UserResponse): User {
   return {
     id: user.id ?? '',
@@ -30,6 +31,7 @@ export function toUser(user: UserResponse): User {
   }
 }
 
+/** Copies the form input field by field into the `PUT /api/users/{id}` body. */
 export function toUpdateUserRequest(input: UpdateUserInput): UpdateUserRequest {
   return {
     firstName: input.firstName,

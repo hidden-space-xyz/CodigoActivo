@@ -6,6 +6,7 @@ import { usePagedList } from '@/shared/lib'
 import { resourceQueryKeys } from './query-keys'
 import { getResourceByIdRequest, getResourcesPageRequest } from './requests'
 
+/** Infinite list of public resources, newest first, filtered by the search term when not empty. */
 export function useResources(search: MaybeRefOrGetter<string>) {
   const term = computed(() => toValue(search))
 
@@ -24,6 +25,7 @@ export function useResources(search: MaybeRefOrGetter<string>) {
   }
 }
 
+/** Public resource detail; `notFound` becomes true once the API answers 404 for the id. */
 export function useResourceDetail(resourceId: MaybeRefOrGetter<string>) {
   const id = computed(() => toValue(resourceId))
 

@@ -13,11 +13,13 @@ import {
 
 import { useCatalog } from './useCatalog'
 
+/** Body for creating or updating a terms document that participants accept when signing up. */
 export interface TermsDocumentInput {
   name: string
   description: string
 }
 
+/** Admin table (filterable by name) and CRUD mutations for terms documents. */
 export function useTermsDocuments() {
   const table = useServerTable<TermsDocumentResponse, GetApiEventsTermsDocumentParams>({
     queryKey: catalogQueryKeys.termsDocumentsTable(),

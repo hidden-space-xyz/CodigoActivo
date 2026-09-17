@@ -10,8 +10,10 @@ type TranslationPath<T> = {
       : never
 }[keyof T & string]
 
+/** Dot-separated path to a string leaf in `es.json`; mistyped message keys fail type-checking. */
 export type TranslationKey = TranslationPath<typeof es>
 
+/** Composition-API Vue I18n instance, Spanish only; `i18n.global` also works outside components. */
 export const i18n = createI18n({
   legacy: false,
   globalInjection: true,

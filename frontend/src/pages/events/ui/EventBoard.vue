@@ -3,7 +3,10 @@ import type { UpcomingEvent } from '@/entities/event'
 
 import { EventCard } from '@/entities/event'
 
-defineProps<{ events: readonly UpcomingEvent[] }>()
+defineProps<{
+  /** Already filtered events, rendered as cards in the given order. */
+  events: readonly UpcomingEvent[]
+}>()
 </script>
 
 <template>

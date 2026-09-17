@@ -26,6 +26,7 @@ function toCategoryTags(event: EventListItemResponse): EventCategoryTag[] {
     }))
 }
 
+/** Maps a category type to a tag, defaulting missing fields to empty strings. */
 export function toCategoryTag(categoryType: EventCategoryTypeResponse): EventCategoryTag {
   return {
     id: categoryType.id ?? '',
@@ -79,6 +80,10 @@ function toEventDate(event: EventListItemResponse): string {
     : i18n.global.t('entities.event.dateFallback')
 }
 
+/**
+ * Maps a list item to a card model. The status is computed from the signup window against the
+ * current time, so the label reflects the moment of mapping, not of the request.
+ */
 export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
   return {
     id: event.id ?? '',
@@ -101,6 +106,10 @@ function toTermsInfo(event: EventResponse): EventTermsInfo | null {
   }
 }
 
+/**
+ * Maps the full event to the detail page model: pre-formatted date and signup labels, derived
+ * `signupOpen`/`earlySignupOpen` flags, and `terms` as `null` when no terms document is attached.
+ */
 export function toEventDetail(event: EventResponse): EventDetail {
   const status = toStatus(event)
   return {
@@ -122,6 +131,7 @@ export function toEventDetail(event: EventResponse): EventDetail {
   }
 }
 
+/** Maps a list item to a past-event card: status is always `finished`, subtitle is `eventName`. */
 export function toPastEvent(event: EventListItemResponse): PastEvent {
   return {
     id: event.id ?? '',

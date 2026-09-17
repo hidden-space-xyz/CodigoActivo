@@ -1,3 +1,4 @@
+/** Signed-in user held by the session; `birthDate` is an ISO date string, empty when unknown. */
 export interface AuthUser {
   readonly id: string
   readonly firstName: string

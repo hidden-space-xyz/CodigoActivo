@@ -1,7 +1,15 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ text: string; color?: string }>(), {
-  color: 'var(--ca-orange-ink)',
-})
+withDefaults(
+  defineProps<{
+    /** Kicker text, rendered uppercase in the monospace font. */
+    text: string
+    /** Any CSS color value, preferably a `--ca-*` variable. */
+    color?: string
+  }>(),
+  {
+    color: 'var(--ca-orange-ink)',
+  },
+)
 </script>
 
 <template>

@@ -3,11 +3,16 @@ import type { EventCategoryTag } from '@/entities/event'
 import { normalizeHexColor } from '@/shared/lib'
 
 defineProps<{
+  /** Selectable categories, each shown with its color swatch. */
   categories: readonly EventCategoryTag[]
+  /** Selected category id (`v-model`); an empty string means all categories. */
   modelValue: string
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  /** Fired with the selected category id, or an empty string when the selection is cleared. */
+  'update:modelValue': [value: string]
+}>()
 
 function onChange(value: unknown): void {
   emit('update:modelValue', typeof value === 'string' ? value : '')

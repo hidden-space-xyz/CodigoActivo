@@ -11,12 +11,22 @@ import AppIcon from './AppIcon.vue'
 const { t } = useI18n()
 
 const props = defineProps<{
+  /** Serialized TipTap JSON document; plain text is loaded as a single paragraph. */
   modelValue?: string | null
+  /** Applies the error border, e.g. when a required description is missing. */
   invalid?: boolean
+  /** Accessible name of the editable area; read once at mount. */
   label: string
+  /**
+   * Uploads an inserted image and resolves to its stored file id, which becomes the image URL.
+   * Resolving `undefined` skips the insert; a rejection shows the upload error message.
+   */
   upload: (file: File) => Promise<string | undefined>
 }>()
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  /** Fired with the serialized JSON document on every user edit, not on external value updates. */
+  'update:modelValue': [value: string]
+}>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)

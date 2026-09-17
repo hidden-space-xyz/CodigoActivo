@@ -30,10 +30,15 @@ import {
 } from '@/shared/lib'
 
 const props = defineProps<{
+  /** Event whose attendees and assignments are listed and managed. */
   eventId: string
+  /** Whether this tab is selected; the attendee table only fetches while it is. */
   active: boolean
+  /** Event activities loaded by the parent page, used for the activity filter options. */
   activities: ActivityResponse[]
+  /** Parent's activities request is loading; keeps the tab in its loading state. */
   activitiesLoading: boolean
+  /** Parent's activities request failed; shows the tab's error state. */
   activitiesError: boolean
 }>()
 

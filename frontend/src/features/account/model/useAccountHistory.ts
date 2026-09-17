@@ -9,6 +9,10 @@ import {
 import type { AccountHistoryEntry, EventRatingInput } from '@/entities/account'
 import { useSession } from '@/entities/session'
 
+/**
+ * User's event participation history split into upcoming and past entries, plus the mutation that
+ * saves an event rating and refetches the history.
+ */
 export function useAccountHistory() {
   const session = useSession()
   const queryClient = useQueryClient()

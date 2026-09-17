@@ -2,7 +2,9 @@
 import AppIcon from './AppIcon.vue'
 
 defineProps<{
+  /** Caption shown before the date; a colon is appended automatically. */
   label: string
+  /** Date text already formatted for display; the component renders nothing when empty. */
   value: string
 }>()
 </script>

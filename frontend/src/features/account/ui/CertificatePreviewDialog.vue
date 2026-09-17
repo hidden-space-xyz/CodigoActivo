@@ -8,13 +8,18 @@ import { SHEET_RATIO, renderCertificatePreview } from '../model/certificate-shee
 import type { CertificateFormat } from '../model/useAccountCertificates'
 
 const props = defineProps<{
+  /** Certificate to preview; the dialog is open while this is not `null`. */
   certificate: AccountCertificate | null
+  /** Shows a loading state on the PNG download button. */
   busyPng: boolean
+  /** Shows a loading state on the PDF download button. */
   busyPdf: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Fired with the previewed certificate and the requested file format. */
   download: [AccountCertificate, CertificateFormat]
+  /** Fired when the user dismisses the dialog. */
   close: []
 }>()
 

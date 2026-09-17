@@ -7,8 +7,13 @@ import { useSession } from '@/entities/session'
 
 import { downloadCertificatePdf, downloadCertificatePng } from './certificate-sheet'
 
+/** File format a certificate can be downloaded in. */
 export type CertificateFormat = 'png' | 'pdf'
 
+/**
+ * Loads the user's certificates and tracks the one open in the preview dialog. Downloads are
+ * tracked per certificate and format, so a repeated click while one is rendering is ignored.
+ */
 export function useAccountCertificates() {
   const session = useSession()
   const userId = computed(() => session.user?.id ?? null)
@@ -55,6 +60,7 @@ export function useAccountCertificates() {
   return { certificates, entries, preview, isBusy, open, close, download }
 }
 
+/** Stable identity for a certificate (event plus participant), usable as a list key. */
 export function certificateKey(certificate: AccountCertificate): string {
   return `${certificate.eventId}-${certificate.participantId}`
 }

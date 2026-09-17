@@ -7,7 +7,13 @@ import AppIcon from './AppIcon.vue'
 
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{ tooltip?: string }>()
+const props = defineProps<{
+  /**
+   * Hover text; falls back to `aria-label`, then the `label` attr. It also becomes the accessible
+   * name of icon-only buttons. Hidden on coarse (touch) pointers.
+   */
+  tooltip?: string
+}>()
 
 const attrs = useAttrs()
 

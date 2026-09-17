@@ -2,7 +2,10 @@
 import type { AnnouncementSummary } from '../model/types'
 import { CardDate, ListThumbnail } from '@/shared/ui'
 
-defineProps<{ announcement: AnnouncementSummary }>()
+defineProps<{
+  /** Announcement rendered as a list card that links to its detail page. */
+  announcement: AnnouncementSummary
+}>()
 </script>
 
 <template>

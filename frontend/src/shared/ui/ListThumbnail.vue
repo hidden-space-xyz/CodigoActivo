@@ -5,7 +5,12 @@ import { fileContentUrl } from '@/shared/lib'
 
 import AppIcon from './AppIcon.vue'
 
-const props = defineProps<{ thumbnailId?: string | null; alt?: string }>()
+const props = defineProps<{
+  /** Stored file id; without one a placeholder icon fills the 16:9 frame. */
+  thumbnailId?: string | null
+  /** Image alt text; defaults to empty, marking the image as decorative. */
+  alt?: string
+}>()
 
 const url = computed(() => fileContentUrl(props.thumbnailId))
 </script>

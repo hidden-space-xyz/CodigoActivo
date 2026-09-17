@@ -140,6 +140,8 @@ Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
   exceptions and seeded content are not UI text.
 - Use `camelCase` private fields without a leading underscore.
 - Keep CSharpier formatting and all SDK analyzer rules clean. Warnings are errors.
+- Document every public type and member with XML comments (`CS1591` is a warning, so the build fails without
+  them). Test projects are exempt.
 - Name tests with three PascalCase segments and no underscores, for example
   `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`. CQRS handler unit tests start with `HandleAsync`.
 
@@ -152,6 +154,10 @@ Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 - Do not hardcode user-facing text. Add Vue I18n keys to `src/shared/i18n/locales/es.json`.
 - Feature composables use camelCase filenames such as `useLogin.ts`; entity and `shared/lib` composables use
   kebab-case names such as `use-theme.ts`.
+- Document the public API with JSDoc: every top-level export, public class member, and every component prop,
+  emitted event and `defineExpose` member. ESLint enforces it and rejects comments that only repeat the name, so
+  explain purpose and non-obvious behavior instead; the TypeScript signature already documents types. Tests
+  (`*.spec.ts`, `*.test.ts`, `__tests__/`) are exempt because their names must explain themselves.
 - Keep strict TypeScript, ESLint, accessibility, i18n, Stylelint, Steiger, Knip and Prettier checks green.
 
 ## Tests and pull requests

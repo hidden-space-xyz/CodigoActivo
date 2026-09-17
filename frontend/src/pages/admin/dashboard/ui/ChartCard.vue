@@ -1,5 +1,10 @@
 <script setup lang="ts">
-defineProps<{ title: string; subtitle?: string }>()
+defineProps<{
+  /** Card heading, rendered as an `h2`. */
+  title: string
+  /** Optional line under the heading; omitted when empty. */
+  subtitle?: string
+}>()
 </script>
 
 <template>

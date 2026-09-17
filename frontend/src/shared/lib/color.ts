@@ -1,5 +1,6 @@
 const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 
+/** Perceived brightness from 0 (black) to 1 (white); expects a 6-digit `#rrggbb` value. */
 export function hexLuminance(hex: string): number {
   const red = parseInt(hex.slice(1, 3), 16)
   const green = parseInt(hex.slice(3, 5), 16)
@@ -7,6 +8,7 @@ export function hexLuminance(hex: string): number {
   return (0.299 * red + 0.587 * green + 0.114 * blue) / 255
 }
 
+/** Trims and expands `#rgb` to `#rrggbb`, keeping case; `null` for empty or non-hex input. */
 export function normalizeHexColor(input?: string | null): string | null {
   if (!input) return null
   const value = input.trim()

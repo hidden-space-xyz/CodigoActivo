@@ -24,6 +24,7 @@ import type {
   AccountProfile,
 } from '../model/types'
 
+/** Maps the signed-in user's `UserResponse` to a profile, defaulting missing text to `''`. */
 export function toAccountProfile(user: UserResponse): AccountProfile {
   return {
     id: user.id ?? '',
@@ -38,6 +39,7 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
   }
 }
 
+/** Maps a minor's `UserResponse` to the reduced shape shown in the household list. */
 export function toAccountChild(user: UserResponse): AccountChild {
   return {
     id: user.id ?? '',
@@ -48,6 +50,7 @@ export function toAccountChild(user: UserResponse): AccountChild {
   }
 }
 
+/** Builds the user update body for the own profile; `parentId` is `null` for adults. */
 export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserRequest {
   return {
     firstName: input.firstName,
@@ -60,6 +63,7 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
   }
 }
 
+/** Builds the body for registering a minor under the current account. */
 export function toAddMinorRequest(input: AddMinorInput): RegisterMinorRequest {
   return {
     firstName: input.firstName,
@@ -69,6 +73,7 @@ export function toAddMinorRequest(input: AddMinorInput): RegisterMinorRequest {
   }
 }
 
+/** Builds the user update body for a minor, keeping it linked to `parentId`. */
 export function toUpdateMinorRequest(input: UpdateMinorInput, parentId: string): UpdateUserRequest {
   return {
     firstName: input.firstName,
@@ -79,6 +84,7 @@ export function toUpdateMinorRequest(input: UpdateMinorInput, parentId: string):
   }
 }
 
+/** Maps a stored event rating; missing score becomes `0` and missing comments `''`. */
 export function toAccountEventRating(rating: EventRatingResponse): AccountEventRating {
   return {
     score: rating.score ?? 0,
@@ -102,6 +108,10 @@ function toAccountHistoryActivity(activity: EventHistoryActivityResponse): Accou
   }
 }
 
+/**
+ * Maps an attended event with its activities for the account history, joining participant names
+ * and leaving `rating` as `null` when the user has not rated the event.
+ */
 export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHistoryEntry {
   return {
     eventId: entry.eventId ?? '',
@@ -117,6 +127,7 @@ export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHisto
   }
 }
 
+/** Maps a participation certificate issued to the user or one of their minors. */
 export function toAccountCertificate(certificate: EventCertificateResponse): AccountCertificate {
   return {
     code: certificate.code ?? '',
@@ -132,6 +143,7 @@ export function toAccountCertificate(certificate: EventCertificateResponse): Acc
   }
 }
 
+/** Builds the rating body, trimming comments and sending blank ones as `null`. */
 export function toSaveEventRatingRequest(input: EventRatingInput): SaveEventRatingRequest {
   return {
     score: input.score,

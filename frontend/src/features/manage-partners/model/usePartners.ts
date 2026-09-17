@@ -15,6 +15,10 @@ import {
   updatePartnerRequest,
 } from '@/entities/partner'
 
+/**
+ * Admin partners table (sorted by tier by default) with create, update and delete mutations; every
+ * mutation invalidates all partner queries, including the public list.
+ */
 export function usePartners() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: partnerQueryKeys.all })

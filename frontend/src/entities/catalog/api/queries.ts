@@ -12,6 +12,7 @@ import {
   getUserTypesRequest,
 } from './requests'
 
+/** Cached user types, used to filter and label users in admin screens. */
 export function useUserTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.userTypes(),
@@ -19,6 +20,7 @@ export function useUserTypesList() {
   })
 }
 
+/** Roles a participant can take in an activity, used for role capacities and attendee admin. */
 export function useActivityRoleTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.activityRoleTypes(),
@@ -26,6 +28,7 @@ export function useActivityRoleTypesList() {
   })
 }
 
+/** Statuses an activity signup can move through, for the admin attendees tab. */
 export function useAssignmentStatusTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.assignmentStatusTypes(),
@@ -33,6 +36,7 @@ export function useAssignmentStatusTypesList() {
   })
 }
 
+/** Event categories for selectors and filters (first 100); refreshed when a category is created. */
 export function useEventCategoryTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.eventCategoryTypes(),
@@ -40,6 +44,7 @@ export function useEventCategoryTypesList() {
   })
 }
 
+/** Account statuses used by the admin users page filters. */
 export function useUserStatusTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.userStatusTypes(),
@@ -47,6 +52,7 @@ export function useUserStatusTypesList() {
   })
 }
 
+/** Activity modalities offered when creating or filtering activities. */
 export function useActivityModalityTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.activityModalityTypes(),
@@ -54,6 +60,7 @@ export function useActivityModalityTypesList() {
   })
 }
 
+/** Resource types for the admin resources page and resource form. */
 export function useResourceTypesList() {
   return useQuery({
     queryKey: catalogQueryKeys.resourceTypes(),
@@ -61,6 +68,7 @@ export function useResourceTypesList() {
   })
 }
 
+/** Terms documents an event can require participants to accept (first 100). */
 export function useTermsDocumentsList() {
   return useQuery({
     queryKey: catalogQueryKeys.termsDocuments(),

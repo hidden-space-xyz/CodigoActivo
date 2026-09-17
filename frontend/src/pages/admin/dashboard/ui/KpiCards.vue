@@ -8,7 +8,13 @@ import type { DashboardKpiResponse } from '@/shared/api/generated/models'
 
 const { t } = useI18n()
 
-const props = defineProps<{ kpis: DashboardKpiResponse[] }>()
+const props = defineProps<{
+  /**
+   * KPIs from the analytics response, matched to the fixed tiles by `key`; missing keys render as
+   * zero. The trend badge compares `inRange` with `previousRange` and is hidden when that is zero.
+   */
+  kpis: DashboardKpiResponse[]
+}>()
 
 interface TileMeta {
   key: string

@@ -105,6 +105,8 @@ enforces these rules.
 - The session is a module-level reactive singleton; the project does not use Pinia.
 - User-facing text must use Vue I18n keys in `src/shared/i18n/locales/es.json`.
 - Feature composables use camelCase filenames; entity and `shared/lib` composables use kebab-case.
+- ESLint requires JSDoc on exports, public class members, component props, emits and `defineExpose` members.
+  Explain purpose and non-obvious behavior, not the name or types. Tests are exempt.
 - Theme values use `--ca-*` variables; map Element Plus values to them instead of adding isolated colors.
 
 ## API changes
