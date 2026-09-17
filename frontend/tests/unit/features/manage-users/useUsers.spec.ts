@@ -111,13 +111,13 @@ describe('useUsers', () => {
     })
     await result.remove.mutateAsync('user-2')
     await result.changeType.mutateAsync({ id: 'user-1', userTypeId: 'type-member' })
-    await result.setAdmin.mutateAsync({ id: 'user-1', isAdmin: true })
+    await result.setAdmin.mutateAsync({ id: 'user-1', isAdmin: true, currentPassword: 'secret' })
 
     expect(requests).toEqual([
       'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":"1990-05-10","gender":"Female","parentId":null}',
       'DELETE user-2',
       'TYPE ?userTypeId=type-member',
-      'ADMIN {"isAdmin":true}',
+      'ADMIN {"isAdmin":true,"currentPassword":"secret"}',
     ])
     expect(invalidate).toHaveBeenCalledTimes(4)
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users'] })

@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -8,45 +10,75 @@ namespace CodigoActivo.Application.Users.Commands;
 /// Carries the input required to set admin.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-/// <param name="IsAdmin">Whether admin.</param>
-public sealed record SetAdminCommand(Guid UserId, bool IsAdmin) : ICommand<Result>;
+/// <param name="ActingUserId">Identifier of the acting user.</param>
+/// <param name="Request">Validated client request data.</param>
+public sealed record SetAdminCommand(Guid UserId, Guid ActingUserId, SetAdminRequest Request)
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to set admin.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="hasher">Hasher used to verify the acting administrator's password.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-public sealed class SetAdminCommandHandler(IUserRepository users, IClock clock, IUnitOfWork uow)
-    : ICommandHandler<SetAdminCommand, Result>
+public sealed class SetAdminCommandHandler(
+    IUserRepository users,
+    IPasswordHasher hasher,
+    IClock clock,
+    IUnitOfWork uow
+) : ICommandHandler<SetAdminCommand, Result>
 {
     /// <summary>
-    /// Handles the request to set admin.
+    /// Handles the request to set admin. Granting the role first re-authenticates the acting
+    /// administrator, so a hijacked session alone cannot escalate another account.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(SetAdminCommand command, CancellationToken ct = default)
     {
+        var isAdmin = command.Request.IsAdmin;
+        if (isAdmin && !await IsActingPasswordValidAsync(command, ct))
+        {
+            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+        }
+
         var user = await users.FindAsync(u => u.Id == command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        if (user.IsAdmin == command.IsAdmin)
+        if (user.IsAdmin == isAdmin)
         {
             return Result.Success();
         }
 
-        if (!command.IsAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
+        if (!isAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
         {
             return Error.Forbidden(ErrorCode.UserCannotRemoveLastAdmin);
         }
 
-        user.IsAdmin = command.IsAdmin;
+        user.IsAdmin = isAdmin;
         user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
         return Result.Success();
+    }
+
+    private async Task<bool> IsActingPasswordValidAsync(
+        SetAdminCommand command,
+        CancellationToken ct
+    )
+    {
+        var password = command.Request.CurrentPassword;
+        if (string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
+
+        var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
+        return !string.IsNullOrEmpty(actingUser?.PasswordHash)
+            && hasher.Verify(password, actingUser.PasswordHash);
     }
 }

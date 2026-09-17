@@ -12,15 +12,17 @@ import {
 } from '@/shared/ui'
 
 import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
-import { UserFormDialog, useUsers } from '@/features/manage-users'
+import { GrantAdminDialog, UserFormDialog, useUsers } from '@/features/manage-users'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { genderLabel } from '@/entities/user'
 import type { UpdateUserInput, User } from '@/entities/user'
+import { ApiError } from '@/shared/api'
 import type { CsvValue } from '@/shared/lib'
 import {
   ageFrom,
   formatDate,
   fullName,
+  getErrorMessage,
   toSelectOptions,
   todayIso,
   useCrudFeedback,
@@ -44,6 +46,10 @@ const selected = ref<User | null>(null)
 const typeDialogVisible = ref(false)
 const typeUser = ref<User | null>(null)
 const selectedUserTypeId = ref<string | null>(null)
+
+const grantDialogVisible = ref(false)
+const grantUser = ref<User | null>(null)
+const grantError = ref('')
 
 function birthDateWithAge(user: User): string {
   const formatted = formatDate(user.birthDate)
@@ -118,16 +124,38 @@ function openChangeType(user: User): void {
 
 function toggleAdmin(user: User, value: boolean): void {
   if (!user.id) return
+  if (value) {
+    grantUser.value = user
+    grantError.value = ''
+    grantDialogVisible.value = true
+    return
+  }
   setAdmin.mutate(
-    { id: user.id, isAdmin: value },
+    { id: user.id, isAdmin: false },
     {
-      onSuccess: () =>
-        feedback.success(
-          value
-            ? t('pages.admin.users.toasts.adminGranted')
-            : t('pages.admin.users.toasts.adminRevoked'),
-        ),
+      onSuccess: () => feedback.success(t('pages.admin.users.toasts.adminRevoked')),
       onError: (error) => feedback.error(error),
+    },
+  )
+}
+
+function submitGrantAdmin(currentPassword: string): void {
+  if (!grantUser.value?.id) return
+  grantError.value = ''
+  setAdmin.mutate(
+    { id: grantUser.value.id, isAdmin: true, currentPassword },
+    {
+      onSuccess: () => {
+        feedback.success(t('pages.admin.users.toasts.adminGranted'))
+        grantDialogVisible.value = false
+      },
+      onError: (error) => {
+        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
+          grantError.value = getErrorMessage(error)
+          return
+        }
+        feedback.error(error)
+      },
     },
   )
 }
@@ -437,6 +465,14 @@ function confirmDelete(user: User): void {
       :user="selected"
       :saving="update.isPending.value"
       @submit="onSubmit"
+    />
+
+    <GrantAdminDialog
+      v-model:visible="grantDialogVisible"
+      :user="grantUser"
+      :saving="setAdmin.isPending.value"
+      :error="grantError"
+      @submit="submitGrantAdmin"
     />
 
     <SendEmailDialog

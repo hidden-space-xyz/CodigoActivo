@@ -116,9 +116,12 @@ describe('user requests', () => {
       }),
     )
 
-    await setUserAdminRequest('u1', true)
+    await setUserAdminRequest('u1', true, 'Str0ngPass!23')
     await setUserAdminRequest('u1', false)
 
-    expect(bodies).toEqual([{ isAdmin: true }, { isAdmin: false }])
+    expect(bodies).toEqual([
+      { isAdmin: true, currentPassword: 'Str0ngPass!23' },
+      { isAdmin: false, currentPassword: null },
+    ])
   })
 })

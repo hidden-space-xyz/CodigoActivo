@@ -86,7 +86,10 @@ public record UserTypeSummaryResponse(Guid Id, string Name, string Color);
 /// Contains the client-supplied data used to set admin.
 /// </summary>
 /// <param name="IsAdmin">Whether admin.</param>
-public record SetAdminRequest(bool IsAdmin);
+/// <param name="CurrentPassword">
+/// Password of the acting administrator. Required to grant the role; ignored when revoking it.
+/// </param>
+public record SetAdminRequest(bool IsAdmin, [MaxLength(128)] string? CurrentPassword);
 
 /// <summary>
 /// Contains the client-supplied data used to update the user.
