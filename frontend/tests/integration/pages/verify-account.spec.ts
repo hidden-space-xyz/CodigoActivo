@@ -46,9 +46,10 @@ describe('verify account page', () => {
         }),
     )
 
-    const { wrapper, router } = await renderApp('/verify-account?userId=user-1&code=otp-1')
+    const { wrapper, router } = await renderApp('/verify-account#userId=user-1&code=otp-1')
 
     await vi.waitFor(() => expect(calls).toHaveLength(1))
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/verify-account'))
     expect(wrapper.get('.verify-card').classes()).toContain('verify-card--verifying')
     expect(wrapper.text()).toContain(t('pages.verifyAccount.verifying'))
 
@@ -64,7 +65,7 @@ describe('verify account page', () => {
   it('reports an incomplete link without calling the API or offering a resend', async () => {
     const calls = serveVerify(() => new HttpResponse(null, { status: 204 }))
 
-    const { wrapper } = await renderApp('/verify-account?code=otp-1')
+    const { wrapper } = await renderApp('/verify-account#code=otp-1')
 
     expect(wrapper.text()).toContain(t('pages.verifyAccount.errorTitle'))
     expect(wrapper.get('[role="alert"]').text()).toBe(t('features.register.verify.incompleteLink'))
@@ -76,7 +77,7 @@ describe('verify account page', () => {
     serveVerify(() => apiError(400, 'OtpInvalidOrExpired'))
     const userIds = serveResend()
 
-    const { wrapper } = await renderApp('/verify-account?userId=user-1&code=expired')
+    const { wrapper } = await renderApp('/verify-account#userId=user-1&code=expired')
 
     await vi.waitFor(() =>
       expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.OtpInvalidOrExpired')),
@@ -94,7 +95,7 @@ describe('verify account page', () => {
   it('offers a resend for a link that has a user but no code, reporting resend failures', async () => {
     serveResend(() => apiError(429, 'OtpResendCooldownActive'))
 
-    const { wrapper } = await renderApp('/verify-account?userId=user-1&userId=user-2&code=')
+    const { wrapper } = await renderApp('/verify-account#userId=user-1&userId=user-2&code=')
 
     expect(wrapper.get('[role="alert"]').text()).toBe(t('features.register.verify.incompleteLink'))
     await resendButton(wrapper)?.trigger('click')

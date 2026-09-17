@@ -88,6 +88,6 @@ public sealed class AccountEmails(
 
     private string BuildAccountUrl(string path, Guid userId, string code)
     {
-        return $"{BuildSiteUrl()}{path}?userId={userId}&code={Uri.EscapeDataString(code)}";
+        return $"{BuildSiteUrl()}{path}#userId={userId}&code={Uri.EscapeDataString(code)}";
     }
 }

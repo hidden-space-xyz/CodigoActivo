@@ -1,9 +1,18 @@
 name: codigoactivo
 
+# Container logs hold client IP addresses and user agents: rotate them so they are not kept indefinitely.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
+    # Terse error reports omit DETAIL lines, which quote row values such as a duplicated email address.
+    command: ["postgres", "-c", "log_error_verbosity=terse"]
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -18,6 +27,7 @@ services:
       retries: 5
       start_period: 30s
     security_opt: [no-new-privileges:true]
+    logging: *logging
 
   api:
     image: ghcr.io/hidden-space-xyz/codigoactivo-backend:latest
@@ -54,6 +64,7 @@ services:
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
+    logging: *logging
 
   web:
     image: ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest
@@ -72,6 +83,7 @@ services:
         hard: 65536
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
+    logging: *logging
 
 networks:
   frontend:

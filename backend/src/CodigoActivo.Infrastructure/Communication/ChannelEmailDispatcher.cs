@@ -113,20 +113,14 @@ public sealed class ChannelEmailDispatcher(
         {
             logger.LogWarning(
                 ex,
-                "Delivery of a queued {Kind} message to {Recipient} timed out after {Timeout}",
+                "Delivery of a queued {Kind} message timed out after {Timeout}",
                 message.Kind,
-                message.ToAddress,
                 options.SendTimeout
             );
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Failed to deliver a queued {Kind} message to {Recipient}",
-                message.Kind,
-                message.ToAddress
-            );
+            logger.LogError(ex, "Failed to deliver a queued {Kind} message", message.Kind);
         }
     }
 }

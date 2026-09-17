@@ -27,9 +27,9 @@ async function fillPasswords(wrapper: VueWrapper, password: string, confirm = pa
 describe('reset password page', () => {
   it.each([
     '/reset-password',
-    `/reset-password?userId=${USER_ID}`,
-    `/reset-password?userId=${USER_ID}&code=`,
-    '/reset-password?userId=not-a-guid&code=abc',
+    `/reset-password#userId=${USER_ID}`,
+    `/reset-password#userId=${USER_ID}&code=`,
+    '/reset-password#userId=not-a-guid&code=abc',
   ])('shows an invalid link panel for %s', async (path) => {
     const { wrapper, router } = await renderApp(path)
 
@@ -44,7 +44,7 @@ describe('reset password page', () => {
 
   it('validates the password locally before calling the API', async () => {
     const calls = serveReset()
-    const { wrapper } = await renderApp(`/reset-password?userId=${USER_ID}&code=otp-1`)
+    const { wrapper } = await renderApp(`/reset-password#userId=${USER_ID}&code=otp-1`)
 
     await fillPasswords(wrapper, 'too-short')
     expect(wrapper.get('[role="alert"]').text()).toBe(t('validation.newPasswordMin'))
@@ -57,8 +57,9 @@ describe('reset password page', () => {
 
   it('changes the password and offers to log in', async () => {
     const calls = serveReset()
-    const { wrapper, router } = await renderApp(`/reset-password?userId=${USER_ID}&code=otp-1`)
+    const { wrapper, router } = await renderApp(`/reset-password#userId=${USER_ID}&code=otp-1`)
 
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/reset-password'))
     await fillPasswords(wrapper, PASSWORD)
 
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.resetPassword.successTitle')))
@@ -68,10 +69,10 @@ describe('reset password page', () => {
     )
   })
 
-  it('uses the first value when a query parameter is repeated', async () => {
+  it('uses the first value when a link parameter is repeated', async () => {
     const calls = serveReset()
     const { wrapper } = await renderApp(
-      `/reset-password?userId=${USER_ID}&userId=other&code=first&code=second`,
+      `/reset-password#userId=${USER_ID}&userId=other&code=first&code=second`,
     )
 
     await fillPasswords(wrapper, PASSWORD)
@@ -82,7 +83,7 @@ describe('reset password page', () => {
 
   it('shows the API error and a link to request a new reset email', async () => {
     serveReset(() => apiError(400, 'PasswordResetInvalidOrExpired'))
-    const { wrapper, router } = await renderApp(`/reset-password?userId=${USER_ID}&code=old`)
+    const { wrapper, router } = await renderApp(`/reset-password#userId=${USER_ID}&code=old`)
 
     await fillPasswords(wrapper, PASSWORD)
 

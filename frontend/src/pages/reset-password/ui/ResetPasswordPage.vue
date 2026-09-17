@@ -1,18 +1,12 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
-
 import { useResetPassword } from '@/features/auth'
+import { useLinkFragment } from '@/shared/lib'
 import { BaseButton, PageHead } from '@/shared/ui'
 
-const route = useRoute()
-
-function queryString(value: unknown): string | null {
-  if (Array.isArray(value)) value = value[0]
-  return typeof value === 'string' && value.length > 0 ? value : null
-}
+const linkParam = useLinkFragment()
 
 const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSubmitting } =
-  useResetPassword(queryString(route.query.userId), queryString(route.query.code))
+  useResetPassword(linkParam('userId'), linkParam('code'))
 </script>
 
 <template>

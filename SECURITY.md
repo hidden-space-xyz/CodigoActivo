@@ -121,6 +121,44 @@ nginx sends HSTS only when the effective forwarded scheme is HTTPS and adds CSP,
 referrer, permissions and cross-origin isolation headers. See
 [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
 
+### Privacy and third parties
+
+- Browsers load nothing from third parties. Fonts are bundled from Fontsource packages and served from the
+  application origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus
+  `data:`/`blob:` images). Do not add CDNs, analytics or embeds without a legal basis and consent review.
+- The only cookies are the session, two-factor challenge and CSRF cookies described above; the theme choice
+  stays in `localStorage` and is never sent to the server.
+- `Referrer-Policy: same-origin` keeps page URLs out of requests to external sites.
+- Verification and password-reset links put the user id and one-time code in the URL fragment
+  (`/reset-password#userId=…&code=…`), which browsers never send to the server. The page reads it and removes
+  it from the address bar and history entry, so a reload needs the emailed link again.
+
+### Logging
+
+Every log line must be useful for diagnosis without exposing users or weakening the system:
+
+- **Never logged:** names, email addresses, phone numbers, birth dates, passwords or their hashes, one-time
+  codes, TOTP secrets, cookies, CSRF tokens, request bodies, query strings, Referer and SMTP replies to
+  recipient or message commands (they quote the mailbox).
+- **Logged:** HTTP method, route path (whose parameters are GUIDs), status, timing, entity identifiers, email
+  kind, counts, SMTP error and status codes, and exception messages and stack traces.
+- **API:** `RequestLoggingMiddleware` records method, path, status and duration only for 4xx/5xx responses.
+  Only the `CodigoActivo`, `Program` and `Microsoft.Hosting.Lifetime` categories log at `Information`; every
+  other category, including ASP.NET Core, EF Core, Npgsql and `System.Net.Http`, logs at `Warning`, so framework
+  request lines (which include query strings) are off. EF Core sensitive-data logging stays disabled, so failed
+  commands show parameters as `?`, and Npgsql redacts PostgreSQL error details. `SmtpEmailSender` replaces a
+  rejected command's exception with one that carries only the SMTP codes, so email failures log the message
+  kind and codes, never the recipient or the server reply that quotes it.
+- **nginx:** the access log keeps client IP, time, method, path without query, status, size, timings,
+  upstream status, rate-limit outcome and user agent; the Referer is not logged. The error log is limited to
+  `crit` because lower levels repeat the full request line and Referer; 429, 502 and 504 outcomes remain in
+  the access log.
+- **PostgreSQL:** `log_error_verbosity=terse` drops `DETAIL` lines such as
+  `Key (email)=(…) already exists`. Failing statements are logged with `$n` placeholders because the API only
+  sends parameterized SQL.
+- **Retention:** container logs are rotated (see [DEPLOYMENT.md](DEPLOYMENT.md#production-topology)). IP
+  addresses and user agents are kept only for abuse and incident diagnosis within that window.
+
 ### Production configuration and secrets
 
 Production startup fails when:

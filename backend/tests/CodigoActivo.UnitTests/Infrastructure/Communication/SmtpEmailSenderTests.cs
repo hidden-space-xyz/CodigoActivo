@@ -2,6 +2,8 @@ using AwesomeAssertions;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
+using MailKit.Net.Smtp;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MimeKit;
 using Xunit;
@@ -28,9 +30,12 @@ public sealed class SmtpEmailSenderTests
         };
     }
 
-    private static SmtpEmailSender Create(SmtpOptions options)
+    private static SmtpEmailSender Create(
+        SmtpOptions options,
+        ILogger<SmtpEmailSender>? logger = null
+    )
     {
-        return new SmtpEmailSender(options, NullLogger<SmtpEmailSender>.Instance);
+        return new SmtpEmailSender(options, logger ?? NullLogger<SmtpEmailSender>.Instance);
     }
 
     private static EmailMessage Message(
@@ -157,6 +162,19 @@ public sealed class SmtpEmailSenderTests
     }
 
     [Fact]
+    public async Task SendAsyncRejectedRecipientThrowsWithoutTheAddress()
+    {
+        await using var server = new FakeSmtpServer { RejectedRecipient = "bounce@example.test" };
+        var sender = Create(Options(server));
+
+        var act = () => sender.SendAsync(Message("bounce@example.test"), Timeout());
+
+        var thrown = (await act.Should().ThrowAsync<SmtpCommandException>()).Which;
+        thrown.ErrorCode.Should().Be(SmtpErrorCode.RecipientNotAccepted);
+        thrown.ToString().Should().NotContain("bounce@example.test");
+    }
+
+    [Fact]
     public async Task SendManyAsyncNoMessagesReturnsEmptyResultWithoutConfiguration()
     {
         var sender = Create(new SmtpOptions());
@@ -211,6 +229,19 @@ public sealed class SmtpEmailSenderTests
             .Messages.SelectMany(m => m.Recipients)
             .Should()
             .Equal("one@example.test", "two@example.test");
+    }
+
+    [Fact]
+    public async Task SendManyAsyncRejectedRecipientLogsWithoutTheAddress()
+    {
+        await using var server = new FakeSmtpServer { RejectedRecipient = "bounce@example.test" };
+        var logger = new RecordingLogger<SmtpEmailSender>();
+        var sender = Create(Options(server), logger);
+
+        await sender.SendManyAsync([Message("bounce@example.test")], Timeout());
+
+        logger.Entries.Should().ContainSingle().Which.Should().Contain("RecipientNotAccepted");
+        logger.Entries.Should().NotContain(entry => entry.Contains("bounce@example.test"));
     }
 
     [Fact]

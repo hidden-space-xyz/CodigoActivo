@@ -135,7 +135,7 @@ public sealed class FakeSmtpServer : IAsyncDisposable
                     var recipient = ParsePath(line);
                     if (string.Equals(recipient, RejectedRecipient, StringComparison.Ordinal))
                     {
-                        await writer.WriteLineAsync("550 5.1.1 Mailbox unavailable");
+                        await writer.WriteLineAsync($"550 5.1.1 <{recipient}>: Mailbox unavailable");
                     }
                     else
                     {

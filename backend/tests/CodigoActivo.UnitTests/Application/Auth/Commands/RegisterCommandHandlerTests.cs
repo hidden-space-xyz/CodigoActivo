@@ -255,8 +255,8 @@ public sealed class RegisterCommandHandlerTests
         email.ToName.Should().Be("Ana");
         email.TextBody.Should().Contain(code);
         email.Subject.Should().NotContain(code);
-        email.TextBody.Should().Contain("https://app.test/verify-account?userId=");
-        email.HtmlBody.Should().Contain("/verify-account?userId=");
+        email.TextBody.Should().Contain("https://app.test/verify-account#userId=");
+        email.HtmlBody.Should().Contain("/verify-account#userId=");
 
         added.Should().ContainSingle();
         added[0].OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + code);

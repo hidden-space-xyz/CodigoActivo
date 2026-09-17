@@ -622,7 +622,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent[0]
             .TextBody.Should()
-            .Contain($"/reset-password?userId={TestSeedData.Users.MemberId}");
+            .Contain($"/reset-password#userId={TestSeedData.Users.MemberId}");
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordResetCodeHash.Should().NotBeNullOrEmpty();

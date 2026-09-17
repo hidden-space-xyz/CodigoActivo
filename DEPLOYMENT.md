@@ -34,6 +34,13 @@ The stack uses two networks: `frontend`, shared by `web` and `api`, and internal
 Logs go to stdout and are available through `docker compose logs`. Automatic email waiting in memory is not
 persistent.
 
+Logs contain personal data (client IP addresses and user agents), so the base Compose file rotates every
+container's `json-file` log at 10 MB with five files kept. The logging policy is in
+[SECURITY.md](SECURITY.md#logging). If you ship logs to another driver or a central store, configure an
+equivalent retention period there and cover it in the processing record. Do not raise
+`Logging__LogLevel__Default` or a framework category to `Information` or `Debug` in Production, and never
+enable EF Core sensitive-data logging or Npgsql `Include Error Detail`.
+
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
 read-only root filesystems with explicit writable mounts. Health checks target `/api/auth/csrf` for the API
 and `/healthz` for nginx.

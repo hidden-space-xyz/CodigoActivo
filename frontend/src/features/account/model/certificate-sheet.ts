@@ -28,9 +28,9 @@ const AZURE = '#159fde'
 
 const STRANDS = [ORANGE, LIME, AZURE]
 
-const DISPLAY_FAMILY = "'Space Grotesk', system-ui, sans-serif"
-const BODY_FAMILY = "'Hanken Grotesk', system-ui, sans-serif"
-const MONO_FAMILY = "'JetBrains Mono', ui-monospace, monospace"
+const DISPLAY_FAMILY = "'Space Grotesk Variable', system-ui, sans-serif"
+const BODY_FAMILY = "'Hanken Grotesk Variable', system-ui, sans-serif"
+const MONO_FAMILY = "'JetBrains Mono Variable', ui-monospace, monospace"
 
 const BAND_INSET = 9.2
 const BAND_HALF = 3
