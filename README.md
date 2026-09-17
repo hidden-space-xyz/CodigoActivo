@@ -24,18 +24,11 @@
 # 🌐 &lt;Codigoactivo/&gt;
 
 Official website and management platform for `<Codigoactivo/>`, a nonprofit association in León that
-introduces young people to programming and computational thinking through free, practical activities.
-
-## What the application provides
-
-- A public site for events, announcements, resources and information about the association.
-- Registration for adults and dependent minors with email verification, password recovery and a
-  self-service account area.
-- Mandatory two-factor login for every account: an emailed one-time code by default, or an authenticator
-  application (TOTP) for stronger protection, chosen by each user from their account.
-- Activity enrollment, participation history, event ratings and downloadable participation certificates.
-- An administration area for content, events, activities, attendees, users, catalogs, reports and email.
-- A Spanish interface whose user-facing copy is managed through Vue I18n.
+introduces young people to programming and computational thinking through free, practical activities. It
+provides a public site for events and resources, self-service registration with mandatory two-factor login
+(emailed code or authenticator app), activity enrollment and participation history, event ratings and
+certificates, and an administration area for content, events, users and email. The interface is Spanish,
+managed through Vue I18n.
 
 ## Technology
 
@@ -62,9 +55,8 @@ the SPA and proxies API traffic. See [ARCHITECTURE.md](ARCHITECTURE.md) for the 
 
 ### Local development stack
 
-From a clone, Docker Compose automatically merges `docker-compose.override.yml`. Create the environment file;
-the overlay delivers every email, including the login codes, to a bundled Mailpit mail catcher, so no SMTP
-server is needed for local work.
+From a clone, Compose automatically merges `docker-compose.override.yml`, which delivers every email
+(including login codes) to a bundled Mailpit catcher, so no SMTP server is needed locally.
 
 ```bash
 cp .env.example .env
@@ -72,9 +64,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The SPA is available at <http://localhost:8080>, the API at <http://localhost:5150>, Swagger at
-<http://localhost:5150/swagger> and the caught mail at <http://localhost:8025>. The development overlay also
-publishes PostgreSQL on port `5432`.
+The SPA is at <http://localhost:8080>, the API at <http://localhost:5150>, Swagger at
+<http://localhost:5150/swagger> and the caught mail at <http://localhost:8025>. The overlay also publishes
+PostgreSQL on port `5432`.
 
 > [!WARNING]
 > The development overlay publishes ports on all host interfaces and relaxes API container hardening. Do not
@@ -82,7 +74,7 @@ publishes PostgreSQL on port `5432`.
 
 ### Production stack
 
-The base Compose file pulls released images from GHCR and does not depend on the repository:
+The base Compose file pulls released images from GHCR and does not depend on a repository clone:
 
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
@@ -91,36 +83,11 @@ curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/ma
 docker compose up -d
 ```
 
-Production publishes plain HTTP on host port `8080` on all interfaces. Put it behind a TLS reverse proxy and
-restrict direct access with the host firewall or an equivalent network policy. The API rejects unsafe
-production configuration. Follow [DEPLOYMENT.md](DEPLOYMENT.md) before exposing the service.
+Follow [DEPLOYMENT.md#first-production-start](DEPLOYMENT.md#first-production-start) before exposing the
+service.
 
-## Run the applications directly
-
-Use Docker only for PostgreSQL, then run the API and frontend with hot reload:
-
-```bash
-cp .env.example .env
-# Set POSTGRES_PASSWORD in .env for the db container.
-docker compose up -d db mailpit
-
-# Export real process variables; dotnet run does not read the root .env.
-export POSTGRES_PASSWORD=...
-export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
-export BOOTSTRAP_ADMIN_PASSWORD=...
-export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
-cd backend
-dotnet run --project src/CodigoActivo.API
-
-cd ../frontend
-npm ci
-cp .env.example .env.local
-# Set VITE_API_PROXY_TARGET=http://localhost:5150.
-npm run dev
-```
-
-PowerShell uses `$env:NAME="value"` instead of `export NAME=value`. The complete setup, command and testing
-workflow is in [CONTRIBUTING.md](CONTRIBUTING.md).
+To run the applications directly with hot reload instead of full containers, see
+[CONTRIBUTING.md](CONTRIBUTING.md#local-setup).
 
 ## Documentation
 

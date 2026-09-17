@@ -9,7 +9,9 @@
 - [SECURITY.md](SECURITY.md): authentication, trust boundaries and abuse controls.
 
 Update the owning document in the same change when behavior, architecture, configuration or security changes.
-Do not copy the same explanation into every file.
+Do not copy the same explanation into every file. Documentation must stay short and factual. Do not grow a
+document with every change: update the fact that changed, remove what it replaces, and add sections only for
+new operational facts.
 
 ## Essential commands
 
@@ -125,12 +127,7 @@ enforces these rules.
 
 ## API changes
 
-Complete cross-boundary changes in one pass:
-
-1. Change backend endpoints, DTOs and `ErrorCode` values.
-2. Refresh `frontend/swagger.json` from the Development Swagger endpoint.
-3. Run `npm run api:generate` in `frontend/`.
-4. Add Spanish messages for new error codes under `errors.*` in `es.json`.
-5. Run `dotnet test` and `npm run check`.
-
-Do not leave the committed Swagger document or generated client out of sync.
+Follow the five-step contract change flow in
+[ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract): change the backend, refresh
+`frontend/swagger.json`, run `npm run api:generate`, add Spanish `errors.*` messages, then run `dotnet test`
+and `npm run check`. Do not leave the committed Swagger document or generated client out of sync.
