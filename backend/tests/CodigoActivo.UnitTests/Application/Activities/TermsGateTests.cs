@@ -226,6 +226,49 @@ public sealed class TermsGateTests
     }
 
     [Fact]
+    public async Task EnsureDecidedAsyncOptionalDocumentWithStoredRejectionRejectingAgainLeavesDecidedAtUnchanged()
+    {
+        var activityId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        HasActivity(activityId, eventId);
+        HasDocuments(eventId, (termsDocumentId, false));
+        var originalDecidedAt = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        var stored = new EventTermsAcceptance
+        {
+            TermsDocumentId = termsDocumentId,
+            Accepted = false,
+            DecidedAt = originalDecidedAt,
+        };
+        HasAcceptances(stored);
+        // Different from originalDecidedAt on purpose: the test must fail if a repeated
+        // rejection is (wrongly) re-stamped with the clock's current instant.
+        clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+
+        var result = await sut.EnsureDecidedAsync(
+            activityId,
+            Guid.NewGuid(),
+            [new TermsDecisionRequest(termsDocumentId, false)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue(
+            "an optional document never blocks the signup, regardless of the decision"
+        );
+        stored.Accepted.Should().BeFalse();
+        stored.DecidedAt.Should().Be(
+            originalDecidedAt,
+            "a repeated rejection is not a change, so the original decision instant must survive"
+        );
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
+    }
+
+    [Fact]
     public async Task EnsureDecidedAsyncDocumentWithStoredAcceptanceRejectingIsIgnoredKeepingAcceptanceIntact()
     {
         var activityId = Guid.NewGuid();
