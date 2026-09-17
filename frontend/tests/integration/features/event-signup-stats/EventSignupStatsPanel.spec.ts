@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EventSignupStatsPanel } from '@/features/event-signup-stats'
 import { ASSIGNMENT_STATUS_IDS } from '@/shared/config'
+import type { EventSignupStatsResponse } from '@/shared/api/generated/models'
 
 import { fakeCharts, resetFakeCharts } from '../../../support/fixtures/public-dashboard/chart-mock'
 import { renderWithProviders, t } from '../../../support/render'
@@ -20,7 +21,7 @@ beforeEach(() => {
 const ROLE_PARTICIPANT = { id: 'role-participant', name: 'Participante' }
 const ROLE_VOLUNTEER = { id: 'role-volunteer', name: 'Voluntario' }
 
-const STATS_BODY = {
+const STATS_BODY: EventSignupStatsResponse = {
   eventId: 'event-1',
   roles: [ROLE_PARTICIPANT, ROLE_VOLUNTEER],
   statuses: [
@@ -54,7 +55,7 @@ interface FakeBarChartData {
   datasets: { label: string; data: number[] }[]
 }
 
-function serveStats(body: unknown = STATS_BODY) {
+function serveStats(body: EventSignupStatsResponse = STATS_BODY) {
   server.use(http.get('/api/events/:eventId/signup-stats', () => HttpResponse.json(body)))
 }
 
@@ -181,12 +182,13 @@ describe('EventSignupStatsPanel privacy', () => {
   it('never shows the name or email of an enrolled person, even if the API cells leaked them', async () => {
     // Simulates a backend regression: the response carries per-signup identifiers in the cells
     // alongside the legitimate aggregate fields. The client only reads the documented fields.
+    const activity = STATS_BODY.activities?.[0]
     serveStats({
       ...STATS_BODY,
       activities: [
         {
-          ...STATS_BODY.activities[0],
-          cells: STATS_BODY.activities[0]?.cells.map((cell) => ({
+          ...activity,
+          cells: (activity?.cells ?? []).map((cell) => ({
             ...cell,
             userName: 'Ada Lovelace',
             email: 'ada@example.test',

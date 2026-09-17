@@ -231,7 +231,10 @@ repository contents, packages and security events.
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
 review logs and smoke test. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from
 older major versions. Once `AnonymizeEventRatings` has run, the schema cannot be rolled back; see
-[SECURITY.md](SECURITY.md#event-rating-anonymity).
+[SECURITY.md](SECURITY.md#event-rating-anonymity). Reverting `AddMultipleEventTermsDocuments` also loses data:
+its `Down` discards every recorded rejection and collapses each user's per-document decisions on an event into
+a single acceptance, and collapses an event's linked documents into the one that was required first. Back up
+`db-data` before rolling that migration back.
 
 ## Backups and recovery
 
