@@ -15,8 +15,7 @@
 </p>
 
 <p align="center">
-  <img alt="API Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-API&style=for-the-badge&label=API&color=2EA44F&logo=github&logoColor=white" />
-  <img alt="UI Release" src="https://img.shields.io/github/v/tag/hidden-space-xyz/CodigoActivo?filter=v*-UI&style=for-the-badge&label=UI&color=2EA44F&logo=github&logoColor=white" />
+  <img alt="Release" src="https://img.shields.io/github/v/release/hidden-space-xyz/CodigoActivo?style=for-the-badge&label=Release&color=2EA44F&logo=github&logoColor=white" />
   <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/hidden-space-xyz/CodigoActivo/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white" />
   <a href="https://github.com/hidden-space-xyz/CodigoActivo/actions/workflows/ci.yml" title="CodeQL runs after checks and gates releases within CI">
     <img alt="CodeQL: part of CI" src="https://img.shields.io/badge/CodeQL-in_CI-2088FF?style=for-the-badge&logo=github&logoColor=white" />

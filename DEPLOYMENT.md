@@ -207,18 +207,21 @@ Backend build/unit/integration tests and frontend checks must pass before CodeQL
 CodeQL high/critical security findings (score >= 7), error-level findings or analysis failures block publishing.
 The CodeQL and Docker workflows are reusable stages; neither runs independently or on a schedule.
 
-API and UI releases increment independently from their highest existing `vX.Y.Z-API` / `vX.Y.Z-UI` tag,
-including legacy tags. Only commits touching `backend/` or `frontend/`, respectively, count since that tag.
+API and UI share one version and one GitHub release, tagged `vX.Y.Z`. All repository commits since the
+highest stable `vX.Y.Z` tag count. With no matching tag, the baseline is `0.0.0` and the full commit history
+is considered.
 The largest Conventional Commit increment wins: `feat` = minor, `fix`/`perf` = patch, any type with `!` = major.
 `refactor`, `docs`, `test`, `style`, `build`, `ci`, `chore` and non-conventional subjects produce no increment.
 Scopes are optional; for squash merges use a conventional PR title. Normal merges also inspect branch commits.
-With no qualifying commits, that component is skipped; with no previous tag, the baseline is `0.0.0`.
+With no qualifying commits, publishing is skipped for both containers.
 
-Each release builds and pushes its GHCR image (`X.Y.Z` and `latest`), then creates its tag and GitHub release
-with generated notes at the checked commit. Versions are not stored in project files. Runs are serialized
-without cancelling an active release; GitHub may replace a pending run with a newer push, whose commit range
-still includes unreleased changes. Reruns skip released components; rerunning a commit older than its latest
-release is rejected. Actions needs permission to write repository contents, packages and security events.
+Each release builds and pushes both GHCR images with the same `X.Y.Z`, even when only one component changed.
+Only after both pushes succeed does the final job update their `latest` tags and create one GitHub release
+with generated notes and pull commands for both images at the checked commit. Versions are not stored in
+project files. Runs are serialized without cancelling an active release; GitHub may replace a pending run
+with a newer push, whose commit range still includes unreleased changes. Reruns skip an already released
+version; rerunning a commit older than the latest release is rejected. Actions needs permission to write
+repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
 review logs and smoke test. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from

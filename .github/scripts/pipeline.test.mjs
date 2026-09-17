@@ -24,7 +24,7 @@ test('all conventional commit rules, scopes and breaking changes', () => {
   assert.equal(nextVersion('1.9.9', 0), '1.9.9');
 });
 
-test('independent releases, historical tags, merges, reruns and stale commits', () => {
+test('shared releases, numeric tag ordering, merges, reruns and stale commits', () => {
   const cwd = mkdtempSync(join(tmpdir(), 'release-test-'));
   const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   let revision = 0;
@@ -40,36 +40,46 @@ test('independent releases, historical tags, merges, reruns and stale commits', 
     git('config', 'user.name', 'Pipeline test');
     git('config', 'commit.gpgsign', 'false');
     commit('frontend', 'docs: initial');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).changed, false);
+    assert.equal(resolveRelease(cwd).changed, false);
     commit('backend', 'fix: first backend');
-    assert.equal(resolveRelease('API', 'backend', cwd).version, '0.0.1');
-    git('tag', 'v1.9.0-UI');
-    git('tag', 'v1.10.0-UI');
-    git('tag', 'v2.0.0-API');
+    assert.equal(resolveRelease(cwd).version, '0.0.1');
+    git('tag', 'v1.9.0');
+    git('tag', 'v1.10.0');
+    git('tag', 'v1.8.0');
     const old = git('rev-parse', 'HEAD');
     commit('backend', 'perf: faster');
-    assert.equal(resolveRelease('API', 'backend', cwd).version, '2.0.1');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).changed, false);
+    assert.deepEqual(resolveRelease(cwd), {
+      changed: true, version: '1.10.1', tag: 'v1.10.1', previous: 'v1.10.0',
+    });
     git('checkout', '-b', 'feature');
     commit('frontend', 'feat: new UI');
     git('checkout', 'master');
     git('merge', '--no-ff', 'feature', '-m', 'Merge pull request #1');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).version, '1.11.0');
+    assert.equal(resolveRelease(cwd).version, '1.11.0');
     commit('frontend', 'chore!: incompatible UI');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).version, '2.0.0');
-    git('tag', 'v2.0.0-UI');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).changed, false);
+    assert.equal(resolveRelease(cwd).version, '2.0.0');
+    git('tag', 'v2.0.0');
+    assert.equal(resolveRelease(cwd).changed, false);
     commit('frontend', 'docs: explanation');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).changed, false);
+    assert.equal(resolveRelease(cwd).changed, false);
     git('checkout', '-b', 'backend-only');
     commit('backend', 'docs: backend notes');
     git('checkout', 'master');
     commit('frontend', 'docs: frontend notes');
     git('merge', '--no-ff', 'backend-only', '-m', 'feat: backend feature');
-    assert.equal(resolveRelease('API', 'backend', cwd).version, '2.1.0');
-    assert.equal(resolveRelease('UI', 'frontend', cwd).changed, false);
+    assert.equal(resolveRelease(cwd).version, '2.1.0');
+    git('tag', 'v2.1.0');
+    commit('.', 'fix: shared configuration');
+    assert.equal(resolveRelease(cwd).version, '2.1.1');
+    git('tag', 'v2.1.1');
+    commit('frontend', 'fix: UI only');
+    assert.deepEqual(resolveRelease(cwd), {
+      changed: true, version: '2.1.2', tag: 'v2.1.2', previous: 'v2.1.1',
+    });
+    git('tag', 'v99.0.0-preview');
+    assert.equal(resolveRelease(cwd).version, '2.1.2');
     git('checkout', old);
-    assert.throws(() => resolveRelease('UI', 'frontend', cwd));
+    assert.throws(() => resolveRelease(cwd));
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }

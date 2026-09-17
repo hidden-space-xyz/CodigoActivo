@@ -4,14 +4,37 @@ on:
   workflow_call:
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
-  publish:
+  version:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.meta.outputs.changed }}
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      previous: ${{ steps.meta.outputs.previous }}
+      image-prefix: ${{ steps.meta.outputs.image-prefix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - name: Resolve shared version
+        id: meta
+        run: node .github/scripts/release-version.mjs
+
+  publish:
+    needs: version
+    if: needs.version.outputs.changed == 'true'
     name: Publish ${{ matrix.name }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -25,33 +48,15 @@ jobs:
             context: frontend
             dockerfile: frontend/Dockerfile
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 26
-
-      - name: Resolve version
-        id: meta
-        run: node .github/scripts/release-version.mjs ${{ matrix.name }} ${{ matrix.context }}
-
-      - name: Set up Docker Buildx
-        if: steps.meta.outputs.changed == 'true'
-        uses: docker/setup-buildx-action@v4
-
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
       - name: Log in to GitHub Container Registry
-        if: steps.meta.outputs.changed == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push image
-        if: steps.meta.outputs.changed == 'true'
+      - name: Build and push versioned image
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
@@ -59,25 +64,68 @@ jobs:
           push: true
           provenance: mode=max
           sbom: true
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.image }}:latest
+          tags: ${{ needs.version.outputs.image-prefix }}-${{ matrix.image }}:${{ needs.version.outputs.version }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.version=${{ needs.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-      - name: Create tag and GitHub release
-        if: steps.meta.outputs.changed == 'true'
+  release:
+    needs: [version, publish]
+    if: needs.version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      IMAGE_PREFIX: ${{ needs.version.outputs.image-prefix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - name: Recheck version before publishing the release
+        id: current
+        run: node .github/scripts/release-version.mjs
+      - name: Verify the prepared version is still current
+        env:
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+        run: test "$CURRENT_VERSION" = "$VERSION"
+      - uses: docker/setup-buildx-action@v4
+        if: steps.current.outputs.changed == 'true'
+      - name: Log in to GitHub Container Registry
+        if: steps.current.outputs.changed == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Promote both published images to latest
+        if: steps.current.outputs.changed == 'true'
+        run: |
+          for component in backend frontend; do
+            docker buildx imagetools create \
+              --tag "${IMAGE_PREFIX}-${component}:latest" \
+              "${IMAGE_PREFIX}-${component}:${VERSION}"
+          done
+      - name: Create shared tag and GitHub release
+        if: steps.current.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
-          PREVIOUS_TAG: ${{ steps.meta.outputs.previous }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          PREVIOUS_TAG: ${{ needs.version.outputs.previous }}
         run: |
           args=()
           if [[ -n "$PREVIOUS_TAG" ]]; then
             args+=(--notes-start-tag "$PREVIOUS_TAG")
           fi
+          notes="$RUNNER_TEMP/release-notes.md"
+          printf '## Docker images\n\n```sh\ndocker pull %s-backend:%s\ndocker pull %s-frontend:%s\n```\n' \
+            "$IMAGE_PREFIX" "$VERSION" "$IMAGE_PREFIX" "$VERSION" > "$notes"
           gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" \
-            --title "$RELEASE_TAG" --generate-notes "${args[@]}"
+            --title "$RELEASE_TAG" --generate-notes --notes-file "$notes" "${args[@]}"

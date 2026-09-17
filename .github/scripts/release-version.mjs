@@ -18,39 +18,28 @@ export function nextVersion(version, bump) {
   return version;
 }
 
-export function resolveRelease(component, directory, cwd = process.cwd()) {
-  if (!['API', 'UI'].includes(component) || directory !== (component === 'API' ? 'backend' : 'frontend')) {
-    throw new Error('Expected API backend or UI frontend');
-  }
+export function resolveRelease(cwd = process.cwd()) {
   const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
-  // Keep the existing tag format, including releases made before this pipeline.
-  const pattern = new RegExp(`^v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)-${component}$`);
-  const previous = git('tag', '--list', `v*-${component}`, '--sort=-version:refname')
-    .split('\n').find((tag) => pattern.test(tag)) ?? '';
+  const tags = git('tag', '--list', 'v*', '--sort=-version:refname').split('\n');
+  const stable = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+  const previous = tags.find((tag) => stable.test(tag)) ?? '';
   if (previous) {
     // Reject reruns of old commits instead of moving latest backwards.
     git('merge-base', '--is-ancestor', previous, 'HEAD');
   }
-  const version = previous ? previous.slice(1, -component.length - 1) : '0.0.0';
+  const version = previous ? previous.slice(1) : '0.0.0';
   const range = previous ? `${previous}..HEAD` : 'HEAD';
-  const commits = git('log', '--format=%H', range).split('\n').filter(Boolean);
-  let bump = 0;
-  for (const commit of commits) {
-    // Merge titles apply to changes introduced into master, relative to the first
-    // parent. The log above also includes the merged branch's own commits.
-    const files = git('diff-tree', '--root', '--diff-merges=first-parent', '--no-commit-id', '--name-only', '-r', commit, '--', directory);
-    if (files) bump = Math.max(bump, commitBump(git('show', '-s', '--format=%s', commit)));
-  }
+  const subjects = git('log', '--format=%s', range).split('\n');
+  const bump = subjects.reduce((highest, subject) => Math.max(highest, commitBump(subject)), 0);
   const next = nextVersion(version, bump);
-  return { changed: bump > 0, version: next, tag: `v${next}-${component}`, previous };
+  return { changed: bump > 0, version: next, tag: `v${next}`, previous };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [component, directory] = process.argv.slice(2);
-  const release = resolveRelease(component, directory);
+  const release = resolveRelease();
   const repository = process.env.GITHUB_REPOSITORY;
   if (!repository || !process.env.GITHUB_OUTPUT) throw new Error('GitHub Actions environment required');
-  const outputs = { ...release, image: `ghcr.io/${repository.toLowerCase()}-${directory}` };
+  const outputs = { ...release, 'image-prefix': `ghcr.io/${repository.toLowerCase()}` };
   appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(outputs).map(([key, value]) => `${key}=${value}\n`).join(''));
-  console.log(release.changed ? `Release ${release.tag} (previous: ${release.previous || 'none'})` : `No release for ${component}`);
+  console.log(release.changed ? `Release ${release.tag} (previous: ${release.previous || 'none'})` : 'No release');
 }
