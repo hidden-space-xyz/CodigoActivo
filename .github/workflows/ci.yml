@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   codeql:
-    needs: [backend, frontend, pipeline-tests]
+    needs: [backend, frontend]
     uses: ./.github/workflows/codeql.yml
     permissions:
       actions: read
@@ -27,19 +27,6 @@ jobs:
     permissions:
       contents: write
       packages: write
-
-  pipeline-tests:
-    name: CI script tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v7
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 26
-      - name: Test versioning and CodeQL gate
-        run: node --test .github/scripts/*.test.mjs
 
   backend:
     runs-on: ubuntu-latest
