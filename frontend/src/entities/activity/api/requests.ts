@@ -34,6 +34,7 @@ import type {
   HouseholdMember,
   HouseholdSignupRoles,
   OverlapCheck,
+  TermsDecisionInput,
 } from '../model/types'
 import {
   toActivityAssignment,
@@ -112,37 +113,51 @@ export async function verifyOverlapsRequest(
 }
 
 /**
- * Signs a user up for an activity with the given role. Pass `acceptTerms` once the user accepts
- * the event's terms; otherwise the API rejects the signup with `EventTermsAcceptanceRequired`
- * when the event has terms the user has not accepted yet.
+ * Signs a user up for an activity with the given role. Pass `termsDecisions` with one entry per
+ * pending terms document the user just decided on; otherwise the API rejects the signup with
+ * `EventTermsAcceptanceRequired` when a required document is still undecided.
  */
 export async function assignActivityRequest(
   activityId: string,
   userId: string,
   roleId: string,
-  acceptTerms = false,
+  termsDecisions?: readonly TermsDecisionInput[],
 ): Promise<void> {
   await patchApiActivitiesActivityIdUserIdAssign(activityId, userId, {
     activityRoleTypeId: roleId,
-    acceptTerms,
+    ...(termsDecisions
+      ? {
+          termsDecisions: termsDecisions.map((decision) => ({
+            termsDocumentId: decision.termsDocumentId,
+            accepted: decision.accepted,
+          })),
+        }
+      : {}),
   })
 }
 
 /**
- * Signs several household members up for an activity in one request; `acceptTerms` works as in
+ * Signs several household members up for an activity in one request; `termsDecisions` works as in
  * `assignActivityRequest`.
  */
 export async function assignHouseholdRequest(
   activityId: string,
   assignments: readonly HouseholdAssignmentInput[],
-  acceptTerms = false,
+  termsDecisions?: readonly TermsDecisionInput[],
 ): Promise<void> {
   await postApiActivitiesActivityIdAssignHousehold(activityId, {
     assignments: assignments.map((assignment) => ({
       userId: assignment.userId,
       activityRoleTypeId: assignment.roleId,
     })),
-    acceptTerms,
+    ...(termsDecisions
+      ? {
+          termsDecisions: termsDecisions.map((decision) => ({
+            termsDocumentId: decision.termsDocumentId,
+            accepted: decision.accepted,
+          })),
+        }
+      : {}),
   })
 }
 

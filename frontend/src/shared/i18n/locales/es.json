@@ -230,6 +230,7 @@
     "EventRatingAttendanceRequired": "Solo puedes valorar eventos en los que has participado con una inscripción confirmada.",
     "EventRatingAlreadySubmitted": "Ya has enviado tu valoración de este evento.",
     "EventTermsAcceptanceRequired": "Debes aceptar los términos y condiciones del evento para apuntarte.",
+    "EventTermsDocumentDuplicated": "No puedes vincular el mismo documento de términos y condiciones más de una vez.",
     "TermsDocumentNotFound": "No se encontraron los términos y condiciones.",
     "TermsDocumentNameAlreadyExists": "Ya existen unos términos y condiciones con ese nombre.",
     "TermsDocumentInUse": "No se pueden eliminar estos términos y condiciones porque hay eventos que los usan o personas que ya los han aceptado.",
@@ -890,7 +891,9 @@
         "viewInfo": "Ver información",
         "info": "Información",
         "viewActivities": "Ver actividades",
-        "activities": "Actividades"
+        "activities": "Actividades",
+        "viewStats": "Ver estadísticas",
+        "stats": "Estadísticas"
       },
       "activities": {
         "loading": "Cargando actividades…",
@@ -915,11 +918,23 @@
         "question": "¿Quieres apuntarte de todos modos?",
         "enrollAnyway": "Apuntarme igualmente"
       },
-      "terms": {
-        "header": "Términos y condiciones",
-        "lead": "Para apuntarte a las actividades de este evento primero debes leer y aceptar:",
-        "question": "¿Aceptas estos términos y condiciones?",
-        "accept": "Aceptar y apuntarme"
+      "stats": {
+        "title": "Estadísticas de inscripción",
+        "subtitle": "Inscripciones por actividad, rol y estado",
+        "loading": "Cargando estadísticas…",
+        "loadError": "No se pudieron cargar las estadísticas.",
+        "empty": "Este evento todavía no tiene actividades.",
+        "roleFilter": "Rol",
+        "allRoles": "Todos los roles",
+        "table": {
+          "activity": "Actividad",
+          "role": "Rol",
+          "requested": "Solicitadas",
+          "confirmed": "Confirmadas",
+          "denied": "Rechazadas",
+          "total": "Total"
+        },
+        "totalsRow": "Total del evento"
       },
       "toast": {
         "signupSuccess": "Te has apuntado a la actividad.",
@@ -963,7 +978,7 @@
         "title": "Título",
         "subtitle": "Subtítulo",
         "categories": "Categorías",
-        "termsDocument": "Términos y condiciones (opcional)",
+        "termsDocuments": "Términos y condiciones (opcional)",
         "description": "Descripción",
         "eventStart": "Inicio del evento",
         "eventEnd": "Fin del evento",
@@ -972,9 +987,10 @@
         "signupEnd": "Cierre de inscripción"
       },
       "termsPlaceholder": "Sin términos y condiciones",
+      "termsRequired": "Obligatorio",
       "hints": {
         "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
-        "termsDocument": "Si los seleccionas, cada persona deberá aceptarlos al apuntarse a su primera actividad del evento. Se gestionan en Configuración."
+        "termsDocuments": "Cada persona deberá decidir sobre estos documentos al apuntarse a su primera actividad del evento. Marca los que sean obligatorios; el orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
       },
       "errors": {
         "categoriesRequired": "Selecciona al menos una categoría.",
@@ -1066,7 +1082,20 @@
     },
     "activitySignup": {
       "selfMember": "Yo",
-      "notAuthenticated": "No autenticado"
+      "notAuthenticated": "No autenticado",
+      "terms": {
+        "header": "Términos y condiciones",
+        "lead": "Antes de apuntarte, decide si aceptas estos documentos:",
+        "required": "Obligatorio",
+        "optional": "Opcional",
+        "openDocument": "Ver el contenido de {name}",
+        "documentHeader": "Documento",
+        "accept": "Aceptar",
+        "reject": "Rechazar",
+        "confirm": "Confirmar y apuntarme",
+        "missingRequired": "Debes marcar todos los documentos obligatorios para continuar.",
+        "close": "Cerrar"
+      }
     },
     "sendEmail": {
       "header": "Enviar correo",

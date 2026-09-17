@@ -5,6 +5,8 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface EventTermsAcceptanceResponse {
-  accepted?: boolean;
+export interface EventSignupStatsStatusResponse {
+  id?: string;
+  /** @nullable */
+  name?: string | null;
 }

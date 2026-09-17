@@ -3,7 +3,8 @@ import {
   getApiEvents,
   getApiEventsEventId,
   getApiEventsEventIdRatings,
-  getApiEventsEventIdTermsAcceptance,
+  getApiEventsEventIdSignupStats,
+  getApiEventsEventIdTerms,
   getApiEventsPastCategories,
   getApiEventsPastYears,
   patchApiEventsEventIdFeature,
@@ -33,12 +34,21 @@ import type { PagedListPage } from '@/shared/lib'
 import type {
   EventCategoryTag,
   EventDetail,
+  EventSignupStats,
+  EventTermsState,
   HomeEvents,
   PastEvent,
   PastEventFilters,
   UpcomingEvent,
 } from '../model/types'
-import { toCategoryTag, toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
+import {
+  toCategoryTag,
+  toEventDetail,
+  toEventSignupStats,
+  toEventTermsState,
+  toPastEvent,
+  toUpcomingEvent,
+} from './mapper'
 
 /** Fetches one page of upcoming events ordered by start date, mapped to card models. */
 export async function getUpcomingEventsPageRequest(
@@ -93,10 +103,16 @@ export async function getEventByIdRequest(id: string): Promise<EventDetail | nul
   return event ? toEventDetail(event) : null
 }
 
-/** Whether the current user has accepted the event terms; a missing flag counts as not accepted. */
-export async function getEventTermsAcceptanceRequest(eventId: string): Promise<boolean> {
-  const { data } = await getApiEventsEventIdTermsAcceptance(eventId)
-  return data.accepted ?? false
+/** Loads the signed-in user's decision state for every terms document linked to the event. */
+export async function getEventTermsStateRequest(eventId: string): Promise<EventTermsState> {
+  const { data } = await getApiEventsEventIdTerms(eventId)
+  return toEventTermsState(data)
+}
+
+/** Loads the event's signup statistics (admin/member only; the backend enforces the check). */
+export async function getEventSignupStatsRequest(eventId: string): Promise<EventSignupStats> {
+  const { data } = await getApiEventsEventIdSignupStats(eventId)
+  return toEventSignupStats(data)
 }
 
 /**

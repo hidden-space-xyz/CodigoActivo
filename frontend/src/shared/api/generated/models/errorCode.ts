@@ -40,6 +40,7 @@ export const ErrorCode = {
   EventRatingAttendanceRequired: 'EventRatingAttendanceRequired',
   EventRatingAlreadySubmitted: 'EventRatingAlreadySubmitted',
   EventTermsAcceptanceRequired: 'EventTermsAcceptanceRequired',
+  EventTermsDocumentDuplicated: 'EventTermsDocumentDuplicated',
   TermsDocumentNotFound: 'TermsDocumentNotFound',
   TermsDocumentNameAlreadyExists: 'TermsDocumentNameAlreadyExists',
   TermsDocumentInUse: 'TermsDocumentInUse',

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import BaseChart from './BaseChart.vue'
-import ChartCard from './ChartCard.vue'
+import { BaseChart, ChartCard } from '@/shared/ui'
 
 withDefaults(
   defineProps<{

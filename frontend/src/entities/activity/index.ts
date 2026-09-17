@@ -5,6 +5,7 @@ export type {
   ActivityRole,
   HouseholdMember,
   OverlapCheck,
+  TermsDecisionInput,
 } from './model/types'
 export { toActivityDetail } from './api/mapper'
 export { activityQueryKeys } from './api/query-keys'

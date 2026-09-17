@@ -7,6 +7,8 @@ import type { PastEventFilters } from '../model/types'
 import { eventQueryKeys } from './query-keys'
 import {
   getEventByIdRequest,
+  getEventSignupStatsRequest,
+  getEventTermsStateRequest,
   getHomeEventsRequest,
   getPastEventCategoriesRequest,
   getPastEventsPageRequest,
@@ -99,4 +101,31 @@ export function useEventDetail(eventId: MaybeRefOrGetter<string>) {
     isError: query.isError,
     notFound,
   }
+}
+
+/**
+ * The signed-in user's decision state for an event's terms documents. Disabled while `enabled()`
+ * returns `false` (e.g. guests, or events without terms).
+ */
+export function useEventTermsState(
+  eventId: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  const id = computed(() => toValue(eventId))
+
+  return useQuery({
+    queryKey: computed(() => eventQueryKeys.terms(id.value)),
+    queryFn: () => getEventTermsStateRequest(id.value),
+    enabled: computed(() => toValue(enabled)),
+  })
+}
+
+/** An event's signup statistics, broken down by activity, role and status. */
+export function useEventSignupStats(eventId: MaybeRefOrGetter<string>) {
+  const id = computed(() => toValue(eventId))
+
+  return useQuery({
+    queryKey: computed(() => eventQueryKeys.signupStats(id.value)),
+    queryFn: () => getEventSignupStatsRequest(id.value),
+  })
 }

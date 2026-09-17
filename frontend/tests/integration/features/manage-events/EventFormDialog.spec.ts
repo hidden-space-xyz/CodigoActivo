@@ -90,7 +90,7 @@ describe('EventFormDialog', () => {
     expect(bodyText()).toContain(t('features.manageEvents.newHeader'))
 
     await fillValidForm(wrapper)
-    wrapper.findAllComponents(ElSelect)[1]?.vm.$emit('update:modelValue', 'terms-1')
+    wrapper.findAllComponents(ElSelect)[1]?.vm.$emit('update:modelValue', ['terms-1'])
     pickFile(new File(['png'], 'cover.png', { type: 'image/png' }))
     await flushPromises()
 
@@ -110,7 +110,7 @@ describe('EventFormDialog', () => {
       signupStartsAt: new Date(2026, 8, 1, 9, 0).toISOString(),
       signupEndsAt: new Date(2026, 9, 1, 20, 0).toISOString(),
       thumbnailId: 'new-thumb',
-      termsDocumentId: 'terms-1',
+      termsDocuments: [{ termsDocumentId: 'terms-1', required: true }],
     })
   })
 
@@ -145,7 +145,7 @@ describe('EventFormDialog', () => {
       signupStartsAt: '2026-09-01T08:00:00.000Z',
       signupEndsAt: '2026-10-01T20:00:00.000Z',
       thumbnailId: THUMBNAIL_ID,
-      termsDocumentId: 'terms-1',
+      termsDocuments: [{ termsDocumentId: 'terms-1', required: true }],
     })
   })
 
@@ -156,7 +156,7 @@ describe('EventFormDialog', () => {
         subtitle: null,
         description: null,
         categories: null,
-        termsDocument: undefined,
+        termsDocuments: undefined,
         signupStartsAt: '',
         signupEndsAt: '',
         eventStartsAt: '',

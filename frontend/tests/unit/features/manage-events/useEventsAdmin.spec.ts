@@ -25,7 +25,7 @@ const body: CreateEventRequest = {
   signupStartsAt: '2026-09-01T00:00:00.000Z',
   signupEndsAt: '2026-09-30T00:00:00.000Z',
   thumbnailId: THUMBNAIL_ID,
-  termsDocumentId: null,
+  termsDocuments: null,
 }
 
 describe('useEventsAdmin', () => {

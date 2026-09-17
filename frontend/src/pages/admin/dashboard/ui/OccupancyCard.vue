@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AppIcon } from '@/shared/ui'
+import { AppIcon, ChartCard } from '@/shared/ui'
 
 import { formatDateTime, formatNumber } from '@/shared/lib'
 import type { DashboardOccupancyResponse } from '@/shared/api/generated/models'
-
-import ChartCard from './ChartCard.vue'
 
 const props = defineProps<{
   /**

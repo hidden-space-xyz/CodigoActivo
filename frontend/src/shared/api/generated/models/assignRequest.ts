@@ -4,8 +4,10 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { TermsDecisionRequest } from './termsDecisionRequest';
 
 export interface AssignRequest {
   activityRoleTypeId?: string;
-  acceptTerms?: boolean;
+  /** @nullable */
+  termsDecisions?: TermsDecisionRequest[] | null;
 }

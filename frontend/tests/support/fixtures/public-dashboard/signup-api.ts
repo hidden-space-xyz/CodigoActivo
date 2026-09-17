@@ -18,11 +18,24 @@ export interface SignupApiState {
   children: UserResponse[]
   household: HouseholdMemberAssignmentResponse[]
   signupRoles: HouseholdSignupRolesResponse[] | 'error'
+  /** Whether the single default terms document (`TERMS_DOCUMENT`) is already accepted. */
   termsAccepted: boolean
   overlap: TimeOverlapResponse | 'error'
   assignError: (() => Response) | null
   householdError: (() => Response) | null
   unassignError: (() => Response) | null
+}
+
+/**
+ * The one terms document served by `/api/events/:eventId/terms` by default; its `accepted`/
+ * `decidedAt` fields are filled in from `state.termsAccepted`.
+ */
+export const TERMS_DOCUMENT = {
+  termsDocumentId: 'terms-1',
+  name: 'Normas del campamento',
+  description: 'Respeta a los demás.',
+  required: true,
+  displayOrder: 0,
 }
 
 /** Request bodies and counters recorded by the fake signup API. */
@@ -102,9 +115,18 @@ export function serveSignupApi(overrides: Partial<SignupApiState> = {}) {
       count('signupRoles')
       return state.signupRoles === 'error' ? apiError(500) : HttpResponse.json(state.signupRoles)
     }),
-    http.get('/api/events/:eventId/terms-acceptance', () => {
+    http.get('/api/events/:eventId/terms', () => {
       count('terms')
-      return HttpResponse.json({ accepted: state.termsAccepted })
+      return HttpResponse.json({
+        documents: [
+          {
+            ...TERMS_DOCUMENT,
+            accepted: state.termsAccepted ? true : null,
+            decidedAt: state.termsAccepted ? '2026-01-01T00:00:00Z' : null,
+          },
+        ],
+        signupBlocked: !state.termsAccepted,
+      })
     }),
     http.get('/api/activities/:activityId/overlaps/:userId', ({ params }) => {
       calls.overlapChecks.push(`${String(params.activityId)}/${String(params.userId)}`)

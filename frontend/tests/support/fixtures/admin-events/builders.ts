@@ -69,7 +69,9 @@ export function buildEvent(overrides: Overrides<EventResponse> = {}): EventRespo
       thumbnailId: THUMBNAIL_ID,
       featured: false,
       categories: [{ categoryTypeId: 'cat-1', name: 'Tech', color: '#112233' }],
-      termsDocument: { id: 'terms-1', name: 'Terms' },
+      termsDocuments: [
+        { termsDocumentId: 'terms-1', name: 'Terms', required: true, displayOrder: 0 },
+      ],
     },
     overrides,
   )

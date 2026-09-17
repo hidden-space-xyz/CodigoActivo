@@ -1,6 +1,14 @@
-export type { EventCategoryTag, EventTermsInfo, UpcomingEvent } from './model/types'
+export type {
+  EventCategoryTag,
+  EventSignupStatsActivity,
+  EventTermsDocumentState,
+  EventTermsSummary,
+  UpcomingEvent,
+} from './model/types'
 export {
   useEventDetail,
+  useEventSignupStats,
+  useEventTermsState,
   useHomeEvents,
   usePastEventCategories,
   usePastEventsPaged,
@@ -18,8 +26,9 @@ export {
   getEventRatingsPageRequest,
   getEventRosterRequest,
   getEventsAdminPageRequest,
+  getEventSignupStatsRequest,
   getEventSummaryRequest,
-  getEventTermsAcceptanceRequest,
+  getEventTermsStateRequest,
   toggleEventFeatureRequest,
   updateEventRequest,
 } from './api/requests'
