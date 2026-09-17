@@ -32,12 +32,15 @@ From `frontend/`:
 npm ci
 npm run dev
 npm run check
+npm test
+npm run test:coverage
+npx vitest run tests/unit/shared/lib/format.spec.ts
 npm run api:generate
 npm run api:check
 ```
 
-`npm run check` is the complete frontend gate: generated-client verification, type-check/build, ESLint,
-Steiger, Stylelint, Knip and Prettier. There is no frontend test suite.
+`npm run check` is the complete frontend gate: generated-client verification, type-check/build, Vitest with
+90% coverage thresholds, ESLint, Steiger, Stylelint, Knip and Prettier.
 
 From the repository root, `docker compose up --build` uses the development override. For a production run
 from a clone, use `docker compose -f docker-compose.yml ...` so the override is not merged.
@@ -108,6 +111,9 @@ enforces these rules.
 - ESLint requires JSDoc on exports, public class members, component props, emits and `defineExpose` members.
   Explain purpose and non-obvious behavior, not the name or types. Tests are exempt.
 - Theme values use `--ca-*` variables; map Element Plus values to them instead of adding isolated colors.
+- Tests live in `tests/unit/` and `tests/integration/`, mirroring the `src/` path, as `*.spec.ts`. They never
+  need the backend: MSW (`tests/support/server.ts`) fails unhandled requests, so declare responses with
+  `server.use(...)`. Mount through `tests/support/render.ts`. Keep each coverage metric at or above 90%.
 
 ## API changes
 
