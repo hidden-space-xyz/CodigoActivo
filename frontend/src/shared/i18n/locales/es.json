@@ -990,7 +990,7 @@
       "termsRequired": "Obligatorio",
       "hints": {
         "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
-        "termsDocuments": "Cada persona deberá decidir sobre estos documentos al apuntarse a su primera actividad del evento. Marca los que sean obligatorios; el orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
+        "termsDocuments": "Cada persona deberá decidir sobre estos documentos al apuntarse a su primera actividad del evento. Se añaden como obligatorios; desmarca los que sean opcionales. El orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
       },
       "errors": {
         "categoriesRequired": "Selecciona al menos una categoría.",
@@ -1090,6 +1090,7 @@
         "optional": "Opcional",
         "openDocument": "Ver el contenido de {name}",
         "documentHeader": "Documento",
+        "checkboxLabel": "Acepto {name}",
         "accept": "Aceptar",
         "reject": "Rechazar",
         "confirm": "Confirmar y apuntarme",

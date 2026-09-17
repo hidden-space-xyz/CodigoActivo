@@ -1151,7 +1151,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAlreadyDecidedOptionalDocumentIgnoresNewDecisionKeepingItImmutable()
+    public async Task HandleAsyncOptionalDocumentWithStoredRejectionAcceptingOverwritesRowInPlace()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -1168,14 +1168,13 @@ public sealed class AssignActivityCommandHandlerTests
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
-        events.HasTermsDecisions(
-            new EventTermsAcceptance
-            {
-                TermsDocumentId = termsDocumentId,
-                Accepted = false,
-                DecidedAt = Now.AddDays(-1),
-            }
-        );
+        var stored = new EventTermsAcceptance
+        {
+            TermsDocumentId = termsDocumentId,
+            Accepted = false,
+            DecidedAt = Now.AddDays(-1),
+        };
+        events.HasTermsDecisions(stored);
         statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
@@ -1193,6 +1192,10 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
+        stored.Accepted.Should().BeTrue(
+            "a rejection is revisable: a later acceptance overwrites the stored row in place"
+        );
+        stored.DecidedAt.Should().Be(Now);
         await events
             .DidNotReceiveWithAnyArgs()
             .AddTermsAcceptanceAsync(

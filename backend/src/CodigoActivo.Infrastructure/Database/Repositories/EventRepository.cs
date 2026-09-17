@@ -104,4 +104,15 @@ public class EventRepository(CodigoActivoDbContext context)
     {
         return Context.EventTermsDocuments.AsNoTracking();
     }
+
+    /// <summary>
+    /// Creates a query for the recorded terms acceptances, without tracking changes. Queries must
+    /// use this method instead of <see cref="ListTermsAcceptancesAsync"/>, which stays tracked
+    /// exclusively for <c>TermsGate</c> to update an existing decision in place.
+    /// </summary>
+    /// <returns>The resulting event terms acceptance value.</returns>
+    public IQueryable<EventTermsAcceptance> QueryTermsAcceptances()
+    {
+        return Context.EventTermsAcceptances.AsNoTracking();
+    }
 }

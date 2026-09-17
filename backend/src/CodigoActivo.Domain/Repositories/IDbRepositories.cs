@@ -155,6 +155,14 @@ public interface IEventRepository : IDbRepository<Event>
     /// </summary>
     /// <returns>The resulting event terms document value.</returns>
     public IQueryable<EventTermsDocument> QueryTermsDocuments();
+
+    /// <summary>
+    /// Creates a query for the recorded terms acceptances, without tracking changes. Queries must
+    /// use this method instead of <see cref="ListTermsAcceptancesAsync"/>, which stays tracked
+    /// exclusively for <c>TermsGate</c> to update an existing decision in place.
+    /// </summary>
+    /// <returns>The resulting event terms acceptance value.</returns>
+    public IQueryable<EventTermsAcceptance> QueryTermsAcceptances();
 }
 
 /// <summary>

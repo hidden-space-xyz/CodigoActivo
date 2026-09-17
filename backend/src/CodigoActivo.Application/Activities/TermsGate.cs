@@ -21,16 +21,16 @@ public sealed class TermsGate(
 {
     /// <summary>
     /// Ensures that every terms document required by the activity's event has been accepted by
-    /// the user, recording any newly supplied decision for a document that had none yet.
-    /// Required documents only persist an accepted decision: rejecting a required document is
-    /// never stored, so the user can retry and accept it on a later call instead of being
-    /// permanently excluded from the event by a single mistaken click. Optional documents persist
-    /// whichever decision the user makes, accepted or rejected, and never block the signup.
-    /// Decisions about documents that are already decided (including a previously rejected
-    /// optional document) or that are not linked to the event are ignored, which makes repeated
-    /// calls idempotent. Nothing is persisted by this method: callers must call
-    /// <see cref="IUnitOfWork.SaveChangesAsync"/> only after every other check in the same use
-    /// case also succeeds.
+    /// the user. An acceptance is immutable: once recorded it is the proof of consent and is
+    /// never overwritten or asked again. A rejection is revisable: a later decision about a
+    /// document whose stored decision is a rejection updates that same row in place instead of
+    /// leaving the user permanently excluded (this also covers a document that was optional, got
+    /// rejected, and was later made required by an administrator). Required documents never
+    /// persist a rejection, neither as a new row nor as an update to an existing rejected row: the
+    /// document is simply left undecided so a later call can still accept it. Decisions about
+    /// documents that are not linked to the event are ignored. Nothing is persisted by this
+    /// method: callers must call <see cref="IUnitOfWork.SaveChangesAsync"/> only after every
+    /// other check in the same use case also succeeds.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="userId">Identifier of the user.</param>
@@ -66,50 +66,69 @@ public sealed class TermsGate(
         }
 
         var acceptances = await events.ListTermsAcceptancesAsync(eventId.Value, userId, ct);
-        var decidedById = acceptances.ToDictionary(a => a.TermsDocumentId, a => a.Accepted);
+        var acceptanceByDocument = acceptances.ToDictionary(a => a.TermsDocumentId);
 
         if (decisions is not null)
         {
             var requiredById = documents.ToDictionary(d => d.TermsDocumentId, d => d.IsRequired);
             foreach (var decision in decisions)
             {
-                if (
-                    !requiredById.TryGetValue(decision.TermsDocumentId, out var isRequired)
-                    || decidedById.ContainsKey(decision.TermsDocumentId)
-                )
+                if (!requiredById.TryGetValue(decision.TermsDocumentId, out var isRequired))
                 {
+                    // Not linked to this event.
                     continue;
                 }
 
                 var accepted = decision.Accepted ?? false;
-                if (isRequired && !accepted)
+
+                if (acceptanceByDocument.TryGetValue(decision.TermsDocumentId, out var existing))
                 {
-                    // A rejection of a required document is never stored: persisting it would
-                    // make the document permanently undecided-as-rejected (decisions are
-                    // immutable once recorded), locking the user out of the event forever with no
-                    // screen to change their mind. Leaving it undecided lets a later call accept
-                    // it instead.
+                    if (existing.Accepted)
+                    {
+                        // An acceptance is the proof of consent: immutable, never asked again.
+                        continue;
+                    }
+
+                    if (isRequired && !accepted)
+                    {
+                        // A required document never persists a rejection, not even as an update
+                        // to an already-rejected row: leave it undecided so a later call can
+                        // still accept it.
+                        continue;
+                    }
+
+                    // The stored decision is a rejection and is revisable: update it in place
+                    // instead of inserting a new row (the primary key would reject that anyway).
+                    existing.Accepted = accepted;
+                    existing.DecidedAt = clock.UtcNow;
                     continue;
                 }
 
-                await events.AddTermsAcceptanceAsync(
-                    new EventTermsAcceptance
-                    {
-                        EventId = eventId.Value,
-                        UserId = userId,
-                        TermsDocumentId = decision.TermsDocumentId,
-                        Accepted = accepted,
-                        DecidedAt = clock.UtcNow,
-                    },
-                    ct
-                );
-                decidedById[decision.TermsDocumentId] = accepted;
+                if (isRequired && !accepted)
+                {
+                    // Same rule as above, for a document that has no decision at all yet.
+                    continue;
+                }
+
+                var acceptance = new EventTermsAcceptance
+                {
+                    EventId = eventId.Value,
+                    UserId = userId,
+                    TermsDocumentId = decision.TermsDocumentId,
+                    Accepted = accepted,
+                    DecidedAt = clock.UtcNow,
+                };
+                await events.AddTermsAcceptanceAsync(acceptance, ct);
+                acceptanceByDocument[decision.TermsDocumentId] = acceptance;
             }
         }
 
         var missingRequired = documents.Any(d =>
             d.IsRequired
-            && (!decidedById.TryGetValue(d.TermsDocumentId, out var accepted) || !accepted)
+            && (
+                !acceptanceByDocument.TryGetValue(d.TermsDocumentId, out var acceptance)
+                || !acceptance.Accepted
+            )
         );
         return missingRequired
             ? (Result)Error.BadRequest(ErrorCode.EventTermsAcceptanceRequired)

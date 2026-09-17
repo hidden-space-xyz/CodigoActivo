@@ -54,9 +54,16 @@ public sealed class GetEventTermsStateQueryHandler(
             return new EventTermsStateResponse([], false);
         }
 
-        var acceptances = await events.ListTermsAcceptancesAsync(
-            query.EventId,
-            query.UserId,
+        var acceptances = await executor.ToListAsync(
+            events
+                .QueryTermsAcceptances()
+                .Where(a => a.EventId == query.EventId && a.UserId == query.UserId)
+                .Select(a => new
+                {
+                    a.TermsDocumentId,
+                    a.Accepted,
+                    a.DecidedAt,
+                }),
             ct
         );
         var decidedById = acceptances.ToDictionary(a => a.TermsDocumentId);

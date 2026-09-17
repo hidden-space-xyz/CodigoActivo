@@ -159,11 +159,20 @@ const termsDialog = reactive<{ visible: boolean; action: TermsPendingAction | nu
   action: null,
 })
 
-const termsPending = computed(() => termsState.data.value?.signupBlocked ?? false)
-
+/**
+ * Documents the user must still decide on: an acceptance is final, but a rejection can be revised,
+ * so anything short of `accepted === true` (including a previous rejection) counts as pending.
+ */
 const pendingTermsDocuments = computed(() =>
-  (termsState.data.value?.documents ?? []).filter((document) => document.accepted === null),
+  (termsState.data.value?.documents ?? []).filter((document) => document.accepted !== true),
 )
+
+/**
+ * Whether the terms dialog must be shown before signing up. Required documents block signup
+ * (`signupBlocked`), but any pending document — required or optional — must still be offered so
+ * the user can decide on it; the confirm button itself only gates on the required ones.
+ */
+const hasPendingTerms = computed(() => pendingTermsDocuments.value.length > 0)
 
 function handleSignupError(error: unknown, action: TermsPendingAction): void {
   if (error instanceof ApiError && error.code === 'EventTermsAcceptanceRequired') {
@@ -209,7 +218,7 @@ function confirmOverlapSignup(): void {
 }
 
 function doAssign(activityId: string, roleId: string): void {
-  if (termsPending.value) {
+  if (hasPendingTerms.value) {
     termsDialog.action = { kind: 'self', activityId, roleId }
     termsDialog.visible = true
     busyId.value = null
@@ -301,7 +310,7 @@ function confirmHousehold(): void {
     return
   }
 
-  if (termsPending.value) {
+  if (hasPendingTerms.value) {
     termsDialog.action = { kind: 'household', activityId: activity.id, assignments }
     termsDialog.visible = true
     return

@@ -17,20 +17,42 @@ import {
 } from '../../../support/fixtures/public-dashboard/dom'
 import {
   CHILD,
+  OPTIONAL_TERMS_DOCUMENT,
   serveSignupApi,
   TERMS_DOCUMENT,
 } from '../../../support/fixtures/public-dashboard/signup-api'
 import { renderWithProviders, t } from '../../../support/render'
 import { apiError, http, server } from '../../../support/server'
 
-const TERMS = [
-  {
-    id: TERMS_DOCUMENT.termsDocumentId,
-    name: TERMS_DOCUMENT.name,
-    required: TERMS_DOCUMENT.required,
-    displayOrder: TERMS_DOCUMENT.displayOrder,
-  },
+/** Summary shape the `terms` prop expects, without the description only `/terms` returns. */
+interface TermsSummary {
+  id: string
+  name: string
+  required: boolean
+  displayOrder: number
+}
+
+/** Maps a raw fixture terms document to the `TermsSummary` shape the `terms` prop expects. */
+function toTermsSummary(document: {
+  termsDocumentId: string
+  name: string
+  required: boolean
+  displayOrder: number
+}): TermsSummary {
+  return {
+    id: document.termsDocumentId,
+    name: document.name,
+    required: document.required,
+    displayOrder: document.displayOrder,
+  }
+}
+
+const TERMS = [toTermsSummary(TERMS_DOCUMENT)]
+const TERMS_WITH_OPTIONAL = [
+  toTermsSummary(TERMS_DOCUMENT),
+  toTermsSummary(OPTIONAL_TERMS_DOCUMENT),
 ]
+const OPTIONAL_ONLY_TERMS = [toTermsSummary(OPTIONAL_TERMS_DOCUMENT)]
 
 /** Finds the checkbox input for a terms document row, however Element Plus placed the id. */
 function termsCheckbox(root: ParentNode, documentId: string): HTMLElement {
@@ -44,7 +66,7 @@ function termsCheckbox(root: ParentNode, documentId: string): HTMLElement {
 interface TimelineProps {
   signupOpen?: boolean
   earlyOnly?: boolean
-  terms?: typeof TERMS
+  terms?: TermsSummary[]
 }
 
 async function renderTimeline(
@@ -370,6 +392,157 @@ describe('activities timeline self signup', () => {
       activityRoleTypeId: 'role-participant',
       termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
     })
+  })
+
+  it('opens the terms dialog for an event with only optional documents', async () => {
+    const { calls } = serveSignupApi({
+      termsDocuments: [{ ...OPTIONAL_TERMS_DOCUMENT, accepted: null, decidedAt: null }],
+    })
+
+    await renderTimeline({ terms: OPTIONAL_ONLY_TERMS })
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
+    await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
+
+    const dialog = await vi.waitFor(() => {
+      const found = openDialog(t('features.activitySignup.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(OPTIONAL_TERMS_DOCUMENT.name)
+    // No required document is pending, so confirming is allowed without checking anything.
+    expect(buttonByText(t('features.activitySignup.terms.confirm'), dialog).disabled).toBe(false)
+    expect(calls.assign).toEqual([])
+
+    await clickElement(termsCheckbox(dialog, OPTIONAL_TERMS_DOCUMENT.termsDocumentId))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), dialog))
+
+    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
+    expect(calls.assign[0]?.body).toEqual({
+      activityRoleTypeId: 'role-participant',
+      termsDecisions: [
+        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, accepted: true },
+      ],
+    })
+  })
+
+  it('only asks again about a new optional document once the required one is already accepted', async () => {
+    const { calls } = serveSignupApi({
+      termsDocuments: [
+        { ...TERMS_DOCUMENT, accepted: true, decidedAt: '2026-01-01T00:00:00Z' },
+        { ...OPTIONAL_TERMS_DOCUMENT, accepted: null, decidedAt: null },
+      ],
+    })
+
+    await renderTimeline({ terms: TERMS_WITH_OPTIONAL })
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
+    await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
+
+    const dialog = await vi.waitFor(() => {
+      const found = openDialog(t('features.activitySignup.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    expect([...dialog.querySelectorAll('.terms-dialog__link')].map(textOf)).toEqual([
+      OPTIONAL_TERMS_DOCUMENT.name,
+    ])
+
+    await clickElement(termsCheckbox(dialog, OPTIONAL_TERMS_DOCUMENT.termsDocumentId))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), dialog))
+
+    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
+    expect(calls.assign[0]?.body).toEqual({
+      activityRoleTypeId: 'role-participant',
+      termsDecisions: [
+        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, accepted: true },
+      ],
+    })
+  })
+
+  it('shows a previously rejected document as pending and unchecked, and lets the user accept it', async () => {
+    const { calls } = serveSignupApi({
+      termsDocuments: [{ ...TERMS_DOCUMENT, accepted: false, decidedAt: '2026-01-01T00:00:00Z' }],
+    })
+
+    await renderTimeline({ terms: TERMS })
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
+    await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
+
+    const dialog = await vi.waitFor(() => {
+      const found = openDialog(t('features.activitySignup.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(TERMS_DOCUMENT.name)
+    expect(
+      (termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId) as HTMLInputElement).checked,
+    ).toBe(false)
+
+    await clickElement(termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), dialog))
+
+    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
+    expect(calls.assign[0]?.body).toEqual({
+      activityRoleTypeId: 'role-participant',
+      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+    })
+  })
+
+  it('does not ask again about an already accepted document', async () => {
+    const { calls } = serveSignupApi({
+      termsDocuments: [{ ...TERMS_DOCUMENT, accepted: true, decidedAt: '2026-01-01T00:00:00Z' }],
+    })
+
+    await renderTimeline({ terms: TERMS })
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
+    await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
+
+    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
+    expect(openDialog(t('features.activitySignup.terms.header'))).toBeUndefined()
+    expect(calls.assign[0]?.body).toEqual({ activityRoleTypeId: 'role-participant' })
+  })
+
+  it('gives the terms checkbox an accessible name', async () => {
+    serveSignupApi({ termsAccepted: false })
+
+    await renderTimeline({ terms: TERMS })
+    await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
+
+    const dialog = await vi.waitFor(() => {
+      const found = openDialog(t('features.activitySignup.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    const checkbox = termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId)
+    const label = checkbox.closest('label')
+    expect(label?.getAttribute('aria-label')).toBe(
+      t('features.activitySignup.terms.checkboxLabel', { name: TERMS_DOCUMENT.name }),
+    )
+  })
+
+  it('returns focus to the document link once its content popup closes', async () => {
+    serveSignupApi({ termsAccepted: false })
+
+    await renderTimeline({ terms: TERMS }, { realTransitions: true })
+    await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
+
+    const dialog = await vi.waitFor(() => {
+      const found = openDialog(t('features.activitySignup.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    const link = dialog.querySelector<HTMLElement>('.terms-dialog__link') as HTMLElement
+    link.focus()
+    await clickElement(link)
+
+    const preview = await vi.waitFor(() => {
+      const found = openDialog(TERMS_DOCUMENT.name)
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    await clickElement(buttonByText(t('features.activitySignup.terms.close'), preview))
+
+    await vi.waitFor(() => expect(openDialog(TERMS_DOCUMENT.name)).toBeUndefined())
+    expect(document.activeElement).toBe(link)
   })
 
   it('does not sign up while a required term stays unchecked, and closes without deciding', async () => {

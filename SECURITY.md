@@ -24,7 +24,10 @@ authentication are not supported.
   such as `UserType` are not authorization roles, with one handler-level exception:
   `GET /api/events/{eventId}/signup-stats` requires a session and returns `AccessDenied` (403) unless the
   caller is an administrator or has the member `UserType`. Its response is aggregate counts per activity,
-  activity role and signup status; it never lists the signed-up individuals.
+  activity role and signup status; it never lists the signed-up individuals. For an activity with very few
+  signups, a member can infer an individual's status — including a rejection — from these counts; whether
+  this granularity is acceptable for the member audience is a pending decision for the project owner, not
+  resolved by this document.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the last administrator
@@ -125,6 +128,13 @@ isolation headers. See [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
   `localStorage` and is never sent to the server. `Referrer-Policy: same-origin` keeps page URLs out of
   requests to external sites.
+- Terms-document consent is recorded for the acting user, not the enrolled person: enrolling a household
+  minor stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
+  for that event covers later minor signups without a new prompt (`TermsGate`). An acceptance is immutable
+  and never re-asked; a rejection is revisable and overwrites the stored row; a required document's
+  rejection is never persisted. `AssignActivity` skips this consent step when an administrator enrolls
+  someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
+  account is deleted.
 - Verification and password-reset links put the user id and code in the URL fragment
   (`/reset-password#userId=…&code=…`), which browsers never send to the server; the page reads and removes it
   from the address bar, so a reload needs the emailed link again.
