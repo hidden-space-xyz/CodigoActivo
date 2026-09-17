@@ -85,7 +85,7 @@ export function useEventAttendeesTable(
   }
 }
 
-/** Server-side table of an event's participant ratings, newest first; fetches while `active`. */
+/** Server-side table of an event's participant ratings, highest score first; fetches while `active`. */
 export function useEventRatingsTable(
   eventId: MaybeRefOrGetter<string>,
   active: MaybeRefOrGetter<boolean>,
@@ -93,7 +93,7 @@ export function useEventRatingsTable(
   const table = useServerTable<EventRatingListItemResponse, GetApiEventsEventIdRatingsParams>({
     queryKey: eventQueryKeys.ratings(),
     fetchPage: (params) => getEventRatingsPageRequest(toValue(eventId), params),
-    defaultSort: { field: 'createdAt', order: -1 },
+    defaultSort: { field: 'score', order: -1 },
     extraParams: () => ({ eventId: toValue(eventId) }),
     enabled: () => toValue(active),
   })

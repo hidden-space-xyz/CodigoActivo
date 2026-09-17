@@ -107,10 +107,15 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                 new EventRating
                 {
                     EventId = EventId,
-                    UserId = TestSeedData.Users.MemberId,
                     Score = 5,
                     MostLiked = "El ambiente",
-                    CreatedAt = SeededAt,
+                }
+            );
+            db.EventRatingSubmissions.Add(
+                new EventRatingSubmission
+                {
+                    EventId = EventId,
+                    UserId = TestSeedData.Users.MemberId,
                 }
             );
             db.EventTermsAcceptances.Add(
@@ -181,7 +186,15 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.QueryAsync(async db =>
         {
             (await db.ActivityUserRoleAssignments.CountAsync(Ct)).Should().Be(0);
-            (await db.EventRatings.CountAsync(Ct)).Should().Be(0);
+            (await db.EventRatingSubmissions.CountAsync(Ct))
+                .Should()
+                .Be(0, "the submission identifies the deleted user and must go with the account");
+            (await db.EventRatings.CountAsync(Ct))
+                .Should()
+                .Be(
+                    1,
+                    "the rating content is anonymous and carries no reference to the deleted user"
+                );
             (await db.EventTermsAcceptances.CountAsync(Ct)).Should().Be(0);
             return true;
         });

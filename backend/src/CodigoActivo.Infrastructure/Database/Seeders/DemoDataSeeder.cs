@@ -146,6 +146,7 @@ public sealed class DemoDataSeeder(
 
             context.ActivityUserRoleAssignments.AddRange(graph.Assignments);
             context.EventRatings.AddRange(graph.Ratings);
+            context.EventRatingSubmissions.AddRange(graph.RatingSubmissions);
             await context.SaveChangesAsync(ct);
 
             context.Announcements.AddRange(graph.Announcements);
@@ -203,6 +204,7 @@ public sealed class DemoDataSeeder(
             schedule.Activities,
             schedule.Assignments,
             schedule.Ratings,
+            schedule.RatingSubmissions,
             news,
             resources,
             partners
@@ -285,6 +287,7 @@ public sealed class DemoDataSeeder(
         var activities = new List<Activity>();
         var assignments = new List<ActivityUserRoleAssignment>();
         var ratings = new List<EventRating>();
+        var ratingSubmissions = new List<EventRatingSubmission>();
 
         for (var eventIndex = 0; eventIndex < DemoEvents.Length; eventIndex++)
         {
@@ -402,20 +405,20 @@ public sealed class DemoDataSeeder(
 
             if (end < clock.Today)
             {
-                ratings.AddRange(
-                    BuildRatings(
-                        eventIndex,
-                        eventId,
-                        eventAssignments,
-                        end,
-                        clock,
-                        now
-                    )
-                );
+                var (eventRatings, eventSubmissions) = BuildRatings(eventIndex, eventId, eventAssignments);
+                ratings.AddRange(eventRatings);
+                ratingSubmissions.AddRange(eventSubmissions);
             }
         }
 
-        return new DemoSchedule(events, eventCategories, activities, assignments, ratings);
+        return new DemoSchedule(
+            events,
+            eventCategories,
+            activities,
+            assignments,
+            ratings,
+            ratingSubmissions
+        );
     }
 
     private static List<Announcement> BuildAnnouncements(
@@ -585,18 +588,14 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    private static IEnumerable<EventRating> BuildRatings(
-        int eventIndex,
-        Guid eventId,
-        List<ActivityUserRoleAssignment> eventAssignments,
-        DateOnly eventEndsAt,
-        IClock clock,
-        DateTimeOffset now
-    )
+    private static (
+        List<EventRating> Ratings,
+        List<EventRatingSubmission> Submissions
+    ) BuildRatings(int eventIndex, Guid eventId, List<ActivityUserRoleAssignment> eventAssignments)
     {
         if (eventIndex % 4 is 3)
         {
-            yield break;
+            return ([], []);
         }
 
         var adultIds = Enumerable.Range(0, AdultCount).Select(UserId).ToHashSet();
@@ -610,31 +609,43 @@ public sealed class DemoDataSeeder(
             .Take(2 + (eventIndex % 4))
             .ToList();
 
+        var ratings = new List<EventRating>(raters.Count);
         for (var slot = 0; slot < raters.Count; slot++)
         {
             var seed = DemoRatings[((eventIndex * 3) + slot) % DemoRatings.Length];
-            var ratedAt = ToUtc(
-                clock.TimeZone,
-                eventEndsAt.AddDays(1 + ((eventIndex + slot) % 6)),
-                18 + (slot % 4),
-                30
+            ratings.Add(
+                new EventRating
+                {
+                    Id = Guid.NewGuid(),
+                    EventId = eventId,
+                    Score = seed.Score,
+                    MostLiked = seed.MostLiked,
+                    LeastLiked = seed.LeastLiked,
+                    Suggestions = seed.Suggestions,
+                }
             );
-            var createdAt = ratedAt < now ? ratedAt : now;
-            var edited = (eventIndex + slot) % 9 is 0;
-
-            yield return new EventRating
-            {
-                Id = Guid.NewGuid(),
-                EventId = eventId,
-                UserId = raters[slot],
-                Score = seed.Score,
-                MostLiked = seed.MostLiked,
-                LeastLiked = seed.LeastLiked,
-                Suggestions = seed.Suggestions,
-                CreatedAt = createdAt,
-                UpdatedAt = edited ? MinTime(createdAt.AddDays(2), now) : null,
-            };
         }
+
+        // Ratings are anonymous: shuffle the submission order independently from the ratings list so
+        // that neither array position nor insertion order pairs a specific rater with a specific
+        // rating's content.
+        var submissions = Shuffled(raters)
+            .Select(userId => new EventRatingSubmission { EventId = eventId, UserId = userId })
+            .ToList();
+
+        return (ratings, submissions);
+    }
+
+    private static List<Guid> Shuffled(IReadOnlyList<Guid> values)
+    {
+        var shuffled = new List<Guid>(values);
+        for (var i = shuffled.Count - 1; i > 0; i--)
+        {
+            var j = RandomNumberGenerator.GetInt32(i + 1);
+            (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+        }
+
+        return shuffled;
     }
 
     private static DateTimeOffset MinTime(DateTimeOffset value, DateTimeOffset ceiling)
@@ -910,7 +921,8 @@ public sealed class DemoDataSeeder(
         List<EventCategory> EventCategories,
         List<Activity> Activities,
         List<ActivityUserRoleAssignment> Assignments,
-        List<EventRating> Ratings
+        List<EventRating> Ratings,
+        List<EventRatingSubmission> RatingSubmissions
     );
 
     private static readonly RatingSeed[] DemoRatings =
@@ -2572,6 +2584,7 @@ internal sealed record DemoGraph(
     List<Activity> Activities,
     List<ActivityUserRoleAssignment> Assignments,
     List<EventRating> Ratings,
+    List<EventRatingSubmission> RatingSubmissions,
     List<Announcement> Announcements,
     List<Resource> Resources,
     List<Partner> Partners

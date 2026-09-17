@@ -377,23 +377,6 @@ public static class Projections
         };
 
     /// <summary>
-    /// Stores the shared event rating value.
-    /// </summary>
-    public static readonly Expression<Func<EventRating, EventRatingResponse>> EventRating =
-        rating => new EventRatingResponse
-        {
-            Id = rating.Id,
-            EventId = rating.EventId,
-            UserId = rating.UserId,
-            Score = rating.Score,
-            MostLiked = rating.MostLiked,
-            LeastLiked = rating.LeastLiked,
-            Suggestions = rating.Suggestions,
-            CreatedAt = rating.CreatedAt,
-            UpdatedAt = rating.UpdatedAt,
-        };
-
-    /// <summary>
     /// Stores the shared event rating list item value.
     /// </summary>
     public static readonly Expression<
@@ -405,8 +388,6 @@ public static class Projections
         MostLiked = rating.MostLiked,
         LeastLiked = rating.LeastLiked,
         Suggestions = rating.Suggestions,
-        CreatedAt = rating.CreatedAt,
-        UpdatedAt = rating.UpdatedAt,
     };
 
     /// <summary>

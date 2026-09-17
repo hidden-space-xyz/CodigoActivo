@@ -30,8 +30,7 @@ public sealed class ListEventRatingsQueryHandler(
     private static readonly SortMap<EventRatingListItemResponse> Sort =
         new SortMap<EventRatingListItemResponse>()
             .Add("score", r => r.Score)
-            .Add("createdAt", r => r.CreatedAt)
-            .Default("-createdAt")
+            .Default("-score")
             .Tie(r => r.Id);
 
     /// <summary>

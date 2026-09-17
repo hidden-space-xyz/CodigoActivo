@@ -9,7 +9,6 @@ import { formatDateRange } from '@/shared/lib'
 import {
   buildHistoryActivityResponse,
   buildHistoryResponse,
-  buildRatingResponse,
 } from '../../../../support/fixtures/account/account'
 import {
   buttonByText,
@@ -48,7 +47,7 @@ const PAST_RATED = buildHistoryResponse({
   title: 'Hackathon de Primavera',
   isPast: true,
   canRate: true,
-  myRating: buildRatingResponse({ score: 4 }),
+  hasRated: true,
 })
 
 const PAST_UNRATED = buildHistoryResponse({
@@ -207,26 +206,29 @@ describe('HistorySection', () => {
     expect(past.querySelector('.el-tag')).toBeNull()
   })
 
-  it('shows the existing score and offers to edit or add ratings', async () => {
+  it('shows the submitted state without a button or score once rated, and a rate button otherwise', async () => {
     serveHistory()
     await renderSection()
 
     const rated = eventItem('Hackathon de Primavera')
-    expect(rated.querySelector('.acc-history__score')?.textContent.trim()).toBe('4/5')
-    expect(buttonByText(rated, t('features.account.history.editRating'))).toBeTruthy()
+    expect(rated.querySelector('.acc-history__score')?.textContent.trim()).toBe(
+      t('features.account.history.rated'),
+    )
+    expect(rated.querySelector('.acc-history__score .el-rate')).toBeNull()
+    expect(rated.querySelectorAll('.acc-history__actions button')).toHaveLength(0)
 
     const unrated = eventItem('Taller de otoño')
     expect(unrated.querySelector('.acc-history__score')).toBeNull()
     expect(buttonByText(unrated, t('features.account.history.rate'))).toBeTruthy()
   })
 
-  it('saves a rating, confirms it and refreshes the history', async () => {
+  it('opens the dialog empty, saves the rating, confirms it and refreshes the history', async () => {
     const history = serveHistory()
     let received: { eventId: unknown; body: unknown } | undefined
     server.use(
-      http.put('/api/events/:eventId/rating', async ({ params, request }) => {
+      http.post('/api/events/:eventId/rating', async ({ params, request }) => {
         received = { eventId: params.eventId, body: await request.json() }
-        return HttpResponse.json(buildRatingResponse({ eventId: 'past-2', score: 3 }))
+        return new HttpResponse(null, { status: 204 })
       }),
     )
     await renderSection()
@@ -234,6 +236,8 @@ describe('HistorySection', () => {
     await click(buttonByText(eventItem('Taller de otoño'), t('features.account.history.rate')))
     const dialog = dialogByTitle(t('features.account.history.dialog.header'))
     expect(dialog.textContent).toContain('Taller de otoño')
+    expect(dialog.textContent).toContain(t('features.account.history.dialog.anonymousNotice'))
+    expect(dialog.querySelector<HTMLTextAreaElement>('#rating-most')?.value).toBe('')
     await click(dialog.querySelectorAll('.el-rate__item')[2] as Element)
     await fill(dialog, '#rating-most', '  Los retos  ')
     await click(buttonByText(dialog, t('common.save')))
@@ -251,20 +255,34 @@ describe('HistorySection', () => {
 
   it('keeps the dialog open and notifies when the rating cannot be saved', async () => {
     serveHistory()
-    server.use(http.put('/api/events/:eventId/rating', () => apiError(404, 'EventNotFound')))
+    server.use(http.post('/api/events/:eventId/rating', () => apiError(404, 'EventNotFound')))
     await renderSection()
 
-    await click(
-      buttonByText(eventItem('Hackathon de Primavera'), t('features.account.history.editRating')),
-    )
+    await click(buttonByText(eventItem('Taller de otoño'), t('features.account.history.rate')))
     const dialog = dialogByTitle(t('features.account.history.dialog.header'))
-    expect(dialog.querySelector<HTMLTextAreaElement>('#rating-most')?.value).toBe('Los talleres')
     await click(buttonByText(dialog, t('common.save')))
 
     await vi.waitFor(() => expect(notificationTexts()).toHaveLength(1))
     expect(notificationTexts()[0]).toContain(t('errors.EventNotFound'))
     expect(notificationTexts()[0]).toContain('trace-123')
     expect(openDialogs()).toHaveLength(1)
+  })
+
+  it('closes the dialog and shows the Spanish message when the rating was already submitted', async () => {
+    const history = serveHistory()
+    server.use(
+      http.post('/api/events/:eventId/rating', () => apiError(409, 'EventRatingAlreadySubmitted')),
+    )
+    await renderSection()
+
+    await click(buttonByText(eventItem('Taller de otoño'), t('features.account.history.rate')))
+    const dialog = dialogByTitle(t('features.account.history.dialog.header'))
+    await click(buttonByText(dialog, t('common.save')))
+
+    await vi.waitFor(() => expect(notificationTexts()).toHaveLength(1))
+    expect(notificationTexts()[0]).toContain(t('errors.EventRatingAlreadySubmitted'))
+    await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
+    await vi.waitFor(() => expect(history.count()).toBe(2))
   })
 
   it('closes the rating dialog without saving when cancelled', async () => {
@@ -285,9 +303,9 @@ describe('HistorySection', () => {
       buildHistoryResponse({ eventId: '', title: 'Sin id', isPast: true, canRate: true }),
     ])
     server.use(
-      http.put('/api/events/:eventId/rating', () => {
+      http.post('/api/events/:eventId/rating', () => {
         saved()
-        return HttpResponse.json(buildRatingResponse())
+        return new HttpResponse(null, { status: 204 })
       }),
     )
     await renderSection()

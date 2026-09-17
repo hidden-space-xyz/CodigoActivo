@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
@@ -18,12 +17,12 @@ public sealed record GetEventHistoryQuery(Guid UserId)
 /// Executes the query to retrieve event history.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="ratings">Repository used to persist and retrieve ratings.</param>
+/// <param name="submissions">Repository used to persist and retrieve rating submissions.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetEventHistoryQueryHandler(
     IActivityRepository activities,
-    IEventRatingRepository ratings,
+    IEventRatingSubmissionRepository submissions,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetEventHistoryQuery, IReadOnlyList<EventHistoryResponse>>
@@ -78,12 +77,12 @@ public sealed class GetEventHistoryQueryHandler(
             return [];
         }
 
-        var ownRatings = (
+        var ratedEventIds = (
             await executor.ToListAsync(
-                ratings.Query().Where(r => r.UserId == userId).Select(Projections.EventRating),
+                submissions.Query().Where(s => s.UserId == userId).Select(s => s.EventId),
                 ct
             )
-        ).ToDictionary(rating => rating.EventId);
+        ).ToHashSet();
 
         var today = clock.Today;
         var upcoming = new List<EventHistoryResponse>();
@@ -106,7 +105,7 @@ public sealed class GetEventHistoryQueryHandler(
             var entry = ToHistoryEntry(
                 visible,
                 isPast,
-                isPast ? ownRatings.GetValueOrDefault(group.Key) : null,
+                isPast && ratedEventIds.Contains(group.Key),
                 userId
             );
             (isPast ? past : upcoming).Add(entry);
@@ -122,7 +121,7 @@ public sealed class GetEventHistoryQueryHandler(
     private static EventHistoryResponse ToHistoryEntry(
         IReadOnlyList<HistoryRow> rows,
         bool isPast,
-        EventRatingResponse? myRating,
+        bool hasRated,
         Guid userId
     )
     {
@@ -136,7 +135,7 @@ public sealed class GetEventHistoryQueryHandler(
             first.ThumbnailId,
             isPast,
             isPast,
-            myRating,
+            hasRated,
             [
                 .. rows.Select(row => new EventHistoryActivityResponse(
                     row.ActivityId,

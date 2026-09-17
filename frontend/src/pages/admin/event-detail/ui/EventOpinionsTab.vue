@@ -3,7 +3,6 @@ import { useEventRatingsTable } from '@/features/manage-events'
 import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
 import type { TranslationKey } from '@/shared/i18n'
 import { DataState } from '@/shared/ui'
-import { formatDateTime } from '@/shared/lib'
 
 const props = defineProps<{
   /** Event whose attendee ratings and written feedback are listed. */
@@ -51,9 +50,6 @@ function answers(rating: EventRatingListItemResponse): {
             }}</span>
             <el-rate :model-value="rating.score ?? 0" disabled :max="5" class="opinion__stars" />
             <span class="opinion__score">{{ rating.score ?? 0 }}/5</span>
-            <span class="opinion__date">{{
-              formatDateTime(rating.updatedAt ?? rating.createdAt)
-            }}</span>
           </div>
 
           <dl v-if="answers(rating).length > 0" class="opinion__answers">
@@ -118,12 +114,6 @@ function answers(rating: EventRatingListItemResponse): {
 .opinion__score {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.opinion__date {
-  margin-left: auto;
-  font-size: 12.5px;
   color: var(--ca-text-muted);
 }
 

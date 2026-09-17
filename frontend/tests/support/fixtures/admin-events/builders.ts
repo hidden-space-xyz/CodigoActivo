@@ -142,8 +142,6 @@ export function buildRating(
       mostLiked: 'The people',
       leastLiked: '',
       suggestions: null,
-      createdAt: '2026-10-13T10:00:00Z',
-      updatedAt: null,
     },
     overrides,
   )

@@ -315,7 +315,7 @@ describe('account requests', () => {
     const entries = await getAccountHistoryRequest()
 
     expect(entries).toHaveLength(1)
-    expect(entries[0]).toMatchObject({ eventId: 'event-1', title: 'Día', rating: null })
+    expect(entries[0]).toMatchObject({ eventId: 'event-1', title: 'Día', hasRated: false })
   })
 
   it('returns an empty history when the API sends no body', async () => {
@@ -336,23 +336,42 @@ describe('account requests', () => {
     await expect(getAccountCertificatesRequest()).resolves.toEqual([])
   })
 
-  it('saves an event rating with trimmed comments and maps the stored rating', async () => {
+  it('posts an event rating with trimmed comments and resolves without a body', async () => {
     let body: unknown
+    let method = ''
     server.use(
-      http.put('/api/events/event-1/rating', async ({ request }) => {
+      http.post('/api/events/event-1/rating', async ({ request }) => {
+        method = request.method
         body = await request.json()
-        return HttpResponse.json({ score: 5, mostLiked: 'Todo', leastLiked: null })
+        return new HttpResponse(null, { status: 204 })
       }),
     )
 
-    const rating = await saveAccountEventRatingRequest('event-1', {
-      score: 5,
-      mostLiked: ' Todo ',
-      leastLiked: '',
-      suggestions: ' ',
-    })
+    await expect(
+      saveAccountEventRatingRequest('event-1', {
+        score: 5,
+        mostLiked: ' Todo ',
+        leastLiked: '',
+        suggestions: ' ',
+      }),
+    ).resolves.toBeUndefined()
 
+    expect(method).toBe('POST')
     expect(body).toEqual({ score: 5, mostLiked: 'Todo', leastLiked: null, suggestions: null })
-    expect(rating).toEqual({ score: 5, mostLiked: 'Todo', leastLiked: '', suggestions: '' })
+  })
+
+  it('surfaces the conflict when the event was already rated', async () => {
+    server.use(
+      http.post('/api/events/event-1/rating', () => apiError(409, 'EventRatingAlreadySubmitted')),
+    )
+
+    await expect(
+      saveAccountEventRatingRequest('event-1', {
+        score: 3,
+        mostLiked: '',
+        leastLiked: '',
+        suggestions: '',
+      }),
+    ).rejects.toMatchObject({ status: 409, code: 'EventRatingAlreadySubmitted' })
   })
 })

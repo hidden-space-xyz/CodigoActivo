@@ -11,7 +11,7 @@ namespace CodigoActivo.Application.DTOs;
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="IsPast">Whether past.</param>
 /// <param name="CanRate">Whether can rate.</param>
-/// <param name="MyRating">The my rating value.</param>
+/// <param name="HasRated">Whether the signed-in user already submitted a rating for this event.</param>
 /// <param name="Activities">The activities value.</param>
 public record EventHistoryResponse(
     Guid EventId,
@@ -22,7 +22,7 @@ public record EventHistoryResponse(
     Guid ThumbnailId,
     bool IsPast,
     bool CanRate,
-    EventRatingResponse? MyRating,
+    bool HasRated,
     IReadOnlyList<EventHistoryActivityResponse> Activities
 );
 

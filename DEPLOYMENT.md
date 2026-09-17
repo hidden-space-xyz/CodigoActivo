@@ -265,7 +265,9 @@ docker compose up -d
 
 Review logs and run application smoke tests after the containers become healthy. PostgreSQL 18 is mounted at
 `/var/lib/postgresql`; the repository does not provide an in-place upgrade procedure from older major
-versions.
+versions. Once the `AnonymizeEventRatings` migration has run, the schema cannot be rolled back to an earlier
+version: its `Down` migration throws instead of running, because the discarded rating authorship is not
+recoverable; see [SECURITY.md](SECURITY.md#event-rating-anonymity).
 
 ## Backups and recovery
 
@@ -275,6 +277,16 @@ the protected key ring unusable and invalidates sessions.
 
 The email queue is intentionally absent from backups. A restart or forced shutdown can lose pending mail, but
 the database action that requested it has already committed.
+
+Any `db-data` backup or logical dump taken before the `AnonymizeEventRatings` migration runs still contains
+the original event rating author, creation and update values that the migration later discards. Rotate such
+backups out of retention or purge them once the migration has run, because restoring one reintroduces
+recoverable rating authorship; see [SECURITY.md](SECURITY.md#event-rating-anonymity).
+
+A physical copy of the `db-data` volume also copies its write-ahead log segments (`pg_wal`), which record the
+database's writes, including event ratings, independently of the migration and of the ongoing anonymizing
+rewrite described in that same section. Treat volume-level backups and any point-in-time recovery material
+with the same retention care as the database itself.
 
 Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
 database and volume recovery, registration and email verification, the two-step login, password reset,

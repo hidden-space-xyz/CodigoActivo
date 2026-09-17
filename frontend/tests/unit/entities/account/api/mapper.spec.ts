@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   toAccountCertificate,
   toAccountChild,
-  toAccountEventRating,
   toAccountHistoryEntry,
   toAccountProfile,
   toAddMinorRequest,
@@ -109,19 +108,7 @@ describe('account mapper', () => {
     expect(toUpdateMinorRequest(input, 'parent-1')).toEqual({ ...input, parentId: 'parent-1' })
   })
 
-  it('maps a rating and defaults missing score and comments', () => {
-    expect(
-      toAccountEventRating({ score: 4, mostLiked: 'a', leastLiked: 'b', suggestions: 'c' }),
-    ).toEqual({ score: 4, mostLiked: 'a', leastLiked: 'b', suggestions: 'c' })
-    expect(toAccountEventRating({ mostLiked: null })).toEqual({
-      score: 0,
-      mostLiked: '',
-      leastLiked: '',
-      suggestions: '',
-    })
-  })
-
-  it('maps a history entry with its rating and activities', () => {
+  it('maps a history entry with its rated flag and activities', () => {
     const entry = toAccountHistoryEntry({
       eventId: 'event-1',
       title: 'Día Código Activo',
@@ -131,7 +118,7 @@ describe('account mapper', () => {
       thumbnailId: 'thumb-1',
       isPast: true,
       canRate: true,
-      myRating: { score: 5, mostLiked: 'Todo' },
+      hasRated: true,
       activities: [
         {
           activityId: 'activity-1',
@@ -159,7 +146,7 @@ describe('account mapper', () => {
       thumbnailId: 'thumb-1',
       isPast: true,
       canRate: true,
-      rating: { score: 5, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
+      hasRated: true,
       activities: [
         {
           activityId: 'activity-1',
@@ -188,7 +175,7 @@ describe('account mapper', () => {
     })
   })
 
-  it('maps an empty history entry with no rating and no activities', () => {
+  it('maps an empty history entry as unrated with no activities', () => {
     expect(toAccountHistoryEntry({})).toEqual({
       eventId: '',
       title: '',
@@ -198,7 +185,7 @@ describe('account mapper', () => {
       thumbnailId: '',
       isPast: false,
       canRate: false,
-      rating: null,
+      hasRated: false,
       activities: [],
     })
   })

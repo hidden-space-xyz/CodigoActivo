@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
@@ -18,33 +17,35 @@ public sealed record SaveEventRatingCommand(
     Guid EventId,
     Guid UserId,
     SaveEventRatingRequest Request
-) : ICommand<Result<EventRatingResponse>>;
+) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to save event rating.
+/// Executes the command to save event rating. Submissions are a single, immutable write: the rating
+/// content is stored anonymously, apart from the submission record that only tracks who already rated
+/// the event, so a second attempt is rejected instead of overwriting the first answer. The write
+/// itself is delegated to <see cref="IEventRatingRepository.SubmitAsync"/>, which persists both
+/// records immediately and atomically instead of going through <see cref="IUnitOfWork"/>.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="unitOfWork">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SaveEventRatingCommandHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
     IActivityRepository activities,
     IQueryExecutor executor,
-    IUnitOfWork unitOfWork,
     IClock clock
-) : ICommandHandler<SaveEventRatingCommand, Result<EventRatingResponse>>
+) : ICommandHandler<SaveEventRatingCommand, Result>
 {
     /// <summary>
     /// Handles the request to save event rating.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an event rating on success, or an application error on failure.</returns>
-    public async Task<Result<EventRatingResponse>> HandleAsync(
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    public async Task<Result> HandleAsync(
         SaveEventRatingCommand command,
         CancellationToken ct = default
     )
@@ -83,24 +84,7 @@ public sealed class SaveEventRatingCommandHandler(
             return Error.Conflict(ErrorCode.EventRatingAttendanceRequired);
         }
 
-        var now = clock.UtcNow;
-        var rating = await ratings.FindAsync(r => r.EventId == eventId && r.UserId == userId, ct);
-
-        if (rating is null)
-        {
-            rating = new EventRating
-            {
-                EventId = eventId,
-                UserId = userId,
-                CreatedAt = now,
-            };
-            await ratings.AddAsync(rating, ct);
-        }
-        else
-        {
-            rating.UpdatedAt = now;
-        }
-
+        var rating = new EventRating { EventId = eventId };
         rating.Apply(
             request.Score!.Value,
             request.MostLiked,
@@ -108,7 +92,11 @@ public sealed class SaveEventRatingCommandHandler(
             request.Suggestions
         );
 
-        await unitOfWork.SaveChangesAsync(ct);
-        return rating.ToResponse();
+        if (!await ratings.SubmitAsync(rating, userId, ct))
+        {
+            return Error.Conflict(ErrorCode.EventRatingAlreadySubmitted);
+        }
+
+        return Result.Success();
     }
 }

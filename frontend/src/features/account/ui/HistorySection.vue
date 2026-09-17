@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useAccountHistory } from '../model/useAccountHistory'
 import EventRatingDialog from './EventRatingDialog.vue'
 import type { AccountHistoryEntry, EventRatingInput } from '@/entities/account'
+import { ApiError } from '@/shared/api'
+import { ErrorCode } from '@/shared/api/generated/models'
 import { AppIcon, BaseButton } from '@/shared/ui'
 import { formatDateRange, useCrudFeedback } from '@/shared/lib'
 
@@ -50,7 +52,13 @@ function submitRating(input: EventRatingInput): void {
           t('features.account.history.savedSummary'),
         )
       },
-      onError: (error) => feedback.error(error),
+      onError: (error) => {
+        feedback.error(error)
+        // A 409 here means the history was stale (rated elsewhere); close and let it refetch.
+        if (error instanceof ApiError && error.code === ErrorCode.EventRatingAlreadySubmitted) {
+          ratingTarget.value = null
+        }
+      },
     },
   )
 }
@@ -103,16 +111,12 @@ const groups = computed(() => [
                 </button>
 
                 <div v-if="entry.canRate" class="acc-history__actions">
-                  <span v-if="entry.rating" class="acc-history__score">
-                    <AppIcon name="star-fill" />
-                    {{ entry.rating.score }}/5
+                  <span v-if="entry.hasRated" class="acc-history__score">
+                    <AppIcon name="check-circle" />
+                    {{ $t('features.account.history.rated') }}
                   </span>
-                  <BaseButton variant="ghost" @click="openRating(entry)">
-                    {{
-                      entry.rating
-                        ? $t('features.account.history.editRating')
-                        : $t('features.account.history.rate')
-                    }}
+                  <BaseButton v-else variant="ghost" @click="openRating(entry)">
+                    {{ $t('features.account.history.rate') }}
                   </BaseButton>
                 </div>
               </div>
@@ -147,7 +151,6 @@ const groups = computed(() => [
     <EventRatingDialog
       :visible="ratingTarget !== null"
       :event-title="ratingTarget?.title ?? ''"
-      :rating="ratingTarget?.rating ?? null"
       :saving="saveRating.isPending.value"
       @submit="submitRating"
       @close="ratingTarget = null"

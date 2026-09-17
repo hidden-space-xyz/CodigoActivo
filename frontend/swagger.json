@@ -2144,7 +2144,7 @@
       }
     },
     "/api/events/{eventId}/rating": {
-      "put": {
+      "post": {
         "tags": [
           "Events"
         ],
@@ -2170,14 +2170,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventRatingResponse"
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       }
@@ -4775,6 +4768,7 @@
           "EventEarlySignupNotBeforeSignup",
           "EventRatingNotFinished",
           "EventRatingAttendanceRequired",
+          "EventRatingAlreadySubmitted",
           "EventTermsAcceptanceRequired",
           "TermsDocumentNotFound",
           "TermsDocumentNameAlreadyExists",
@@ -5263,8 +5257,8 @@
           "canRate": {
             "type": "boolean"
           },
-          "myRating": {
-            "$ref": "#/components/schemas/EventRatingResponse"
+          "hasRated": {
+            "type": "boolean"
           },
           "activities": {
             "type": "array",
@@ -5394,15 +5388,6 @@
           "suggestions": {
             "type": "string",
             "nullable": true
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5428,49 +5413,6 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventRatingResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "score": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "mostLiked": {
-            "type": "string",
-            "nullable": true
-          },
-          "leastLiked": {
-            "type": "string",
-            "nullable": true
-          },
-          "suggestions": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
         "additionalProperties": false

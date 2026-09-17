@@ -14,7 +14,4 @@ export interface EventRatingListItemResponse {
   leastLiked?: string | null;
   /** @nullable */
   suggestions?: string | null;
-  createdAt?: string;
-  /** @nullable */
-  updatedAt?: string | null;
 }

@@ -7,6 +7,8 @@ import {
   saveAccountEventRatingRequest,
 } from '@/entities/account'
 import type { AccountHistoryEntry, EventRatingInput } from '@/entities/account'
+import { ApiError } from '@/shared/api'
+import { ErrorCode } from '@/shared/api/generated/models'
 import { useSession } from '@/entities/session'
 
 /**
@@ -35,6 +37,12 @@ export function useAccountHistory() {
       saveAccountEventRatingRequest(vars.eventId, vars.input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: historyKey })
+    },
+    onError: (error: unknown) => {
+      // A stale "already submitted" conflict means the history shown no longer matches the server.
+      if (error instanceof ApiError && error.code === ErrorCode.EventRatingAlreadySubmitted) {
+        void queryClient.invalidateQueries({ queryKey: historyKey })
+      }
     },
   })
 

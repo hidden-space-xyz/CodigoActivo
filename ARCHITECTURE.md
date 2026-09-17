@@ -88,7 +88,9 @@ Commands:
   deployment must add a shared cache store and cross-instance invalidation before scaling the API out.
 
 `RemoveAsync` and `SetFeaturedAsync` are deliberate set-based operations that execute immediately. Do not
-combine either with other staged mutations that are expected to share one transaction.
+combine either with other staged mutations that are expected to share one transaction. `IEventRatingRepository.SubmitAsync`
+is the same kind of exception: it opens and commits its own transaction, so it must not be mixed with other
+staged `IUnitOfWork` work expected to commit atomically with it.
 
 Cross-handler behavior belongs in focused collaborators such as `SignupGate`, `TermsGate`,
 `ActivityValidator`, `AccountEmails`, `FileUploadValidator` and `ManualEmailDispatcher` rather than in

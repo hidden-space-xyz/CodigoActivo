@@ -3,7 +3,6 @@ import type {
   EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
-  EventRatingResponse,
   UserResponse,
 } from '@/shared/api/generated/models'
 
@@ -43,22 +42,6 @@ export function buildCertificateResponse(
   }
 }
 
-/** Wire rating stored for an event. */
-export function buildRatingResponse(overrides: EventRatingResponse = {}): EventRatingResponse {
-  return {
-    id: 'rating-1',
-    eventId: 'event-1',
-    userId: 'user-1',
-    score: 4,
-    mostLiked: 'Los talleres',
-    leastLiked: 'El calor',
-    suggestions: 'Más agua',
-    createdAt: '2025-05-13T10:00:00Z',
-    updatedAt: null,
-    ...overrides,
-  }
-}
-
 /** Wire activity inside a history entry. */
 export function buildHistoryActivityResponse(
   overrides: EventHistoryActivityResponse = {},
@@ -91,6 +74,7 @@ export function buildHistoryResponse(overrides: EventHistoryResponse = {}): Even
     thumbnailId: 'thumb-1',
     isPast: false,
     canRate: false,
+    hasRated: false,
     activities: [buildHistoryActivityResponse()],
     ...overrides,
   }

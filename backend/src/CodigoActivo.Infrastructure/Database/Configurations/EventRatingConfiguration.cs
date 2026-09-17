@@ -21,20 +21,13 @@ public class EventRatingConfiguration : IEntityTypeConfiguration<EventRating>
         builder.Property(r => r.MostLiked).HasMaxLength(EventRating.MaxAnswerLength);
         builder.Property(r => r.LeastLiked).HasMaxLength(EventRating.MaxAnswerLength);
         builder.Property(r => r.Suggestions).HasMaxLength(EventRating.MaxAnswerLength);
-        builder.Property(r => r.CreatedAt).IsRequired();
 
-        builder.HasIndex(r => new { r.EventId, r.UserId }).IsUnique();
+        builder.HasIndex(r => r.EventId);
 
         builder
             .HasOne(r => r.Event)
             .WithMany(e => e.Ratings)
             .HasForeignKey(r => r.EventId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne(r => r.User)
-            .WithMany()
-            .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

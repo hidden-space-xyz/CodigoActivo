@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 
-import type { AccountEventRating, EventRatingInput } from '@/entities/account'
+import type { EventRatingInput } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
 
 const props = defineProps<{
-  /** Opens the dialog; each time it opens the form is reset from `rating`. */
+  /** Opens the dialog; each time it opens the form is reset to empty. */
   visible: boolean
   /** Title of the rated event, shown above the form. */
   eventTitle: string
-  /** Existing rating to edit; `null` starts an empty form with no score. */
-  rating: AccountEventRating | null
   /** Shows a loading state on the save button while the rating is stored. */
   saving: boolean
 }>()
@@ -32,13 +30,13 @@ const form = reactive<EventRatingInput>({
 })
 
 watch(
-  () => [props.visible, props.rating] as const,
-  ([visible, rating]) => {
+  () => props.visible,
+  (visible) => {
     if (!visible) return
-    form.score = rating?.score ?? 0
-    form.mostLiked = rating?.mostLiked ?? ''
-    form.leastLiked = rating?.leastLiked ?? ''
-    form.suggestions = rating?.suggestions ?? ''
+    form.score = 0
+    form.mostLiked = ''
+    form.leastLiked = ''
+    form.suggestions = ''
   },
   { immediate: true },
 )
@@ -62,6 +60,7 @@ function onSubmit(): void {
     @update:model-value="(value: boolean) => !value && emit('close')"
   >
     <p class="acc-rating__event">{{ eventTitle }}</p>
+    <p class="acc-rating__notice">{{ $t('features.account.history.dialog.anonymousNotice') }}</p>
 
     <form class="acc-form" @submit.prevent="onSubmit">
       <div class="acc-form__field">
@@ -123,9 +122,16 @@ function onSubmit(): void {
 
 <style scoped>
 .acc-rating__event {
-  margin: 0 0 18px;
+  margin: 0 0 6px;
   color: var(--ca-text-muted);
   font-size: 14px;
+}
+
+.acc-rating__notice {
+  margin: 0 0 18px;
+  color: var(--ca-text-dim);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .acc-rating__stars {
