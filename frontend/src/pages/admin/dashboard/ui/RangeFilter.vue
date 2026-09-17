@@ -9,12 +9,16 @@ import { RANGE_OPTIONS, type RangePreset } from '../model/useDashboardRange'
 const { t } = useI18n()
 
 const props = defineProps<{
+  /** Active selection; highlights the matching pill, or the calendar pill for `custom`. */
   preset: RangePreset
+  /** Committed custom dates, shown on the calendar pill and used to seed the picker on open. */
   customRange: (Date | null)[] | null
 }>()
 
 const emit = defineEmits<{
+  /** Fired with the clicked preset pill value. */
   preset: [RangePreset]
+  /** Fired with `[start, end]` once both dates are picked; the popover closes at the same time. */
   range: [(Date | null)[] | null]
 }>()
 

@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import SectionEyebrow from './SectionEyebrow.vue'
 
-defineProps<{ eyebrow: string; title: string }>()
+defineProps<{
+  /** Small uppercase kicker shown above the title. */
+  eyebrow: string
+  /** Page `<h1>`; the default slot renders below it, typically an intro paragraph. */
+  title: string
+}>()
 </script>
 
 <template>

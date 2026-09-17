@@ -3,7 +3,10 @@ import type { PastEvent } from '../model/types'
 import { CardDate, ColorTag, ListThumbnail } from '@/shared/ui'
 import EventCardFooter from './EventCardFooter.vue'
 
-defineProps<{ event: PastEvent }>()
+defineProps<{
+  /** Finished event rendered as a card linking to its detail page. */
+  event: PastEvent
+}>()
 </script>
 
 <template>

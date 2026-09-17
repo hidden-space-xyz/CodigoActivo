@@ -6,6 +6,11 @@ import { getErrorMessage } from '@/shared/lib'
 
 import { uploadThumbnailRequest } from '../api/requests'
 
+/**
+ * Holds the thumbnail picked in a form and uploads it only on save. `resolveThumbnailId` returns
+ * the existing id when nothing was picked, overwrites the existing file when there is one, and
+ * returns `null` on failure with a translated message in `uploadError`.
+ */
 export function useThumbnailUpload(existingId: MaybeRefOrGetter<string | null | undefined>) {
   const { t } = useI18n()
   const pickedFile = ref<File | null>(null)

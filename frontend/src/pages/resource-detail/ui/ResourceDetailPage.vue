@@ -8,7 +8,10 @@ import RichTextContent from '@/shared/ui/RichTextContent.vue'
 import { fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
 import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
-const props = defineProps<{ resourceId: string }>()
+const props = defineProps<{
+  /** Id from the `/resources/:resourceId` route param; link resources redirect to their URL. */
+  resourceId: string
+}>()
 
 const { t } = useI18n()
 

@@ -4,16 +4,24 @@ import { ref } from 'vue'
 import AppIcon from './AppIcon.vue'
 
 defineProps<{
+  /** Column header text rendered next to the toggle. */
   label: string
+  /** Highlights the toggle and swaps its search icon for a filled filter icon. */
   active: boolean
+  /** Accessible name and title of the toggle button. */
   toggleLabel: string
+  /** Accessible name of the clear button inside the panel. */
   clearLabel: string
+  /** Shows the clear button next to the slotted control. */
   showClear: boolean
+  /** Raises the panel's minimum width for wider controls such as date ranges. */
   wide?: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Fired after the popover finishes opening, e.g. to focus the slotted input. */
   show: []
+  /** Fired when the clear button is pressed; the parent resets its value and hides the panel. */
   clear: []
 }>()
 
@@ -24,7 +32,10 @@ function hide(): void {
   visible.value = false
 }
 
-defineExpose({ hide })
+defineExpose({
+  /** Closes the popover; wrappers call it after applying or clearing a filter. */
+  hide,
+})
 </script>
 
 <template>

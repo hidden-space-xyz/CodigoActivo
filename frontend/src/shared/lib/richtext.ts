@@ -14,6 +14,7 @@ import Underline from '@tiptap/extension-underline'
 import StarterKit from '@tiptap/starter-kit'
 
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
+/** Serialized empty Tiptap document, stored when a rich-text field is left blank. */
 export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 
 const FILE_CONTENT_URL =
@@ -75,6 +76,10 @@ const SameOriginImage = Image.extend({
   },
 })
 
+/**
+ * Tiptap extensions shared by the editor and the HTML renderer, as fresh instances on each call.
+ * Links open in a new tab and pasted images are accepted only from the same origin.
+ */
 export function richTextExtensions(): AnyExtension[] {
   return [
     StarterKit.configure({ link: false, underline: false }),
@@ -98,6 +103,7 @@ export function richTextExtensions(): AnyExtension[] {
 
 let rendererExtensions: AnyExtension[] | undefined
 
+/** Renders stored rich-text JSON to sanitized HTML for `v-html`; `''` if rendering fails. */
 export function renderRichTextHtml(value?: string | null): string {
   rendererExtensions ??= richTextExtensions()
   try {
@@ -107,6 +113,12 @@ export function renderRichTextHtml(value?: string | null): string {
   }
 }
 
+/**
+ * Parses stored rich text into a sanitized Tiptap document. Only allow-listed nodes, marks and
+ * attributes survive (http/https/mailto/tel links, `/api/files/{id}/content` images, `#rrggbb`
+ * colors), within node, depth and character limits. Non-JSON input becomes one plain paragraph;
+ * other JSON yields an empty document.
+ */
 export function parseRichText(value?: string | null): JSONContent {
   if (!value) return { type: 'doc', content: [] }
   try {
@@ -267,10 +279,15 @@ function boundedInteger(value: unknown, minimum: number, maximum: number): numbe
   return Math.min(maximum, Math.max(minimum, Number(value)))
 }
 
+/** Serializes editor JSON into the string format persisted by the API. */
 export function serializeRichText(json: JSONContent): string {
   return JSON.stringify(json)
 }
 
+/**
+ * True when the document has no nodes or only empty paragraphs. Whitespace-only text counts as
+ * content; use `isRichTextBlank` to ignore it.
+ */
 export function isRichTextEmpty(value?: string | null): boolean {
   const doc = parseRichText(value)
   if (!doc.content || doc.content.length === 0) return true
@@ -279,6 +296,7 @@ export function isRichTextEmpty(value?: string | null): boolean {
   )
 }
 
+/** True when no image or non-whitespace text exists at any depth; used for required fields. */
 export function isRichTextBlank(value?: string | null): boolean {
   return !hasRichTextContent(parseRichText(value))
 }
@@ -308,6 +326,7 @@ function collectRichTextStrings(node: JSONContent): string[] {
   return parts
 }
 
+/** Plain-text summary with collapsed whitespace, cut at a word boundary with `…` when too long. */
 export function richTextExcerpt(value: string | null | undefined, maxLength = 160): string {
   const text = collectRichTextStrings(parseRichText(value)).join(' ').replace(/\s+/g, ' ').trim()
   if (text.length <= maxLength) return text

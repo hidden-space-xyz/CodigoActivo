@@ -1,5 +1,10 @@
 <script setup lang="ts">
-defineProps<{ title: string; description: string }>()
+defineProps<{
+  /** Page `<h1>`. */
+  title: string
+  /** Intro line styled as a `//` code comment under the title. */
+  description: string
+}>()
 </script>
 
 <template>

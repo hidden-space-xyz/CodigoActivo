@@ -6,17 +6,27 @@ import ColumnFilterShell from './ColumnFilterShell.vue'
 
 const props = withDefaults(
   defineProps<{
+    /** Current search term; `null`, `undefined` or `''` means no filter. */
     modelValue: string | number | null | undefined
+    /** Column header text, also used in the toggle's accessible name. */
     label: string
+    /** Input placeholder; empty falls back to the localized "search by {label}" text. */
     placeholder?: string
+    /** `number` converts the trimmed input with `Number()` before emitting. */
     inputType?: 'text' | 'number'
+    /** Delay in milliseconds after the last keystroke before the value is emitted. */
     debounce?: number
   }>(),
   { placeholder: '', inputType: 'text', debounce: 300 },
 )
 
 const emit = defineEmits<{
+  /**
+   * Fired with the trimmed term (`null` when blank) after the debounce, or immediately on Enter or
+   * clear. Escape discards the draft without emitting.
+   */
   'update:modelValue': [value: string | number | null]
+  /** Fired right after each model update so the table can reload its data. */
   apply: []
 }>()
 

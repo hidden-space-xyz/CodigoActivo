@@ -1,3 +1,7 @@
+/**
+ * Query keys for activities, covering the admin table and the per-event signup data;
+ * admin mutations invalidate `all`.
+ */
 export const activityQueryKeys = {
   all: ['activities'] as const,
   adminTable: () => [...activityQueryKeys.all, 'admin-table'] as const,

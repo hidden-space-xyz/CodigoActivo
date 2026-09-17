@@ -7,6 +7,10 @@ interface CatalogApi<TBody> {
   remove: (id: string) => Promise<unknown>
 }
 
+/**
+ * Create/update/delete mutations for a simple catalog; each success invalidates `api.queryKey`,
+ * which should be the catalog's root key so its table and option lists refetch.
+ */
 export function useCatalog<TBody>(api: CatalogApi<TBody>) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: api.queryKey })

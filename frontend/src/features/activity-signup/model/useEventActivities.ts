@@ -23,6 +23,14 @@ import { eventQueryKeys, getEventTermsAcceptanceRequest } from '@/entities/event
 import { useSession } from '@/entities/session'
 import { i18n } from '@/shared/i18n'
 
+/**
+ * Signup state for an event's public activities: the user's and household assignments, household
+ * members (the user listed first), allowed signup roles and terms acceptance. Authenticated queries
+ * stay disabled for guests. Signups invalidate activities, assignments and terms acceptance.
+ *
+ * @param eventId - Getter so the queries follow route changes.
+ * @param hasTerms - Getter; terms acceptance is only fetched when the event has terms.
+ */
 export function useEventActivities(eventId: () => string, hasTerms: () => boolean) {
   const session = useSession()
   const queryClient = useQueryClient()

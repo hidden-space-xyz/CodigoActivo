@@ -20,6 +20,7 @@ import {
   getEventSummaryRequest,
 } from '@/entities/event'
 
+/** Report summary for an event; invalidated by activity and assignment changes. */
 export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.summary(toValue(eventId))),
@@ -27,6 +28,11 @@ export function useEventSummary(eventId: MaybeRefOrGetter<string>) {
   })
 }
 
+/**
+ * Server-side attendee table for an event with search, user type, gender, activity, role and status
+ * filters. Fetches only while `active` is true (its tab is selected). `fetchAllAttendees` loads
+ * every page with the current filters and sort (for exports).
+ */
 export function useEventAttendeesTable(
   eventId: MaybeRefOrGetter<string>,
   active: MaybeRefOrGetter<boolean>,
@@ -79,6 +85,7 @@ export function useEventAttendeesTable(
   }
 }
 
+/** Server-side table of an event's participant ratings, newest first; fetches while `active`. */
 export function useEventRatingsTable(
   eventId: MaybeRefOrGetter<string>,
   active: MaybeRefOrGetter<boolean>,
@@ -94,6 +101,7 @@ export function useEventRatingsTable(
   return { table }
 }
 
+/** Per-participant badge data for an event, consumed by the printable badges page. */
 export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.badges(toValue(eventId))),
@@ -101,6 +109,7 @@ export function useEventBadges(eventId: MaybeRefOrGetter<string>) {
   })
 }
 
+/** Event participants grouped by activity, consumed by the printable roster page. */
 export function useEventRoster(eventId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => eventReportQueryKeys.roster(toValue(eventId))),

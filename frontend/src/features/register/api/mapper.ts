@@ -18,6 +18,10 @@ function toRegisterMinorRequest(minor: MinorForm): RegisterMinorRequest {
   }
 }
 
+/**
+ * Builds the register request from the form, trimming names, email and phone and dropping
+ * `confirmPassword`. Throws if the adult or any minor has no gender; the form validates this first.
+ */
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
   const { gender } = form
   if (!gender) throw new Error('missing gender')
@@ -33,6 +37,7 @@ export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
   }
 }
 
+/** Reduces the register response to what the success step needs, defaulting missing fields. */
 export function toRegistrationResult(response: RegisterResponse): RegistrationResult {
   return {
     adultId: response.adult?.id ?? null,

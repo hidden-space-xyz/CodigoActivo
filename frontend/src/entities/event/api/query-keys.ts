@@ -1,3 +1,7 @@
+/**
+ * Query keys for public and admin event data. Every key starts with `all`, so invalidating
+ * `eventQueryKeys.all` refreshes every event query at once.
+ */
 export const eventQueryKeys = {
   all: ['events'] as const,
   upcoming: () => [...eventQueryKeys.all, 'upcoming'] as const,
@@ -13,6 +17,10 @@ export const eventQueryKeys = {
   ratings: () => [...eventQueryKeys.all, 'ratings'] as const,
 }
 
+/**
+ * Query keys for admin event reports and dashboard analytics, kept under a separate `reports` root
+ * so activity and assignment mutations can refresh reports without touching event lists.
+ */
 export const eventReportQueryKeys = {
   all: ['reports'] as const,
   summary: (eventId: string) => [...eventReportQueryKeys.all, 'event-summary', eventId] as const,

@@ -4,12 +4,19 @@ import ChartCard from './ChartCard.vue'
 
 withDefaults(
   defineProps<{
+    /** Card heading. */
     title: string
+    /** Short explanation shown under the heading. */
     subtitle: string
+    /** Chart.js chart type; changing it recreates the chart. */
     type: 'line' | 'bar' | 'doughnut'
+    /** Chart.js `data` object, typically built by the helpers in `model/charts.ts`. */
     data: object
+    /** Chart.js `options` object matching `type`. */
     options: object
+    /** Canvas (or empty placeholder) height in pixels; defaults to 260. */
     height?: number
+    /** Shows the "no data" placeholder instead of rendering the chart. */
     empty?: boolean
   }>(),
   { height: 260, empty: false },

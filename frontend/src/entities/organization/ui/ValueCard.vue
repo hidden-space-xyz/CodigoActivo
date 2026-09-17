@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { OrganizationValue } from '../model/content'
 
-defineProps<{ value: OrganizationValue }>()
+defineProps<{
+  /** Organization value shown with its emoji icon, title and description. */
+  value: OrganizationValue
+}>()
 </script>
 
 <template>

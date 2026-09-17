@@ -1,10 +1,15 @@
 <script setup lang="ts">
 defineProps<{
+  /** Years rendered as toggle pills, in display order. */
   years: readonly string[]
+  /** Year whose pill is marked pressed; a value not in `years` leaves none selected. */
   selected: string
 }>()
 
-const emit = defineEmits<{ select: [year: string] }>()
+const emit = defineEmits<{
+  /** Fired with the clicked year, even if it is already selected; the parent updates `selected`. */
+  select: [year: string]
+}>()
 </script>
 
 <template>

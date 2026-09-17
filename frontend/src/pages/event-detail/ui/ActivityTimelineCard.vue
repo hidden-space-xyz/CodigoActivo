@@ -10,21 +10,35 @@ import type { ActivityRole } from '@/entities/activity'
 import type { TimelineActivity } from '../model/types'
 
 const props = defineProps<{
+  /** Activity shown on the card, including the user's and household's enrollments. */
   activity: TimelineActivity
+  /** Roles the current user may take; a single role is preselected and hides the selector. */
   roles: readonly ActivityRole[]
+  /** Signup roles are still loading; replaces the role selector with a loading note. */
   rolesLoading: boolean
+  /** An enrollment request for this activity is in flight; disables and spins its actions. */
   busy: boolean
+  /** Whether a user is signed in; otherwise the card only offers a login button. */
   authenticated: boolean
+  /** Whether the current user may enroll or withdraw right now. */
   signupOpen: boolean
+  /** Signup is closed only because early signup is reserved to members and sponsors. */
   earlyOnly?: boolean
+  /** The user manages household members, so enrollment goes through the household dialog. */
   hasHousehold: boolean
+  /** Day of the timeline group; the schedule omits the date when the activity starts that day. */
   referenceDate?: Date | null
 }>()
 const emit = defineEmits<{
+  /** Fired with the chosen role id when the user enrolls themselves. */
   signup: [roleId: string]
+  /** Fired when the user withdraws their own enrollment. */
   unassign: []
+  /** Fired with a household member's user id to withdraw that member. */
   unassignMember: [userId: string]
+  /** Fired to open the household enrollment dialog for this activity. */
   household: []
+  /** Fired when an anonymous visitor asks to sign in before enrolling. */
   login: []
 }>()
 

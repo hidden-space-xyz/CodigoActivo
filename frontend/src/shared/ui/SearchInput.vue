@@ -5,14 +5,23 @@ import AppIcon from './AppIcon.vue'
 
 const props = withDefaults(
   defineProps<{
+    /** Current search term. */
     modelValue: string
+    /** Used as both placeholder and accessible name, since there is no visible label. */
     label: string
+    /** Delay in milliseconds after the last keystroke before the term is emitted. */
     debounce?: number
   }>(),
   { debounce: 300 },
 )
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  /**
+   * Fired with the trimmed term after the debounce, or immediately on Enter or clear; skipped when
+   * it equals the current value.
+   */
+  'update:modelValue': [value: string]
+}>()
 
 const draft = ref(props.modelValue)
 let timer: ReturnType<typeof setTimeout> | undefined

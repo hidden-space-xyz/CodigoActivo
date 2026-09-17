@@ -5,14 +5,20 @@ import type { AccountEventRating, EventRatingInput } from '@/entities/account'
 import { BaseButton } from '@/shared/ui'
 
 const props = defineProps<{
+  /** Opens the dialog; each time it opens the form is reset from `rating`. */
   visible: boolean
+  /** Title of the rated event, shown above the form. */
   eventTitle: string
+  /** Existing rating to edit; `null` starts an empty form with no score. */
   rating: AccountEventRating | null
+  /** Shows a loading state on the save button while the rating is stored. */
   saving: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Fired with the score (0 when cleared) and free-text answers on submit. */
   submit: [EventRatingInput]
+  /** Fired on cancel or when the dialog is dismissed. */
   close: []
 }>()
 

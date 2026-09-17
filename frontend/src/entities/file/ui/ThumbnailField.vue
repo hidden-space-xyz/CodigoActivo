@@ -8,9 +8,20 @@ import { getThumbnailNameRequest } from '../api/requests'
 
 const { t } = useI18n()
 
-const props = defineProps<{ existingThumbnailId?: string | null | undefined; invalid?: boolean }>()
+const props = defineProps<{
+  /** Stored thumbnail previewed until a new image is picked; empty shows the placeholder. */
+  existingThumbnailId?: string | null | undefined
+  /** Highlights the preview border as a validation error. */
+  invalid?: boolean
+}>()
 
-const emit = defineEmits<{ 'update:file': [file: File | null] }>()
+const emit = defineEmits<{
+  /**
+   * Fired with the picked image (files over 10 MB are rejected without emitting), or `null` when
+   * the selection is removed and the existing thumbnail is shown again. Nothing is uploaded here.
+   */
+  'update:file': [file: File | null]
+}>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const previewUrl = ref<string | null>(null)

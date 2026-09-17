@@ -25,6 +25,11 @@ function adminRoute(
   } as RouteRecordRaw
 }
 
+/**
+ * Application route table with lazily loaded pages. Admin routes use the admin layout (or `blank`
+ * for printable pages) behind `requireAdmin`; public detail routes receive their path params as
+ * props.
+ */
 export const routes: readonly RouteRecordRaw[] = [
   { path: '/', name: 'home', component: () => import('@/pages/home').then((m) => m.HomePage) },
   {

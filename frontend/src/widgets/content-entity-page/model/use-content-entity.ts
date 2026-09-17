@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useServerTable, type ServerTableColumn, type ServerTablePage } from '@/shared/lib'
 
+/** Common shape of announcements and resources shown in the admin content table and edit dialog. */
 export interface ContentItem {
   id?: string
   title?: string | null
@@ -11,9 +12,11 @@ export interface ContentItem {
   featured?: boolean
 }
 
+/** Create/update body sent by the content dialog; title and subtitle are already trimmed. */
 export interface ContentRequest {
   title: string
   subtitle: string
+  /** Rich-text document JSON; the dialog sends an empty document rather than an empty string. */
   description?: string | null
   thumbnailId?: string
 }
@@ -30,6 +33,11 @@ interface ContentApi<TParams> {
   feature?: (id: string) => Promise<unknown>
 }
 
+/**
+ * Adapts an entity's request functions into the controller consumed by `ContentEntityPage`: a
+ * server-side table plus create, update, remove and feature mutations that invalidate
+ * `api.queryKey` on success. `canFeature` is `false` when the entity has no feature endpoint.
+ */
 export function useContentEntity<TParams = Record<string, unknown>>(api: ContentApi<TParams>) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: api.queryKey })
@@ -72,4 +80,5 @@ export function useContentEntity<TParams = Record<string, unknown>>(api: Content
   }
 }
 
+/** Controller built by `useContentEntity` and passed to `ContentEntityPage`. */
 export type ContentController = ReturnType<typeof useContentEntity>

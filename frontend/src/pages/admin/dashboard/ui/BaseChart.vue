@@ -5,8 +5,11 @@ import { Chart, registerables, type ChartConfiguration } from 'chart.js'
 Chart.register(...registerables)
 
 const props = defineProps<{
+  /** Chart.js chart type. Changing it destroys and recreates the chart. */
   type: 'line' | 'bar' | 'doughnut'
+  /** Chart.js `data`; watched deeply, and any change rebuilds the chart instead of updating it. */
   data: object
+  /** Chart.js `options`; watched deeply, and any change rebuilds the chart. */
   options: object
 }>()
 

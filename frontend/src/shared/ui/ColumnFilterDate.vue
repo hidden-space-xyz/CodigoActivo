@@ -6,12 +6,19 @@ import { useMediaQuery } from '@/shared/lib'
 import ColumnFilterShell from './ColumnFilterShell.vue'
 
 const props = defineProps<{
+  /** Selected `[from, to]` range; `null` means no filter. */
   modelValue: (Date | null)[] | null
+  /** Column header text, also used in the toggle's accessible name. */
   label: string
 }>()
 
 const emit = defineEmits<{
+  /**
+   * Fired on every pick, including a half-selected range, and with `null` once no date remains;
+   * the popover closes when both ends are chosen.
+   */
   'update:modelValue': [value: (Date | null)[] | null]
+  /** Fired right after each model update so the table can reload its data. */
   apply: []
 }>()
 

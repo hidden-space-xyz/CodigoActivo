@@ -14,6 +14,7 @@ import {
   getUpcomingEventsPageRequest,
 } from './requests'
 
+/** Infinite list of upcoming events ordered by start date, for the public events page. */
 export function useUpcomingEventsPaged() {
   return usePagedList({
     queryKey: () => eventQueryKeys.upcoming(),
@@ -21,6 +22,7 @@ export function useUpcomingEventsPaged() {
   })
 }
 
+/** Years that have past events, used as filter options; `years` is empty until loaded. */
 export function usePastEventYears() {
   const query = useQuery({
     queryKey: eventQueryKeys.pastYears(),
@@ -34,6 +36,7 @@ export function usePastEventYears() {
   }
 }
 
+/** Categories used by past events, used as filter options; `categories` is empty until loaded. */
 export function usePastEventCategories() {
   const query = useQuery({
     queryKey: eventQueryKeys.pastCategories(),
@@ -47,6 +50,10 @@ export function usePastEventCategories() {
   }
 }
 
+/**
+ * Infinite list of past events for the selected filters, newest first. Empty `search` and
+ * `categoryId` are not sent; nothing loads while `year` is empty.
+ */
 export function usePastEventsPaged(filters: MaybeRefOrGetter<PastEventFilters>) {
   const selected = computed(() => toValue(filters))
 
@@ -60,6 +67,7 @@ export function usePastEventsPaged(filters: MaybeRefOrGetter<PastEventFilters>) 
   })
 }
 
+/** Home page board: the featured event (or `null`) plus up to three other upcoming events. */
 export function useHomeEvents() {
   const query = useQuery({
     queryKey: eventQueryKeys.board(),
@@ -74,6 +82,7 @@ export function useHomeEvents() {
   }
 }
 
+/** Public event detail; `notFound` becomes true once the API answers 404 for the id. */
 export function useEventDetail(eventId: MaybeRefOrGetter<string>) {
   const id = computed(() => toValue(eventId))
 

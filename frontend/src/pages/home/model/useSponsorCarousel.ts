@@ -17,6 +17,11 @@ function circularOffset(index: number, active: number, total: number): number {
   return offset
 }
 
+/**
+ * Circular sponsor carousel that auto-advances every 3 seconds while mounted and there is more
+ * than one sponsor. Each card gets its signed offset from the active sponsor, wrapped so the list
+ * behaves as a ring. `next`/`prev` restart the timer; `pause` stops it until `resume`.
+ */
 export function useSponsorCarousel(source: MaybeRefOrGetter<readonly Sponsor[] | undefined>) {
   const items = computed<readonly Sponsor[]>(() => toValue(source) ?? [])
   const count = computed(() => items.value.length)

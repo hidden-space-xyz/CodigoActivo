@@ -7,7 +7,13 @@ import type { DashboardOccupancyResponse } from '@/shared/api/generated/models'
 
 import ChartCard from './ChartCard.vue'
 
-const props = defineProps<{ occupancy: DashboardOccupancyResponse }>()
+const props = defineProps<{
+  /**
+   * Confirmed versus desired places, overall and per event with expandable activities. Items
+   * without a desired count show no percentage.
+   */
+  occupancy: DashboardOccupancyResponse
+}>()
 
 const events = computed(() => props.occupancy.events ?? [])
 const overall = computed(() => {

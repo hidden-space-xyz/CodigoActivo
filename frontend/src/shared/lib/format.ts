@@ -24,6 +24,10 @@ const RANGE_SEPARATOR = '–'
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
+/**
+ * Parses the `YYYY-MM-DD` prefix as a local-midnight `Date`, avoiding `new Date()`'s UTC shift.
+ * Returns `null` for empty or malformed input.
+ */
 export function parseDateOnly(value?: string | null): Date | null {
   if (!value) return null
   const [year, month, day] = value.slice(0, 10).split('-').map(Number)
@@ -31,6 +35,7 @@ export function parseDateOnly(value?: string | null): Date | null {
   return new Date(year, month - 1, day)
 }
 
+/** Formats the local calendar date as `YYYY-MM-DD`, ignoring the time. */
 export function toDateOnly(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -38,16 +43,19 @@ export function toDateOnly(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+/** Today's date as `YYYY-MM-DD` in UTC, which can differ from the local date around midnight. */
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+/** The date `years` before now as UTC `YYYY-MM-DD`; used for the adult (18+) birth-date limit. */
 export function yearsAgoIso(years: number): string {
   const date = new Date()
   date.setFullYear(date.getFullYear() - years)
   return date.toISOString().slice(0, 10)
 }
 
+/** Completed years since a birth date, or `null` when the date is missing or invalid. */
 export function ageFrom(value?: Date | string | null): number | null {
   if (!value) return null
   const birth = value instanceof Date ? value : parseDateOnly(value)
@@ -59,26 +67,31 @@ export function ageFrom(value?: Date | string | null): number | null {
   return age
 }
 
+/** Joins first and last name, or `—` when both are empty. */
 export function fullName(person: { firstName?: string | null; lastName?: string | null }): string {
   return `${person.firstName ?? ''} ${person.lastName ?? ''}`.trim() || '—'
 }
 
+/** Label/value pair for select inputs. */
 export interface SelectOption {
   readonly label: string
   readonly value: string
 }
 
+/** Maps catalog `{ id, name }` items to select options; missing name shows `—`, missing id `''`. */
 export function toSelectOptions(
   items?: readonly { id?: string | null; name?: string | null }[] | null,
 ): SelectOption[] {
   return (items ?? []).map((item) => ({ label: item.name ?? '—', value: item.id ?? '' }))
 }
 
+/** Spanish-locale number with thousands separators, or `—` for missing or `NaN` values. */
 export function formatNumber(value?: number | null): string {
   if (value == null || Number.isNaN(value)) return '—'
   return numberFormatter.format(value)
 }
 
+/** Localized size in B, whole KB or one-decimal MB (1024-based); `—` for negative or NaN input. */
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—'
   if (bytes < 1024) return i18n.global.t('common.fileSize.bytes', { value: formatNumber(bytes) })
@@ -93,6 +106,7 @@ export function formatFileSize(bytes: number): string {
   })
 }
 
+/** Rounds a percentage change and prefixes positives with `+` (e.g. `+12%`, `-3%`, `0%`). */
 export function formatSignedPercent(value: number): string {
   if (!Number.isFinite(value)) return '—'
   const rounded = Math.round(value)
@@ -100,6 +114,10 @@ export function formatSignedPercent(value: number): string {
   return `${sign}${rounded}%`
 }
 
+/**
+ * Chart axis label for a date bucket: short month and year when `granularity` is `'month'`,
+ * day and month otherwise. Unparseable input is returned unchanged.
+ */
 export function formatBucketLabel(iso: string, granularity: string): string {
   const date = parseDateOnly(iso)
   if (!date) return iso
@@ -111,6 +129,7 @@ function parseDisplayDate(value: string): Date {
   return new Date(value)
 }
 
+/** Medium date plus short time for an ISO timestamp, or `—` when missing or invalid. */
 export function formatDateTime(value?: string | null): string {
   if (!value) return '—'
   const date = new Date(value)
@@ -118,6 +137,7 @@ export function formatDateTime(value?: string | null): string {
   return dateTimeFormatter.format(date)
 }
 
+/** Medium date, or `—`. Plain `YYYY-MM-DD` values are read as local dates so they don't shift. */
 export function formatDate(value?: string | null): string {
   if (!value) return '—'
   const date = parseDisplayDate(value)
@@ -125,6 +145,7 @@ export function formatDate(value?: string | null): string {
   return dateFormatter.format(date)
 }
 
+/** UTC `YYYY-MM-DD` value for date inputs, or `''` when missing or invalid. */
 export function toDateInput(value?: string | null): string {
   if (!value) return ''
   const date = new Date(value)
@@ -146,6 +167,10 @@ function isSameDay(a: Date, b: Date): boolean {
   )
 }
 
+/**
+ * `start – end` with date and time; the end shows only its time when both fall on the same day.
+ * Returns just the start without an end, and `—` without a valid start.
+ */
 export function formatDateTimeRange(
   start?: Date | string | null,
   end?: Date | string | null,
@@ -161,6 +186,7 @@ export function formatDateTimeRange(
   return `${startText} ${RANGE_SEPARATOR} ${endText}`
 }
 
+/** Compact medium date range; a single date when the end is missing or not after the start. */
 export function formatDateRange(start?: string | null, end?: string | null): string {
   if (!start) return '—'
   const startDate = parseDisplayDate(start)
@@ -172,6 +198,10 @@ export function formatDateRange(start?: string | null, end?: string | null): str
   return dateFormatter.formatRange(startDate, endDate)
 }
 
+/**
+ * `start – end` as times, for schedules grouped by day. A day and month is added to the start when
+ * it differs from `referenceDay`, and to the end when it falls on another day than the start.
+ */
 export function formatTimeRange(
   start?: Date | string | null,
   end?: Date | string | null,

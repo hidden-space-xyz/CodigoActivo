@@ -3,6 +3,7 @@ import { formatDate } from '@/shared/lib'
 
 import type { LearningResource, LearningResourceSummary } from '../model/types'
 
+/** Maps a list item to a card model; `date` is the formatted creation date. */
 export function toLearningResourceSummary(
   response: ResourceListItemResponse,
 ): LearningResourceSummary {
@@ -16,6 +17,7 @@ export function toLearningResourceSummary(
   }
 }
 
+/** Maps the full resource to the detail model (summary fields plus description). */
 export function toLearningResource(response: ResourceResponse): LearningResource {
   return {
     ...toLearningResourceSummary(response),

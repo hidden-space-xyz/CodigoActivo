@@ -5,6 +5,7 @@ import { toDateOnly } from './format'
 import { useMediaQuery } from './use-theme'
 
 type ServerTableFieldType = 'text' | 'number' | 'dateRange'
+/** Sort direction names used by Element Plus tables. */
 export type ServerTableSortOrder = 'ascending' | 'descending'
 
 const ROWS_PER_PAGE_OPTIONS = [25, 50, 100]
@@ -13,6 +14,10 @@ const PAGINATION_LAYOUT_NARROW = 'prev, pager, next'
 const NARROW_QUERY = '(max-width: 640px)'
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
+/**
+ * Maps a filterable column to query parameters. `param` defaults to the column key; `dateRange`
+ * columns send `fromParam`/`toParam` (default `<key>From`/`<key>To`) as `YYYY-MM-DD`.
+ */
 export interface ServerTableColumn<TParams = Record<string, unknown>> {
   readonly param?: Extract<keyof TParams, string>
   readonly type?: ServerTableFieldType
@@ -23,16 +28,22 @@ export interface ServerTableColumn<TParams = Record<string, unknown>> {
 type ServerTableFilterValue =
   string | number | boolean | Date | readonly (Date | string | null)[] | null | undefined
 
+/**
+ * Write-only view of a column filter for `v-model`. The `never` getter lets any input component
+ * bind to it without casts.
+ */
 export interface ServerTableFilter {
   get value(): never
   set value(next: ServerTableFilterValue)
 }
 
+/** Payload of the Element Plus table `sort-change` event; a `null` order clears sorting. */
 export interface ServerTableSortChange {
   readonly prop: string | null
   readonly order: ServerTableSortOrder | null
 }
 
+/** Initial sort passed to the Element Plus table `default-sort` prop. */
 export interface ServerTableDefaultSort {
   readonly prop: string
   readonly order: ServerTableSortOrder
@@ -56,6 +67,7 @@ function toDateParam(value: unknown): string | undefined {
   return undefined
 }
 
+/** One page of rows; `total` counts all rows matching the filters. */
 export interface ServerTablePage<T> {
   readonly items: T[]
   readonly total: number
@@ -64,6 +76,10 @@ export interface ServerTablePage<T> {
 const FETCH_ALL_PAGE_SIZE = 100
 const FETCH_ALL_PAGE_LIMIT = 200
 
+/**
+ * Collects every row for the given filters in 100-row pages, e.g. for CSV export. Stops at
+ * `total`, on an empty page or after 200 pages (20,000 rows), silently truncating larger results.
+ */
 export async function fetchAllPages<T>(
   fetchPage: (params: Record<string, unknown>) => Promise<ServerTablePage<T>>,
   params: Record<string, unknown>,
@@ -101,6 +117,15 @@ function initialFilters<TParams>(
   return filters
 }
 
+/**
+ * Server-side paginated, sorted and filtered Element Plus table backed by TanStack Query.
+ *
+ * Builds `page`, `pageSize`, `sort` (`-field` for descending) and column filter params, keeps the
+ * previous page visible while fetching, and returns ready-to-bind `tableProps`/`paginationProps`
+ * plus event handlers. Sort, page-size and `extraParams` changes, `onFilter` and `clearFilters` go
+ * back to the first page; an empty page beyond the end jumps to the last one. Narrow viewports get
+ * a compact paginator.
+ */
 export function useServerTable<T, TParams = Record<string, unknown>>(
   options: UseServerTableOptions<T, TParams>,
 ) {

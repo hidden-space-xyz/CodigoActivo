@@ -5,6 +5,7 @@ interface NavItem {
   readonly labelKey: TranslationKey
 }
 
+/** Public site header links in display order, referenced by route name. */
 export const PRIMARY_NAV: readonly NavItem[] = [
   { routeName: 'home', labelKey: 'nav.home' },
   { routeName: 'announcements', labelKey: 'nav.announcements' },

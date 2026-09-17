@@ -2,10 +2,15 @@
 import AppIcon from './AppIcon.vue'
 
 defineProps<{
+  /** Shows a spinner; takes precedence over `error` and `empty`. */
   loading: boolean
+  /** Shows the error message instead of the slot; takes precedence over `empty`. */
   error: boolean
+  /** Shows the empty message instead of the slot once loading succeeded. */
   empty: boolean
+  /** Overrides the generic localized empty message. */
   emptyText?: string
+  /** Overrides the generic localized error message. */
   errorText?: string
 }>()
 </script>

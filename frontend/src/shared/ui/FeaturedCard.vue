@@ -19,13 +19,21 @@ interface FeaturedMetaItem {
 }
 
 const props = defineProps<{
+  /** Short highlight pill shown above the title. */
   badge: string
+  /** Main heading; also the poster image's alt text. */
   title: string
+  /** Line under the title, such as a slogan; hidden when empty. */
   subtitle: string
+  /** Stored file id of the poster; an empty id leaves the poster area blank. */
   thumbnailId: string
+  /** Route opened by the call-to-action button. */
   to: RouteLocationRaw
+  /** Text of the call-to-action button. */
   ctaLabel: string
+  /** Colored category tags; the row is hidden when the list is empty. */
   tags: readonly FeaturedTag[]
+  /** Label/value pairs such as date or place; `label` must be unique because it is the list key. */
   meta: readonly FeaturedMetaItem[]
 }>()
 

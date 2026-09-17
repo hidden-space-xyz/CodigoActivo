@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useInfiniteQuery } from '@tanstack/vue-query'
 
+/** One page returned by `fetchPage`; `total` counts all matching items, not just this page. */
 export interface PagedListPage<T> {
   readonly items: T[]
   readonly total: number
@@ -13,6 +14,10 @@ interface UsePagedListOptions<T> {
   readonly enabled?: (() => boolean) | undefined
 }
 
+/**
+ * "Load more" list on top of an infinite query. Pages are 1-based (25 items by default), `items`
+ * concatenates every loaded page and `hasMore` turns false once `total` items are loaded.
+ */
 export function usePagedList<T>(options: UsePagedListOptions<T>) {
   const pageSize = options.pageSize ?? 25
 

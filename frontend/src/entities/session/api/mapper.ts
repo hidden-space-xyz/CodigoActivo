@@ -3,6 +3,7 @@ import { EARLY_SIGNUP_USER_TYPE_IDS } from '@/shared/config'
 
 import type { AuthUser } from '../model/types'
 
+/** Maps the signed-in user; early signup eligibility comes from the configured user type ids. */
 export function toAuthUser(user: UserResponse): AuthUser {
   const userTypeId = user.type?.id ?? ''
   return {

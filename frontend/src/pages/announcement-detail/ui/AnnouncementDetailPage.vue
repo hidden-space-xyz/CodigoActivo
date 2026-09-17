@@ -10,7 +10,10 @@ import RichTextContent from '@/shared/ui/RichTextContent.vue'
 import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
 import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
-const props = defineProps<{ announcementId: string }>()
+const props = defineProps<{
+  /** Announcement id from the `/announcements/:announcementId` route param. */
+  announcementId: string
+}>()
 
 const { t } = useI18n()
 const route = useRoute()

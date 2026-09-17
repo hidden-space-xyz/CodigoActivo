@@ -1,3 +1,7 @@
+/**
+ * Query keys for lookup catalogs. The `*Table` keys nest under their list key, so invalidating
+ * `eventCategoryTypes()` or `termsDocuments()` also refreshes the matching admin table.
+ */
 export const catalogQueryKeys = {
   all: ['catalogs'] as const,
   userTypes: () => [...catalogQueryKeys.all, 'user-types'] as const,

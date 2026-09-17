@@ -2,6 +2,10 @@ import { CONTACT, FOUNDING_YEAR } from '@/shared/config'
 import { i18n } from '@/shared/i18n'
 import { absoluteUrl } from '@/shared/lib'
 
+/**
+ * Schema.org `NGO` structured data for the home page: site name, absolute logo URL, founding year,
+ * León address and social profiles.
+ */
 export function organizationJsonLd(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',

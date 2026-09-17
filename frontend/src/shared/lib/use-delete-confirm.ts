@@ -21,6 +21,7 @@ function confirm(options: {
     .catch(() => undefined)
 }
 
+/** Warning dialog with a red "delete" button; `accept` runs only on confirmation. */
 export function useDeleteConfirm() {
   function confirmDelete(options: { header: string; message: string; accept: () => void }): void {
     confirm({ ...options, acceptLabel: i18n.global.t('common.delete'), danger: true })
@@ -29,6 +30,7 @@ export function useDeleteConfirm() {
   return { confirmDelete }
 }
 
+/** Warning dialog for non-destructive actions with a caller-provided confirm label. */
 export function useActionConfirm() {
   function confirmAction(options: {
     header: string

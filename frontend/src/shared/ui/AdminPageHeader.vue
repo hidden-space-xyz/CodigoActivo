@@ -1,5 +1,10 @@
 <script setup lang="ts">
-defineProps<{ title: string; subtitle?: string }>()
+defineProps<{
+  /** Page `<h1>`; the `actions` slot renders beside it, right-aligned. */
+  title: string
+  /** Muted line under the title; omitted when empty. */
+  subtitle?: string
+}>()
 </script>
 
 <template>

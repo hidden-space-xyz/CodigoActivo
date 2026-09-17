@@ -14,13 +14,21 @@ import type {
 import { isRichTextBlank } from '@/shared/lib/richtext'
 
 const props = defineProps<{
+  /** Opens the dialog; each time it opens the form is repopulated from `resource`. */
   visible: boolean
+  /** Resource being edited; `null` opens the dialog in create mode. */
   resource: ResourceResponse | null
+  /** Shows a loading state on the save button while the parent persists the resource. */
   saving: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
+  /**
+   * Fired once the form validates and the thumbnail is uploaded. External resource types send only
+   * `url`; internal ones send only the rich-text `description`.
+   */
   submit: [body: CreateResourceRequest | UpdateResourceRequest]
 }>()
 

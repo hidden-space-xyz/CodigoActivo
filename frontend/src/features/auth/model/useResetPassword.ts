@@ -6,10 +6,18 @@ import { getErrorMessage } from '@/shared/lib'
 
 import { resetPasswordRequest } from '../api/requests'
 
+/** Reset page step: the password form, or the confirmation shown after a successful reset. */
 export type ResetPasswordState = 'form' | 'success'
 
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+/**
+ * Reset-password form for the emailed link. Validates length (12+) and confirmation locally before
+ * calling the API; an API failure shows its message and offers requesting a new link.
+ *
+ * @param userId - User id from the link; `hasValidLink` requires it to be a GUID.
+ * @param code - One-time reset code from the link.
+ */
 export function useResetPassword(userId: string | null, code: string | null) {
   const { t } = useI18n()
   const form = reactive({ password: '', confirmPassword: '' })

@@ -16,6 +16,7 @@ interface SeriesStyle {
 
 type StyleMap = Record<string, SeriesStyle>
 
+/** Labels and palette colors for the `userGrowth` and `usersByType` series, keyed by user type. */
 export const USER_TYPE_STYLE: StyleMap = {
   member: {
     label: i18n.global.t('pages.admin.dashboard.series.member'),
@@ -34,6 +35,7 @@ export const USER_TYPE_STYLE: StyleMap = {
   },
 }
 
+/** Inscription series styles keyed by status: green confirmed, amber requested, red denied. */
 export const INSCRIPTION_STATUS_STYLE: StyleMap = {
   confirmed: {
     label: i18n.global.t('pages.admin.dashboard.series.confirmed'),
@@ -52,6 +54,7 @@ export const INSCRIPTION_STATUS_STYLE: StyleMap = {
   },
 }
 
+/** Styles for the adults/minors slices of the audience composition doughnut. */
 export const AUDIENCE_STYLE: StyleMap = {
   adults: {
     label: i18n.global.t('pages.admin.dashboard.series.adults'),
@@ -65,6 +68,7 @@ export const AUDIENCE_STYLE: StyleMap = {
   },
 }
 
+/** Participant gender slice styles, keyed by the API gender value (`Male`, `Female`, `Other`). */
 export const GENDER_STYLE: StyleMap = {
   Male: {
     label: genderLabel('Male'),
@@ -83,6 +87,7 @@ export const GENDER_STYLE: StyleMap = {
   },
 }
 
+/** Styles for published announcements and resources in the content bar chart. */
 export const CONTENT_STYLE: StyleMap = {
   announcements: {
     label: i18n.global.t('pages.admin.dashboard.series.announcements'),
@@ -96,6 +101,7 @@ export const CONTENT_STYLE: StyleMap = {
   },
 }
 
+/** Styles for past versus upcoming events in the monthly events calendar chart. */
 export const CALENDAR_STYLE: StyleMap = {
   past: {
     label: i18n.global.t('pages.admin.dashboard.series.past'),
@@ -116,14 +122,20 @@ function axisLabels(
   return (series?.buckets ?? []).map((bucket) => formatBucketLabel(bucket, granularity))
 }
 
+/** Whether any bucket of any series has a positive value; used to show the empty state instead. */
 export function hasSeriesData(series: DashboardTimeSeriesResponse | undefined): boolean {
   return (series?.series ?? []).some((set) => (set.values ?? []).some((value) => value > 0))
 }
 
+/** Whether at least one slice has a positive count, i.e. the doughnut would draw something. */
 export function hasSliceData(slices: DashboardSliceResponse[] | null | undefined): boolean {
   return (slices ?? []).some((slice) => (slice.count ?? 0) > 0)
 }
 
+/**
+ * Builds filled, smoothed line datasets for a stacked area chart. Series without an entry in
+ * `styleMap` fall back to their raw key and the dim text color.
+ */
 export function stackedAreaData(
   series: DashboardTimeSeriesResponse | undefined,
   granularity: string,
@@ -151,6 +163,10 @@ export function stackedAreaData(
   }
 }
 
+/**
+ * Builds one bar dataset per series, with x labels formatted for `granularity`. Unstyled series
+ * fall back to their raw key and the dim text color.
+ */
 export function barSeriesData(
   series: DashboardTimeSeriesResponse | undefined,
   granularity: string,
@@ -174,6 +190,10 @@ export function barSeriesData(
   }
 }
 
+/**
+ * Builds a single-dataset doughnut, dropping zero-count slices. Label and color come from
+ * `styleMap` when the key is known, otherwise from the slice's own label/color sent by the API.
+ */
 export function doughnutData(
   slices: DashboardSliceResponse[] | null | undefined,
   palette: ChartPalette,
@@ -198,6 +218,10 @@ export function doughnutData(
   }
 }
 
+/**
+ * Splits text into at most `maxLines` lines of up to `maxPerLine` characters for chart axis labels,
+ * appending an ellipsis when words are cut off or a single word is too long.
+ */
 export function wrapLabel(text: string, maxPerLine = 26, maxLines = 2): string[] {
   const words = text.split(/\s+/).filter(Boolean)
   if (words.length === 0) return ['']
@@ -227,6 +251,7 @@ export function wrapLabel(text: string, maxPerLine = 26, maxLines = 2): string[]
   )
 }
 
+/** Single-color ranking dataset of confirmed inscriptions; `labels` may be pre-wrapped lines. */
 export function rankingBarData(
   labels: (string | string[])[],
   values: number[],
@@ -303,6 +328,7 @@ function categoryScale(palette: ChartPalette, stacked: boolean, { autoSkip = tru
   }
 }
 
+/** Options for the stacked area chart: index-mode tooltip over all series and bottom legend. */
 export function areaOptions(palette: ChartPalette): ChartOptions<'line'> {
   return {
     responsive: true,
@@ -322,6 +348,7 @@ export function areaOptions(palette: ChartPalette): ChartOptions<'line'> {
   }
 }
 
+/** Bar chart options; `stacked` stacks both axes. Tooltips show formatted numbers per dataset. */
 export function barOptions(palette: ChartPalette, stacked: boolean): ChartOptions<'bar'> {
   return {
     responsive: true,
@@ -340,6 +367,10 @@ export function barOptions(palette: ChartPalette, stacked: boolean): ChartOption
   }
 }
 
+/**
+ * Horizontal bar options without legend. `fullLabels` holds the unwrapped titles, shown in the
+ * tooltip because the axis labels may be truncated by `wrapLabel`.
+ */
 export function rankingOptions(palette: ChartPalette, fullLabels: string[]): ChartOptions<'bar'> {
   return {
     responsive: true,
@@ -365,6 +396,7 @@ export function rankingOptions(palette: ChartPalette, fullLabels: string[]): Cha
   }
 }
 
+/** Doughnut options whose tooltip shows each slice with its percentage of the visible slices. */
 export function doughnutOptions(palette: ChartPalette): ChartOptions<'doughnut'> {
   return {
     responsive: true,

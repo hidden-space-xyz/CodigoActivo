@@ -16,9 +16,13 @@ import { ApiError } from '@/shared/api'
 import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
 
 const props = defineProps<{
+  /** Event whose activities are listed and grouped by overlapping schedules. */
   eventId: string
+  /** Whether the current user may enroll, including early signup when they are eligible. */
   signupOpen: boolean
+  /** Only early signup is open and the user is not eligible; picks the closed-signup message. */
   earlyOnly?: boolean
+  /** Event terms the user must accept before the first enrollment; `null` when there are none. */
   terms?: EventTermsInfo | null
 }>()
 

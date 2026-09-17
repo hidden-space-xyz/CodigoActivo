@@ -24,10 +24,22 @@ import { DEFAULT_CATEGORY_COLOR } from '@/shared/config'
 const DATE_FORMAT = 'DD/MM/YYYY'
 const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
 
-const props = defineProps<{ visible: boolean; event: EventResponse | null; saving: boolean }>()
+const props = defineProps<{
+  /** Opens the dialog; each time it opens the form is repopulated from `event`. */
+  visible: boolean
+  /** Event being edited; `null` opens the dialog in create mode. */
+  event: EventResponse | null
+  /** Shows a loading state on the save button while the parent persists the event. */
+  saving: boolean
+}>()
 
 const emit = defineEmits<{
+  /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
+  /**
+   * Fired once the form validates and the thumbnail is uploaded. Event dates are sent as date-only
+   * strings, signup dates as ISO timestamps, and an empty description as an empty rich-text doc.
+   */
   submit: [body: CreateEventRequest | UpdateEventRequest]
 }>()
 

@@ -12,7 +12,10 @@ import { i18n } from '@/shared/i18n'
 import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
 import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
-const props = defineProps<{ eventId: string }>()
+const props = defineProps<{
+  /** Event id from the `/events/:eventId` route param. */
+  eventId: string
+}>()
 
 const route = useRoute()
 const { t } = useI18n()

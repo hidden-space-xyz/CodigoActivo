@@ -5,7 +5,10 @@ import { RouterLink } from 'vue-router'
 import type { LearningResourceSummary } from '../model/types'
 import { CardDate, ListThumbnail } from '@/shared/ui'
 
-const props = defineProps<{ resource: LearningResourceSummary }>()
+const props = defineProps<{
+  /** Resource card; links to `url` as a plain anchor when set, otherwise to the detail route. */
+  resource: LearningResourceSummary
+}>()
 
 const linkAttrs = computed(() =>
   props.resource.url

@@ -40,6 +40,7 @@ import type {
 } from '../model/types'
 import { toCategoryTag, toEventDetail, toPastEvent, toUpcomingEvent } from './mapper'
 
+/** Fetches one page of upcoming events ordered by start date, mapped to card models. */
 export async function getUpcomingEventsPageRequest(
   page: number,
   pageSize: number,
@@ -49,16 +50,19 @@ export async function getUpcomingEventsPageRequest(
   return { items: items.map(toUpcomingEvent), total }
 }
 
+/** Lists the years that have past events, as strings for select options. */
 export async function getPastEventYearsRequest(): Promise<readonly string[]> {
   const { data } = await getApiEventsPastYears()
   return (data ?? []).map(String)
 }
 
+/** Lists categories used by past events, dropping entries without an id. */
 export async function getPastEventCategoriesRequest(): Promise<readonly EventCategoryTag[]> {
   const { data } = await getApiEventsPastCategories()
   return (data ?? []).map(toCategoryTag).filter((category) => category.id)
 }
 
+/** Fetches one page of past events for a year, newest first, with optional search and category. */
 export async function getPastEventsPageRequest(
   filters: PastEventFilters,
   page: number,
@@ -83,16 +87,22 @@ async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
   return first ? toUpcomingEvent(first) : null
 }
 
+/** Loads the public event detail; resolves to `null` when the event does not exist (404). */
 export async function getEventByIdRequest(id: string): Promise<EventDetail | null> {
   const event = await unwrapOrNull<EventResponse>(getApiEventsEventId(id))
   return event ? toEventDetail(event) : null
 }
 
+/** Whether the current user has accepted the event terms; a missing flag counts as not accepted. */
 export async function getEventTermsAcceptanceRequest(eventId: string): Promise<boolean> {
   const { data } = await getApiEventsEventIdTermsAcceptance(eventId)
   return data.accepted ?? false
 }
 
+/**
+ * Builds the home board: the featured-first event plus up to three upcoming events, excluding the
+ * featured one so it is not shown twice.
+ */
 export async function getHomeEventsRequest(): Promise<HomeEvents> {
   const [featured, upcomingPage] = await Promise.all([
     getFeaturedEventRequest(),
@@ -103,32 +113,42 @@ export async function getHomeEventsRequest(): Promise<HomeEvents> {
   return { featured, items }
 }
 
+/** Fetches one page of the admin events table with raw list items (no card mapping). */
 export function getEventsAdminPageRequest(
   params: GetApiEventsParams,
 ): Promise<{ items: EventListItemResponse[]; total: number }> {
   return getApiEvents(params).then(toPage)
 }
 
+/** Loads the raw event for the admin editor; `null` when it does not exist (404). */
 export function getEventAdminRequest(id: string) {
   return unwrapOrNull<EventResponse>(getApiEventsEventId(id))
 }
 
+/** Creates an event and resolves to the created event. */
 export function createEventRequest(body: CreateEventRequest) {
   return postApiEvents(body).then((r) => r.data)
 }
 
+/** Replaces an event and resolves to the updated event. */
 export function updateEventRequest(id: string, body: UpdateEventRequest) {
   return putApiEventsEventId(id, body).then((r) => r.data)
 }
 
+/** Deletes an event (admin only); resolves with the raw 204 response. */
 export function deleteEventRequest(id: string) {
   return deleteApiEventsEventId(id)
 }
 
+/**
+ * Makes the event the only featured one (any other featured event loses the flag) and resolves to
+ * the updated event. Despite the name, calling it on the featured event does not unfeature it.
+ */
 export function toggleEventFeatureRequest(id: string) {
   return patchApiEventsEventIdFeature(id).then((r) => r.data)
 }
 
+/** Fetches one page of attendee ratings for an event. */
 export function getEventRatingsPageRequest(
   eventId: string,
   params: GetApiEventsEventIdRatingsParams,
@@ -136,10 +156,12 @@ export function getEventRatingsPageRequest(
   return getApiEventsEventIdRatings(eventId, params).then(toPage)
 }
 
+/** Loads the admin report summary for an event. */
 export function getEventSummaryRequest(eventId: string) {
   return getApiReportsEventsEventIdSummary(eventId).then((r) => r.data)
 }
 
+/** Fetches one page of the attendee report for an event. */
 export function getEventAttendeesPageRequest(
   eventId: string,
   params: GetApiReportsEventsEventIdAttendeesParams,
@@ -147,14 +169,17 @@ export function getEventAttendeesPageRequest(
   return getApiReportsEventsEventIdAttendees(eventId, params).then(toPage)
 }
 
+/** Loads one badge per attendee (name, guardian, activities) for printing (admin only). */
 export function getEventBadgesRequest(eventId: string) {
   return getApiReportsEventsEventIdBadges(eventId).then((r) => r.data)
 }
 
+/** Loads participants grouped by activity, with contact and guardian data (admin only). */
 export function getEventRosterRequest(eventId: string) {
   return getApiReportsEventsEventIdRoster(eventId).then((r) => r.data)
 }
 
+/** Loads admin dashboard analytics for a date range. */
 export function getDashboardAnalyticsRequest(params: GetApiReportsDashboardAnalyticsParams) {
   return getApiReportsDashboardAnalytics(params).then((r) => r.data)
 }

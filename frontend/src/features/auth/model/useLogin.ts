@@ -5,6 +5,10 @@ import { useMutation } from '@tanstack/vue-query'
 import { createEmptyCredentials, loginRequest, useSession } from '@/entities/session'
 import type { Credentials } from '@/entities/session'
 
+/**
+ * Login form: on success stores the user in the session and navigates to the `redirect` query
+ * parameter, or home when there is none.
+ */
 export function useLogin() {
   const session = useSession()
   const router = useRouter()

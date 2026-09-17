@@ -24,6 +24,11 @@ import type {
 } from '@/entities/account'
 import { getCurrentUserRequest, logoutRequest, useSession } from '@/entities/session'
 
+/**
+ * Signed-in user's profile, minors and account mutations. Profile updates refresh the session
+ * user; minor changes also invalidate household members for activity signup; deleting the account
+ * logs out, clears the session and query cache, and navigates home.
+ */
 export function useAccount() {
   const { t } = useI18n()
   const session = useSession()

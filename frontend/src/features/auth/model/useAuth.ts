@@ -4,6 +4,11 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { logoutRequest, useSession } from '@/entities/session'
 
+/**
+ * Session state for app chrome (auth/admin flags, display name), `bootstrap` to resolve the session
+ * on startup, and `logout`, which clears the session and query cache even if the API call fails,
+ * then navigates to login.
+ */
 export function useAuth() {
   const session = useSession()
   const { isAuthenticated, isAdmin, displayName } = toRefs(session)

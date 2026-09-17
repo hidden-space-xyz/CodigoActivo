@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { logoMark } from '@/shared/branding'
 
-withDefaults(defineProps<{ size?: 'sm' | 'md' }>(), { size: 'md' })
+withDefaults(
+  defineProps<{
+    /** `sm` shrinks the mark and wordmark slightly for compact headers. */
+    size?: 'sm' | 'md'
+  }>(),
+  { size: 'md' },
+)
 </script>
 
 <template>

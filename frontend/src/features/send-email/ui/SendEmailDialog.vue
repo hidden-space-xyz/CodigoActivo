@@ -11,13 +11,18 @@ const SUBJECT_MAX_LENGTH = 200
 const BODY_MAX_LENGTH = 10000
 
 const props = defineProps<{
+  /** Opens the dialog; each time it opens subject, body and attachments are cleared. */
   visible: boolean
+  /** Localized recipient description shown above the form and in the confirmation. */
   target: string
+  /** Disables sending and closing while an email is in flight. */
   sending: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Fired with `false` when the dialog is closed, unless a send is in flight. */
   'update:visible': [value: boolean]
+  /** Fired with the untrimmed subject, body and attachments after the user confirms sending. */
   submit: [payload: SendEmailPayload]
 }>()
 

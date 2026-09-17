@@ -3,12 +3,17 @@ import { useRoute, type RouteLocationNormalized } from 'vue-router'
 
 import { i18n, type TranslationKey } from '@/shared/i18n'
 
+/** Static SEO declared in a route's `meta.seo`, as i18n keys resolved on navigation. */
 export interface SeoRouteMeta {
   readonly titleKey?: TranslationKey | undefined
   readonly descriptionKey?: TranslationKey | undefined
   readonly noindex?: boolean | undefined
 }
 
+/**
+ * Resolved page SEO. Missing title and description fall back to the site defaults, and `image`
+ * falls back to `/og-image.png`.
+ */
 export interface SeoData {
   readonly title?: string | undefined
   readonly description?: string | undefined
@@ -20,6 +25,7 @@ export interface SeoData {
 
 const JSON_LD_ID = 'ca-jsonld'
 
+/** Resolves a path against the current origin, as required by canonical and Open Graph URLs. */
 export function absoluteUrl(path: string): string {
   return new URL(path, window.location.origin).href
 }
@@ -104,11 +110,20 @@ function withoutUndefined(seo: SeoData): SeoData {
   return Object.fromEntries(Object.entries(seo).filter(([, value]) => value !== undefined))
 }
 
+/**
+ * Writes the document title, description, canonical, robots, Open Graph, Twitter and JSON-LD tags
+ * from the route's static meta. Admin-layout routes are always `noindex`.
+ */
 export function applyRouteSeo(to: RouteLocationNormalized): void {
   const resolved = resolveRouteSeo(to.meta.seo ?? {})
   applySeo(to.path, to.meta.layout === 'admin' ? { ...resolved, noindex: true } : resolved)
 }
 
+/**
+ * Overrides the route's SEO with page data (e.g. a loaded event) whenever `seo` changes. Defined
+ * fields win over route meta; `undefined` skips the update, and it stops applying once the user
+ * navigates to another route so late data cannot overwrite the next page's tags.
+ */
 export function useSeo(seo: MaybeRefOrGetter<SeoData | undefined>): void {
   const route = useRoute()
   const routeName = route.name

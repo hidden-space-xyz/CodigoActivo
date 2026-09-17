@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { EventStatus } from '../model/types'
 
-defineProps<{ status: EventStatus }>()
+defineProps<{
+  /** Status whose `kind` picks the label color. */
+  status: EventStatus
+}>()
 </script>
 
 <template>

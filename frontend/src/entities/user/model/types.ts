@@ -1,11 +1,16 @@
 import type { Gender } from '@/shared/api/generated/models'
 
+/** Reference to a user status or user type catalog entry; `color` is `null` when none is set. */
 export interface UserCatalogRef {
   readonly id: string
   readonly name: string
   readonly color: string | null
 }
 
+/**
+ * User row and detail model for admin screens, mapped from `UserResponse`. `parentId` and
+ * `parentName` identify the guardian of a minor; `dependentCount` counts this user's minors.
+ */
 export interface User {
   readonly id: string
   readonly firstName: string
@@ -22,6 +27,10 @@ export interface User {
   readonly type: UserCatalogRef | null
 }
 
+/**
+ * Fields an admin edits on a user. The backend applies them by age: minors require `parentId` and
+ * lose email and phone; adults require email and phone and must not have `parentId`.
+ */
 export interface UpdateUserInput {
   readonly firstName: string
   readonly lastName: string

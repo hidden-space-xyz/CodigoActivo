@@ -20,6 +20,11 @@ import {
 } from '@/entities/activity'
 import { eventReportQueryKeys } from '@/entities/event'
 
+/**
+ * Admin CRUD for one event's activities: a server-side table (filterable by modality), activity
+ * options for the event, and mutations that invalidate all activity queries plus the event's report
+ * summary and attendee reports.
+ */
 export function useActivities(eventId: MaybeRefOrGetter<string>) {
   const queryClient = useQueryClient()
   const invalidate = () => {

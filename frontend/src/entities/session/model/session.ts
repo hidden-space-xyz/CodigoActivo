@@ -42,6 +42,11 @@ const session = reactive({
   resolve,
 })
 
+/**
+ * Returns the app-wide reactive session singleton. `resolve()` returns the cached user or loads it
+ * once, sharing a single in-flight request; anonymous results are not cached, so each later call
+ * asks the API again. `setUser`/`clear` only update local state and make no requests.
+ */
 export function useSession() {
   return session
 }

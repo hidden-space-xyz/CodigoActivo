@@ -5,7 +5,10 @@ import { useI18n } from 'vue-i18n'
 import type { AnnouncementSummary } from '../model/types'
 import { FeaturedCard } from '@/shared/ui'
 
-const props = defineProps<{ announcement: AnnouncementSummary }>()
+const props = defineProps<{
+  /** Announcement shown as the large home highlight; the date row is hidden if `date` is empty. */
+  announcement: AnnouncementSummary
+}>()
 
 const { t } = useI18n()
 
