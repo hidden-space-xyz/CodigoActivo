@@ -28,22 +28,19 @@ docker compose up -d db mailpit
 export POSTGRES_PASSWORD=...
 export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
 export BOOTSTRAP_ADMIN_PASSWORD=...
-export SMTP_HOST=localhost
-export SMTP_PORT=1025
-export SMTP_SECURITY=None
-export SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
+export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API
 ```
 
 In PowerShell, set variables with `$env:POSTGRES_PASSWORD="..."` and the equivalent names above. SMTP is
-always required because every login is completed with an emailed one-time code; the Mailpit service from
-the development override catches that mail at <http://localhost:8025>, which is where you read the login
-codes and the verification links of new accounts.
+always required because every login is completed with an emailed one-time code; the Mailpit service from the
+development override catches that mail at <http://localhost:8025>, which is where you read login codes and
+verification links.
 
-The API starts at <http://localhost:5150>; the `https` launch profile also uses
-<https://localhost:7039>. Swagger is available at `/swagger` only in Development. Startup applies migrations,
-seeds catalogs and requires bootstrap credentials when the user table is empty.
+The API starts at <http://localhost:5150>; the `https` launch profile also uses <https://localhost:7039>.
+Swagger is available at `/swagger` only in Development. Startup applies migrations, seeds catalogs and
+requires bootstrap credentials when the user table is empty.
 
 ### Frontend
 
@@ -60,18 +57,9 @@ backend.
 
 ### Complete Docker development stack
 
-From the repository root:
-
-```bash
-cp .env.example .env
-# Set the database and bootstrap values; the override delivers all mail to Mailpit.
-docker compose up --build
-```
-
-Compose automatically merges `docker-compose.override.yml`: it builds both applications, serves the SPA on
-port `8080`, publishes the API on `5150` and PostgreSQL on `5432`, adds a Mailpit mail catcher on `8025`
-(where verification links and login codes arrive), and relaxes API hardening for debugging. These ports bind
-to all host interfaces, so use the overlay only on a trusted development machine.
+For the full containerized dev stack instead of running services individually, see
+[README.md#quick-start-with-docker](README.md#quick-start-with-docker) and
+[DEPLOYMENT.md#development-overlay](DEPLOYMENT.md#development-overlay).
 
 ## Commands
 
@@ -93,7 +81,7 @@ PostgreSQL database.
 
 CI merges the coverage of both test projects and fails when line, branch or method coverage is below 90%.
 Coverage uses Microsoft Code Coverage with `tests/CodeCoverage.config`, which measures the production
-assemblies and excludes EF Core migrations. To reproduce the check locally:
+assemblies and excludes EF Core migrations. To reproduce locally:
 
 ```bash
 dotnet tool restore
@@ -110,39 +98,26 @@ Run frontend commands from `frontend/`:
 ```bash
 npm run dev             # Vite development server
 npm run build           # Type-check and production build
-npm run typecheck       # vue-tsc only
 npm test                # Vitest unit and integration tests
-npm run test:watch      # Vitest in watch mode
 npm run test:coverage   # Tests with the 90% coverage thresholds
 npm run lint            # ESLint, i18n and accessibility rules
 npm run lint:fix        # Safe ESLint fixes
-npm run lint:fsd        # Feature-Sliced Design checks
-npm run lint:styles     # Stylelint
-npm run lint:styles:fix # Stylelint fixes
-npm run lint:unused     # Knip unused-code/dependency checks
 npm run format          # Write Prettier formatting
-npm run format:check    # Verify Prettier formatting
 npm run api:generate    # Regenerate the Orval client
 npm run api:check       # Compare generated output with the committed client
 npm run check           # Complete frontend CI gate
 ```
 
-`npm run check` is the mandatory frontend quality gate and includes `npm run test:coverage`.
+The remaining scripts are in `package.json`. `npm run check` is the mandatory frontend quality gate and
+includes `npm run test:coverage`.
 
 ## Changing the API
 
-Keep the backend, OpenAPI document and generated frontend client in one change:
-
-1. Update backend endpoints, request/response records and error codes.
-2. Run the backend in Development.
-3. Replace `frontend/swagger.json` with the document from
-   `http://localhost:5150/swagger/v1/swagger.json`.
-4. Run `npm run api:generate` from `frontend/`.
-5. Add a Spanish `errors.*` message in `frontend/src/shared/i18n/locales/es.json` for every new
-   `ErrorCode`.
-6. Run `dotnet test` and `npm run check`.
-
-Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
+The five required steps are documented once, in
+[ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract). In short: change the backend, refresh
+`frontend/swagger.json` from the Development Swagger endpoint, run `npm run api:generate`, add Spanish
+`errors.*` messages for new codes, then run `dotnet test` and `npm run check`. Never edit
+`frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 
 ## Backend conventions
 
@@ -180,31 +155,27 @@ Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 - Feature composables use camelCase filenames such as `useLogin.ts`; entity and `shared/lib` composables use
   kebab-case names such as `use-theme.ts`.
 - Document the public API with JSDoc: every top-level export, public class member, and every component prop,
-  emitted event and `defineExpose` member. ESLint enforces it and rejects comments that only repeat the name, so
-  explain purpose and non-obvious behavior instead; the TypeScript signature already documents types. Tests
-  (`tests/`, `*.spec.ts`, `*.test.ts`, `__tests__/`) are exempt because their names must explain themselves.
+  emitted event and `defineExpose` member. ESLint enforces it and rejects comments that only repeat the name,
+  so explain purpose and non-obvious behavior instead. Tests (`tests/`, `*.spec.ts`, `*.test.ts`,
+  `__tests__/`) are exempt.
 - Keep strict TypeScript, ESLint, accessibility, i18n, Stylelint, Steiger, Knip and Prettier checks green.
 
 ## Tests and pull requests
 
-Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Integration tests share a disposable
-PostgreSQL 18 Testcontainers instance, reset and reseed data between tests, and disable parallel execution.
-The test host lifts the email guard and the request rate limits, whose wall-clock windows would otherwise
-carry over between tests; tests that exercise them use the factory's `WithEmailGuard` or `WithRateLimits`.
+Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute; integration tests share a disposable
+PostgreSQL 18 Testcontainers instance and disable parallel execution. The test host lifts the email guard and
+request rate limits by default; use the factory's `WithEmailGuard`/`WithRateLimits` to exercise them.
 
-Frontend tests use Vitest, Vue Test Utils and jsdom, and live in `frontend/tests/`, outside the
-Feature-Sliced `src/` tree. `tests/unit/` covers functions, mappers and composables in isolation;
-`tests/integration/` mounts components, pages or the whole `App.vue` with the real i18n, Element Plus,
-TanStack Query and router plugins. Both mirror the `src/` path of the code under test.
+Frontend tests use Vitest, Vue Test Utils and jsdom in `frontend/tests/`, mirroring `src/`: `tests/unit/`
+covers isolated units, `tests/integration/` mounts components or `App.vue` with real plugins.
 
-- The backend is never required. `tests/setup.ts` starts an MSW server that fails any request without a
-  handler; declare the API responses a test needs with `server.use(...)` from `tests/support/server.ts`.
-  Requests still go through the generated client and `httpClient`, including CSRF handling.
-- Mount with `renderWithProviders` or `renderApp` from `tests/support/render.ts`. Element Plus dialogs,
-  message boxes and notifications render in `document.body`.
-- Shared state (session, CSRF token, handlers, storage, fake timers, media queries) is reset after each test.
-- Coverage covers `src/**/*.{ts,vue}` except the generated client and `main.ts`. Statements, branches,
-  functions and lines must each stay at or above 90%.
+- The backend is never required: `tests/setup.ts` runs an MSW server that fails unhandled requests, so
+  declare responses with `server.use(...)` from `tests/support/server.ts` (requests still go through the
+  generated client and `httpClient`, including CSRF).
+- Mount with `renderWithProviders` or `renderApp` from `tests/support/render.ts`.
+- Shared state (session, CSRF token, handlers, storage, fake timers, media queries) resets after each test.
+- Coverage covers `src/**/*.{ts,vue}` except the generated client and `main.ts`, at or above 90% for
+  statements, branches, functions and lines.
 
 Before opening a pull request:
 
