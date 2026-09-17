@@ -192,7 +192,7 @@ describe('activity requests', () => {
     })
   })
 
-  it('signs a user up without accepting terms by default and with them when asked', async () => {
+  it('signs a user up without terms decisions by default and with them when given', async () => {
     const bodies: unknown[] = []
     server.use(
       http.patch('/api/activities/activity-1/user-1/assign', async ({ request }) => {
@@ -202,11 +202,16 @@ describe('activity requests', () => {
     )
 
     await assignActivityRequest('activity-1', 'user-1', 'role-1')
-    await assignActivityRequest('activity-1', 'user-1', 'role-1', true)
+    await assignActivityRequest('activity-1', 'user-1', 'role-1', [
+      { termsDocumentId: 'terms-1', accepted: true },
+    ])
 
     expect(bodies).toEqual([
-      { activityRoleTypeId: 'role-1', acceptTerms: false },
-      { activityRoleTypeId: 'role-1', acceptTerms: true },
+      { activityRoleTypeId: 'role-1' },
+      {
+        activityRoleTypeId: 'role-1',
+        termsDecisions: [{ termsDocumentId: 'terms-1', accepted: true }],
+      },
     ])
   })
 
@@ -236,7 +241,11 @@ describe('activity requests', () => {
       { userId: 'child-1', roleId: 'role-participant' },
     ]
     await assignHouseholdRequest('activity-1', assignments)
-    await assignHouseholdRequest('activity-1', [], true)
+    await assignHouseholdRequest(
+      'activity-1',
+      [],
+      [{ termsDocumentId: 'terms-1', accepted: false }],
+    )
 
     expect(bodies).toEqual([
       {
@@ -244,9 +253,11 @@ describe('activity requests', () => {
           { userId: 'user-1', activityRoleTypeId: 'role-mentor' },
           { userId: 'child-1', activityRoleTypeId: 'role-participant' },
         ],
-        acceptTerms: false,
       },
-      { assignments: [], acceptTerms: true },
+      {
+        assignments: [],
+        termsDecisions: [{ termsDocumentId: 'terms-1', accepted: false }],
+      },
     ])
   })
 

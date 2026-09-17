@@ -4,14 +4,17 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useQueryClient } from '@tanstack/vue-query'
 import { AppButton as Button, AppIcon } from '@/shared/ui'
-import RichTextContent from '@/shared/ui/RichTextContent.vue'
 
-import { useEventActivities } from '@/features/activity-signup'
+import { EventTermsDialog, useEventActivities } from '@/features/activity-signup'
 import ActivityTimelineCard from './ActivityTimelineCard.vue'
 import type { TimelineActivity, TimelineMemberAssignment } from '../model/types'
-import type { ActivityOverlap, HouseholdAssignmentInput } from '@/entities/activity'
+import type {
+  ActivityOverlap,
+  HouseholdAssignmentInput,
+  TermsDecisionInput,
+} from '@/entities/activity'
 import { eventQueryKeys } from '@/entities/event'
-import type { EventTermsInfo } from '@/entities/event'
+import type { EventTermsSummary } from '@/entities/event'
 import { ApiError } from '@/shared/api'
 import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
 
@@ -22,8 +25,8 @@ const props = defineProps<{
   signupOpen: boolean
   /** Only early signup is open and the user is not eligible; picks the closed-signup message. */
   earlyOnly?: boolean
-  /** Event terms the user must accept before the first enrollment; `null` when there are none. */
-  terms?: EventTermsInfo | null
+  /** Terms documents linked to the event; empty when there are none. */
+  terms?: readonly EventTermsSummary[]
 }>()
 
 const router = useRouter()
@@ -45,11 +48,11 @@ const {
   assignHousehold,
   unassign,
   verifyOverlaps,
-  termsAccepted,
+  termsState,
   isAuthenticated,
 } = useEventActivities(
   () => props.eventId,
-  () => !!props.terms,
+  () => (props.terms?.length ?? 0) > 0,
 )
 
 interface Cluster {
@@ -156,13 +159,17 @@ const termsDialog = reactive<{ visible: boolean; action: TermsPendingAction | nu
   action: null,
 })
 
-const termsPending = computed(() => !!props.terms && termsAccepted.data.value === false)
+const termsPending = computed(() => termsState.data.value?.signupBlocked ?? false)
+
+const pendingTermsDocuments = computed(() =>
+  (termsState.data.value?.documents ?? []).filter((document) => document.accepted === null),
+)
 
 function handleSignupError(error: unknown, action: TermsPendingAction): void {
   if (error instanceof ApiError && error.code === 'EventTermsAcceptanceRequired') {
     void queryClient.invalidateQueries({ queryKey: eventQueryKeys.detail(props.eventId) })
-    void queryClient.invalidateQueries({ queryKey: eventQueryKeys.termsAcceptance(props.eventId) })
-    if (props.terms) {
+    void queryClient.invalidateQueries({ queryKey: eventQueryKeys.terms(props.eventId) })
+    if ((props.terms?.length ?? 0) > 0) {
       termsDialog.action = action
       termsDialog.visible = true
       return
@@ -208,13 +215,17 @@ function doAssign(activityId: string, roleId: string): void {
     busyId.value = null
     return
   }
-  executeAssign(activityId, roleId, false)
+  executeAssign(activityId, roleId)
 }
 
-function executeAssign(activityId: string, roleId: string, acceptTerms: boolean): void {
+function executeAssign(
+  activityId: string,
+  roleId: string,
+  termsDecisions?: readonly TermsDecisionInput[],
+): void {
   busyId.value = activityId
   assign.mutate(
-    { activityId, activityRoleTypeId: roleId, acceptTerms },
+    { activityId, activityRoleTypeId: roleId, termsDecisions },
     {
       onSuccess: () =>
         feedback.success(
@@ -229,16 +240,16 @@ function executeAssign(activityId: string, roleId: string, acceptTerms: boolean)
   )
 }
 
-function confirmTerms(): void {
+function confirmTerms(decisions: TermsDecisionInput[]): void {
   const action = termsDialog.action
   termsDialog.visible = false
   termsDialog.action = null
   if (!action) return
   if (action.kind === 'self') {
-    executeAssign(action.activityId, action.roleId, true)
+    executeAssign(action.activityId, action.roleId, decisions)
     return
   }
-  mutateHousehold(action.activityId, action.assignments, true)
+  mutateHousehold(action.activityId, action.assignments, decisions)
 }
 
 function openHousehold(activity: TimelineActivity): void {
@@ -296,17 +307,17 @@ function confirmHousehold(): void {
     return
   }
 
-  mutateHousehold(activity.id, assignments, false)
+  mutateHousehold(activity.id, assignments)
 }
 
 function mutateHousehold(
   activityId: string,
   assignments: HouseholdAssignmentInput[],
-  acceptTerms: boolean,
+  termsDecisions?: readonly TermsDecisionInput[],
 ): void {
   busyId.value = activityId
   assignHousehold.mutate(
-    { activityId, assignments, acceptTerms },
+    { activityId, assignments, termsDecisions },
     {
       onSuccess: () => {
         householdDialog.visible = false
@@ -527,29 +538,11 @@ function onUnassign(activity: TimelineActivity): void {
       </template>
     </el-dialog>
 
-    <el-dialog
-      v-model="termsDialog.visible"
-      :title="$t('pages.eventDetail.terms.header')"
-      width="min(680px, 94vw)"
-      append-to-body
-    >
-      <p class="terms__lead">
-        {{ $t('pages.eventDetail.terms.lead') }}
-        <b>{{ terms?.name }}</b>
-      </p>
-      <div class="terms__content">
-        <RichTextContent :content="terms?.description ?? ''" />
-      </div>
-      <p class="terms__q">{{ $t('pages.eventDetail.terms.question') }}</p>
-      <template #footer>
-        <Button :label="$t('common.cancel')" text @click="termsDialog.visible = false" />
-        <Button
-          :label="$t('pages.eventDetail.terms.accept')"
-          type="primary"
-          @click="confirmTerms"
-        />
-      </template>
-    </el-dialog>
+    <EventTermsDialog
+      v-model:visible="termsDialog.visible"
+      :documents="pendingTermsDocuments"
+      @confirm="confirmTerms"
+    />
   </div>
 </template>
 
@@ -583,27 +576,6 @@ function onUnassign(activity: TimelineActivity): void {
 
 .activities :deep(.overlap-dialog) {
   max-width: 480px;
-}
-
-.terms__lead {
-  color: var(--ca-text);
-  line-height: 1.55;
-  margin-bottom: 14px;
-}
-
-.terms__content {
-  max-height: 48vh;
-  overflow-y: auto;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-}
-
-.terms__q {
-  color: var(--ca-text);
-  font-weight: 600;
 }
 
 .timeline {

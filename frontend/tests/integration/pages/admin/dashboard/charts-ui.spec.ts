@@ -2,8 +2,7 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AnalyticsChart from '@/pages/admin/dashboard/ui/AnalyticsChart.vue'
-import BaseChart from '@/pages/admin/dashboard/ui/BaseChart.vue'
-import ChartCard from '@/pages/admin/dashboard/ui/ChartCard.vue'
+import { BaseChart, ChartCard } from '@/shared/ui'
 
 import {
   fakeCharts,

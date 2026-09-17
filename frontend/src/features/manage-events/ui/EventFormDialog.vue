@@ -50,7 +50,10 @@ interface EventForm {
   subtitle: string
   description: string
   categoryIds: string[]
-  termsDocumentId: string
+  /** Selected terms document ids, in display order (their index becomes `displayOrder`). */
+  termsDocumentIds: string[]
+  /** Whether each selected document is mandatory, keyed by document id; defaults to `true`. */
+  termsRequired: Record<string, boolean>
   eventStartsAt: Date | null
   eventEndsAt: Date | null
   earlySignupStartsAt: Date | null
@@ -63,7 +66,8 @@ const form = reactive<EventForm>({
   subtitle: '',
   description: '',
   categoryIds: [],
-  termsDocumentId: '',
+  termsDocumentIds: [],
+  termsRequired: {},
   eventStartsAt: null,
   eventEndsAt: null,
   earlySignupStartsAt: null,
@@ -88,6 +92,11 @@ const categoriesMissing = computed(() => form.categoryIds.length === 0)
 
 const termsQuery = useTermsDocumentsList()
 const termsOptions = computed<TermsDocumentResponse[]>(() => termsQuery.data.value ?? [])
+
+/** Display name of a selected terms document, resolved from the loaded catalog. */
+function termsNameById(id: string): string {
+  return termsOptions.value.find((terms) => terms.id === id)?.name ?? ''
+}
 
 const createCategory = useCreateEventCategoryType()
 const catDialogVisible = ref(false)
@@ -198,7 +207,17 @@ watch(
     form.categoryIds = (props.event?.categories ?? [])
       .map((cat) => cat.categoryTypeId)
       .filter((id): id is string => !!id)
-    form.termsDocumentId = props.event?.termsDocument?.id ?? ''
+    const terms = [...(props.event?.termsDocuments ?? [])].sort(
+      (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
+    )
+    form.termsDocumentIds = terms
+      .map((doc) => doc.termsDocumentId)
+      .filter((id): id is string => !!id)
+    form.termsRequired = Object.fromEntries(
+      terms
+        .filter((doc): doc is typeof doc & { termsDocumentId: string } => !!doc.termsDocumentId)
+        .map((doc) => [doc.termsDocumentId, doc.required ?? true]),
+    )
     form.eventStartsAt = parseDateOnly(props.event?.eventStartsAt)
     form.eventEndsAt = parseDateOnly(props.event?.eventEndsAt)
     form.earlySignupStartsAt = parse(props.event?.earlySignupStartsAt)
@@ -237,7 +256,12 @@ async function save(): Promise<void> {
     signupStartsAt: signupStartsAt.toISOString(),
     signupEndsAt: signupEndsAt.toISOString(),
     thumbnailId,
-    termsDocumentId: form.termsDocumentId || null,
+    termsDocuments: form.termsDocumentIds.length
+      ? form.termsDocumentIds.map((id) => ({
+          termsDocumentId: id,
+          required: form.termsRequired[id] ?? true,
+        }))
+      : null,
   } satisfies CreateEventRequest)
 }
 </script>
@@ -304,14 +328,16 @@ async function save(): Promise<void> {
         }}</small>
       </div>
       <div class="form__field">
-        <label for="event-terms-document">{{
-          $t('features.manageEvents.fields.termsDocument')
+        <label for="event-terms-documents">{{
+          $t('features.manageEvents.fields.termsDocuments')
         }}</label>
         <el-select
-          id="event-terms-document"
-          v-model="form.termsDocumentId"
-          clearable
+          id="event-terms-documents"
+          v-model="form.termsDocumentIds"
+          multiple
           filterable
+          collapse-tags
+          collapse-tags-tooltip
           :placeholder="$t('features.manageEvents.termsPlaceholder')"
         >
           <el-option
@@ -321,7 +347,19 @@ async function save(): Promise<void> {
             :value="terms.id ?? ''"
           />
         </el-select>
-        <small class="form__hint">{{ $t('features.manageEvents.hints.termsDocument') }}</small>
+        <small class="form__hint">{{ $t('features.manageEvents.hints.termsDocuments') }}</small>
+        <ul v-if="form.termsDocumentIds.length" class="form__terms-list">
+          <li v-for="id in form.termsDocumentIds" :key="id" class="form__terms-row">
+            <span class="form__terms-name">{{ termsNameById(id) }}</span>
+            <el-switch
+              :model-value="form.termsRequired[id] ?? true"
+              :active-text="$t('features.manageEvents.termsRequired')"
+              @update:model-value="
+                (value: string | number | boolean) => (form.termsRequired[id] = value === true)
+              "
+            />
+          </li>
+        </ul>
       </div>
       <div class="form__field">
         <div class="form__label">{{ $t('features.manageEvents.fields.description') }}</div>
@@ -568,6 +606,34 @@ async function save(): Promise<void> {
 .form__hint {
   color: var(--ca-text-muted);
   font-size: 12.5px;
+}
+
+.form__terms-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form__terms-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.form__terms-name {
+  font-size: 13.5px;
+  color: var(--ca-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .form :deep(.el-date-editor) {

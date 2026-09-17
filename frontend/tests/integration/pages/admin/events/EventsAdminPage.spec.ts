@@ -30,7 +30,7 @@ const request: CreateEventRequest = {
   signupStartsAt: '2026-09-01T08:00:00.000Z',
   signupEndsAt: '2026-10-01T20:00:00.000Z',
   thumbnailId: THUMBNAIL_ID,
-  termsDocumentId: null,
+  termsDocuments: null,
 }
 
 function listHandler(items: EventListItemResponse[], urls: URL[] = []) {

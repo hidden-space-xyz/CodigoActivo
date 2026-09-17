@@ -10,8 +10,9 @@ import {
   getEventRatingsPageRequest,
   getEventRosterRequest,
   getEventsAdminPageRequest,
+  getEventSignupStatsRequest,
   getEventSummaryRequest,
-  getEventTermsAcceptanceRequest,
+  getEventTermsStateRequest,
   toggleEventFeatureRequest,
   updateEventRequest,
 } from '@/entities/event'
@@ -117,7 +118,7 @@ describe('event requests', () => {
       await expect(getEventByIdRequest('e1')).resolves.toMatchObject({
         id: 'e1',
         description: 'Texto',
-        terms: null,
+        terms: [],
       })
       await expect(getEventAdminRequest('e1')).resolves.toEqual(event)
     })
@@ -136,14 +137,93 @@ describe('event requests', () => {
     })
   })
 
-  it('reports whether the terms were accepted and defaults to not accepted', async () => {
+  it('loads the terms state, sorted by display order, defaulting missing fields', async () => {
     server.use(
-      http.get('/api/events/e1/terms-acceptance', () => HttpResponse.json({ accepted: true })),
-      http.get('/api/events/e2/terms-acceptance', () => HttpResponse.json({})),
+      http.get('/api/events/e1/terms', () =>
+        HttpResponse.json({
+          documents: [
+            {
+              termsDocumentId: 'terms-2',
+              name: 'Segundo',
+              description: 'B',
+              required: false,
+              displayOrder: 1,
+              accepted: true,
+              decidedAt: '2026-01-01T00:00:00Z',
+            },
+            { termsDocumentId: 'terms-1', displayOrder: 0 },
+          ],
+          signupBlocked: true,
+        }),
+      ),
+      http.get('/api/events/e2/terms', () => HttpResponse.json({})),
     )
 
-    await expect(getEventTermsAcceptanceRequest('e1')).resolves.toBe(true)
-    await expect(getEventTermsAcceptanceRequest('e2')).resolves.toBe(false)
+    await expect(getEventTermsStateRequest('e1')).resolves.toEqual({
+      documents: [
+        {
+          id: 'terms-1',
+          name: '',
+          description: '',
+          required: false,
+          displayOrder: 0,
+          accepted: null,
+          decidedAt: null,
+        },
+        {
+          id: 'terms-2',
+          name: 'Segundo',
+          description: 'B',
+          required: false,
+          displayOrder: 1,
+          accepted: true,
+          decidedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+      signupBlocked: true,
+    })
+    await expect(getEventTermsStateRequest('e2')).resolves.toEqual({
+      documents: [],
+      signupBlocked: false,
+    })
+  })
+
+  it('loads the signup statistics, keeping role/status ids on each cell', async () => {
+    server.use(
+      http.get('/api/events/e1/signup-stats', () =>
+        HttpResponse.json({
+          eventId: 'e1',
+          roles: [{ id: 'role-1', name: 'Líder' }],
+          statuses: [{ id: 'status-1', name: 'Confirmada' }],
+          activities: [
+            {
+              activityId: 'act-1',
+              title: 'Robótica',
+              startsAt: '2026-10-10T09:00:00Z',
+              cells: [{ activityRoleTypeId: 'role-1', assignmentStatusId: 'status-1', count: 3 }],
+            },
+            { activityId: 'act-2', title: 'Sin inscritos', startsAt: '2026-10-11T09:00:00Z' },
+          ],
+          totals: { total: 3, requested: 0, confirmed: 3, denied: 0 },
+        }),
+      ),
+    )
+
+    await expect(getEventSignupStatsRequest('e1')).resolves.toEqual({
+      eventId: 'e1',
+      roles: [{ id: 'role-1', name: 'Líder' }],
+      statuses: [{ id: 'status-1', name: 'Confirmada' }],
+      activities: [
+        {
+          id: 'act-1',
+          title: 'Robótica',
+          startsAt: '2026-10-10T09:00:00Z',
+          cells: [{ roleId: 'role-1', statusId: 'status-1', count: 3 }],
+        },
+        { id: 'act-2', title: 'Sin inscritos', startsAt: '2026-10-11T09:00:00Z', cells: [] },
+      ],
+      totals: { total: 3, requested: 0, confirmed: 3, denied: 0 },
+    })
   })
 
   describe('getHomeEventsRequest', () => {

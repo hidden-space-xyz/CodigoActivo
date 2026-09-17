@@ -2,9 +2,11 @@ import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AuthUser } from '@/entities/session/model/types'
+import { EventSignupStatsPanel } from '@/features/event-signup-stats'
 import { EventDetailPage } from '@/pages/event-detail'
 import EventActivitiesTimeline from '@/pages/event-detail/ui/EventActivitiesTimeline.vue'
 import type { EventResponse } from '@/shared/api/generated/models'
+import { MEMBER_USER_TYPE_ID } from '@/shared/config'
 import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib'
 
 import {
@@ -16,6 +18,11 @@ import {
 import { serveSignupApi } from '../../../support/fixtures/public-dashboard/signup-api'
 import { renderWithProviders, t } from '../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../support/server'
+
+vi.mock(
+  'chart.js',
+  async () => (await import('../../../support/fixtures/public-dashboard/chart-mock')).chartJsModule,
+)
 
 function serveEvent(event: EventResponse | 'not-found') {
   server.use(
@@ -170,7 +177,7 @@ describe('event detail page', () => {
       eventId: 'event-1',
       signupOpen: true,
       earlyOnly: false,
-      terms: null,
+      terms: [],
     })
     await vi.waitFor(() => expect(wrapper.find('.act__title').text()).toBe('Taller de robótica'))
 
@@ -181,12 +188,78 @@ describe('event detail page', () => {
     expect(wrapper.findComponent(EventActivitiesTimeline).exists()).toBe(true)
   })
 
+  describe('signup statistics tab visibility', () => {
+    function serveEmptyStats() {
+      server.use(
+        http.get('/api/events/:eventId/signup-stats', () =>
+          HttpResponse.json({
+            eventId: 'event-1',
+            roles: [],
+            statuses: [],
+            activities: [],
+            totals: { total: 0, requested: 0, confirmed: 0, denied: 0 },
+          }),
+        ),
+      )
+    }
+
+    it('does not show the tab to a guest without a session', async () => {
+      serveEvent(buildEventResponse())
+      serveSignupApi()
+
+      const { wrapper } = await renderPage()
+
+      expect(wrapper.findAll('.detail-tab')).toHaveLength(2)
+      expect(wrapper.text()).not.toContain(t('pages.eventDetail.tabs.stats'))
+    })
+
+    it('does not show the tab to a participant user', async () => {
+      serveEvent(buildEventResponse())
+      serveSignupApi()
+
+      const { wrapper } = await renderPage({ userTypeId: 'type-participant', isAdmin: false })
+
+      expect(wrapper.findAll('.detail-tab')).toHaveLength(2)
+      expect(wrapper.text()).not.toContain(t('pages.eventDetail.tabs.stats'))
+    })
+
+    it('shows the tab and the panel to a member user', async () => {
+      serveEvent(buildEventResponse())
+      serveSignupApi()
+      serveEmptyStats()
+
+      const { wrapper } = await renderPage({ userTypeId: MEMBER_USER_TYPE_ID, isAdmin: false })
+
+      const tabs = wrapper.findAll('.detail-tab')
+      expect(tabs).toHaveLength(3)
+      expect(tabs[2]?.text()).toBe(t('pages.eventDetail.tabs.stats'))
+
+      await tabs[2]?.trigger('click')
+      expect(wrapper.findComponent(EventSignupStatsPanel).exists()).toBe(true)
+      await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.eventDetail.stats.empty')))
+    })
+
+    it('shows the tab to an admin who is not a member', async () => {
+      serveEvent(buildEventResponse())
+      serveSignupApi()
+      serveEmptyStats()
+
+      const { wrapper } = await renderPage({ userTypeId: 'type-participant', isAdmin: true })
+
+      const tabs = wrapper.findAll('.detail-tab')
+      expect(tabs).toHaveLength(3)
+      expect(tabs[2]?.text()).toBe(t('pages.eventDetail.tabs.stats'))
+    })
+  })
+
   describe('during early signup', () => {
     const earlyEvent = () =>
       buildEventResponse({
         earlySignupStartsAt: LONG_AGO,
         signupStartsAt: FAR_FUTURE,
-        termsDocument: { id: 'terms-1', name: 'Normas', description: 'Sé amable' },
+        termsDocuments: [
+          { termsDocumentId: 'terms-1', name: 'Normas', required: true, displayOrder: 0 },
+        ],
       })
 
     it('lists the early signup date and lets eligible users sign up', async () => {
@@ -202,7 +275,7 @@ describe('event detail page', () => {
       expect(wrapper.findComponent(EventActivitiesTimeline).props()).toMatchObject({
         signupOpen: true,
         earlyOnly: false,
-        terms: { id: 'terms-1', name: 'Normas', description: 'Sé amable' },
+        terms: [{ id: 'terms-1', name: 'Normas', required: true, displayOrder: 0 }],
       })
     })
 

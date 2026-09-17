@@ -11,7 +11,8 @@ export const eventQueryKeys = {
   past: (year: string, search: string, categoryId: string) =>
     [...eventQueryKeys.all, 'past', year, search, categoryId] as const,
   detail: (id: string) => [...eventQueryKeys.all, 'detail', id] as const,
-  termsAcceptance: (id: string) => [...eventQueryKeys.all, 'terms-acceptance', id] as const,
+  terms: (id: string) => [...eventQueryKeys.all, 'terms', id] as const,
+  signupStats: (id: string) => [...eventQueryKeys.all, 'signup-stats', id] as const,
   adminTable: () => [...eventQueryKeys.all, 'admin'] as const,
   adminDetail: (id: string) => [...eventQueryKeys.all, 'admin-detail', id] as const,
   ratings: () => [...eventQueryKeys.all, 'ratings'] as const,

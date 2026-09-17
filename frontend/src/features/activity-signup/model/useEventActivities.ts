@@ -18,18 +18,19 @@ import type {
   HouseholdAssignmentInput,
   HouseholdMember,
   OverlapCheck,
+  TermsDecisionInput,
 } from '@/entities/activity'
-import { eventQueryKeys, getEventTermsAcceptanceRequest } from '@/entities/event'
+import { eventQueryKeys, useEventTermsState } from '@/entities/event'
 import { useSession } from '@/entities/session'
 import { i18n } from '@/shared/i18n'
 
 /**
  * Signup state for an event's public activities: the user's and household assignments, household
- * members (the user listed first), allowed signup roles and terms acceptance. Authenticated queries
- * stay disabled for guests. Signups invalidate activities, assignments and terms acceptance.
+ * members (the user listed first), allowed signup roles and terms state. Authenticated queries
+ * stay disabled for guests. Signups invalidate activities, assignments and terms state.
  *
  * @param eventId - Getter so the queries follow route changes.
- * @param hasTerms - Getter; terms acceptance is only fetched when the event has terms.
+ * @param hasTerms - Getter; the terms state is only fetched when the event has terms documents.
  */
 export function useEventActivities(eventId: () => string, hasTerms: () => boolean) {
   const session = useSession()
@@ -42,7 +43,7 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
   const assignedKey = computed(() => activityQueryKeys.myAssignments(eventId()))
   const membersKey = activityQueryKeys.householdMembers()
   const householdKey = computed(() => activityQueryKeys.householdAssignments(eventId()))
-  const termsAcceptanceKey = computed(() => eventQueryKeys.termsAcceptance(eventId()))
+  const termsKey = computed(() => eventQueryKeys.terms(eventId()))
 
   const activities = useQuery({
     queryKey: activitiesKey,
@@ -76,11 +77,10 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
     enabled: isAuthenticated,
   })
 
-  const termsAccepted = useQuery({
-    queryKey: termsAcceptanceKey,
-    queryFn: () => getEventTermsAcceptanceRequest(eventId()),
-    enabled: computed(() => isAuthenticated.value && hasTerms()),
-  })
+  const termsState = useEventTermsState(
+    eventId,
+    computed(() => isAuthenticated.value && hasTerms()),
+  )
 
   const rolesByUserId = computed(() => {
     const map = new Map<string, readonly ActivityRole[]>()
@@ -121,14 +121,14 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
 
   function invalidateAfterSignup(): void {
     invalidate()
-    void queryClient.invalidateQueries({ queryKey: termsAcceptanceKey.value })
+    void queryClient.invalidateQueries({ queryKey: termsKey.value })
   }
 
   const assign = useMutation({
     mutationFn: (vars: {
       activityId: string
       activityRoleTypeId: string
-      acceptTerms: boolean
+      termsDecisions?: readonly TermsDecisionInput[] | undefined
     }) => {
       if (!userId.value)
         return Promise.reject(new Error(i18n.global.t('features.activitySignup.notAuthenticated')))
@@ -136,7 +136,7 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
         vars.activityId,
         userId.value,
         vars.activityRoleTypeId,
-        vars.acceptTerms,
+        vars.termsDecisions,
       )
     },
     onSuccess: invalidateAfterSignup,
@@ -146,8 +146,8 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
     mutationFn: (vars: {
       activityId: string
       assignments: HouseholdAssignmentInput[]
-      acceptTerms: boolean
-    }) => assignHouseholdRequest(vars.activityId, vars.assignments, vars.acceptTerms),
+      termsDecisions?: readonly TermsDecisionInput[] | undefined
+    }) => assignHouseholdRequest(vars.activityId, vars.assignments, vars.termsDecisions),
     onSuccess: invalidateAfterSignup,
   })
 
@@ -177,7 +177,7 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
     assignHousehold,
     unassign,
     verifyOverlaps,
-    termsAccepted,
+    termsState,
     isAuthenticated,
   }
 }

@@ -4,6 +4,12 @@ export interface ActivityRole {
   readonly name: string
 }
 
+/** One decision on an event terms document, sent alongside a signup for undecided documents. */
+export interface TermsDecisionInput {
+  readonly termsDocumentId: string
+  readonly accepted: boolean
+}
+
 /** Roles one household member may sign up for, as allowed by their user type. */
 export interface HouseholdSignupRoles {
   readonly userId: string

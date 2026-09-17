@@ -15,16 +15,36 @@ import {
   openDialog,
   textOf,
 } from '../../../support/fixtures/public-dashboard/dom'
-import { CHILD, serveSignupApi } from '../../../support/fixtures/public-dashboard/signup-api'
+import {
+  CHILD,
+  serveSignupApi,
+  TERMS_DOCUMENT,
+} from '../../../support/fixtures/public-dashboard/signup-api'
 import { renderWithProviders, t } from '../../../support/render'
 import { apiError, http, server } from '../../../support/server'
 
-const TERMS = { id: 'terms-1', name: 'Normas del campamento', description: 'Respeta a los demás.' }
+const TERMS = [
+  {
+    id: TERMS_DOCUMENT.termsDocumentId,
+    name: TERMS_DOCUMENT.name,
+    required: TERMS_DOCUMENT.required,
+    displayOrder: TERMS_DOCUMENT.displayOrder,
+  },
+]
+
+/** Finds the checkbox input for a terms document row, however Element Plus placed the id. */
+function termsCheckbox(root: ParentNode, documentId: string): HTMLElement {
+  const checkbox = root.querySelector<HTMLElement>(
+    `#terms-${documentId} input, input#terms-${documentId}`,
+  )
+  if (!checkbox) throw new Error(`Terms checkbox not found: ${documentId}`)
+  return checkbox
+}
 
 interface TimelineProps {
   signupOpen?: boolean
   earlyOnly?: boolean
-  terms?: typeof TERMS | null
+  terms?: typeof TERMS
 }
 
 async function renderTimeline(
@@ -234,7 +254,7 @@ describe('activities timeline self signup', () => {
     expect(calls.overlapChecks).toEqual(['activity-1/user-1'])
     expect(calls.assign[0]).toMatchObject({
       path: 'activity-1/user-1',
-      body: { activityRoleTypeId: 'role-participant', acceptTerms: false },
+      body: { activityRoleTypeId: 'role-participant' },
     })
     const toast = await waitForNotification(t('pages.eventDetail.toast.signupSent'))
     expect(toast?.message).toBe(t('pages.eventDetail.toast.signupSuccess'))
@@ -327,7 +347,7 @@ describe('activities timeline self signup', () => {
     expect(calls.unassign).toEqual([])
   })
 
-  it('asks to accept pending terms before signing up', async () => {
+  it('asks to decide pending terms before signing up', async () => {
     const { calls } = serveSignupApi({ termsAccepted: false })
 
     await renderTimeline({ terms: TERMS })
@@ -335,47 +355,54 @@ describe('activities timeline self signup', () => {
     await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
 
     const dialog = await vi.waitFor(() => {
-      const found = openDialog(t('pages.eventDetail.terms.header'))
+      const found = openDialog(t('features.activitySignup.terms.header'))
       expect(found).toBeDefined()
       return found as HTMLElement
     })
-    expect(textOf(dialog.querySelector('.terms__lead b'))).toBe(TERMS.name)
-    expect(textOf(dialog.querySelector('.terms__content'))).toBe(TERMS.description)
+    expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(TERMS_DOCUMENT.name)
     expect(calls.assign).toEqual([])
 
-    await clickElement(buttonByText(t('pages.eventDetail.terms.accept'), dialog))
+    await clickElement(termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), dialog))
 
     await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
     expect(calls.assign[0]?.body).toEqual({
       activityRoleTypeId: 'role-participant',
-      acceptTerms: true,
+      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
     })
   })
 
-  it('does not sign up when the terms are declined', async () => {
+  it('does not sign up while a required term stays unchecked, and closes without deciding', async () => {
     const { calls } = serveSignupApi({ termsAccepted: false })
 
     await renderTimeline({ terms: TERMS }, { realTransitions: true })
     await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
     await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
     const dialog = await vi.waitFor(() => {
-      const found = openDialog(t('pages.eventDetail.terms.header'))
+      const found = openDialog(t('features.activitySignup.terms.header'))
       expect(found).toBeDefined()
       return found as HTMLElement
     })
+    expect(buttonByText(t('features.activitySignup.terms.confirm'), dialog).disabled).toBe(true)
 
     await clickElement(dialog.querySelector<HTMLElement>('.el-dialog__headerbtn') as HTMLElement)
-    await vi.waitFor(() => expect(openDialog(t('pages.eventDetail.terms.header'))).toBeUndefined())
+    await vi.waitFor(() =>
+      expect(openDialog(t('features.activitySignup.terms.header'))).toBeUndefined(),
+    )
 
     await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
-    await vi.waitFor(() => expect(openDialog(t('pages.eventDetail.terms.header'))).toBeDefined())
+    await vi.waitFor(() =>
+      expect(openDialog(t('features.activitySignup.terms.header'))).toBeDefined(),
+    )
     await clickElement(buttonByText(t('common.cancel'), dialog))
 
-    await vi.waitFor(() => expect(openDialog(t('pages.eventDetail.terms.header'))).toBeUndefined())
+    await vi.waitFor(() =>
+      expect(openDialog(t('features.activitySignup.terms.header'))).toBeUndefined(),
+    )
     expect(calls.assign).toEqual([])
   })
 
-  it('opens the terms when the API requires accepting them and retries with acceptance', async () => {
+  it('opens the terms when the API requires accepting them and retries the signup', async () => {
     const { calls, state } = serveSignupApi({
       assignError: () => apiError(400, 'EventTermsAcceptanceRequired'),
     })
@@ -384,19 +411,19 @@ describe('activities timeline self signup', () => {
     await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
 
     const dialog = await vi.waitFor(() => {
-      const found = openDialog(t('pages.eventDetail.terms.header'))
+      const found = openDialog(t('features.activitySignup.terms.header'))
       expect(found).toBeDefined()
       return found as HTMLElement
     })
     expect(notifications()).toEqual([])
 
     state.assignError = null
-    await clickElement(buttonByText(t('pages.eventDetail.terms.accept'), dialog))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), dialog))
 
     await vi.waitFor(() => expect(calls.assign).toHaveLength(2))
     expect(calls.assign.map((call) => call.body)).toEqual([
-      { activityRoleTypeId: 'role-participant', acceptTerms: false },
-      { activityRoleTypeId: 'role-participant', acceptTerms: true },
+      { activityRoleTypeId: 'role-participant' },
+      { activityRoleTypeId: 'role-participant', termsDecisions: [] },
     ])
   })
 
@@ -407,7 +434,7 @@ describe('activities timeline self signup', () => {
     await clickElement(buttonByText(t('pages.eventDetail.card.enrollSelf')))
 
     await waitForNotification(t('pages.eventDetail.toast.signupFailed'))
-    expect(openDialog(t('pages.eventDetail.terms.header'))).toBeUndefined()
+    expect(openDialog(t('features.activitySignup.terms.header'))).toBeUndefined()
   })
 
   it('reports other signup failures', async () => {
@@ -502,7 +529,6 @@ describe('activities timeline household signup', () => {
           { userId: 'user-1', activityRoleTypeId: 'role-participant' },
           { userId: 'child-1', activityRoleTypeId: 'role-volunteer' },
         ],
-        acceptTerms: false,
       },
     })
     const toast = await waitForNotification(t('pages.eventDetail.toast.signupSent'))
@@ -637,7 +663,7 @@ describe('activities timeline household signup', () => {
     await vi.waitFor(() => expect(calls.unassign).toEqual(['activity-1/child-1']))
   })
 
-  it('asks for pending terms before enrolling the household', async () => {
+  it('asks to decide pending terms before enrolling the household', async () => {
     const { calls } = serveSignupApi({ children: [CHILD], termsAccepted: false })
 
     const { wrapper, dialog } = await openHousehold({ terms: TERMS })
@@ -651,21 +677,22 @@ describe('activities timeline household signup', () => {
     await clickElement(buttonByText(t('pages.eventDetail.household.enroll'), dialog))
 
     const terms = await vi.waitFor(() => {
-      const found = openDialog(t('pages.eventDetail.terms.header'))
+      const found = openDialog(t('features.activitySignup.terms.header'))
       expect(found).toBeDefined()
       return found as HTMLElement
     })
     expect(calls.household).toEqual([])
-    await clickElement(buttonByText(t('pages.eventDetail.terms.accept'), terms))
+    await clickElement(termsCheckbox(terms, TERMS_DOCUMENT.termsDocumentId))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), terms))
 
     await vi.waitFor(() => expect(calls.household).toHaveLength(1))
     expect(calls.household[0]?.body).toEqual({
       assignments: [{ userId: 'user-1', activityRoleTypeId: 'role-participant' }],
-      acceptTerms: true,
+      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
     })
   })
 
-  it('retries the household signup with acceptance when the API requires the terms', async () => {
+  it('retries the household signup when the API requires the terms', async () => {
     const { calls, state } = serveSignupApi({
       children: [CHILD],
       householdError: () => apiError(400, 'EventTermsAcceptanceRequired'),
@@ -680,22 +707,21 @@ describe('activities timeline household signup', () => {
     await clickElement(buttonByText(t('pages.eventDetail.household.enroll'), dialog))
 
     const terms = await vi.waitFor(() => {
-      const found = openDialog(t('pages.eventDetail.terms.header'))
+      const found = openDialog(t('features.activitySignup.terms.header'))
       expect(found).toBeDefined()
       return found as HTMLElement
     })
     state.householdError = null
-    await clickElement(buttonByText(t('pages.eventDetail.terms.accept'), terms))
+    await clickElement(buttonByText(t('features.activitySignup.terms.confirm'), terms))
 
     await vi.waitFor(() => expect(calls.household).toHaveLength(2))
     expect(calls.household.map((call) => call.body)).toEqual([
       {
         assignments: [{ userId: 'user-1', activityRoleTypeId: 'role-participant' }],
-        acceptTerms: false,
       },
       {
         assignments: [{ userId: 'user-1', activityRoleTypeId: 'role-participant' }],
-        acceptTerms: true,
+        termsDecisions: [],
       },
     ])
   })

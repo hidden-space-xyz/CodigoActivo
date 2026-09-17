@@ -2030,7 +2030,7 @@
         }
       }
     },
-    "/api/events/{eventId}/terms-acceptance": {
+    "/api/events/{eventId}/terms": {
       "get": {
         "tags": [
           "Events"
@@ -2052,7 +2052,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EventTermsAcceptanceResponse"
+                  "$ref": "#/components/schemas/EventTermsStateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/signup-stats": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSignupStatsResponse"
                 }
               }
             }
@@ -3991,8 +4021,12 @@
             },
             "nullable": true
           },
-          "acceptTerms": {
-            "type": "boolean"
+          "termsDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermsDecisionRequest"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -4004,8 +4038,12 @@
             "type": "string",
             "format": "uuid"
           },
-          "acceptTerms": {
-            "type": "boolean"
+          "termsDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermsDecisionRequest"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -4334,9 +4372,11 @@
             },
             "nullable": true
           },
-          "termsDocumentId": {
-            "type": "string",
-            "format": "uuid",
+          "termsDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsDocumentRequest"
+            },
             "nullable": true
           }
         },
@@ -4770,6 +4810,7 @@
           "EventRatingAttendanceRequired",
           "EventRatingAlreadySubmitted",
           "EventTermsAcceptanceRequired",
+          "EventTermsDocumentDuplicated",
           "TermsDocumentNotFound",
           "TermsDocumentNameAlreadyExists",
           "TermsDocumentInUse",
@@ -5489,8 +5530,12 @@
             },
             "nullable": true
           },
-          "termsDocument": {
-            "$ref": "#/components/schemas/TermsDocumentResponse"
+          "termsDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsDocumentResponse"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5633,6 +5678,133 @@
         ],
         "type": "string"
       },
+      "EventSignupStatsActivityResponse": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSignupStatsCellResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventSignupStatsCellResponse": {
+        "type": "object",
+        "properties": {
+          "activityRoleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "assignmentStatusId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventSignupStatsResponse": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSignupStatsRoleResponse"
+            },
+            "nullable": true
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSignupStatsStatusResponse"
+            },
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSignupStatsActivityResponse"
+            },
+            "nullable": true
+          },
+          "totals": {
+            "$ref": "#/components/schemas/EventSignupStatsTotalsResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventSignupStatsRoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventSignupStatsStatusResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventSignupStatsTotalsResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requested": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "denied": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "EventSummaryResponse": {
         "type": "object",
         "properties": {
@@ -5687,10 +5859,85 @@
         },
         "additionalProperties": false
       },
-      "EventTermsAcceptanceResponse": {
+      "EventTermsDocumentRequest": {
         "type": "object",
         "properties": {
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsDocumentResponse": {
+        "type": "object",
+        "properties": {
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsDocumentStateResponse": {
+        "type": "object",
+        "properties": {
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
           "accepted": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsStateResponse": {
+        "type": "object",
+        "properties": {
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsDocumentStateResponse"
+            },
+            "nullable": true
+          },
+          "signupBlocked": {
             "type": "boolean"
           }
         },
@@ -6248,6 +6495,20 @@
         },
         "additionalProperties": false
       },
+      "TermsDecisionRequest": {
+        "type": "object",
+        "properties": {
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accepted": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "TermsDocumentResponse": {
         "type": "object",
         "properties": {
@@ -6455,9 +6716,11 @@
             },
             "nullable": true
           },
-          "termsDocumentId": {
-            "type": "string",
-            "format": "uuid",
+          "termsDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsDocumentRequest"
+            },
             "nullable": true
           }
         },

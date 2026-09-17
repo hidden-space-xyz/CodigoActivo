@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { EventTermsDocumentRequest } from './eventTermsDocumentRequest';
 
 export interface CreateEventRequest {
   /** @nullable */
@@ -26,5 +27,5 @@ export interface CreateEventRequest {
   /** @nullable */
   categoryTypeIds?: string[] | null;
   /** @nullable */
-  termsDocumentId?: string | null;
+  termsDocuments?: EventTermsDocumentRequest[] | null;
 }

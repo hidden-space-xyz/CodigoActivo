@@ -17,7 +17,8 @@ describe('eventQueryKeys', () => {
       'cat-1',
     ])
     expect(eventQueryKeys.detail('e1')).toEqual(['events', 'detail', 'e1'])
-    expect(eventQueryKeys.termsAcceptance('e1')).toEqual(['events', 'terms-acceptance', 'e1'])
+    expect(eventQueryKeys.terms('e1')).toEqual(['events', 'terms', 'e1'])
+    expect(eventQueryKeys.signupStats('e1')).toEqual(['events', 'signup-stats', 'e1'])
     expect(eventQueryKeys.adminTable()).toEqual(['events', 'admin'])
     expect(eventQueryKeys.adminDetail('e1')).toEqual(['events', 'admin-detail', 'e1'])
     expect(eventQueryKeys.ratings()).toEqual(['events', 'ratings'])

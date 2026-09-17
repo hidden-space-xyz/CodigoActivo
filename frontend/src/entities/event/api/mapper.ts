@@ -2,6 +2,10 @@ import type {
   EventCategoryTypeResponse,
   EventListItemResponse,
   EventResponse,
+  EventSignupStatsResponse,
+  EventTermsDocumentResponse,
+  EventTermsDocumentStateResponse,
+  EventTermsStateResponse,
 } from '@/shared/api/generated/models'
 import { i18n, type TranslationKey } from '@/shared/i18n'
 import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
@@ -9,9 +13,12 @@ import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } f
 import type {
   EventCategoryTag,
   EventDetail,
+  EventSignupStats,
   EventStatus,
   EventStatusKind,
-  EventTermsInfo,
+  EventTermsDocumentState,
+  EventTermsState,
+  EventTermsSummary,
   PastEvent,
   UpcomingEvent,
 } from '../model/types'
@@ -96,13 +103,12 @@ export function toUpcomingEvent(event: EventListItemResponse): UpcomingEvent {
   }
 }
 
-function toTermsInfo(event: EventResponse): EventTermsInfo | null {
-  const terms = event.termsDocument
-  if (!terms?.id) return null
+function toTermsSummary(document: EventTermsDocumentResponse): EventTermsSummary {
   return {
-    id: terms.id,
-    name: terms.name ?? '',
-    description: terms.description ?? '',
+    id: document.termsDocumentId ?? '',
+    name: document.name ?? '',
+    required: document.required ?? false,
+    displayOrder: document.displayOrder ?? 0,
   }
 }
 
@@ -127,7 +133,58 @@ export function toEventDetail(event: EventResponse): EventDetail {
     signupOpen: status.kind === 'signupOpen',
     earlySignupOpen: status.kind === 'earlySignupOpen',
     categories: toCategoryTags(event),
-    terms: toTermsInfo(event),
+    terms: (event.termsDocuments ?? []).map(toTermsSummary),
+  }
+}
+
+/** Maps one terms document's state from the signed-in user's perspective. */
+function toTermsDocumentState(document: EventTermsDocumentStateResponse): EventTermsDocumentState {
+  return {
+    id: document.termsDocumentId ?? '',
+    name: document.name ?? '',
+    description: document.description ?? '',
+    required: document.required ?? false,
+    displayOrder: document.displayOrder ?? 0,
+    accepted: document.accepted ?? null,
+    decidedAt: document.decidedAt ?? null,
+  }
+}
+
+/** Maps the event's terms state for the signed-in user, sorted by the event's display order. */
+export function toEventTermsState(response: EventTermsStateResponse): EventTermsState {
+  return {
+    documents: (response.documents ?? [])
+      .map(toTermsDocumentState)
+      .sort((a, b) => a.displayOrder - b.displayOrder),
+    signupBlocked: response.signupBlocked ?? false,
+  }
+}
+
+/** Maps the event's signup statistics, keeping only the role/status ids on each cell. */
+export function toEventSignupStats(response: EventSignupStatsResponse): EventSignupStats {
+  return {
+    eventId: response.eventId ?? '',
+    roles: (response.roles ?? []).map((role) => ({ id: role.id ?? '', name: role.name ?? '' })),
+    statuses: (response.statuses ?? []).map((status) => ({
+      id: status.id ?? '',
+      name: status.name ?? '',
+    })),
+    activities: (response.activities ?? []).map((activity) => ({
+      id: activity.activityId ?? '',
+      title: activity.title ?? '',
+      startsAt: activity.startsAt ?? null,
+      cells: (activity.cells ?? []).map((cell) => ({
+        roleId: cell.activityRoleTypeId ?? '',
+        statusId: cell.assignmentStatusId ?? '',
+        count: cell.count ?? 0,
+      })),
+    })),
+    totals: {
+      total: response.totals?.total ?? 0,
+      requested: response.totals?.requested ?? 0,
+      confirmed: response.totals?.confirmed ?? 0,
+      denied: response.totals?.denied ?? 0,
+    },
   }
 }
 

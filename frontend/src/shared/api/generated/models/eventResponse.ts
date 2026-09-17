@@ -5,7 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { EventCategoryResponse } from './eventCategoryResponse';
-import type { TermsDocumentResponse } from './termsDocumentResponse';
+import type { EventTermsDocumentResponse } from './eventTermsDocumentResponse';
 
 export interface EventResponse {
   id?: string;
@@ -31,5 +31,6 @@ export interface EventResponse {
   featured?: boolean;
   /** @nullable */
   categories?: EventCategoryResponse[] | null;
-  termsDocument?: TermsDocumentResponse;
+  /** @nullable */
+  termsDocuments?: EventTermsDocumentResponse[] | null;
 }

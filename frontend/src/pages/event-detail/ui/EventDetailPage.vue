@@ -5,10 +5,12 @@ import { useI18n } from 'vue-i18n'
 
 import { useEventDetail } from '@/entities/event'
 import { useSession } from '@/entities/session'
+import { EventSignupStatsPanel } from '@/features/event-signup-stats'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
 import { BaseButton, ColorTag } from '@/shared/ui'
 import RichTextContent from '@/shared/ui/RichTextContent.vue'
 import { i18n } from '@/shared/i18n'
+import { MEMBER_USER_TYPE_ID } from '@/shared/config'
 import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
 import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
@@ -22,7 +24,12 @@ const { t } = useI18n()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 const session = useSession()
 
-const tab = ref<'info' | 'activities'>('info')
+const tab = ref<'info' | 'activities' | 'stats'>('info')
+
+/** Only admins and members may see the signup statistics tab. */
+const canSeeStats = computed(
+  () => session.isAdmin || session.user?.userTypeId === MEMBER_USER_TYPE_ID,
+)
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
@@ -147,6 +154,16 @@ useSeo(seo)
           >
             {{ $t('pages.eventDetail.tabs.activities') }}
           </button>
+          <button
+            v-if="canSeeStats"
+            type="button"
+            class="detail-tab"
+            :class="{ 'detail-tab--active': tab === 'stats' }"
+            :title="$t('pages.eventDetail.tabs.viewStats')"
+            @click="tab = 'stats'"
+          >
+            {{ $t('pages.eventDetail.tabs.stats') }}
+          </button>
         </div>
       </nav>
 
@@ -178,7 +195,7 @@ useSeo(seo)
         </div>
       </section>
 
-      <section v-else class="detail-body">
+      <section v-else-if="tab === 'activities'" class="detail-body">
         <div class="ca-container--narrow">
           <EventActivitiesTimeline
             :event-id="eventId"
@@ -186,6 +203,12 @@ useSeo(seo)
             :early-only="earlySignupOnly"
             :terms="event.terms"
           />
+        </div>
+      </section>
+
+      <section v-else-if="canSeeStats" class="detail-body">
+        <div class="ca-container--narrow">
+          <EventSignupStatsPanel :event-id="eventId" />
         </div>
       </section>
     </template>

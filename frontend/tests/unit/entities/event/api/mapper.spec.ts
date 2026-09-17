@@ -137,7 +137,9 @@ describe('event mapper', () => {
       signupEndsAt: at(30),
       thumbnailId: 'thumb-1',
       categories: [{ categoryTypeId: 'cat-1', name: 'IA', color: '#123456' }],
-      termsDocument: { id: 'terms-1', name: 'Normas', description: 'Acepta' },
+      termsDocuments: [
+        { termsDocumentId: 'terms-1', name: 'Normas', required: true, displayOrder: 0 },
+      ],
     })
 
     expect(detail).toEqual({
@@ -155,7 +157,7 @@ describe('event mapper', () => {
       signupOpen: true,
       earlySignupOpen: false,
       categories: [{ id: 'cat-1', name: 'IA', color: '#123456' }],
-      terms: { id: 'terms-1', name: 'Normas', description: 'Acepta' },
+      terms: [{ id: 'terms-1', name: 'Normas', required: true, displayOrder: 0 }],
     })
   })
 
@@ -163,17 +165,17 @@ describe('event mapper', () => {
     const detail = toEventDetail({
       signupStartsAt: at(20),
       earlySignupStartsAt: at(15),
-      termsDocument: { id: 'terms-1' },
+      termsDocuments: [{ termsDocumentId: 'terms-1' }],
     })
 
     expect(detail.earlySignupOpen).toBe(true)
     expect(detail.signupOpen).toBe(false)
     expect(detail.earlySignupLabel).toBe(formatDateTime(at(15)))
-    expect(detail.terms).toEqual({ id: 'terms-1', name: '', description: '' })
+    expect(detail.terms).toEqual([{ id: 'terms-1', name: '', required: false, displayOrder: 0 }])
   })
 
-  it('defaults a bare detail and drops terms without an id', () => {
-    expect(toEventDetail({ termsDocument: { name: 'Sin id' } })).toEqual({
+  it('defaults a bare detail without terms documents', () => {
+    expect(toEventDetail({})).toEqual({
       id: '',
       title: '',
       subtitle: '',
@@ -188,7 +190,7 @@ describe('event mapper', () => {
       signupOpen: false,
       earlySignupOpen: false,
       categories: [],
-      terms: null,
+      terms: [],
     })
   })
 
