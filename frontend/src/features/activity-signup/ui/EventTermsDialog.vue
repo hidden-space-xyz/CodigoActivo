@@ -89,7 +89,11 @@ function confirm(): void {
     <p class="terms-dialog__lead">{{ t('features.activitySignup.terms.lead') }}</p>
     <ul class="terms-dialog__list">
       <li v-for="document in documents" :key="document.id" class="terms-dialog__row">
-        <el-checkbox :id="`terms-${document.id}`" v-model="checked[document.id]" />
+        <el-checkbox
+          :id="`terms-${document.id}`"
+          v-model="checked[document.id]"
+          :aria-label="t('features.activitySignup.terms.checkboxLabel', { name: document.name })"
+        />
         <div class="terms-dialog__info">
           <button
             type="button"

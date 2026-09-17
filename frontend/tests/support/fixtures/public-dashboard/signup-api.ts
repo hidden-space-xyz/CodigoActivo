@@ -1,6 +1,7 @@
 import type {
   ActivityResponse,
   AssignedActivityResponse,
+  EventTermsDocumentStateResponse,
   HouseholdMemberAssignmentResponse,
   HouseholdSignupRolesResponse,
   TimeOverlapResponse,
@@ -18,8 +19,13 @@ export interface SignupApiState {
   children: UserResponse[]
   household: HouseholdMemberAssignmentResponse[]
   signupRoles: HouseholdSignupRolesResponse[] | 'error'
-  /** Whether the single default terms document (`TERMS_DOCUMENT`) is already accepted. */
+  /**
+   * Whether the single default terms document (`TERMS_DOCUMENT`) is already accepted; ignored
+   * once `termsDocuments` is set explicitly.
+   */
   termsAccepted: boolean
+  /** Overrides the full documents list served by `/terms`; unset derives one from `termsAccepted`. */
+  termsDocuments?: EventTermsDocumentStateResponse[]
   overlap: TimeOverlapResponse | 'error'
   assignError: (() => Response) | null
   householdError: (() => Response) | null
@@ -36,6 +42,15 @@ export const TERMS_DOCUMENT = {
   description: 'Respeta a los demás.',
   required: true,
   displayOrder: 0,
+}
+
+/** A second, optional terms document for tests that need more than one document to decide on. */
+export const OPTIONAL_TERMS_DOCUMENT = {
+  termsDocumentId: 'terms-2',
+  name: 'Boletín informativo',
+  description: 'Recibe noticias del evento por correo.',
+  required: false,
+  displayOrder: 1,
 }
 
 /** Request bodies and counters recorded by the fake signup API. */
@@ -117,16 +132,17 @@ export function serveSignupApi(overrides: Partial<SignupApiState> = {}) {
     }),
     http.get('/api/events/:eventId/terms', () => {
       count('terms')
-      return HttpResponse.json({
-        documents: [
+      const documents =
+        state.termsDocuments ??
+        ([
           {
             ...TERMS_DOCUMENT,
             accepted: state.termsAccepted ? true : null,
             decidedAt: state.termsAccepted ? '2026-01-01T00:00:00Z' : null,
           },
-        ],
-        signupBlocked: !state.termsAccepted,
-      })
+        ] satisfies EventTermsDocumentStateResponse[])
+      const signupBlocked = documents.some((document) => document.required && !document.accepted)
+      return HttpResponse.json({ documents, signupBlocked })
     }),
     http.get('/api/activities/:activityId/overlaps/:userId', ({ params }) => {
       calls.overlapChecks.push(`${String(params.activityId)}/${String(params.userId)}`)

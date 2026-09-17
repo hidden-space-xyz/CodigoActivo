@@ -152,22 +152,21 @@ public sealed class TermsGateTests
     }
 
     [Fact]
-    public async Task EnsureDecidedAsyncAlreadyDecidedDocumentIgnoresNewDecisionKeepingItImmutable()
+    public async Task EnsureDecidedAsyncRequiredDocumentWithStoredRejectionAcceptingOverwritesRowInPlace()
     {
         var activityId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
         HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, false));
-        var earlierDecision = clock.UtcNow.AddDays(-1);
-        HasAcceptances(
-            new EventTermsAcceptance
-            {
-                TermsDocumentId = termsDocumentId,
-                Accepted = false,
-                DecidedAt = earlierDecision,
-            }
-        );
+        HasDocuments(eventId, (termsDocumentId, true));
+        var stored = new EventTermsAcceptance
+        {
+            TermsDocumentId = termsDocumentId,
+            Accepted = false,
+            DecidedAt = clock.UtcNow.AddDays(-1),
+        };
+        HasAcceptances(stored);
+        clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
             activityId,
@@ -177,8 +176,122 @@ public sealed class TermsGateTests
         );
 
         result.IsSuccess.Should().BeTrue(
-            "the document is optional and already decided (rejected), so it never blocks signup"
+            "a rejection is revisable, so accepting afterwards must not leave the user permanently excluded"
         );
+        stored.Accepted.Should().BeTrue();
+        stored.DecidedAt.Should().Be(clock.UtcNow);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncOptionalDocumentWithStoredRejectionAcceptingOverwritesRowInPlace()
+    {
+        var activityId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        HasActivity(activityId, eventId);
+        HasDocuments(eventId, (termsDocumentId, false));
+        var stored = new EventTermsAcceptance
+        {
+            TermsDocumentId = termsDocumentId,
+            Accepted = false,
+            DecidedAt = clock.UtcNow.AddDays(-1),
+        };
+        HasAcceptances(stored);
+        clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+
+        var result = await sut.EnsureDecidedAsync(
+            activityId,
+            Guid.NewGuid(),
+            [new TermsDecisionRequest(termsDocumentId, true)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        stored.Accepted.Should().BeTrue(
+            "a rejection is revisable regardless of whether the document is required or optional"
+        );
+        stored.DecidedAt.Should().Be(clock.UtcNow);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncDocumentWithStoredAcceptanceRejectingIsIgnoredKeepingAcceptanceIntact()
+    {
+        var activityId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        HasActivity(activityId, eventId);
+        HasDocuments(eventId, (termsDocumentId, true));
+        var originalDecidedAt = clock.UtcNow.AddDays(-1);
+        var stored = new EventTermsAcceptance
+        {
+            TermsDocumentId = termsDocumentId,
+            Accepted = true,
+            DecidedAt = originalDecidedAt,
+        };
+        HasAcceptances(stored);
+        clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+
+        var result = await sut.EnsureDecidedAsync(
+            activityId,
+            Guid.NewGuid(),
+            [new TermsDecisionRequest(termsDocumentId, false)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        stored.Accepted.Should().BeTrue(
+            "an acceptance is the proof of consent and must never be overwritten by a later rejection"
+        );
+        stored.DecidedAt.Should().Be(originalDecidedAt);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncRequiredDocumentWithStoredRejectionRejectingAgainLeavesRowUnchangedAndStillBlocks()
+    {
+        var activityId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        HasActivity(activityId, eventId);
+        HasDocuments(eventId, (termsDocumentId, true));
+        var originalDecidedAt = clock.UtcNow.AddDays(-1);
+        var stored = new EventTermsAcceptance
+        {
+            TermsDocumentId = termsDocumentId,
+            Accepted = false,
+            DecidedAt = originalDecidedAt,
+        };
+        HasAcceptances(stored);
+        clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+
+        var result = await sut.EnsureDecidedAsync(
+            activityId,
+            Guid.NewGuid(),
+            [new TermsDecisionRequest(termsDocumentId, false)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+        stored.Accepted.Should().BeFalse();
+        stored.DecidedAt.Should().Be(originalDecidedAt);
         await events
             .DidNotReceiveWithAnyArgs()
             .AddTermsAcceptanceAsync(
