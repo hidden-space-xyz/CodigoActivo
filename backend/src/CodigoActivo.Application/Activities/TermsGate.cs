@@ -22,13 +22,15 @@ public sealed class TermsGate(
     /// <summary>
     /// Ensures that every terms document required by the activity's event has been accepted by
     /// the user. An acceptance is immutable: once recorded it is the proof of consent and is
-    /// never overwritten or asked again. A rejection is revisable: a later decision about a
-    /// document whose stored decision is a rejection updates that same row in place instead of
-    /// leaving the user permanently excluded (this also covers a document that was optional, got
-    /// rejected, and was later made required by an administrator). Required documents never
-    /// persist a rejection, neither as a new row nor as an update to an existing rejected row: the
-    /// document is simply left undecided so a later call can still accept it. Decisions about
-    /// documents that are not linked to the event are ignored. Nothing is persisted by this
+    /// never overwritten or asked again. A rejection is revisable only by a decision that changes
+    /// it to an acceptance: that later decision updates the same row in place instead of leaving
+    /// the user permanently excluded (this also covers a document that was optional, got
+    /// rejected, and was later made required by an administrator). A repeated rejection of an
+    /// already-rejected document is not a change, so it leaves the row (and its original
+    /// <c>DecidedAt</c>) untouched rather than stamping a needless update. Required documents
+    /// never persist a rejection, neither as a new row nor as an update to an existing rejected
+    /// row: the document is simply left undecided so a later call can still accept it. Decisions
+    /// about documents that are not linked to the event are ignored. Nothing is persisted by this
     /// method: callers must call <see cref="IUnitOfWork.SaveChangesAsync"/> only after every
     /// other check in the same use case also succeeds.
     /// </summary>
@@ -83,23 +85,22 @@ public sealed class TermsGate(
 
                 if (acceptanceByDocument.TryGetValue(decision.TermsDocumentId, out var existing))
                 {
-                    if (existing.Accepted)
+                    if (existing.Accepted || !accepted)
                     {
                         // An acceptance is the proof of consent: immutable, never asked again.
+                        // A rejection only changes when the incoming decision accepts instead: a
+                        // repeated rejection is not a change, so the row (and its original
+                        // DecidedAt) is left untouched instead of stamping a needless update. This
+                        // also covers a required document whose stored decision is a rejection:
+                        // it never persists another rejection, leaving it undecided so a later
+                        // call can still accept it.
                         continue;
                     }
 
-                    if (isRequired && !accepted)
-                    {
-                        // A required document never persists a rejection, not even as an update
-                        // to an already-rejected row: leave it undecided so a later call can
-                        // still accept it.
-                        continue;
-                    }
-
-                    // The stored decision is a rejection and is revisable: update it in place
-                    // instead of inserting a new row (the primary key would reject that anyway).
-                    existing.Accepted = accepted;
+                    // The stored decision is a rejection that the caller is now accepting: update
+                    // it in place instead of inserting a new row (the primary key would reject
+                    // that anyway).
+                    existing.Accepted = true;
                     existing.DecidedAt = clock.UtcNow;
                     continue;
                 }
