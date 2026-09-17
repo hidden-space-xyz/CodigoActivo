@@ -21,7 +21,10 @@ authentication are not supported.
   invalidates them.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
-  such as `UserType` are not authorization roles.
+  such as `UserType` are not authorization roles, with one handler-level exception:
+  `GET /api/events/{eventId}/signup-stats` requires a session and returns `AccessDenied` (403) unless the
+  caller is an administrator or has the member `UserType`. Its response is aggregate counts per activity,
+  activity role and signup status; it never lists the signed-up individuals.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the last administrator

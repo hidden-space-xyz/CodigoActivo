@@ -45,7 +45,12 @@ describe('useEventSignupStats zero-filling', () => {
             },
           ],
         },
-        { activityId: 'act-2', title: 'Actividad sin apuntados', startsAt: null, cells: [] },
+        {
+          activityId: 'act-2',
+          title: 'Actividad sin apuntados',
+          startsAt: '2099-06-12T09:00:00Z',
+          cells: [],
+        },
       ],
       totals: { total: 5, requested: 2, confirmed: 3, denied: 0 },
     })
