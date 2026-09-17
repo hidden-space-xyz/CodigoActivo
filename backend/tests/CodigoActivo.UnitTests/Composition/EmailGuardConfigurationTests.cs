@@ -21,7 +21,8 @@ public sealed class EmailGuardConfigurationTests : IDisposable
 
     private EmailGuardOptions Build(Dictionary<string, string?> settings)
     {
-        settings["ACCOUNT_VERIFICATION_REQUIRED"] = "false";
+        settings["SMTP_HOST"] = "smtp.example.test";
+        settings["SMTP_FROM_ADDRESS"] = "no-reply@example.test";
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
         var provider = new ServiceCollection()
             .AddCodigoActivo(configuration)

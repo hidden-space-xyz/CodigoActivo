@@ -4,6 +4,7 @@ import type {
   UserStatusResponse,
   UserTypeSummaryResponse,
 } from '@/shared/api/generated/models'
+import { TwoFactorMethod } from '@/shared/api/generated/models'
 
 import type { UpdateUserInput, User, UserCatalogRef } from '../model/types'
 
@@ -28,6 +29,7 @@ export function toUser(user: UserResponse): User {
     dependentCount: user.dependentCount ?? 0,
     status: toCatalogRef(user.status),
     type: toCatalogRef(user.type),
+    twoFactorMethod: user.twoFactorMethod ?? TwoFactorMethod.Email,
   }
 }
 

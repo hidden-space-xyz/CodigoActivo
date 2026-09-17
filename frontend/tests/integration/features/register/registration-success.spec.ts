@@ -8,7 +8,6 @@ import { renderWithProviders, t } from '../../../support/render'
 const baseProps = {
   minorCount: 0,
   email: 'ada@example.test',
-  requiresVerification: true,
   isResending: false,
   resendCooldown: 0,
 }
@@ -23,7 +22,6 @@ describe('RegistrationSuccess', () => {
 
     expect(wrapper.text()).toContain(t('features.register.success.title'))
     expect(wrapper.get('.reg-success__verify-intro b').text()).toBe('ada@example.test')
-    expect(wrapper.text()).not.toContain(t('features.register.success.verifiedActive'))
     expect(wrapper.find('.reg-success__role').exists()).toBe(false)
     expect(resendButton(wrapper).text()).toBe(t('features.register.success.resend'))
     expect(resendButton(wrapper).attributes('disabled')).toBeUndefined()
@@ -53,18 +51,14 @@ describe('RegistrationSuccess', () => {
     expect(resendButton(wrapper).attributes('aria-busy')).toBe('true')
   })
 
-  it('offers login for an already active account and pluralizes enrolled minors', async () => {
-    const { wrapper, router } = await renderWithProviders(RegistrationSuccess, {
-      props: { ...baseProps, requiresVerification: false, minorCount: 2 },
+  it('pluralizes enrolled minors while still asking to verify the email', async () => {
+    const { wrapper } = await renderWithProviders(RegistrationSuccess, {
+      props: { ...baseProps, minorCount: 2 },
     })
 
-    expect(wrapper.text()).toContain(t('features.register.success.verifiedActive'))
-    expect(wrapper.find('.reg-success__verify').exists()).toBe(false)
+    expect(wrapper.find('.reg-success__verify').exists()).toBe(true)
     expect(wrapper.get('.reg-success__role b').text()).toBe(
       i18n.global.t('features.register.success.minorsEnrolled', { n: 2 }, 2),
-    )
-    expect(wrapper.get('.reg-success__login').attributes('href')).toBe(
-      router.resolve({ name: 'login' }).href,
     )
   })
 

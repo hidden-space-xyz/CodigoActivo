@@ -134,6 +134,20 @@ public static class EmailStyles
         + $"line-height:1.2;text-decoration:none;border-radius:10px;color:{EmailBranding.OnPrimary};";
 
     /// <summary>
+    /// Identifies the one-time code cell configuration or policy value.
+    /// </summary>
+    public const string CodeCell =
+        "padding:16px 28px;border-radius:10px;"
+        + $"background-color:{EmailBranding.Panel};border:1px solid {EmailBranding.Border};";
+
+    /// <summary>
+    /// Identifies the one-time code text configuration or policy value.
+    /// </summary>
+    public const string CodeText =
+        "font-family:Consolas,'Courier New',monospace;font-size:32px;font-weight:700;"
+        + $"letter-spacing:8px;line-height:1.2;color:{EmailBranding.TextBright};";
+
+    /// <summary>
     /// Identifies the fallback link configuration or policy value.
     /// </summary>
     public const string FallbackLink = $"color:{EmailBranding.PrimaryInk};word-break:break-all;";

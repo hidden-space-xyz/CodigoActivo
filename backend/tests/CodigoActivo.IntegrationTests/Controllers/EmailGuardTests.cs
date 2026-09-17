@@ -78,7 +78,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         return activityId;
     }
 
-    private static async Task<int> DriveDecisionLoopAsync(
+    private async Task<int> DriveDecisionLoopAsync(
         WebApplicationFactory<Program> host,
         Guid activityId,
         int iterations
@@ -126,7 +126,10 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         accepted.Should().Be(6, "delivery must never fail the write");
         Factory
             .EmailSender.Sent.Count.Should()
-            .Be(RecipientBurst, "the guard holds the mail once the recipient burst is spent");
+            .Be(
+                RecipientBurst - 1,
+                "the guard holds the mail once the recipient burst is spent, and the member's login code already used one token of it"
+            );
     }
 
     [Fact]

@@ -1,4 +1,9 @@
-import { getApiAuthMe } from '@/shared/api/generated/endpoints/auth/auth'
+import {
+  getApiAuthMe,
+  postApiAuthTwoFactorAuthenticatorConfirm,
+  postApiAuthTwoFactorAuthenticatorSetup,
+  postApiAuthTwoFactorEmail,
+} from '@/shared/api/generated/endpoints/auth/auth'
 import { putApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
 import { getApiMeCertificates, getApiMeEventHistory } from '@/shared/api/generated/endpoints/me/me'
 import {
@@ -13,6 +18,7 @@ import { toPage, unwrapOrNull } from '@/shared/api'
 import type {
   AddMinorInput,
   ChangePasswordInput,
+  DisableAuthenticatorInput,
   EventRatingInput,
   UpdateMinorInput,
   UpdateProfileInput,
@@ -23,6 +29,7 @@ import type {
   AccountEventRating,
   AccountHistoryEntry,
   AccountProfile,
+  AuthenticatorSetup,
 } from '../model/types'
 import {
   toAccountChild,
@@ -31,6 +38,7 @@ import {
   toAccountHistoryEntry,
   toAccountProfile,
   toAddMinorRequest,
+  toAuthenticatorSetup,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
@@ -77,6 +85,28 @@ export async function changeAccountPasswordRequest(
     currentPassword: input.currentPassword,
     newPassword: input.newPassword,
   })
+}
+
+/**
+ * Starts enrolling an authenticator application (`POST /api/auth/two-factor/authenticator/setup`).
+ * The API verifies `currentPassword` and answers with the key to scan or type; nothing changes
+ * until `confirmAuthenticatorRequest` succeeds.
+ */
+export async function beginAuthenticatorSetupRequest(
+  currentPassword: string,
+): Promise<AuthenticatorSetup> {
+  const response = await postApiAuthTwoFactorAuthenticatorSetup({ currentPassword })
+  return toAuthenticatorSetup(response.data)
+}
+
+/** Confirms the pending enrollment with the first code the application generated. */
+export async function confirmAuthenticatorRequest(code: string): Promise<void> {
+  await postApiAuthTwoFactorAuthenticatorConfirm({ code })
+}
+
+/** Removes the authenticator so login codes arrive by email again (`POST /api/auth/two-factor/email`). */
+export async function disableAuthenticatorRequest(input: DisableAuthenticatorInput): Promise<void> {
+  await postApiAuthTwoFactorEmail({ currentPassword: input.currentPassword, code: input.code })
 }
 
 /** Registers a minor under `parentId` and returns the created child. */

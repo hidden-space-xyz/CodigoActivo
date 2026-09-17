@@ -71,6 +71,7 @@ public static class DependencyInjection
         AddApplicationOptions(services, configuration);
         AddAccountVerification(services, configuration);
         AddPasswordReset(services, configuration);
+        AddTwoFactor(services, configuration);
         AddEmail(services, configuration);
         AddCaching(services);
         AddApplicationHandlers(services);
@@ -101,12 +102,6 @@ public static class DependencyInjection
         );
     }
 
-    private static bool IsVerificationRequired(IConfiguration configuration)
-    {
-        return !bool.TryParse(configuration["ACCOUNT_VERIFICATION_REQUIRED"], out var required)
-            || required;
-    }
-
     private static void AddAccountVerification(
         IServiceCollection services,
         IConfiguration configuration
@@ -114,7 +109,6 @@ public static class DependencyInjection
     {
         var options = new AccountVerificationOptions
         {
-            Required = IsVerificationRequired(configuration),
             OtpLifetime = ReadTimeSpan(
                 configuration["AccountVerification:OtpLifetimeMinutes"],
                 TimeSpan.FromMinutes,
@@ -145,6 +139,44 @@ public static class DependencyInjection
             ),
         };
         services.AddSingleton(options);
+    }
+
+    private static void AddTwoFactor(IServiceCollection services, IConfiguration configuration)
+    {
+        var issuer = configuration["TwoFactor:Issuer"];
+        var options = new TwoFactorOptions
+        {
+            ChallengeLifetime = ReadTimeSpan(
+                configuration["TwoFactor:ChallengeLifetimeMinutes"],
+                TimeSpan.FromMinutes,
+                TwoFactorOptions.DefaultChallengeLifetime
+            ),
+            ResendCooldown = ReadTimeSpan(
+                configuration["TwoFactor:ResendCooldownSeconds"],
+                TimeSpan.FromSeconds,
+                TwoFactorOptions.DefaultResendCooldown
+            ),
+            SetupLifetime = ReadTimeSpan(
+                configuration["TwoFactor:AuthenticatorSetupLifetimeMinutes"],
+                TimeSpan.FromMinutes,
+                TwoFactorOptions.DefaultSetupLifetime
+            ),
+            MaxFailedAttempts = ReadPositiveInt(
+                configuration["TwoFactor:MaxFailedAttempts"],
+                TwoFactorOptions.DefaultMaxFailedAttempts
+            ),
+            LockoutDuration = ReadTimeSpan(
+                configuration["TwoFactor:LockoutMinutes"],
+                TimeSpan.FromMinutes,
+                TwoFactorOptions.DefaultLockoutDuration
+            ),
+            Issuer = string.IsNullOrWhiteSpace(issuer) ? TwoFactorOptions.DefaultIssuer : issuer.Trim(),
+        };
+        services.AddSingleton(options);
+
+        services.AddDataProtection();
+        services.AddSingleton<ITotpService, TotpService>();
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
     }
 
     private static TimeSpan ReadTimeSpan(
@@ -195,17 +227,12 @@ public static class DependencyInjection
             FromName = configuration["SMTP_FROM_NAME"] ?? "Código Activo",
         };
 
-        if (
-            IsVerificationRequired(configuration)
-            && (
-                string.IsNullOrWhiteSpace(options.Host)
-                || string.IsNullOrWhiteSpace(options.FromAddress)
-            )
-        )
+        if (string.IsNullOrWhiteSpace(options.Host) || string.IsNullOrWhiteSpace(options.FromAddress))
         {
             throw new InvalidOperationException(
-                "SMTP is not configured (SMTP_HOST and SMTP_FROM_ADDRESS are required) while "
-                    + "ACCOUNT_VERIFICATION_REQUIRED is true. Configure SMTP or disable verification."
+                "SMTP is not configured (SMTP_HOST and SMTP_FROM_ADDRESS are required). "
+                    + "Login codes are delivered by email, so every deployment needs an SMTP server; "
+                    + "for local work point it at a mail catcher such as Mailpit."
             );
         }
 
@@ -584,6 +611,7 @@ public static class DependencyInjection
         services.AddScoped<ChangeUserTypeCommandHandler>();
         services.AddScoped<AddChildCommandHandler>();
         services.AddScoped<ChangePasswordCommandHandler>();
+        services.AddScoped<ResetTwoFactorCommandHandler>();
     }
 
     private static void AddAuthHandlers(IServiceCollection services)
@@ -596,8 +624,16 @@ public static class DependencyInjection
         services.AddScoped<ResendVerificationCommandHandler>();
         services.AddScoped<ForgotPasswordCommandHandler>();
         services.AddScoped<ResetPasswordCommandHandler>();
+        services.AddScoped<GetLoginChallengeQueryHandler>();
+        services.AddScoped<VerifyTwoFactorLoginCommandHandler>();
+        services.AddScoped<ResendTwoFactorCodeCommandHandler>();
+        services.AddScoped<BeginAuthenticatorSetupCommandHandler>();
+        services.AddScoped<ConfirmAuthenticatorCommandHandler>();
+        services.AddScoped<DisableAuthenticatorCommandHandler>();
         services.AddScoped<AccountEmails>();
         services.AddScoped<OtpValidator>();
+        services.AddScoped<LoginCodeIssuer>();
+        services.AddScoped<AuthenticatorCodeVerifier>();
     }
 
     private static void AddReportHandlers(IServiceCollection services)

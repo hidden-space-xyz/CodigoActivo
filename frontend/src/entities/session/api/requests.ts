@@ -1,13 +1,16 @@
 import {
+  getApiAuthLoginTwoFactor,
   getApiAuthMe,
   postApiAuthLogin,
+  postApiAuthLoginTwoFactor,
+  postApiAuthLoginTwoFactorResend,
   postApiAuthLogout,
 } from '@/shared/api/generated/endpoints/auth/auth'
 import { resetCsrfToken, unwrapOrNull } from '@/shared/api'
 
 import type { Credentials } from '../model/credentials'
-import type { AuthUser } from '../model/types'
-import { toAuthUser } from './mapper'
+import type { AuthUser, LoginChallenge } from '../model/types'
+import { toAuthUser, toLoginChallenge } from './mapper'
 
 /** Loads the signed-in user from the auth cookie; resolves to `null` on 401/403. */
 export async function getCurrentUserRequest(): Promise<AuthUser | null> {
@@ -15,14 +18,40 @@ export async function getCurrentUserRequest(): Promise<AuthUser | null> {
   return data ? toAuthUser(data) : null
 }
 
-/** Signs in and resets the cached CSRF token so the next unsafe request fetches a fresh one. */
-export async function loginRequest(credentials: Credentials): Promise<AuthUser> {
+/**
+ * Runs the password step of the login (`POST /api/auth/login`). A correct password never signs
+ * the user in by itself: the API answers with the second factor it now expects.
+ */
+export async function loginRequest(credentials: Credentials): Promise<LoginChallenge> {
   const response = await postApiAuthLogin({
     identifier: credentials.identifier,
     password: credentials.password,
   })
+  return toLoginChallenge(response.data)
+}
+
+/**
+ * Describes the pending second-factor challenge of the browser
+ * (`GET /api/auth/login/two-factor`); resolves to `null` when there is none or it expired.
+ */
+export async function getLoginChallengeRequest(): Promise<LoginChallenge | null> {
+  const data = await unwrapOrNull(getApiAuthLoginTwoFactor(), [401])
+  return data ? toLoginChallenge(data) : null
+}
+
+/**
+ * Presents the second factor (`POST /api/auth/login/two-factor`). On success the session cookie
+ * is set, so the cached CSRF token is dropped for the next unsafe request.
+ */
+export async function verifyTwoFactorLoginRequest(code: string): Promise<AuthUser> {
+  const response = await postApiAuthLoginTwoFactor({ code })
   resetCsrfToken()
   return toAuthUser(response.data)
+}
+
+/** Asks the API to email a new code for the pending challenge. */
+export async function resendTwoFactorCodeRequest(): Promise<void> {
+  await postApiAuthLoginTwoFactorResend()
 }
 
 /** Signs out and resets the cached CSRF token even when the request fails. */

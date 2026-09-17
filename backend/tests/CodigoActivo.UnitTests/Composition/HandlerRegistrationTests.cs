@@ -35,7 +35,8 @@ public sealed class HandlerRegistrationTests
             .AddInMemoryCollection(
                 new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
-                    ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
+                    ["SMTP_HOST"] = "smtp.example.test",
+                    ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
                     ["FileStorage:RootPath"] = Path.GetTempPath(),
                 }
             )

@@ -4,6 +4,7 @@ import {
   getApiUsersUserId,
   patchApiUsersUserIdAdmin,
   patchApiUsersUserIdChangeType,
+  postApiUsersUserIdTwoFactorReset,
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
 import type { GetApiUsersParams } from '@/shared/api/generated/models'
@@ -56,4 +57,12 @@ export function setUserAdminRequest(
   currentPassword: string | null = null,
 ) {
   return patchApiUsersUserIdAdmin(id, { isAdmin, currentPassword })
+}
+
+/**
+ * Returns a user's second factor to email and clears any lockout (admin only); the signed-in
+ * admin's `currentPassword` authorizes it. Resolves with the raw 204 response.
+ */
+export function resetUserTwoFactorRequest(id: string, currentPassword: string) {
+  return postApiUsersUserIdTwoFactorReset(id, { currentPassword })
 }

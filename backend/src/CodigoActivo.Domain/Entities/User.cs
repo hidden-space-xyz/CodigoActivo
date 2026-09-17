@@ -110,6 +110,47 @@ public class User : IdentifiableEntity
     public DateTimeOffset? PasswordResetLastSentAt { get; set; }
 
     /// <summary>
+    /// Gets or sets the second factor required after the password. Every account has one.
+    /// </summary>
+    public TwoFactorMethod TwoFactorMethod { get; set; } = TwoFactorMethod.Email;
+    /// <summary>
+    /// Gets or sets the protected shared secret of the active authenticator application.
+    /// </summary>
+    public string? AuthenticatorKey { get; set; }
+    /// <summary>
+    /// Gets or sets the last authenticator time step accepted, so a code cannot be replayed.
+    /// </summary>
+    public long? AuthenticatorLastUsedStep { get; set; }
+    /// <summary>
+    /// Gets or sets the protected shared secret of an authenticator being enrolled.
+    /// </summary>
+    public string? PendingAuthenticatorKey { get; set; }
+    /// <summary>
+    /// Gets or sets when the pending authenticator enrollment stops being confirmable.
+    /// </summary>
+    public DateTimeOffset? PendingAuthenticatorExpiresAt { get; set; }
+    /// <summary>
+    /// Gets or sets the hash of the emailed login code of the open two-factor challenge.
+    /// </summary>
+    public string? LoginCodeHash { get; set; }
+    /// <summary>
+    /// Gets or sets when the emailed login code expires.
+    /// </summary>
+    public DateTimeOffset? LoginCodeExpiresAt { get; set; }
+    /// <summary>
+    /// Gets or sets when the emailed login code was last sent.
+    /// </summary>
+    public DateTimeOffset? LoginCodeLastSentAt { get; set; }
+    /// <summary>
+    /// Gets or sets the consecutive wrong second-factor codes since the last success or lockout.
+    /// </summary>
+    public int TwoFactorFailedAttempts { get; set; }
+    /// <summary>
+    /// Gets or sets until when second-factor codes are rejected after too many failures.
+    /// </summary>
+    public DateTimeOffset? TwoFactorLockedUntil { get; set; }
+
+    /// <summary>
     /// Gets or sets the related children collection.
     /// </summary>
     public ICollection<User> Children { get; set; } = [];
@@ -195,5 +236,154 @@ public class User : IdentifiableEntity
     public void RegisterLogin(DateTimeOffset now)
     {
         LastLoginAt = now;
+    }
+
+    /// <summary>
+    /// Stores a new emailed login code, replacing any previous one.
+    /// </summary>
+    /// <param name="codeHash">Hash of the code that was emailed.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="lifetime">How long the code stays valid.</param>
+    public void IssueLoginCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
+    {
+        LoginCodeHash = codeHash;
+        LoginCodeExpiresAt = now + lifetime;
+        LoginCodeLastSentAt = now;
+    }
+
+    /// <summary>
+    /// Clears the emailed login code and its timestamps.
+    /// </summary>
+    public void ClearLoginCode()
+    {
+        LoginCodeHash = null;
+        LoginCodeExpiresAt = null;
+        LoginCodeLastSentAt = null;
+    }
+
+    /// <summary>
+    /// Determines whether an emailed login code exists that is still valid and was sent recently
+    /// enough that a new one should not be issued yet.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="resendCooldown">Minimum time between two emailed codes.</param>
+    /// <returns><see langword="true"/> when the existing code can still be used.</returns>
+    public bool HasRecentLoginCode(DateTimeOffset now, TimeSpan resendCooldown)
+    {
+        return LoginCodeHash is not null
+            && LoginCodeExpiresAt > now
+            && LoginCodeLastSentAt + resendCooldown > now;
+    }
+
+    /// <summary>
+    /// Determines whether second-factor verification is temporarily locked.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <returns><see langword="true"/> when codes must be rejected regardless of their value.</returns>
+    public bool IsTwoFactorLocked(DateTimeOffset now)
+    {
+        return TwoFactorLockedUntil > now;
+    }
+
+    /// <summary>
+    /// Counts a wrong second-factor code and locks verification once the limit is reached.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <param name="lockoutDuration">How long the lock lasts.</param>
+    /// <returns><see langword="true"/> when this failure triggered the lock.</returns>
+    public bool RecordTwoFactorFailure(
+        DateTimeOffset now,
+        int maxFailedAttempts,
+        TimeSpan lockoutDuration
+    )
+    {
+        TwoFactorFailedAttempts++;
+        if (TwoFactorFailedAttempts < maxFailedAttempts)
+        {
+            return false;
+        }
+
+        TwoFactorFailedAttempts = 0;
+        TwoFactorLockedUntil = now + lockoutDuration;
+        ClearLoginCode();
+        return true;
+    }
+
+    /// <summary>
+    /// Completes a login after the second factor was accepted.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    public void CompleteTwoFactorLogin(DateTimeOffset now)
+    {
+        ClearLoginCode();
+        TwoFactorFailedAttempts = 0;
+        TwoFactorLockedUntil = null;
+        RegisterLogin(now);
+    }
+
+    /// <summary>
+    /// Stores the protected secret of an authenticator that still has to be confirmed.
+    /// </summary>
+    /// <param name="protectedKey">Protected shared secret.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="lifetime">How long the enrollment can be confirmed.</param>
+    public void BeginAuthenticatorSetup(string protectedKey, DateTimeOffset now, TimeSpan lifetime)
+    {
+        PendingAuthenticatorKey = protectedKey;
+        PendingAuthenticatorExpiresAt = now + lifetime;
+    }
+
+    /// <summary>
+    /// Determines whether an authenticator enrollment is waiting for confirmation.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <returns><see langword="true"/> when a pending key exists and has not expired.</returns>
+    public bool HasPendingAuthenticator(DateTimeOffset now)
+    {
+        return PendingAuthenticatorKey is not null && PendingAuthenticatorExpiresAt > now;
+    }
+
+    /// <summary>
+    /// Promotes the pending authenticator to the active second factor.
+    /// </summary>
+    /// <param name="usedStep">Time step of the code that confirmed the enrollment.</param>
+    /// <param name="now">Current timestamp.</param>
+    public void EnableAuthenticator(long usedStep, DateTimeOffset now)
+    {
+        AuthenticatorKey = PendingAuthenticatorKey;
+        AuthenticatorLastUsedStep = usedStep;
+        PendingAuthenticatorKey = null;
+        PendingAuthenticatorExpiresAt = null;
+        TwoFactorMethod = TwoFactorMethod.Authenticator;
+        ClearLoginCode();
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Makes email the second factor again and forgets any authenticator, active or pending.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    public void UseEmailTwoFactor(DateTimeOffset now)
+    {
+        TwoFactorMethod = TwoFactorMethod.Email;
+        AuthenticatorKey = null;
+        AuthenticatorLastUsedStep = null;
+        PendingAuthenticatorKey = null;
+        PendingAuthenticatorExpiresAt = null;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Returns the second factor to its default state: email, no authenticator, no lock and no
+    /// open challenge. Used by administrators when a user loses access to their authenticator.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    public void ResetTwoFactor(DateTimeOffset now)
+    {
+        UseEmailTwoFactor(now);
+        ClearLoginCode();
+        TwoFactorFailedAttempts = 0;
+        TwoFactorLockedUntil = null;
     }
 }

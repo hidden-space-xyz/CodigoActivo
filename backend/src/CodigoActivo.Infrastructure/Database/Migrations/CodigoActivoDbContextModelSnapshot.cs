@@ -17,7 +17,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.11")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -778,6 +778,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AuthenticatorKey")
+                        .HasColumnType("text")
+                        .HasColumnName("authenticator_key");
+
+                    b.Property<long?>("AuthenticatorLastUsedStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("authenticator_last_used_step");
+
                     b.Property<DateOnly>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
@@ -814,6 +822,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
+                    b.Property<DateTimeOffset?>("LoginCodeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("login_code_expires_at");
+
+                    b.Property<string>("LoginCodeHash")
+                        .HasColumnType("text")
+                        .HasColumnName("login_code_hash");
+
+                    b.Property<DateTimeOffset?>("LoginCodeLastSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("login_code_last_sent_at");
+
                     b.Property<string>("OtpCodeHash")
                         .HasColumnType("text")
                         .HasColumnName("otp_code_hash");
@@ -846,9 +866,31 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_reset_last_sent_at");
 
+                    b.Property<DateTimeOffset?>("PendingAuthenticatorExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pending_authenticator_expires_at");
+
+                    b.Property<string>("PendingAuthenticatorKey")
+                        .HasColumnType("text")
+                        .HasColumnName("pending_authenticator_key");
+
                     b.Property<string>("Phone")
                         .HasColumnType("text")
                         .HasColumnName("phone");
+
+                    b.Property<int>("TwoFactorFailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("two_factor_failed_attempts");
+
+                    b.Property<DateTimeOffset?>("TwoFactorLockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("two_factor_locked_until");
+
+                    b.Property<string>("TwoFactorMethod")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("two_factor_method");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

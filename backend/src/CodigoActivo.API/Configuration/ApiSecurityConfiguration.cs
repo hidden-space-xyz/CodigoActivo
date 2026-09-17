@@ -1,5 +1,6 @@
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -65,7 +66,43 @@ internal static class ApiSecurityConfiguration
                     context
                         .HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>()
                         .ValidateAsync(context);
-            });
+            })
+            .AddCookie(
+                TwoFactorAuthentication.Scheme,
+                options =>
+                {
+                    options.Cookie.Name = builder.Environment.IsProduction()
+                        ? "__Host-CodigoActivo.TwoFactor"
+                        : "CodigoActivo.TwoFactor";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.Path = "/";
+                    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                        ? CookieSecurePolicy.SameAsRequest
+                        : CookieSecurePolicy.Always;
+                    options.Cookie.SameSite = SameSiteMode.Lax;
+                    options.SlidingExpiration = false;
+                    options.ExpireTimeSpan = TwoFactorOptions.DefaultChallengeLifetime;
+
+                    options.Events.OnRedirectToLogin = context =>
+                        context.HttpContext.WriteApiErrorAsync(
+                            Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired)
+                        );
+                    options.Events.OnRedirectToAccessDenied = context =>
+                        context.HttpContext.WriteApiErrorAsync(
+                            Error.Forbidden(ErrorCode.AccessDenied)
+                        );
+                    options.Events.OnValidatePrincipal = context =>
+                        context
+                            .HttpContext.RequestServices.GetRequiredService<TwoFactorTicketValidator>()
+                            .ValidateAsync(context);
+                }
+            );
+
+        builder
+            .Services.AddOptions<CookieAuthenticationOptions>(TwoFactorAuthentication.Scheme)
+            .Configure<TwoFactorOptions>(
+                (options, twoFactor) => options.ExpireTimeSpan = twoFactor.ChallengeLifetime
+            );
     }
 
     private static void AddAuthorization(IServiceCollection services)

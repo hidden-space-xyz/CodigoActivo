@@ -1045,10 +1045,137 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "$ref": "#/components/schemas/LoginChallengeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login/two-factor": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginChallengeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwoFactorLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
                   "$ref": "#/components/schemas/UserResponse"
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/login/two-factor/resend": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/two-factor/authenticator/setup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthenticatorSetupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticatorSetupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/two-factor/authenticator/confirm": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmAuthenticatorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/two-factor/email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisableAuthenticatorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -3369,6 +3496,38 @@
         }
       }
     },
+    "/api/users/{userId}/two-factor/reset": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetTwoFactorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{userId}/children": {
       "post": {
         "tags": [
@@ -3931,6 +4090,30 @@
         },
         "additionalProperties": false
       },
+      "AuthenticatorSetupRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuthenticatorSetupResponse": {
+        "type": "object",
+        "properties": {
+          "sharedKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "authenticatorUri": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ChangeAssignmentRoleRequest": {
         "type": "object",
         "properties": {
@@ -3959,6 +4142,16 @@
             "nullable": true
           },
           "newPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConfirmAuthenticatorRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
             "type": "string",
             "nullable": true
           }
@@ -4471,6 +4664,20 @@
         },
         "additionalProperties": false
       },
+      "DisableAuthenticatorRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ErrorCode": {
         "enum": [
           "AnnouncementNotFound",
@@ -4552,6 +4759,13 @@
           "OtpResendNotAllowed",
           "OtpResendCooldownActive",
           "PasswordResetInvalidOrExpired",
+          "TwoFactorCodeInvalid",
+          "TwoFactorLocked",
+          "TwoFactorChallengeExpired",
+          "TwoFactorResendNotAllowed",
+          "TwoFactorResendCooldownActive",
+          "AuthenticatorSetupExpired",
+          "AuthenticatorNotEnabled",
           "EmailNoRecipients",
           "EmailRecipientWithoutAddress",
           "EmailTooManyRecipients",
@@ -5585,6 +5799,19 @@
         },
         "additionalProperties": false
       },
+      "LoginChallengeResponse": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/TwoFactorMethod"
+          },
+          "maskedEmail": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LoginRequest": {
         "type": "object",
         "properties": {
@@ -5767,9 +5994,6 @@
               "$ref": "#/components/schemas/UserResponse"
             },
             "nullable": true
-          },
-          "requiresVerification": {
-            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -5782,6 +6006,16 @@
             "nullable": true
           },
           "newPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResetTwoFactorRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
             "type": "string",
             "nullable": true
           }
@@ -6062,6 +6296,23 @@
           }
         },
         "additionalProperties": false
+      },
+      "TwoFactorLoginRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwoFactorMethod": {
+        "enum": [
+          "Email",
+          "Authenticator"
+        ],
+        "type": "string"
       },
       "UpdateActivityRequest": {
         "type": "object",
@@ -6373,6 +6624,9 @@
           },
           "type": {
             "$ref": "#/components/schemas/UserTypeSummaryResponse"
+          },
+          "twoFactorMethod": {
+            "$ref": "#/components/schemas/TwoFactorMethod"
           }
         },
         "additionalProperties": false

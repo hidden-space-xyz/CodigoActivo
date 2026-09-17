@@ -32,6 +32,40 @@ authentication are not supported.
   administrator from `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`; those variables are ignored once
   a user exists.
 
+### Two-factor authentication
+
+Every account logs in in two steps; there is no opt-out. `POST /api/auth/login` verifies the password and,
+instead of a session, issues a separate short-lived challenge cookie (`__Host-CodigoActivo.TwoFactor` in
+Production, 10 minutes, non-sliding) whose only use is the second step. It is bound to the user's password
+fingerprint and account status, so a password change or a block invalidates it. The session cookie is only
+issued by `POST /api/auth/login/two-factor` after the second factor is accepted, which is also when the login
+timestamp is recorded.
+
+Each user chooses one second factor from their account:
+
+- **Email (default)**: a 6-digit code is emailed on the password step. It is stored hashed with Argon2id,
+  expires with the challenge, is single use, and a new one replaces it. The password step reuses a code sent
+  within the last minute instead of sending another, and `POST /api/auth/login/two-factor/resend` enforces
+  the same 60-second cooldown. These emails count as credential mail in the automatic-message limiter.
+- **Authenticator application**: RFC 6238 TOTP (HMAC-SHA1, six digits, 30-second steps, one step of clock
+  drift) delegated to the Otp.NET library; the project implements no cryptographic algorithm itself, and
+  secrets, codes and hashes come from Otp.NET, ASP.NET Data Protection, `RandomNumberGenerator` and
+  Argon2id. Enrollment starts with the user's password, stores the shared secret encrypted with ASP.NET
+  Data Protection (a database copy alone cannot produce codes), and only activates once the application's
+  first code is confirmed; an unconfirmed enrollment expires after 15 minutes. Each accepted time step is
+  remembered so a code cannot be replayed. Returning to email requires the password and a current code, so
+  neither a stolen session nor a stolen password can weaken the second factor on its own.
+
+Wrong codes are counted per account across logins and authenticator removal: after five failures the second
+factor is locked for 15 minutes (`TwoFactorLocked`), which makes the 6-digit spaces unguessable within the
+per-IP credential rate limits. A successful code resets the counter. Enrollment URIs and shared keys are only
+returned to the authenticated owner over HTTPS and never logged.
+
+Recovery: an administrator can reset a user's second factor to email (`POST /api/users/{id}/two-factor/reset`)
+after re-entering their own password; this also removes the authenticator and any lockout. Losing the Data
+Protection keys makes stored authenticator secrets unreadable, so back them up (see below); affected users
+need the same administrator reset.
+
 ### CSRF
 
 `CsrfValidationMiddleware` validates every unsafe HTTP method. The client obtains a token from
@@ -43,8 +77,9 @@ Passwords must contain 12–128 characters and are hashed with Argon2id. Passwor
 stored or logged in plaintext. Login performs fallback Argon2 work for unknown identifiers to reduce timing
 differences.
 
-Credential routes (login, registration, verification, password recovery and change, and administrator
-grants) have layered resource controls:
+Credential routes (both login steps and the code resend, registration, verification, password recovery and
+change, authenticator enrollment and removal, administrator grants and second-factor resets) have layered
+resource controls:
 
 - nginx rejects credential floods above 10 requests per second per client IP, with a burst of 100;
 - the API enforces 120 requests per minute per client IP in every environment;
@@ -125,8 +160,10 @@ count are bounded by application settings.
 
 ### Verification, reset and activity notifications
 
-When `ACCOUNT_VERIFICATION_REQUIRED=true`, new accounts must confirm an emailed OTP before login. Verification
-and password-reset codes expire after 15 minutes by default and have a 60-second resend cooldown.
+New accounts must always confirm an emailed OTP before their first login; there is no switch. Verification
+and password-reset codes expire after 15 minutes by default and have a 60-second resend cooldown. Login codes
+expire after 10 minutes with the same cooldown. Because every login of an email-method user sends a message,
+SMTP must be configured in every environment; the API refuses to start otherwise.
 
 Activity signup itself sends no message. Confirming or rejecting a signup after the status change commits
 queues an outcome email. A dependent minor's notification resolves to the guardian address on the server;
@@ -137,7 +174,7 @@ the background dispatcher.
 
 ### Automatic-message limiter
 
-Every automatic verification, password-reset and activity-decision email passes through
+Every automatic verification, password-reset, login-code and activity-decision email passes through
 `ThrottledEmailSender` before entering the queue.
 
 - Each normalized destination has burst, hourly and daily budgets.
@@ -175,17 +212,20 @@ recipient/attachment limits and the five-minute nginx upstream timeout.
 
 ## Demo mode
 
-`DEMO_MODE=true` creates accounts with the public password `Demo1234!`. Such deployments are disposable
-demonstrations and must never contain private data. The first selected mode is persisted in `api-state`; a
-later conflicting value stops startup. Changing it requires deleting all named volumes as described in
+`DEMO_MODE=true` seeds invented accounts that nobody is meant to log in as: each seeding run gives them a
+random 32-byte password that is hashed and immediately discarded, they still require the second factor, and
+their addresses are fictitious. Demonstrations use the bootstrap administrator configured in Compose. Such
+deployments are disposable and must never contain private data. The first selected mode is persisted in
+`api-state`; a later conflicting value stops startup. Changing it requires deleting all named volumes as described in
 [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
 
 ## Operational checklist
 
 - Keep the TLS proxy as the only public ingress and restrict direct port `8080` access.
-- Back up and test restoration of the database, uploads, mode state and Data Protection material.
+- Back up and test restoration of the database, uploads, mode state and Data Protection material; the
+  latter also encrypts stored authenticator secrets.
 - Alert on authentication abuse, email-budget exhaustion, queue saturation and SMTP delivery failures.
 - Review administrator access and smoke-test session revocation, file authorization and account recovery
   after releases.
-- Treat the development override, demo credentials and any copied production `.env` as sensitive operational
-  risks.
+- Treat the development override, the bootstrap credentials of demo deployments and any copied production
+  `.env` as sensitive operational risks.

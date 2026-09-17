@@ -32,7 +32,7 @@ public sealed class ResendVerificationCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             verification,
-            new AccountEmails(emailSender, verification, passwordReset, application)
+            new AccountEmails(emailSender, verification, passwordReset, application, new TwoFactorOptions())
         );
     }
 
@@ -107,21 +107,6 @@ public sealed class ResendVerificationCommandHandlerTests
         user.OtpLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncVerificationNotRequiredReturnsConflict()
-    {
-        verification.Required = false;
-        var user = users.FindReturns(NewPendingWithOtp(clock));
-
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Code.Should().Be(ErrorCode.OtpResendNotAllowed);
-        emailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]

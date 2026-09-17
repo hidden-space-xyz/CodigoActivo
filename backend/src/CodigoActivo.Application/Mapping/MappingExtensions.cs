@@ -37,7 +37,8 @@ public static class MappingExtensions
             null,
             status,
             user.IsAdmin,
-            null
+            null,
+            user.TwoFactorMethod
         );
     }
 

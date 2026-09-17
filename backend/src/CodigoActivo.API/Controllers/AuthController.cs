@@ -1,4 +1,5 @@
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.Auth.Queries;
@@ -145,16 +146,17 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the login endpoint for auth.
+    /// Executes the password step of the login. On success it stores a short-lived challenge
+    /// cookie and returns which second factor must be presented; no session exists yet.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user, or an error response.</returns>
+    /// <returns>An HTTP response containing the pending challenge, or an error response.</returns>
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
-    public async Task<ActionResult<UserResponse>> LoginAsync(
+    public async Task<ActionResult<LoginChallengeResponse>> LoginAsync(
         [FromBody] LoginRequest request,
         [FromServices] LoginCommandHandler handler,
         CancellationToken ct
@@ -166,20 +168,178 @@ public class AuthController : ApiControllerBase
             return ToProblem(result.Error!);
         }
 
-        var user = result.Value;
-        var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
-        var principal = await sessionTickets.CreatePrincipalAsync(user.Id, ct);
+        var challenge = result.Value;
+        var tickets = HttpContext.RequestServices.GetRequiredService<TwoFactorTicketValidator>();
+        var principal = await tickets.CreatePrincipalAsync(challenge.UserId, ct);
         if (principal is null)
         {
             return ToProblem(Error.Unauthorized(ErrorCode.InvalidCredentials));
         }
 
         await HttpContext.SignInAsync(
+            TwoFactorAuthentication.Scheme,
+            principal,
+            new AuthenticationProperties { IsPersistent = false, AllowRefresh = false }
+        );
+        return Ok(challenge.ToResponse());
+    }
+
+    /// <summary>
+    /// Describes the pending second-factor challenge of the caller.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the pending challenge, or an error response.</returns>
+    [HttpGet("login/two-factor")]
+    [AllowAnonymous]
+    [OutputCache(NoStore = true)]
+    public async Task<ActionResult<LoginChallengeResponse>> TwoFactorChallengeAsync(
+        [FromServices] GetLoginChallengeQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        var userId = await GetPendingTwoFactorUserIdAsync();
+        if (userId is null)
+        {
+            return ToProblem(Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
+        }
+
+        return ToOk(await handler.HandleAsync(new GetLoginChallengeQuery(userId.Value), ct));
+    }
+
+    /// <summary>
+    /// Completes the login with the second factor and opens the session.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the signed-in user, or an error response.</returns>
+    [HttpPost("login/two-factor")]
+    [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult<UserResponse>> VerifyTwoFactorAsync(
+        [FromBody] TwoFactorLoginRequest request,
+        [FromServices] VerifyTwoFactorLoginCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        var userId = await GetPendingTwoFactorUserIdAsync();
+        if (userId is null)
+        {
+            return ToProblem(Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
+        }
+
+        var result = await handler.HandleAsync(
+            new VerifyTwoFactorLoginCommand(userId.Value, request.Code),
+            ct
+        );
+        if (result.IsFailure)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
+        var principal = await sessionTickets.CreatePrincipalAsync(userId.Value, ct);
+        if (principal is null)
+        {
+            return ToProblem(Error.Unauthorized(ErrorCode.InvalidCredentials));
+        }
+
+        await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);
+        await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,
             new AuthenticationProperties { IsPersistent = false, AllowRefresh = false }
         );
-        return Ok(user);
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Emails a new code for the pending second-factor challenge of the caller.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("login/two-factor/resend")]
+    [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> ResendTwoFactorCodeAsync(
+        [FromServices] ResendTwoFactorCodeCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        var userId = await GetPendingTwoFactorUserIdAsync();
+        if (userId is null)
+        {
+            return ToProblem(Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
+        }
+
+        return ToNoContent(
+            await handler.HandleAsync(new ResendTwoFactorCodeCommand(userId.Value), ct)
+        );
+    }
+
+    /// <summary>
+    /// Starts enrolling an authenticator application for the signed-in user.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the enrollment data, or an error response.</returns>
+    [HttpPost("two-factor/authenticator/setup")]
+    [Authorize]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult<AuthenticatorSetupResponse>> BeginAuthenticatorSetupAsync(
+        [FromBody] AuthenticatorSetupRequest request,
+        [FromServices] BeginAuthenticatorSetupCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(
+            await handler.HandleAsync(new BeginAuthenticatorSetupCommand(UserId, request), ct)
+        );
+    }
+
+    /// <summary>
+    /// Confirms the authenticator enrollment of the signed-in user with its first code.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("two-factor/authenticator/confirm")]
+    [Authorize]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> ConfirmAuthenticatorAsync(
+        [FromBody] ConfirmAuthenticatorRequest request,
+        [FromServices] ConfirmAuthenticatorCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(new ConfirmAuthenticatorCommand(UserId, request), ct)
+        );
+    }
+
+    /// <summary>
+    /// Returns the signed-in user to email as their second factor, removing the authenticator.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("two-factor/email")]
+    [Authorize]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> DisableAuthenticatorAsync(
+        [FromBody] DisableAuthenticatorRequest request,
+        [FromServices] DisableAuthenticatorCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(new DisableAuthenticatorCommand(UserId, request), ct)
+        );
     }
 
     /// <summary>
@@ -191,6 +351,7 @@ public class AuthController : ApiControllerBase
     public async Task<IActionResult> LogoutAsync()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);
         return NoContent();
     }
 
@@ -208,5 +369,11 @@ public class AuthController : ApiControllerBase
     )
     {
         return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(UserId), ct));
+    }
+
+    private async Task<Guid?> GetPendingTwoFactorUserIdAsync()
+    {
+        var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
+        return pending.Succeeded ? pending.Principal.GetUserId() : null;
     }
 }

@@ -86,6 +86,28 @@ public static class EmailBlocks
     }
 
     /// <summary>
+    /// Builds an email block that displays a short one-time code prominently.
+    /// </summary>
+    /// <param name="code">The code value.</param>
+    /// <returns>The resulting email block value.</returns>
+    public static EmailBlock Code(string code)
+    {
+        var encoded = WebUtility.HtmlEncode(code);
+
+        var html = $"""
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:4px auto 18px auto;">
+            <tr>
+            <td align="center" class="ca-code" style="{EmailStyles.CodeCell}">
+            <span style="{EmailStyles.CodeText}">{encoded}</span>
+            </td>
+            </tr>
+            </table>
+            """;
+
+        return new EmailBlock(html, code);
+    }
+
+    /// <summary>
     /// Builds an email callout content block.
     /// </summary>
     /// <param name="text">The text value.</param>

@@ -67,7 +67,6 @@ describe('register page', () => {
     const response: RegisterResponse = {
       adult: buildUserResponse({ id: 'adult-1' }),
       minors: [buildUserResponse({ id: 'minor-1' })],
-      requiresVerification: true,
     }
     const received = serveRegister(() => HttpResponse.json(response, { status: 201 }))
     const resent: unknown[] = []
@@ -133,12 +132,9 @@ describe('register page', () => {
     )
   })
 
-  it('offers login when the account is active and restarts the flow on demand', async () => {
+  it('always asks to verify the email and restarts the flow on demand', async () => {
     serveRegister(() =>
-      HttpResponse.json(
-        { adult: buildUserResponse(), minors: [], requiresVerification: false },
-        { status: 201 },
-      ),
+      HttpResponse.json({ adult: buildUserResponse(), minors: [] }, { status: 201 }),
     )
     const { wrapper } = await renderApp('/register')
     await clickButton(wrapper, t('features.register.ageGate.confirm'))
@@ -146,7 +142,7 @@ describe('register page', () => {
     await wrapper.find('form').trigger('submit')
 
     await vi.waitFor(() =>
-      expect(page(wrapper).text()).toContain(t('features.register.success.verifiedActive')),
+      expect(page(wrapper).text()).toContain(t('features.register.success.verifyIntroBefore')),
     )
     expect(wrapper.find('.reg-success__role').exists()).toBe(false)
 

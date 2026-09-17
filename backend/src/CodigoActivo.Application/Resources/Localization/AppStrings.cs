@@ -87,6 +87,31 @@ public static class AppStrings
     public static string EmailsFooterWebsiteLabel => Get("emails.footer.websiteLabel");
 
     /// <summary>
+    /// Gets the emails login code heading value.
+    /// </summary>
+    public static string EmailsLoginCodeHeading => Get("emails.loginCode.heading");
+
+    /// <summary>
+    /// Gets the emails login code ignore note value.
+    /// </summary>
+    public static string EmailsLoginCodeIgnoreNote => Get("emails.loginCode.ignoreNote");
+
+    /// <summary>
+    /// Gets the emails login code intro html value.
+    /// </summary>
+    public static string EmailsLoginCodeIntroHtml => Get("emails.loginCode.introHtml");
+
+    /// <summary>
+    /// Gets the emails login code intro text value.
+    /// </summary>
+    public static string EmailsLoginCodeIntroText => Get("emails.loginCode.introText");
+
+    /// <summary>
+    /// Gets the emails login code subject value.
+    /// </summary>
+    public static string EmailsLoginCodeSubject => Get("emails.loginCode.subject");
+
+    /// <summary>
     /// Gets the emails manual signature value.
     /// </summary>
     public static string EmailsManualSignature => Get("emails.manual.signature");
@@ -279,6 +304,26 @@ public static class AppStrings
     )
     {
         return Format("emails.details.scheduleSameDay", startDate, startTime, endTime);
+    }
+
+    /// <summary>
+    /// Formats the localized emails login code expiry html text with the supplied values.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsLoginCodeExpiryHtml(int minutes)
+    {
+        return Format("emails.loginCode.expiryHtml", minutes);
+    }
+
+    /// <summary>
+    /// Formats the localized emails login code expiry text text with the supplied values.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsLoginCodeExpiryText(int minutes)
+    {
+        return Format("emails.loginCode.expiryText", minutes);
     }
 
     /// <summary>

@@ -27,18 +27,6 @@ public sealed class ProductionConfigurationValidatorTests
         act.Should().NotThrow();
     }
 
-    [Fact]
-    public void ValidateDisabledAccountVerificationInProductionDoesNotThrow()
-    {
-        var config = BuildConfiguration(
-            new KeyValuePair<string, string?>("ACCOUNT_VERIFICATION_REQUIRED", "false")
-        );
-
-        var act = () => ProductionConfigurationValidator.Validate(config);
-
-        act.Should().NotThrow();
-    }
-
     [Theory]
     [InlineData("POSTGRES_PASSWORD", "short", "POSTGRES_PASSWORD")]
     [InlineData(
@@ -75,7 +63,6 @@ public sealed class ProductionConfigurationValidatorTests
         var values = new Dictionary<string, string?>
         {
             ["DEMO_MODE"] = "false",
-            ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
             ["POSTGRES_PASSWORD"] = "a-strong-32-character-db-password",
             ["DATA_PROTECTION_CERTIFICATE_PASSWORD"] =
                 "a-separate-strong-data-protection-password",

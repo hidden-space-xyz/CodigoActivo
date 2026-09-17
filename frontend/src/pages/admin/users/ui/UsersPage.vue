@@ -12,7 +12,12 @@ import {
 } from '@/shared/ui'
 
 import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
-import { GrantAdminDialog, UserFormDialog, useUsers } from '@/features/manage-users'
+import {
+  GrantAdminDialog,
+  ResetTwoFactorDialog,
+  UserFormDialog,
+  useUsers,
+} from '@/features/manage-users'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { genderLabel } from '@/entities/user'
 import type { UpdateUserInput, User } from '@/entities/user'
@@ -32,8 +37,17 @@ import {
 
 const { t } = useI18n()
 
-const { table, relationFilter, update, remove, changeType, setAdmin, fetchOne, fetchAllUsers } =
-  useUsers()
+const {
+  table,
+  relationFilter,
+  update,
+  remove,
+  changeType,
+  setAdmin,
+  resetTwoFactor,
+  fetchOne,
+  fetchAllUsers,
+} = useUsers()
 const userTypes = useUserTypesList()
 const userStatusTypes = useUserStatusTypesList()
 const feedback = useCrudFeedback()
@@ -50,6 +64,10 @@ const selectedUserTypeId = ref<string | null>(null)
 const grantDialogVisible = ref(false)
 const grantUser = ref<User | null>(null)
 const grantError = ref('')
+
+const resetTwoFactorVisible = ref(false)
+const resetTwoFactorUser = ref<User | null>(null)
+const resetTwoFactorError = ref('')
 
 function birthDateWithAge(user: User): string {
   const formatted = formatDate(user.birthDate)
@@ -152,6 +170,34 @@ function submitGrantAdmin(currentPassword: string): void {
       onError: (error) => {
         if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
           grantError.value = getErrorMessage(error)
+          return
+        }
+        feedback.error(error)
+      },
+    },
+  )
+}
+
+function openResetTwoFactor(user: User): void {
+  if (!user.id) return
+  resetTwoFactorUser.value = user
+  resetTwoFactorError.value = ''
+  resetTwoFactorVisible.value = true
+}
+
+function submitResetTwoFactor(currentPassword: string): void {
+  if (!resetTwoFactorUser.value?.id) return
+  resetTwoFactorError.value = ''
+  resetTwoFactor.mutate(
+    { id: resetTwoFactorUser.value.id, currentPassword },
+    {
+      onSuccess: () => {
+        feedback.success(t('pages.admin.users.toasts.twoFactorReset'))
+        resetTwoFactorVisible.value = false
+      },
+      onError: (error) => {
+        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
+          resetTwoFactorError.value = getErrorMessage(error)
           return
         }
         feedback.error(error)
@@ -412,7 +458,7 @@ function confirmDelete(user: User): void {
           />
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="200" align="center" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="240" align="center" fixed="right">
         <template #default="{ row }">
           <div class="ca-row-actions">
             <Button
@@ -439,6 +485,15 @@ function confirmDelete(user: User): void {
               class="ca-action-icon--email"
               :aria-label="$t('pages.admin.users.aria.sendEmail')"
               @click="openEmail(row)"
+            />
+            <Button
+              v-if="row.email"
+              icon="undo"
+              text
+              circle
+              type="warning"
+              :aria-label="$t('pages.admin.users.aria.resetTwoFactor')"
+              @click="openResetTwoFactor(row)"
             />
             <Button
               icon="trash"
@@ -473,6 +528,14 @@ function confirmDelete(user: User): void {
       :saving="setAdmin.isPending.value"
       :error="grantError"
       @submit="submitGrantAdmin"
+    />
+
+    <ResetTwoFactorDialog
+      v-model:visible="resetTwoFactorVisible"
+      :user="resetTwoFactorUser"
+      :saving="resetTwoFactor.isPending.value"
+      :error="resetTwoFactorError"
+      @submit="submitResetTwoFactor"
     />
 
     <SendEmailDialog

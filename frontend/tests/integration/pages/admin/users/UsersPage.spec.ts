@@ -33,6 +33,7 @@ const EDIT_TITLE = 'features.manageUsers.editHeader'
 const TYPE_TITLE = 'pages.admin.users.typeDialog.header'
 const EMAIL_TITLE = 'features.sendEmail.header'
 const GRANT_TITLE = 'features.manageUsers.grantAdmin.header'
+const RESET_2FA_TITLE = 'features.manageUsers.resetTwoFactor.header'
 
 const ada = buildUserResponse({ dependentCount: 2 })
 const tim = without(
@@ -691,5 +692,70 @@ describe('admin users page', () => {
     await acceptMessageBox()
     await expectNotification(t('common.error'))
     expect(isDialogOpen(t(EMAIL_TITLE))).toBe(true)
+  })
+
+  it('resets the second factor of a user after confirming the admin password', async () => {
+    serveUsers([ada])
+    const requests: unknown[] = []
+    server.use(
+      http.post('/api/users/:userId/two-factor/reset', async ({ request, params }) => {
+        requests.push({ id: params.userId, body: await request.json() })
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { wrapper } = await renderPage()
+
+    await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
+    const dialog = openDialog(t(RESET_2FA_TITLE))
+    expect(dialog.textContent).toContain(
+      t('features.manageUsers.resetTwoFactor.message', { fullName: 'Ada Lovelace' }),
+    )
+
+    await click(findButton(t('features.manageUsers.resetTwoFactor.confirm'), dialog))
+    expect(dialog.textContent).toContain(t('features.manageUsers.resetTwoFactor.passwordRequired'))
+    expect(requests).toEqual([])
+
+    await typeInto('#reset-two-factor-password', 'Str0ngPass!23')
+    await click(findButton(t('features.manageUsers.resetTwoFactor.confirm'), dialog))
+
+    await expectNotification(t('pages.admin.users.toasts.twoFactorReset'))
+    expect(requests).toEqual([{ id: 'user-1', body: { currentPassword: 'Str0ngPass!23' } }])
+    await vi.waitFor(() => expect(isDialogOpen(t(RESET_2FA_TITLE))).toBe(false))
+  })
+
+  it('keeps the reset dialog open when the password is rejected or the request fails', async () => {
+    serveUsers([ada, tim])
+    let rejectPassword = true
+    server.use(
+      http.post('/api/users/:userId/two-factor/reset', () =>
+        rejectPassword ? apiError(400, 'UserCurrentPasswordIncorrect') : apiError(500),
+      ),
+    )
+    const { wrapper } = await renderPage()
+    expect(
+      rowElement(wrapper, 1).querySelector(
+        `button[aria-label="${t('pages.admin.users.aria.resetTwoFactor')}"]`,
+      ),
+    ).toBeNull()
+
+    await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
+    const dialog = openDialog(t(RESET_2FA_TITLE))
+    await typeInto('#reset-two-factor-password', 'wrong-password')
+    await click(findButton(t('features.manageUsers.resetTwoFactor.confirm'), dialog))
+
+    await vi.waitFor(() =>
+      expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
+    )
+    expect(document.body.querySelectorAll('.el-notification')).toHaveLength(0)
+    expect(isDialogOpen(t(RESET_2FA_TITLE))).toBe(true)
+
+    rejectPassword = false
+    await click(findButton(t('features.manageUsers.resetTwoFactor.confirm'), dialog))
+    await expectNotification(t('common.error'))
+    expect(dialog.textContent).not.toContain(t('errors.UserCurrentPasswordIncorrect'))
+    expect(isDialogOpen(t(RESET_2FA_TITLE))).toBe(true)
+
+    await dismissDialog(wrapper, t(RESET_2FA_TITLE))
+    await vi.waitFor(() => expect(isDialogOpen(t(RESET_2FA_TITLE))).toBe(false))
   })
 })

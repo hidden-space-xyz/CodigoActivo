@@ -1,4 +1,4 @@
-import type { Gender } from '@/shared/api/generated/models'
+import type { Gender, TwoFactorMethod } from '@/shared/api/generated/models'
 
 /** Signed-in user's own data shown and edited on the account page, mapped from `UserResponse`. */
 export interface AccountProfile {
@@ -11,6 +11,17 @@ export interface AccountProfile {
   readonly gender: Gender | null
   readonly statusName: string
   readonly isAdmin: boolean
+  /** Second factor asked for at login: an emailed code or an authenticator application. */
+  readonly twoFactorMethod: TwoFactorMethod
+}
+
+/**
+ * Enrollment data of an authenticator application that still has to be confirmed with its first
+ * code. `sharedKey` is grouped for manual entry; `authenticatorUri` is what the QR code encodes.
+ */
+export interface AuthenticatorSetup {
+  readonly sharedKey: string
+  readonly authenticatorUri: string
 }
 
 /** Minor managed by the signed-in adult, mapped from `UserResponse`. */

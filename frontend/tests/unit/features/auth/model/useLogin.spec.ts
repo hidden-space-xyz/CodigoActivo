@@ -5,7 +5,7 @@ import { useSession } from '@/entities/session'
 import { useLogin } from '@/features/auth'
 
 import { mountComposable } from '../../../../support/fixtures/auth-register/composable'
-import { buildUserResponse } from '../../../../support/fixtures/user'
+import { buildLoginChallenge } from '../../../../support/fixtures/user'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
 
 function serveLogin() {
@@ -13,7 +13,7 @@ function serveLogin() {
   server.use(
     http.post('/api/auth/login', async ({ request }) => {
       bodies.push(await request.json())
-      return HttpResponse.json(buildUserResponse({ firstName: 'Grace', isAdmin: true }))
+      return HttpResponse.json(buildLoginChallenge())
     }),
   )
   return bodies
@@ -28,41 +28,45 @@ describe('useLogin', () => {
     expect(result.isError.value).toBe(false)
   })
 
-  it('stores the user and navigates home when there is no redirect', async () => {
+  it('moves to the verification page without opening a session when the password is accepted', async () => {
     const bodies = serveLogin()
     const { result, router } = await mountComposable(() => useLogin(), { route: '/login' })
     result.form.identifier = 'grace@example.test'
     result.form.password = 'secret'
 
     result.submit()
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
 
     expect(bodies).toEqual([{ identifier: 'grace@example.test', password: 'secret' }])
-    expect(useSession().isAdmin).toBe(true)
-    expect(useSession().displayName).toBe('Grace')
+    expect(router.currentRoute.value.query).toEqual({})
+    expect(useSession().isAuthenticated).toBe(false)
   })
 
-  it('ignores a redirect given more than once and navigates home', async () => {
-    serveLogin()
-    const { result, router } = await mountComposable(() => useLogin(), {
-      route: '/login?redirect=/about&redirect=/events',
-    })
-
-    result.submit()
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
-  })
-
-  it('navigates to the redirect path after signing in', async () => {
+  it('carries the redirect target over to the verification page', async () => {
     serveLogin()
     const { result, router } = await mountComposable(() => useLogin(), {
       route: '/login?redirect=/events',
     })
 
     result.submit()
-    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/events'))
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
+
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/events' })
   })
 
-  it('flags an error and keeps the session empty when login fails', async () => {
+  it('ignores a redirect given more than once', async () => {
+    serveLogin()
+    const { result, router } = await mountComposable(() => useLogin(), {
+      route: '/login?redirect=/about&redirect=/events',
+    })
+
+    result.submit()
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
+
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('flags an error and stays on the login page when the password is rejected', async () => {
     server.use(http.post('/api/auth/login', () => apiError(401, 'InvalidCredentials')))
     const { result, router } = await mountComposable(() => useLogin(), { route: '/login' })
 
@@ -70,6 +74,7 @@ describe('useLogin', () => {
     await vi.waitFor(() => expect(result.isError.value).toBe(true))
     await flushPromises()
 
+    expect(result.error.value).toMatchObject({ code: 'InvalidCredentials' })
     expect(useSession().isAuthenticated).toBe(false)
     expect(router.currentRoute.value.name).toBe('login')
   })

@@ -93,6 +93,10 @@ describe('useUsers', () => {
         requests.push(`ADMIN ${JSON.stringify(await request.json())}`)
         return new HttpResponse(null, { status: 204 })
       }),
+      http.post('/api/users/:userId/two-factor/reset', async ({ request, params }) => {
+        requests.push(`RESET-2FA ${String(params.userId)} ${JSON.stringify(await request.json())}`)
+        return new HttpResponse(null, { status: 204 })
+      }),
     )
     const { result, queryClient } = await withSetup(() => useUsers())
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -112,14 +116,16 @@ describe('useUsers', () => {
     await result.remove.mutateAsync('user-2')
     await result.changeType.mutateAsync({ id: 'user-1', userTypeId: 'type-member' })
     await result.setAdmin.mutateAsync({ id: 'user-1', isAdmin: true, currentPassword: 'secret' })
+    await result.resetTwoFactor.mutateAsync({ id: 'user-1', currentPassword: 'secret' })
 
     expect(requests).toEqual([
       'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":"1990-05-10","gender":"Female","parentId":null}',
       'DELETE user-2',
       'TYPE ?userTypeId=type-member',
       'ADMIN {"isAdmin":true,"currentPassword":"secret"}',
+      'RESET-2FA user-1 {"currentPassword":"secret"}',
     ])
-    expect(invalidate).toHaveBeenCalledTimes(4)
+    expect(invalidate).toHaveBeenCalledTimes(5)
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users'] })
   })
 })

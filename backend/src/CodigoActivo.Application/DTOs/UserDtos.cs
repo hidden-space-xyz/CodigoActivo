@@ -23,6 +23,7 @@ namespace CodigoActivo.Application.DTOs;
 /// <param name="Status">The status value.</param>
 /// <param name="IsAdmin">Whether admin.</param>
 /// <param name="Type">The type value.</param>
+/// <param name="TwoFactorMethod">Second factor the user presents when logging in.</param>
 public record UserResponse(
     Guid Id,
     string FirstName,
@@ -39,7 +40,8 @@ public record UserResponse(
     int? DependentCount,
     UserStatusResponse Status,
     bool IsAdmin,
-    UserTypeSummaryResponse? Type
+    UserTypeSummaryResponse? Type,
+    TwoFactorMethod TwoFactorMethod
 )
 {
     /// <summary>
@@ -62,7 +64,8 @@ public record UserResponse(
             null,
             null!,
             false,
-            null
+            null,
+            TwoFactorMethod.Email
         ) { }
 }
 
@@ -90,6 +93,12 @@ public record UserTypeSummaryResponse(Guid Id, string Name, string Color);
 /// Password of the acting administrator. Required to grant the role; ignored when revoking it.
 /// </param>
 public record SetAdminRequest(bool IsAdmin, [MaxLength(128)] string? CurrentPassword);
+
+/// <summary>
+/// Contains the client-supplied data used by an administrator to reset a user's second factor.
+/// </summary>
+/// <param name="CurrentPassword">Password of the acting administrator, re-entered to authorize the reset.</param>
+public record ResetTwoFactorRequest([Required] [MaxLength(128)] [NotBlank] string CurrentPassword);
 
 /// <summary>
 /// Contains the client-supplied data used to update the user.

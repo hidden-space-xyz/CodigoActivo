@@ -100,4 +100,155 @@ public sealed class UserEntityTests
         user.OtpCodeHash.Should().Be(otpHash);
         user.UpdatedAt.Should().BeNull();
     }
+
+    [Fact]
+    public void NewUserDefaultsToEmailAsSecondFactor()
+    {
+        NewPendingUser().TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
+    }
+
+    [Fact]
+    public void IssueLoginCodeStoresHashAndTimestamps()
+    {
+        var user = NewPendingUser();
+
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        user.LoginCodeHash.Should().Be("HASH");
+        user.LoginCodeExpiresAt.Should().Be(Now.AddMinutes(10));
+        user.LoginCodeLastSentAt.Should().Be(Now);
+        user.HasRecentLoginCode(Now.AddSeconds(30), TimeSpan.FromSeconds(60)).Should().BeTrue();
+        user.HasRecentLoginCode(Now.AddSeconds(61), TimeSpan.FromSeconds(60)).Should().BeFalse();
+        user.HasRecentLoginCode(Now.AddMinutes(11), TimeSpan.FromMinutes(20)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearLoginCodeForgetsHashAndTimestamps()
+    {
+        var user = NewPendingUser();
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        user.ClearLoginCode();
+
+        user.LoginCodeHash.Should().BeNull();
+        user.LoginCodeExpiresAt.Should().BeNull();
+        user.LoginCodeLastSentAt.Should().BeNull();
+        user.HasRecentLoginCode(Now, TimeSpan.FromMinutes(1)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void RecordTwoFactorFailureBelowTheLimitOnlyCounts()
+    {
+        var user = NewPendingUser();
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeFalse();
+
+        user.TwoFactorFailedAttempts.Should().Be(1);
+        user.TwoFactorLockedUntil.Should().BeNull();
+        user.IsTwoFactorLocked(Now).Should().BeFalse();
+        user.LoginCodeHash.Should().Be("HASH");
+    }
+
+    [Fact]
+    public void RecordTwoFactorFailureAtTheLimitLocksResetsCounterAndDiscardsTheCode()
+    {
+        var user = NewPendingUser();
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+        user.TwoFactorFailedAttempts = 2;
+
+        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeTrue();
+
+        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.TwoFactorLockedUntil.Should().Be(Now.AddMinutes(15));
+        user.IsTwoFactorLocked(Now.AddMinutes(14)).Should().BeTrue();
+        user.IsTwoFactorLocked(Now.AddMinutes(15)).Should().BeFalse();
+        user.LoginCodeHash.Should().BeNull();
+    }
+
+    [Fact]
+    public void CompleteTwoFactorLoginClearsChallengeStateAndStampsLogin()
+    {
+        var user = NewPendingUser();
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+        user.TwoFactorFailedAttempts = 2;
+        user.TwoFactorLockedUntil = Now.AddMinutes(-1);
+
+        user.CompleteTwoFactorLogin(Now);
+
+        user.LoginCodeHash.Should().BeNull();
+        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.TwoFactorLockedUntil.Should().BeNull();
+        user.LastLoginAt.Should().Be(Now);
+    }
+
+    [Fact]
+    public void BeginAuthenticatorSetupStoresPendingKeyUntilItExpires()
+    {
+        var user = NewPendingUser();
+
+        user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+
+        user.PendingAuthenticatorKey.Should().Be("PENDING");
+        user.PendingAuthenticatorExpiresAt.Should().Be(Now.AddMinutes(15));
+        user.HasPendingAuthenticator(Now.AddMinutes(14)).Should().BeTrue();
+        user.HasPendingAuthenticator(Now.AddMinutes(15)).Should().BeFalse();
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email, "setup does not change the factor yet");
+    }
+
+    [Fact]
+    public void EnableAuthenticatorPromotesPendingKeyAndSwitchesTheFactor()
+    {
+        var user = NewPendingUser();
+        user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        user.EnableAuthenticator(42, Now);
+
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
+        user.AuthenticatorKey.Should().Be("PENDING");
+        user.AuthenticatorLastUsedStep.Should().Be(42);
+        user.PendingAuthenticatorKey.Should().BeNull();
+        user.PendingAuthenticatorExpiresAt.Should().BeNull();
+        user.LoginCodeHash.Should().BeNull();
+        user.UpdatedAt.Should().Be(Now);
+    }
+
+    [Fact]
+    public void UseEmailTwoFactorForgetsActiveAndPendingAuthenticators()
+    {
+        var user = NewPendingUser();
+        user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+        user.EnableAuthenticator(42, Now);
+        user.BeginAuthenticatorSetup("ANOTHER", Now, TimeSpan.FromMinutes(15));
+
+        user.UseEmailTwoFactor(Now.AddHours(1));
+
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
+        user.AuthenticatorKey.Should().BeNull();
+        user.AuthenticatorLastUsedStep.Should().BeNull();
+        user.PendingAuthenticatorKey.Should().BeNull();
+        user.PendingAuthenticatorExpiresAt.Should().BeNull();
+        user.UpdatedAt.Should().Be(Now.AddHours(1));
+    }
+
+    [Fact]
+    public void ResetTwoFactorReturnsEverySecondFactorFieldToItsDefault()
+    {
+        var user = NewPendingUser();
+        user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+        user.EnableAuthenticator(42, Now);
+        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+        user.TwoFactorFailedAttempts = 4;
+        user.TwoFactorLockedUntil = Now.AddMinutes(10);
+
+        user.ResetTwoFactor(Now);
+
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
+        user.AuthenticatorKey.Should().BeNull();
+        user.LoginCodeHash.Should().BeNull();
+        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.TwoFactorLockedUntil.Should().BeNull();
+        user.IsTwoFactorLocked(Now).Should().BeFalse();
+    }
 }

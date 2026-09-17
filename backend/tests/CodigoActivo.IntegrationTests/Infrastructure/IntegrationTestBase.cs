@@ -35,12 +35,32 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         return LoginAsync(Factory, credentials);
     }
 
-    protected static async Task<HttpClient> LoginAsync(
+    /// <summary>
+    /// Signs in completely: the password step followed by the emailed second factor, which every
+    /// seeded user relies on. The login-code email is removed from the recorder afterwards so the
+    /// test only sees the mail its own scenario produces.
+    /// </summary>
+    protected async Task<HttpClient> LoginAsync(
         WebApplicationFactory<Program> host,
         TestCredentials credentials
     )
     {
         var client = host.CreateClient();
+        await PassPasswordStepAsync(client, credentials);
+        var code = Factory.EmailSender.LastLoginCodeSentTo(credentials.Identifier);
+        await CompleteTwoFactorAsync(client, code);
+        Factory.EmailSender.ForgetLoginCodes();
+        return client;
+    }
+
+    /// <summary>
+    /// Runs only the password step, leaving the client with a pending second-factor challenge.
+    /// </summary>
+    protected static async Task<LoginChallengeResponse> PassPasswordStepAsync(
+        HttpClient client,
+        TestCredentials credentials
+    )
+    {
         using var response = await client.PostJsonAsync(
             "/api/auth/login",
             new LoginRequest(credentials.Identifier, credentials.Password),
@@ -54,7 +74,28 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
             );
         }
 
-        return client;
+        return (await response.ReadJsonAsync<LoginChallengeResponse>(Ct))!;
+    }
+
+    /// <summary>
+    /// Presents the second factor for the pending challenge of the client.
+    /// </summary>
+    protected static async Task<UserResponse> CompleteTwoFactorAsync(HttpClient client, string code)
+    {
+        using var response = await client.PostJsonAsync(
+            "/api/auth/login/two-factor",
+            new TwoFactorLoginRequest(code),
+            Ct
+        );
+        if (response.StatusCode is not HttpStatusCode.OK)
+        {
+            var status = $"{response.StatusCode:D}";
+            throw new InvalidOperationException(
+                $"Test second-factor step failed with status {status}."
+            );
+        }
+
+        return (await response.ReadJsonAsync<UserResponse>(Ct))!;
     }
 
     protected Task<HttpClient> LoginAsAdminAsync()

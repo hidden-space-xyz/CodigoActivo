@@ -98,20 +98,14 @@ public sealed class RegisterCommandHandler(
             Email = email,
             Phone = phone,
             PasswordHash = hasher.Hash(request.Password),
-            UserStatusTypeId = verification.Required
-                ? SeedIds.UserStatusTypes.Pending
-                : SeedIds.UserStatusTypes.Active,
+            UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
             IsAdmin = false,
             UserTypeId = SeedIds.UserTypes.Participant,
             CreatedAt = now,
         };
 
-        string? otpCode = null;
-        if (verification.Required)
-        {
-            otpCode = Guid.NewGuid().ToString();
-            adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
-        }
+        var otpCode = Guid.NewGuid().ToString();
+        adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
 
         await users.AddAsync(adult, ct);
 
@@ -136,20 +130,13 @@ public sealed class RegisterCommandHandler(
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
-        if (otpCode is not null)
-        {
-            await TrySendVerificationEmailAsync(adult, otpCode, ct);
-        }
+        await TrySendVerificationEmailAsync(adult, otpCode, ct);
 
         var createdAdult = await users.GetByIdWithDetailsAsync(adult.Id, ct);
         var children = await users.ListChildrenWithDetailsAsync(adult.Id, ct);
         var createdMinors = children.Select(child => child.ToResponse()).ToList();
 
-        return new RegisterResponse(
-            createdAdult!.ToResponse(),
-            createdMinors,
-            verification.Required
-        );
+        return new RegisterResponse(createdAdult!.ToResponse(), createdMinors);
     }
 
     private async Task TrySendVerificationEmailAsync(

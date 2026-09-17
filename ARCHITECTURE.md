@@ -24,7 +24,7 @@ PostgreSQL database and no mediator, message bus, event sourcing or separate rea
 | ----------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
 | `CodigoActivo.Domain`         | Entities, repository and service ports, domain constants, `Result` and `Error` | None                                |
 | `CodigoActivo.Application`    | Use cases, DTOs, validation, mapping, querying and application services        | Domain                              |
-| `CodigoActivo.Infrastructure` | EF Core, repositories, file storage, Argon2id, SMTP and the system clock       | Domain                              |
+| `CodigoActivo.Infrastructure` | EF Core, repositories, file storage, Argon2id, TOTP (Otp.NET), SMTP and the clock | Domain                            |
 | `CodigoActivo.Composition`    | Dependency injection and configuration-to-options mapping                      | Domain, Application, Infrastructure |
 | `CodigoActivo.API`            | HTTP controllers, middleware, authentication, caching, OpenAPI and startup     | Composition                         |
 
@@ -38,8 +38,9 @@ replace project-reference discipline.
   expressed as guard clauses in Application handlers; `User` also owns account-state transitions.
 - Repository interfaces live in `Domain/Repositories`. All repositories in one request share the scoped
   `CodigoActivoDbContext`; `IUnitOfWork.SaveChangesAsync` commits staged changes once.
-- Pure service contracts such as `IClock`, `IPasswordHasher`, email ports and file storage ports live in
-  Domain. Application-specific contracts such as cache invalidation remain in Application.
+- Pure service contracts such as `IClock`, `IPasswordHasher`, `ITotpService`, `ISecretProtector`, email
+  ports and file storage ports live in Domain. Application-specific contracts such as cache invalidation
+  remain in Application.
 - EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values. Closed value sets are
   enums stored as strings; administrator-managed lookups are tables seeded with stable IDs from `SeedIds`.
 - Startup locks the selected demo mode, applies migrations, seeds catalogs, creates the initial administrator
@@ -118,8 +119,9 @@ UI localization resources.
 
 Automatic mail and administrator-authored mail deliberately follow different paths:
 
-- Automatic account and activity messages use `IEmailSender`. `ThrottledEmailSender` consumes an in-memory
-  rate-limit budget and enqueues accepted messages in `ChannelEmailDispatcher`.
+- Automatic account and activity messages, including the login codes of the mandatory second factor, use
+  `IEmailSender`. `ThrottledEmailSender` consumes an in-memory rate-limit budget and enqueues accepted
+  messages in `ChannelEmailDispatcher`.
 - Queue workers deliver through `IEmailTransport`. The queue is bounded, volatile and has no retry.
 - Administrator-authored bulk mail uses `ManualEmailDispatcher` and `IEmailTransport` directly so the HTTP
   response can report delivery results. It remains subject to recipient and attachment limits.
@@ -163,6 +165,9 @@ not reusable server-state logic.
 
 - Route guards resolve authentication and administrator access before entering protected pages.
 - Session state is a module-level reactive singleton backed by `GET /api/auth/me`; Pinia is not used.
+- Login is two pages: the password form navigates to `/login/verify`, which reads the pending challenge from
+  `GET /api/auth/login/two-factor` (held in a cookie, so a reload survives) and only stores the user in the
+  session once the second factor is accepted.
 - The HTTP client sends cookies, obtains the CSRF token when needed and turns failed responses into `ApiError`.
 - `ErrorCode` values map to Spanish messages under `errors.*` in
   `src/shared/i18n/locales/es.json`.

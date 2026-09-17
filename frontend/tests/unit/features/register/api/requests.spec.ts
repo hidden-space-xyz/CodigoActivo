@@ -21,7 +21,6 @@ describe('register requests', () => {
         const response: RegisterResponse = {
           adult: buildUserResponse({ id: 'adult-1' }),
           minors: [],
-          requiresVerification: true,
         }
         return HttpResponse.json(response, { status: 201 })
       }),
@@ -38,11 +37,7 @@ describe('register requests', () => {
       gender: 'Female' as const,
     }
 
-    await expect(registerRequest(form)).resolves.toEqual({
-      adultId: 'adult-1',
-      requiresVerification: true,
-      minorCount: 0,
-    })
+    await expect(registerRequest(form)).resolves.toEqual({ adultId: 'adult-1', minorCount: 0 })
     expect(received).toEqual({
       csrf: TEST_CSRF_TOKEN,
       body: {

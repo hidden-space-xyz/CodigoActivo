@@ -16,6 +16,14 @@ export interface ChangePasswordInput {
   newPassword: string
 }
 
+/** Values needed to drop the authenticator application and receive login codes by email again. */
+export interface DisableAuthenticatorInput {
+  /** Current password, re-entered so a stolen session cannot weaken the second factor. */
+  currentPassword: string
+  /** Current code of the authenticator being removed. */
+  code: string
+}
+
 /** Form values for registering a minor in the household; minors have no email or phone. */
 export interface AddMinorInput {
   firstName: string
