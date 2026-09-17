@@ -93,7 +93,6 @@ describe('useRegistration', () => {
     const bodies = serveRegister({
       adult: buildUserResponse({ id: 'adult-1' }),
       minors: [buildUserResponse({ id: 'minor-1' })],
-      requiresVerification: false,
     })
     const { result } = await mountComposable(() => useRegistration())
     fillAdult(result)
@@ -111,12 +110,11 @@ describe('useRegistration', () => {
     expect(bodies).toHaveLength(1)
     expect(result.submittedEmail.value).toBe('ada@example.test')
     expect(result.submittedMinorCount.value).toBe(1)
-    expect(result.requiresVerification.value).toBe(false)
-    expect(result.resendCooldown.value).toBe(0)
+    expect(result.resendCooldown.value).toBe(60)
   })
 
   it('falls back to the number of minors in the form when the response omits them', async () => {
-    serveRegister({ adult: buildUserResponse({ id: 'adult-1' }), requiresVerification: false })
+    serveRegister({ adult: buildUserResponse({ id: 'adult-1' }) })
     const { result } = await mountComposable(() => useRegistration())
     fillAdult(result)
     result.form.minors.push(
@@ -165,9 +163,7 @@ describe('useRegistration', () => {
     const userIds = serveResend()
     const { result } = await registerSuccessfully({
       adult: buildUserResponse({ id: 'adult-1' }),
-      requiresVerification: true,
     })
-    expect(result.requiresVerification.value).toBe(true)
     expect(result.resendCooldown.value).toBe(60)
 
     vi.advanceTimersByTime(1000)
@@ -187,7 +183,6 @@ describe('useRegistration', () => {
     const userIds = serveResend()
     const { result } = await registerSuccessfully({
       adult: buildUserResponse({ id: 'adult-1' }),
-      requiresVerification: true,
     })
     vi.advanceTimersByTime(60_000)
 
@@ -212,7 +207,6 @@ describe('useRegistration', () => {
     )
     const { result } = await registerSuccessfully({
       adult: buildUserResponse({ id: 'adult-1' }),
-      requiresVerification: true,
     })
     vi.advanceTimersByTime(60_000)
 
@@ -231,7 +225,6 @@ describe('useRegistration', () => {
     serveResend(() => apiError(429, 'OtpResendCooldownActive'))
     const { result } = await registerSuccessfully({
       adult: buildUserResponse({ id: 'adult-1' }),
-      requiresVerification: true,
     })
     vi.advanceTimersByTime(60_000)
 
@@ -244,8 +237,10 @@ describe('useRegistration', () => {
   })
 
   it('reports a generic error when resending without a created user id', async () => {
+    useCooldownClock()
     const userIds = serveResend()
-    const { result } = await registerSuccessfully({ requiresVerification: false })
+    const { result } = await registerSuccessfully({})
+    vi.advanceTimersByTime(60_000)
 
     result.resend()
     await vi.waitFor(() => expect(notificationText()).toContain(t('errors.generic')))
@@ -258,7 +253,6 @@ describe('useRegistration', () => {
     const { result } = await registerSuccessfully({
       adult: buildUserResponse({ id: 'adult-1' }),
       minors: [buildUserResponse()],
-      requiresVerification: true,
     })
     expect(vi.getTimerCount()).toBe(1)
 
@@ -269,7 +263,6 @@ describe('useRegistration', () => {
     expect(result.form.minors).toEqual([])
     expect(result.submittedEmail.value).toBe('')
     expect(result.submittedMinorCount.value).toBe(0)
-    expect(result.requiresVerification.value).toBe(false)
     expect(result.resendCooldown.value).toBe(0)
     expect(result.isSubmitting.value).toBe(false)
     expect(vi.getTimerCount()).toBe(0)
@@ -279,7 +272,6 @@ describe('useRegistration', () => {
     useCooldownClock()
     const { wrapper } = await registerSuccessfully({
       adult: buildUserResponse({ id: 'adult-1' }),
-      requiresVerification: true,
     })
     expect(vi.getTimerCount()).toBe(1)
 

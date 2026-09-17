@@ -7,6 +7,7 @@ import {
   toAccountHistoryEntry,
   toAccountProfile,
   toAddMinorRequest,
+  toAuthenticatorSetup,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
@@ -26,6 +27,7 @@ describe('account mapper', () => {
       gender: 'Female',
       statusName: 'Active',
       isAdmin: true,
+      twoFactorMethod: 'Email',
     })
   })
 
@@ -40,7 +42,21 @@ describe('account mapper', () => {
       gender: null,
       statusName: '',
       isAdmin: false,
+      twoFactorMethod: 'Email',
     })
+  })
+
+  it('keeps the authenticator method of the profile', () => {
+    expect(
+      toAccountProfile(buildUserResponse({ twoFactorMethod: 'Authenticator' })).twoFactorMethod,
+    ).toBe('Authenticator')
+  })
+
+  it('maps the authenticator enrollment data, defaulting missing text to empty', () => {
+    expect(
+      toAuthenticatorSetup({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://totp/x' }),
+    ).toEqual({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://totp/x' })
+    expect(toAuthenticatorSetup({})).toEqual({ sharedKey: '', authenticatorUri: '' })
   })
 
   it('maps a minor to the reduced child shape', () => {

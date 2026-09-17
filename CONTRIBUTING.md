@@ -23,19 +23,23 @@ API configuration as real process environment variables:
 ```bash
 cp .env.example .env
 # Set POSTGRES_PASSWORD in .env.
-docker compose up -d db
+docker compose up -d db mailpit
 
 export POSTGRES_PASSWORD=...
-export ACCOUNT_VERIFICATION_REQUIRED=false
 export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
 export BOOTSTRAP_ADMIN_PASSWORD=...
+export SMTP_HOST=localhost
+export SMTP_PORT=1025
+export SMTP_SECURITY=None
+export SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API
 ```
 
-In PowerShell, set variables with `$env:POSTGRES_PASSWORD="..."` and the equivalent names above. If account
-verification remains enabled, also set valid `SMTP_HOST` and `SMTP_FROM_ADDRESS` values; verification defaults
-to enabled when the variable is absent.
+In PowerShell, set variables with `$env:POSTGRES_PASSWORD="..."` and the equivalent names above. SMTP is
+always required because every login is completed with an emailed one-time code; the Mailpit service from
+the development override catches that mail at <http://localhost:8025>, which is where you read the login
+codes and the verification links of new accounts.
 
 The API starts at <http://localhost:5150>; the `https` launch profile also uses
 <https://localhost:7039>. Swagger is available at `/swagger` only in Development. Startup applies migrations,
@@ -60,13 +64,14 @@ From the repository root:
 
 ```bash
 cp .env.example .env
-# Set database/bootstrap values and configure SMTP, or disable account verification.
+# Set the database and bootstrap values; the override delivers all mail to Mailpit.
 docker compose up --build
 ```
 
 Compose automatically merges `docker-compose.override.yml`: it builds both applications, serves the SPA on
-port `8080`, publishes the API on `5150` and PostgreSQL on `5432`, and relaxes API hardening for debugging.
-These ports bind to all host interfaces, so use the overlay only on a trusted development machine.
+port `8080`, publishes the API on `5150` and PostgreSQL on `5432`, adds a Mailpit mail catcher on `8025`
+(where verification links and login codes arrive), and relaxes API hardening for debugging. These ports bind
+to all host interfaces, so use the overlay only on a trusted development machine.
 
 ## Commands
 

@@ -113,6 +113,45 @@ public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
             : match.Groups["code"].Value;
     }
 
+    /// <summary>
+    /// Drops the recorded login-code emails, so tests that count application mail after signing in
+    /// only see the messages their scenario produced.
+    /// </summary>
+    public void ForgetLoginCodes()
+    {
+        lock (sent)
+        {
+            sent.RemoveAll(m => m.Kind is EmailKind.TwoFactorCode);
+        }
+    }
+
+    public string LastLoginCodeSentTo(string address)
+    {
+        EmailMessage? message;
+        lock (sent)
+        {
+            message = sent.LastOrDefault(m =>
+                m.Kind is EmailKind.TwoFactorCode
+                && string.Equals(m.ToAddress, address, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+
+        if (message is null)
+        {
+            throw new InvalidOperationException($"No login code was sent to '{address}'.");
+        }
+
+        var match = LoginCodePattern.Match(message.TextBody);
+        return !match.Success
+            ? throw new InvalidOperationException(
+                $"The login code email sent to '{address}' does not contain a code."
+            )
+            : match.Groups["code"].Value;
+    }
+
     [GeneratedRegex(@"[?&]code=(?<code>[^\s&]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex OtpPattern { get; }
+
+    [GeneratedRegex(@"^(?<code>\d{6})$", RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex LoginCodePattern { get; }
 }

@@ -51,6 +51,29 @@ internal static class AuthTestData
         );
     }
 
+    public static User NewUserWithLoginCode(
+        TestClock clock,
+        string code = "123456",
+        DateTimeOffset? expiresAt = null,
+        DateTimeOffset? lastSentAt = null
+    )
+    {
+        var user = NewUser();
+        user.LoginCodeHash = FakePasswordHasher.Prefix + code;
+        user.LoginCodeExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(5);
+        user.LoginCodeLastSentAt = lastSentAt ?? clock.UtcNow.AddMinutes(-2);
+        return user;
+    }
+
+    public static User NewUserWithAuthenticator(string secret, long? lastUsedStep = null)
+    {
+        var user = NewUser();
+        user.TwoFactorMethod = TwoFactorMethod.Authenticator;
+        user.AuthenticatorKey = FakeSecretProtector.Prefix + secret;
+        user.AuthenticatorLastUsedStep = lastUsedStep;
+        return user;
+    }
+
     public static User NewUserWithResetCode(
         TestClock clock,
         string code = "the-reset-code",

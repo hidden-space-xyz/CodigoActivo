@@ -1,4 +1,5 @@
 import type {
+  AuthenticatorSetupResponse,
   EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
@@ -8,6 +9,7 @@ import type {
   UpdateUserRequest,
   UserResponse,
 } from '@/shared/api/generated/models'
+import { TwoFactorMethod } from '@/shared/api/generated/models'
 
 import type {
   AddMinorInput,
@@ -22,6 +24,7 @@ import type {
   AccountHistoryActivity,
   AccountHistoryEntry,
   AccountProfile,
+  AuthenticatorSetup,
 } from '../model/types'
 
 /** Maps the signed-in user's `UserResponse` to a profile, defaulting missing text to `''`. */
@@ -36,6 +39,15 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
     gender: user.gender ?? null,
     statusName: user.status?.name ?? '',
     isAdmin: user.isAdmin ?? false,
+    twoFactorMethod: user.twoFactorMethod ?? TwoFactorMethod.Email,
+  }
+}
+
+/** Maps the enrollment data returned when an authenticator setup starts. */
+export function toAuthenticatorSetup(setup: AuthenticatorSetupResponse): AuthenticatorSetup {
+  return {
+    sharedKey: setup.sharedKey ?? '',
+    authenticatorUri: setup.authenticatorUri ?? '',
   }
 }
 

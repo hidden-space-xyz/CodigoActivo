@@ -256,6 +256,7 @@ public static class Projections
             user.UserStatusType.Color
         ),
         IsAdmin = user.IsAdmin,
+        TwoFactorMethod = user.TwoFactorMethod,
     };
 
     /// <summary>
@@ -289,6 +290,7 @@ public static class Projections
                 user.UserType.Name,
                 user.UserType.Color
             ),
+            TwoFactorMethod = user.TwoFactorMethod,
         };
 
     /// <summary>

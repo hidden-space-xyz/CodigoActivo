@@ -50,8 +50,7 @@ public sealed class ResendVerificationCommandHandler(
         }
 
         if (
-            !verification.Required
-            || user.UserStatusTypeId != SeedIds.UserStatusTypes.Pending
+            user.UserStatusTypeId != SeedIds.UserStatusTypes.Pending
             || string.IsNullOrWhiteSpace(user.Email)
         )
         {

@@ -23,6 +23,24 @@ public sealed class DemoDataSeederTests
         graph = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
     }
 
+    [Fact]
+    public void BuildGraphAdultsGetARandomThrowawayPasswordThatChangesEveryRun()
+    {
+        var adults = graph.Users.Where(user => user.ParentId is null).ToList();
+        var hashes = adults.Select(user => user.PasswordHash).Distinct().ToList();
+
+        adults.Should().NotBeEmpty();
+        hashes.Should().ContainSingle("one random password is hashed per seeding run");
+        var password = hashes[0]![FakePasswordHasher.Prefix.Length..];
+        Convert.FromBase64String(password).Should().HaveCount(32, "the password carries 32 bytes of entropy");
+
+        var rerun = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
+        rerun
+            .Users.First(user => user.ParentId is null)
+            .PasswordHash.Should()
+            .NotBe(hashes[0], "the password must not be predictable across runs");
+    }
+
     private DateOnly LocalDate(DateTimeOffset value)
     {
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, clock.TimeZone).DateTime);

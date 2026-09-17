@@ -37,7 +37,7 @@ public sealed class RegisterCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             verification,
-            new AccountEmails(emailSender, verification, passwordReset, application),
+            new AccountEmails(emailSender, verification, passwordReset, application, new TwoFactorOptions()),
             NullLogger<RegisterCommandHandler>.Instance,
             cacheInvalidator
         );
@@ -222,7 +222,6 @@ public sealed class RegisterCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Minors.Should().BeEmpty();
-        result.Value.RequiresVerification.Should().BeTrue();
 
         await users.Received(1)
             .AddAsync(Arg.Is<User>(u => IsPendingParticipantAdult(u)), Arg.Any<CancellationToken>());
@@ -289,7 +288,6 @@ public sealed class RegisterCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.RequiresVerification.Should().BeTrue();
         added.Should().ContainSingle();
         added[0].OtpLastSentAt.Should().BeNull();
         added[0]

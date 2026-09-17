@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { BaseButton } from '@/shared/ui'
 
-const props = defineProps<{
+defineProps<{
   /** Minors registered with the adult; the enrolled-minors message is hidden when 0. */
   minorCount: number
   /** Address the verification email was sent to. */
   email: string
-  /** Shows resend-verification instructions instead of the login link. */
-  requiresVerification: boolean
   /** Shows a loading state on the resend button. */
   isResending: boolean
   /** Seconds until resending is allowed again; 0 enables the button. */
@@ -38,14 +36,7 @@ const emit = defineEmits<{
       {{ $t('features.register.success.reminder') }}
     </p>
 
-    <div v-if="!props.requiresVerification" class="reg-success__verified">
-      {{ $t('features.register.success.verifiedActive') }}
-      <BaseButton :to="{ name: 'login' }" variant="primary" class="reg-success__login">
-        {{ $t('common.login') }}
-      </BaseButton>
-    </div>
-
-    <div v-else class="reg-success__verify">
+    <div class="reg-success__verify">
       <p class="reg-success__verify-intro">
         {{ $t('features.register.success.verifyIntroBefore') }} <b>{{ email }}</b
         >{{ $t('features.register.success.verifyIntroAfter') }}
@@ -180,21 +171,5 @@ const emit = defineEmits<{
 
 .reg-success__resend-button {
   font-size: 13.5px;
-}
-
-.reg-success__verified {
-  margin-top: 22px;
-  background: var(--ca-success-soft);
-  border: 1px solid var(--ca-success);
-  border-radius: 12px;
-  padding: 14px;
-  color: var(--ca-text);
-  font-size: 14.5px;
-}
-
-.reg-success__login {
-  display: block;
-  margin: 12px auto 0;
-  width: fit-content;
 }
 </style>

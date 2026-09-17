@@ -29,6 +29,7 @@ describe('user mapper', () => {
       dependentCount: 2,
       status: { id: 'status-active', name: 'Active', color: '#00ff00' },
       type: { id: 'type-participant', name: 'Participant', color: null },
+      twoFactorMethod: 'Email',
     })
   })
 
@@ -47,6 +48,7 @@ describe('user mapper', () => {
       dependentCount: 0,
       status: null,
       type: null,
+      twoFactorMethod: 'Email',
     })
     expect(toUser({ status: {}, type: {} })).toMatchObject({
       status: { id: '', name: '', color: null },

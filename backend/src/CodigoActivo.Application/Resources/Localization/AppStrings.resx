@@ -112,6 +112,27 @@ Equipo de Código Activo</value>
   <data name="emails.passwordReset.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado este cambio, puedes ignorar este mensaje; tu contraseña seguirá siendo la misma.</value>
   </data>
+  <data name="emails.loginCode.subject" xml:space="preserve">
+    <value>Tu código de acceso a Código Activo</value>
+  </data>
+  <data name="emails.loginCode.heading" xml:space="preserve">
+    <value>Tu código de acceso</value>
+  </data>
+  <data name="emails.loginCode.introText" xml:space="preserve">
+    <value>Hemos recibido un intento de inicio de sesión en tu cuenta de Código Activo. Introduce este código para completarlo:</value>
+  </data>
+  <data name="emails.loginCode.introHtml" xml:space="preserve">
+    <value>Hemos recibido un intento de inicio de sesión en tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Introduce este código para completarlo:</value>
+  </data>
+  <data name="emails.loginCode.expiryText" xml:space="preserve">
+    <value>El código caduca en {0} minutos y solo sirve una vez.</value>
+  </data>
+  <data name="emails.loginCode.expiryHtml" xml:space="preserve">
+    <value>El código caduca en &lt;b&gt;{0} minutos&lt;/b&gt; y solo sirve una vez.</value>
+  </data>
+  <data name="emails.loginCode.ignoreNote" xml:space="preserve">
+    <value>Si no has intentado iniciar sesión, alguien conoce tu contraseña: cámbiala cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
+  </data>
   <data name="emails.activityDecision.confirmedSubject" xml:space="preserve">
     <value>Inscripción confirmada: {0}</value>
   </data>

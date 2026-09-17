@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toAuthUser } from '@/entities/session/api/mapper'
+import { toAuthUser, toLoginChallenge } from '@/entities/session/api/mapper'
 import { EARLY_SIGNUP_USER_TYPE_IDS } from '@/shared/config'
 
 import { buildUserResponse } from '../../../../support/fixtures/user'
@@ -17,6 +17,7 @@ describe('toAuthUser', () => {
       isAdmin: true,
       userTypeId: 'type-participant',
       earlySignupEligible: false,
+      twoFactorMethod: 'Email',
     })
   })
 
@@ -38,6 +39,24 @@ describe('toAuthUser', () => {
       isAdmin: false,
       userTypeId: '',
       earlySignupEligible: false,
+      twoFactorMethod: 'Email',
     })
+  })
+})
+
+describe('toLoginChallenge', () => {
+  it('maps the method and the masked address', () => {
+    expect(toLoginChallenge({ method: 'Authenticator', maskedEmail: null })).toEqual({
+      method: 'Authenticator',
+      maskedEmail: null,
+    })
+    expect(toLoginChallenge({ method: 'Email', maskedEmail: 'a***@example.test' })).toEqual({
+      method: 'Email',
+      maskedEmail: 'a***@example.test',
+    })
+  })
+
+  it('defaults a bare response to an email challenge without address', () => {
+    expect(toLoginChallenge({})).toEqual({ method: 'Email', maskedEmail: null })
   })
 })

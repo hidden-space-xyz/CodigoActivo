@@ -46,6 +46,7 @@ describe('useAccount', () => {
       gender: 'Female',
       statusName: 'Activo',
       isAdmin: false,
+      twoFactorMethod: 'Email',
     })
     expect(result.children.data.value).toEqual([
       {

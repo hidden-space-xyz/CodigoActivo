@@ -77,8 +77,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         response.Headers.Location.Should().NotBeNull();
         var raw = await response.Content.ReadAsStringAsync(Ct);
         var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        body!.RequiresVerification.Should().BeTrue();
-        body.Minors.Should().BeEmpty();
+        body!.Minors.Should().BeEmpty();
         body.Adult.Email.Should().Be(NewAdultEmail);
         body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Pending);
         body.Adult.Gender.Should().Be(Gender.Female);
@@ -279,15 +278,17 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var login = await client.PostJsonAsync(
-            "/api/auth/login",
-            new LoginRequest(NewAdultEmail, "Str0ngPass!23"),
-            Ct
+        var challenge = await PassPasswordStepAsync(
+            client,
+            new TestCredentials(NewAdultEmail, "Str0ngPass!23")
         );
+        challenge.Method.Should().Be(TwoFactorMethod.Email);
 
-        login.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await login.ReadJsonAsync<UserResponse>(Ct);
-        body!.Id.Should().Be(userId);
+        var body = await CompleteTwoFactorAsync(
+            client,
+            Factory.EmailSender.LastLoginCodeSentTo(NewAdultEmail)
+        );
+        body.Id.Should().Be(userId);
     }
 
     [Fact]
@@ -454,7 +455,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task LoginValidCredentialsReturnsOkSetsCookieAndRecordsLogin()
+    public async Task LoginValidCredentialsOpensChallengeEmailsCodeAndDoesNotSignIn()
     {
         var client = CreateClient();
 
@@ -466,12 +467,24 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
-        cookies.Should().Contain(c => c.Contains("CodigoActivo.Session", StringComparison.Ordinal));
-        var body = await response.ReadJsonAsync<UserResponse>(Ct);
-        body!.Id.Should().Be(TestSeedData.Users.AdminId);
+        cookies.Should().Contain(c => c.Contains("CodigoActivo.TwoFactor=", StringComparison.Ordinal));
+        cookies.Should().NotContain(c => c.Contains("CodigoActivo.Session=", StringComparison.Ordinal));
+        var raw = await response.Content.ReadAsStringAsync(Ct);
+        var body = await response.ReadJsonAsync<LoginChallengeResponse>(Ct);
+        body!.Method.Should().Be(TwoFactorMethod.Email);
+        body.MaskedEmail.Should().Be("a***@codigoactivo.test");
+
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.AdminEmail);
+        code.Should().HaveLength(6);
+        raw.Should().NotContain(code, "the login code must never be returned in the HTTP response");
 
         var stored = await FindAsync<User>(TestSeedData.Users.AdminId);
-        stored!.LastLoginAt.Should().NotBeNull();
+        stored!.LastLoginAt.Should().BeNull("the login is not complete until the second factor");
+        stored.LoginCodeHash.Should().NotBeNullOrEmpty().And.NotBe(code, "codes are stored hashed");
+        stored.LoginCodeExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(10));
+
+        using var me = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -727,14 +740,15 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
         oldLogin.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-        var newLogin = await client.PostJsonAsync(
-            "/api/auth/login",
-            new LoginRequest(TestSeedData.MemberEmail, "NuevaPass123!"),
-            Ct
+        await PassPasswordStepAsync(
+            client,
+            new TestCredentials(TestSeedData.MemberEmail, "NuevaPass123!")
         );
-        newLogin.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await newLogin.ReadJsonAsync<UserResponse>(Ct);
-        body!.Id.Should().Be(TestSeedData.Users.MemberId);
+        var body = await CompleteTwoFactorAsync(
+            client,
+            Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail)
+        );
+        body.Id.Should().Be(TestSeedData.Users.MemberId);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordResetCodeHash.Should().BeNull();

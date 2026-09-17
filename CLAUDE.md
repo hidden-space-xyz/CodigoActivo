@@ -53,8 +53,10 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 - The API reads flat environment variables. It does not load the root `.env`; Docker Compose does.
 - Database variables are `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` and
   `POSTGRES_PASSWORD`.
-- Account verification defaults to enabled. Local API startup without SMTP requires
-  `ACCOUNT_VERIFICATION_REQUIRED=false`.
+- `SMTP_HOST` and `SMTP_FROM_ADDRESS` are always required at startup: every login is completed with a
+  one-time code (mandatory two-factor authentication), emailed by default. Locally point them at a mail
+  catcher such as Mailpit; the Compose development override already does.
+- New accounts always confirm their email before the first login; there is no configuration switch.
 - An empty database requires valid `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` values.
 - Vite reads `frontend/.env.local`; point `VITE_API_PROXY_TARGET` to the local API.
 - Production nginx is published on host port `8080` on all interfaces. Do not describe it as loopback-only.
@@ -85,6 +87,9 @@ Domain + Application + Infrastructure <- Composition <- API
   `Application/Querying`.
 - Use handwritten mapping. Do not introduce AutoMapper without an explicit architecture change.
 - Use `IClock`; never call `DateTime.Now` or `DateTime.UtcNow`.
+- Never implement cryptographic or one-time-password algorithms by hand. Delegate to .NET primitives
+  (`System.Security.Cryptography`, ASP.NET Data Protection) or established packages (Argon2id via
+  Konscious, TOTP via Otp.NET, BouncyCastle when a primitive is missing).
 - Package versions belong in `backend/Directory.Packages.props`, never on individual `PackageReference`
   items.
 - PostgreSQL identifiers are snake_case; remember this in raw SQL.

@@ -1,6 +1,7 @@
 export type {
   AddMinorInput,
   ChangePasswordInput,
+  DisableAuthenticatorInput,
   EventRatingInput,
   UpdateMinorInput,
   UpdateProfileInput,
@@ -11,13 +12,17 @@ export type {
   AccountEventRating,
   AccountHistoryEntry,
   AccountProfile,
+  AuthenticatorSetup,
 } from './model/types'
 export { accountQueryKeys } from './api/query-keys'
 export {
   addAccountChildRequest,
+  beginAuthenticatorSetupRequest,
   changeAccountPasswordRequest,
+  confirmAuthenticatorRequest,
   deleteAccountChildRequest,
   deleteAccountRequest,
+  disableAuthenticatorRequest,
   getAccountChildrenRequest,
   getAccountCertificatesRequest,
   getAccountHistoryRequest,

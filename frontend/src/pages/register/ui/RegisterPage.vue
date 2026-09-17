@@ -12,7 +12,6 @@ const {
   form,
   submittedEmail,
   submittedMinorCount,
-  requiresVerification,
   resendCooldown,
   confirmAdult,
   backToGate,
@@ -48,7 +47,6 @@ const {
           v-else-if="step === 'success'"
           :minor-count="submittedMinorCount"
           :email="submittedEmail"
-          :requires-verification="requiresVerification"
           :is-resending="isResending"
           :resend-cooldown="resendCooldown"
           @resend="resend"

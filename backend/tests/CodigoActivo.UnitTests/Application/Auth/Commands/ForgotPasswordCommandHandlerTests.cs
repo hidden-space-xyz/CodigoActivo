@@ -33,7 +33,7 @@ public sealed class ForgotPasswordCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             passwordReset,
-            new AccountEmails(emailSender, verification, passwordReset, application),
+            new AccountEmails(emailSender, verification, passwordReset, application, new TwoFactorOptions()),
             NullLogger<ForgotPasswordCommandHandler>.Instance
         );
     }

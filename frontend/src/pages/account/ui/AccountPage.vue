@@ -7,6 +7,7 @@ import {
   HistorySection,
   MinorsSection,
   ProfileSection,
+  TwoFactorSection,
 } from '@/features/account'
 import { AppIcon, PageHeading } from '@/shared/ui'
 
@@ -53,6 +54,8 @@ const tab = computed<AccountTab>({
                 </span>
               </template>
               <ProfileSection />
+              <hr class="account-divider" />
+              <TwoFactorSection />
               <hr class="account-divider" />
               <MinorsSection />
             </el-tab-pane>

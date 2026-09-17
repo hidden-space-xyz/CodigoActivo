@@ -8,6 +8,13 @@ services:
       dockerfile: src/CodigoActivo.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SECURITY: None
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM_ADDRESS: no-reply@codigoactivo.local
+      SMTP_FROM_NAME: Código Activo (desarrollo)
     ports:
       - "5150:8080"
     read_only: false
@@ -15,6 +22,9 @@ services:
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined
+    depends_on:
+      mailpit:
+        condition: service_started
 
   web:
     image: codigoactivo-web-dev
@@ -27,6 +37,13 @@ services:
   db:
     ports:
       - "5432:5432"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks: [backend]
 
 networks:
   backend:

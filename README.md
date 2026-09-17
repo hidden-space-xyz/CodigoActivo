@@ -29,8 +29,10 @@ introduces young people to programming and computational thinking through free, 
 ## What the application provides
 
 - A public site for events, announcements, resources and information about the association.
-- Registration for adults and dependent minors, optional email verification, password recovery and a
+- Registration for adults and dependent minors with email verification, password recovery and a
   self-service account area.
+- Mandatory two-factor login for every account: an emailed one-time code by default, or an authenticator
+  application (TOTP) for stronger protection, chosen by each user from their account.
 - Activity enrollment, participation history, event ratings and downloadable participation certificates.
 - An administration area for content, events, activities, attendees, users, catalogs, reports and email.
 - A Spanish interface whose user-facing copy is managed through Vue I18n.
@@ -39,7 +41,7 @@ introduces young people to programming and computational thinking through free, 
 
 | Area     | Main technologies                                                                        |
 | -------- | ---------------------------------------------------------------------------------------- |
-| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, MailKit, OpenAPI              |
+| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, Otp.NET, MailKit, OpenAPI     |
 | Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval |
 | Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`         |
 | Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW    |
@@ -60,18 +62,19 @@ the SPA and proxies API traffic. See [ARCHITECTURE.md](ARCHITECTURE.md) for the 
 
 ### Local development stack
 
-From a clone, Docker Compose automatically merges `docker-compose.override.yml`. Create the environment file
-and choose one email setup: configure SMTP, or set `ACCOUNT_VERIFICATION_REQUIRED=false` for local work.
+From a clone, Docker Compose automatically merges `docker-compose.override.yml`. Create the environment file;
+the overlay delivers every email, including the login codes, to a bundled Mailpit mail catcher, so no SMTP
+server is needed for local work.
 
 ```bash
 cp .env.example .env
 # Set POSTGRES_PASSWORD, BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD.
-# Configure SMTP_* or set ACCOUNT_VERIFICATION_REQUIRED=false.
 docker compose up --build
 ```
 
-The SPA is available at <http://localhost:8080>, the API at <http://localhost:5150>, and Swagger at
-<http://localhost:5150/swagger>. The development overlay also publishes PostgreSQL on port `5432`.
+The SPA is available at <http://localhost:8080>, the API at <http://localhost:5150>, Swagger at
+<http://localhost:5150/swagger> and the caught mail at <http://localhost:8025>. The development overlay also
+publishes PostgreSQL on port `5432`.
 
 > [!WARNING]
 > The development overlay publishes ports on all host interfaces and relaxes API container hardening. Do not
@@ -99,13 +102,13 @@ Use Docker only for PostgreSQL, then run the API and frontend with hot reload:
 ```bash
 cp .env.example .env
 # Set POSTGRES_PASSWORD in .env for the db container.
-docker compose up -d db
+docker compose up -d db mailpit
 
 # Export real process variables; dotnet run does not read the root .env.
 export POSTGRES_PASSWORD=...
-export ACCOUNT_VERIFICATION_REQUIRED=false
 export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
 export BOOTSTRAP_ADMIN_PASSWORD=...
+export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API
 

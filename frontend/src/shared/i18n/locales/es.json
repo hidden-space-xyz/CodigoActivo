@@ -116,6 +116,9 @@
       "verifyAccount": {
         "title": "Verificar cuenta"
       },
+      "loginTwoFactor": {
+        "title": "Verificación en dos pasos"
+      },
       "forgotPassword": {
         "title": "Recuperar contraseña"
       },
@@ -275,6 +278,13 @@
     "OtpResendNotAllowed": "No se puede reenviar el correo de verificación para esta cuenta.",
     "OtpResendCooldownActive": "Espera un momento antes de solicitar un nuevo enlace.",
     "PasswordResetInvalidOrExpired": "El enlace para restablecer la contraseña no es válido o ha caducado. Solicita uno nuevo.",
+    "TwoFactorCodeInvalid": "El código no es válido o ha caducado.",
+    "TwoFactorLocked": "Demasiados intentos fallidos. Espera unos minutos antes de volver a intentarlo.",
+    "TwoFactorChallengeExpired": "La verificación ha caducado. Vuelve a iniciar sesión.",
+    "TwoFactorResendNotAllowed": "Tu método de verificación no usa códigos por correo.",
+    "TwoFactorResendCooldownActive": "Espera un momento antes de solicitar otro código.",
+    "AuthenticatorSetupExpired": "La configuración de la aplicación ha caducado. Vuelve a empezar.",
+    "AuthenticatorNotEnabled": "No tienes una aplicación de autenticación configurada.",
     "EmailNoRecipients": "Ningún destinatario con correo coincide con los filtros actuales.",
     "EmailRecipientWithoutAddress": "Esta persona no tiene correo electrónico, así que no se le puede escribir.",
     "EmailTooManyRecipients": "Hay demasiados destinatarios para un solo envío. Afina los filtros e inténtalo de nuevo.",
@@ -477,7 +487,8 @@
         "aria": {
           "admin": "Administrador",
           "changeType": "Cambiar tipo",
-          "sendEmail": "Escribir un correo"
+          "sendEmail": "Escribir un correo",
+          "resetTwoFactor": "Restablecer la verificación en dos pasos"
         },
         "export": {
           "label": "Exportar CSV",
@@ -503,7 +514,8 @@
           "deleted": "Usuario eliminado.",
           "typeUpdated": "Tipo de usuario actualizado.",
           "adminGranted": "Administrador concedido.",
-          "adminRevoked": "Administrador retirado."
+          "adminRevoked": "Administrador retirado.",
+          "twoFactorReset": "Verificación en dos pasos restablecida: volverá a recibir el código por correo."
         },
         "delete": {
           "header": "Eliminar usuario",
@@ -767,6 +779,23 @@
       "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo.",
       "noAccount": "¿Aún no tienes cuenta?"
     },
+    "loginTwoFactor": {
+      "eyebrow": "// verificación",
+      "title": "Un paso más",
+      "intro": "Por seguridad, además de la contraseña te pedimos un código cada vez que inicias sesión.",
+      "loading": "Preparando la verificación…",
+      "emailIntroBefore": "Te hemos enviado un código de 6 dígitos a ",
+      "emailIntroAfter": ". Introdúcelo para terminar de iniciar sesión.",
+      "authenticatorIntro": "Introduce el código que muestra tu aplicación de autenticación.",
+      "codeLabel": "Código de verificación",
+      "submit": "Verificar",
+      "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",
+      "resend": "pide otro código",
+      "resendCountdown": "pide otro código ({s}s)",
+      "expiredTitle": "La verificación ha caducado",
+      "expiredText": "Ha pasado demasiado tiempo desde que introdujiste la contraseña. Vuelve a iniciar sesión para recibir un código nuevo.",
+      "backToLogin": "Volver a iniciar sesión"
+    },
     "register": {
       "eyebrow": "// regístrate",
       "title": "Únete a Código Activo",
@@ -916,6 +945,12 @@
     }
   },
   "features": {
+    "auth": {
+      "twoFactor": {
+        "codeResentSummary": "Código enviado",
+        "codeResentDetail": "Te hemos enviado un nuevo código. Revisa tu correo."
+      }
+    },
     "manageEvents": {
       "editHeader": "Editar evento",
       "newHeader": "Nuevo evento",
@@ -1017,6 +1052,13 @@
         "passwordLabel": "Tu contraseña",
         "passwordRequired": "Introduce tu contraseña.",
         "confirm": "Conceder"
+      },
+      "resetTwoFactor": {
+        "header": "Restablecer la verificación en dos pasos",
+        "message": "Vas a restablecer la verificación en dos pasos de {fullName}: se eliminará su aplicación de autenticación, se levantará cualquier bloqueo y volverá a recibir el código por correo. Por seguridad, confirma tu contraseña.",
+        "passwordLabel": "Tu contraseña",
+        "passwordRequired": "Introduce tu contraseña.",
+        "confirm": "Restablecer"
       }
     },
     "activitySignup": {
@@ -1101,6 +1143,38 @@
         "savedSummary": "Datos actualizados",
         "passwordUpdatedDetail": "Tu contraseña se ha actualizado.",
         "passwordUpdatedSummary": "Contraseña cambiada"
+      },
+      "twoFactor": {
+        "title": "Verificación en dos pasos",
+        "lead": "Cada vez que inicies sesión te pediremos un código además de la contraseña. Puedes recibirlo por correo o generarlo con una aplicación de autenticación, que es más segura.",
+        "methodLabel": "Método actual",
+        "methods": {
+          "Email": "Código por correo electrónico",
+          "Authenticator": "Aplicación de autenticación"
+        },
+        "securityLabel": "Nivel de protección",
+        "securityEmail": "Básico: quien acceda a tu correo podría recibir el código.",
+        "securityAuthenticator": "Reforzado: el código solo existe en tu dispositivo.",
+        "useAuthenticator": "Usar una aplicación de autenticación",
+        "useEmail": "Volver al código por correo",
+        "setupHeader": "Configurar aplicación de autenticación",
+        "setupPasswordIntro": "Para cambiar tu método de verificación, confirma primero tu contraseña.",
+        "passwordLabel": "Tu contraseña",
+        "passwordRequired": "Introduce tu contraseña.",
+        "continue": "Continuar",
+        "scanIntro": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Microsoft Authenticator, Aegis…) o introduce la clave a mano.",
+        "qrAlt": "Código QR para la aplicación de autenticación",
+        "manualKeyLabel": "Clave manual",
+        "codeIntro": "Después, escribe el código de 6 dígitos que muestra la aplicación para activarla.",
+        "codeLabel": "Código de la aplicación",
+        "codeRequired": "Introduce el código.",
+        "confirm": "Activar",
+        "enabledSummary": "Aplicación activada",
+        "enabledDetail": "A partir de ahora te pediremos el código de tu aplicación al iniciar sesión.",
+        "disableHeader": "Volver al código por correo",
+        "disableIntro": "Confirma tu contraseña y el código actual de tu aplicación. A partir de entonces recibirás los códigos por correo electrónico.",
+        "disabledSummary": "Verificación por correo",
+        "disabledDetail": "Volverás a recibir el código de acceso por correo electrónico."
       },
       "minors": {
         "title": "Menores a mi cargo",
@@ -1191,7 +1265,6 @@
         "minorsEnrolledAfter": "a tu cargo.",
         "thanks": "Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes posible para conocernos más.",
         "reminder": "Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la sección de eventos.",
-        "verifiedActive": "Tu cuenta está activa. Ya puedes iniciar sesión.",
         "verifyIntroBefore": "Te hemos enviado un correo electrónico de verificación a",
         "verifyIntroAfter": ". Pulsa el enlace del mensaje para activar tu cuenta.",
         "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",

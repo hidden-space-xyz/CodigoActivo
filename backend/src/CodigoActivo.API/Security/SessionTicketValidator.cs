@@ -121,12 +121,12 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
             );
     }
 
-    private static string Fingerprint(string passwordHash)
+    internal static string Fingerprint(string passwordHash)
     {
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(passwordHash)));
     }
 
-    private static bool FixedTimeEquals(string left, string right)
+    internal static bool FixedTimeEquals(string left, string right)
     {
         return left.Length == right.Length
             && CryptographicOperations.FixedTimeEquals(

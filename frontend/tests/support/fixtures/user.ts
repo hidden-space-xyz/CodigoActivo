@@ -1,5 +1,5 @@
 ﻿import type { AuthUser } from '@/entities/session/model/types'
-import type { UserResponse } from '@/shared/api/generated/models'
+import type { LoginChallengeResponse, UserResponse } from '@/shared/api/generated/models'
 
 /** Signed-in session user with sensible defaults. */
 export function buildAuthUser(overrides: Partial<AuthUser> = {}): AuthUser {
@@ -13,6 +13,7 @@ export function buildAuthUser(overrides: Partial<AuthUser> = {}): AuthUser {
     isAdmin: false,
     userTypeId: 'type-participant',
     earlySignupEligible: false,
+    twoFactorMethod: 'Email',
     ...overrides,
   }
 }
@@ -36,6 +37,14 @@ export function buildUserResponse(overrides: UserResponse = {}): UserResponse {
     status: { id: 'status-active', name: 'Active' },
     isAdmin: false,
     type: { id: 'type-participant', name: 'Participant' },
+    twoFactorMethod: 'Email',
     ...overrides,
   }
+}
+
+/** Pending second-factor challenge as returned by `/api/auth/login` and its `GET` twin. */
+export function buildLoginChallenge(
+  overrides: LoginChallengeResponse = {},
+): LoginChallengeResponse {
+  return { method: 'Email', maskedEmail: 'a***@example.test', ...overrides }
 }

@@ -22,6 +22,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.BirthDate).IsRequired();
         builder.Property(u => u.Gender).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(u => u.CreatedAt).IsRequired();
+        builder
+            .Property(u => u.TwoFactorMethod)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .IsRequired();
 
         builder.HasIndex(u => u.Email).IsUnique();
         builder.HasIndex(u => u.Phone).IsUnique();

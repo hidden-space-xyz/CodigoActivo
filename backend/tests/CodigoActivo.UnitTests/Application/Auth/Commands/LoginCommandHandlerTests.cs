@@ -4,10 +4,12 @@ using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Auth.AuthTestData;
@@ -19,19 +21,45 @@ public sealed class LoginCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
-    private readonly AccountVerificationOptions verification = new();
+    private readonly RecordingEmailSender emailSender = new();
+    private readonly TwoFactorOptions twoFactor = new();
     private readonly LoginCommandHandler sut;
 
     public LoginCommandHandlerTests()
     {
         var hasher = new FakePasswordHasher();
+        var accountEmails = new AccountEmails(
+            emailSender,
+            new AccountVerificationOptions(),
+            new PasswordResetOptions(),
+            new ApplicationOptions { BaseUrl = "https://app.test" },
+            twoFactor
+        );
         sut = new LoginCommandHandler(
             users,
             uow,
             clock,
             new CredentialTimingProtector(hasher),
-            verification
+            twoFactor,
+            new LoginCodeIssuer(hasher, twoFactor, accountEmails, NullLogger<LoginCodeIssuer>.Instance)
         );
+    }
+
+    private Task<Result<LoginChallenge>> LoginAsync(
+        string identifier = "ana@test.com",
+        string password = "password123"
+    )
+    {
+        return sut.HandleAsync(
+            new LoginCommand(new LoginRequest(identifier, password)),
+            TestContext.Current.CancellationToken
+        );
+    }
+
+    private User Returns(User user)
+    {
+        users.GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        return user;
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -48,12 +76,10 @@ public sealed class LoginCommandHandlerTests
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(missing);
 
-        var result = await sut.HandleAsync(
-            new LoginCommand(new LoginRequest("nobody@test.com", "password123")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await LoginAsync("nobody@test.com");
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
 
@@ -62,32 +88,23 @@ public sealed class LoginCommandHandlerTests
     [InlineData(null)]
     public async Task HandleAsyncPasswordHashNotSetReturnsUnauthorized(string? hash)
     {
-        users
-            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser(passwordHash: hash));
+        Returns(NewUser(passwordHash: hash));
 
-        var result = await sut.HandleAsync(
-            new LoginCommand(new LoginRequest("ana@test.com", "password123")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await LoginAsync();
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncPasswordDoesNotVerifyReturnsUnauthorized()
+    public async Task HandleAsyncPasswordDoesNotVerifyReturnsUnauthorizedWithoutEmailing()
     {
-        users
-            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser(passwordHash: "fake:correct"));
+        Returns(NewUser(passwordHash: "fake:correct"));
 
-        var result = await sut.HandleAsync(
-            new LoginCommand(new LoginRequest("ana@test.com", "wrong")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await LoginAsync(password: "wrong");
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
 
@@ -95,16 +112,12 @@ public sealed class LoginCommandHandlerTests
     [MemberData(nameof(BlockedStatuses))]
     public async Task HandleAsyncNonActiveStatusReturnsForbidden(Guid statusId, ErrorCode expected)
     {
-        users
-            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser(statusId: statusId));
+        Returns(NewUser(statusId: statusId));
 
-        var result = await sut.HandleAsync(
-            new LoginCommand(new LoginRequest("ana@test.com", "password123")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await LoginAsync();
 
         result.ShouldFail(ErrorKind.Forbidden, expected);
+        emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
 
@@ -119,46 +132,126 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPendingUserVerificationNotRequiredActivatesUser()
+    public async Task HandleAsyncValidCredentialsEmailsCodeStoresHashAndDoesNotRecordLogin()
     {
-        verification.Required = false;
-        var user = NewUser(statusId: SeedIds.UserStatusTypes.Pending, otpCodeHash: "ABCDEF");
-        users.GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
-        users
-            .GetByIdWithDetailsAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(NewUser(id: user.Id, statusId: SeedIds.UserStatusTypes.Active));
+        var user = Returns(NewUser());
 
-        var result = await sut.HandleAsync(
-            new LoginCommand(new LoginRequest("ana@test.com", "password123")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await LoginAsync("  ana@test.com  ");
 
         result.IsSuccess.Should().BeTrue();
-        user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
-        user.OtpCodeHash.Should().BeNull();
-        result.Value.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
+        result.Value.Should().Be(new LoginChallenge(user.Id, TwoFactorMethod.Email, "a***@test.com"));
+        result.Value.ToResponse().Should().Be(new LoginChallengeResponse(TwoFactorMethod.Email, "a***@test.com"));
 
-    [Fact]
-    public async Task HandleAsyncValidCredentialsTrimsIdentifierAndRecordsLogin()
-    {
-        var user = NewUser();
-        users.GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
-
-        var result = await sut.HandleAsync(
-            new LoginCommand(new LoginRequest("  ana@test.com  ", "password123")),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(user.Id);
-        result.Value.Email.Should().Be("ana@test.com");
-        result.Value.Type.Should().BeNull();
-        user.LastLoginAt.Should().NotBeNull();
+        var code = emailSender.LastLoginCode();
+        emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.TwoFactorCode);
+        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
+        user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
+        user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
         await users
             .Received(1)
             .GetByEmailOrPhoneAsync("ana@test.com", Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncRecentCodeStillValidReusesItInsteadOfEmailingAgain()
+    {
+        var user = Returns(NewUserWithLoginCode(clock, code: "654321", lastSentAt: clock.UtcNow.AddSeconds(-30)));
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + "654321");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncOldCodeOutsideCooldownIssuesANewOne()
+    {
+        var user = Returns(NewUserWithLoginCode(clock, code: "654321", lastSentAt: clock.UtcNow.AddMinutes(-2)));
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().ContainSingle();
+        user.LoginCodeHash.Should().NotBe(FakePasswordHasher.Prefix + "654321");
+    }
+
+    [Fact]
+    public async Task HandleAsyncAuthenticatorUserOpensChallengeWithoutEmailingOrMaskedAddress()
+    {
+        var user = Returns(NewUserWithAuthenticator("SECRET"));
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(new LoginChallenge(user.Id, TwoFactorMethod.Authenticator, null));
+        emailSender.Sent.Should().BeEmpty();
+        user.LoginCodeHash.Should().BeNull();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncSecondFactorLockedReturnsForbiddenWithoutEmailing()
+    {
+        var user = Returns(NewUser());
+        user.TwoFactorLockedUntil = clock.UtcNow.AddMinutes(5);
+
+        var result = await LoginAsync();
+
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncLockExpiredOpensChallengeAgain()
+    {
+        var user = Returns(NewUser());
+        user.TwoFactorLockedUntil = clock.UtcNow.AddMinutes(-1);
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task HandleAsyncEmailQuotaDeniedReturnsConflictWithoutStoringACode()
+    {
+        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
+        var user = Returns(NewUser());
+
+        var result = await LoginAsync();
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        user.LoginCodeHash.Should().BeNull();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncEmailTransportFailsReturnsConflictWithoutStoringACode()
+    {
+        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
+        var user = Returns(NewUser());
+
+        var result = await LoginAsync();
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        user.LoginCodeHash.Should().BeNull();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncEmailUserWithoutAddressReturnsConflict()
+    {
+        Returns(NewUser(email: null));
+
+        var result = await LoginAsync("+34123456789");
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
+        await AssertNotSavedAsync();
     }
 }

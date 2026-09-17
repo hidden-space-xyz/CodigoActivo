@@ -34,6 +34,7 @@ import type {
   GetApiUsersParams,
   PatchApiUsersUserIdChangeTypeParams,
   RegisterMinorRequest,
+  ResetTwoFactorRequest,
   SetAdminRequest,
   UpdateUserRequest,
   UserResponse,
@@ -647,6 +648,108 @@ export function usePatchApiUsersUserIdAdmin<TData = Awaited<ReturnType<typeof pa
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPatchApiUsersUserIdAdminQueryOptions(userId,setAdminRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiUsersUserIdTwoFactorResetResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiUsersUserIdTwoFactorResetResponseSuccess = (postApiUsersUserIdTwoFactorResetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiUsersUserIdTwoFactorResetResponse = (postApiUsersUserIdTwoFactorResetResponseSuccess)
+
+export const getPostApiUsersUserIdTwoFactorResetUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/two-factor/reset`
+}
+
+export const postApiUsersUserIdTwoFactorReset = async (userId: string,
+    resetTwoFactorRequest?: ResetTwoFactorRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiUsersUserIdTwoFactorResetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiUsersUserIdTwoFactorResetResponse>(getPostApiUsersUserIdTwoFactorResetUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resetTwoFactorRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiUsersUserIdTwoFactorResetQueryKey = (userId: MaybeRefOrGetter<string>,
+    resetTwoFactorRequest?: MaybeRefOrGetter<ResetTwoFactorRequest>,) => {
+    return [
+    'POST', 'api','users',userId,'two-factor','reset', resetTwoFactorRequest
+    ] as const;
+    }
+
+
+export const getPostApiUsersUserIdTwoFactorResetQueryOptions = <TData = Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
+    resetTwoFactorRequest?: MaybeRefOrGetter<ResetTwoFactorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiUsersUserIdTwoFactorResetQueryKey(userId,resetTwoFactorRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>> = ({ signal }) => postApiUsersUserIdTwoFactorReset(toValue(userId),toValue(resetTwoFactorRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError, TData>
+}
+
+export type PostApiUsersUserIdTwoFactorResetQueryResult = NonNullable<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>>
+export type PostApiUsersUserIdTwoFactorResetQueryError = unknown
+
+
+
+export function usePostApiUsersUserIdTwoFactorReset<TData = Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError = unknown>(
+ userId: MaybeRefOrGetter<string>,
+    resetTwoFactorRequest?: MaybeRefOrGetter<ResetTwoFactorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiUsersUserIdTwoFactorResetQueryOptions(userId,resetTwoFactorRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -16,6 +16,7 @@ internal static class ApiServiceConfiguration
     {
         builder.Services.AddCodigoActivo(builder.Configuration);
         builder.Services.AddScoped<SessionTicketValidator>();
+        builder.Services.AddScoped<TwoFactorTicketValidator>();
         builder.Services.AddSingleton<DeploymentModeLock>();
 
         AddForwardedHeaders(builder.Services);

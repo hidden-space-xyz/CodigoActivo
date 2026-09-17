@@ -150,6 +150,30 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
+    /// Returns a user's second factor to email so they can log in again after losing their
+    /// authenticator. The acting administrator confirms their own password.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("{userId:guid}/two-factor/reset")]
+    [AllowOnlyAdmin]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<IActionResult> ResetTwoFactorAsync(
+        Guid userId,
+        [FromBody] ResetTwoFactorRequest request,
+        [FromServices] ResetTwoFactorCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(new ResetTwoFactorCommand(userId, UserId, request), ct)
+        );
+    }
+
+    /// <summary>
     /// Adds a child to the current unit of work.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>

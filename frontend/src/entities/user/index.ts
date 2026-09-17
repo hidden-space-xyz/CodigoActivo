@@ -6,6 +6,7 @@ export {
   deleteUserRequest,
   getUserRequest,
   getUsersPageRequest,
+  resetUserTwoFactorRequest,
   setUserAdminRequest,
   updateUserRequest,
 } from './api/requests'

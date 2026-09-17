@@ -114,6 +114,13 @@ export const routes: readonly RouteRecordRaw[] = [
     meta: { seo: { titleKey: 'seo.routes.login.title', noindex: true } },
   },
   {
+    path: '/login/verify',
+    name: 'login-two-factor',
+    component: () => import('@/pages/login-two-factor').then((m) => m.TwoFactorLoginPage),
+    beforeEnter: () => redirectIfAuthenticated(),
+    meta: { seo: { titleKey: 'seo.routes.loginTwoFactor.title', noindex: true } },
+  },
+  {
     path: '/verify-account',
     name: 'verify-account',
     component: () => import('@/pages/verify-account').then((m) => m.VerifyAccountPage),

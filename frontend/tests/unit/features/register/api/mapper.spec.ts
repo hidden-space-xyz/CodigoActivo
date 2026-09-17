@@ -76,25 +76,19 @@ describe('toRegisterRequest', () => {
 })
 
 describe('toRegistrationResult', () => {
-  it('keeps the adult id, verification flag and number of minors', () => {
+  it('keeps the adult id and number of minors', () => {
     expect(
       toRegistrationResult({
         adult: buildUserResponse({ id: 'adult-9' }),
         minors: [buildUserResponse({ id: 'm1' }), buildUserResponse({ id: 'm2' })],
-        requiresVerification: true,
       }),
-    ).toEqual({ adultId: 'adult-9', requiresVerification: true, minorCount: 2 })
+    ).toEqual({ adultId: 'adult-9', minorCount: 2 })
   })
 
   it('defaults missing fields', () => {
-    expect(toRegistrationResult({})).toEqual({
-      adultId: null,
-      requiresVerification: false,
-      minorCount: 0,
-    })
+    expect(toRegistrationResult({})).toEqual({ adultId: null, minorCount: 0 })
     expect(toRegistrationResult({ adult: {}, minors: null })).toEqual({
       adultId: null,
-      requiresVerification: false,
       minorCount: 0,
     })
   })

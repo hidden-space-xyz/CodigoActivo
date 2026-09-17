@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addAccountChildRequest,
+  beginAuthenticatorSetupRequest,
   changeAccountPasswordRequest,
+  confirmAuthenticatorRequest,
   deleteAccountChildRequest,
   deleteAccountRequest,
+  disableAuthenticatorRequest,
   getAccountCertificatesRequest,
   getAccountChildrenRequest,
   getAccountHistoryRequest,
@@ -48,6 +51,69 @@ describe('account requests', () => {
       server.use(http.get('/api/auth/me', () => apiError(500)))
 
       await expect(getAccountProfileRequest()).rejects.toBeInstanceOf(ApiError)
+    })
+  })
+
+  it('starts, confirms and drops an authenticator enrollment with the CSRF token', async () => {
+    const calls: { url: string; body: unknown; csrf: string | null }[] = []
+    const record = async (request: Request) =>
+      calls.push({
+        url: new URL(request.url).pathname,
+        body: await request.json(),
+        csrf: request.headers.get('X-CSRF-TOKEN'),
+      })
+    server.use(
+      http.post('/api/auth/two-factor/authenticator/setup', async ({ request }) => {
+        await record(request)
+        return HttpResponse.json({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://totp/x' })
+      }),
+      http.post('/api/auth/two-factor/authenticator/confirm', async ({ request }) => {
+        await record(request)
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.post('/api/auth/two-factor/email', async ({ request }) => {
+        await record(request)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(beginAuthenticatorSetupRequest('secret')).resolves.toEqual({
+      sharedKey: 'ABCD EFGH',
+      authenticatorUri: 'otpauth://totp/x',
+    })
+    await expect(confirmAuthenticatorRequest('123456')).resolves.toBeUndefined()
+    await expect(
+      disableAuthenticatorRequest({ currentPassword: 'secret', code: '654321' }),
+    ).resolves.toBeUndefined()
+
+    expect(calls).toEqual([
+      {
+        url: '/api/auth/two-factor/authenticator/setup',
+        body: { currentPassword: 'secret' },
+        csrf: TEST_CSRF_TOKEN,
+      },
+      {
+        url: '/api/auth/two-factor/authenticator/confirm',
+        body: { code: '123456' },
+        csrf: TEST_CSRF_TOKEN,
+      },
+      {
+        url: '/api/auth/two-factor/email',
+        body: { currentPassword: 'secret', code: '654321' },
+        csrf: TEST_CSRF_TOKEN,
+      },
+    ])
+  })
+
+  it('rejects with the API error when the enrollment is refused', async () => {
+    server.use(
+      http.post('/api/auth/two-factor/authenticator/setup', () =>
+        apiError(400, 'UserCurrentPasswordIncorrect'),
+      ),
+    )
+
+    await expect(beginAuthenticatorSetupRequest('wrong')).rejects.toMatchObject({
+      code: 'UserCurrentPasswordIncorrect',
     })
   })
 

@@ -1,4 +1,4 @@
-import type { Gender } from '@/shared/api/generated/models'
+import type { Gender, TwoFactorMethod } from '@/shared/api/generated/models'
 
 /** Reference to a user status or user type catalog entry; `color` is `null` when none is set. */
 export interface UserCatalogRef {
@@ -25,6 +25,8 @@ export interface User {
   readonly dependentCount: number
   readonly status: UserCatalogRef | null
   readonly type: UserCatalogRef | null
+  /** Second factor the user presents at login; administrators can reset it to email. */
+  readonly twoFactorMethod: TwoFactorMethod
 }
 
 /**

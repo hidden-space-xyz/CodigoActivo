@@ -1,0 +1,54 @@
+using AwesomeAssertions;
+using CodigoActivo.Application.Emails;
+using CodigoActivo.Domain.Communication;
+using Xunit;
+
+namespace CodigoActivo.UnitTests.Application.Emails;
+
+public sealed class LoginCodeEmailTests
+{
+    private const string SiteUrl = "https://app.test";
+
+    [Fact]
+    public void CreateValidRequestAddressesRecipientWithCodeAndLifetime()
+    {
+        var message = LoginCodeEmail.Create(
+            "ana@test.com",
+            "Ana",
+            "482913",
+            SiteUrl,
+            TimeSpan.FromMinutes(10)
+        );
+
+        message.Kind.Should().Be(EmailKind.TwoFactorCode);
+        message.ToAddress.Should().Be("ana@test.com");
+        message.ToName.Should().Be("Ana");
+        message.Subject.Should().NotContain("482913", "the code must not appear in the subject line");
+        message.TextBody.Should().Contain("Ana").And.Contain("\n482913\n").And.Contain("10 minutos");
+        message.HtmlBody.Should().Contain("Ana").And.Contain(">482913<").And.Contain("10 minutos");
+        message.HtmlBody.Should().NotContain("href=\"https://app.test/login", "the email carries a code, never a link that logs in");
+    }
+
+    [Fact]
+    public void CreateShortLifetimeRoundsUpToOneMinute()
+    {
+        var message = LoginCodeEmail.Create("ana@test.com", "Ana", "000000", SiteUrl, TimeSpan.FromSeconds(20));
+
+        message.TextBody.Should().Contain("1 minutos");
+    }
+
+    [Fact]
+    public void CreateScriptInNameOrCodeHtmlEncodesThem()
+    {
+        var message = LoginCodeEmail.Create(
+            "ana@test.com",
+            "<script>alert(1)</script>",
+            "<b>1</b>",
+            SiteUrl,
+            TimeSpan.FromMinutes(10)
+        );
+
+        message.HtmlBody.Should().NotContain("<script>").And.Contain("&lt;script&gt;");
+        message.HtmlBody.Should().NotContain("<b>1</b>").And.Contain("&lt;b&gt;1&lt;/b&gt;");
+    }
+}

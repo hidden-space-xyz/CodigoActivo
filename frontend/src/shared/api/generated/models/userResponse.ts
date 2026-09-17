@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { Gender } from './gender';
+import type { TwoFactorMethod } from './twoFactorMethod';
 import type { UserStatusResponse } from './userStatusResponse';
 import type { UserTypeSummaryResponse } from './userTypeSummaryResponse';
 
@@ -34,4 +35,5 @@ export interface UserResponse {
   status?: UserStatusResponse;
   isAdmin?: boolean;
   type?: UserTypeSummaryResponse;
+  twoFactorMethod?: TwoFactorMethod;
 }

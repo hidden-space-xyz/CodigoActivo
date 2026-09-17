@@ -162,7 +162,10 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 
     private static bool IsCredential(EmailKind kind)
     {
-        return kind is EmailKind.AccountVerification or EmailKind.PasswordReset;
+        return kind
+            is EmailKind.AccountVerification
+                or EmailKind.PasswordReset
+                or EmailKind.TwoFactorCode;
     }
 
     private EmailSendDecision Denied(EmailLimitScope scope, EmailGuardAlert alert)

@@ -14,6 +14,10 @@ public enum EmailKind
     /// </summary>
     PasswordReset,
     /// <summary>
+    /// Selects the two factor login code option.
+    /// </summary>
+    TwoFactorCode,
+    /// <summary>
     /// Selects the activity notification option.
     /// </summary>
     ActivityNotification,

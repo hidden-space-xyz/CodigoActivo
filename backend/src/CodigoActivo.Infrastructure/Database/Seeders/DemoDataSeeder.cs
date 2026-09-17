@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using CodigoActivo.Domain.Common;
@@ -29,9 +30,11 @@ public sealed class DemoDataSeeder(
 )
 {
     /// <summary>
-    /// Identifies the demo password configuration or policy value.
+    /// Bytes of entropy in the throwaway password given to demo accounts. Nobody is meant to log
+    /// in as one of them: demonstrations use the bootstrap administrator, and the password is
+    /// generated on each seeding run and never stored, logged or shown anywhere.
     /// </summary>
-    public const string DemoPassword = "Demo1234!";
+    private const int DemoPasswordBytes = 32;
 
     private const int AdultCount = 20;
     private const int MemberAdultCount = 14;
@@ -178,7 +181,9 @@ public sealed class DemoDataSeeder(
     internal static DemoGraph BuildGraph(IClock clock, IPasswordHasher passwordHasher)
     {
         var now = clock.UtcNow;
-        var passwordHash = passwordHasher.Hash(DemoPassword);
+        var passwordHash = passwordHasher.Hash(
+            Convert.ToBase64String(RandomNumberGenerator.GetBytes(DemoPasswordBytes))
+        );
         var files = new List<FileEntity>();
         var users = BuildUsers(now, passwordHash);
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();

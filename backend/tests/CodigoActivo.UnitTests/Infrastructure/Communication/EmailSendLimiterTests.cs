@@ -148,6 +148,10 @@ public sealed class EmailSendLimiterTests
             .TryConsume(EmailKind.AccountVerification, "newcomer@example.test")
             .Scope.Should()
             .Be(EmailLimitScope.None);
+        limiter
+            .TryConsume(EmailKind.TwoFactorCode, "returning@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.None, "login codes are credential mail and use the reserve");
     }
 
     [Fact]

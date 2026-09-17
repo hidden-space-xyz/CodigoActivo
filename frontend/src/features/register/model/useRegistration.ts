@@ -13,9 +13,9 @@ export type RegistrationStep = 'age-gate' | 'form' | 'success'
 const RESEND_COOLDOWN_SECONDS = 60
 
 /**
- * Drives the registration flow through its steps, scrolling to the top on each change. After a
- * registration that requires verification, resending the email is locked by a 60-second cooldown
- * (restarted on every resend). `reset` clears the form and returns to the age gate.
+ * Drives the registration flow through its steps, scrolling to the top on each change. Every new
+ * account must verify its email, so after registering, resending the email is locked by a
+ * 60-second cooldown (restarted on every resend). `reset` clears the form and returns to the age gate.
  */
 export function useRegistration() {
   const { t } = useI18n()
@@ -24,7 +24,6 @@ export function useRegistration() {
   const step = ref<RegistrationStep>('age-gate')
   const form = reactive<RegistrationForm>(createEmptyRegistrationForm())
   const createdUserId = ref<string | null>(null)
-  const requiresVerification = ref(false)
   const submittedEmail = ref('')
   const submittedMinorCount = ref(0)
   const resendCooldown = ref(0)
@@ -55,11 +54,10 @@ export function useRegistration() {
     mutationFn: (payload: RegistrationForm) => registerRequest(payload),
     onSuccess: (result) => {
       createdUserId.value = result.adultId
-      requiresVerification.value = result.requiresVerification
       submittedEmail.value = form.email.trim()
       submittedMinorCount.value = result.minorCount || form.minors.length
       step.value = 'success'
-      if (result.requiresVerification) startCooldown()
+      startCooldown()
       scrollToTop()
     },
     onError: (error) => {
@@ -109,7 +107,6 @@ export function useRegistration() {
     stopCooldown()
     Object.assign(form, createEmptyRegistrationForm())
     createdUserId.value = null
-    requiresVerification.value = false
     submittedEmail.value = ''
     submittedMinorCount.value = 0
     resendCooldown.value = 0
@@ -120,7 +117,6 @@ export function useRegistration() {
   return {
     step,
     form,
-    requiresVerification,
     submittedEmail,
     submittedMinorCount,
     resendCooldown,

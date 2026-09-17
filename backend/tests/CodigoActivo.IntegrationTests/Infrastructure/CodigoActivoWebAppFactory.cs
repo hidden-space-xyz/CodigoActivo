@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Security;
@@ -26,8 +25,6 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     private readonly string fileStorageRoot = CreateFileStorageRoot();
     private readonly string deploymentModeFile = CreateDeploymentModeFilePath();
     private readonly List<WebApplicationFactory<Program>> derived = [];
-
-    private WebApplicationFactory<Program>? verificationDisabled;
 
     public TestClock Clock { get; } = new();
 
@@ -88,19 +85,6 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         );
     }
 
-    public WebApplicationFactory<Program> WithVerificationDisabled()
-    {
-        return verificationDisabled ??= Track(
-            WithWebHostBuilder(builder =>
-                builder.ConfigureTestServices(services =>
-                {
-                    services.RemoveAll<AccountVerificationOptions>();
-                    services.AddSingleton(new AccountVerificationOptions { Required = false });
-                })
-            )
-        );
-    }
-
     private WebApplicationFactory<Program> Track(WebApplicationFactory<Program> factory)
     {
         derived.Add(factory);
@@ -127,6 +111,9 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             services.RemoveAll<IPasswordHasher>();
             services.AddSingleton<IPasswordHasher, FakePasswordHasher>();
 
+            services.RemoveAll<ISecretProtector>();
+            services.AddSingleton<ISecretProtector, FakeSecretProtector>();
+
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Clock);
 
@@ -141,9 +128,6 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
             services.RemoveAll<ApiRateLimitOptions>();
             services.AddSingleton(UnboundedRateLimits());
-
-            services.RemoveAll<AccountVerificationOptions>();
-            services.AddSingleton(new AccountVerificationOptions { Required = true });
 
             services.RemoveAll<FileStorageOptions>();
             services.AddSingleton(new FileStorageOptions { RootPath = fileStorageRoot });

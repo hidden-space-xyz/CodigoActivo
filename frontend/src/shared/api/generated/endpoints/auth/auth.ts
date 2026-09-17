@@ -30,12 +30,18 @@ import type {
 } from 'vue';
 
 import type {
+  AuthenticatorSetupRequest,
+  AuthenticatorSetupResponse,
+  ConfirmAuthenticatorRequest,
   CsrfTokenResponse,
+  DisableAuthenticatorRequest,
   ForgotPasswordRequest,
+  LoginChallengeResponse,
   LoginRequest,
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
+  TwoFactorLoginRequest,
   UserResponse,
   VerifyRequest
 } from '../../models';
@@ -611,7 +617,7 @@ export function usePatchApiAuthUserIdResetPassword<TData = Awaited<ReturnType<ty
 
 
 export type postApiAuthLoginResponse200 = {
-  data: UserResponse
+  data: LoginChallengeResponse
   status: 200
 }
 
@@ -695,6 +701,561 @@ export function usePostApiAuthLogin<TData = Awaited<ReturnType<typeof postApiAut
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPostApiAuthLoginQueryOptions(loginRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type getApiAuthLoginTwoFactorResponse200 = {
+  data: LoginChallengeResponse
+  status: 200
+}
+
+export type getApiAuthLoginTwoFactorResponseSuccess = (getApiAuthLoginTwoFactorResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAuthLoginTwoFactorResponse = (getApiAuthLoginTwoFactorResponseSuccess)
+
+export const getGetApiAuthLoginTwoFactorUrl = () => {
+
+
+
+
+  return `/api/auth/login/two-factor`
+}
+
+export const getApiAuthLoginTwoFactor = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiAuthLoginTwoFactorResponse> => {
+
+  return httpClient<getApiAuthLoginTwoFactorResponse>(getGetApiAuthLoginTwoFactorUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiAuthLoginTwoFactorMutationKey = () => ['getApiAuthLoginTwoFactor'] as const;
+
+export const getGetApiAuthLoginTwoFactorMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, TError,void, TContext> => {
+
+const mutationKey = getGetApiAuthLoginTwoFactorMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, void> = () => {
+
+
+          return  getApiAuthLoginTwoFactor(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiAuthLoginTwoFactorMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>>
+
+    export type GetApiAuthLoginTwoFactorMutationError = unknown
+
+
+    export const useGetApiAuthLoginTwoFactor = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiAuthLoginTwoFactorMutationOptions(options), queryClient);
+    }
+    export type postApiAuthLoginTwoFactorResponse200 = {
+  data: UserResponse
+  status: 200
+}
+
+export type postApiAuthLoginTwoFactorResponseSuccess = (postApiAuthLoginTwoFactorResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthLoginTwoFactorResponse = (postApiAuthLoginTwoFactorResponseSuccess)
+
+export const getPostApiAuthLoginTwoFactorUrl = () => {
+
+
+
+
+  return `/api/auth/login/two-factor`
+}
+
+export const postApiAuthLoginTwoFactor = async (twoFactorLoginRequest?: TwoFactorLoginRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthLoginTwoFactorResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiAuthLoginTwoFactorResponse>(getPostApiAuthLoginTwoFactorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(twoFactorLoginRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthLoginTwoFactorQueryKey = (twoFactorLoginRequest?: MaybeRefOrGetter<TwoFactorLoginRequest>,) => {
+    return [
+    'POST', 'api','auth','login','two-factor', twoFactorLoginRequest
+    ] as const;
+    }
+
+
+export const getPostApiAuthLoginTwoFactorQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError = unknown>(twoFactorLoginRequest?: MaybeRefOrGetter<TwoFactorLoginRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthLoginTwoFactorQueryKey(twoFactorLoginRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>> = ({ signal }) => postApiAuthLoginTwoFactor(toValue(twoFactorLoginRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError, TData>
+}
+
+export type PostApiAuthLoginTwoFactorQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>>
+export type PostApiAuthLoginTwoFactorQueryError = unknown
+
+
+
+export function usePostApiAuthLoginTwoFactor<TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError = unknown>(
+ twoFactorLoginRequest?: MaybeRefOrGetter<TwoFactorLoginRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthLoginTwoFactorQueryOptions(twoFactorLoginRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiAuthLoginTwoFactorResendResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiAuthLoginTwoFactorResendResponseSuccess = (postApiAuthLoginTwoFactorResendResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthLoginTwoFactorResendResponse = (postApiAuthLoginTwoFactorResendResponseSuccess)
+
+export const getPostApiAuthLoginTwoFactorResendUrl = () => {
+
+
+
+
+  return `/api/auth/login/two-factor/resend`
+}
+
+export const postApiAuthLoginTwoFactorResend = async ( options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthLoginTwoFactorResendResponse> => {
+
+  return httpClient<postApiAuthLoginTwoFactorResendResponse>(getPostApiAuthLoginTwoFactorResendUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthLoginTwoFactorResendQueryKey = () => {
+    return [
+    'POST', 'api','auth','login','two-factor','resend'
+    ] as const;
+    }
+
+
+export const getPostApiAuthLoginTwoFactorResendQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthLoginTwoFactorResendQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>> = ({ signal }) => postApiAuthLoginTwoFactorResend({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError, TData>
+}
+
+export type PostApiAuthLoginTwoFactorResendQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>>
+export type PostApiAuthLoginTwoFactorResendQueryError = unknown
+
+
+
+export function usePostApiAuthLoginTwoFactorResend<TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthLoginTwoFactorResendQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiAuthTwoFactorAuthenticatorSetupResponse200 = {
+  data: AuthenticatorSetupResponse
+  status: 200
+}
+
+export type postApiAuthTwoFactorAuthenticatorSetupResponseSuccess = (postApiAuthTwoFactorAuthenticatorSetupResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthTwoFactorAuthenticatorSetupResponse = (postApiAuthTwoFactorAuthenticatorSetupResponseSuccess)
+
+export const getPostApiAuthTwoFactorAuthenticatorSetupUrl = () => {
+
+
+
+
+  return `/api/auth/two-factor/authenticator/setup`
+}
+
+export const postApiAuthTwoFactorAuthenticatorSetup = async (authenticatorSetupRequest?: AuthenticatorSetupRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthTwoFactorAuthenticatorSetupResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiAuthTwoFactorAuthenticatorSetupResponse>(getPostApiAuthTwoFactorAuthenticatorSetupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authenticatorSetupRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthTwoFactorAuthenticatorSetupQueryKey = (authenticatorSetupRequest?: MaybeRefOrGetter<AuthenticatorSetupRequest>,) => {
+    return [
+    'POST', 'api','auth','two-factor','authenticator','setup', authenticatorSetupRequest
+    ] as const;
+    }
+
+
+export const getPostApiAuthTwoFactorAuthenticatorSetupQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError = unknown>(authenticatorSetupRequest?: MaybeRefOrGetter<AuthenticatorSetupRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthTwoFactorAuthenticatorSetupQueryKey(authenticatorSetupRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>> = ({ signal }) => postApiAuthTwoFactorAuthenticatorSetup(toValue(authenticatorSetupRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError, TData>
+}
+
+export type PostApiAuthTwoFactorAuthenticatorSetupQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>>
+export type PostApiAuthTwoFactorAuthenticatorSetupQueryError = unknown
+
+
+
+export function usePostApiAuthTwoFactorAuthenticatorSetup<TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError = unknown>(
+ authenticatorSetupRequest?: MaybeRefOrGetter<AuthenticatorSetupRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthTwoFactorAuthenticatorSetupQueryOptions(authenticatorSetupRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiAuthTwoFactorAuthenticatorConfirmResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiAuthTwoFactorAuthenticatorConfirmResponseSuccess = (postApiAuthTwoFactorAuthenticatorConfirmResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthTwoFactorAuthenticatorConfirmResponse = (postApiAuthTwoFactorAuthenticatorConfirmResponseSuccess)
+
+export const getPostApiAuthTwoFactorAuthenticatorConfirmUrl = () => {
+
+
+
+
+  return `/api/auth/two-factor/authenticator/confirm`
+}
+
+export const postApiAuthTwoFactorAuthenticatorConfirm = async (confirmAuthenticatorRequest?: ConfirmAuthenticatorRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthTwoFactorAuthenticatorConfirmResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiAuthTwoFactorAuthenticatorConfirmResponse>(getPostApiAuthTwoFactorAuthenticatorConfirmUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(confirmAuthenticatorRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthTwoFactorAuthenticatorConfirmQueryKey = (confirmAuthenticatorRequest?: MaybeRefOrGetter<ConfirmAuthenticatorRequest>,) => {
+    return [
+    'POST', 'api','auth','two-factor','authenticator','confirm', confirmAuthenticatorRequest
+    ] as const;
+    }
+
+
+export const getPostApiAuthTwoFactorAuthenticatorConfirmQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError = unknown>(confirmAuthenticatorRequest?: MaybeRefOrGetter<ConfirmAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthTwoFactorAuthenticatorConfirmQueryKey(confirmAuthenticatorRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>> = ({ signal }) => postApiAuthTwoFactorAuthenticatorConfirm(toValue(confirmAuthenticatorRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError, TData>
+}
+
+export type PostApiAuthTwoFactorAuthenticatorConfirmQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>>
+export type PostApiAuthTwoFactorAuthenticatorConfirmQueryError = unknown
+
+
+
+export function usePostApiAuthTwoFactorAuthenticatorConfirm<TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError = unknown>(
+ confirmAuthenticatorRequest?: MaybeRefOrGetter<ConfirmAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthTwoFactorAuthenticatorConfirmQueryOptions(confirmAuthenticatorRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiAuthTwoFactorEmailResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiAuthTwoFactorEmailResponseSuccess = (postApiAuthTwoFactorEmailResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthTwoFactorEmailResponse = (postApiAuthTwoFactorEmailResponseSuccess)
+
+export const getPostApiAuthTwoFactorEmailUrl = () => {
+
+
+
+
+  return `/api/auth/two-factor/email`
+}
+
+export const postApiAuthTwoFactorEmail = async (disableAuthenticatorRequest?: DisableAuthenticatorRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthTwoFactorEmailResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiAuthTwoFactorEmailResponse>(getPostApiAuthTwoFactorEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(disableAuthenticatorRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiAuthTwoFactorEmailQueryKey = (disableAuthenticatorRequest?: MaybeRefOrGetter<DisableAuthenticatorRequest>,) => {
+    return [
+    'POST', 'api','auth','two-factor','email', disableAuthenticatorRequest
+    ] as const;
+    }
+
+
+export const getPostApiAuthTwoFactorEmailQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError = unknown>(disableAuthenticatorRequest?: MaybeRefOrGetter<DisableAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiAuthTwoFactorEmailQueryKey(disableAuthenticatorRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>> = ({ signal }) => postApiAuthTwoFactorEmail(toValue(disableAuthenticatorRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError, TData>
+}
+
+export type PostApiAuthTwoFactorEmailQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>>
+export type PostApiAuthTwoFactorEmailQueryError = unknown
+
+
+
+export function usePostApiAuthTwoFactorEmail<TData = Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError = unknown>(
+ disableAuthenticatorRequest?: MaybeRefOrGetter<DisableAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiAuthTwoFactorEmailQueryOptions(disableAuthenticatorRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

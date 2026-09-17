@@ -35,7 +35,6 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
             {
-                ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
                 ["AccountVerification:OtpLifetimeMinutes"] = "10",
                 ["AccountVerification:ResendCooldownSeconds"] = "30",
                 ["SMTP_HOST"] = "smtp.example.test",
@@ -44,7 +43,6 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
         );
 
         var options = provider.GetRequiredService<AccountVerificationOptions>();
-        options.Required.Should().BeTrue();
         options.OtpLifetime.Should().Be(TimeSpan.FromMinutes(10));
         options.ResendCooldown.Should().Be(TimeSpan.FromSeconds(30));
     }
@@ -55,63 +53,34 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
             {
-                ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
                 ["AccountVerification:OtpLifetimeMinutes"] = "Infinity",
                 ["AccountVerification:ResendCooldownSeconds"] = "not-a-number",
-            }
-        );
-
-        var options = provider.GetRequiredService<AccountVerificationOptions>();
-        options.Required.Should().BeFalse();
-        options.OtpLifetime.Should().Be(AccountVerificationOptions.DefaultOtpLifetime);
-        options.ResendCooldown.Should().Be(AccountVerificationOptions.DefaultResendCooldown);
-    }
-
-    [Fact]
-    public void AddCodigoActivoRequiredFlagAbsentDefaultsRequiredToTrue()
-    {
-        var provider = Build(
-            new Dictionary<string, string?>(StringComparer.Ordinal)
-            {
                 ["SMTP_HOST"] = "smtp.example.test",
                 ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
             }
         );
 
-        provider.GetRequiredService<AccountVerificationOptions>().Required.Should().BeTrue();
+        var options = provider.GetRequiredService<AccountVerificationOptions>();
+        options.OtpLifetime.Should().Be(AccountVerificationOptions.DefaultOtpLifetime);
+        options.ResendCooldown.Should().Be(AccountVerificationOptions.DefaultResendCooldown);
     }
 
     [Theory]
     [InlineData(null, "no-reply@example.test")]
     [InlineData("smtp.example.test", null)]
-    public void AddCodigoActivoVerificationRequiredButSmtpUnconfiguredThrows(
-        string? host,
-        string? from
-    )
+    [InlineData(null, null)]
+    public void AddCodigoActivoSmtpUnconfiguredThrows(string? host, string? from)
     {
         var settings = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            ["ACCOUNT_VERIFICATION_REQUIRED"] = "true",
             ["SMTP_HOST"] = host,
             ["SMTP_FROM_ADDRESS"] = from,
         };
 
         var act = () => Build(settings);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*SMTP is not configured*");
-    }
-
-    [Fact]
-    public void AddCodigoActivoVerificationDisabledDoesNotRequireSmtp()
-    {
-        var act = () =>
-            Build(
-                new Dictionary<string, string?>(StringComparer.Ordinal)
-                {
-                    ["ACCOUNT_VERIFICATION_REQUIRED"] = "false",
-                }
-            );
-
-        act.Should().NotThrow();
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*SMTP is not configured*Login codes are delivered by email*");
     }
 }

@@ -1,11 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -13,31 +13,34 @@ namespace CodigoActivo.Application.Auth.Commands;
 /// Carries the input required to login.
 /// </summary>
 /// <param name="Request">Validated client request data.</param>
-public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<UserResponse>>;
+public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginChallenge>>;
 
 /// <summary>
-/// Executes the command to login.
+/// Executes the password step of the login. A correct password never opens a session by itself:
+/// it opens a second-factor challenge that <see cref="VerifyTwoFactorLoginCommandHandler"/> closes.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="credentialTiming">The credential timing value.</param>
-/// <param name="verification">The verification value.</param>
+/// <param name="twoFactor">Second-factor configuration.</param>
+/// <param name="loginCodes">Issuer of emailed login codes.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     CredentialTimingProtector credentialTiming,
-    AccountVerificationOptions verification
-) : ICommandHandler<LoginCommand, Result<UserResponse>>
+    TwoFactorOptions twoFactor,
+    LoginCodeIssuer loginCodes
+) : ICommandHandler<LoginCommand, Result<LoginChallenge>>
 {
     /// <summary>
     /// Handles the request to login.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
-    public async Task<Result<UserResponse>> HandleAsync(
+    /// <returns>A task whose result contains the pending challenge on success, or an application error on failure.</returns>
+    public async Task<Result<LoginChallenge>> HandleAsync(
         LoginCommand command,
         CancellationToken ct = default
     )
@@ -66,23 +69,35 @@ public sealed class LoginCommandHandler(
             return Error.Forbidden(ErrorCode.UserAccountIsDependent);
         }
 
-        var selfHealed = false;
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending)
         {
-            if (verification.Required)
-            {
-                return Error.Forbidden(ErrorCode.UserAccountPendingVerification);
-            }
-
-            user.Verify(SeedIds.UserStatusTypes.Active, clock.UtcNow);
-            selfHealed = true;
+            return Error.Forbidden(ErrorCode.UserAccountPendingVerification);
         }
 
-        user.RegisterLogin(clock.UtcNow);
+        var now = clock.UtcNow;
+        if (user.IsTwoFactorLocked(now))
+        {
+            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+        }
+
+        if (
+            user.TwoFactorMethod == TwoFactorMethod.Email
+            && !user.HasRecentLoginCode(now, twoFactor.ResendCooldown)
+        )
+        {
+            var issued = await loginCodes.IssueAsync(user, now, ct);
+            if (issued.IsFailure)
+            {
+                return issued.Error!;
+            }
+        }
+
         await uow.SaveChangesAsync(ct);
 
-        return selfHealed
-            ? (Result<UserResponse>)(await users.GetByIdWithDetailsAsync(user.Id, ct))!.ToResponse()
-            : (Result<UserResponse>)user.ToResponse();
+        return new LoginChallenge(
+            user.Id,
+            user.TwoFactorMethod,
+            user.TwoFactorMethod == TwoFactorMethod.Email ? user.Email.MaskEmail() : null
+        );
     }
 }

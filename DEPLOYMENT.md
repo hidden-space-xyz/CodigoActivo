@@ -74,13 +74,14 @@ Set at least:
 - `DATA_PROTECTION_CERTIFICATE_PASSWORD`: a separate value of at least 32 characters.
 - `APP_BASE_URL`: the final public HTTPS origin, with no path, query or fragment.
 - `DEMO_MODE`: the permanent mode for these volumes.
-- `ACCOUNT_VERIFICATION_REQUIRED`: whether new accounts must verify their email before login.
 - `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`: used only when the user table is empty.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_FROM_ADDRESS` and any required SMTP credentials.
 
-Production validation always requires an encrypted SMTP mode (`StartTls` or `SslOnConnect`) and valid host,
-port and sender values, even when account verification is disabled. `APP_BASE_URL` must use a public DNS name;
-IP addresses, localhost and reserved example/test domains are rejected.
+Every login is completed with a one-time code, emailed unless the user enrolled an authenticator
+application, so startup fails in every environment when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing.
+Production validation additionally requires an encrypted SMTP mode (`StartTls` or `SslOnConnect`) and valid
+host, port and sender values. `APP_BASE_URL` must use a public DNS name; IP addresses, localhost and reserved
+example/test domains are rejected.
 
 ### TLS and proxy boundary
 
@@ -108,10 +109,9 @@ The base Compose file forwards an explicit variable list to the API. Adding an a
 | `APP_BASE_URL`                         | Public origin for links and SEO output                                             | `https://example.org` (invalid for Production) |
 | `APP_TIMEZONE`                         | IANA or Windows time-zone ID used by the application clock                         | `Europe/Madrid`                                |
 | `DEMO_MODE`                            | `true` or `false`; locked on first start                                           | `false`                                        |
-| `ACCOUNT_VERIFICATION_REQUIRED`        | Require OTP verification before login                                              | `true`                                         |
 | `BOOTSTRAP_ADMIN_EMAIL`                | Initial administrator email for an empty database                                  | Empty                                          |
 | `BOOTSTRAP_ADMIN_PASSWORD`             | Initial administrator password, 12–128 characters                                  | Empty                                          |
-| `SMTP_HOST`                            | SMTP host                                                                          | Empty                                          |
+| `SMTP_HOST`                            | SMTP host; always required because login codes are emailed                         | Empty                                          |
 | `SMTP_PORT`                            | SMTP port                                                                          | `587`                                          |
 | `SMTP_SECURITY`                        | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production allows only the first two | `StartTls`                                     |
 | `SMTP_USERNAME`                        | SMTP username; must be paired with a password                                      | Empty                                          |
@@ -124,8 +124,9 @@ uses the image's default data directory inside the volume mounted at `/var/lib/p
 
 For a direct `dotnet run`, missing database variables fall back to `localhost:5432` and database/user
 `codigoactivo`; the password remains empty. Missing `APP_BASE_URL` falls back to
-`http://localhost:5173`. Account verification defaults to enabled, so direct development without SMTP must
-explicitly set `ACCOUNT_VERIFICATION_REQUIRED=false`.
+`http://localhost:5173`. SMTP has no fallback: direct development points `SMTP_HOST` at a mail catcher such
+as the Mailpit service of the development overlay (`localhost:1025`, security `None`), which is also where
+the login codes can be read.
 
 ### Application settings
 
@@ -139,6 +140,12 @@ Defaults in `backend/src/CodigoActivo.API/appsettings.json` include:
 | `AccountVerification:ResendCooldownSeconds` | `60`                |
 | `PasswordReset:CodeLifetimeMinutes`         | `15`                |
 | `PasswordReset:ResendCooldownSeconds`       | `60`                |
+| `TwoFactor:ChallengeLifetimeMinutes`        | `10`                |
+| `TwoFactor:ResendCooldownSeconds`           | `60`                |
+| `TwoFactor:AuthenticatorSetupLifetimeMinutes` | `15`              |
+| `TwoFactor:MaxFailedAttempts`               | `5`                 |
+| `TwoFactor:LockoutMinutes`                  | `15`                |
+| `TwoFactor:Issuer`                          | `Código Activo`     |
 | `ManualEmail:MaxRecipients`                 | `500`               |
 | `ManualEmail:MaxAttachments`                | `10`                |
 | `ManualEmail:MaxAttachmentsBytes`           | `8388608` (8 MiB)   |
@@ -195,8 +202,10 @@ and undelivered messages at shutdown.
 ## Demo mode and initial administrator
 
 On first start, the API writes the selected `DEMO_MODE` value to `/app/state/deployment-mode` in `api-state`.
-Later starts must use the same value. Demo mode seeds realistic content and accounts with the public password
-`Demo1234!`; only the bootstrap account is an administrator.
+Later starts must use the same value. Demo mode seeds realistic content and invented accounts under
+`demo.codigoactivo.es` whose passwords are random and discarded, so they cannot be used to log in; the
+person giving the demonstration signs in with the bootstrap administrator from `.env`, which is the only
+administrator and receives its login codes at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server.
 
 Changing mode requires destroying all named volumes and therefore all application data:
 
@@ -219,6 +228,8 @@ Inside the repository, `docker compose up --build` merges `docker-compose.overri
 
 - builds `api` and `web` from the working tree;
 - sets the API environment to Development and exposes port `5150`;
+- adds a Mailpit service, points the API's SMTP settings at it and exposes its inbox on port `8025`, so
+  verification links and login codes can be read without a real mail server;
 - exposes PostgreSQL on port `5432` and makes the backend network non-internal;
 - disables the API read-only root filesystem and adds debugger-oriented privileges.
 
@@ -259,5 +270,6 @@ The email queue is intentionally absent from backups. A restart or forced shutdo
 the database action that requested it has already committed.
 
 Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
-database and volume recovery, registration, login, password reset, authorization changes, file access and the
-selected demo/verification modes. Review [SECURITY.md](SECURITY.md) for the complete security model.
+database and volume recovery, registration and email verification, the two-step login, password reset,
+authorization changes, file access and the selected demo mode. Review [SECURITY.md](SECURITY.md) for the
+complete security model.

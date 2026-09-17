@@ -5,6 +5,7 @@ import {
   deleteUserRequest,
   getUserRequest,
   getUsersPageRequest,
+  resetUserTwoFactorRequest,
   setUserAdminRequest,
   updateUserRequest,
 } from '@/entities/user'
@@ -123,5 +124,19 @@ describe('user requests', () => {
       { isAdmin: true, currentPassword: 'Str0ngPass!23' },
       { isAdmin: false, currentPassword: null },
     ])
+  })
+
+  it('resets the second factor of a user with the admin password', async () => {
+    let body: unknown
+    server.use(
+      http.post('/api/users/u1/two-factor/reset', async ({ request }) => {
+        body = await request.json()
+        return noContent()
+      }),
+    )
+
+    await resetUserTwoFactorRequest('u1', 'Str0ngPass!23')
+
+    expect(body).toEqual({ currentPassword: 'Str0ngPass!23' })
   })
 })

@@ -15,11 +15,6 @@ public sealed class AccountVerificationOptions
     public static readonly TimeSpan DefaultResendCooldown = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// Gets or sets the required value.
-    /// </summary>
-    public bool Required { get; set; } = true;
-
-    /// <summary>
     /// Gets or sets the otp lifetime value.
     /// </summary>
     public TimeSpan OtpLifetime { get; set; } = DefaultOtpLifetime;
