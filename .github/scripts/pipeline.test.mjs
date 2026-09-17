@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -151,6 +151,44 @@ test('CodeQL fails closed for missing output, invalid metadata and execution err
     checkDirectory(directory);
     writeFileSync(join(directory, 'critical.sarif'), JSON.stringify(sarif('9')));
     assert.throws(() => checkDirectory(directory));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('CodeQL CLI reports all analysis errors and findings with their SARIF file and location', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'codeql-diagnostics-'));
+  try {
+    const report = sarif('4');
+    report.runs[0].artifacts = [{ location: { uri: 'backend/Example.cs' } }];
+    report.runs[0].invocations = [{
+      executionSuccessful: false,
+      exitCode: 2,
+      exitCodeDescription: 'Extraction failed',
+      toolExecutionNotifications: [{
+        level: 'error',
+        descriptor: { id: 'extractor/error' },
+        message: { text: 'Could not extract source: 100%\nMore detail' },
+        locations: [{ physicalLocation: { artifactLocation: { index: 0 }, region: { startLine: 12, startColumn: 3 } } }],
+        exception: { kind: 'ExtractionException', message: 'Missing dependency' },
+      }],
+      toolConfigurationNotifications: [{ level: 'error', message: { markdown: 'Query pack unavailable' } }],
+    }];
+    writeFileSync(join(directory, 'csharp.sarif'), JSON.stringify(report));
+    const finding = sarif('9');
+    finding.runs[0].results[0].message = { text: 'Unsafe input' };
+    finding.runs[0].results[0].locations = [{ physicalLocation: { artifactLocation: { uri: 'frontend/example.ts' }, region: { startLine: 7 } } }];
+    writeFileSync(join(directory, 'javascript.sarif'), JSON.stringify(finding));
+    const result = spawnSync(process.execPath, ['.github/scripts/check-codeql.mjs', directory], {
+      encoding: 'utf8', env: { ...process.env, GITHUB_ACTIONS: 'true' },
+    });
+    assert.equal(result.status, 1);
+    for (const detail of [
+      '::error title=CodeQL release gate::', 'csharp.sarif', 'exit code 2', 'Extraction failed',
+      'extractor/error', '100%25%0AMore detail', 'backend/Example.cs:12:3', 'Missing dependency',
+      'Query pack unavailable', 'javascript.sarif', 'security-severity=9', 'Unsafe input', 'frontend/example.ts:7',
+    ]) assert.ok(result.stderr.includes(detail), `Missing diagnostic: ${detail}`);
+    assert.ok(!result.stderr.includes('at checkSarif'));
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

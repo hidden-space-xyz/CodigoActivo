@@ -205,6 +205,8 @@ debugger-oriented privileges. Visual Studio uses the same Compose project throug
 Only pushes to `master` start CI (including merged PRs). `develop` and unmerged PRs run nothing.
 Backend build/unit/integration tests and frontend checks must pass before CodeQL scans both languages.
 CodeQL high/critical security findings (score >= 7), error-level findings or analysis failures block publishing.
+The gate logs diagnostic messages and available source locations; SARIF reports are retained for 14 days
+as `codeql-sarif-<language>` workflow artifacts, including failed runs when reports were generated.
 The CodeQL and Docker workflows are reusable stages; neither runs independently or on a schedule.
 
 API and UI share one version and one GitHub release, tagged `vX.Y.Z`. All repository commits since the
