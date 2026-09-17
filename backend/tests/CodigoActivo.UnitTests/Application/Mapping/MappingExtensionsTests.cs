@@ -84,4 +84,57 @@ public sealed class MappingExtensionsTests
         response.Status.Name.Should().BeEmpty();
         response.Status.Color.Should().BeEmpty();
     }
+
+    [Fact]
+    public void ToResponseResourceWithTypeMapsTypeDetails()
+    {
+        var typeId = Guid.NewGuid();
+        var resource = new Resource
+        {
+            Id = Guid.NewGuid(),
+            Title = "Guía",
+            Subtitle = "Primeros pasos",
+            Url = "https://example.test/guia",
+            ResourceTypeId = typeId,
+            ResourceType = new ResourceType
+            {
+                Id = typeId,
+                Name = "Externo",
+                Description = "Enlace externo",
+                Color = "#0EA5E9",
+                IsExternal = true,
+            },
+            CreatedAt = Created,
+            UpdatedAt = Updated,
+        };
+
+        var response = resource.ToResponse();
+
+        response.Id.Should().Be(resource.Id);
+        response.Title.Should().Be("Guía");
+        response.Url.Should().Be("https://example.test/guia");
+        response
+            .Type.Should()
+            .Be(new ResourceTypeResponse(typeId, "Externo", "Enlace externo", "#0EA5E9", true));
+        response.CreatedAt.Should().Be(Created);
+        response.UpdatedAt.Should().Be(Updated);
+    }
+
+    [Fact]
+    public void ToResponseResourceWithoutTypeNavigationMapsEmptyInternalType()
+    {
+        var typeId = Guid.NewGuid();
+        var resource = new Resource
+        {
+            Title = "Guía",
+            Subtitle = "Primeros pasos",
+            ResourceTypeId = typeId,
+        };
+
+        var response = resource.ToResponse();
+
+        response
+            .Type.Should()
+            .Be(new ResourceTypeResponse(typeId, string.Empty, string.Empty, string.Empty, false));
+    }
 }

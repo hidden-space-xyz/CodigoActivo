@@ -86,6 +86,20 @@ dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --star
 Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable
 PostgreSQL database.
 
+CI merges the coverage of both test projects and fails when line, branch or method coverage is below 90%.
+Coverage uses Microsoft Code Coverage with `tests/CodeCoverage.config`, which measures the production
+assemblies and excludes EF Core migrations. To reproduce the check locally:
+
+```bash
+dotnet tool restore
+dotnet test tests/CodigoActivo.UnitTests --coverage --coverage-output-format cobertura --coverage-output unit.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
+dotnet test tests/CodigoActivo.IntegrationTests --coverage --coverage-output-format cobertura --coverage-output integration.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
+dotnet reportgenerator "-reports:TestResults/coverage/*.cobertura.xml" -targetdir:TestResults/coverage/report "-reporttypes:JsonSummary;Html"
+dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summary.json 90
+```
+
+`TestResults/coverage/report/index.html` shows the uncovered code.
+
 Run frontend commands from `frontend/`:
 
 ```bash
@@ -186,7 +200,7 @@ TanStack Query and router plugins. Both mirror the `src/` path of the code under
 
 Before opening a pull request:
 
-1. Run `dotnet build` and `dotnet test` from `backend/`.
+1. Run `dotnet build` and `dotnet test` from `backend/`, and keep backend coverage at or above 90%.
 2. Run `npm run check` from `frontend/`.
 3. Update the relevant documentation when behavior, configuration, architecture or security changes.
 4. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, and so on).

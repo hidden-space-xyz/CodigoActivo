@@ -5,6 +5,8 @@
 files/
 logs/
 tests/
+scripts/
+TestResults/
 .git/
 .gitignore
 .vs/

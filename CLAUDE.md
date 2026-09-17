@@ -26,6 +26,9 @@ dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --star
 Integration tests use PostgreSQL 18 through Testcontainers and require Docker unless
 `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty disposable database.
 
+CI fails when the merged unit and integration coverage (lines, branches or methods) is below 90%. Migrations are
+excluded through `tests/CodeCoverage.config`; the local reproduction steps are in CONTRIBUTING.md.
+
 From `frontend/`:
 
 ```bash
