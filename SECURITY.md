@@ -24,6 +24,10 @@ authentication are not supported.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian relationship.
   Catalog values such as `UserType` are not authorization roles.
+- Granting the administrator flag requires the acting administrator to re-enter their password, so a stolen
+  session cookie alone cannot promote another account. A missing or wrong password returns
+  `UserCurrentPasswordIncorrect` and changes nothing. Revoking the flag needs no password, but the last
+  administrator cannot be demoted.
 - Public registration never grants administrator access. On an empty database, startup creates the first
   administrator from `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`; those variables are ignored once
   a user exists.
@@ -39,7 +43,8 @@ Passwords must contain 12–128 characters and are hashed with Argon2id. Passwor
 stored or logged in plaintext. Login performs fallback Argon2 work for unknown identifiers to reduce timing
 differences.
 
-Credential routes have layered resource controls:
+Credential routes (login, registration, verification, password recovery and change, and administrator
+grants) have layered resource controls:
 
 - nginx rejects credential floods above 10 requests per second per client IP, with a burst of 100;
 - the API enforces 120 requests per minute per client IP in every environment;

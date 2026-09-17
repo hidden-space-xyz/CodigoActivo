@@ -24,8 +24,9 @@ export interface UserRelationFilter {
 
 /**
  * Admin users table with column filters and an optional relation filter, plus update, delete,
- * user-type and admin-flag mutations that invalidate all user queries. `fetchAllUsers` loads every
- * page with the current filters and sort (for exports).
+ * user-type and admin-flag mutations that invalidate all user queries. Granting the admin flag
+ * needs the signed-in admin's `currentPassword`. `fetchAllUsers` loads every page with the current
+ * filters and sort (for exports).
  */
 export function useUsers() {
   const queryClient = useQueryClient()
@@ -67,8 +68,8 @@ export function useUsers() {
   })
 
   const setAdmin = useMutation({
-    mutationFn: (vars: { id: string; isAdmin: boolean }) =>
-      setUserAdminRequest(vars.id, vars.isAdmin),
+    mutationFn: (vars: { id: string; isAdmin: boolean; currentPassword?: string }) =>
+      setUserAdminRequest(vars.id, vars.isAdmin, vars.currentPassword),
     onSuccess: invalidate,
   })
 

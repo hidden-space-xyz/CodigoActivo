@@ -126,7 +126,8 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Sets the admin state.
+    /// Sets the admin state. Granting it requires the caller's password, so the endpoint shares
+    /// the credential rate limits.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -135,6 +136,7 @@ public class UsersController : ApiControllerBase
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPatch("{userId:guid}/admin")]
     [AllowOnlyAdmin]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<IActionResult> SetAdminAsync(
         Guid userId,
         [FromBody] SetAdminRequest request,
@@ -143,7 +145,7 @@ public class UsersController : ApiControllerBase
     )
     {
         return ToNoContent(
-            await handler.HandleAsync(new SetAdminCommand(userId, request.IsAdmin), ct)
+            await handler.HandleAsync(new SetAdminCommand(userId, UserId, request), ct)
         );
     }
 

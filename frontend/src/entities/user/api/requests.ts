@@ -45,7 +45,15 @@ export function changeUserTypeRequest(id: string, userTypeId: string): Promise<U
   )
 }
 
-/** Grants or revokes the admin role; resolves with the raw response. */
-export function setUserAdminRequest(id: string, isAdmin: boolean) {
-  return patchApiUsersUserIdAdmin(id, { isAdmin })
+/**
+ * Grants or revokes the admin role; resolves with the raw response. Granting requires the signed-in
+ * admin's `currentPassword` (the API rejects it with `UserCurrentPasswordIncorrect` otherwise);
+ * revoking ignores it.
+ */
+export function setUserAdminRequest(
+  id: string,
+  isAdmin: boolean,
+  currentPassword: string | null = null,
+) {
+  return patchApiUsersUserIdAdmin(id, { isAdmin, currentPassword })
 }

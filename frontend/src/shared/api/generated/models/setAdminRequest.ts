@@ -7,4 +7,6 @@
 
 export interface SetAdminRequest {
   isAdmin?: boolean;
+  /** @nullable */
+  currentPassword?: string | null;
 }

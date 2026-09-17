@@ -1010,7 +1010,14 @@
       "editHeader": "Editar usuario",
       "optionalSuffix": " (opcional)",
       "birthDateInvalid": "Indica una fecha de nacimiento válida.",
-      "contactRequired": "Los usuarios adultos necesitan correo y teléfono."
+      "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
+      "grantAdmin": {
+        "header": "Conceder rol de administrador",
+        "message": "Vas a dar permisos de administrador a {fullName}. Por seguridad, confirma tu contraseña.",
+        "passwordLabel": "Tu contraseña",
+        "passwordRequired": "Introduce tu contraseña.",
+        "confirm": "Conceder"
+      }
     },
     "activitySignup": {
       "selfMember": "Yo",

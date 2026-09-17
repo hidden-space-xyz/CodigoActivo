@@ -5982,6 +5982,10 @@
         "properties": {
           "isAdmin": {
             "type": "boolean"
+          },
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -32,6 +32,7 @@ import { apiError, http, HttpResponse, server } from '../../../../support/server
 const EDIT_TITLE = 'features.manageUsers.editHeader'
 const TYPE_TITLE = 'pages.admin.users.typeDialog.header'
 const EMAIL_TITLE = 'features.sendEmail.header'
+const GRANT_TITLE = 'features.manageUsers.grantAdmin.header'
 
 const ada = buildUserResponse({ dependentCount: 2 })
 const tim = without(
@@ -418,8 +419,81 @@ describe('admin users page', () => {
     expect(document.body.querySelectorAll('.el-notification')).toHaveLength(0)
   })
 
-  it('grants and revokes the admin role', async () => {
-    serveUsers([ada, withoutId()])
+  it('asks for the admin password before granting the role', async () => {
+    serveUsers([ada])
+    const requests: unknown[] = []
+    server.use(
+      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
+        requests.push({ id: params.userId, body: await request.json() })
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { wrapper } = await renderPage()
+
+    wrapper.findComponent(ElSwitch).vm.$emit('update:modelValue', true)
+    await flushPromises()
+    const dialog = openDialog(t(GRANT_TITLE))
+    expect(dialog.textContent).toContain(
+      t('features.manageUsers.grantAdmin.message', { fullName: 'Ada Lovelace' }),
+    )
+    expect(requests).toEqual([])
+
+    await click(findButton(t('features.manageUsers.grantAdmin.confirm'), dialog))
+    expect(dialog.textContent).toContain(t('features.manageUsers.grantAdmin.passwordRequired'))
+    expect(requests).toEqual([])
+
+    await typeInto('#grant-admin-password', 'Str0ngPass!23')
+    await click(findButton(t('features.manageUsers.grantAdmin.confirm'), dialog))
+
+    await expectNotification(t('pages.admin.users.toasts.adminGranted'))
+    expect(requests).toEqual([
+      { id: 'user-1', body: { isAdmin: true, currentPassword: 'Str0ngPass!23' } },
+    ])
+    await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
+  })
+
+  it('keeps the grant dialog open when the password is rejected or the request fails', async () => {
+    serveUsers([ada])
+    let rejectPassword = true
+    server.use(
+      http.patch('/api/users/:userId/admin', () =>
+        rejectPassword ? apiError(400, 'UserCurrentPasswordIncorrect') : apiError(500),
+      ),
+    )
+    const { wrapper } = await renderPage()
+    const adaSwitch = wrapper.findComponent(ElSwitch)
+
+    adaSwitch.vm.$emit('update:modelValue', true)
+    await flushPromises()
+    const dialog = openDialog(t(GRANT_TITLE))
+    await typeInto('#grant-admin-password', 'wrong-password')
+    await click(findButton(t('features.manageUsers.grantAdmin.confirm'), dialog))
+
+    await vi.waitFor(() =>
+      expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
+    )
+    expect(document.body.querySelectorAll('.el-notification')).toHaveLength(0)
+    expect(isDialogOpen(t(GRANT_TITLE))).toBe(true)
+    expect(adaSwitch.props('modelValue')).toBe(false)
+
+    rejectPassword = false
+    await click(findButton(t('features.manageUsers.grantAdmin.confirm'), dialog))
+    await expectNotification(t('common.error'))
+    expect(dialog.textContent).not.toContain(t('errors.UserCurrentPasswordIncorrect'))
+    expect(isDialogOpen(t(GRANT_TITLE))).toBe(true)
+
+    await click(findButton(t('common.cancel'), dialog))
+    await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
+
+    adaSwitch.vm.$emit('update:modelValue', true)
+    await flushPromises()
+    expect(inputValue('#grant-admin-password')).toBe('')
+    await dismissDialog(wrapper, t(GRANT_TITLE))
+    await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
+  })
+
+  it('revokes the admin role without asking for a password', async () => {
+    serveUsers([tim, withoutId()])
     const requests: unknown[] = []
     let fail = false
     server.use(
@@ -430,22 +504,18 @@ describe('admin users page', () => {
       }),
     )
     const { wrapper } = await renderPage()
-    const [adaSwitch, ghostSwitch] = wrapper.findAllComponents(ElSwitch)
+    const [timSwitch, ghostSwitch] = wrapper.findAllComponents(ElSwitch)
 
-    adaSwitch?.vm.$emit('update:modelValue', true)
-    await expectNotification(t('pages.admin.users.toasts.adminGranted'))
-    adaSwitch?.vm.$emit('update:modelValue', false)
+    timSwitch?.vm.$emit('update:modelValue', false)
     await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
     ghostSwitch?.vm.$emit('update:modelValue', true)
     await flushPromises()
 
-    expect(requests).toEqual([
-      { id: 'user-1', body: { isAdmin: true } },
-      { id: 'user-1', body: { isAdmin: false } },
-    ])
+    expect(isDialogOpen(t(GRANT_TITLE))).toBe(false)
+    expect(requests).toEqual([{ id: 'child-1', body: { isAdmin: false, currentPassword: null } }])
 
     fail = true
-    adaSwitch?.vm.$emit('update:modelValue', true)
+    timSwitch?.vm.$emit('update:modelValue', false)
     await expectNotification(t('common.error'))
   })
 

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -13,14 +14,32 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 
 public sealed class SetAdminCommandHandlerTests
 {
+    private const string ActingPassword = "acting-admin-password";
+
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly User actingAdmin;
     private readonly SetAdminCommandHandler sut;
 
     public SetAdminCommandHandlerTests()
     {
-        sut = new SetAdminCommandHandler(users, clock, uow);
+        actingAdmin = NewUser(isAdmin: true);
+        actingAdmin.PasswordHash = hasher.Hash(ActingPassword);
+        sut = new SetAdminCommandHandler(users, hasher, clock, uow);
+    }
+
+    private Task<Result> HandleAsync(Guid userId, bool isAdmin, string? currentPassword = null)
+    {
+        return sut.HandleAsync(
+            new SetAdminCommand(
+                userId,
+                actingAdmin.Id,
+                new SetAdminRequest(isAdmin, currentPassword)
+            ),
+            TestContext.Current.CancellationToken
+        );
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -32,50 +51,97 @@ public sealed class SetAdminCommandHandlerTests
     [Fact]
     public async Task HandleAsyncUserMissingReturnsNotFound()
     {
-        users.FindReturns(null);
+        users.FindReturns(actingAdmin, null);
 
-        var result = await sut.HandleAsync(
-            new SetAdminCommand(Guid.NewGuid(), true),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), true, ActingPassword);
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncGrantAdminToNonAdminGrantsAndSaves()
+    public async Task HandleAsyncGrantWithCorrectPasswordGrantsAndSaves()
     {
         var user = NewUser(isAdmin: false);
-        users.FindReturns(user);
+        users.FindReturns(actingAdmin, user);
+        clock.UtcNow = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var result = await sut.HandleAsync(
-            new SetAdminCommand(user.Id, true),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(user.Id, true, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeTrue();
+        user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task HandleAsyncGrantWithoutPasswordReturnsBadRequest(string? currentPassword)
+    {
+        var result = await HandleAsync(Guid.NewGuid(), true, currentPassword);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .FindAsync(default!, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncGrantWithIncorrectPasswordReturnsBadRequest()
+    {
+        var user = NewUser(isAdmin: false);
+        users.FindReturns(actingAdmin, user);
+
+        var result = await HandleAsync(user.Id, true, "wrong-password");
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.IsAdmin.Should().BeFalse();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncGrantActingUserWithoutPasswordReturnsBadRequest()
+    {
+        actingAdmin.PasswordHash = null;
+        var user = NewUser(isAdmin: false);
+        users.FindReturns(actingAdmin, user);
+
+        var result = await HandleAsync(user.Id, true, ActingPassword);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.IsAdmin.Should().BeFalse();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncGrantActingUserMissingReturnsBadRequest()
+    {
+        var user = NewUser(isAdmin: false);
+        users.FindReturns(null, user);
+
+        var result = await HandleAsync(user.Id, true, ActingPassword);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.IsAdmin.Should().BeFalse();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
     public async Task HandleAsyncFlagUnchangedIsNoopAndDoesNotSave()
     {
         var user = NewUser(isAdmin: true);
-        users.FindReturns(user);
+        users.FindReturns(actingAdmin, user);
 
-        var result = await sut.HandleAsync(
-            new SetAdminCommand(user.Id, true),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(user.Id, true, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncRevokeWithOtherAdminsRemainingRevokesAndSaves()
+    public async Task HandleAsyncRevokeWithOtherAdminsRemainingRevokesWithoutPassword()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
@@ -83,13 +149,13 @@ public sealed class SetAdminCommandHandlerTests
             .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(2);
 
-        var result = await sut.HandleAsync(
-            new SetAdminCommand(user.Id, false),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(user.Id, false);
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeFalse();
+        await users
+            .Received(1)
+            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -102,10 +168,7 @@ public sealed class SetAdminCommandHandlerTests
             .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(1);
 
-        var result = await sut.HandleAsync(
-            new SetAdminCommand(user.Id, false),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(user.Id, false);
 
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserCannotRemoveLastAdmin);
         user.IsAdmin.Should().BeTrue();
