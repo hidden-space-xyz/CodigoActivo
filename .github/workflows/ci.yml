@@ -47,9 +47,13 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore CodigoActivo.slnx
+      - run: dotnet tool restore
       - run: dotnet build CodigoActivo.slnx --configuration Release --no-restore
-      - run: dotnet test tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj --configuration Release --no-build --no-restore
-      - run: dotnet test tests/CodigoActivo.IntegrationTests/CodigoActivo.IntegrationTests.csproj --configuration Release --no-build --no-restore
+      - run: dotnet test tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj --configuration Release --no-build --no-restore --coverage --coverage-output-format cobertura --coverage-output unit.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
+      - run: dotnet test tests/CodigoActivo.IntegrationTests/CodigoActivo.IntegrationTests.csproj --configuration Release --no-build --no-restore --coverage --coverage-output-format cobertura --coverage-output integration.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
+      - run: dotnet reportgenerator "-reports:TestResults/coverage/*.cobertura.xml" -targetdir:TestResults/coverage/report "-reporttypes:JsonSummary;MarkdownSummaryGithub"
+      - run: cat TestResults/coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+      - run: dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summary.json 90
 
   frontend:
     runs-on: ubuntu-latest

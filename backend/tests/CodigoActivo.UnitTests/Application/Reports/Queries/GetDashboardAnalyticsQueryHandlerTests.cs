@@ -367,6 +367,98 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         occEvent.Activities[0].Desired.Should().Be(5);
     }
 
+    private void HasNoData()
+    {
+        users.HasUsers();
+        activities.HasAssignments();
+        events.HasEvents();
+        HasActivityRows();
+        HasResources();
+        HasAnnouncements();
+        HasPartners();
+        HasCategoryTypes();
+    }
+
+    private Task<DashboardAnalyticsResponse> Analytics(DateOnly? from, DateOnly? to)
+    {
+        return sut.HandleAsync(
+            new GetDashboardAnalyticsQuery(new DashboardAnalyticsQuery { From = from, To = to }),
+            TestContext.Current.CancellationToken
+        );
+    }
+
+    [Fact]
+    public async Task HandleAsyncWithoutRangeCoversTheLastTwelveMonthsMonthly()
+    {
+        HasNoData();
+
+        var r = await Analytics(null, null);
+
+        r.RangeStart.Should().Be(new DateOnly(2025, 7, 7));
+        r.RangeEnd.Should().Be(new DateOnly(2026, 7, 7));
+        r.Granularity.Should().Be("month");
+        r.UserGrowth.Buckets.Should().HaveCount(13);
+        r.UserGrowth.Buckets[0].Should().Be(new DateOnly(2025, 7, 1));
+        r.UserGrowth.Buckets[^1].Should().Be(new DateOnly(2026, 7, 1));
+    }
+
+    [Fact]
+    public async Task HandleAsyncReversedShortRangeSwapsDatesAndUsesDailyBuckets()
+    {
+        HasNoData();
+
+        var r = await Analytics(new DateOnly(2026, 6, 30), new DateOnly(2026, 6, 1));
+
+        r.RangeStart.Should().Be(new DateOnly(2026, 6, 1));
+        r.RangeEnd.Should().Be(new DateOnly(2026, 6, 30));
+        r.Granularity.Should().Be("day");
+        r.Inscriptions.Buckets.Should().HaveCount(30);
+        r.Inscriptions.Buckets[1].Should().Be(new DateOnly(2026, 6, 2));
+    }
+
+    [Fact]
+    public async Task HandleAsyncQuarterRangeUsesWeeklyBucketsStartingOnMonday()
+    {
+        HasNoData();
+
+        var r = await Analytics(new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 31));
+
+        r.Granularity.Should().Be("week");
+        r.ContentPublished.Buckets[0].Should().Be(new DateOnly(2025, 12, 29));
+        r.ContentPublished.Buckets[1].Should().Be(new DateOnly(2026, 1, 5));
+        r.ContentPublished.Buckets.Should().OnlyContain(b => b.DayOfWeek == DayOfWeek.Monday);
+        r.ContentPublished.Buckets[^1].Should().Be(new DateOnly(2026, 3, 30));
+    }
+
+    [Fact]
+    public async Task HandleAsyncUnknownUserTypeAndStatusAreLeftOutOfTheBreakdowns()
+    {
+        HasNoData();
+        var unknown = Guid.NewGuid();
+        users.HasUsers(
+            AnalyticsUser(unknown, SeedIds.UserStatusTypes.Active, Utc(2026, 3, 1)),
+            AnalyticsUser(
+                SeedIds.UserTypes.Member,
+                SeedIds.UserStatusTypes.Active,
+                Utc(2026, 3, 1)
+            )
+        );
+        activities.HasAssignments(
+            Insc(Guid.NewGuid(), unknown, Utc(2026, 3, 1)),
+            Insc(Guid.NewGuid(), Confirmed, Utc(2026, 3, 1))
+        );
+
+        var r = await Analytics(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
+
+        r.UsersByType.Select(s => s.Key).Should().Equal("member", "sponsor", "participant");
+        Slice(r.UsersByType, "member").Should().Be(1);
+        r.UserGrowth.Series.Select(s => s.Key).Should().NotContain("other");
+        r.Inscriptions.Series.Select(s => s.Key).Should().Equal("requested", "confirmed", "denied");
+        Series(r.Inscriptions, "confirmed").Sum().Should().Be(1);
+        Series(r.Inscriptions, "requested").Sum().Should().Be(0);
+        Series(r.Inscriptions, "denied").Sum().Should().Be(0);
+    }
+
     private static DateTimeOffset Utc(int year, int month, int day)
     {
         return new(year, month, day, 12, 0, 0, TimeSpan.Zero);
