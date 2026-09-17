@@ -33,12 +33,6 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne(e => e.TermsDocument)
-            .WithMany()
-            .HasForeignKey(e => e.TermsDocumentId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(e => e.CreatedBy)

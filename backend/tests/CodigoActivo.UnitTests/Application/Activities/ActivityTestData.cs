@@ -249,53 +249,116 @@ internal static class ActivityTestData
             .Returns(activity);
     }
 
+    /// <summary>
+    /// Configures an activity window for handlers that never consult terms documents (change
+    /// status, unassign). Use the overload that also takes an <see cref="IEventRepository"/> for
+    /// handlers that go through <c>TermsGate</c>.
+    /// </summary>
     public static void HasActivityWindow(
         this IActivityRepository activities,
         Guid activityId,
         DateTimeOffset signupStart,
         DateTimeOffset signupEnd,
         DateTimeOffset? earlySignupStart = null,
-        Guid? eventId = null,
-        Guid? termsDocumentId = null
+        Guid? eventId = null
     )
     {
+        activities.Query().Returns(BuildActivityWindow(activityId, signupStart, signupEnd, earlySignupStart, eventId ?? Guid.Empty).AsQueryable());
+    }
+
+    /// <summary>
+    /// Configures an activity window and the terms documents linked to its event, for handlers
+    /// that go through <c>TermsGate</c> (assign, assign household).
+    /// </summary>
+    public static void HasActivityWindow(
+        this IActivityRepository activities,
+        IEventRepository events,
+        Guid activityId,
+        DateTimeOffset signupStart,
+        DateTimeOffset signupEnd,
+        DateTimeOffset? earlySignupStart = null,
+        Guid? eventId = null,
+        Guid? termsDocumentId = null,
+        bool termsRequired = true
+    )
+    {
+        var resolvedEventId = eventId ?? Guid.Empty;
         activities
             .Query()
             .Returns(
-                new List<Activity>
+                BuildActivityWindow(activityId, signupStart, signupEnd, earlySignupStart, resolvedEventId)
+                    .AsQueryable()
+            );
+
+        var documents =
+            termsDocumentId is { } termsId
+                ? new List<EventTermsDocument>
                 {
                     new()
                     {
-                        Description = "Descripción de la actividad",
-                        Id = activityId,
-                        Title = "Taller de robótica",
-                        Location = "Sala A",
-                        ActivityStartsAt = ActivityStartsAt,
-                        ActivityEndsAt = ActivityEndsAt,
-                        EventId = eventId ?? Guid.Empty,
-                        Event = new Event
-                        {
-                            Title = "e",
-                            Subtitle = "s",
-                            EarlySignupStartsAt = earlySignupStart,
-                            SignupStartsAt = signupStart,
-                            SignupEndsAt = signupEnd,
-                            TermsDocumentId = termsDocumentId,
-                        },
+                        EventId = resolvedEventId,
+                        TermsDocumentId = termsId,
+                        IsRequired = termsRequired,
+                        DisplayOrder = 0,
                     },
-                }.AsQueryable()
-            );
+                }
+                : [];
+        events.QueryTermsDocuments().Returns(documents.AsQueryable());
+    }
+
+    private static List<Activity> BuildActivityWindow(
+        Guid activityId,
+        DateTimeOffset signupStart,
+        DateTimeOffset signupEnd,
+        DateTimeOffset? earlySignupStart,
+        Guid eventId
+    )
+    {
+        return
+        [
+            new Activity
+            {
+                Description = "Descripción de la actividad",
+                Id = activityId,
+                Title = "Taller de robótica",
+                Location = "Sala A",
+                ActivityStartsAt = ActivityStartsAt,
+                ActivityEndsAt = ActivityEndsAt,
+                EventId = eventId,
+                Event = new Event
+                {
+                    Title = "e",
+                    Subtitle = "s",
+                    EarlySignupStartsAt = earlySignupStart,
+                    SignupStartsAt = signupStart,
+                    SignupEndsAt = signupEnd,
+                },
+            },
+        ];
     }
 
     public static void TermsAccepted(this IEventRepository events, Guid? acceptedTermsDocumentId)
     {
         events
-            .GetTermsAcceptanceAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ListTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(
                 acceptedTermsDocumentId is { } termsDocumentId
-                    ? new EventTermsAcceptance { TermsDocumentId = termsDocumentId }
-                    : null
+                    ? new List<EventTermsAcceptance>
+                    {
+                        new() { TermsDocumentId = termsDocumentId, Accepted = true },
+                    }
+                    : []
             );
+    }
+
+    public static void HasTermsDecisions(
+        this IEventRepository events,
+        params EventTermsAcceptance[] acceptances
+    )
+    {
+        events
+            .ListTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(acceptances.ToList());
     }
 
     public static void TargetUser(this IUserRepository users, Guid userId, Guid userTypeId)

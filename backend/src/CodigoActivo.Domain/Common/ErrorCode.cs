@@ -133,6 +133,10 @@ public enum ErrorCode
     /// </summary>
     EventTermsAcceptanceRequired,
     /// <summary>
+    /// Selects the event terms document duplicated option.
+    /// </summary>
+    EventTermsDocumentDuplicated,
+    /// <summary>
     /// Selects the terms document not found option.
     /// </summary>
     TermsDocumentNotFound,

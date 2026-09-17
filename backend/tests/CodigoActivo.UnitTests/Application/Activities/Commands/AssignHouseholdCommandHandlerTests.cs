@@ -72,7 +72,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, PastStart, PastEnd);
+        activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
 
         var result = await sut.HandleAsync(
             new AssignHouseholdCommand(
@@ -96,7 +96,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
         var strangerId = Guid.NewGuid();
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers();
 
         var result = await sut.HandleAsync(
@@ -120,7 +120,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(
             new User
             {
@@ -153,7 +153,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
 
         var request = new AssignHouseholdRequest([
@@ -186,6 +186,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var childId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -227,6 +228,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -244,7 +246,7 @@ public sealed class AssignHouseholdCommandHandlerTests
                 actingUserId,
                 new AssignHouseholdRequest(
                     [new(childId, SeedIds.ActivityRoleTypes.Participant)],
-                    AcceptTerms: true
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
                 ),
                 IsAdmin: false
             ),
@@ -261,7 +263,8 @@ public sealed class AssignHouseholdCommandHandlerTests
                     && a.EventId == eventId
                     && a.UserId == actingUserId
                     && a.TermsDocumentId == termsDocumentId
-                    && a.AcceptedAt == Now
+                    && a.Accepted
+                    && a.DecidedAt == Now
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -275,7 +278,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         clock.UtcNow = DuringEarly;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
         activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
         statuses.RequestedStatusNamed("Solicitado");
@@ -302,7 +305,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         clock.UtcNow = DuringEarly;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.HouseholdUsers(
             new User
             {
@@ -337,7 +340,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
         activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
         statuses.RequestedStatusNamed("Solicitado");
@@ -391,7 +394,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         var roleId = SeedIds.ActivityRoleTypes.Participant;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
         activities
             .QueryAssignments()

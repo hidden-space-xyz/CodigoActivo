@@ -139,7 +139,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
 
         using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/events/{eventId}"), Ct);
         var before = await warm.ReadJsonAsync<EventResponse>(Ct);
-        before!.TermsDocument!.Name.Should().Be("Términos originales");
+        before!.TermsDocuments.Should().ContainSingle().Which.Name.Should().Be("Términos originales");
 
         var admin = await LoginAsAdminAsync();
         using var renamed = await admin.PutJsonAsync(
@@ -151,7 +151,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
 
         using var after = await anonymous.GetAsync(TestUri.Rel($"/api/events/{eventId}"), Ct);
         var body = await after.ReadJsonAsync<EventResponse>(Ct);
-        body!.TermsDocument!.Name.Should().Be("Términos corregidos");
+        body!.TermsDocuments.Should().ContainSingle().Which.Name.Should().Be("Términos corregidos");
     }
 
     [Fact]
@@ -499,11 +499,22 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
                 SignupEndsAt = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
                 Featured = featured,
                 ThumbnailId = thumbnailId,
-                TermsDocumentId = termsDocumentId,
                 CreatedAt = SeededAt,
                 CreatedBy = TestSeedData.Users.AdminId,
             };
             ev.Categories.Add(new EventCategory { EventCategoryTypeId = categoryId });
+            if (termsDocumentId is { } linkedTermsDocumentId)
+            {
+                ev.TermsDocuments.Add(
+                    new EventTermsDocument
+                    {
+                        TermsDocumentId = linkedTermsDocumentId,
+                        IsRequired = true,
+                        DisplayOrder = 0,
+                    }
+                );
+            }
+
             db.Events.Add(ev);
             return Task.CompletedTask;
         });

@@ -74,12 +74,13 @@ public sealed class CreateEventCommandHandler(
             return categories.Error!;
         }
 
-        if (
-            request.TermsDocumentId is { } termsDocumentId
-            && !await termsDocuments.ExistsAsync(x => x.Id == termsDocumentId, ct)
-        )
+        if (request.TermsDocuments is { Count: > 0 } termsDocumentRequests)
         {
-            return Error.BadRequest(ErrorCode.TermsDocumentNotFound);
+            var termsValidation = await ValidateTermsDocumentsAsync(termsDocumentRequests, ct);
+            if (termsValidation.IsFailure)
+            {
+                return termsValidation.Error!;
+            }
         }
 
         var ev = new Event
@@ -93,16 +94,34 @@ public sealed class CreateEventCommandHandler(
             SignupStartsAt = schedule.Value.SignupStartsAt,
             SignupEndsAt = schedule.Value.SignupEndsAt,
             ThumbnailId = request.ThumbnailId,
-            TermsDocumentId = request.TermsDocumentId,
             CreatedAt = clock.UtcNow,
             CreatedBy = command.UserId,
         };
         EventRules.SyncCategories(ev, request.CategoryTypeIds!);
+        EventRules.SyncTermsDocuments(ev, request.TermsDocuments);
 
         await events.AddAsync(ev, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Events);
 
         return await getById.HandleAsync(new GetEventByIdQuery(ev.Id), ct);
+    }
+
+    private async Task<Result> ValidateTermsDocumentsAsync(
+        IReadOnlyList<EventTermsDocumentRequest> termsDocumentRequests,
+        CancellationToken ct
+    )
+    {
+        var ids = termsDocumentRequests.Select(t => t.TermsDocumentId).ToList();
+        var distinctIds = ids.Distinct().ToList();
+        if (distinctIds.Count != ids.Count)
+        {
+            return Error.BadRequest(ErrorCode.EventTermsDocumentDuplicated);
+        }
+
+        var existingCount = await termsDocuments.CountAsync(t => distinctIds.Contains(t.Id), ct);
+        return existingCount != distinctIds.Count
+            ? (Result)Error.BadRequest(ErrorCode.TermsDocumentNotFound)
+            : Result.Success();
     }
 }

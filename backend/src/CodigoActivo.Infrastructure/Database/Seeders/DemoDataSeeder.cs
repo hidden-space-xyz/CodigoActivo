@@ -141,6 +141,7 @@ public sealed class DemoDataSeeder(
             await context.SaveChangesAsync(ct);
 
             context.EventCategories.AddRange(graph.EventCategories);
+            context.EventTermsDocuments.AddRange(graph.EventTermsDocuments);
             context.Activities.AddRange(graph.Activities);
             await context.SaveChangesAsync(ct);
 
@@ -201,6 +202,7 @@ public sealed class DemoDataSeeder(
             termsDocuments,
             schedule.Events,
             schedule.EventCategories,
+            schedule.EventTermsDocuments,
             schedule.Activities,
             schedule.Assignments,
             schedule.Ratings,
@@ -284,6 +286,7 @@ public sealed class DemoDataSeeder(
     {
         var events = new List<Event>(DemoEvents.Length);
         var eventCategories = new List<EventCategory>();
+        var eventTermsDocuments = new List<EventTermsDocument>();
         var activities = new List<Activity>();
         var assignments = new List<ActivityUserRoleAssignment>();
         var ratings = new List<EventRating>();
@@ -339,9 +342,18 @@ public sealed class DemoDataSeeder(
                     SignupEndsAt = signupClosesAt,
                     Featured = eventIndex is FeaturedEventIndex,
                     ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
-                    TermsDocumentId = ResolveTermsDocumentId(eventIndex),
                     CreatedAt = eventCreatedAt,
                     CreatedBy = DemoAuthorId,
+                }
+            );
+
+            eventTermsDocuments.Add(
+                new EventTermsDocument
+                {
+                    EventId = eventId,
+                    TermsDocumentId = ResolveTermsDocumentId(eventIndex),
+                    IsRequired = true,
+                    DisplayOrder = 0,
                 }
             );
 
@@ -414,6 +426,7 @@ public sealed class DemoDataSeeder(
         return new DemoSchedule(
             events,
             eventCategories,
+            eventTermsDocuments,
             activities,
             assignments,
             ratings,
@@ -919,6 +932,7 @@ public sealed class DemoDataSeeder(
     private sealed record DemoSchedule(
         List<Event> Events,
         List<EventCategory> EventCategories,
+        List<EventTermsDocument> EventTermsDocuments,
         List<Activity> Activities,
         List<ActivityUserRoleAssignment> Assignments,
         List<EventRating> Ratings,
@@ -2581,6 +2595,7 @@ internal sealed record DemoGraph(
     List<TermsDocument> TermsDocuments,
     List<Event> Events,
     List<EventCategory> EventCategories,
+    List<EventTermsDocument> EventTermsDocuments,
     List<Activity> Activities,
     List<ActivityUserRoleAssignment> Assignments,
     List<EventRating> Ratings,

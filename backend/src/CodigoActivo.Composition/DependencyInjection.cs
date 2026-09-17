@@ -553,7 +553,8 @@ public static class DependencyInjection
         services.AddScoped<GetPastEventCategoryTypesQueryHandler>();
         services.AddScoped<ListEventCategoryTypesQueryHandler>();
         services.AddScoped<ListTermsDocumentsQueryHandler>();
-        services.AddScoped<GetEventTermsAcceptanceQueryHandler>();
+        services.AddScoped<GetEventTermsStateQueryHandler>();
+        services.AddScoped<GetEventSignupStatsQueryHandler>();
         services.AddScoped<CreateEventCommandHandler>();
         services.AddScoped<UpdateEventCommandHandler>();
         services.AddScoped<DeleteEventCommandHandler>();

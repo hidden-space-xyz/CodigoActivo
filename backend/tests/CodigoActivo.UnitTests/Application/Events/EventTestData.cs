@@ -82,7 +82,7 @@ internal static class EventTestData
         DateTimeOffset? signupEnd = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
         Guid? thumbnailId = null,
-        Guid? termsDocumentId = null
+        IReadOnlyList<EventTermsDocumentRequest>? termsDocuments = null
     )
     {
         return new(
@@ -96,7 +96,7 @@ internal static class EventTestData
             SignupEndsAt: signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
             CategoryTypeIds: categoryTypeIds,
-            TermsDocumentId: termsDocumentId
+            TermsDocuments: termsDocuments
         );
     }
 
@@ -110,7 +110,7 @@ internal static class EventTestData
         Guid? thumbnailId = null,
         string title = "  New title  ",
         string description = "{}",
-        Guid? termsDocumentId = null
+        IReadOnlyList<EventTermsDocumentRequest>? termsDocuments = null
     )
     {
         return new(
@@ -124,7 +124,7 @@ internal static class EventTestData
             SignupEndsAt: signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
             ThumbnailId: thumbnailId ?? Guid.NewGuid(),
             CategoryTypeIds: categoryTypeIds,
-            TermsDocumentId: termsDocumentId
+            TermsDocuments: termsDocuments
         );
     }
 
@@ -214,7 +214,7 @@ internal static class EventTestData
     public static void TermsDocumentInUse(this IEventRepository events, bool inUse)
     {
         events
-            .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
+            .HasTermsDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(inUse);
     }
 

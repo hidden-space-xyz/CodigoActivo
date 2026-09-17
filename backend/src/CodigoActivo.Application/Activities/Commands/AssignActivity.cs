@@ -92,10 +92,10 @@ public sealed class AssignActivityCommandHandler(
 
         if (!command.IsAdmin || command.ActingUserId == command.UserId)
         {
-            var terms = await termsGate.EnsureAcceptedAsync(
+            var terms = await termsGate.EnsureDecidedAsync(
                 command.ActivityId,
                 command.ActingUserId,
-                command.Request.AcceptTerms,
+                command.Request.TermsDecisions,
                 ct
             );
             if (terms.IsFailure)

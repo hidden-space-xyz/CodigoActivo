@@ -152,20 +152,33 @@ public record AssignmentResponse(
 public record AssignmentStatusResponse(Guid Id, string Name);
 
 /// <summary>
+/// Contains the client-supplied decision for a single terms document during a signup.
+/// </summary>
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="Accepted">Whether the user accepted the document.</param>
+public record TermsDecisionRequest(
+    [Required] Guid TermsDocumentId,
+    [Required] bool? Accepted
+);
+
+/// <summary>
 /// Contains the client-supplied data used to assign.
 /// </summary>
 /// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-/// <param name="AcceptTerms">Whether accept terms.</param>
-public record AssignRequest([Required] Guid ActivityRoleTypeId, bool AcceptTerms = false);
+/// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
+public record AssignRequest(
+    [Required] Guid ActivityRoleTypeId,
+    IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
+);
 
 /// <summary>
 /// Contains the client-supplied data used to assign household.
 /// </summary>
 /// <param name="Assignments">The assignments value.</param>
-/// <param name="AcceptTerms">Whether accept terms.</param>
+/// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
 public record AssignHouseholdRequest(
     [Required] IReadOnlyList<HouseholdAssignmentRequest> Assignments,
-    bool AcceptTerms = false
+    IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
 );
 
 /// <summary>

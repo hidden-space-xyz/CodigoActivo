@@ -2,6 +2,7 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -44,7 +45,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         Guid? categoryTypeId = null,
         IReadOnlyList<Guid>? categoryTypeIds = null,
         DateTimeOffset? signupStartsAt = null,
-        DateTimeOffset? signupEndsAt = null
+        DateTimeOffset? signupEndsAt = null,
+        Guid? termsDocumentId = null
     )
     {
         var thumbnailId = await SeedThumbnailAsync();
@@ -75,10 +77,110 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
                 ev.Categories.Add(new EventCategory { EventCategoryTypeId = catId });
             }
 
+            if (termsDocumentId is { } linkedTermsDocumentId)
+            {
+                ev.TermsDocuments.Add(
+                    new EventTermsDocument
+                    {
+                        TermsDocumentId = linkedTermsDocumentId,
+                        IsRequired = true,
+                        DisplayOrder = 0,
+                    }
+                );
+            }
+
             db.Events.Add(ev);
             return Task.CompletedTask;
         });
         return id;
+    }
+
+    private async Task<Guid> SeedTermsDocumentAsync(string? name = null)
+    {
+        var id = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.TermsDocuments.Add(
+                new TermsDocument
+                {
+                    Id = id,
+                    Name = name ?? Guid.NewGuid().ToString("N"),
+                    Description = "{}",
+                }
+            );
+            return Task.CompletedTask;
+        });
+        return id;
+    }
+
+    /// <summary>
+    /// Seeds a user with a login-capable password whose type is not <c>Member</c>, so tests can
+    /// exercise the signup-stats "socio or admin only" authorization rule from the denied side.
+    /// </summary>
+    private async Task<TestCredentials> SeedNonMemberCredentialsAsync(Guid userTypeId)
+    {
+        var email = $"nonmember.{Guid.NewGuid():N}@codigoactivo.test";
+        await Factory.SeedAsync(db =>
+        {
+            db.Users.Add(
+                new User
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = "NoSocio",
+                    LastName = "Prueba",
+                    Email = email,
+                    Phone = $"+34{Guid.NewGuid():N}"[..15],
+                    PasswordHash = TestSeedData.PasswordHash,
+                    BirthDate = new DateOnly(1995, 1, 1),
+                    Gender = Gender.Male,
+                    UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                    UserTypeId = userTypeId,
+                    CreatedAt = SeededAt,
+                }
+            );
+            return Task.CompletedTask;
+        });
+        return new TestCredentials(email, TestSeedData.Password);
+    }
+
+    /// <summary>
+    /// Seeds a single activity for the event with one confirmed participant assignment, so the
+    /// signup-stats endpoint has a non-empty aggregate to return.
+    /// </summary>
+    private async Task<Guid> SeedActivityWithConfirmedAssignmentAsync(Guid eventId)
+    {
+        var activityId = Guid.NewGuid();
+        var activityThumbnailId = await SeedThumbnailAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.Activities.Add(
+                new Activity
+                {
+                    Id = activityId,
+                    Title = "Taller",
+                    Description = "{}",
+                    Location = "Sala",
+                    ActivityStartsAt = SeededAt,
+                    ActivityEndsAt = SeededAt.AddHours(1),
+                    EventId = eventId,
+                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    ThumbnailId = activityThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            db.ActivityUserRoleAssignments.Add(
+                new ActivityUserRoleAssignment
+                {
+                    UserId = TestSeedData.Users.MemberId,
+                    ActivityId = activityId,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                }
+            );
+            return Task.CompletedTask;
+        });
+        return activityId;
     }
 
     private static CreateEventRequest BuildCreate(
@@ -767,5 +869,98 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<EventCategoryType>(id);
         stored.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SignupStatsAnonymousReturnsUnauthorized()
+    {
+        var eventId = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2));
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/events/{eventId}/signup-stats"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task SignupStatsAsParticipantReturnsForbiddenAccessDenied()
+    {
+        var eventId = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2));
+        var credentials = await SeedNonMemberCredentialsAsync(SeedIds.UserTypes.Participant);
+        var client = await LoginAsync(credentials);
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/events/{eventId}/signup-stats"),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+    }
+
+    [Fact]
+    public async Task SignupStatsAsMemberReturnsOkWithAggregatedShape()
+    {
+        var eventId = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2));
+        var activityId = await SeedActivityWithConfirmedAssignmentAsync(eventId);
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/events/{eventId}/signup-stats"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stats = await response.ReadJsonAsync<EventSignupStatsResponse>(Ct);
+        stats!.EventId.Should().Be(eventId);
+        var activity = stats.Activities.Should().ContainSingle(a => a.ActivityId == activityId).Subject;
+        activity.Cells.Should()
+            .ContainSingle(c =>
+                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+                && c.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                && c.Count == 1
+            );
+        stats.Totals.Total.Should().Be(1);
+        stats.Totals.Confirmed.Should().Be(1);
+        stats.Roles.Should().NotBeEmpty();
+        stats.Statuses.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task TermsStateAnonymousReturnsUnauthorized()
+    {
+        var eventId = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2));
+        var client = CreateClient();
+
+        var response = await client.GetAsync(TestUri.Rel($"/api/events/{eventId}/terms"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task TermsStateAsMemberReturnsOkWithUndecidedRequiredDocument()
+    {
+        var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
+        var eventId = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            termsDocumentId: termsDocumentId
+        );
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(TestUri.Rel($"/api/events/{eventId}/terms"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var state = await response.ReadJsonAsync<EventTermsStateResponse>(Ct);
+        var document = state!.Documents.Should().ContainSingle().Subject;
+        document.TermsDocumentId.Should().Be(termsDocumentId);
+        document.Required.Should().BeTrue();
+        document.Accepted.Should().BeNull();
+        document.DecidedAt.Should().BeNull();
+        state.SignupBlocked.Should().BeTrue(
+            "the member has not yet decided on the event's only, required document"
+        );
     }
 }

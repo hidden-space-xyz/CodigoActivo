@@ -22,7 +22,7 @@ namespace CodigoActivo.Application.DTOs;
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="Featured">Whether featured.</param>
 /// <param name="Categories">The categories value.</param>
-/// <param name="TermsDocument">The terms document value.</param>
+/// <param name="TermsDocuments">The terms documents linked to this event, ordered for display.</param>
 public record EventResponse(
     Guid Id,
     string Title,
@@ -40,7 +40,7 @@ public record EventResponse(
     Guid ThumbnailId,
     bool Featured,
     IReadOnlyList<EventCategoryResponse> Categories,
-    TermsDocumentResponse? TermsDocument
+    IReadOnlyList<EventTermsDocumentResponse> TermsDocuments
 )
 {
     /// <summary>
@@ -64,7 +64,7 @@ public record EventResponse(
             Guid.Empty,
             false,
             [],
-            null
+            []
         ) { }
 }
 
@@ -155,7 +155,7 @@ public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Col
 /// <param name="SignupEndsAt">The signup ends at value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="CategoryTypeIds">Identifiers of the category type items.</param>
-/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="TermsDocuments">The requested terms document links, in display order.</param>
 public record CreateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
@@ -167,7 +167,7 @@ public record CreateEventRequest(
     [Required] DateTimeOffset? SignupEndsAt,
     Guid ThumbnailId,
     IReadOnlyList<Guid>? CategoryTypeIds,
-    Guid? TermsDocumentId
+    IReadOnlyList<EventTermsDocumentRequest>? TermsDocuments
 );
 
 /// <summary>
@@ -183,7 +183,7 @@ public record CreateEventRequest(
 /// <param name="SignupEndsAt">The signup ends at value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="CategoryTypeIds">Identifiers of the category type items.</param>
-/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="TermsDocuments">The requested terms document links, in display order.</param>
 public record UpdateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
@@ -195,7 +195,7 @@ public record UpdateEventRequest(
     [Required] DateTimeOffset? SignupEndsAt,
     Guid ThumbnailId,
     IReadOnlyList<Guid>? CategoryTypeIds,
-    Guid? TermsDocumentId
+    IReadOnlyList<EventTermsDocumentRequest>? TermsDocuments
 );
 
 /// <summary>
@@ -269,7 +269,131 @@ public record UpdateTermsDocumentRequest(
 );
 
 /// <summary>
-/// Contains the event terms acceptance data returned by the API.
+/// Contains the event terms document link data returned by the API.
 /// </summary>
-/// <param name="Accepted">Whether accepted.</param>
-public record EventTermsAcceptanceResponse(bool Accepted);
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="Name">The name value.</param>
+/// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+/// <param name="DisplayOrder">The position in which the document is displayed.</param>
+public record EventTermsDocumentResponse(
+    Guid TermsDocumentId,
+    string Name,
+    bool Required,
+    int DisplayOrder
+)
+{
+    /// <summary>
+    /// Initializes an empty event terms document response for serialization.
+    /// </summary>
+    public EventTermsDocumentResponse()
+        : this(Guid.Empty, string.Empty, false, 0) { }
+}
+
+/// <summary>
+/// Contains the client-supplied data used to link a terms document to an event.
+/// </summary>
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+public record EventTermsDocumentRequest(
+    [Required] Guid TermsDocumentId,
+    bool Required = false
+);
+
+/// <summary>
+/// Contains the per-user state of a terms document linked to an event, returned by the API.
+/// </summary>
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="Name">The name value.</param>
+/// <param name="Description">The description value.</param>
+/// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+/// <param name="DisplayOrder">The position in which the document is displayed.</param>
+/// <param name="Accepted">Whether the current user accepted the document, or <see langword="null"/> when undecided.</param>
+/// <param name="DecidedAt">When the current user decided, or <see langword="null"/> when undecided.</param>
+public record EventTermsDocumentStateResponse(
+    Guid TermsDocumentId,
+    string Name,
+    string Description,
+    bool Required,
+    int DisplayOrder,
+    bool? Accepted,
+    DateTimeOffset? DecidedAt
+);
+
+/// <summary>
+/// Contains the current user's terms state for an event, returned by the API.
+/// </summary>
+/// <param name="Documents">The documents linked to the event, with the current user's decision.</param>
+/// <param name="SignupBlocked">Whether at least one required document is still undecided or rejected.</param>
+public record EventTermsStateResponse(
+    IReadOnlyList<EventTermsDocumentStateResponse> Documents,
+    bool SignupBlocked
+);
+
+/// <summary>
+/// Contains the activity role type data used to label a signup statistics column, returned by
+/// the API.
+/// </summary>
+/// <param name="Id">Identifier of the target entity.</param>
+/// <param name="Name">The name value.</param>
+public record EventSignupStatsRoleResponse(Guid Id, string Name);
+
+/// <summary>
+/// Contains the assignment status type data used to label a signup statistics column, returned
+/// by the API.
+/// </summary>
+/// <param name="Id">Identifier of the target entity.</param>
+/// <param name="Name">The name value.</param>
+public record EventSignupStatsStatusResponse(Guid Id, string Name);
+
+/// <summary>
+/// Contains a single aggregated signup count for a role and status combination, returned by the
+/// API.
+/// </summary>
+/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
+/// <param name="AssignmentStatusId">Identifier of the assignment status.</param>
+/// <param name="Count">Number of assignments matching the combination.</param>
+public record EventSignupStatsCellResponse(
+    Guid ActivityRoleTypeId,
+    Guid AssignmentStatusId,
+    int Count
+);
+
+/// <summary>
+/// Contains the aggregated signup statistics for a single activity, returned by the API.
+/// </summary>
+/// <param name="ActivityId">Identifier of the activity.</param>
+/// <param name="Title">The title value.</param>
+/// <param name="StartsAt">The starts at value.</param>
+/// <param name="Cells">The non-zero role and status combinations for the activity.</param>
+public record EventSignupStatsActivityResponse(
+    Guid ActivityId,
+    string Title,
+    DateTimeOffset StartsAt,
+    IReadOnlyList<EventSignupStatsCellResponse> Cells
+);
+
+/// <summary>
+/// Contains the aggregated signup totals for an event, returned by the API.
+/// </summary>
+/// <param name="Total">Total number of assignments across all activities.</param>
+/// <param name="Requested">Number of assignments with the requested status.</param>
+/// <param name="Confirmed">Number of assignments with the confirmed status.</param>
+/// <param name="Denied">Number of assignments with the denied status.</param>
+public record EventSignupStatsTotalsResponse(int Total, int Requested, int Confirmed, int Denied);
+
+/// <summary>
+/// Contains the aggregated signup statistics for an event, returned by the API. Only aggregated
+/// counts and catalogs are exposed: no user identifiers, names or contact details.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Roles">The activity role types referenced by the statistics.</param>
+/// <param name="Statuses">The assignment status types referenced by the statistics.</param>
+/// <param name="Activities">The per-activity aggregated statistics.</param>
+/// <param name="Totals">The event-wide aggregated totals.</param>
+public record EventSignupStatsResponse(
+    Guid EventId,
+    IReadOnlyList<EventSignupStatsRoleResponse> Roles,
+    IReadOnlyList<EventSignupStatsStatusResponse> Statuses,
+    IReadOnlyList<EventSignupStatsActivityResponse> Activities,
+    EventSignupStatsTotalsResponse Totals
+);

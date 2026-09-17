@@ -1,5 +1,7 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
@@ -64,6 +66,16 @@ public sealed class UpdateEventCommandHandlerTests
                     };
                 }
 
+                foreach (var termsDocument in ev.TermsDocuments)
+                {
+                    termsDocument.TermsDocument ??= new TermsDocument
+                    {
+                        Id = termsDocument.TermsDocumentId,
+                        Name = "Términos generales",
+                        Description = "{}",
+                    };
+                }
+
                 return 1;
             });
     }
@@ -73,12 +85,17 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var ev = NewEvent();
         PrepareUpdate(ev);
-        termsDocuments.TermsDocumentExists(false);
+        termsDocuments
+            .CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(0);
 
         var result = await sut.HandleAsync(
             new UpdateEventCommand(
                 ev.Id,
-                UpdateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: Guid.NewGuid()),
+                UpdateReq(
+                    categoryTypeIds: [Guid.NewGuid()],
+                    termsDocuments: [new EventTermsDocumentRequest(Guid.NewGuid())]
+                ),
                 Guid.NewGuid()
             ),
             TestContext.Current.CancellationToken
@@ -91,24 +108,58 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncDuplicateTermsDocumentIdsReturnsTermsDocumentDuplicated()
+    {
+        var ev = NewEvent();
+        var termsDocumentId = Guid.NewGuid();
+        PrepareUpdate(ev);
+
+        var result = await sut.HandleAsync(
+            new UpdateEventCommand(
+                ev.Id,
+                UpdateReq(
+                    categoryTypeIds: [Guid.NewGuid()],
+                    termsDocuments:
+                    [
+                        new EventTermsDocumentRequest(termsDocumentId),
+                        new EventTermsDocumentRequest(termsDocumentId, Required: true),
+                    ]
+                ),
+                Guid.NewGuid()
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.EventTermsDocumentDuplicated);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task HandleAsyncKnownTermsDocumentUpdatesTermsReference()
     {
         var ev = NewEvent();
         var termsDocumentId = Guid.NewGuid();
         PrepareUpdate(ev);
-        termsDocuments.TermsDocumentExists(true);
+        termsDocuments
+            .CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(1);
 
         var result = await sut.HandleAsync(
             new UpdateEventCommand(
                 ev.Id,
-                UpdateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: termsDocumentId),
+                UpdateReq(
+                    categoryTypeIds: [Guid.NewGuid()],
+                    termsDocuments: [new EventTermsDocumentRequest(termsDocumentId, Required: true)]
+                ),
                 Guid.NewGuid()
             ),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        ev.TermsDocumentId.Should().Be(termsDocumentId);
+        ev.TermsDocuments.Should().ContainSingle().Which.TermsDocumentId.Should().Be(termsDocumentId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

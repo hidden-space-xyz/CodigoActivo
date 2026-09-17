@@ -57,13 +57,10 @@ public class Event : AuditableEntity, IFeaturable
     public FileEntity Thumbnail { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the identifier of the associated terms document.
+    /// Gets or sets the terms documents linked to this event, each with its own requirement and
+    /// display order.
     /// </summary>
-    public Guid? TermsDocumentId { get; set; }
-    /// <summary>
-    /// Gets or sets the terms document value.
-    /// </summary>
-    public TermsDocument? TermsDocument { get; set; }
+    public ICollection<EventTermsDocument> TermsDocuments { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the related activities collection.

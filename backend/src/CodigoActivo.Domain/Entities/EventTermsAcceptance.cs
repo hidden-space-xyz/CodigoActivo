@@ -29,7 +29,13 @@ public class EventTermsAcceptance
     public Guid TermsDocumentId { get; set; }
 
     /// <summary>
-    /// Gets or sets the accepted at value.
+    /// Gets or sets whether the user accepted the document. A recorded decision can also be a
+    /// rejection, kept for audit purposes.
     /// </summary>
-    public DateTimeOffset AcceptedAt { get; set; }
+    public bool Accepted { get; set; }
+
+    /// <summary>
+    /// Gets or sets when the decision was made.
+    /// </summary>
+    public DateTimeOffset DecidedAt { get; set; }
 }

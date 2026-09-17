@@ -145,13 +145,16 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultEveryEventReferencesSeededTermsDocument()
     {
         var termsDocumentIds = graph.TermsDocuments.Select(t => t.Id).ToHashSet();
-        var referencedIds = graph
-            .Events.Where(e => e.TermsDocumentId is not null)
-            .Select(e => e.TermsDocumentId!.Value)
-            .ToHashSet();
+        var eventIds = graph.Events.Select(e => e.Id).ToHashSet();
+        var referencedIds = graph.EventTermsDocuments.Select(d => d.TermsDocumentId).ToHashSet();
 
         graph.TermsDocuments.Select(t => t.Name).Should().OnlyHaveUniqueItems();
-        graph.Events.Should().OnlyContain(e => e.TermsDocumentId != null);
+        graph
+            .EventTermsDocuments.Select(d => d.EventId)
+            .ToHashSet()
+            .Should()
+            .BeEquivalentTo(eventIds, "every event links exactly one seeded terms document");
+        graph.EventTermsDocuments.Should().OnlyContain(d => d.IsRequired);
         referencedIds.Should().BeEquivalentTo(termsDocumentIds);
     }
 
