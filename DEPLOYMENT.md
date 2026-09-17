@@ -202,13 +202,23 @@ debugger-oriented privileges. Visual Studio uses the same Compose project throug
 
 ## Releases and upgrades
 
-CI runs on pushes and pull requests targeting `master`; a successful run triggers Docker Publish for the API
-and UI independently, tagged as below.
+Only pushes to `master` start CI (including merged PRs). `develop` and unmerged PRs run nothing.
+Backend build/unit/integration tests and frontend checks must pass before CodeQL scans both languages.
+CodeQL high/critical security findings (score >= 7), error-level findings or analysis failures block publishing.
+The CodeQL and Docker workflows are reusable stages; neither runs independently or on a schedule.
 
-| Image    | Version source                           | Git release tag |
-| -------- | ---------------------------------------- | --------------- |
-| Backend  | `<Version>` in `CodigoActivo.API.csproj` | `vX.X.X-API`    |
-| Frontend | `version` in `frontend/package.json`     | `vX.X.X-UI`     |
+API and UI releases increment independently from their highest existing `vX.Y.Z-API` / `vX.Y.Z-UI` tag,
+including legacy tags. Only commits touching `backend/` or `frontend/`, respectively, count since that tag.
+The largest Conventional Commit increment wins: `feat` = minor, `fix`/`perf` = patch, any type with `!` = major.
+`refactor`, `docs`, `test`, `style`, `build`, `ci`, `chore` and non-conventional subjects produce no increment.
+Scopes are optional; for squash merges use a conventional PR title. Normal merges also inspect branch commits.
+With no qualifying commits, that component is skipped; with no previous tag, the baseline is `0.0.0`.
+
+Each release builds and pushes its GHCR image (`X.Y.Z` and `latest`), then creates its tag and GitHub release
+with generated notes at the checked commit. Versions are not stored in project files. Runs are serialized
+without cancelling an active release; GitHub may replace a pending run with a newer push, whose commit range
+still includes unreleased changes. Reruns skip released components; rerunning a commit older than its latest
+release is rejected. Actions needs permission to write repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
 review logs and smoke test. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from
