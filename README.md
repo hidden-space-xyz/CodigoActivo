@@ -42,7 +42,7 @@ introduces young people to programming and computational thinking through free, 
 | Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, MailKit, OpenAPI              |
 | Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval |
 | Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`         |
-| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers                                 |
+| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW    |
 | Runtime  | Docker Compose and unprivileged nginx                                                    |
 
 ## Repository

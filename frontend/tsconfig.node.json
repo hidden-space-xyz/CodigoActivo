@@ -10,6 +10,7 @@
 
     "strict": true,
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "checkJs": true,
     "noEmit": true,
     "isolatedModules": true,
@@ -24,6 +25,7 @@
     "steiger.config.ts",
     "stylelint.config.js",
     "scripts/**/*.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vitest.config.ts"
   ]
 }

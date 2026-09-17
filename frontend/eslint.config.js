@@ -13,7 +13,7 @@ const disableTypeChecked = Array.isArray(vueTsConfigs.disableTypeChecked)
 if (!disableTypeChecked) throw new Error('Missing disable-type-checked ESLint configuration')
 
 // Test names must explain themselves, so tests are exempt from documentation rules.
-const testSources = ['src/**/*.{spec,test}.ts', 'src/**/__tests__/**']
+const testSources = ['src/**/*.{spec,test}.ts', 'src/**/__tests__/**', 'tests/**']
 
 // Mirrors CS1591 in the backend: top-level exports and public class members form a module's public API.
 const publicApiContexts = [

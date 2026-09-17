@@ -92,6 +92,9 @@ Run frontend commands from `frontend/`:
 npm run dev             # Vite development server
 npm run build           # Type-check and production build
 npm run typecheck       # vue-tsc only
+npm test                # Vitest unit and integration tests
+npm run test:watch      # Vitest in watch mode
+npm run test:coverage   # Tests with the 90% coverage thresholds
 npm run lint            # ESLint, i18n and accessibility rules
 npm run lint:fix        # Safe ESLint fixes
 npm run lint:fsd        # Feature-Sliced Design checks
@@ -105,7 +108,7 @@ npm run api:check       # Compare generated output with the committed client
 npm run check           # Complete frontend CI gate
 ```
 
-There is currently no frontend test suite; `npm run check` is its mandatory quality gate.
+`npm run check` is the mandatory frontend quality gate and includes `npm run test:coverage`.
 
 ## Changing the API
 
@@ -157,7 +160,7 @@ Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 - Document the public API with JSDoc: every top-level export, public class member, and every component prop,
   emitted event and `defineExpose` member. ESLint enforces it and rejects comments that only repeat the name, so
   explain purpose and non-obvious behavior instead; the TypeScript signature already documents types. Tests
-  (`*.spec.ts`, `*.test.ts`, `__tests__/`) are exempt because their names must explain themselves.
+  (`tests/`, `*.spec.ts`, `*.test.ts`, `__tests__/`) are exempt because their names must explain themselves.
 - Keep strict TypeScript, ESLint, accessibility, i18n, Stylelint, Steiger, Knip and Prettier checks green.
 
 ## Tests and pull requests
@@ -166,6 +169,20 @@ Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Integration 
 PostgreSQL 18 Testcontainers instance, reset and reseed data between tests, and disable parallel execution.
 The test host lifts the email guard and the request rate limits, whose wall-clock windows would otherwise
 carry over between tests; tests that exercise them use the factory's `WithEmailGuard` or `WithRateLimits`.
+
+Frontend tests use Vitest, Vue Test Utils and jsdom, and live in `frontend/tests/`, outside the
+Feature-Sliced `src/` tree. `tests/unit/` covers functions, mappers and composables in isolation;
+`tests/integration/` mounts components, pages or the whole `App.vue` with the real i18n, Element Plus,
+TanStack Query and router plugins. Both mirror the `src/` path of the code under test.
+
+- The backend is never required. `tests/setup.ts` starts an MSW server that fails any request without a
+  handler; declare the API responses a test needs with `server.use(...)` from `tests/support/server.ts`.
+  Requests still go through the generated client and `httpClient`, including CSRF handling.
+- Mount with `renderWithProviders` or `renderApp` from `tests/support/render.ts`. Element Plus dialogs,
+  message boxes and notifications render in `document.body`.
+- Shared state (session, CSRF token, handlers, storage, fake timers, media queries) is reset after each test.
+- Coverage covers `src/**/*.{ts,vue}` except the generated client and `main.ts`. Statements, branches,
+  functions and lines must each stay at or above 90%.
 
 Before opening a pull request:
 
