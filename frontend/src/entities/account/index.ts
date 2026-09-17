@@ -10,7 +10,6 @@ export type {
 export type {
   AccountChild,
   AccountCertificate,
-  AccountEventRating,
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,

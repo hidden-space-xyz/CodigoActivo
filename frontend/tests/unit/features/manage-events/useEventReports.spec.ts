@@ -112,7 +112,7 @@ describe('useEventAttendeesTable', () => {
 })
 
 describe('useEventRatingsTable', () => {
-  it('lists ratings newest first only while active', async () => {
+  it('lists ratings highest score first only while active', async () => {
     const urls: URL[] = []
     server.use(
       http.get('/api/events/:eventId/ratings', ({ request }) => {
@@ -129,7 +129,7 @@ describe('useEventRatingsTable', () => {
     active.value = true
     await vi.waitFor(() => expect(result.table.total.value).toBe(1))
     expect(urls[0]?.pathname).toBe(`/api/events/${EVENT_ID}/ratings`)
-    expect(urls[0]?.searchParams.get('sort')).toBe('-createdAt')
+    expect(urls[0]?.searchParams.get('sort')).toBe('-score')
   })
 })
 

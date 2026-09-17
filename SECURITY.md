@@ -69,7 +69,10 @@ it is stored in the same fields as the login code and therefore shares its stora
 authenticator users, who read their code from the application. Both routes are credential routes. A
 successful deletion signs the caller out of the session and challenge schemes and removes, through database
 cascade, the user, every minor under their guardianship and all of their participation rows (activity
-assignments, event ratings and terms acceptances). It is refused with `UserDeleteAuthoredContentExists`
+assignments, event rating submissions and terms acceptances). Past event ratings are not removed: their content
+carries no user reference, so they are not personal data of the deleted account, though in an event with very
+few ratings it can still be attributable by context (see
+[Event rating anonymity](#event-rating-anonymity)). It is refused with `UserDeleteAuthoredContentExists`
 while published content still credits the household as author, uploader or last editor, and administrators
 cannot delete themselves at all (`UserDeleteAdminForbidden`); they must be demoted first.
 `DELETE /api/users/{id}` therefore refuses the caller's own identifier
@@ -147,6 +150,61 @@ referrer, permissions and cross-origin isolation headers. See
 - Verification and password-reset links put the user id and one-time code in the URL fragment
   (`/reset-password#userId=…&code=…`), which browsers never send to the server. The page reads it and removes
   it from the address bar and history entry, so a reload needs the emailed link again.
+
+### Event rating anonymity
+
+Event ratings use two tables with no relationship between them. `event_rating_submissions` records only who
+has rated an event (a composite `event_id`/`user_id` primary key that cascades with the event or the user);
+`event_ratings` stores only the answer content (score, most liked, least liked, suggestions) under a random
+v4 `Guid`, with no user id and no timestamps. `POST /api/events/{eventId}/rating` writes both rows in the same
+transaction and cannot edit an existing answer: a second submission for the same event and user is rejected
+(`EventRatingAlreadySubmitted`), including under a race, because the composite primary key allows only one
+submission per event and user and its violation is translated to that error. The administrator listing
+(`GET /api/events/{id}/ratings`) and the member history (whose `hasRated` flag replaces any per-user rating
+reference) never expose who authored an answer.
+
+Deleting an account removes the caller's submission rows through cascade but keeps their past ratings, because
+the rating content carries no author reference and is therefore not personal data of the deleted account. The
+`AnonymizeEventRatings` migration retrofitted this design onto data that used to link ratings to their author:
+it copies the existing `event_ratings.user_id` values into the new submission table in a random row order,
+drops `user_id`, `created_at` and `updated_at` from `event_ratings`, deletes and reinserts every row of both
+tables in a random order so they stop sharing their original transaction identifiers, and runs `CLUSTER` on
+both tables so their physical row order no longer matches the pre-migration insertion order (`DROP COLUMN`
+alone does not rewrite the table). Its `Down` migration throws instead of running: the link between a rating
+and its author was intentionally discarded, not merely hidden, so there is no data left to recreate the old
+`user_id`, `created_at` and `updated_at` columns with.
+
+`EventRatingRepository.SubmitAsync` keeps this guarantee for every submission made after the migration, not
+only for the rows that existed when it ran: once it inserts a new rating and its submission marker inside its
+own transaction, it deletes and reinserts every `event_ratings` and `event_rating_submissions` row for that
+event in a random order, so all of that event's rows end up sharing one transaction identifier ("xmin") and an
+unrelated physical row order. This holds up against the API, the administration UI, ordinary relational
+queries, a raw heap scan keyed on `xmin` or physical row order, and a single query, dump or backup taken after
+a submission commits. It does not defend against someone with direct PostgreSQL access to write-ahead log
+segments (the `pg_wal` files record every write, including ones this rewrite later hides at the table level,
+and travel inside any physical copy of the `db-data` volume, including one taken for point-in-time recovery),
+dead tuples left behind until the next `VACUUM`, PostgreSQL statement logs if `log_statement` is enabled, or a
+`db-data` backup or logical dump taken **before** the migration ran, which still contains the original author,
+creation and update values; rotate such backups out of retention or purge them, see
+[DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery). Correlating HTTP request logs only narrows a rating to a
+client IP address, time and user agent, because neither nginx nor the API's `RequestLoggingMiddleware` records
+the authenticated user (see [Logging](#logging)); it cannot point to a registered identity. Because
+`SubmitAsync` locks the event row and rewrites every one of that event's rows in both tables on each
+submission, its cost grows with the number of existing ratings for that event and each rewrite leaves dead
+tuples behind until the next `VACUUM`.
+
+**Known limitations:**
+
+- This anonymity holds against a single, point-in-time observation of the database (an ordinary query, or one
+  dump or backup taken after a submission commits). It does not hold against repeated or differential
+  observations: comparing two dumps, backups or replica snapshots taken before and after a submission, or
+  polling the same tables over time, lets someone see that event's new submission row and new rating row
+  appear together and pair them.
+- Anonymity depends on there being no stored link between a rating and its author, not on the size of the
+  group sharing an event. In an event with only one or two confirmed ratings, the rating count, the listing
+  itself or a free-text answer can still let someone deduce authorship from context. Handle results from very
+  small groups with care, and consider adding a minimum-rating threshold before surfacing opinions; that
+  threshold does not exist today.
 
 ### Logging
 

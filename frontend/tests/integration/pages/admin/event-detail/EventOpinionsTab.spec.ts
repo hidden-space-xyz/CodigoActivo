@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 import EventOpinionsTab from '@/pages/admin/event-detail/ui/EventOpinionsTab.vue'
 import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
 import { i18n } from '@/shared/i18n'
-import { formatDateTime } from '@/shared/lib'
 
 import { buildRating, EVENT_ID } from '../../../../support/fixtures/admin-events/builders'
 import { renderWithProviders, t } from '../../../../support/render'
@@ -41,7 +40,6 @@ describe('EventOpinionsTab', () => {
         mostLiked: 'The people',
         leastLiked: '   ',
         suggestions: 'More coffee',
-        updatedAt: '2026-10-14T10:00:00Z',
       }),
       buildRating({
         id: 'rating-2',
@@ -57,7 +55,7 @@ describe('EventOpinionsTab', () => {
     const [first, second] = wrapper.findAll('li.opinion')
     expect(first?.text()).toContain(t('pages.admin.eventDetail.opinions.anonymous'))
     expect(first?.find('.opinion__score').text()).toBe('4/5')
-    expect(first?.find('.opinion__date').text()).toBe(formatDateTime('2026-10-14T10:00:00Z'))
+    expect(first?.find('.opinion__date').exists()).toBe(false)
     expect(first?.findAll('dt').map((node) => node.text())).toEqual([
       t('entities.event.ratingQuestions.mostLiked'),
       t('entities.event.ratingQuestions.suggestions'),

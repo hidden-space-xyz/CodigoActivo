@@ -68,7 +68,6 @@ export * from './eventListItemResponse';
 export * from './eventListItemResponsePagedResult';
 export * from './eventRatingListItemResponse';
 export * from './eventRatingListItemResponsePagedResult';
-export * from './eventRatingResponse';
 export * from './eventResponse';
 export * from './eventRoleTypeSummaryResponse';
 export * from './eventRosterActivityResponse';

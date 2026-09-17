@@ -47,15 +47,6 @@ export interface AccountHistoryActivity {
   readonly statusName: string
 }
 
-/** The user's saved feedback for an event; missing comments are `''`. */
-export interface AccountEventRating {
-  /** Stars from 0 to 5. */
-  readonly score: number
-  readonly mostLiked: string
-  readonly leastLiked: string
-  readonly suggestions: string
-}
-
 /** Participation certificate for the user or a minor, rendered client-side as a printable sheet. */
 export interface AccountCertificate {
   /** Reference code printed on the certificate. */
@@ -81,7 +72,7 @@ export interface AccountHistoryEntry {
   readonly thumbnailId: string
   readonly isPast: boolean
   readonly canRate: boolean
-  /** `null` until the user rates the event. */
-  readonly rating: AccountEventRating | null
+  /** `true` once the user submitted a rating; ratings are anonymous and cannot be edited or reread. */
+  readonly hasRated: boolean
   readonly activities: readonly AccountHistoryActivity[]
 }

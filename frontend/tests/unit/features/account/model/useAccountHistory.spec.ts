@@ -6,7 +6,6 @@ import type { EventHistoryResponse } from '@/shared/api/generated/models'
 import {
   buildHistoryActivityResponse,
   buildHistoryResponse,
-  buildRatingResponse,
 } from '../../../../support/fixtures/account/account'
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
 
@@ -37,7 +36,7 @@ describe('useAccountHistory', () => {
         eventId: 'past-1',
         isPast: true,
         canRate: true,
-        myRating: buildRatingResponse({ score: 5, mostLiked: null }),
+        hasRated: true,
         activities: [
           buildHistoryActivityResponse({
             userId: 'child-1',
@@ -58,18 +57,17 @@ describe('useAccountHistory', () => {
     expect(result.past.value.map((entry) => entry.eventId)).toEqual(['past-1'])
 
     const [past] = result.past.value
-    expect(past?.rating).toEqual({
-      score: 5,
-      mostLiked: '',
-      leastLiked: 'El calor',
-      suggestions: 'Más agua',
-    })
+    expect(past?.hasRated).toBe(true)
     expect(past?.activities[0]).toMatchObject({
       participantId: 'child-1',
       participantName: 'Byron',
       isSelf: false,
     })
-    expect(result.upcoming.value[1]).toMatchObject({ rating: null, activities: [], title: '' })
+    expect(result.upcoming.value[1]).toMatchObject({
+      hasRated: false,
+      activities: [],
+      title: '',
+    })
   })
 
   it('saves a rating with trimmed answers and refetches the history', async () => {
@@ -80,10 +78,10 @@ describe('useAccountHistory', () => {
         historyRequests += 1
         return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
       }),
-      http.put('/api/events/:eventId/rating', async ({ request, params }) => {
+      http.post('/api/events/:eventId/rating', async ({ request, params }) => {
         received = { body: await request.json(), csrf: request.headers.get('X-CSRF-TOKEN') }
         expect(params.eventId).toBe('event-1')
-        return HttpResponse.json(buildRatingResponse())
+        return new HttpResponse(null, { status: 204 })
       }),
     )
 
@@ -95,12 +93,7 @@ describe('useAccountHistory', () => {
       input: { score: 4, mostLiked: '  Los talleres ', leastLiked: '   ', suggestions: '' },
     })
 
-    expect(saved).toEqual({
-      score: 4,
-      mostLiked: 'Los talleres',
-      leastLiked: 'El calor',
-      suggestions: 'Más agua',
-    })
+    expect(saved).toBeUndefined()
     expect(received).toEqual({
       body: { score: 4, mostLiked: 'Los talleres', leastLiked: null, suggestions: null },
       csrf: TEST_CSRF_TOKEN,
@@ -111,7 +104,7 @@ describe('useAccountHistory', () => {
   it('exposes the error when the rating cannot be saved', async () => {
     server.use(
       http.get('/api/me/event-history', () => HttpResponse.json([])),
-      http.put('/api/events/:eventId/rating', () => apiError(400, 'EventNotFound')),
+      http.post('/api/events/:eventId/rating', () => apiError(400, 'EventNotFound')),
     )
 
     const { result } = await withSetup(() => useAccountHistory(), { user: {} })
@@ -122,5 +115,28 @@ describe('useAccountHistory', () => {
         input: { score: 0, mostLiked: '', leastLiked: '', suggestions: '' },
       }),
     ).rejects.toMatchObject({ status: 400, code: 'EventNotFound' })
+  })
+
+  it('invalidates the history when the rating was already submitted elsewhere', async () => {
+    let historyRequests = 0
+    server.use(
+      http.get('/api/me/event-history', () => {
+        historyRequests += 1
+        return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
+      }),
+      http.post('/api/events/:eventId/rating', () => apiError(409, 'EventRatingAlreadySubmitted')),
+    )
+
+    const { result } = await withSetup(() => useAccountHistory(), { user: {} })
+    await vi.waitFor(() => expect(historyRequests).toBe(1))
+
+    await expect(
+      result.saveRating.mutateAsync({
+        eventId: 'event-1',
+        input: { score: 0, mostLiked: '', leastLiked: '', suggestions: '' },
+      }),
+    ).rejects.toMatchObject({ status: 409, code: 'EventRatingAlreadySubmitted' })
+
+    await vi.waitFor(() => expect(historyRequests).toBe(2))
   })
 })

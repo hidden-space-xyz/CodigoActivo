@@ -5,7 +5,6 @@
  * OpenAPI spec version: 1.0
  */
 import type { EventHistoryActivityResponse } from './eventHistoryActivityResponse';
-import type { EventRatingResponse } from './eventRatingResponse';
 
 export interface EventHistoryResponse {
   eventId?: string;
@@ -18,7 +17,7 @@ export interface EventHistoryResponse {
   thumbnailId?: string;
   isPast?: boolean;
   canRate?: boolean;
-  myRating?: EventRatingResponse;
+  hasRated?: boolean;
   /** @nullable */
   activities?: EventHistoryActivityResponse[] | null;
 }

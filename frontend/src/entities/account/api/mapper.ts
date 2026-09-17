@@ -3,7 +3,6 @@ import type {
   EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
-  EventRatingResponse,
   RegisterMinorRequest,
   SaveEventRatingRequest,
   UpdateUserRequest,
@@ -20,7 +19,6 @@ import type {
 import type {
   AccountChild,
   AccountCertificate,
-  AccountEventRating,
   AccountHistoryActivity,
   AccountHistoryEntry,
   AccountProfile,
@@ -96,16 +94,6 @@ export function toUpdateMinorRequest(input: UpdateMinorInput, parentId: string):
   }
 }
 
-/** Maps a stored event rating; missing score becomes `0` and missing comments `''`. */
-export function toAccountEventRating(rating: EventRatingResponse): AccountEventRating {
-  return {
-    score: rating.score ?? 0,
-    mostLiked: rating.mostLiked ?? '',
-    leastLiked: rating.leastLiked ?? '',
-    suggestions: rating.suggestions ?? '',
-  }
-}
-
 function toAccountHistoryActivity(activity: EventHistoryActivityResponse): AccountHistoryActivity {
   return {
     activityId: activity.activityId ?? '',
@@ -121,8 +109,9 @@ function toAccountHistoryActivity(activity: EventHistoryActivityResponse): Accou
 }
 
 /**
- * Maps an attended event with its activities for the account history, joining participant names
- * and leaving `rating` as `null` when the user has not rated the event.
+ * Maps an attended event with its activities for the account history, joining participant names.
+ * `hasRated` reflects whether the anonymous rating was already submitted; it is never editable or
+ * rereadable afterwards.
  */
 export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHistoryEntry {
   return {
@@ -134,7 +123,7 @@ export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHisto
     thumbnailId: entry.thumbnailId ?? '',
     isPast: entry.isPast ?? false,
     canRate: entry.canRate ?? false,
-    rating: entry.myRating ? toAccountEventRating(entry.myRating) : null,
+    hasRated: entry.hasRated ?? false,
     activities: (entry.activities ?? []).map(toAccountHistoryActivity),
   }
 }

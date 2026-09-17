@@ -247,23 +247,24 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the save rating endpoint for events.
+    /// Executes the save rating endpoint for events. Submissions are single and immutable: a second
+    /// attempt for the same event is rejected instead of overwriting the first answer.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event rating, or an error response.</returns>
-    [HttpPut("{eventId:guid}/rating")]
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("{eventId:guid}/rating")]
     [Authorize]
-    public async Task<ActionResult<EventRatingResponse>> SaveRatingAsync(
+    public async Task<IActionResult> SaveRatingAsync(
         Guid eventId,
         [FromBody] SaveEventRatingRequest request,
         [FromServices] SaveEventRatingCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(
+        return ToNoContent(
             await handler.HandleAsync(new SaveEventRatingCommand(eventId, UserId, request), ct)
         );
     }

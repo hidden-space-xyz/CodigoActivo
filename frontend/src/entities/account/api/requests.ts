@@ -4,7 +4,7 @@ import {
   postApiAuthTwoFactorAuthenticatorSetup,
   postApiAuthTwoFactorEmail,
 } from '@/shared/api/generated/endpoints/auth/auth'
-import { putApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
+import { postApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
 import {
   getApiMeCertificates,
   getApiMeEventHistory,
@@ -32,7 +32,6 @@ import type {
 import type {
   AccountChild,
   AccountCertificate,
-  AccountEventRating,
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
@@ -40,7 +39,6 @@ import type {
 import {
   toAccountChild,
   toAccountCertificate,
-  toAccountEventRating,
   toAccountHistoryEntry,
   toAccountProfile,
   toAddMinorRequest,
@@ -164,11 +162,13 @@ export async function getAccountCertificatesRequest(): Promise<readonly AccountC
   return (data ?? []).map(toAccountCertificate)
 }
 
-/** Creates or replaces the user's rating for an event (`PUT`) and returns the stored rating. */
+/**
+ * Submits the user's rating for an event (`POST`). The submission is single and anonymous: it
+ * cannot be edited afterwards, and a second attempt for the same event fails.
+ */
 export async function saveAccountEventRatingRequest(
   eventId: string,
   input: EventRatingInput,
-): Promise<AccountEventRating> {
-  const response = await putApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
-  return toAccountEventRating(response.data)
+): Promise<void> {
+  await postApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
 }

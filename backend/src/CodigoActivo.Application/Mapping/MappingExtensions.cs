@@ -157,24 +157,4 @@ public static class MappingExtensions
             termsDocument.Description
         );
     }
-
-    /// <summary>
-    /// Maps the domain value to its API response model.
-    /// </summary>
-    /// <param name="rating">The rating value.</param>
-    /// <returns>The resulting event rating value.</returns>
-    public static EventRatingResponse ToResponse(this EventRating rating)
-    {
-        return new EventRatingResponse(
-            rating.Id,
-            rating.EventId,
-            rating.UserId,
-            rating.Score,
-            rating.MostLiked,
-            rating.LeastLiked,
-            rating.Suggestions,
-            rating.CreatedAt,
-            rating.UpdatedAt
-        );
-    }
 }
