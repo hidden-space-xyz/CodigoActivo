@@ -47,7 +47,7 @@ public sealed class DeleteTermsDocumentCommandHandler(
         }
 
         if (
-            await events.ExistsAsync(e => e.TermsDocumentId == command.TermsDocumentId, ct)
+            await events.HasTermsDocumentAsync(command.TermsDocumentId, ct)
             || await events.HasTermsAcceptancesAsync(command.TermsDocumentId, ct)
         )
         {

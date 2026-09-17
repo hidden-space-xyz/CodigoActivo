@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -61,6 +62,16 @@ public sealed class CreateEventCommandHandlerTests
                     };
                 }
 
+                foreach (var termsDocument in ev.TermsDocuments)
+                {
+                    termsDocument.TermsDocument = new TermsDocument
+                    {
+                        Id = termsDocument.TermsDocumentId,
+                        Name = "Términos generales",
+                        Description = "{}",
+                    };
+                }
+
                 store.Add(ev);
             });
     }
@@ -70,11 +81,15 @@ public sealed class CreateEventCommandHandlerTests
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        termsDocuments.TermsDocumentExists(false);
+        termsDocuments.CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(0);
 
         var result = await sut.HandleAsync(
             new CreateEventCommand(
-                CreateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: Guid.NewGuid()),
+                CreateReq(
+                    categoryTypeIds: [Guid.NewGuid()],
+                    termsDocuments: [new EventTermsDocumentRequest(Guid.NewGuid())]
+                ),
                 Guid.NewGuid()
             ),
             TestContext.Current.CancellationToken
@@ -87,17 +102,49 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncDuplicateTermsDocumentIdsReturnsTermsDocumentDuplicated()
+    {
+        var termsDocumentId = Guid.NewGuid();
+        files.ThumbnailExists(true);
+        categoryTypes.HasCategoryCount(1);
+
+        var result = await sut.HandleAsync(
+            new CreateEventCommand(
+                CreateReq(
+                    categoryTypeIds: [Guid.NewGuid()],
+                    termsDocuments:
+                    [
+                        new EventTermsDocumentRequest(termsDocumentId),
+                        new EventTermsDocumentRequest(termsDocumentId, Required: true),
+                    ]
+                ),
+                Guid.NewGuid()
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(ErrorCode.EventTermsDocumentDuplicated);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task HandleAsyncKnownTermsDocumentPersistsEventWithTermsReference()
     {
         var termsDocumentId = Guid.NewGuid();
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        termsDocuments.TermsDocumentExists(true);
+        termsDocuments.CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(1);
         CaptureCreatedEvents();
 
         var result = await sut.HandleAsync(
             new CreateEventCommand(
-                CreateReq(categoryTypeIds: [Guid.NewGuid()], termsDocumentId: termsDocumentId),
+                CreateReq(
+                    categoryTypeIds: [Guid.NewGuid()],
+                    termsDocuments: [new EventTermsDocumentRequest(termsDocumentId, Required: true)]
+                ),
                 Guid.NewGuid()
             ),
             TestContext.Current.CancellationToken
@@ -107,7 +154,13 @@ public sealed class CreateEventCommandHandlerTests
         await events
             .Received(1)
             .AddAsync(
-                Arg.Is<Event>(e => e != null && e.TermsDocumentId == termsDocumentId),
+                Arg.Is<Event>(e =>
+                    e != null
+                    && e.TermsDocuments.Count == 1
+                    && e.TermsDocuments.Single().TermsDocumentId == termsDocumentId
+                    && e.TermsDocuments.Single().IsRequired
+                    && e.TermsDocuments.Single().DisplayOrder == 0
+                ),
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -131,7 +184,7 @@ public sealed class CreateEventCommandHandlerTests
             SignupEndsAt: signupEnd,
             ThumbnailId: Guid.NewGuid(),
             CategoryTypeIds: [Guid.NewGuid()],
-            TermsDocumentId: null
+            TermsDocuments: null
         );
 
         return

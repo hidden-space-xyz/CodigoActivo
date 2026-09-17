@@ -22,7 +22,9 @@ public class EventRepository(CodigoActivoDbContext context)
     /// <returns>A task whose result contains the matching event, or <see langword="null"/> when it is not found.</returns>
     public async Task<Event?> GetForEditAsync(Guid id, CancellationToken ct = default)
     {
-        return await Set.Include(e => e.Categories).FirstOrDefaultAsync(e => e.Id == id, ct);
+        return await Set.Include(e => e.Categories)
+            .Include(e => e.TermsDocuments)
+            .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
     /// <summary>
@@ -37,43 +39,33 @@ public class EventRepository(CodigoActivoDbContext context)
     }
 
     /// <summary>
-    /// Gets the requested terms acceptance.
+    /// Gets the terms acceptances recorded by a user for an event, tracked by the change tracker
+    /// so callers can update an existing decision in place.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching event terms acceptance, or <see langword="null"/> when it is not found.</returns>
-    public Task<EventTermsAcceptance?> GetTermsAcceptanceAsync(
+    /// <returns>A task whose result contains the matching event terms acceptance items.</returns>
+    public async Task<IReadOnlyList<EventTermsAcceptance>> ListTermsAcceptancesAsync(
         Guid eventId,
         Guid userId,
         CancellationToken ct = default
     )
     {
-        return Context.EventTermsAcceptances.FirstOrDefaultAsync(
-            x => x.EventId == eventId && x.UserId == userId,
-            ct
-        );
+        return await Context
+            .EventTermsAcceptances.Where(x => x.EventId == eventId && x.UserId == userId)
+            .ToListAsync(ct);
     }
 
     /// <summary>
-    /// Determines whether a terms acceptance already exists.
+    /// Determines whether a terms document is currently linked to any event.
     /// </summary>
-    /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="userId">Identifier of the user.</param>
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public Task<bool> TermsAcceptanceExistsAsync(
-        Guid eventId,
-        Guid userId,
-        Guid termsDocumentId,
-        CancellationToken ct = default
-    )
+    public Task<bool> HasTermsDocumentAsync(Guid termsDocumentId, CancellationToken ct = default)
     {
-        return Context.EventTermsAcceptances.AnyAsync(
-            x => x.EventId == eventId && x.UserId == userId && x.TermsDocumentId == termsDocumentId,
-            ct
-        );
+        return Context.EventTermsDocuments.AnyAsync(x => x.TermsDocumentId == termsDocumentId, ct);
     }
 
     /// <summary>
@@ -102,5 +94,14 @@ public class EventRepository(CodigoActivoDbContext context)
     )
     {
         await Context.EventTermsAcceptances.AddAsync(acceptance, ct);
+    }
+
+    /// <summary>
+    /// Creates a query for the terms documents linked to events, without tracking changes.
+    /// </summary>
+    /// <returns>The resulting event terms document value.</returns>
+    public IQueryable<EventTermsDocument> QueryTermsDocuments()
+    {
+        return Context.EventTermsDocuments.AsNoTracking();
     }
 }

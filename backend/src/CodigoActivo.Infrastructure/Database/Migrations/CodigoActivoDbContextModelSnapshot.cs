@@ -363,10 +363,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("subtitle");
 
-                    b.Property<Guid?>("TermsDocumentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("terms_document_id");
-
                     b.Property<Guid>("ThumbnailId")
                         .HasColumnType("uuid")
                         .HasColumnName("thumbnail_id");
@@ -395,9 +391,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("EventStartsAt")
                         .HasDatabaseName("ix_events_event_starts_at");
-
-                    b.HasIndex("TermsDocumentId")
-                        .HasDatabaseName("ix_events_terms_document_id");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_events_thumbnail_id");
@@ -523,15 +516,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<DateTimeOffset>("AcceptedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("accepted_at");
-
                     b.Property<Guid>("TermsDocumentId")
                         .HasColumnType("uuid")
                         .HasColumnName("terms_document_id");
 
-                    b.HasKey("EventId", "UserId")
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("accepted");
+
+                    b.Property<DateTimeOffset>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.HasKey("EventId", "UserId", "TermsDocumentId")
                         .HasName("pk_event_terms_acceptances");
 
                     b.HasIndex("TermsDocumentId")
@@ -541,6 +538,33 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_terms_acceptances_user_id");
 
                     b.ToTable("event_terms_acceptances", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsDocument", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("TermsDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terms_document_id");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_required");
+
+                    b.HasKey("EventId", "TermsDocumentId")
+                        .HasName("pk_event_terms_documents");
+
+                    b.HasIndex("TermsDocumentId")
+                        .HasDatabaseName("ix_event_terms_documents_terms_document_id");
+
+                    b.ToTable("event_terms_documents", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
@@ -1136,12 +1160,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_events_users_created_by");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.TermsDocument", "TermsDocument")
-                        .WithMany()
-                        .HasForeignKey("TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_events_terms_documents_terms_document_id");
-
                     b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
                         .WithMany()
                         .HasForeignKey("ThumbnailId")
@@ -1154,8 +1172,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_events_users_updated_by");
-
-                    b.Navigation("TermsDocument");
 
                     b.Navigation("Thumbnail");
                 });
@@ -1240,6 +1256,27 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Event");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsDocument", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
+                        .WithMany("TermsDocuments")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_documents_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.TermsDocument", "TermsDocument")
+                        .WithMany()
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_documents_terms_documents_terms_document_id");
+
+                    b.Navigation("Event");
+
+                    b.Navigation("TermsDocument");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
@@ -1369,6 +1406,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Categories");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("TermsDocuments");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>

@@ -39,15 +39,16 @@ public static class Projections
                     Color = category.EventCategoryType.Color,
                 })
                 .ToList(),
-            TermsDocument =
-                @event.TermsDocument == null
-                    ? null
-                    : new TermsDocumentResponse
-                    {
-                        Id = @event.TermsDocument.Id,
-                        Name = @event.TermsDocument.Name,
-                        Description = @event.TermsDocument.Description,
-                    },
+            TermsDocuments = @event
+                .TermsDocuments.OrderBy(link => link.DisplayOrder)
+                .Select(link => new EventTermsDocumentResponse
+                {
+                    TermsDocumentId = link.TermsDocumentId,
+                    Name = link.TermsDocument.Name,
+                    Required = link.IsRequired,
+                    DisplayOrder = link.DisplayOrder,
+                })
+                .ToList(),
         };
 
     /// <summary>

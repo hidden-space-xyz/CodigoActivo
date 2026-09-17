@@ -107,32 +107,26 @@ public interface IEventRepository : IDbRepository<Event>
     public Task<bool> SetFeaturedAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the requested terms acceptance.
+    /// Gets the terms acceptances recorded by a user for an event, tracked by the change tracker
+    /// so callers can update an existing decision in place.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching event terms acceptance, or <see langword="null"/> when it is not found.</returns>
-    public Task<EventTermsAcceptance?> GetTermsAcceptanceAsync(
+    /// <returns>A task whose result contains the matching event terms acceptance items.</returns>
+    public Task<IReadOnlyList<EventTermsAcceptance>> ListTermsAcceptancesAsync(
         Guid eventId,
         Guid userId,
         CancellationToken ct = default
     );
 
     /// <summary>
-    /// Determines whether a terms acceptance already exists.
+    /// Determines whether a terms document is currently linked to any event.
     /// </summary>
-    /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="userId">Identifier of the user.</param>
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public Task<bool> TermsAcceptanceExistsAsync(
-        Guid eventId,
-        Guid userId,
-        Guid termsDocumentId,
-        CancellationToken ct = default
-    );
+    public Task<bool> HasTermsDocumentAsync(Guid termsDocumentId, CancellationToken ct = default);
 
     /// <summary>
     /// Determines whether terms acceptances exists.
@@ -155,6 +149,12 @@ public interface IEventRepository : IDbRepository<Event>
         EventTermsAcceptance acceptance,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Creates a query for the terms documents linked to events, without tracking changes.
+    /// </summary>
+    /// <returns>The resulting event terms document value.</returns>
+    public IQueryable<EventTermsDocument> QueryTermsDocuments();
 }
 
 /// <summary>

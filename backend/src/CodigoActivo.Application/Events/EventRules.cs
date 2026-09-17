@@ -1,3 +1,4 @@
+using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 
@@ -71,6 +72,51 @@ public static class EventRules
             ev.Categories.Add(
                 new EventCategory { EventId = ev.Id, EventCategoryTypeId = categoryTypeId }
             );
+        }
+    }
+
+    /// <summary>
+    /// Synchronizes the terms documents linked to the event with the supplied requests, keeping
+    /// existing acceptance history for documents that stay linked and setting the display order
+    /// to the position of each request in the supplied list.
+    /// </summary>
+    /// <param name="ev">The ev value.</param>
+    /// <param name="termsDocuments">The requested terms document links, or <see langword="null"/> when the event has none.</param>
+    public static void SyncTermsDocuments(
+        Event ev,
+        IReadOnlyList<EventTermsDocumentRequest>? termsDocuments
+    )
+    {
+        var desired = termsDocuments ?? [];
+        var desiredIds = desired.Select(t => t.TermsDocumentId).ToHashSet();
+
+        var removed = ev.TermsDocuments.Where(t => !desiredIds.Contains(t.TermsDocumentId)).ToList();
+        foreach (var existing in removed)
+        {
+            ev.TermsDocuments.Remove(existing);
+        }
+
+        var current = ev.TermsDocuments.ToDictionary(t => t.TermsDocumentId);
+        for (var index = 0; index < desired.Count; index++)
+        {
+            var request = desired[index];
+            if (current.TryGetValue(request.TermsDocumentId, out var existing))
+            {
+                existing.IsRequired = request.Required;
+                existing.DisplayOrder = index;
+            }
+            else
+            {
+                ev.TermsDocuments.Add(
+                    new EventTermsDocument
+                    {
+                        EventId = ev.Id,
+                        TermsDocumentId = request.TermsDocumentId,
+                        IsRequired = request.Required,
+                        DisplayOrder = index,
+                    }
+                );
+            }
         }
     }
 

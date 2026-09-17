@@ -82,6 +82,10 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<TermsDocument> TermsDocuments => Set<TermsDocument>();
     /// <summary>
+    /// Gets the event terms documents value.
+    /// </summary>
+    public DbSet<EventTermsDocument> EventTermsDocuments => Set<EventTermsDocument>();
+    /// <summary>
     /// Gets the event terms acceptances value.
     /// </summary>
     public DbSet<EventTermsAcceptance> EventTermsAcceptances => Set<EventTermsAcceptance>();

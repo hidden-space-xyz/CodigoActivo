@@ -130,21 +130,43 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the terms acceptance endpoint for events.
+    /// Executes the terms state endpoint for events, returning every document linked to the
+    /// event along with the current user's decision for each one.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event terms acceptance, or an error response.</returns>
-    [HttpGet("{eventId:guid}/terms-acceptance")]
+    /// <returns>An HTTP response containing the event's terms state, or an error response.</returns>
+    [HttpGet("{eventId:guid}/terms")]
     [Authorize]
-    public async Task<ActionResult<EventTermsAcceptanceResponse>> TermsAcceptanceAsync(
+    public async Task<ActionResult<EventTermsStateResponse>> TermsStateAsync(
         Guid eventId,
-        [FromServices] GetEventTermsAcceptanceQueryHandler handler,
+        [FromServices] GetEventTermsStateQueryHandler handler,
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetEventTermsAcceptanceQuery(eventId, UserId), ct));
+        return Ok(await handler.HandleAsync(new GetEventTermsStateQuery(eventId, UserId), ct));
+    }
+
+    /// <summary>
+    /// Executes the signup statistics endpoint for events. Only members and administrators may
+    /// access this data.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the event's signup statistics, or an error response.</returns>
+    [HttpGet("{eventId:guid}/signup-stats")]
+    [Authorize]
+    public async Task<ActionResult<EventSignupStatsResponse>> SignupStatsAsync(
+        Guid eventId,
+        [FromServices] GetEventSignupStatsQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(
+            await handler.HandleAsync(new GetEventSignupStatsQuery(eventId, UserId, IsAdmin), ct)
+        );
     }
 
     /// <summary>

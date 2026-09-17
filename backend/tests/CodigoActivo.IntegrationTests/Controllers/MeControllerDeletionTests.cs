@@ -124,7 +124,8 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     EventId = EventId,
                     UserId = TestSeedData.Users.MemberId,
                     TermsDocumentId = TermsDocumentId,
-                    AcceptedAt = SeededAt,
+                    Accepted = true,
+                    DecidedAt = SeededAt,
                 }
             );
             return Task.CompletedTask;

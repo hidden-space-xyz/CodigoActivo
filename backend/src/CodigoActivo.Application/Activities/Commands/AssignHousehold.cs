@@ -115,10 +115,10 @@ public sealed class AssignHouseholdCommandHandler(
             return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
         }
 
-        var terms = await termsGate.EnsureAcceptedAsync(
+        var terms = await termsGate.EnsureDecidedAsync(
             command.ActivityId,
             command.ActingUserId,
-            request.AcceptTerms,
+            request.TermsDecisions,
             ct
         );
         if (terms.IsFailure)

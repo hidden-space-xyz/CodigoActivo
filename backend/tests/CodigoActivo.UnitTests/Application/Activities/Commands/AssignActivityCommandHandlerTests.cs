@@ -77,7 +77,7 @@ public sealed class AssignActivityCommandHandlerTests
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, PastStart, PastEnd);
+        activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -101,7 +101,7 @@ public sealed class AssignActivityCommandHandlerTests
     {
         var activityId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers();
 
         var result = await sut.HandleAsync(
@@ -127,7 +127,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -164,7 +164,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -201,7 +201,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
 
         var result = await sut.HandleAsync(
@@ -227,7 +227,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, PastStart, PastEnd);
+        activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
 
         var result = await sut.HandleAsync(
@@ -253,7 +253,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
 
         var result = await sut.HandleAsync(
@@ -279,7 +279,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(true);
 
@@ -312,7 +312,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var roleId = SeedIds.ActivityRoleTypes.Participant;
-        activities.HasActivityWindow(activityId, PastStart, PastEnd);
+        activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -367,7 +367,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = OpenStart;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -404,7 +404,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = OpenEnd;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -440,7 +440,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = DuringEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -468,7 +468,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = DuringEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetUser(userId, SeedIds.UserTypes.Sponsor);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -496,7 +496,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = DuringEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
 
         var result = await sut.HandleAsync(
@@ -524,7 +524,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = DuringEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetChildOf(childId, SeedIds.UserTypes.Member);
         AssignmentExists(false);
         statuses.RequestedStatusNamed("Solicitado");
@@ -552,7 +552,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = DuringEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetChildOf(childId, SeedIds.UserTypes.Participant);
 
         var result = await sut.HandleAsync(
@@ -580,7 +580,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = BeforeEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd, EarlyStart);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
 
         var result = await sut.HandleAsync(
@@ -608,7 +608,7 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = DuringEarly;
 
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
 
         var result = await sut.HandleAsync(
@@ -635,6 +635,7 @@ public sealed class AssignActivityCommandHandlerTests
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -677,6 +678,7 @@ public sealed class AssignActivityCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -693,7 +695,10 @@ public sealed class AssignActivityCommandHandlerTests
                 activityId,
                 userId,
                 userId,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant, AcceptTerms: true),
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
+                ),
                 IsAdmin: false
             ),
             TestContext.Current.CancellationToken
@@ -708,7 +713,8 @@ public sealed class AssignActivityCommandHandlerTests
                     && a.EventId == eventId
                     && a.UserId == userId
                     && a.TermsDocumentId == termsDocumentId
-                    && a.AcceptedAt == Now
+                    && a.Accepted
+                    && a.DecidedAt == Now
                 ),
                 Arg.Any<CancellationToken>()
             );
@@ -723,6 +729,7 @@ public sealed class AssignActivityCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -761,6 +768,7 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         activities.HasActivityWindow(
+            events,
             activityId,
             PastStart,
             PastEnd,
@@ -797,6 +805,7 @@ public sealed class AssignActivityCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             PastStart,
             PastEnd,
@@ -813,7 +822,10 @@ public sealed class AssignActivityCommandHandlerTests
                 activityId,
                 userId,
                 userId,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant, AcceptTerms: true),
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
+                ),
                 IsAdmin: true
             ),
             TestContext.Current.CancellationToken
@@ -844,6 +856,7 @@ public sealed class AssignActivityCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -860,7 +873,10 @@ public sealed class AssignActivityCommandHandlerTests
                 activityId,
                 childId,
                 parentId,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant, AcceptTerms: true),
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
+                ),
                 IsAdmin: false
             ),
             TestContext.Current.CancellationToken
@@ -885,6 +901,7 @@ public sealed class AssignActivityCommandHandlerTests
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -918,21 +935,30 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncTermsAcceptedForOldDocumentWithoutAcceptFlagRequiresReacceptance()
+    public async Task HandleAsyncRequiredDocumentAlreadyRejectedWithoutNewDecisionStillRequiresAcceptance()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
             eventId: Guid.NewGuid(),
-            termsDocumentId: Guid.NewGuid()
+            termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
-        events.TermsAccepted(Guid.NewGuid());
+        events.HasTermsDecisions(
+            new EventTermsAcceptance
+            {
+                TermsDocumentId = termsDocumentId,
+                Accepted = false,
+                DecidedAt = Now.AddDays(-1),
+            }
+        );
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -947,19 +973,25 @@ public sealed class AssignActivityCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncTermsAcceptedForOldDocumentWithAcceptFlagUpdatesAcceptance()
+    public async Task HandleAsyncRejectingRequiredDocumentReturnsTermsAcceptanceRequiredWithoutPersistingRejection()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        var previousAcceptance = new EventTermsAcceptance { TermsDocumentId = Guid.NewGuid() };
         clock.UtcNow = Now;
         activities.HasActivityWindow(
+            events,
             activityId,
             OpenStart,
             OpenEnd,
@@ -968,9 +1000,121 @@ public sealed class AssignActivityCommandHandlerTests
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
         AssignmentExists(false);
-        events
-            .GetTermsAcceptanceAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(previousAcceptance);
+        events.TermsAccepted(null);
+
+        var result = await sut.HandleAsync(
+            new AssignActivityCommand(
+                activityId,
+                userId,
+                userId,
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, false)]
+                ),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error.Code.Should().Be(
+            ErrorCode.EventTermsAcceptanceRequired,
+            "rejecting a required document must not be stored as a permanent, unrecoverable decision"
+        );
+        await events
+            .DidNotReceiveWithAnyArgs()
+            .AddTermsAcceptanceAsync(
+                new EventTermsAcceptance(),
+                TestContext.Current.CancellationToken
+            );
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncAcceptingRequiredDocumentAfterEarlierRejectionSucceeds()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(
+            events,
+            activityId,
+            OpenStart,
+            OpenEnd,
+            eventId: Guid.NewGuid(),
+            termsDocumentId: termsDocumentId
+        );
+        users.TargetUser(userId, SeedIds.UserTypes.Participant);
+        AssignmentExists(false);
+        events.TermsAccepted(null);
+
+        var rejected = await sut.HandleAsync(
+            new AssignActivityCommand(
+                activityId,
+                userId,
+                userId,
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, false)]
+                ),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+        rejected.Error!.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+
+        statuses.RequestedStatusNamed("Solicitado");
+
+        var accepted = await sut.HandleAsync(
+            new AssignActivityCommand(
+                activityId,
+                userId,
+                userId,
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
+                ),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        accepted.IsSuccess.Should().BeTrue(
+            "a mistaken rejection of a required document must not permanently lock the user out of the event"
+        );
+        await events
+            .Received(1)
+            .AddTermsAcceptanceAsync(
+                Arg.Is<EventTermsAcceptance>(a =>
+                    a != null && a.TermsDocumentId == termsDocumentId && a.Accepted
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncRejectingOptionalDocumentPersistsRejectionAndDoesNotBlockSignup()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(
+            events,
+            activityId,
+            OpenStart,
+            OpenEnd,
+            eventId: eventId,
+            termsDocumentId: termsDocumentId,
+            termsRequired: false
+        );
+        users.TargetUser(userId, SeedIds.UserTypes.Participant);
+        AssignmentExists(false);
+        events.TermsAccepted(null);
         statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
@@ -978,15 +1122,77 @@ public sealed class AssignActivityCommandHandlerTests
                 activityId,
                 userId,
                 userId,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant, AcceptTerms: true),
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, false)]
+                ),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue(
+            "an optional document never blocks the signup, regardless of the user's decision"
+        );
+        await events
+            .Received(1)
+            .AddTermsAcceptanceAsync(
+                Arg.Is<EventTermsAcceptance>(a =>
+                    a != null
+                    && a.EventId == eventId
+                    && a.UserId == userId
+                    && a.TermsDocumentId == termsDocumentId
+                    && !a.Accepted
+                    && a.DecidedAt == Now
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncAlreadyDecidedOptionalDocumentIgnoresNewDecisionKeepingItImmutable()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var termsDocumentId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(
+            events,
+            activityId,
+            OpenStart,
+            OpenEnd,
+            eventId: Guid.NewGuid(),
+            termsDocumentId: termsDocumentId,
+            termsRequired: false
+        );
+        users.TargetUser(userId, SeedIds.UserTypes.Participant);
+        AssignmentExists(false);
+        events.HasTermsDecisions(
+            new EventTermsAcceptance
+            {
+                TermsDocumentId = termsDocumentId,
+                Accepted = false,
+                DecidedAt = Now.AddDays(-1),
+            }
+        );
+        statuses.RequestedStatusNamed("Solicitado");
+
+        var result = await sut.HandleAsync(
+            new AssignActivityCommand(
+                activityId,
+                userId,
+                userId,
+                new AssignRequest(
+                    SeedIds.ActivityRoleTypes.Participant,
+                    TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
+                ),
                 IsAdmin: false
             ),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        previousAcceptance.TermsDocumentId.Should().Be(termsDocumentId);
-        previousAcceptance.AcceptedAt.Should().Be(Now);
         await events
             .DidNotReceiveWithAnyArgs()
             .AddTermsAcceptanceAsync(

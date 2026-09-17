@@ -16,7 +16,7 @@ public sealed class EventTermsAcceptanceConfiguration
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EventTermsAcceptance> builder)
     {
-        builder.HasKey(x => new { x.EventId, x.UserId });
+        builder.HasKey(x => new { x.EventId, x.UserId, x.TermsDocumentId });
 
         builder
             .HasOne(x => x.Event)
@@ -37,6 +37,7 @@ public sealed class EventTermsAcceptanceConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.TermsDocumentId).IsRequired();
-        builder.Property(x => x.AcceptedAt).IsRequired();
+        builder.Property(x => x.Accepted).IsRequired();
+        builder.Property(x => x.DecidedAt).IsRequired();
     }
 }
