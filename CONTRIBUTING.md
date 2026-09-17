@@ -160,6 +160,9 @@ Never edit `frontend/src/shared/api/generated/`; Orval deletes and recreates it.
 - User-facing backend text belongs in
   `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`. Log messages, diagnostic
   exceptions and seeded content are not UI text.
+- Log identifiers, counts, kinds and error codes; never personal data, credentials, codes, tokens, request
+  bodies, query strings or third-party replies that may quote them. Exception messages you throw follow the
+  same rule because they are logged. See [SECURITY.md](SECURITY.md#logging).
 - Use `camelCase` private fields without a leading underscore.
 - Keep CSharpier formatting and all SDK analyzer rules clean. Warnings are errors.
 - Document every public type and member with XML comments (`CS1591` is a warning, so the build fails without

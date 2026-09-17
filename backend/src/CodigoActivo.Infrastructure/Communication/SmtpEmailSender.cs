@@ -26,8 +26,7 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
 
         using var client = new SmtpClient();
         await ConnectAsync(client, ct);
-        using var mime = BuildMime(message);
-        await client.SendAsync(mime, ct);
+        await DeliverAsync(client, message, ct);
         await client.DisconnectAsync(quit: true, ct);
     }
 
@@ -63,18 +62,13 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
                 var connectionDropped = false;
                 try
                 {
-                    using var mime = BuildMime(message);
-                    await client.SendAsync(mime, ct);
+                    await DeliverAsync(client, message, ct);
                     sent++;
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     failed++;
-                    logger.LogError(
-                        ex,
-                        "Failed to send an email to {Recipient}",
-                        message.ToAddress
-                    );
+                    logger.LogError(ex, "Failed to send a {Kind} email", message.Kind);
                     connectionDropped = !client.IsConnected;
                 }
 
@@ -126,6 +120,25 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
         {
             throw new InvalidOperationException(
                 "The SMTP sender address is not configured (SMTP_FROM_ADDRESS)."
+            );
+        }
+    }
+
+    private async Task DeliverAsync(SmtpClient client, EmailMessage message, CancellationToken ct)
+    {
+        using var mime = BuildMime(message);
+        try
+        {
+            await client.SendAsync(mime, ct);
+        }
+        catch (SmtpCommandException ex)
+        {
+            // The server reply usually quotes the rejected mailbox and every caller logs this exception, so
+            // only the codes leave the transport.
+            throw new SmtpCommandException(
+                ex.ErrorCode,
+                ex.StatusCode,
+                $"The SMTP server rejected the message: {ex.ErrorCode} ({ex.StatusCode})"
             );
         }
     }

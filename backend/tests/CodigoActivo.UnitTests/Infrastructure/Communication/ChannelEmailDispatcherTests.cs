@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -25,13 +26,14 @@ public sealed class ChannelEmailDispatcherTests
 
     private static ChannelEmailDispatcher Create(
         RecordingEmailSender transport,
-        EmailQueueOptions? options = null
+        EmailQueueOptions? options = null,
+        ILogger<ChannelEmailDispatcher>? logger = null
     )
     {
         return new ChannelEmailDispatcher(
             transport,
             options ?? new EmailQueueOptions(),
-            NullLogger<ChannelEmailDispatcher>.Instance
+            logger ?? NullLogger<ChannelEmailDispatcher>.Instance
         );
     }
 
@@ -76,6 +78,24 @@ public sealed class ChannelEmailDispatcherTests
         await queue.StopAsync(TestContext.Current.CancellationToken);
 
         transport.Sent.Select(m => m.ToAddress).Should().Equal("bueno@example.test");
+    }
+
+    [Fact]
+    public async Task StopAsyncTransportFailureLogsWithoutTheAddress()
+    {
+        var transport = new RecordingEmailSender
+        {
+            ThrowOnSend = new InvalidOperationException("Connection refused"),
+        };
+        var logger = new RecordingLogger<ChannelEmailDispatcher>();
+        var queue = Create(transport, logger: logger);
+
+        queue.TryEnqueue(Message("roto@example.test"));
+        await queue.StartAsync(TestContext.Current.CancellationToken);
+        await queue.StopAsync(TestContext.Current.CancellationToken);
+
+        logger.Entries.Should().ContainSingle().Which.Should().Contain("Connection refused");
+        logger.Entries.Should().NotContain(entry => entry.Contains("roto@example.test"));
     }
 
     [Fact]

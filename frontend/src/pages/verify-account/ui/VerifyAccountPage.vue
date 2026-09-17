@@ -1,20 +1,15 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { useAccountVerification } from '@/features/register'
+import { useLinkFragment } from '@/shared/lib'
 import { AppIcon, BaseButton, PageHead } from '@/shared/ui'
 
-const route = useRoute()
+const linkParam = useLinkFragment()
 const { state, errorMessage, verify, resend, canResend, isResending } = useAccountVerification()
 
-function queryString(value: unknown): string | null {
-  if (Array.isArray(value)) value = value[0]
-  return typeof value === 'string' && value.length > 0 ? value : null
-}
-
 onMounted(() => {
-  verify(queryString(route.query.userId), queryString(route.query.code))
+  verify(linkParam('userId'), linkParam('code'))
 })
 </script>
 

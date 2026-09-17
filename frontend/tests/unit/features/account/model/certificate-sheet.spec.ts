@@ -182,7 +182,7 @@ describe('renderCertificatePreview', () => {
     const drawn = fake.texts.map((draw) => draw.text)
     expect(nameDraws(fake.texts).map((draw) => draw.text)).toEqual(['Ada Lovelace'])
     expect(nameDraws(fake.texts)[0]?.font).toBe(
-      `700 ${(32 * PT_TO_MM).toFixed(4)}px ${"'Space Grotesk', system-ui, sans-serif"}`,
+      `700 ${(32 * PT_TO_MM).toFixed(4)}px ${"'Space Grotesk Variable', system-ui, sans-serif"}`,
     )
     expect(titleDraws(fake.texts).map((draw) => draw.text)).toEqual(['Hackathon de Primavera'])
     expect(drawn).toContain('CA-2025-0001')

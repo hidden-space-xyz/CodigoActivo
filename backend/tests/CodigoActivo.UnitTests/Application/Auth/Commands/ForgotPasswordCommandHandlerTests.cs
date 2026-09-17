@@ -146,7 +146,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
         emailSender.Sent[0].ToAddress.Should().Be(user.Email);
-        emailSender.Sent[0].TextBody.Should().Contain("/reset-password?userId=");
+        emailSender.Sent[0].TextBody.Should().Contain("/reset-password#userId=");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

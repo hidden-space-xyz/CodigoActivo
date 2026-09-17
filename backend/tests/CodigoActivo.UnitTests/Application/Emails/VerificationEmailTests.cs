@@ -6,7 +6,7 @@ namespace CodigoActivo.UnitTests.Application.Emails;
 
 public sealed class VerificationEmailTests
 {
-    private const string VerifyUrl = "https://app.test/verify-account?userId=abc&code=123456";
+    private const string VerifyUrl = "https://app.test/verify-account#userId=abc&code=123456";
     private const string SiteUrl = "https://app.test";
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class VerificationEmailTests
         message
             .HtmlBody.Should()
             .Contain("Ana")
-            .And.Contain("verify-account?userId=abc")
+            .And.Contain("verify-account#userId=abc")
             .And.Contain("code=123456")
             .And.Contain("15 minutos");
     }
