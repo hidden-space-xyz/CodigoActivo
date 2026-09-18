@@ -31,6 +31,10 @@ public sealed class SessionLifetimeConfigurationTests
     [InlineData(null)]
     [InlineData("0")]
     [InlineData("-5")]
+    [InlineData("not-a-number")]
+    [InlineData("")]
+    [InlineData("1e400")]
+    [InlineData("1e300")]
     public void InvalidOrMissingExpireHoursFallsBackToTheDefaultLifetime(string? value)
     {
         Build(value).Lifetime.Should().Be(SessionLifetimeOptions.DefaultLifetime);

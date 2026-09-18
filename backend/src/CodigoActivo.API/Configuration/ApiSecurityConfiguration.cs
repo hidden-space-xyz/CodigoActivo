@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Options;
@@ -106,14 +107,23 @@ internal static class ApiSecurityConfiguration
             );
     }
 
-    private static SessionLifetimeOptions ReadSessionLifetime(IConfiguration configuration)
+    private static SessionLifetimeOptions ReadSessionLifetime(ConfigurationManager configuration)
     {
-        var hours = configuration.GetValue<double?>("Auth:ExpireHours");
+        var configured = double.TryParse(
+            configuration["Auth:ExpireHours"],
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var hours
+        );
+
         return new SessionLifetimeOptions
         {
             Lifetime =
-                hours is { } value && double.IsFinite(value) && value > 0
-                    ? TimeSpan.FromHours(value)
+                configured
+                && double.IsFinite(hours)
+                && hours > 0
+                && hours < TimeSpan.MaxValue.TotalHours
+                    ? TimeSpan.FromHours(hours)
                     : SessionLifetimeOptions.DefaultLifetime,
         };
     }
