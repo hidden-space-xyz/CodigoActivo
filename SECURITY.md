@@ -16,8 +16,10 @@ authentication are not supported.
 
 - Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
   eight hours by default. In Production it is `Secure` and uses a `__Host-` name. The ticket is not
-  self-sufficient: completing the second factor also writes a `user_sessions` row that expires with the cookie
-  and whose id travels in the ticket's `sid` claim, dropping that user's already-expired rows.
+  self-sufficient: completing the second factor also writes a `user_sessions` row whose id travels in the
+  ticket's `sid` claim, dropping that user's already-expired rows. The row carries the expiry that decides
+  access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its row,
+  and the ticket is rejected as soon as the row is missing or expired.
 - Every authenticated request revalidates account status, password fingerprint, administrator flag and the
   `sid` row in one query, and rejects the ticket when any of them is missing or expired. Blocking or demoting
   a user takes effect on existing sessions; changing or resetting the password invalidates them and deletes
@@ -189,9 +191,9 @@ timing, entity ids, enum values, email kind, counts, SMTP status codes, and exce
 - **Security events**: handlers emit the events declared in `Application/Auth/SecurityLog.cs` — failed
   password and second-factor steps, lockouts, refused logins, password changes and resets, authenticator and
   administrator changes, wrong re-authentication passwords, identifier changes and deletions — at `Warning`
-  for failures and `Information` for completed changes, carrying only entity ids, enum values and counts.
-  Successful logins and session starts are deliberately absent, so the API keeps no user-id/time trail of
-  ordinary activity (see [Event rating anonymity](#event-rating-anonymity)).
+  for failures and `Information` for completed changes, carrying only entity and catalog ids, enum values and
+  counts. Successful logins and session starts are deliberately absent; failed password and second-factor
+  attempts are recorded with the user id and the time, so the logs do show when a given account was tried.
 - **API**: `RequestLoggingMiddleware` logs 4xx/5xx only. Only `CodigoActivo`, `Program` and
   `Microsoft.Hosting.Lifetime` log at `Information`; other categories log at `Warning`. EF Core
   sensitive-data logging stays disabled; `SmtpEmailSender` strips recipient/server replies from exceptions.

@@ -71,7 +71,10 @@ a public DNS name; IP addresses, localhost and reserved example/test domains are
 
 The external proxy must terminate HTTPS, overwrite client-supplied forwarding headers, and send the effective
 scheme as `X-Forwarded-Proto`. The API accepts one forwarded hop, redirects HTTP to HTTPS in Production, and
-sets secure `__Host-` cookies; nginx emits HSTS only when the forwarded scheme is HTTPS. `APP_BASE_URL`
+sets secure `__Host-` cookies; nginx emits HSTS only when the forwarded scheme is HTTPS. The API honours
+`X-Forwarded-For`/`X-Forwarded-Proto` only from loopback and private peers (RFC 1918 and `fc00::/7`), so a
+proxy or container network outside those ranges makes it ignore both headers, which in Production means an
+HTTPS redirect loop and a single shared rate-limit partition for every client. `APP_BASE_URL`
 controls links in email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it must match the public
 origin.
 
