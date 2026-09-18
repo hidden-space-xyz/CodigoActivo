@@ -140,7 +140,7 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         var newCode = emailSender.LastCode();
-        Guid.TryParse(newCode, out _).Should().BeTrue("the OTP is now a GUID");
+        newCode.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
         newCode.Should().NotBe("old-code");
         user.OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + newCode);
         user.OtpExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);

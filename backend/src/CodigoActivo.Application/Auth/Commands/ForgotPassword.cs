@@ -71,7 +71,7 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
-        var code = Guid.NewGuid().ToString();
+        var code = AccountTokens.Create();
         try
         {
             await accountEmails.SendPasswordResetEmailAsync(user, code, ct);

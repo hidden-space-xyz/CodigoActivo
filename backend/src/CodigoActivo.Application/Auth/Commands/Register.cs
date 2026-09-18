@@ -104,7 +104,7 @@ public sealed class RegisterCommandHandler(
             CreatedAt = now,
         };
 
-        var otpCode = Guid.NewGuid().ToString();
+        var otpCode = AccountTokens.Create();
         adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
 
         await users.AddAsync(adult, ct);

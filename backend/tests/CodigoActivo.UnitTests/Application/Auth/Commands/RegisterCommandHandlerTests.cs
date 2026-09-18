@@ -248,7 +248,7 @@ public sealed class RegisterCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().HaveCount(1);
         var code = emailSender.LastCode();
-        Guid.TryParse(code, out _).Should().BeTrue("the OTP is now a GUID");
+        code.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
 
         var email = emailSender.Sent[0];
         email.ToAddress.Should().Be("ana@test.com");

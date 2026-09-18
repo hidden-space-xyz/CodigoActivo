@@ -63,7 +63,7 @@ public sealed class ResendVerificationCommandHandler(
             return Error.Conflict(ErrorCode.OtpResendCooldownActive);
         }
 
-        var otpCode = Guid.NewGuid().ToString();
+        var otpCode = AccountTokens.Create();
         try
         {
             await accountEmails.SendVerificationEmailAsync(user, otpCode, ct);
