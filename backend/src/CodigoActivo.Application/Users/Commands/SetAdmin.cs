@@ -5,6 +5,7 @@ using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -25,14 +26,18 @@ public sealed record SetAdminCommand(Guid UserId, Guid ActingUserId, SetAdminReq
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class SetAdminCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
     IClock clock,
     IUnitOfWork uow,
-    AccountSecurityNotifier securityNotifier
+    AccountSecurityNotifier securityNotifier,
+    ILogger<SetAdminCommandHandler> logger
 ) : ICommandHandler<SetAdminCommand, Result>
 {
+    private const string Operation = "SetAdmin";
+
     /// <summary>
     /// Handles the request to set admin. Granting the role first re-authenticates the acting
     /// administrator, so a hijacked session alone cannot escalate another account.
@@ -45,6 +50,7 @@ public sealed class SetAdminCommandHandler(
         var isAdmin = command.Request.IsAdmin;
         if (isAdmin && !await IsActingPasswordValidAsync(command, ct))
         {
+            logger.ReauthenticationRejected(command.ActingUserId, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
@@ -67,6 +73,7 @@ public sealed class SetAdminCommandHandler(
         user.IsAdmin = isAdmin;
         user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
+        logger.AdministratorFlagChanged(command.ActingUserId, user.Id, isAdmin);
         await securityNotifier.NotifyAsync(
             user,
             isAdmin ? AccountSecurityChange.AdminGranted : AccountSecurityChange.AdminRevoked,

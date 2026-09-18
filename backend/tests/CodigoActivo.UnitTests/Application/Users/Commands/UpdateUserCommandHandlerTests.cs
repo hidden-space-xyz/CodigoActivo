@@ -46,7 +46,8 @@ public sealed class UpdateUserCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
-            )
+            ),
+            NullLogger<UpdateUserCommandHandler>.Instance
         );
     }
 

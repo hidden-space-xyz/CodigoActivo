@@ -5,6 +5,7 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -26,15 +27,19 @@ public sealed record VerifyTwoFactorLoginCommand(Guid UserId, string Code)
 /// <param name="otpValidator">Validator of emailed codes.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class VerifyTwoFactorLoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     OtpValidator otpValidator,
     AuthenticatorCodeVerifier authenticatorCodes,
-    TwoFactorOptions options
+    TwoFactorOptions options,
+    ILogger<VerifyTwoFactorLoginCommandHandler> logger
 ) : ICommandHandler<VerifyTwoFactorLoginCommand, Result<UserResponse>>
 {
+    private const string Operation = "VerifyTwoFactorLogin";
+
     /// <summary>
     /// Handles the request to complete the login.
     /// </summary>
@@ -55,6 +60,7 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
+            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
@@ -77,8 +83,19 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
 
         if (!accepted)
         {
-            user.RecordTwoFactorFailure(now, options.MaxFailedAttempts, options.LockoutDuration);
+            var method = user.TwoFactorMethod;
+            var locked = user.RecordTwoFactorFailure(
+                now,
+                options.MaxFailedAttempts,
+                options.LockoutDuration
+            );
             await uow.SaveChangesAsync(ct);
+            logger.TwoFactorCodeRejected(user.Id, method);
+            if (locked)
+            {
+                logger.TwoFactorLockoutTriggered(user.Id, options.MaxFailedAttempts);
+            }
+
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
         }
 

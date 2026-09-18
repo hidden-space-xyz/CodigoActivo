@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -26,6 +27,7 @@ public sealed record ResetPasswordCommand(Guid UserId, ResetPasswordRequest Requ
 /// <param name="otpValidator">The otp validator value.</param>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ResetPasswordCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -33,7 +35,8 @@ public sealed class ResetPasswordCommandHandler(
     IPasswordHasher hasher,
     OtpValidator otpValidator,
     IUserSessionRepository sessions,
-    AccountSecurityNotifier securityNotifier
+    AccountSecurityNotifier securityNotifier,
+    ILogger<ResetPasswordCommandHandler> logger
 ) : ICommandHandler<ResetPasswordCommand, Result>
 {
     /// <summary>
@@ -65,12 +68,14 @@ public sealed class ResetPasswordCommandHandler(
             )
         )
         {
+            logger.PasswordResetCodeRejected(user.Id, user.UserStatusTypeId);
             return Error.BadRequest(ErrorCode.PasswordResetInvalidOrExpired);
         }
 
         user.ResetPassword(hasher.Hash(request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
         await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
+        logger.PasswordResetCompleted(user.Id);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordReset, ct);
 
         return Result.Success();

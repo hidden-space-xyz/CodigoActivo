@@ -8,6 +8,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -30,6 +31,7 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="getById">Handler used to retrieve user by identifier.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
@@ -37,9 +39,12 @@ public sealed class UpdateUserCommandHandler(
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
     GetUserByIdQueryHandler getById,
-    AccountSecurityNotifier securityNotifier
+    AccountSecurityNotifier securityNotifier,
+    ILogger<UpdateUserCommandHandler> logger
 ) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
 {
+    private const string Operation = "UpdateUser";
+
     /// <summary>
     /// Handles the request to update the user. Replacing the login identifiers of the account, or
     /// dropping them by turning it into a dependent minor, first re-authenticates the acting
@@ -89,6 +94,7 @@ public sealed class UpdateUserCommandHandler(
             )
         )
         {
+            logger.LoginIdentifiersChanged(command.ActingUserId, user.Id);
             await securityNotifier.NotifyIdentifiersChangedAsync(
                 user.Id,
                 previousEmail,
@@ -192,6 +198,20 @@ public sealed class UpdateUserCommandHandler(
     }
 
     private async Task<bool> IsActingPasswordValidAsync(
+        UpdateUserCommand command,
+        CancellationToken ct
+    )
+    {
+        var valid = await VerifyActingPasswordAsync(command, ct);
+        if (!valid)
+        {
+            logger.ReauthenticationRejected(command.ActingUserId, Operation);
+        }
+
+        return valid;
+    }
+
+    private async Task<bool> VerifyActingPasswordAsync(
         UpdateUserCommand command,
         CancellationToken ct
     )

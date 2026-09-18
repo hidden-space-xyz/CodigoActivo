@@ -46,7 +46,8 @@ public sealed class DeleteOwnAccountCommandHandlerTests
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
             options,
-            cacheInvalidator
+            cacheInvalidator,
+            NullLogger<DeleteOwnAccountCommandHandler>.Instance
         );
     }
 

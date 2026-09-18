@@ -6,6 +6,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Auth.AuthTestData;
@@ -33,7 +34,8 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
             new FakePasswordHasher(),
             totp,
             new FakeSecretProtector(),
-            options
+            options,
+            NullLogger<BeginAuthenticatorSetupCommandHandler>.Instance
         );
     }
 

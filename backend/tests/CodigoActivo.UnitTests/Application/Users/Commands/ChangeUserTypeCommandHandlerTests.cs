@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -30,7 +31,8 @@ public sealed class ChangeUserTypeCommandHandlerTests
             clock,
             uow,
             cacheInvalidator,
-            new GetUserByIdQueryHandler(users, new FakeQueryExecutor())
+            new GetUserByIdQueryHandler(users, new FakeQueryExecutor()),
+            NullLogger<ChangeUserTypeCommandHandler>.Instance
         );
     }
 

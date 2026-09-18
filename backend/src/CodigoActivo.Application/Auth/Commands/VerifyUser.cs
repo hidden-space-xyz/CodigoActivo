@@ -4,6 +4,7 @@ using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -21,11 +22,13 @@ public sealed record VerifyUserCommand(Guid UserId, string Otp) : ICommand<Resul
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="otpValidator">The otp validator value.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class VerifyUserCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    OtpValidator otpValidator
+    OtpValidator otpValidator,
+    ILogger<VerifyUserCommandHandler> logger
 ) : ICommandHandler<VerifyUserCommand, Result<UserResponse>>
 {
     /// <summary>
@@ -50,6 +53,7 @@ public sealed class VerifyUserCommandHandler(
             || !otpValidator.IsCodeValid(command.Otp, user.OtpCodeHash, user.OtpExpiresAt)
         )
         {
+            logger.AccountVerificationCodeRejected(user.Id, user.UserStatusTypeId);
             return Error.BadRequest(ErrorCode.OtpInvalidOrExpired);
         }
 

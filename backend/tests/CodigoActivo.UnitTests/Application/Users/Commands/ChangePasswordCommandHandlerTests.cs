@@ -39,7 +39,8 @@ public sealed class ChangePasswordCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
-            )
+            ),
+            NullLogger<ChangePasswordCommandHandler>.Instance
         );
     }
 

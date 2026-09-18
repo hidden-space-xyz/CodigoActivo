@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Auth.AuthTestData;
@@ -24,7 +25,8 @@ public sealed class VerifyUserCommandHandlerTests
             users,
             uow,
             clock,
-            new OtpValidator(clock, new FakePasswordHasher())
+            new OtpValidator(clock, new FakePasswordHasher()),
+            NullLogger<VerifyUserCommandHandler>.Instance
         );
     }
 

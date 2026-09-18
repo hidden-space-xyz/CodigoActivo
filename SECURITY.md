@@ -179,11 +179,17 @@ free-text content (no minimum-rating threshold exists). HTTP logs never record t
 
 ### Logging
 
-Never logged: names, emails, phone numbers, birth dates, passwords/hashes, one-time codes, TOTP secrets,
-cookies, CSRF tokens, request bodies, query strings, Referer, and SMTP replies quoting a recipient or
-message. Logged: HTTP method, route path (GUID parameters), status, timing, entity ids, email kind, counts,
-SMTP status codes, and exception messages/stack traces.
+Never logged: names, emails, phone numbers, birth dates, login identifiers typed by the client,
+passwords/hashes, one-time codes, TOTP secrets, cookies, CSRF tokens, request bodies, query strings, Referer,
+and SMTP replies quoting a recipient or message. Logged: HTTP method, route path (GUID parameters), status,
+timing, entity ids, enum values, email kind, counts, SMTP status codes, and exception messages/stack traces.
 
+- **Security events**: handlers emit the events declared in `Application/Auth/SecurityLog.cs` — failed
+  password and second-factor steps, lockouts, refused logins, password changes and resets, authenticator and
+  administrator changes, wrong re-authentication passwords, identifier changes and deletions — at `Warning`
+  for failures and `Information` for completed changes, carrying only entity ids, enum values and counts.
+  Successful logins and session starts are deliberately absent, so the API keeps no user-id/time trail of
+  ordinary activity (see [Event rating anonymity](#event-rating-anonymity)).
 - **API**: `RequestLoggingMiddleware` logs 4xx/5xx only. Only `CodigoActivo`, `Program` and
   `Microsoft.Hosting.Lifetime` log at `Information`; other categories log at `Warning`. EF Core
   sensitive-data logging stays disabled; `SmtpEmailSender` strips recipient/server replies from exceptions.

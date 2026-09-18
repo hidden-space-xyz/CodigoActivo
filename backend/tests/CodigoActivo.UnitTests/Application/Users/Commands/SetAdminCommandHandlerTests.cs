@@ -41,7 +41,8 @@ public sealed class SetAdminCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
-            )
+            ),
+            NullLogger<SetAdminCommandHandler>.Instance
         );
     }
 

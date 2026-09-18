@@ -6,6 +6,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -25,15 +26,19 @@ public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginC
 /// <param name="credentialTiming">The credential timing value.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     CredentialTimingProtector credentialTiming,
     TwoFactorOptions twoFactor,
-    LoginCodeIssuer loginCodes
+    LoginCodeIssuer loginCodes,
+    ILogger<LoginCommandHandler> logger
 ) : ICommandHandler<LoginCommand, Result<LoginChallenge>>
 {
+    private const string Operation = "Login";
+
     /// <summary>
     /// Handles the request to login.
     /// </summary>
@@ -48,15 +53,30 @@ public sealed class LoginCommandHandler(
         var identifier = command.Request.Identifier.Trim();
         var user = await users.GetByEmailOrPhoneAsync(identifier, ct);
 
+        if (user is null)
+        {
+            logger.LoginUnknownIdentifierRejected();
+            return Error.Unauthorized(ErrorCode.InvalidCredentials);
+        }
+
         if (
-            user is null
-            || !credentialTiming.Verify(
+            !credentialTiming.Verify(
                 command.Request.Password,
                 string.IsNullOrEmpty(user.PasswordHash) ? null : user.PasswordHash
             )
         )
         {
+            logger.LoginPasswordRejected(user.Id);
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
+        }
+
+        if (
+            user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked
+            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
+        )
+        {
+            logger.LoginRefusedForAccountStatus(user.Id, user.UserStatusTypeId);
         }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked)
@@ -77,6 +97,7 @@ public sealed class LoginCommandHandler(
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
+            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 

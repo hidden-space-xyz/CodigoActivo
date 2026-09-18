@@ -23,6 +23,7 @@ public sealed class LoginCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly TwoFactorOptions twoFactor = new();
+    private readonly RecordingLogger<LoginCommandHandler> logger = new();
     private readonly LoginCommandHandler sut;
 
     public LoginCommandHandlerTests()
@@ -41,7 +42,8 @@ public sealed class LoginCommandHandlerTests
             clock,
             new CredentialTimingProtector(hasher),
             twoFactor,
-            new LoginCodeIssuer(hasher, twoFactor, accountEmails, NullLogger<LoginCodeIssuer>.Instance)
+            new LoginCodeIssuer(hasher, twoFactor, accountEmails, NullLogger<LoginCodeIssuer>.Instance),
+            logger
         );
     }
 
@@ -106,6 +108,29 @@ public sealed class LoginCommandHandlerTests
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncFailedPasswordStepLogsIdsOnlyAndNeverTheIdentifier()
+    {
+        var known = Returns(NewUser(passwordHash: "fake:correct"));
+
+        await LoginAsync(password: "wrong");
+
+        logger.Entries.Should().ContainSingle().Which.Should().Be($"Login password step failed for user {known.Id}");
+
+        users
+            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((User?)null);
+
+        await LoginAsync("someone@test.com");
+
+        logger.Entries.Should().HaveCount(2);
+        logger
+            .Entries[1]
+            .Should()
+            .Be("Login password step failed for an unknown identifier")
+            .And.NotContain("someone@test.com");
     }
 
     [Theory]

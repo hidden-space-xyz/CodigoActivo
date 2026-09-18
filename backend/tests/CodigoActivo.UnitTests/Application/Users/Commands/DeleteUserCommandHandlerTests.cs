@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -20,7 +21,12 @@ public sealed class DeleteUserCommandHandlerTests
 
     public DeleteUserCommandHandlerTests()
     {
-        sut = new DeleteUserCommandHandler(users, uow, cacheInvalidator);
+        sut = new DeleteUserCommandHandler(
+            users,
+            uow,
+            cacheInvalidator,
+            NullLogger<DeleteUserCommandHandler>.Instance
+        );
     }
 
     private Task<int> AssertNotSavedAsync()

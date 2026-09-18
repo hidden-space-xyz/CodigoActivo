@@ -38,7 +38,8 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
                 clock,
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
-            options
+            options,
+            NullLogger<VerifyTwoFactorLoginCommandHandler>.Instance
         );
     }
 
