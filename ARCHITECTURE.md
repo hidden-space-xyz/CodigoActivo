@@ -68,6 +68,16 @@ handler for a read-after-write response; queries never call commands.
 - Commands invalidate dependency tags only after commit, evicting both application and HTTP output entries.
 - Both stores are process-local, assuming one API replica; scaling out needs a shared store and cross-instance
   invalidation.
+- nginx does not cache API responses. It adds `Cache-Control: no-store` to every proxied response that sets
+  none, so browsers and intermediaries never store API data; file content keeps the API's own
+  `private, no-cache` and revalidates by `ETag`.
+- Static files: hashed `/assets/` are `immutable` for a year, the stable-named icons last a day, and
+  `index.html` with every SPA route is `no-cache`, so a deployment is picked up on the next navigation.
+  Errors and any response without an explicit policy are `no-store`. A tab left open across a deployment
+  reloads once when a lazy chunk of the previous build is gone (`stale-build-reload.ts`).
+- The SPA holds no data cache: TanStack Query refetches on every mount, focus and reconnect and drops data
+  as soon as no view observes it, so freshness is decided only by the API. Retaining query data needs every
+  consumer to handle retained values and failed refetches first.
 
 `RemoveAsync` and `SetFeaturedAsync` are deliberate set-based operations that execute immediately; do not
 combine them with other staged mutations expected to share a transaction. `IEventRatingRepository.SubmitAsync`
