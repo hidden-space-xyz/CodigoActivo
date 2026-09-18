@@ -7,10 +7,10 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -27,6 +27,8 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly RecordingLogger<UpdateUserCommandHandler> logger = new();
+    private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
     private readonly User actingUser;
     private readonly UpdateUserCommandHandler sut;
 
@@ -45,10 +47,19 @@ public sealed class UpdateUserCommandHandlerTests
                 emailSender,
                 clock,
                 new ApplicationOptions(),
-                NullLogger<AccountSecurityNotifier>.Instance
+                notifierLogger
             ),
-            NullLogger<UpdateUserCommandHandler>.Instance
+            logger
         );
+    }
+
+    private void AssertIdentifierChangeLogged(Guid userId)
+    {
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be($"Login identifiers changed by user {actingUser.Id} for user {userId}");
     }
 
     private Task<Result<UserResponse>> HandleAsync(Guid userId, UpdateUserRequest request)
@@ -271,6 +282,92 @@ public sealed class UpdateUserCommandHandlerTests
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("old@test.com");
         message.TextBody.Should().Contain("b***@test.com").And.NotContain("brandnew@test.com");
+        AssertIdentifierChangeLogged(id);
+    }
+
+    [Fact]
+    public async Task HandleAsyncOnlyThePhoneChangedWarnsWithoutQuotingTheUnchangedEmail()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user, actingUser);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0199",
+            AdultDob,
+            Gender.Female,
+            null,
+            ActingPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.ToAddress.Should().Be("ana@test.com");
+        message.TextBody.Should().NotContain("a***@test.com");
+        AssertIdentifierChangeLogged(id);
+    }
+
+    [Fact]
+    public async Task HandleAsyncAccountGainingIdentifiersLogsTheChangeWithoutNotifying()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: null, phone: null);
+        users.FindReturns(user, actingUser);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0100",
+            AdultDob,
+            Gender.Female,
+            null,
+            ActingPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.Email.Should().Be("ana@test.com");
+        emailSender.Sent.Should().BeEmpty();
+        AssertIdentifierChangeLogged(id);
+    }
+
+    [Fact]
+    public async Task HandleAsyncIdentifierNoticeRefusedByTheLimiterIsLoggedWithoutFailingTheUpdate()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "old@test.com");
+        users.FindReturns(user, actingUser);
+        users.HasUsers(user);
+        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "brandnew@test.com",
+            "555-0100",
+            AdultDob,
+            Gender.Female,
+            null,
+            ActingPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        notifierLogger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be(
+                $"Security notification IdentifiersChanged for user {id} was dropped by the email limiter"
+            );
     }
 
     [Fact]
