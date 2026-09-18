@@ -135,7 +135,6 @@ describe('EventSignupStatsPanel rendering', () => {
     const data = fakeCharts.at(-1)?.config.data as FakeBarChartData
     expect(data.datasets.map((dataset) => dataset.data)).toEqual([[0], [5], [0]])
 
-    // The detail table always shows every role, regardless of the chart filter.
     expect(wrapper.findAll('.signup-stats__table tbody tr')).toHaveLength(2)
   })
 })
@@ -180,8 +179,6 @@ describe('EventSignupStatsPanel states', () => {
 
 describe('EventSignupStatsPanel privacy', () => {
   it('never shows the name or email of an enrolled person, even if the API cells leaked them', async () => {
-    // Simulates a backend regression: the response carries per-signup identifiers in the cells
-    // alongside the legitimate aggregate fields. The client only reads the documented fields.
     const activity = STATS_BODY.activities?.[0]
     serveStats({
       ...STATS_BODY,
@@ -203,7 +200,6 @@ describe('EventSignupStatsPanel privacy', () => {
     expect(wrapper.text()).not.toContain('Ada Lovelace')
     expect(wrapper.text()).not.toContain('ada@example.test')
     expect(wrapper.text()).not.toMatch(/@/)
-    // Only the activity title, role name and formatted counts are rendered.
     const row = wrapper.find('.signup-stats__table tbody tr')
     expect(row.findAll('td').map((td) => td.text())).toEqual([
       'Taller de robótica',

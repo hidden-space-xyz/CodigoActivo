@@ -1,6 +1,3 @@
-// CA2100 flags every dynamic NpgsqlCommand.CommandText below. None of it carries user input: the
-// database name is a test-generated GUID and every value column uses parameters, so the rule does
-// not apply to this throwaway-database test fixture.
 #pragma warning disable CA2100
 
 using AwesomeAssertions;
@@ -170,10 +167,6 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
 
         await using (var db = CreateContext(upConnectionString))
         {
-            // Land on the schema exactly as it stood right before the migration under test: the EF
-            // model in this assembly already reflects the multi-document (post-migration) shape, so
-            // events.terms_document_id and event_terms_acceptances.accepted_at are seeded through
-            // raw SQL below instead of through EF.
             await GetMigrator(db).MigrateAsync(PreviousMigrationId, Ct);
             await new DatabaseSeeder(db).SeedAsync(Ct);
 
@@ -207,8 +200,6 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
                     Description = "{}",
                 }
             );
-            // One event links the legacy single terms document; the other has none, to prove the
-            // backfill only inserts a bridge row for events that actually had one.
             db.Events.Add(
                 new Event
                 {
@@ -290,8 +281,6 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
                 rows.Add((reader.GetGuid(0), reader.GetGuid(1), reader.GetBoolean(2), reader.GetInt32(3)));
             }
 
-            // Only the event that had a terms_document_id gets backfilled, as a required,
-            // first-position link; the event without one contributes nothing.
             rows.Should().Equal([(linkedEventId, termsDocumentId, true, 0)]);
         }
 
@@ -336,8 +325,6 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
 
         await using (var db = CreateContext(downConnectionString))
         {
-            // This test starts from the current (post-migration) shape, which the EF model in this
-            // assembly already maps, so seeding goes entirely through EF.
             await db.Database.MigrateAsync(Ct);
             await new DatabaseSeeder(db).SeedAsync(Ct);
 
@@ -387,8 +374,6 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
                 CreatedAt = Fixed,
                 CreatedBy = authorId,
             };
-            // The optional document has the lower display order, but the Down migration must still
-            // prefer the required document (is_required desc comes first in its ORDER BY).
             ev.TermsDocuments.Add(
                 new EventTermsDocument
                 {
@@ -408,10 +393,6 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
             db.Events.Add(ev);
             await db.SaveChangesAsync(Ct);
 
-            // The user has three decisions on three different documents (a document's decision is
-            // immutable once recorded, so the same document cannot appear twice): an earlier
-            // rejection (discarded entirely by Down), and two accepted decisions at different
-            // times, of which only the earliest must survive.
             db.EventTermsAcceptances.AddRange(
                 new EventTermsAcceptance
                 {

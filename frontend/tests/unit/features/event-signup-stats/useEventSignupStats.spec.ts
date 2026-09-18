@@ -100,7 +100,6 @@ describe('useEventSignupStats zero-filling', () => {
       },
     ])
 
-    // Both activities are charted, including the one without any signup (all zero bars).
     expect(result.chartData.value.labels).toEqual([['Actividad 1'], ['Actividad sin apuntados']])
     const [requestedSeries, confirmedSeries, deniedSeries] = result.chartData.value.datasets
     expect(requestedSeries?.data).toEqual([2, 0])
@@ -171,7 +170,6 @@ describe('useEventSignupStats role filter', () => {
     const { result } = await serveTwoRoleStats()
     await vi.waitFor(() => expect(result.isLoading.value).toBe(false))
 
-    // Default: "all roles" sums both roles for every status.
     expect(result.chartData.value.datasets[0]?.data).toEqual([2])
     expect(result.chartData.value.datasets[1]?.data).toEqual([5])
 
@@ -203,7 +201,6 @@ describe('useEventSignupStats ordering and totals', () => {
     const { result } = await serveStats({
       eventId: 'event-1',
       roles: [ROLE_A],
-      // Statuses arrive in a different order than the chart renders them.
       statuses: [
         { id: ASSIGNMENT_STATUS_IDS.denied, name: 'Rechazada' },
         { id: ASSIGNMENT_STATUS_IDS.confirmed, name: 'Confirmada' },
@@ -239,11 +236,9 @@ describe('useEventSignupStats ordering and totals', () => {
     })
     await vi.waitFor(() => expect(result.isLoading.value).toBe(false))
 
-    // Activities keep the API order (Zeta, then Alfa); the composable does not re-sort them.
     expect(result.chartData.value.labels).toEqual([['Zeta'], ['Alfa']])
     expect(result.tableRows.value.map((row) => row.activityId)).toEqual(['act-z', 'act-a'])
 
-    // Series always render requested, confirmed, denied in that order regardless of API order.
     expect(result.chartData.value.datasets.map((dataset) => dataset.label)).toEqual([
       t('pages.eventDetail.stats.table.requested'),
       t('pages.eventDetail.stats.table.confirmed'),
@@ -313,7 +308,6 @@ describe('useEventSignupStats ordering and totals', () => {
 
     expect(result.isLoading.value).toBe(true)
     expect(result.totals.value).toEqual({ total: 0, requested: 0, confirmed: 0, denied: 0 })
-    // isEmpty is only meaningful once loading finishes; the panel checks isLoading first.
     expect(result.isEmpty.value).toBe(true)
     expect(result.chartData.value).toEqual({ labels: [], datasets: [] })
     expect(result.tableRows.value).toEqual([])

@@ -111,7 +111,6 @@ public sealed class TermsGateTests
                 new EventTermsAcceptance(),
                 TestContext.Current.CancellationToken
             );
-        // An event with no linked documents never needs to know the user's prior decisions.
         await events
             .DidNotReceiveWithAnyArgs()
             .ListTermsAcceptancesAsync(default, default, TestContext.Current.CancellationToken);
@@ -241,8 +240,6 @@ public sealed class TermsGateTests
             DecidedAt = originalDecidedAt,
         };
         HasAcceptances(stored);
-        // Different from originalDecidedAt on purpose: the test must fail if a repeated
-        // rejection is (wrongly) re-stamped with the clock's current instant.
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(

@@ -409,7 +409,6 @@ describe('activities timeline self signup', () => {
       return found as HTMLElement
     })
     expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(OPTIONAL_TERMS_DOCUMENT.name)
-    // No required document is pending, so confirming is allowed without checking anything.
     expect(buttonByText(t('features.activitySignup.terms.confirm'), dialog).disabled).toBe(false)
     expect(calls.assign).toEqual([])
 
