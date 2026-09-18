@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using AwesomeAssertions;
 using CodigoActivo.Application.Validation;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Storage;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -67,6 +68,23 @@ public sealed class ValidationAttributesTests : IDisposable
     public void IsValidMalformedJsonReturnsFalse(string value)
     {
         new JsonStringAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"doc\",\"type\":\"image\"}")]
+    [InlineData("{\"content\":[{\"text\":\"a\",\"text\":\"b\"}]}")]
+    public void IsValidJsonRepeatingAPropertyNameReturnsFalse(string value)
+    {
+        new JsonStringAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsEmptyRichTextRepeatingAPropertyNameReportsNoContent()
+    {
+        RichTextDocument
+            .IsEmpty("{\"type\":\"doc\",\"type\":\"doc\",\"text\":\"hello\"}")
+            .Should()
+            .BeTrue();
     }
 
     [Theory]

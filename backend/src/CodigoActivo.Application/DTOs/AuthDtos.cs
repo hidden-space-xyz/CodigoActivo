@@ -114,7 +114,7 @@ public record RegisterResponse(UserResponse Adult, IReadOnlyList<UserResponse> M
 /// Contains the client-supplied data used to verify.
 /// </summary>
 /// <param name="Otp">The otp value.</param>
-public record VerifyRequest([Required] [MaxLength(64)] [NotBlank] string Otp);
+public record VerifyRequest([Required] [MaxLength(128)] [NotBlank] string Otp);
 
 /// <summary>
 /// Contains the client-supplied data used to forgot password.
@@ -128,6 +128,6 @@ public record ForgotPasswordRequest([Required] [EmailAddress] [MaxLength(256)] s
 /// <param name="Otp">The otp value.</param>
 /// <param name="NewPassword">The new password value.</param>
 public record ResetPasswordRequest(
-    [Required] [MaxLength(64)] [NotBlank] string Otp,
+    [Required] [MaxLength(128)] [NotBlank] string Otp,
     [Required] [MinLength(12)] [MaxLength(128)] [NotBlank] string NewPassword
 );
