@@ -56,6 +56,7 @@ const { sendToUsers } = useSendEmail()
 
 const dialogVisible = ref(false)
 const selected = ref<User | null>(null)
+const editError = ref('')
 
 const typeDialogVisible = ref(false)
 const typeUser = ref<User | null>(null)
@@ -113,6 +114,7 @@ function clearRelationFilter(): void {
 
 async function openEdit(user: User): Promise<void> {
   selected.value = user
+  editError.value = ''
   dialogVisible.value = true
   if (!user.id) return
   try {
@@ -122,6 +124,7 @@ async function openEdit(user: User): Promise<void> {
 
 function onSubmit(body: UpdateUserInput): void {
   if (!selected.value?.id) return
+  editError.value = ''
   update.mutate(
     { id: selected.value.id, body },
     {
@@ -129,7 +132,13 @@ function onSubmit(body: UpdateUserInput): void {
         feedback.success(t('pages.admin.users.toasts.updated'))
         dialogVisible.value = false
       },
-      onError: (error) => feedback.error(error),
+      onError: (error) => {
+        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
+          editError.value = getErrorMessage(error)
+          return
+        }
+        feedback.error(error)
+      },
     },
   )
 }
@@ -519,6 +528,7 @@ function confirmDelete(user: User): void {
       v-model:visible="dialogVisible"
       :user="selected"
       :saving="update.isPending.value"
+      :error="editError"
       @submit="onSubmit"
     />
 

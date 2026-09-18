@@ -5,9 +5,10 @@ import { useI18n } from 'vue-i18n'
 import { useAccount } from '../model/useAccount'
 import type { UpdateProfileInput } from '@/entities/account'
 import { genderLabel, genderOptions } from '@/entities/user'
+import { ApiError } from '@/shared/api'
 import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib'
+import { formatDate, getErrorMessage, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib'
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
@@ -20,6 +21,7 @@ const genders = genderOptions()
 
 const editVisible = ref(false)
 const editSubmitted = ref(false)
+const editError = ref('')
 const editForm = reactive<{
   firstName: string
   lastName: string
@@ -27,23 +29,43 @@ const editForm = reactive<{
   phone: string
   birthDate: string
   gender: Gender | null
-}>({ firstName: '', lastName: '', email: '', phone: '', birthDate: '', gender: null })
+  currentPassword: string
+}>({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  birthDate: '',
+  gender: null,
+  currentPassword: '',
+})
+
+const replacesIdentifiers = computed(() => {
+  return (
+    editForm.email.trim().toLowerCase() !== (user.value?.email ?? '').toLowerCase() ||
+    editForm.phone.trim() !== (user.value?.phone ?? '')
+  )
+})
+const passwordMissing = computed(() => replacesIdentifiers.value && !editForm.currentPassword)
 
 function openEdit(): void {
   editSubmitted.value = false
+  editError.value = ''
   editForm.firstName = user.value?.firstName ?? ''
   editForm.lastName = user.value?.lastName ?? ''
   editForm.email = user.value?.email ?? ''
   editForm.phone = user.value?.phone ?? ''
   editForm.birthDate = toDateInput(user.value?.birthDate)
   editForm.gender = user.value?.gender ?? null
+  editForm.currentPassword = ''
   editVisible.value = true
 }
 
 function saveEdit(): void {
   editSubmitted.value = true
+  editError.value = ''
   const gender = editForm.gender
-  if (!gender) return
+  if (!gender || passwordMissing.value) return
   const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
     lastName: editForm.lastName.trim(),
@@ -51,6 +73,7 @@ function saveEdit(): void {
     phone: editForm.phone.trim(),
     birthDate: editForm.birthDate,
     gender,
+    currentPassword: replacesIdentifiers.value ? editForm.currentPassword : null,
   }
   updateProfile.mutate(request, {
     onSuccess: () => {
@@ -60,7 +83,13 @@ function saveEdit(): void {
         t('features.account.profile.savedSummary'),
       )
     },
-    onError: (error) => feedback.error(error),
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
+        editError.value = getErrorMessage(error)
+        return
+      }
+      feedback.error(error)
+    },
   })
 }
 
@@ -204,6 +233,26 @@ function savePassword(): void {
             <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
               $t('validation.genderRequired')
             }}</small>
+          </div>
+          <div v-if="replacesIdentifiers" class="acc-form__field acc-form__field--wide">
+            <label for="p-current">{{
+              $t('features.account.profile.identifierChange.passwordLabel')
+            }}</label>
+            <p class="acc-form__hint">
+              {{ $t('features.account.profile.identifierChange.message') }}
+            </p>
+            <el-input
+              id="p-current"
+              v-model="editForm.currentPassword"
+              type="password"
+              show-password
+              autocomplete="current-password"
+              :maxlength="128"
+            />
+            <small v-if="editSubmitted && passwordMissing" class="acc-form__error">{{
+              $t('features.account.profile.identifierChange.passwordRequired')
+            }}</small>
+            <small v-else-if="editError" class="acc-form__error">{{ editError }}</small>
           </div>
         </div>
         <div class="acc-form__actions">
@@ -359,6 +408,17 @@ function savePassword(): void {
   color: var(--ca-danger-ink);
   font-size: 13.5px;
   margin: 0 0 10px;
+}
+
+.acc-form__field--wide {
+  grid-column: 1 / -1;
+}
+
+.acc-form__hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ca-text-muted);
 }
 
 .ca-invalid :deep(.el-select__wrapper) {

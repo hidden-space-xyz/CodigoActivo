@@ -163,6 +163,7 @@ describe('account requests', () => {
       phone: '600000000',
       birthDate: '1990-05-10',
       gender: 'Female',
+      currentPassword: null,
     })
 
     expect(profile.lastName).toBe('King')
@@ -174,6 +175,7 @@ describe('account requests', () => {
       birthDate: '1990-05-10',
       gender: 'Female',
       parentId: null,
+      currentPassword: null,
     })
     expect(csrf).toBe(TEST_CSRF_TOKEN)
   })

@@ -128,6 +128,11 @@ public record DeleteAccountRequest(
 /// <param name="BirthDate">User's date of birth.</param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="ParentId">Identifier of the parent.</param>
+/// <param name="CurrentPassword">
+/// Password of the acting caller. Required when the update changes the login identifiers of the
+/// target account, that is a different email or phone, or turning an account that still has an
+/// email, a phone or a password into a dependent minor; ignored otherwise.
+/// </param>
 public record UpdateUserRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
@@ -135,7 +140,8 @@ public record UpdateUserRequest(
     [Phone] [MaxLength(40)] string? Phone,
     [NotDefaultOrFutureDate] DateOnly BirthDate,
     [EnumDataType(typeof(Gender))] Gender Gender,
-    Guid? ParentId
+    Guid? ParentId,
+    [MaxLength(128)] string? CurrentPassword
 );
 
 /// <summary>

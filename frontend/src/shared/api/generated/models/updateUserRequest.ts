@@ -19,4 +19,6 @@ export interface UpdateUserRequest {
   gender?: Gender;
   /** @nullable */
   parentId?: string | null;
+  /** @nullable */
+  currentPassword?: string | null;
 }

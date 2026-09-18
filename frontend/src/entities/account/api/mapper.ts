@@ -70,6 +70,7 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
     birthDate: input.birthDate,
     gender: input.gender,
     parentId: null,
+    currentPassword: input.currentPassword,
   }
 }
 

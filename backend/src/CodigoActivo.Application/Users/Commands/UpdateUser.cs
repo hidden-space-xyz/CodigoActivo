@@ -6,6 +6,7 @@ using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -13,20 +14,23 @@ namespace CodigoActivo.Application.Users.Commands;
 /// Carries the input required to update the user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
+/// <param name="ActingUserId">Identifier of the acting user.</param>
 /// <param name="Request">Validated client request data.</param>
-public sealed record UpdateUserCommand(Guid UserId, UpdateUserRequest Request)
+public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUserRequest Request)
     : ICommand<Result<UserResponse>>;
 
 /// <summary>
 /// Executes the command to update the user.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="hasher">Hasher used to verify the acting caller's password.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="getById">Handler used to retrieve user by identifier.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
+    IPasswordHasher hasher,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
@@ -34,7 +38,9 @@ public sealed class UpdateUserCommandHandler(
 ) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
 {
     /// <summary>
-    /// Handles the request to update the user.
+    /// Handles the request to update the user. Replacing the login identifiers of the account, or
+    /// dropping them by turning it into a dependent minor, first re-authenticates the acting
+    /// caller, so a hijacked session alone cannot take the account over.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -53,15 +59,8 @@ public sealed class UpdateUserCommandHandler(
         }
 
         var rules = request.BirthDate.IsMinor(clock.Today)
-            ? await ApplyMinorContactRulesAsync(user, request.ParentId, command.UserId, ct)
-            : await ApplyAdultContactRulesAsync(
-                user,
-                request.Email,
-                request.Phone,
-                request.ParentId,
-                command.UserId,
-                ct
-            );
+            ? await ApplyMinorContactRulesAsync(command, user, ct)
+            : await ApplyAdultContactRulesAsync(command, user, ct);
         if (rules.IsFailure)
         {
             return rules.Error!;
@@ -80,18 +79,17 @@ public sealed class UpdateUserCommandHandler(
     }
 
     private async Task<Result> ApplyMinorContactRulesAsync(
+        UpdateUserCommand command,
         User user,
-        Guid? parentId,
-        Guid? excludeUserId,
         CancellationToken ct
     )
     {
-        if (parentId is not { } parent)
+        if (command.Request.ParentId is not { } parent)
         {
             return Error.BadRequest(ErrorCode.UserParentIdRequired);
         }
 
-        if (parent == excludeUserId)
+        if (parent == command.UserId)
         {
             return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
         }
@@ -112,6 +110,13 @@ public sealed class UpdateUserCommandHandler(
             return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
         }
 
+        var dropsAccessFactors =
+            user.Email is not null || user.Phone is not null || user.PasswordHash is not null;
+        if (dropsAccessFactors && !await IsActingPasswordValidAsync(command, ct))
+        {
+            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+        }
+
         user.ParentId = parent;
         user.Email = null;
         user.Phone = null;
@@ -121,32 +126,38 @@ public sealed class UpdateUserCommandHandler(
     }
 
     private async Task<Result> ApplyAdultContactRulesAsync(
+        UpdateUserCommand command,
         User user,
-        string? rawEmail,
-        string? rawPhone,
-        Guid? parentId,
-        Guid? excludeUserId,
         CancellationToken ct
     )
     {
-        if (parentId is not null)
+        var request = command.Request;
+        if (request.ParentId is not null)
         {
             return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
         }
 
-        var email = rawEmail.NormalizeEmailOrNull();
-        var phone = rawPhone.NormalizeOrNull();
+        var email = request.Email.NormalizeEmailOrNull();
+        var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null)
         {
             return Error.BadRequest(ErrorCode.UserContactInfoRequired);
         }
 
-        if (await users.EmailExistsAsync(email, excludeUserId, ct))
+        var replacesLoginIdentifiers =
+            !string.Equals(email, user.Email, StringComparison.Ordinal)
+            || !string.Equals(phone, user.Phone, StringComparison.Ordinal);
+        if (replacesLoginIdentifiers && !await IsActingPasswordValidAsync(command, ct))
+        {
+            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+        }
+
+        if (await users.EmailExistsAsync(email, command.UserId, ct))
         {
             return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
         }
 
-        if (await users.PhoneExistsAsync(phone, excludeUserId, ct))
+        if (await users.PhoneExistsAsync(phone, command.UserId, ct))
         {
             return Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
         }
@@ -155,5 +166,21 @@ public sealed class UpdateUserCommandHandler(
         user.Email = email;
         user.Phone = phone;
         return Result.Success();
+    }
+
+    private async Task<bool> IsActingPasswordValidAsync(
+        UpdateUserCommand command,
+        CancellationToken ct
+    )
+    {
+        var password = command.Request.CurrentPassword;
+        if (string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
+
+        var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
+        return !string.IsNullOrEmpty(actingUser?.PasswordHash)
+            && hasher.Verify(password, actingUser.PasswordHash);
     }
 }

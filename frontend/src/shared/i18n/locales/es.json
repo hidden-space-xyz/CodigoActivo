@@ -1065,6 +1065,11 @@
       "optionalSuffix": " (opcional)",
       "birthDateInvalid": "Indica una fecha de nacimiento válida.",
       "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
+      "identifierChange": {
+        "message": "Vas a cambiar el correo o el teléfono con los que esta persona inicia sesión y recibe sus códigos. Por seguridad, confirma tu contraseña.",
+        "passwordLabel": "Tu contraseña",
+        "passwordRequired": "Introduce tu contraseña."
+      },
       "grantAdmin": {
         "header": "Conceder rol de administrador",
         "message": "Vas a dar permisos de administrador a {fullName}. Por seguridad, confirma tu contraseña.",
@@ -1166,6 +1171,11 @@
         "editData": "Editar datos",
         "changePassword": "Cambiar contraseña",
         "editDialogHeader": "Editar mis datos",
+        "identifierChange": {
+          "message": "Con el correo y el teléfono inicias sesión y recibes los códigos de verificación. Por seguridad, confirma tu contraseña actual.",
+          "passwordLabel": "Tu contraseña actual",
+          "passwordRequired": "Introduce tu contraseña actual."
+        },
         "currentPassword": "Contraseña actual",
         "newPassword": "Nueva contraseña",
         "confirmNewPassword": "Repite la nueva contraseña",

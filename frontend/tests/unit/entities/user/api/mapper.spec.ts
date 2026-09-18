@@ -65,6 +65,7 @@ describe('user mapper', () => {
       birthDate: '2015-01-02',
       gender: 'Male',
       parentId: 'parent-1',
+      currentPassword: 'Str0ngPass!23',
     } as const
 
     expect(toUpdateUserRequest(input)).toEqual(input)

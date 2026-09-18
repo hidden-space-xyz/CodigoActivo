@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
@@ -15,16 +16,23 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 
 public sealed class UpdateUserCommandHandlerTests
 {
+    private const string ActingPassword = "acting-user-password";
+
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
+    private readonly User actingUser;
     private readonly UpdateUserCommandHandler sut;
 
     public UpdateUserCommandHandlerTests()
     {
+        actingUser = NewUser();
+        actingUser.PasswordHash = hasher.Hash(ActingPassword);
         sut = new UpdateUserCommandHandler(
             users,
+            hasher,
             clock,
             uow,
             cacheInvalidator,
@@ -32,10 +40,25 @@ public sealed class UpdateUserCommandHandlerTests
         );
     }
 
+    private Task<Result<UserResponse>> HandleAsync(Guid userId, UpdateUserRequest request)
+    {
+        return sut.HandleAsync(
+            new UpdateUserCommand(userId, actingUser.Id, request),
+            TestContext.Current.CancellationToken
+        );
+    }
+
     private Task<int> AssertNotSavedAsync()
     {
         return uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private Task<User?> AssertActingUserNotLoadedAsync()
+    {
+        return users
+            .Received(1)
+            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -49,13 +72,11 @@ public sealed class UpdateUserCommandHandlerTests
             "555",
             AdultDob,
             Gender.Female,
+            null,
             null
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
         await AssertNotSavedAsync();
@@ -72,13 +93,11 @@ public sealed class UpdateUserCommandHandlerTests
             "555",
             AdultDob,
             Gender.Female,
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            null
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentNotAllowedForAdult);
         await AssertNotSavedAsync();
@@ -93,12 +112,18 @@ public sealed class UpdateUserCommandHandlerTests
     )
     {
         users.FindReturns(NewUser());
-        var request = new UpdateUserRequest("F", "L", email, phone, AdultDob, Gender.Female, null);
-
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            email,
+            phone,
+            AdultDob,
+            Gender.Female,
+            null,
+            null
         );
+
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserContactInfoRequired);
         await AssertNotSavedAsync();
@@ -107,7 +132,7 @@ public sealed class UpdateUserCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAdultEmailAlreadyInUseReturnsConflict()
     {
-        users.FindReturns(NewUser());
+        users.FindReturns(NewUser(), actingUser);
         users
             .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(true);
@@ -118,13 +143,11 @@ public sealed class UpdateUserCommandHandlerTests
             "555",
             AdultDob,
             Gender.Female,
-            null
+            null,
+            ActingPassword
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
         await AssertNotSavedAsync();
@@ -133,7 +156,7 @@ public sealed class UpdateUserCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAdultPhoneAlreadyInUseReturnsConflict()
     {
-        users.FindReturns(NewUser());
+        users.FindReturns(NewUser(), actingUser);
         users
             .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
@@ -147,13 +170,11 @@ public sealed class UpdateUserCommandHandlerTests
             "555",
             AdultDob,
             Gender.Female,
-            null
+            null,
+            ActingPassword
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserPhoneAlreadyInUse);
         await AssertNotSavedAsync();
@@ -164,7 +185,7 @@ public sealed class UpdateUserCommandHandlerTests
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id, parentId: Guid.NewGuid());
-        users.FindReturns(user);
+        users.FindReturns(user, actingUser);
         users
             .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
@@ -180,13 +201,11 @@ public sealed class UpdateUserCommandHandlerTests
             "  999  ",
             AdultDob,
             Gender.Female,
-            null
+            null,
+            ActingPassword
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(id, request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(id, request);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FirstName.Should().Be("New");
@@ -212,15 +231,126 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncAdultUnchangedContactSavesWithoutPassword()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "  ANA@test.com  ",
+            "  555-0100  ",
+            AdultDob,
+            Gender.Female,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.Email.Should().Be("ana@test.com");
+        user.Phone.Should().Be("555-0100");
+        await AssertActingUserNotLoadedAsync();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("wrong-password")]
+    public async Task HandleAsyncAdultChangedEmailWithoutValidPasswordReturnsBadRequest(
+        string? currentPassword
+    )
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user, actingUser);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "attacker@test.com",
+            "555-0100",
+            AdultDob,
+            Gender.Female,
+            null,
+            currentPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.Email.Should().Be("ana@test.com");
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdultChangedPhoneWithoutPasswordReturnsBadRequest()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user, actingUser);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0199",
+            AdultDob,
+            Gender.Female,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.Phone.Should().Be("555-0100");
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdultChangedEmailWithActingUserWithoutPasswordReturnsBadRequest()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        actingUser.PasswordHash = null;
+        users.FindReturns(user, actingUser);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "other@test.com",
+            "555-0100",
+            AdultDob,
+            Gender.Female,
+            null,
+            ActingPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.Email.Should().Be("ana@test.com");
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncMinorWithoutParentIdReturnsBadRequest()
     {
         users.FindReturns(NewUser());
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Gender.Male, null);
-
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
+        var request = new UpdateUserRequest(
+            "F",
+            "L",
+            null,
+            null,
+            MinorDob,
+            Gender.Male,
+            null,
+            null
         );
+
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIdRequired);
         await AssertNotSavedAsync();
@@ -231,12 +361,9 @@ public sealed class UpdateUserCommandHandlerTests
     {
         var id = Guid.NewGuid();
         users.FindReturns(NewUser(id: id));
-        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Gender.Male, id);
+        var request = new UpdateUserRequest("F", "L", null, null, MinorDob, Gender.Male, id, null);
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(id, request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(id, request);
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCannotBeOwnParent);
         await AssertNotSavedAsync();
@@ -253,13 +380,11 @@ public sealed class UpdateUserCommandHandlerTests
             null,
             MinorDob,
             Gender.Male,
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            null
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.ParentUserNotFound);
         await AssertNotSavedAsync();
@@ -276,13 +401,11 @@ public sealed class UpdateUserCommandHandlerTests
             null,
             MinorDob,
             Gender.Male,
-            Guid.NewGuid()
+            Guid.NewGuid(),
+            null
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(Guid.NewGuid(), request);
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIsMinor);
         await AssertNotSavedAsync();
@@ -297,7 +420,7 @@ public sealed class UpdateUserCommandHandlerTests
         user.PasswordHash = "hash";
         user.OtpCodeHash = "ABCDEF";
         user.OtpExpiresAt = clock.UtcNow.AddMinutes(10);
-        users.FindReturns(user, NewUser(id: parentId));
+        users.FindReturns(user, NewUser(id: parentId), actingUser);
         users.HasUsers(user);
         var request = new UpdateUserRequest(
             "Kid",
@@ -306,13 +429,11 @@ public sealed class UpdateUserCommandHandlerTests
             "222",
             MinorDob,
             Gender.Male,
-            parentId
+            parentId,
+            ActingPassword
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(id, request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(id, request);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ParentId.Should().Be(parentId);
@@ -322,6 +443,60 @@ public sealed class UpdateUserCommandHandlerTests
         user.PasswordHash.Should().BeNull();
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncMinorLosingContactWithoutPasswordReturnsBadRequest()
+    {
+        var id = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = NewUser(id: id, email: "old@test.com", phone: "111");
+        users.FindReturns(user, NewUser(id: parentId), actingUser);
+        var request = new UpdateUserRequest(
+            "Kid",
+            "Doe",
+            null,
+            null,
+            MinorDob,
+            Gender.Male,
+            parentId,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.Email.Should().Be("old@test.com");
+        user.Phone.Should().Be("111");
+        user.ParentId.Should().BeNull();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncMinorWithoutContactOrCredentialsSavesWithoutPassword()
+    {
+        var id = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
+        users.FindReturns(user, NewUser(id: parentId));
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Kid",
+            "Doe",
+            null,
+            null,
+            MinorDob,
+            Gender.Male,
+            parentId,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.FirstName.Should().Be("Kid");
+        user.ParentId.Should().Be(parentId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -339,13 +514,11 @@ public sealed class UpdateUserCommandHandlerTests
             null,
             MinorDob,
             Gender.Male,
-            newParentId
+            newParentId,
+            null
         );
 
-        var result = await sut.HandleAsync(
-            new UpdateUserCommand(id, request),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(id, request);
 
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserParentReassignmentForbidden);
         await AssertNotSavedAsync();

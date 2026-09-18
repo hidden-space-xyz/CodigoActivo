@@ -296,9 +296,30 @@ describe('admin users page', () => {
         birthDate: '1990-05-10',
         gender: 'Female',
         parentId: null,
+        currentPassword: null,
       },
     })
     await vi.waitFor(() => expect(isDialogOpen(t(EDIT_TITLE))).toBe(false))
+  })
+
+  it('keeps the edit dialog open and explains a rejected password', async () => {
+    serveUsers([ada])
+    server.use(
+      userDetail(() => HttpResponse.json(buildUserResponse())),
+      http.put('/api/users/:userId', () => apiError(400, 'UserCurrentPasswordIncorrect')),
+    )
+    await renderPage()
+
+    await click(findButton(t('common.edit')))
+    const dialog = openDialog(t(EDIT_TITLE))
+    await typeInto('#user-email', 'augusta@example.test')
+    await typeInto('#user-current-password', 'wrong')
+    await click(findButton(t('common.save'), dialog))
+
+    await vi.waitFor(() =>
+      expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
+    )
+    expect(isDialogOpen(t(EDIT_TITLE))).toBe(true)
   })
 
   // Suspected bug: UsersPage opens the dialog before the detail request resolves, and
