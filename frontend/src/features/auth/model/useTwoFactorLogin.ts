@@ -13,7 +13,7 @@ import {
 } from '@/entities/session'
 import { ApiError } from '@/shared/api'
 import { TwoFactorMethod } from '@/shared/api/generated/models'
-import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
+import { getErrorMessage, toLocalRedirect, useCrudFeedback } from '@/shared/lib'
 
 const RESEND_COOLDOWN_SECONDS = 60
 
@@ -62,9 +62,7 @@ export function useTwoFactorLogin() {
 
   onScopeDispose(stopCooldown)
 
-  const redirect = computed(() =>
-    typeof route.query.redirect === 'string' ? route.query.redirect : null,
-  )
+  const redirect = computed(() => toLocalRedirect(route.query.redirect))
 
   const loginRoute = computed<RouteLocationRaw>(() => ({
     name: 'login',
