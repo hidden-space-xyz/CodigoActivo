@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 
@@ -21,11 +22,13 @@ public sealed record ConfirmAuthenticatorCommand(Guid UserId, ConfirmAuthenticat
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ConfirmAuthenticatorCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    AuthenticatorCodeVerifier authenticatorCodes
+    AuthenticatorCodeVerifier authenticatorCodes,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<ConfirmAuthenticatorCommand, Result>
 {
     /// <summary>
@@ -63,6 +66,7 @@ public sealed class ConfirmAuthenticatorCommandHandler(
 
         user.EnableAuthenticator(step.Value, now);
         await uow.SaveChangesAsync(ct);
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorEnabled, ct);
         return Result.Success();
     }
 }

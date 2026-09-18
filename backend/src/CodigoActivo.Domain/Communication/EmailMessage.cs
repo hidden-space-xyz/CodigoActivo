@@ -22,6 +22,10 @@ public enum EmailKind
     /// </summary>
     ActivityNotification,
     /// <summary>
+    /// Selects the security change notification option.
+    /// </summary>
+    SecurityAlert,
+    /// <summary>
     /// Selects the manual option.
     /// </summary>
     Manual,

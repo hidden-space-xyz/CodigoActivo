@@ -225,14 +225,22 @@ and password-reset codes expire after 15 minutes with a 60-second resend cooldow
 codes share storage and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or
 the API refuses to start. Activity signup sends no message; confirming or rejecting one queues an outcome
 email after commit, always to the guardian address for a dependent minor. Delivery errors never roll back
-registration, recovery or activity decisions.
+registration, recovery, activity decisions or security changes.
 
-Every automatic verification, password-reset, second-factor-code and activity-decision email passes through
-`ThrottledEmailSender`: each normalized destination has burst/hourly/daily budgets, the process has a global
-budget with a credential-email reserve, and normalization lowercases addresses, strips sub-address tags and
-folds dots only for Gmail/Googlemail. Quota is spent on attempt, before queueing; SMTP failure and a full
-queue do not refund it. The limiter is always enabled, in-memory, resets on restart and is multiplied by the
-number of API replicas.
+Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
+returned to email, or reset by an administrator), its administrator flag or its login identifiers queues a
+notification to the affected account after commit, from the handler, whoever asked for the change. The notice
+names the change and its timestamp and carries no code, secret or link that performs an action; an identifier
+change is announced to the **previous** address and only ever quotes the new one masked. These messages are
+ordinary automatic mail, not credential mail, so they spend the shared budget without touching the credential
+reserve that login codes rely on.
+
+Every automatic verification, password-reset, second-factor-code, security-change and activity-decision email
+passes through `ThrottledEmailSender`: each normalized destination has burst/hourly/daily budgets, the
+process has a global budget with a credential-email reserve, and normalization lowercases addresses, strips
+sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on attempt, before queueing; SMTP
+failure and a full queue do not refund it. The limiter is always enabled, in-memory, resets on restart and is
+multiplied by the number of API replicas.
 
 Accepted mail enters a bounded in-memory channel drained by a fixed worker pool with no retry or persistence;
 graceful shutdown drains it within 20 seconds by default. SMTP failures are logged per message. Operational

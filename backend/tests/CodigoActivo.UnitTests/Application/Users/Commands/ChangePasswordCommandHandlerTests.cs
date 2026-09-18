@@ -1,11 +1,15 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -19,11 +23,24 @@ public sealed class ChangePasswordCommandHandlerTests
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly ChangePasswordCommandHandler sut;
 
     public ChangePasswordCommandHandlerTests()
     {
-        sut = new ChangePasswordCommandHandler(users, hasher, clock, uow, sessions);
+        sut = new ChangePasswordCommandHandler(
+            users,
+            hasher,
+            clock,
+            uow,
+            sessions,
+            new AccountSecurityNotifier(
+                emailSender,
+                clock,
+                new ApplicationOptions(),
+                NullLogger<AccountSecurityNotifier>.Instance
+            )
+        );
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -108,6 +125,49 @@ public sealed class ChangePasswordCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
         user.UpdatedAt.Should().Be(clock.UtcNow);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertSessionsRevokedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncValidCurrentPasswordNotifiesTheOwnerWithoutSecrets()
+    {
+        var user = NewUser();
+        user.PasswordHash = hasher.Hash("correct");
+        users.FindReturns(user);
+
+        var result = await sut.HandleAsync(
+            new ChangePasswordCommand(user.Id, new ChangePasswordRequest("correct", "brandnew")),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
+        message
+            .TextBody.Should()
+            .NotContain("brandnew")
+            .And.NotContain(user.PasswordHash)
+            .And.NotContain("#userId=");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncNotificationFailureStillChangesThePassword()
+    {
+        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
+        var user = NewUser();
+        user.PasswordHash = hasher.Hash("correct");
+        users.FindReturns(user);
+
+        var result = await sut.HandleAsync(
+            new ChangePasswordCommand(user.Id, new ChangePasswordRequest("correct", "brandnew")),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await AssertSessionsRevokedAsync();
     }

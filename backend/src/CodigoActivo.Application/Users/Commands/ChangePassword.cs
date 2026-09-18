@@ -1,5 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -22,12 +24,14 @@ public sealed record ChangePasswordCommand(Guid UserId, ChangePasswordRequest Re
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
     IClock clock,
     IUnitOfWork uow,
-    IUserSessionRepository sessions
+    IUserSessionRepository sessions,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<ChangePasswordCommand, Result>
 {
     /// <summary>
@@ -60,6 +64,7 @@ public sealed class ChangePasswordCommandHandler(
         user.ResetPassword(hasher.Hash(command.Request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
         await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordChanged, ct);
         return Result.Success();
     }
 }

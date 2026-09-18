@@ -1,5 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -22,11 +24,13 @@ public sealed record SetAdminCommand(Guid UserId, Guid ActingUserId, SetAdminReq
 /// <param name="hasher">Hasher used to verify the acting administrator's password.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class SetAdminCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<SetAdminCommand, Result>
 {
     /// <summary>
@@ -63,6 +67,11 @@ public sealed class SetAdminCommandHandler(
         user.IsAdmin = isAdmin;
         user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
+        await securityNotifier.NotifyAsync(
+            user,
+            isAdmin ? AccountSecurityChange.AdminGranted : AccountSecurityChange.AdminRevoked,
+            ct
+        );
         return Result.Success();
     }
 

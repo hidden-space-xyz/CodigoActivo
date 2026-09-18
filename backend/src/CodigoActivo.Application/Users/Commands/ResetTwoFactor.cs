@@ -1,5 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -27,11 +29,13 @@ public sealed record ResetTwoFactorCommand(
 /// <param name="hasher">Hasher used to verify the acting administrator's password.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ResetTwoFactorCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<ResetTwoFactorCommand, Result>
 {
     /// <summary>
@@ -62,6 +66,7 @@ public sealed class ResetTwoFactorCommandHandler(
 
         user.ResetTwoFactor(clock.UtcNow);
         await uow.SaveChangesAsync(ct);
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.TwoFactorReset, ct);
         return Result.Success();
     }
 }
