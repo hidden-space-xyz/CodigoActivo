@@ -46,8 +46,10 @@ internal static class ApiServiceConfiguration
         services
             .AddControllers()
             .AddJsonOptions(options =>
-                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
-            )
+            {
+                options.JsonSerializerOptions.AllowDuplicateProperties = false;
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            })
             .ConfigureApiBehaviorOptions(options =>
             {
                 options.InvalidModelStateResponseFactory = context =>
