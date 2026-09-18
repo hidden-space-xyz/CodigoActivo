@@ -154,6 +154,54 @@ Equipo de Código Activo</value>
   <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y cambia tu contraseña cuanto antes. Nunca compartas este código con nadie.</value>
   </data>
+  <data name="emails.securityAlert.subject" xml:space="preserve">
+    <value>Cambio de seguridad en tu cuenta de Código Activo</value>
+  </data>
+  <data name="emails.securityAlert.heading" xml:space="preserve">
+    <value>Cambio de seguridad en tu cuenta</value>
+  </data>
+  <data name="emails.securityAlert.introText" xml:space="preserve">
+    <value>Te informamos de un cambio en los datos de acceso de tu cuenta de Código Activo:</value>
+  </data>
+  <data name="emails.securityAlert.introHtml" xml:space="preserve">
+    <value>Te informamos de un cambio en los datos de acceso de tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;:</value>
+  </data>
+  <data name="emails.securityAlert.when" xml:space="preserve">
+    <value>Fecha del cambio: {0} (hora local).</value>
+  </data>
+  <data name="emails.securityAlert.newEmail" xml:space="preserve">
+    <value>El nuevo correo de acceso empieza por {0}.</value>
+  </data>
+  <data name="emails.securityAlert.warning" xml:space="preserve">
+    <value>Si no has sido tú, restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?» y ponte en contacto con la asociación.</value>
+  </data>
+  <data name="emails.securityAlert.noActionNote" xml:space="preserve">
+    <value>Este aviso es solo informativo: no incluye códigos ni enlaces para realizar ningún cambio.</value>
+  </data>
+  <data name="emails.securityAlert.passwordChanged" xml:space="preserve">
+    <value>Se ha cambiado la contraseña de tu cuenta.</value>
+  </data>
+  <data name="emails.securityAlert.passwordReset" xml:space="preserve">
+    <value>Se ha restablecido la contraseña de tu cuenta mediante el proceso de recuperación.</value>
+  </data>
+  <data name="emails.securityAlert.authenticatorEnabled" xml:space="preserve">
+    <value>Tu segundo factor ha pasado a ser una aplicación de autenticación.</value>
+  </data>
+  <data name="emails.securityAlert.authenticatorDisabled" xml:space="preserve">
+    <value>Se ha desactivado la aplicación de autenticación y tu segundo factor vuelve a ser el correo electrónico.</value>
+  </data>
+  <data name="emails.securityAlert.twoFactorReset" xml:space="preserve">
+    <value>Un administrador ha restablecido tu segundo factor al correo electrónico.</value>
+  </data>
+  <data name="emails.securityAlert.adminGranted" xml:space="preserve">
+    <value>Tu cuenta ha recibido permisos de administración.</value>
+  </data>
+  <data name="emails.securityAlert.adminRevoked" xml:space="preserve">
+    <value>Tu cuenta ya no tiene permisos de administración.</value>
+  </data>
+  <data name="emails.securityAlert.identifiersChanged" xml:space="preserve">
+    <value>Se han cambiado los datos de acceso de tu cuenta (correo electrónico o teléfono). Te avisamos en esta dirección porque era la anterior.</value>
+  </data>
   <data name="emails.activityDecision.confirmedSubject" xml:space="preserve">
     <value>Inscripción confirmada: {0}</value>
   </data>

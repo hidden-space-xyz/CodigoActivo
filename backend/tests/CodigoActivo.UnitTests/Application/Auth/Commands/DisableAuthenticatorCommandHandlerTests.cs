@@ -39,7 +39,13 @@ public sealed class DisableAuthenticatorCommandHandlerTests
                 clock,
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
-            options
+            options,
+            new AccountSecurityNotifier(
+                new RecordingEmailSender(),
+                clock,
+                new ApplicationOptions(),
+                NullLogger<AccountSecurityNotifier>.Instance
+            )
         );
     }
 

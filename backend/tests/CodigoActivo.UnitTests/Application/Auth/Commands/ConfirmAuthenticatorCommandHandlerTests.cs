@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -35,6 +36,12 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
                 new FakeSecretProtector(),
                 clock,
                 NullLogger<AuthenticatorCodeVerifier>.Instance
+            ),
+            new AccountSecurityNotifier(
+                new RecordingEmailSender(),
+                clock,
+                new ApplicationOptions(),
+                NullLogger<AccountSecurityNotifier>.Instance
             )
         );
     }

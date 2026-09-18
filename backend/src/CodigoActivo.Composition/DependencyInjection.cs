@@ -636,6 +636,7 @@ public static class DependencyInjection
         services.AddScoped<ConfirmAuthenticatorCommandHandler>();
         services.AddScoped<DisableAuthenticatorCommandHandler>();
         services.AddScoped<AccountEmails>();
+        services.AddScoped<AccountSecurityNotifier>();
         services.AddScoped<OtpValidator>();
         services.AddScoped<LoginCodeIssuer>();
         services.AddScoped<AuthenticatorCodeVerifier>();

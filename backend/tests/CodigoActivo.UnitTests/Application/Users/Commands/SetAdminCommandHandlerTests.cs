@@ -1,11 +1,14 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -20,6 +23,7 @@ public sealed class SetAdminCommandHandlerTests
     private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly User actingAdmin;
     private readonly SetAdminCommandHandler sut;
 
@@ -27,7 +31,18 @@ public sealed class SetAdminCommandHandlerTests
     {
         actingAdmin = NewUser(isAdmin: true);
         actingAdmin.PasswordHash = hasher.Hash(ActingPassword);
-        sut = new SetAdminCommandHandler(users, hasher, clock, uow);
+        sut = new SetAdminCommandHandler(
+            users,
+            hasher,
+            clock,
+            uow,
+            new AccountSecurityNotifier(
+                emailSender,
+                clock,
+                new ApplicationOptions(),
+                NullLogger<AccountSecurityNotifier>.Instance
+            )
+        );
     }
 
     private Task<Result> HandleAsync(Guid userId, bool isAdmin, string? currentPassword = null)

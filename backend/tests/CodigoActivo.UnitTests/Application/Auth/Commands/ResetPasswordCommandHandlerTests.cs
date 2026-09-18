@@ -3,11 +3,13 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Auth.AuthTestData;
@@ -30,7 +32,13 @@ public sealed class ResetPasswordCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             new OtpValidator(clock, new FakePasswordHasher()),
-            sessions
+            sessions,
+            new AccountSecurityNotifier(
+                new RecordingEmailSender(),
+                clock,
+                new ApplicationOptions(),
+                NullLogger<AccountSecurityNotifier>.Instance
+            )
         );
     }
 

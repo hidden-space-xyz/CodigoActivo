@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -27,13 +28,15 @@ public sealed record DisableAuthenticatorCommand(Guid UserId, DisableAuthenticat
 /// <param name="hasher">Hasher used to verify the current password.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class DisableAuthenticatorCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
     AuthenticatorCodeVerifier authenticatorCodes,
-    TwoFactorOptions options
+    TwoFactorOptions options,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<DisableAuthenticatorCommand, Result>
 {
     /// <summary>
@@ -87,6 +90,7 @@ public sealed class DisableAuthenticatorCommandHandler(
         user.UseEmailTwoFactor(now);
         user.TwoFactorFailedAttempts = 0;
         await uow.SaveChangesAsync(ct);
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorDisabled, ct);
         return Result.Success();
     }
 }

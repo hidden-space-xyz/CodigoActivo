@@ -1,13 +1,16 @@
 using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -23,6 +26,7 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly User actingUser;
     private readonly UpdateUserCommandHandler sut;
 
@@ -36,7 +40,13 @@ public sealed class UpdateUserCommandHandlerTests
             clock,
             uow,
             cacheInvalidator,
-            new GetUserByIdQueryHandler(users, new FakeQueryExecutor())
+            new GetUserByIdQueryHandler(users, new FakeQueryExecutor()),
+            new AccountSecurityNotifier(
+                emailSender,
+                clock,
+                new ApplicationOptions(),
+                NullLogger<AccountSecurityNotifier>.Instance
+            )
         );
     }
 
@@ -228,6 +238,38 @@ public sealed class UpdateUserCommandHandlerTests
                     tags != null && tags.Contains(CacheTags.Users)
                 )
             );
+    }
+
+    [Fact]
+    public async Task HandleAsyncChangedIdentifiersWarnsThePreviousAddressWithTheNewOneMasked()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "old@test.com");
+        users.FindReturns(user, actingUser);
+        users
+            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        users
+            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "brandnew@test.com",
+            "555-0100",
+            AdultDob,
+            Gender.Female,
+            null,
+            ActingPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.ToAddress.Should().Be("old@test.com");
+        message.TextBody.Should().Contain("b***@test.com").And.NotContain("brandnew@test.com");
     }
 
     [Fact]

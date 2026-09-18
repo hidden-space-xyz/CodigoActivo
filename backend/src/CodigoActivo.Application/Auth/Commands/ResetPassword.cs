@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
@@ -24,13 +25,15 @@ public sealed record ResetPasswordCommand(Guid UserId, ResetPasswordRequest Requ
 /// <param name="hasher">The hasher value.</param>
 /// <param name="otpValidator">The otp validator value.</param>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ResetPasswordCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
     OtpValidator otpValidator,
-    IUserSessionRepository sessions
+    IUserSessionRepository sessions,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<ResetPasswordCommand, Result>
 {
     /// <summary>
@@ -68,6 +71,7 @@ public sealed class ResetPasswordCommandHandler(
         user.ResetPassword(hasher.Hash(request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
         await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordReset, ct);
 
         return Result.Success();
     }

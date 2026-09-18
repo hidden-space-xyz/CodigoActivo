@@ -172,6 +172,76 @@ public static class AppStrings
     public static string EmailsPasswordResetSubject => Get("emails.passwordReset.subject");
 
     /// <summary>
+    /// Gets the emails security alert admin granted value.
+    /// </summary>
+    public static string EmailsSecurityAlertAdminGranted => Get("emails.securityAlert.adminGranted");
+
+    /// <summary>
+    /// Gets the emails security alert admin revoked value.
+    /// </summary>
+    public static string EmailsSecurityAlertAdminRevoked => Get("emails.securityAlert.adminRevoked");
+
+    /// <summary>
+    /// Gets the emails security alert authenticator disabled value.
+    /// </summary>
+    public static string EmailsSecurityAlertAuthenticatorDisabled => Get("emails.securityAlert.authenticatorDisabled");
+
+    /// <summary>
+    /// Gets the emails security alert authenticator enabled value.
+    /// </summary>
+    public static string EmailsSecurityAlertAuthenticatorEnabled => Get("emails.securityAlert.authenticatorEnabled");
+
+    /// <summary>
+    /// Gets the emails security alert heading value.
+    /// </summary>
+    public static string EmailsSecurityAlertHeading => Get("emails.securityAlert.heading");
+
+    /// <summary>
+    /// Gets the emails security alert identifiers changed value.
+    /// </summary>
+    public static string EmailsSecurityAlertIdentifiersChanged => Get("emails.securityAlert.identifiersChanged");
+
+    /// <summary>
+    /// Gets the emails security alert intro html value.
+    /// </summary>
+    public static string EmailsSecurityAlertIntroHtml => Get("emails.securityAlert.introHtml");
+
+    /// <summary>
+    /// Gets the emails security alert intro text value.
+    /// </summary>
+    public static string EmailsSecurityAlertIntroText => Get("emails.securityAlert.introText");
+
+    /// <summary>
+    /// Gets the emails security alert no action note value.
+    /// </summary>
+    public static string EmailsSecurityAlertNoActionNote => Get("emails.securityAlert.noActionNote");
+
+    /// <summary>
+    /// Gets the emails security alert password changed value.
+    /// </summary>
+    public static string EmailsSecurityAlertPasswordChanged => Get("emails.securityAlert.passwordChanged");
+
+    /// <summary>
+    /// Gets the emails security alert password reset value.
+    /// </summary>
+    public static string EmailsSecurityAlertPasswordReset => Get("emails.securityAlert.passwordReset");
+
+    /// <summary>
+    /// Gets the emails security alert subject value.
+    /// </summary>
+    public static string EmailsSecurityAlertSubject => Get("emails.securityAlert.subject");
+
+    /// <summary>
+    /// Gets the emails security alert two factor reset value.
+    /// </summary>
+    public static string EmailsSecurityAlertTwoFactorReset => Get("emails.securityAlert.twoFactorReset");
+
+    /// <summary>
+    /// Gets the emails security alert warning value.
+    /// </summary>
+    public static string EmailsSecurityAlertWarning => Get("emails.securityAlert.warning");
+
+    /// <summary>
     /// Gets the emails shared brand name value.
     /// </summary>
     public static string EmailsSharedBrandName => Get("emails.shared.brandName");
@@ -389,6 +459,26 @@ public static class AppStrings
     public static string EmailsPasswordResetExpiryText(int minutes)
     {
         return Format("emails.passwordReset.expiryText", minutes);
+    }
+
+    /// <summary>
+    /// Formats the localized emails security alert new email text with the supplied values.
+    /// </summary>
+    /// <param name="maskedEmail">The masked email value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsSecurityAlertNewEmail(string maskedEmail)
+    {
+        return Format("emails.securityAlert.newEmail", maskedEmail);
+    }
+
+    /// <summary>
+    /// Formats the localized emails security alert when text with the supplied values.
+    /// </summary>
+    /// <param name="occurredAt">The occurred at value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsSecurityAlertWhen(string occurredAt)
+    {
+        return Format("emails.securityAlert.when", occurredAt);
     }
 
     /// <summary>

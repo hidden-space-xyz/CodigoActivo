@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
@@ -28,13 +29,15 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="getById">Handler used to retrieve user by identifier.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
-    GetUserByIdQueryHandler getById
+    GetUserByIdQueryHandler getById,
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
 {
     /// <summary>
@@ -58,6 +61,9 @@ public sealed class UpdateUserCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
+        var previousEmail = user.Email;
+        var previousPhone = user.Phone;
+
         var rules = request.BirthDate.IsMinor(clock.Today)
             ? await ApplyMinorContactRulesAsync(command, user, ct)
             : await ApplyAdultContactRulesAsync(command, user, ct);
@@ -74,6 +80,23 @@ public sealed class UpdateUserCommandHandler(
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
+
+        if (
+            previousEmail is not null
+            && (
+                !string.Equals(previousEmail, user.Email, StringComparison.Ordinal)
+                || !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal)
+            )
+        )
+        {
+            await securityNotifier.NotifyIdentifiersChangedAsync(
+                user.Id,
+                previousEmail,
+                user.FirstName,
+                user.Email,
+                ct
+            );
+        }
 
         return await getById.HandleAsync(new GetUserByIdQuery(command.UserId), ct);
     }
