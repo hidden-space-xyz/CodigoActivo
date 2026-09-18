@@ -4,6 +4,7 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -27,6 +28,7 @@ public sealed record BeginAuthenticatorSetupCommand(Guid UserId, AuthenticatorSe
 /// <param name="totp">Generator of shared secrets.</param>
 /// <param name="protector">Protector that encrypts the secret before it is stored.</param>
 /// <param name="options">Second-factor configuration.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class BeginAuthenticatorSetupCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -34,9 +36,12 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
     IPasswordHasher hasher,
     ITotpService totp,
     ISecretProtector protector,
-    TwoFactorOptions options
+    TwoFactorOptions options,
+    ILogger<BeginAuthenticatorSetupCommandHandler> logger
 ) : ICommandHandler<BeginAuthenticatorSetupCommand, Result<AuthenticatorSetupResponse>>
 {
+    private const string Operation = "BeginAuthenticatorSetup";
+
     /// <summary>
     /// Handles the request to start the enrollment.
     /// </summary>
@@ -59,6 +64,7 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
             || !hasher.Verify(command.Request.CurrentPassword, user.PasswordHash)
         )
         {
+            logger.ReauthenticationRejected(user.Id, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 

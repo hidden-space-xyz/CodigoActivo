@@ -42,7 +42,8 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
-            )
+            ),
+            NullLogger<ConfirmAuthenticatorCommandHandler>.Instance
         );
     }
 

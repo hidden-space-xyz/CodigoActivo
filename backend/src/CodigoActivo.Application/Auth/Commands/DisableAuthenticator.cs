@@ -6,6 +6,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -29,6 +30,7 @@ public sealed record DisableAuthenticatorCommand(Guid UserId, DisableAuthenticat
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DisableAuthenticatorCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -36,9 +38,12 @@ public sealed class DisableAuthenticatorCommandHandler(
     IPasswordHasher hasher,
     AuthenticatorCodeVerifier authenticatorCodes,
     TwoFactorOptions options,
-    AccountSecurityNotifier securityNotifier
+    AccountSecurityNotifier securityNotifier,
+    ILogger<DisableAuthenticatorCommandHandler> logger
 ) : ICommandHandler<DisableAuthenticatorCommand, Result>
 {
+    private const string Operation = "DisableAuthenticator";
+
     /// <summary>
     /// Handles the request to remove the authenticator.
     /// </summary>
@@ -66,12 +71,14 @@ public sealed class DisableAuthenticatorCommandHandler(
             || !hasher.Verify(command.Request.CurrentPassword, user.PasswordHash)
         )
         {
+            logger.ReauthenticationRejected(user.Id, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
+            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
@@ -82,14 +89,25 @@ public sealed class DisableAuthenticatorCommandHandler(
         );
         if (step is null)
         {
-            user.RecordTwoFactorFailure(now, options.MaxFailedAttempts, options.LockoutDuration);
+            var locked = user.RecordTwoFactorFailure(
+                now,
+                options.MaxFailedAttempts,
+                options.LockoutDuration
+            );
             await uow.SaveChangesAsync(ct);
+            logger.TwoFactorCodeRejected(user.Id, TwoFactorMethod.Authenticator);
+            if (locked)
+            {
+                logger.TwoFactorLockoutTriggered(user.Id, options.MaxFailedAttempts);
+            }
+
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
         }
 
         user.UseEmailTwoFactor(now);
         user.TwoFactorFailedAttempts = 0;
         await uow.SaveChangesAsync(ct);
+        logger.AuthenticatorRemoved(user.Id);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorDisabled, ct);
         return Result.Success();
     }

@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -20,10 +22,12 @@ public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : IComman
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    ICacheInvalidator cacheInvalidator,
+    ILogger<DeleteUserCommandHandler> logger
 ) : ICommandHandler<DeleteUserCommand, Result>
 {
     /// <summary>
@@ -53,6 +57,7 @@ public sealed class DeleteUserCommandHandler(
         users.Remove(user);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
+        logger.UserDeletedByAnotherUser(command.ActingUserId, command.UserId);
         return Result.Success();
     }
 }

@@ -1,9 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -24,13 +26,15 @@ public sealed record ChangeUserTypeCommand(Guid UserId, Guid UserTypeId)
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="getById">Handler used to retrieve user by identifier.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ChangeUserTypeCommandHandler(
     IUserRepository users,
     IUserTypeRepository userTypes,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
-    GetUserByIdQueryHandler getById
+    GetUserByIdQueryHandler getById,
+    ILogger<ChangeUserTypeCommandHandler> logger
 ) : ICommandHandler<ChangeUserTypeCommand, Result<UserResponse>>
 {
     /// <summary>
@@ -61,6 +65,7 @@ public sealed class ChangeUserTypeCommandHandler(
             user.UpdatedAt = clock.UtcNow;
             await uow.SaveChangesAsync(ct);
             await cacheInvalidator.InvalidateAsync(CacheTags.Users);
+            logger.UserTypeChanged(user.Id, command.UserTypeId);
         }
 
         return await getById.HandleAsync(new GetUserByIdQuery(command.UserId), ct);
