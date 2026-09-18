@@ -8,6 +8,7 @@ namespace CodigoActivo.UnitTests.TestSupport;
 public sealed class RecordingLogger<T> : ILogger<T>
 {
     private readonly List<string> entries = [];
+    private readonly List<(LogLevel Level, string Message)> levelEntries = [];
 
     /// <summary>Formatted messages followed by the text of their exception, if any.</summary>
     public IReadOnlyList<string> Entries
@@ -17,6 +18,18 @@ public sealed class RecordingLogger<T> : ILogger<T>
             lock (entries)
             {
                 return [.. entries];
+            }
+        }
+    }
+
+    /// <summary>Every recorded entry together with the level it was logged at.</summary>
+    public IReadOnlyList<(LogLevel Level, string Message)> LevelEntries
+    {
+        get
+        {
+            lock (entries)
+            {
+                return [.. levelEntries];
             }
         }
     }
@@ -46,6 +59,7 @@ public sealed class RecordingLogger<T> : ILogger<T>
         lock (entries)
         {
             entries.Add(entry);
+            levelEntries.Add((logLevel, entry));
         }
     }
 }

@@ -5,6 +5,7 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
@@ -88,6 +89,10 @@ public sealed class SetAdminCommandHandlerTests
         user.IsAdmin.Should().BeTrue();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
+        message.TextBody.Should().NotContain(ActingPassword);
     }
 
     [Theory]
@@ -154,6 +159,7 @@ public sealed class SetAdminCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await AssertNotSavedAsync();
+        emailSender.Sent.Should().BeEmpty("an unchanged flag is not a security event worth reporting");
     }
 
     [Fact]
@@ -173,6 +179,9 @@ public sealed class SetAdminCommandHandlerTests
             .Received(1)
             .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
     }
 
     [Fact]

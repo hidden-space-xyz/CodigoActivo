@@ -11,6 +11,7 @@ using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -60,6 +61,7 @@ public sealed class UpdateUserCommandHandlerTests
             .ContainSingle()
             .Which.Should()
             .Be($"Login identifiers changed by user {actingUser.Id} for user {userId}");
+        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Information);
     }
 
     private Task<Result<UserResponse>> HandleAsync(Guid userId, UpdateUserRequest request)
@@ -424,6 +426,18 @@ public sealed class UpdateUserCommandHandlerTests
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.Email.Should().Be("ana@test.com");
         await AssertNotSavedAsync();
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be($"Re-authentication rejected for user {actingUser.Id} during UpdateUser")
+            .And.NotContain("attacker@test.com");
+        if (!string.IsNullOrEmpty(currentPassword))
+        {
+            logger.Entries[0].Should().NotContain(currentPassword);
+        }
+
+        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Warning);
     }
 
     [Fact]

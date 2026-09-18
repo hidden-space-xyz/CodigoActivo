@@ -519,6 +519,28 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task LoginDuplicateJsonPropertyReturnsBadRequestInsteadOfCrashing()
+    {
+        var client = CreateClient();
+        var token = await client.FetchCsrfTokenAsync(Ct);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = new StringContent(
+                $$"""
+                {"identifier":"{{TestSeedData.AdminEmail}}","identifier":"attacker@test.com","password":"{{TestSeedData.Password}}"}
+                """,
+                System.Text.Encoding.UTF8,
+                "application/json"
+            ),
+        };
+        request.Headers.Add("X-CSRF-TOKEN", token);
+
+        var response = await client.SendAsync(request, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
     public async Task MeAuthenticatedReturnsCurrentUser()
     {
         var client = await LoginAsAdminAsync();

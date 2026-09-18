@@ -4,6 +4,7 @@ using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -24,6 +25,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 2 };
+    private readonly RecordingEmailSender emailSender = new();
     private readonly DisableAuthenticatorCommandHandler sut;
 
     public DisableAuthenticatorCommandHandlerTests()
@@ -41,7 +43,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
             ),
             options,
             new AccountSecurityNotifier(
-                new RecordingEmailSender(),
+                emailSender,
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
@@ -164,5 +166,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
+        message.TextBody.Should().NotContain(Secret).And.NotContain("123456");
     }
 }

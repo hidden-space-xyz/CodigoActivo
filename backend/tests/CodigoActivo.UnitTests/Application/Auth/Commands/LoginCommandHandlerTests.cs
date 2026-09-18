@@ -10,6 +10,7 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
@@ -138,6 +139,7 @@ public sealed class LoginCommandHandlerTests
         await LoginAsync(password: "wrong");
 
         logger.Entries.Should().ContainSingle().Which.Should().Be($"Login password step failed for user {known.Id}");
+        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Warning);
 
         users
             .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -150,7 +152,9 @@ public sealed class LoginCommandHandlerTests
             .Entries[1]
             .Should()
             .Be("Login password step failed for an unknown identifier")
-            .And.NotContain("someone@test.com");
+            .And.NotContain("someone@test.com")
+            .And.NotContain("wrong");
+        logger.LevelEntries[1].Level.Should().Be(LogLevel.Warning);
     }
 
     [Theory]
