@@ -16,7 +16,10 @@ const props = defineProps<{
   user: User | null
   /** Shows a loading state on the save button while the parent persists the changes. */
   saving: boolean
-  /** Rejection reported by the parent, such as an incorrect password; empty hides it. */
+  /**
+   * Rejection reported by the parent, such as an incorrect password; empty hides it. A non-empty
+   * value also reveals the password field, so the server can ask for it when this form did not.
+   */
   error: string
 }>()
 
@@ -26,8 +29,8 @@ const emit = defineEmits<{
   /**
    * Fired with the validated changes. Email and phone are required for adults only, blank values
    * are sent as `null`, and the user's current `parentId` is preserved. `currentPassword` carries
-   * the signed-in user's password when the change replaces the login identifiers of the account,
-   * and is `null` otherwise.
+   * the signed-in user's password when the change replaces the login identifiers of the account or
+   * the server already refused one, and is `null` otherwise.
    */
   submit: [body: UpdateUserInput]
 }>()
@@ -77,13 +80,16 @@ const replacesIdentifiers = computed(() => {
     form.phone.trim() !== storedPhone.value
   )
 })
-const passwordMissing = computed(() => replacesIdentifiers.value && !form.currentPassword)
+const passwordRejected = ref(false)
+const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
+const passwordMissing = computed(() => requiresPassword.value && !form.currentPassword)
 
 watch(
   () => props.visible,
   (open) => {
     if (!open) return
     submitted.value = false
+    passwordRejected.value = false
     form.firstName = props.user?.firstName ?? ''
     form.lastName = props.user?.lastName ?? ''
     form.email = props.user?.email ?? ''
@@ -91,6 +97,13 @@ watch(
     form.birthDate = parseDateOnly(props.user?.birthDate)
     form.gender = props.user?.gender ?? null
     form.currentPassword = ''
+  },
+)
+
+watch(
+  () => props.error,
+  (value) => {
+    if (value) passwordRejected.value = true
   },
 )
 
@@ -122,7 +135,7 @@ function save(): void {
     birthDate: toDateOnly(birthDate),
     gender,
     parentId: props.user?.parentId ?? null,
-    currentPassword: replacesIdentifiers.value ? form.currentPassword : null,
+    currentPassword: requiresPassword.value ? form.currentPassword : null,
   }
   emit('submit', body)
 }
@@ -224,7 +237,7 @@ function save(): void {
           $t('features.manageUsers.contactRequired')
         }}</small>
       </div>
-      <div v-if="replacesIdentifiers" class="form__field">
+      <div v-if="requiresPassword" class="form__field">
         <label for="user-current-password">{{
           $t('features.manageUsers.identifierChange.passwordLabel')
         }}</label>
@@ -238,10 +251,10 @@ function save(): void {
           :maxlength="128"
           :class="{ 'ca-invalid': (submitted && passwordMissing) || !!error }"
         />
-        <small v-if="submitted && passwordMissing" class="form__error">{{
+        <small v-if="error" class="form__error">{{ error }}</small>
+        <small v-else-if="submitted && passwordMissing" class="form__error">{{
           $t('features.manageUsers.identifierChange.passwordRequired')
         }}</small>
-        <small v-else-if="error" class="form__error">{{ error }}</small>
       </div>
     </form>
 

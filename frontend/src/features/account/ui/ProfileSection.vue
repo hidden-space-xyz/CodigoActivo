@@ -40,17 +40,20 @@ const editForm = reactive<{
   currentPassword: '',
 })
 
+const passwordRejected = ref(false)
 const replacesIdentifiers = computed(() => {
   return (
     editForm.email.trim().toLowerCase() !== (user.value?.email ?? '').toLowerCase() ||
     editForm.phone.trim() !== (user.value?.phone ?? '')
   )
 })
-const passwordMissing = computed(() => replacesIdentifiers.value && !editForm.currentPassword)
+const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
+const passwordMissing = computed(() => requiresPassword.value && !editForm.currentPassword)
 
 function openEdit(): void {
   editSubmitted.value = false
   editError.value = ''
+  passwordRejected.value = false
   editForm.firstName = user.value?.firstName ?? ''
   editForm.lastName = user.value?.lastName ?? ''
   editForm.email = user.value?.email ?? ''
@@ -73,7 +76,7 @@ function saveEdit(): void {
     phone: editForm.phone.trim(),
     birthDate: editForm.birthDate,
     gender,
-    currentPassword: replacesIdentifiers.value ? editForm.currentPassword : null,
+    currentPassword: requiresPassword.value ? editForm.currentPassword : null,
   }
   updateProfile.mutate(request, {
     onSuccess: () => {
@@ -85,6 +88,7 @@ function saveEdit(): void {
     },
     onError: (error) => {
       if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
+        passwordRejected.value = true
         editError.value = getErrorMessage(error)
         return
       }
@@ -234,7 +238,7 @@ function savePassword(): void {
               $t('validation.genderRequired')
             }}</small>
           </div>
-          <div v-if="replacesIdentifiers" class="acc-form__field acc-form__field--wide">
+          <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
             <label for="p-current">{{
               $t('features.account.profile.identifierChange.passwordLabel')
             }}</label>
@@ -249,10 +253,10 @@ function savePassword(): void {
               autocomplete="current-password"
               :maxlength="128"
             />
-            <small v-if="editSubmitted && passwordMissing" class="acc-form__error">{{
+            <small v-if="editError" class="acc-form__error">{{ editError }}</small>
+            <small v-else-if="editSubmitted && passwordMissing" class="acc-form__error">{{
               $t('features.account.profile.identifierChange.passwordRequired')
             }}</small>
-            <small v-else-if="editError" class="acc-form__error">{{ editError }}</small>
           </div>
         </div>
         <div class="acc-form__actions">
