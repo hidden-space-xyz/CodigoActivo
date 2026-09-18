@@ -113,7 +113,9 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 
 ### Transport and proxy trust
 
-In Production the API accepts one forwarded hop, redirects HTTP to HTTPS and emits secure cookies. The base
+In Production the API accepts one forwarded hop, redirects HTTP to HTTPS and emits secure cookies.
+`X-Forwarded-For`/`X-Forwarded-Proto` are honoured only from loopback and private ranges (`127.0.0.0/8`,
+`::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`); other peers are ignored. The base
 Compose file keeps `api` and `db` off host ports but publishes nginx as `8080:8080` on all interfaces. The
 operator must terminate TLS externally, overwrite untrusted `X-Forwarded-For`/`X-Forwarded-Proto`, and
 prevent clients from bypassing the proxy to reach port `8080` directly. nginx sends HSTS only when the

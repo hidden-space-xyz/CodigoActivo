@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json.Serialization;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
@@ -7,11 +8,22 @@ using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using IPNetwork = System.Net.IPNetwork;
 
 namespace CodigoActivo.API.Configuration;
 
 internal static class ApiServiceConfiguration
 {
+    private static readonly IPNetwork[] TrustedProxyNetworks =
+    [
+        new(IPAddress.Parse("127.0.0.0"), 8),
+        new(IPAddress.Parse("::1"), 128),
+        new(IPAddress.Parse("10.0.0.0"), 8),
+        new(IPAddress.Parse("172.16.0.0"), 12),
+        new(IPAddress.Parse("192.168.0.0"), 16),
+        new(IPAddress.Parse("fc00::"), 7),
+    ];
+
     internal static void AddApiServices(this WebApplicationBuilder builder)
     {
         builder.Services.AddCodigoActivo(builder.Configuration);
@@ -38,6 +50,11 @@ internal static class ApiServiceConfiguration
 
             options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
+
+            foreach (var network in TrustedProxyNetworks)
+            {
+                options.KnownIPNetworks.Add(network);
+            }
         });
     }
 
