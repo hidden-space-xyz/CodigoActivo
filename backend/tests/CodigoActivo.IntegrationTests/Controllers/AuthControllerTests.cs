@@ -601,6 +601,20 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task LogoutRepeatedWithoutAValidSessionStillReturnsNoContent()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using (var first = await client.PostJsonAsync("/api/auth/logout", body: null, Ct))
+        {
+            first.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        using var second = await client.PostJsonAsync("/api/auth/logout", body: null, Ct);
+        second.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
     public async Task LogoutCopiedSessionCookieStopsWorkingAfterRevocation()
     {
         var client = CreateClient();

@@ -344,16 +344,30 @@ public class AuthController : ApiControllerBase
 
     /// <summary>
     /// Closes the caller's session: the server-side session row is revoked before the cookies are
-    /// deleted, so the presented ticket stops being accepted even if a copy of it survives.
+    /// deleted, so the presented ticket stops being accepted even if a copy of it survives. The
+    /// endpoint is idempotent and needs no valid session, so a ticket whose row is already gone is
+    /// still answered by clearing both cookies; a failed revocation is logged and never keeps them.
     /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("logout")]
-    [Authorize]
-    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
+    [AllowAnonymous]
+    public async Task<IActionResult> LogoutAsync(
+        [FromServices] ILogger<AuthController> logger,
+        CancellationToken ct
+    )
     {
         var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
-        await sessionTickets.EndSessionAsync(User, ct);
+        try
+        {
+            await sessionTickets.EndSessionAsync(User, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Failed to revoke the session row while signing out");
+        }
+
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);
         return NoContent();

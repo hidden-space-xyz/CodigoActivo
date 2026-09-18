@@ -23,9 +23,11 @@ authentication are not supported.
   a user takes effect on existing sessions; changing or resetting the password invalidates them and deletes
   that user's session rows.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
-  that cookie stops working immediately instead of lasting until its expiry; it still signs out when the row
-  is already gone. Deleting an account removes its rows by cascade. Tickets issued before this behaviour
-  existed carry no `sid`, so those users are signed out once and log in again.
+  that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
+  valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
+  cookies, including when the row is already gone or its deletion fails, which is logged. Deleting an account
+  removes its rows by cascade. Tickets issued before this behaviour existed carry no `sid`, so those users
+  are signed out once and log in again.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
   such as `UserType` are not authorization roles, with one handler-level exception:
