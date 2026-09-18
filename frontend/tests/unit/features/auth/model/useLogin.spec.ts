@@ -66,6 +66,33 @@ describe('useLogin', () => {
     expect(router.currentRoute.value.query).toEqual({})
   })
 
+  it.each(['//evil.test', 'https://evil.test', '/\\evil.test'])(
+    'ignores the hostile redirect %s',
+    async (redirect) => {
+      serveLogin()
+      const { result, router } = await mountComposable(() => useLogin(), {
+        route: `/login?redirect=${encodeURIComponent(redirect)}`,
+      })
+
+      result.submit()
+      await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
+
+      expect(router.currentRoute.value.query).toEqual({})
+    },
+  )
+
+  it('honours a redirect to /account', async () => {
+    serveLogin()
+    const { result, router } = await mountComposable(() => useLogin(), {
+      route: '/login?redirect=/account',
+    })
+
+    result.submit()
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
+
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/account' })
+  })
+
   it('flags an error and stays on the login page when the password is rejected', async () => {
     server.use(http.post('/api/auth/login', () => apiError(401, 'InvalidCredentials')))
     const { result, router } = await mountComposable(() => useLogin(), { route: '/login' })
