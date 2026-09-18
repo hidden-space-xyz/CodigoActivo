@@ -129,7 +129,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEligibleUserSendsGuidCodeAndPersistsHash()
+    public async Task HandleAsyncEligibleUserSendsRandomCodeAndPersistsHash()
     {
         var user = users.FindReturns(NewUser());
 
@@ -140,7 +140,8 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         var code = emailSender.LastCode();
-        Guid.TryParse(code, out _).Should().BeTrue("the reset code is a GUID");
+        code.Should()
+            .MatchRegex("^[0-9a-f]{64}$", "the reset code is 256 random bits in lowercase hex");
         user.PasswordResetCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
         user.PasswordResetExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
         user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);

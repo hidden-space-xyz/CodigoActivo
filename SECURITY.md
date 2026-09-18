@@ -135,9 +135,9 @@ isolation headers. See [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
   rejection is never persisted. `AssignActivity` skips this consent step when an administrator enrolls
   someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
   account is deleted.
-- Verification and password-reset links put the user id and code in the URL fragment
-  (`/reset-password#userId=…&code=…`), which browsers never send to the server; the page reads and removes it
-  from the address bar, so a reload needs the emailed link again.
+- Verification and password-reset links put the user id and a 256-bit code from a cryptographic random
+  generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers never send to the server;
+  the page reads and removes it from the address bar, so a reload needs the emailed link again.
 
 ### Event rating anonymity
 
