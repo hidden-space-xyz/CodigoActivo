@@ -35,6 +35,10 @@ Both application containers run as non-root, drop Linux capabilities, use `no-ne
 read-only root filesystems with explicit writable mounts. Health checks target `/api/auth/csrf` (API) and
 `/healthz` (nginx).
 
+nginx gzips text responses of 1 KiB or more on the fly, both static files and proxied API responses; the API
+itself does not compress. The `web` image build also stores a `.gz` sibling of each text asset, which nginx
+serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept-Encoding`.
+
 ### Capacity and rate limits
 
 nginx allows 8,192 connections per worker, 4,000 active client connections and 2,000 per IP (`web`'s open-file
