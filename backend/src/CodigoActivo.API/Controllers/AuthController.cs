@@ -348,15 +348,11 @@ public class AuthController : ApiControllerBase
     /// endpoint is idempotent and needs no valid session, so a ticket whose row is already gone is
     /// still answered by clearing both cookies; a failed revocation is logged and never keeps them.
     /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("logout")]
     [AllowAnonymous]
-    public async Task<IActionResult> LogoutAsync(
-        [FromServices] ILogger<AuthController> logger,
-        CancellationToken ct
-    )
+    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
     {
         var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
         try
@@ -365,7 +361,9 @@ public class AuthController : ApiControllerBase
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Failed to revoke the session row while signing out");
+            HttpContext
+                .RequestServices.GetRequiredService<ILogger<AuthController>>()
+                .LogError(ex, "Failed to revoke the session row while signing out");
         }
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

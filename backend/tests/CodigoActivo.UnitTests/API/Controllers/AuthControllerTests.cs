@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
@@ -38,6 +39,7 @@ public sealed class AuthControllerTests
         var services = new ServiceCollection();
         services.AddSingleton(authenticationService);
         services.AddSingleton(validator);
+        services.AddSingleton<ILogger<AuthController>>(NullLogger<AuthController>.Instance);
         var provider = services.BuildServiceProvider();
 
         var httpContext = new DefaultHttpContext { RequestServices = provider };
@@ -56,10 +58,7 @@ public sealed class AuthControllerTests
             ControllerContext = new ControllerContext { HttpContext = httpContext },
         };
 
-        var result = await controller.LogoutAsync(
-            NullLogger<AuthController>.Instance,
-            TestContext.Current.CancellationToken
-        );
+        var result = await controller.LogoutAsync(TestContext.Current.CancellationToken);
 
         result.Should().BeOfType<NoContentResult>();
         await authenticationService
