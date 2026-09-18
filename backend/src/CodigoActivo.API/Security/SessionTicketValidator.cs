@@ -3,7 +3,10 @@ using System.Security.Cryptography;
 using System.Text;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -12,26 +15,83 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Validates session ticket input before it is processed.
+/// Opens, validates and revokes the server-side state behind the session cookie. Every ticket names
+/// a <c>user_sessions</c> row through its <c>sid</c> claim, so a copied cookie stops working as soon
+/// as that row is deleted instead of lasting until the cookie expires.
 /// </summary>
 /// <param name="db">Database context used for persistence.</param>
-public sealed class SessionTicketValidator(CodigoActivoDbContext db)
+/// <param name="sessions">Repository used to persist and retrieve user sessions.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="options">Lifetime shared by the cookie and its session row.</param>
+public sealed class SessionTicketValidator(
+    CodigoActivoDbContext db,
+    IUserSessionRepository sessions,
+    IUnitOfWork uow,
+    IClock clock,
+    SessionLifetimeOptions options
+)
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
+    private const string SessionIdClaim = "sid";
 
     /// <summary>
-    /// Creates a principal.
+    /// Opens a session for a user whose second factor was accepted: it records a session row that
+    /// expires with the cookie, drops that user's already-expired rows, and returns the principal
+    /// carrying the new session identifier.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the matching claims principal, or <see langword="null"/> when it is not found.</returns>
-    public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
+    public async Task<ClaimsPrincipal?> StartSessionAsync(
         Guid userId,
         CancellationToken ct = default
     )
     {
-        var user = await FindSessionUserAsync(userId, ct);
-        return user is null ? null : BuildPrincipal(user);
+        var user = await FindSessionUserAsync(userId, sessionId: null, ct);
+        if (user is null)
+        {
+            return null;
+        }
+
+        var now = clock.UtcNow;
+        await sessions.RemoveAsync(
+            candidate => candidate.UserId == userId && candidate.ExpiresAt <= now,
+            ct
+        );
+
+        var session = new UserSession
+        {
+            UserId = userId,
+            CreatedAt = now,
+            ExpiresAt = now + options.Lifetime,
+        };
+        await sessions.AddAsync(session, ct);
+        await uow.SaveChangesAsync(ct);
+
+        return BuildPrincipal(user, session.Id);
+    }
+
+    /// <summary>
+    /// Revokes the session named by the presented ticket. Nothing happens when the ticket carries no
+    /// usable session identifier or the row was already removed, so callers can sign out regardless.
+    /// </summary>
+    /// <param name="principal">Authenticated principal whose claims are inspected.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public async Task EndSessionAsync(ClaimsPrincipal? principal, CancellationToken ct = default)
+    {
+        var userId = principal?.GetUserId();
+        var sessionId = ReadSessionId(principal);
+        if (userId is not { } user || sessionId is not { } session)
+        {
+            return;
+        }
+
+        await sessions.RemoveAsync(
+            candidate => candidate.Id == session && candidate.UserId == user,
+            ct
+        );
     }
 
     /// <summary>
@@ -42,14 +102,19 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
     public async Task ValidateAsync(CookieValidatePrincipalContext context)
     {
         var userId = context.Principal?.GetUserId();
+        var sessionId = ReadSessionId(context.Principal);
         var presentedFingerprint = context.Principal?.FindFirstValue(PasswordFingerprintClaim);
-        if (userId is null || string.IsNullOrEmpty(presentedFingerprint))
+        if (userId is null || sessionId is null || string.IsNullOrEmpty(presentedFingerprint))
         {
             await RejectAsync(context);
             return;
         }
 
-        var user = await FindSessionUserAsync(userId.Value, context.HttpContext.RequestAborted);
+        var user = await FindSessionUserAsync(
+            userId.Value,
+            sessionId,
+            context.HttpContext.RequestAborted
+        );
         if (
             user is null
             || !FixedTimeEquals(presentedFingerprint, Fingerprint(user.PasswordHash))
@@ -59,7 +124,7 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
             return;
         }
 
-        var refreshed = BuildPrincipal(user);
+        var refreshed = BuildPrincipal(user, sessionId.Value);
         if (!ClaimsMatch(context.Principal!, refreshed))
         {
             context.ReplacePrincipal(refreshed);
@@ -67,15 +132,31 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
         }
     }
 
-    private Task<SessionUser?> FindSessionUserAsync(Guid userId, CancellationToken ct)
+    private Task<SessionUser?> FindSessionUserAsync(
+        Guid userId,
+        Guid? sessionId,
+        CancellationToken ct
+    )
     {
-        return db
+        var candidates = db
             .Users.AsNoTracking()
             .Where(user =>
                 user.Id == userId
                 && user.UserStatusTypeId == SeedIds.UserStatusTypes.Active
                 && user.PasswordHash != null
-            )
+            );
+
+        if (sessionId is { } session)
+        {
+            var now = clock.UtcNow;
+            candidates = candidates.Where(user =>
+                db.UserSessions.Any(row =>
+                    row.Id == session && row.UserId == user.Id && row.ExpiresAt > now
+                )
+            );
+        }
+
+        return candidates
             .Select(user => new SessionUser(
                 user.Id,
                 user.FirstName,
@@ -87,13 +168,19 @@ public sealed class SessionTicketValidator(CodigoActivoDbContext db)
             .SingleOrDefaultAsync(ct);
     }
 
-    private static ClaimsPrincipal BuildPrincipal(SessionUser user)
+    private static Guid? ReadSessionId(ClaimsPrincipal? principal)
+    {
+        return Guid.TryParse(principal?.FindFirstValue(SessionIdClaim), out var id) ? id : null;
+    }
+
+    private static ClaimsPrincipal BuildPrincipal(SessionUser user, Guid sessionId)
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
             new(PasswordFingerprintClaim, Fingerprint(user.PasswordHash)),
+            new(SessionIdClaim, sessionId.ToString()),
         };
         if (!string.IsNullOrEmpty(user.Email))
         {

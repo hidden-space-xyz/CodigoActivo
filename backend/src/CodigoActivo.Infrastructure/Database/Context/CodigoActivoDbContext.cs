@@ -26,6 +26,10 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// Gets the user types value.
     /// </summary>
     public DbSet<UserType> UserTypes => Set<UserType>();
+    /// <summary>
+    /// Gets the user sessions value.
+    /// </summary>
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     /// <summary>
     /// Gets the events value.

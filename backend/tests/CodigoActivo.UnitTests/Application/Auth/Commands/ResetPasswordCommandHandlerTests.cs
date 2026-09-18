@@ -1,9 +1,11 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
@@ -17,6 +19,7 @@ public sealed class ResetPasswordCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly ResetPasswordCommandHandler sut;
 
     public ResetPasswordCommandHandlerTests()
@@ -26,7 +29,8 @@ public sealed class ResetPasswordCommandHandlerTests
             uow,
             clock,
             new FakePasswordHasher(),
-            new OtpValidator(clock, new FakePasswordHasher())
+            new OtpValidator(clock, new FakePasswordHasher()),
+            sessions
         );
     }
 
@@ -34,6 +38,16 @@ public sealed class ResetPasswordCommandHandlerTests
     {
         return uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private Task<int> AssertSessionsRevokedAsync()
+    {
+        return sessions
+            .Received(1)
+            .RemoveAsync(
+                Arg.Any<Expression<Func<UserSession, bool>>>(),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -147,5 +161,6 @@ public sealed class ResetPasswordCommandHandlerTests
         user.PasswordResetLastSentAt.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertSessionsRevokedAsync();
     }
 }

@@ -23,12 +23,14 @@ public sealed record ResetPasswordCommand(Guid UserId, ResetPasswordRequest Requ
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="otpValidator">The otp validator value.</param>
+/// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 public sealed class ResetPasswordCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
-    OtpValidator otpValidator
+    OtpValidator otpValidator,
+    IUserSessionRepository sessions
 ) : ICommandHandler<ResetPasswordCommand, Result>
 {
     /// <summary>
@@ -65,6 +67,7 @@ public sealed class ResetPasswordCommandHandler(
 
         user.ResetPassword(hasher.Hash(request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
+        await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
 
         return Result.Success();
     }

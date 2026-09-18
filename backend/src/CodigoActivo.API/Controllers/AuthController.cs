@@ -239,7 +239,7 @@ public class AuthController : ApiControllerBase
         }
 
         var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
-        var principal = await sessionTickets.CreatePrincipalAsync(userId.Value, ct);
+        var principal = await sessionTickets.StartSessionAsync(userId.Value, ct);
         if (principal is null)
         {
             return ToProblem(Error.Unauthorized(ErrorCode.InvalidCredentials));
@@ -343,13 +343,17 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the logout endpoint for auth.
+    /// Closes the caller's session: the server-side session row is revoked before the cookies are
+    /// deleted, so the presented ticket stops being accepted even if a copy of it survives.
     /// </summary>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("logout")]
     [Authorize]
-    public async Task<IActionResult> LogoutAsync()
+    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
     {
+        var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
+        await sessionTickets.EndSessionAsync(User, ct);
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);
         return NoContent();

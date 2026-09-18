@@ -436,6 +436,7 @@ public static class DependencyInjection
     private static void AddRepositories(IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IEventRatingRepository, EventRatingRepository>();
         services.AddScoped<IEventRatingSubmissionRepository, EventRatingSubmissionRepository>();

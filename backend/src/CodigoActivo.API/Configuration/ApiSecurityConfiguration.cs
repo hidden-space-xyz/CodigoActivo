@@ -36,6 +36,9 @@ internal static class ApiSecurityConfiguration
 
     private static void AddAuthentication(WebApplicationBuilder builder)
     {
+        var session = ReadSessionLifetime(builder.Configuration);
+        builder.Services.AddSingleton(session);
+
         builder
             .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
@@ -50,9 +53,7 @@ internal static class ApiSecurityConfiguration
                     : CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.SlidingExpiration = false;
-                options.ExpireTimeSpan = TimeSpan.FromHours(
-                    builder.Configuration.GetValue<double?>("Auth:ExpireHours") ?? 8
-                );
+                options.ExpireTimeSpan = session.Lifetime;
 
                 options.Events.OnRedirectToLogin = context =>
                     context.HttpContext.WriteApiErrorAsync(
@@ -103,6 +104,18 @@ internal static class ApiSecurityConfiguration
             .Configure<TwoFactorOptions>(
                 (options, twoFactor) => options.ExpireTimeSpan = twoFactor.ChallengeLifetime
             );
+    }
+
+    private static SessionLifetimeOptions ReadSessionLifetime(IConfiguration configuration)
+    {
+        var hours = configuration.GetValue<double?>("Auth:ExpireHours");
+        return new SessionLifetimeOptions
+        {
+            Lifetime =
+                hours is { } value && double.IsFinite(value) && value > 0
+                    ? TimeSpan.FromHours(value)
+                    : SessionLifetimeOptions.DefaultLifetime,
+        };
     }
 
     private static void AddAuthorization(IServiceCollection services)
