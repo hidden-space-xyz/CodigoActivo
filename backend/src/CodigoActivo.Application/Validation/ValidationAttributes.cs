@@ -24,6 +24,11 @@ public sealed class NotBlankAttribute : ValidationAttribute
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class JsonStringAttribute : ValidationAttribute
 {
+    private static readonly JsonDocumentOptions ParseOptions = new()
+    {
+        AllowDuplicateProperties = false,
+    };
+
 /// <inheritdoc />
     public override bool IsValid(object? value)
     {
@@ -34,7 +39,7 @@ public sealed class JsonStringAttribute : ValidationAttribute
 
         try
         {
-            JsonDocument.Parse(text).Dispose();
+            JsonDocument.Parse(text, ParseOptions).Dispose();
             return true;
         }
         catch (JsonException)

@@ -7,6 +7,11 @@ namespace CodigoActivo.Domain.Storage;
 /// </summary>
 public static class RichTextDocument
 {
+    private static readonly JsonDocumentOptions ParseOptions = new()
+    {
+        AllowDuplicateProperties = false,
+    };
+
     /// <summary>
     /// Determines whether the rich-text document contains meaningful content.
     /// </summary>
@@ -21,7 +26,7 @@ public static class RichTextDocument
 
         try
         {
-            using var document = JsonDocument.Parse(richTextJson);
+            using var document = JsonDocument.Parse(richTextJson, ParseOptions);
             return !HasContent(document.RootElement);
         }
         catch (JsonException)
