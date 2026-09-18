@@ -213,6 +213,37 @@ describe('ProfileSection', () => {
     expect(openDialogs()).toHaveLength(1)
   })
 
+  it('asks for the current password when the server refuses it without a visible change', async () => {
+    serveProfile()
+    const bodies: unknown[] = []
+    server.use(
+      http.put('/api/users/:userId', async ({ request }) => {
+        bodies.push(await request.json())
+        return bodies.length === 1
+          ? apiError(400, 'UserCurrentPasswordIncorrect')
+          : HttpResponse.json(buildUserResponse())
+      }),
+    )
+    await renderSection()
+
+    await click(buttonByText(document.body, t('features.account.profile.editData')))
+    const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
+    expect(dialog.querySelector('#p-current')).toBeNull()
+    await click(buttonByText(dialog, t('common.save')))
+
+    await vi.waitFor(() => expect(dialog.querySelector('#p-current')).not.toBeNull())
+    expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect'))
+    expect(notificationTexts()).toHaveLength(0)
+
+    await fill(dialog, '#p-current', 'old-password')
+    await click(buttonByText(dialog, t('common.save')))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(2))
+    expect(bodies[0]).toMatchObject({ currentPassword: null })
+    expect(bodies[1]).toMatchObject({ currentPassword: 'old-password' })
+    await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
+  })
+
   it('requires a gender before saving the profile', async () => {
     serveProfile()
     const updated = vi.fn()

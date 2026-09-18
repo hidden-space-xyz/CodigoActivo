@@ -109,6 +109,26 @@ describe('UserFormDialog', () => {
     expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect'))
   })
 
+  it('reveals the password field when the server refuses the password without a visible change', async () => {
+    const { wrapper, dialog } = await renderDialog(adult)
+
+    expect(dialog.querySelector('#user-current-password')).toBeNull()
+
+    await wrapper.setProps({ error: t('errors.UserCurrentPasswordIncorrect') })
+
+    expect(dialog.querySelector('#user-current-password')).not.toBeNull()
+    expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect'))
+
+    await typeInto('#user-current-password', 'admin-password')
+    await wrapper.setProps({ error: '' })
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      email: 'ada@example.test',
+      currentPassword: 'admin-password',
+    })
+  })
+
   it('lets minors omit contact details and keeps their guardian', async () => {
     const { wrapper, dialog } = await renderDialog(minor)
 
