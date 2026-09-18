@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -263,6 +264,23 @@ internal static partial class SecurityLog
     public static partial void UserDeletedByAnotherUser(
         this ILogger logger,
         Guid actingUserId,
+        Guid userId
+    );
+
+    /// <summary>
+    /// Records that the automatic-message limiter refused a security notification, so the owner of
+    /// the account was never told about the change.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="securityChange">Change the dropped notification was reporting.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Security notification {SecurityChange} for user {UserId} was dropped by the email limiter"
+    )]
+    public static partial void SecurityNotificationRateLimited(
+        this ILogger logger,
+        AccountSecurityChange securityChange,
         Guid userId
     );
 

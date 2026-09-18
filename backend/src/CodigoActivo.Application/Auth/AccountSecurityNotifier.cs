@@ -10,7 +10,8 @@ namespace CodigoActivo.Application.Auth;
 
 /// <summary>
 /// Tells the owner of an account that its authentication data changed. Handlers call it after a
-/// successful commit: a delivery failure is swallowed, so it never undoes the change it reports.
+/// successful commit: a delivery failure, including a refusal from the message limiter, is logged
+/// and swallowed, so it never undoes the change it reports.
 /// </summary>
 /// <param name="emailSender">The email sender value.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -92,7 +93,7 @@ public sealed class AccountSecurityNotifier(
         }
         catch (EmailRateLimitedException)
         {
-            return;
+            logger.SecurityNotificationRateLimited(change, userId);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

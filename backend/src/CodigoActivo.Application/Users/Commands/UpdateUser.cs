@@ -86,22 +86,21 @@ public sealed class UpdateUserCommandHandler(
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
-        if (
-            previousEmail is not null
-            && (
-                !string.Equals(previousEmail, user.Email, StringComparison.Ordinal)
-                || !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal)
-            )
-        )
+        var emailChanged = !string.Equals(previousEmail, user.Email, StringComparison.Ordinal);
+        var phoneChanged = !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal);
+        if (emailChanged || phoneChanged)
         {
             logger.LoginIdentifiersChanged(command.ActingUserId, user.Id);
-            await securityNotifier.NotifyIdentifiersChangedAsync(
-                user.Id,
-                previousEmail,
-                user.FirstName,
-                user.Email,
-                ct
-            );
+            if (previousEmail is not null)
+            {
+                await securityNotifier.NotifyIdentifiersChangedAsync(
+                    user.Id,
+                    previousEmail,
+                    user.FirstName,
+                    emailChanged ? user.Email : null,
+                    ct
+                );
+            }
         }
 
         return await getById.HandleAsync(new GetUserByIdQuery(command.UserId), ct);
