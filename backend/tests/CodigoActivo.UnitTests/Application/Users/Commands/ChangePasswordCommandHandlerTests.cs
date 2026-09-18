@@ -174,6 +174,25 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncSaveChangesFailureDoesNotQueueTheAlert()
+    {
+        var user = NewUser();
+        user.PasswordHash = hasher.Hash("correct");
+        users.FindReturns(user);
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new InvalidOperationException("db down"));
+
+        Func<Task> act = () =>
+            sut.HandleAsync(
+                new ChangePasswordCommand(user.Id, new ChangePasswordRequest("correct", "brandnew")),
+                TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        emailSender.Sent.Should().BeEmpty("the alert is only queued once the commit succeeds");
+    }
+
+    [Fact]
     public async Task HandleAsyncValidCurrentPasswordClearsPendingPasswordReset()
     {
         var user = NewUser();

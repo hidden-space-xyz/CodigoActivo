@@ -5,6 +5,7 @@ using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
@@ -22,6 +23,7 @@ public sealed class ResetPasswordCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly ResetPasswordCommandHandler sut;
 
     public ResetPasswordCommandHandlerTests()
@@ -34,7 +36,7 @@ public sealed class ResetPasswordCommandHandlerTests
             new OtpValidator(clock, new FakePasswordHasher()),
             sessions,
             new AccountSecurityNotifier(
-                new RecordingEmailSender(),
+                emailSender,
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
@@ -171,5 +173,45 @@ public sealed class ResetPasswordCommandHandlerTests
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await AssertSessionsRevokedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncCorrectCodeQueuesExactlyOnePasswordResetAlertToTheOwner()
+    {
+        var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
+
+        var result = await sut.HandleAsync(
+            new ResetPasswordCommand(
+                user.Id,
+                new ResetPasswordRequest("the-reset-code", "newPassword123")
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
+        message.TextBody.Should().NotContain("newPassword123").And.NotContain("the-reset-code");
+    }
+
+    [Fact]
+    public async Task HandleAsyncSaveChangesFailureDoesNotQueueTheAlert()
+    {
+        var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new InvalidOperationException("db down"));
+
+        Func<Task> act = () =>
+            sut.HandleAsync(
+                new ResetPasswordCommand(
+                    user.Id,
+                    new ResetPasswordRequest("the-reset-code", "newPassword123")
+                ),
+                TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        emailSender.Sent.Should().BeEmpty("the alert is only queued once the commit succeeds");
     }
 }

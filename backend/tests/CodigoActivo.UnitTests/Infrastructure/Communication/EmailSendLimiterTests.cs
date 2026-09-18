@@ -155,6 +155,25 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
+    public void TryConsumeSecurityAlertCannotDipIntoTheCredentialReserve()
+    {
+        var limiter = new EmailSendLimiter(Options(), new TestClock());
+
+        for (var i = 0; i < 6; i++)
+        {
+            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test");
+        }
+
+        limiter
+            .TryConsume(EmailKind.SecurityAlert, "owner@example.test")
+            .Scope.Should()
+            .Be(
+                EmailLimitScope.Global,
+                "a security notification is not credential mail and must not use the reserve"
+            );
+    }
+
+    [Fact]
     public void TryConsumeReserveWiderThanTheGlobalBurstStillDeliversAutomaticMail()
     {
         var limiter = new EmailSendLimiter(

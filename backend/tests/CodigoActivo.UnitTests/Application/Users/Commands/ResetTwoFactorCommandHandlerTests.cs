@@ -4,6 +4,7 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
@@ -22,6 +23,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
     private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly User actingAdmin;
     private readonly ResetTwoFactorCommandHandler sut;
 
@@ -35,7 +37,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
             clock,
             uow,
             new AccountSecurityNotifier(
-                new RecordingEmailSender(),
+                emailSender,
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
@@ -129,5 +131,9 @@ public sealed class ResetTwoFactorCommandHandlerTests
         user.TwoFactorLockedUntil.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
+        message.TextBody.Should().NotContain("protected:secret").And.NotContain(ActingPassword);
     }
 }

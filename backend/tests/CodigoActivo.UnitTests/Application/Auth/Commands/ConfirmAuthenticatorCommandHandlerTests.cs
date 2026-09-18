@@ -4,6 +4,7 @@ using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -23,6 +24,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
+    private readonly RecordingEmailSender emailSender = new();
     private readonly ConfirmAuthenticatorCommandHandler sut;
 
     public ConfirmAuthenticatorCommandHandlerTests()
@@ -38,7 +40,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
             new AccountSecurityNotifier(
-                new RecordingEmailSender(),
+                emailSender,
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
@@ -134,5 +136,9 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         user.LoginCodeHash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.ToAddress.Should().Be(user.Email);
+        message.TextBody.Should().NotContain(Secret).And.NotContain("123456");
     }
 }
