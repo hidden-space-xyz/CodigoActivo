@@ -19,6 +19,8 @@ public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginC
 /// <summary>
 /// Executes the password step of the login. A correct password never opens a session by itself:
 /// it opens a second-factor challenge that <see cref="VerifyTwoFactorLoginCommandHandler"/> closes.
+/// An identifier matching no account still pays the same Argon2 work, so the response time does not
+/// disclose which identifiers exist.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -55,6 +57,7 @@ public sealed class LoginCommandHandler(
 
         if (user is null)
         {
+            credentialTiming.Verify(command.Request.Password, null);
             logger.LoginUnknownIdentifierRejected();
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
         }

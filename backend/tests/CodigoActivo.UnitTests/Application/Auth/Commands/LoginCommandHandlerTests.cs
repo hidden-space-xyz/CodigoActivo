@@ -8,6 +8,7 @@ using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Security;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -24,11 +25,11 @@ public sealed class LoginCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly TwoFactorOptions twoFactor = new();
     private readonly RecordingLogger<LoginCommandHandler> logger = new();
+    private readonly CountingPasswordHasher hasher = new();
     private readonly LoginCommandHandler sut;
 
     public LoginCommandHandlerTests()
     {
-        var hasher = new FakePasswordHasher();
         var accountEmails = new AccountEmails(
             emailSender,
             new AccountVerificationOptions(),
@@ -83,6 +84,25 @@ public sealed class LoginCommandHandlerTests
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncUnknownIdentifierStillPaysTheSameHashingWorkAsAKnownOne()
+    {
+        User? missing = null;
+        users
+            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(missing);
+
+        var result = await LoginAsync("nobody@test.com");
+
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        hasher.VerifyCalls.Should().Be(1);
+
+        Returns(NewUser(passwordHash: "fake:correct"));
+        await LoginAsync(password: "wrong");
+
+        hasher.VerifyCalls.Should().Be(2);
     }
 
     [Theory]
@@ -278,5 +298,23 @@ public sealed class LoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
         await AssertNotSavedAsync();
+    }
+
+    private sealed class CountingPasswordHasher : IPasswordHasher
+    {
+        private readonly FakePasswordHasher inner = new();
+
+        public int VerifyCalls { get; private set; }
+
+        public string Hash(string password)
+        {
+            return inner.Hash(password);
+        }
+
+        public bool Verify(string password, string hash)
+        {
+            VerifyCalls++;
+            return inner.Verify(password, hash);
+        }
     }
 }
