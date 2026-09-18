@@ -40,8 +40,6 @@ public sealed class GetEventSignupStatsQueryHandlerTests
             executor
         );
 
-        // Every scenario needs the two catalogs to resolve, even the ones that never look at
-        // assignments: the response always echoes the full role and status catalogs.
         roleTypeRepository
             .Query()
             .Returns(
@@ -177,7 +175,6 @@ public sealed class GetEventSignupStatsQueryHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        // Admin authorization never consults the user's type.
         users.DidNotReceiveWithAnyArgs().Query();
     }
 
@@ -218,7 +215,6 @@ public sealed class GetEventSignupStatsQueryHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ErrorCode.AccessDenied);
-        // Denied before the event is even looked up.
         await events
             .DidNotReceiveWithAnyArgs()
             .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>());
@@ -296,7 +292,6 @@ public sealed class GetEventSignupStatsQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.EventId.Should().Be(eventId);
-        // Ordered by start time: the early activity's cells come first.
         result.Value.Activities.Select(a => a.ActivityId)
             .Should()
             .Equal(earlyActivity.Id, lateActivity.Id);
@@ -398,9 +393,6 @@ public sealed class GetEventSignupStatsQueryHandlerTests
         var json = JsonSerializer.Serialize(result.Value);
         var lowerJson = json.ToLowerInvariant();
 
-        // This is the privacy invariant the design mandates: only aggregated counts and catalog
-        // labels may leave the handler. If a future change appends user identity to the response
-        // (under any casing convention), one of these assertions must fail.
         json.Should().NotContain(seededUserId.ToString());
         json.Should().NotContain(seededFirstName);
         json.Should().NotContain(seededLastName);

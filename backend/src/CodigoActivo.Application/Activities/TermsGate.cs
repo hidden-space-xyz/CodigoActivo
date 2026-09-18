@@ -77,7 +77,6 @@ public sealed class TermsGate(
             {
                 if (!requiredById.TryGetValue(decision.TermsDocumentId, out var isRequired))
                 {
-                    // Not linked to this event.
                     continue;
                 }
 
@@ -87,19 +86,9 @@ public sealed class TermsGate(
                 {
                     if (existing.Accepted || !accepted)
                     {
-                        // An acceptance is the proof of consent: immutable, never asked again.
-                        // A rejection only changes when the incoming decision accepts instead: a
-                        // repeated rejection is not a change, so the row (and its original
-                        // DecidedAt) is left untouched instead of stamping a needless update. This
-                        // also covers a required document whose stored decision is a rejection:
-                        // it never persists another rejection, leaving it undecided so a later
-                        // call can still accept it.
                         continue;
                     }
 
-                    // The stored decision is a rejection that the caller is now accepting: update
-                    // it in place instead of inserting a new row (the primary key would reject
-                    // that anyway).
                     existing.Accepted = true;
                     existing.DecidedAt = clock.UtcNow;
                     continue;
@@ -107,7 +96,6 @@ public sealed class TermsGate(
 
                 if (isRequired && !accepted)
                 {
-                    // Same rule as above, for a document that has no decision at all yet.
                     continue;
                 }
 

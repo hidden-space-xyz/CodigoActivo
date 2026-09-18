@@ -64,7 +64,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
 
         result.Documents.Should().BeEmpty();
         result.SignupBlocked.Should().BeFalse();
-        // Short-circuits before consulting the user's decisions: nothing to decide.
         events.DidNotReceiveWithAnyArgs().QueryTermsAcceptances();
     }
 
@@ -221,7 +220,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
         var firstId = Guid.NewGuid();
         var secondId = Guid.NewGuid();
         var thirdId = Guid.NewGuid();
-        // Supplied out of display order on purpose: the handler must sort, not preserve input order.
         HasDocuments(
             NewDocument(eventId, thirdId, required: false, displayOrder: 2, name: "Tercero"),
             NewDocument(eventId, firstId, required: false, displayOrder: 0, name: "Primero"),

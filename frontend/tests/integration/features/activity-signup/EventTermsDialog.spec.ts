@@ -157,8 +157,6 @@ describe('EventTermsDialog confirm decisions', () => {
   })
 
   it('does not include a decision for a document the caller already resolved', async () => {
-    // The already-decided document is simply not part of `documents`; only the pending one gets a
-    // decision, so confirming cannot resend a choice for something already accepted/rejected.
     const { wrapper } = await renderDialog([OPTIONAL_DOC])
 
     await clickElement(buttonByText(t('features.activitySignup.terms.confirm')))

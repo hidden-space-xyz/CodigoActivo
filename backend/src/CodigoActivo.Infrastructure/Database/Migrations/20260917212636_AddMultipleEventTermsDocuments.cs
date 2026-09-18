@@ -11,8 +11,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // 1. Create the bridge table first, while events.terms_document_id still exists, so the
-            //    backfill below can read from it.
             migrationBuilder.CreateTable(
                 name: "event_terms_documents",
                 columns: table => new
@@ -44,15 +42,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 table: "event_terms_documents",
                 column: "terms_document_id");
 
-            // 2. Backfill: every event that already had a single terms document becomes a required,
-            //    first-position (display_order 0) link in the bridge table.
             migrationBuilder.Sql(
                 "INSERT INTO event_terms_documents (event_id, terms_document_id, is_required, display_order) "
                     + "SELECT id, terms_document_id, true, 0 FROM events WHERE terms_document_id IS NOT NULL;"
             );
 
-            // 3. The single-document column and its supporting foreign key/index are no longer
-            //    needed once the bridge table carries the same information.
             migrationBuilder.DropForeignKey(
                 name: "fk_events_terms_documents_terms_document_id",
                 table: "events");
@@ -65,9 +59,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "terms_document_id",
                 table: "events");
 
-            // 4. Widen event_terms_acceptances to carry one row per decided document instead of one
-            //    row per event. Existing rows only ever recorded an acceptance (there was no
-            //    rejection concept before), so they backfill as accepted = true.
             migrationBuilder.DropPrimaryKey(
                 name: "pk_event_terms_acceptances",
                 table: "event_terms_acceptances");
@@ -83,8 +74,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 table: "event_terms_acceptances",
                 newName: "decided_at");
 
-            // The primary key widens to (event_id, user_id, terms_document_id); this does not
-            // collide with any existing row because (event_id, user_id) was already unique.
             migrationBuilder.AddPrimaryKey(
                 name: "pk_event_terms_acceptances",
                 table: "event_terms_acceptances",
@@ -94,10 +83,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // The Down migration loses data: a user's multiple decisions per event (including any
-            // rejections) collapse back into a single accepted/rejected marker, and an event's
-            // multiple linked documents collapse into the single one that was required first. See
-            // DEPLOYMENT.md for the required backup before reverting this migration in production.
             migrationBuilder.Sql("DELETE FROM event_terms_acceptances WHERE accepted = false;");
             migrationBuilder.Sql(
                 """
