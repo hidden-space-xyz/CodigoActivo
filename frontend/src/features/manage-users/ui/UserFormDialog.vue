@@ -16,6 +16,8 @@ const props = defineProps<{
   user: User | null
   /** Shows a loading state on the save button while the parent persists the changes. */
   saving: boolean
+  /** Rejection reported by the parent, such as an incorrect password; empty hides it. */
+  error: string
 }>()
 
 const emit = defineEmits<{
@@ -23,7 +25,9 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   /**
    * Fired with the validated changes. Email and phone are required for adults only, blank values
-   * are sent as `null`, and the user's current `parentId` is preserved.
+   * are sent as `null`, and the user's current `parentId` is preserved. `currentPassword` carries
+   * the signed-in user's password when the change replaces the login identifiers of the account,
+   * and is `null` otherwise.
    */
   submit: [body: UpdateUserInput]
 }>()
@@ -35,6 +39,7 @@ interface UserForm {
   phone: string
   birthDate: Date | null
   gender: Gender | null
+  currentPassword: string
 }
 
 const form = reactive<UserForm>({
@@ -44,6 +49,7 @@ const form = reactive<UserForm>({
   phone: '',
   birthDate: null,
   gender: null,
+  currentPassword: '',
 })
 const submitted = ref(false)
 const genders = genderOptions()
@@ -62,6 +68,16 @@ const emailInvalid = computed(() => {
   return value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 })
 const contactMissing = computed(() => !isMinor.value && (!form.email.trim() || !form.phone.trim()))
+const storedEmail = computed(() => props.user?.email ?? '')
+const storedPhone = computed(() => props.user?.phone ?? '')
+const replacesIdentifiers = computed(() => {
+  if (isMinor.value) return Boolean(storedEmail.value || storedPhone.value)
+  return (
+    form.email.trim().toLowerCase() !== storedEmail.value.toLowerCase() ||
+    form.phone.trim() !== storedPhone.value
+  )
+})
+const passwordMissing = computed(() => replacesIdentifiers.value && !form.currentPassword)
 
 watch(
   () => props.visible,
@@ -74,6 +90,7 @@ watch(
     form.phone = props.user?.phone ?? ''
     form.birthDate = parseDateOnly(props.user?.birthDate)
     form.gender = props.user?.gender ?? null
+    form.currentPassword = ''
   },
 )
 
@@ -89,6 +106,7 @@ function save(): void {
     birthDateInvalid.value ||
     emailInvalid.value ||
     contactMissing.value ||
+    passwordMissing.value ||
     !form.gender
   ) {
     return
@@ -104,6 +122,7 @@ function save(): void {
     birthDate: toDateOnly(birthDate),
     gender,
     parentId: props.user?.parentId ?? null,
+    currentPassword: replacesIdentifiers.value ? form.currentPassword : null,
   }
   emit('submit', body)
 }
@@ -205,6 +224,25 @@ function save(): void {
           $t('features.manageUsers.contactRequired')
         }}</small>
       </div>
+      <div v-if="replacesIdentifiers" class="form__field">
+        <label for="user-current-password">{{
+          $t('features.manageUsers.identifierChange.passwordLabel')
+        }}</label>
+        <p class="form__hint">{{ $t('features.manageUsers.identifierChange.message') }}</p>
+        <el-input
+          id="user-current-password"
+          v-model="form.currentPassword"
+          type="password"
+          show-password
+          autocomplete="current-password"
+          :maxlength="128"
+          :class="{ 'ca-invalid': (submitted && passwordMissing) || !!error }"
+        />
+        <small v-if="submitted && passwordMissing" class="form__error">{{
+          $t('features.manageUsers.identifierChange.passwordRequired')
+        }}</small>
+        <small v-else-if="error" class="form__error">{{ error }}</small>
+      </div>
     </form>
 
     <template #footer>
@@ -243,6 +281,13 @@ function save(): void {
 .form__error {
   color: var(--ca-danger-ink);
   font-size: 12.5px;
+}
+
+.form__hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ca-text-muted);
 }
 
 .form :deep(.el-select),

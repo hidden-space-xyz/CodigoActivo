@@ -74,6 +74,7 @@ describe('user requests', () => {
       birthDate: '1980-12-09',
       gender: 'Female',
       parentId: null,
+      currentPassword: null,
     } as const
 
     await expect(updateUserRequest('u1', input)).resolves.toMatchObject({ firstName: 'Grace' })

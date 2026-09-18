@@ -111,6 +111,7 @@ describe('useUsers', () => {
         birthDate: '1990-05-10',
         gender: 'Female',
         parentId: null,
+        currentPassword: null,
       },
     })
     await result.remove.mutateAsync('user-2')
@@ -119,7 +120,7 @@ describe('useUsers', () => {
     await result.resetTwoFactor.mutateAsync({ id: 'user-1', currentPassword: 'secret' })
 
     expect(requests).toEqual([
-      'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":"1990-05-10","gender":"Female","parentId":null}',
+      'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":"1990-05-10","gender":"Female","parentId":null,"currentPassword":null}',
       'DELETE user-2',
       'TYPE ?userTypeId=type-member',
       'ADMIN {"isAdmin":true,"currentPassword":"secret"}',

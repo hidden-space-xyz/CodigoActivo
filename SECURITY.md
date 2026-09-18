@@ -41,6 +41,12 @@ authentication are not supported.
   cannot be demoted. Public registration never grants administrator access; on an empty database, startup
   creates the first administrator from `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a
   user exists.
+- `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
+  password whenever the update would replace the account's login identifiers: a different email or phone,
+  or turning an account that still has an email, a phone or a password into a dependent minor. A missing or
+  wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave both
+  identifiers untouched need none. A new address is stored as given and is not confirmed by an emailed
+  code.
 
 ### Two-factor authentication
 
@@ -90,13 +96,14 @@ Passwords require 12–128 characters and are hashed with Argon2id, never stored
 performs fallback Argon2 work for unknown identifiers to reduce timing differences.
 
 Credential routes (both login steps and code resend, registration, verification, password recovery/change,
-authenticator enrollment/removal, administrator grants, second-factor resets and the two self-service
-account-deletion steps) have layered controls:
+authenticator enrollment/removal, administrator grants, second-factor resets, user updates and the two
+self-service account-deletion steps) have layered controls:
 
 - nginx caps `login`, `register`, `forgot-password`, `/api/auth/{id}/(verify|resend-verification|reset-password)`
   and `/api/users/{id}/(password|admin)` at 10 requests/second per client IP, burst 100; the remaining
-  credential routes (two-factor login/resend/authenticator/email, `users/{id}/two-factor/reset`,
-  `me/deletion*`) rely only on nginx's general 200 requests/second limit and the API controls below.
+  credential routes (two-factor login/resend/authenticator/email, `users/{id}`,
+  `users/{id}/two-factor/reset`, `me/deletion*`) rely only on nginx's general 200 requests/second limit and
+  the API controls below.
 - the API enforces 120 requests/minute per client IP in every environment on every credential route;
 - memory-hard credential work has a process-wide concurrency limit of 4 and a FIFO queue of 16.
 

@@ -21,7 +21,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         string? email = TestSeedData.MemberEmail,
         string? phone = "+34600000002",
         Gender gender = Gender.Female,
-        Guid? parentId = null
+        Guid? parentId = null,
+        string? currentPassword = null
     )
     {
         return new UpdateUserRequest(
@@ -31,7 +32,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             phone,
             new DateOnly(1992, 7, 30),
             gender,
-            parentId
+            parentId,
+            currentPassword
         );
     }
 
@@ -48,7 +50,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             null,
             ChildBirthDate,
             gender,
-            parentId
+            parentId,
+            null
         );
     }
 
@@ -375,6 +378,41 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.FirstName.Should().Be("Marta Renombrada");
         stored.Gender.Should().Be(Gender.Other);
+    }
+
+    [Fact]
+    public async Task UpdateChangingEmailWithoutPasswordReturnsBadRequest()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: "taken-over@codigoactivo.test"),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.Email.Should().Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
+    public async Task UpdateChangingEmailWithCurrentPasswordSucceeds()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(
+                email: "marta.nueva@codigoactivo.test",
+                currentPassword: TestSeedData.Password
+            ),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.Email.Should().Be("marta.nueva@codigoactivo.test");
     }
 
     [Fact]

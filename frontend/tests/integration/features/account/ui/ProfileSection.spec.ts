@@ -155,6 +155,7 @@ describe('ProfileSection', () => {
     await fill(dialog, '#p-phone', ' 611111111 ')
     await fill(dialog, '#p-dob', '1990-06-11')
     await selectGender(wrapper, 'Other')
+    await fill(dialog, '#p-current', 'old-password')
     await click(buttonByText(dialog, t('common.save')))
 
     await vi.waitFor(() => expect(received).toBeDefined())
@@ -168,6 +169,7 @@ describe('ProfileSection', () => {
         birthDate: '1990-06-11',
         gender: 'Other',
         parentId: null,
+        currentPassword: 'old-password',
       },
     })
     await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
@@ -175,6 +177,40 @@ describe('ProfileSection', () => {
     expect(notificationTexts().join()).toContain(t('features.account.profile.savedDetail'))
     expect(infoRows()[t('common.name')]).toBe('Augusta Lovelace')
     await vi.waitFor(() => expect(meRequests).toBe(2))
+  })
+
+  it('asks for the current password only when the email or the phone changes', async () => {
+    serveProfile()
+    const updated = vi.fn()
+    server.use(
+      http.put('/api/users/:userId', () => {
+        updated()
+        return apiError(400, 'UserCurrentPasswordIncorrect')
+      }),
+    )
+    await renderSection()
+
+    await click(buttonByText(document.body, t('features.account.profile.editData')))
+    const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
+    expect(dialog.querySelector('#p-current')).toBeNull()
+
+    await fill(dialog, '#p-email', 'augusta@example.test')
+    expect(dialog.querySelector('#p-current')).not.toBeNull()
+    await click(buttonByText(dialog, t('common.save')))
+
+    expect(dialog.textContent).toContain(
+      t('features.account.profile.identifierChange.passwordRequired'),
+    )
+    expect(updated).not.toHaveBeenCalled()
+
+    await fill(dialog, '#p-current', 'wrong')
+    await click(buttonByText(dialog, t('common.save')))
+
+    await vi.waitFor(() => expect(updated).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
+    )
+    expect(openDialogs()).toHaveLength(1)
   })
 
   it('requires a gender before saving the profile', async () => {

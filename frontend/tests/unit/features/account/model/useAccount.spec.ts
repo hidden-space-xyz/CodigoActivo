@@ -102,6 +102,7 @@ describe('useAccount', () => {
       phone: '611111111',
       birthDate: '1990-05-10',
       gender: 'Female' as const,
+      currentPassword: 'Str0ngPass!23',
     }
 
     await result.updateProfile.mutateAsync(input)

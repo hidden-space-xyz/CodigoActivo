@@ -6827,6 +6827,10 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

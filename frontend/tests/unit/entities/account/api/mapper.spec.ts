@@ -84,6 +84,7 @@ describe('account mapper', () => {
         phone: '611111111',
         birthDate: '1990-05-10',
         gender: 'Female',
+        currentPassword: 'Str0ngPass!23',
       }),
     ).toEqual({
       firstName: 'Ada',
@@ -93,6 +94,7 @@ describe('account mapper', () => {
       birthDate: '1990-05-10',
       gender: 'Female',
       parentId: null,
+      currentPassword: 'Str0ngPass!23',
     })
   })
 

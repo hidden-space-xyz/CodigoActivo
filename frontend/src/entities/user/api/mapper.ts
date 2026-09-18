@@ -43,5 +43,6 @@ export function toUpdateUserRequest(input: UpdateUserInput): UpdateUserRequest {
     birthDate: input.birthDate,
     gender: input.gender,
     parentId: input.parentId,
+    currentPassword: input.currentPassword,
   }
 }

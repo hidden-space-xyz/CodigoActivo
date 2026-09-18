@@ -88,7 +88,8 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Updates the selected user with the validated request.
+    /// Updates the selected user with the validated request. Replacing the login identifiers
+    /// requires the caller's password, so the endpoint shares the credential rate limits.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -97,6 +98,7 @@ public class UsersController : ApiControllerBase
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPut("{userId:guid}")]
     [AllowOnlySelf]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid userId,
         [FromBody] UpdateUserRequest request,
@@ -104,7 +106,7 @@ public class UsersController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new UpdateUserCommand(userId, request), ct));
+        return ToOk(await handler.HandleAsync(new UpdateUserCommand(userId, UserId, request), ct));
     }
 
     /// <summary>

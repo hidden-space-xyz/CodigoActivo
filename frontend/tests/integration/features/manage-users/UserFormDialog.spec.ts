@@ -19,9 +19,9 @@ import { renderWithProviders, t } from '../../../support/render'
 
 const TITLE = 'features.manageUsers.editHeader'
 
-async function renderDialog(user: User | null) {
+async function renderDialog(user: User | null, error = '') {
   const rendered = await renderWithProviders(UserFormDialog, {
-    props: { visible: false, user, saving: false },
+    props: { visible: false, user, saving: false, error },
     attach: true,
   })
   await rendered.wrapper.setProps({ visible: true })
@@ -62,6 +62,7 @@ describe('UserFormDialog', () => {
 
     await typeInto('#user-first-name', ' Augusta ')
     await typeInto('#user-phone', ' 611111111 ')
+    await typeInto('#user-current-password', 'admin-password')
     await click(findButton(t('common.save'), dialog))
 
     expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
@@ -72,7 +73,40 @@ describe('UserFormDialog', () => {
       birthDate: '1990-05-10',
       gender: 'Female',
       parentId: null,
+      currentPassword: 'admin-password',
     })
+  })
+
+  it('demands the signed-in password before replacing the login identifiers', async () => {
+    const { wrapper, dialog } = await renderDialog(adult)
+
+    expect(dialog.querySelector('#user-current-password')).toBeNull()
+
+    await typeInto('#user-email', 'augusta@example.test')
+    expect(dialog.querySelector('#user-current-password')).not.toBeNull()
+    await click(findButton(t('common.save'), dialog))
+
+    expect(dialog.textContent).toContain(
+      t('features.manageUsers.identifierChange.passwordRequired'),
+    )
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    await typeInto('#user-email', 'ADA@example.test')
+    expect(dialog.querySelector('#user-current-password')).toBeNull()
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      email: 'ADA@example.test',
+      currentPassword: null,
+    })
+  })
+
+  it('shows the rejection reported by the parent under the password field', async () => {
+    const { dialog } = await renderDialog(adult, t('errors.UserCurrentPasswordIncorrect'))
+
+    await typeInto('#user-email', 'augusta@example.test')
+
+    expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect'))
   })
 
   it('lets minors omit contact details and keeps their guardian', async () => {
@@ -89,6 +123,27 @@ describe('UserFormDialog', () => {
       birthDate: '2016-02-01',
       gender: 'Male',
       parentId: 'user-1',
+      currentPassword: null,
+    })
+  })
+
+  it('demands the password when an account with contact details becomes a minor', async () => {
+    const { wrapper, dialog } = await renderDialog(adult)
+    const picker = wrapper.findComponent(ElDatePicker)
+
+    picker.vm.$emit('update:modelValue', new Date(2016, 1, 1))
+    await flushPromises()
+    expect(dialog.querySelector('#user-current-password')).not.toBeNull()
+
+    await click(findButton(t('common.save'), dialog))
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    await typeInto('#user-current-password', 'admin-password')
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      birthDate: '2016-02-01',
+      currentPassword: 'admin-password',
     })
   })
 

@@ -8,6 +8,11 @@ export interface UpdateProfileInput {
   phone: string
   birthDate: string
   gender: Gender
+  /**
+   * Current password, required by the API only when the email or the phone changes, because both
+   * identify the account at login and carry its recovery and second-factor messages.
+   */
+  currentPassword: string | null
 }
 
 /** Password change form values; confirmation is checked by the form before this is built. */
