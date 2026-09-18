@@ -600,6 +600,48 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task LogoutCopiedSessionCookieStopsWorkingAfterRevocation()
+    {
+        var client = CreateClient();
+        await PassPasswordStepAsync(client, TestSeedData.AdminCredentials);
+        var ticket = await CompleteTwoFactorAndReadTicketAsync(
+            client,
+            Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.AdminEmail)
+        );
+
+        var copy = Factory.CreateDefaultClient();
+        copy.DefaultRequestHeaders.Add("Cookie", ticket);
+        using (var stolen = await copy.GetAsync(TestUri.Rel("/api/auth/me"), Ct))
+        {
+            stolen.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        using var logout = await client.PostJsonAsync("/api/auth/logout", body: null, Ct);
+        logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var replayed = await copy.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        replayed.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private static async Task<string> CompleteTwoFactorAndReadTicketAsync(
+        HttpClient client,
+        string code
+    )
+    {
+        using var response = await client.PostJsonAsync(
+            "/api/auth/login/two-factor",
+            new TwoFactorLoginRequest(code),
+            Ct
+        );
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return response
+            .Headers.GetValues("Set-Cookie")
+            .First(value => value.StartsWith("CodigoActivo.Session=", StringComparison.Ordinal))
+            .Split(';')[0];
+    }
+
     private async Task<string> RequestPasswordResetAsync(HttpClient client, string email)
     {
         using var response = await client.PostJsonAsync(

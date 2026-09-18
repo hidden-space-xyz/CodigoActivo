@@ -86,6 +86,13 @@ public interface IUserRepository : IDbRepository<User>
 }
 
 /// <summary>
+/// Persists and retrieves user session data from the database. Rows are created when a session
+/// cookie is issued and removed when it is revoked, so <c>RemoveAsync</c> is the normal way to end
+/// one session, every session of a user, or the rows that already expired.
+/// </summary>
+public interface IUserSessionRepository : IDbRepository<UserSession>;
+
+/// <summary>
 /// Persists and retrieves event data from the database.
 /// </summary>
 public interface IEventRepository : IDbRepository<Event>

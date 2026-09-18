@@ -1,7 +1,9 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
@@ -16,17 +18,28 @@ public sealed class ChangePasswordCommandHandlerTests
     private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly ChangePasswordCommandHandler sut;
 
     public ChangePasswordCommandHandlerTests()
     {
-        sut = new ChangePasswordCommandHandler(users, hasher, clock, uow);
+        sut = new ChangePasswordCommandHandler(users, hasher, clock, uow, sessions);
     }
 
     private Task<int> AssertNotSavedAsync()
     {
         return uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private Task<int> AssertSessionsRevokedAsync()
+    {
+        return sessions
+            .Received(1)
+            .RemoveAsync(
+                Arg.Any<Expression<Func<UserSession, bool>>>(),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -96,6 +109,7 @@ public sealed class ChangePasswordCommandHandlerTests
         user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertSessionsRevokedAsync();
     }
 
     [Fact]

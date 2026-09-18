@@ -15,10 +15,17 @@ authentication are not supported.
 ### Authentication and authorization
 
 - Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
-  eight hours by default. In Production it is `Secure` and uses a `__Host-` name.
-- Every authenticated request revalidates account status, password fingerprint and administrator flag against
-  the database. Blocking or demoting a user takes effect on existing sessions; changing the password
-  invalidates them.
+  eight hours by default. In Production it is `Secure` and uses a `__Host-` name. The ticket is not
+  self-sufficient: completing the second factor also writes a `user_sessions` row that expires with the cookie
+  and whose id travels in the ticket's `sid` claim, dropping that user's already-expired rows.
+- Every authenticated request revalidates account status, password fingerprint, administrator flag and the
+  `sid` row in one query, and rejects the ticket when any of them is missing or expired. Blocking or demoting
+  a user takes effect on existing sessions; changing or resetting the password invalidates them and deletes
+  that user's session rows.
+- `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
+  that cookie stops working immediately instead of lasting until its expiry; it still signs out when the row
+  is already gone. Deleting an account removes its rows by cascade. Tickets issued before this behaviour
+  existed carry no `sid`, so those users are signed out once and log in again.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
   such as `UserType` are not authorization roles, with one handler-level exception:

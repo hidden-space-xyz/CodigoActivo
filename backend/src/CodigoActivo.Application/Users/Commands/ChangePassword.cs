@@ -21,11 +21,13 @@ public sealed record ChangePasswordCommand(Guid UserId, ChangePasswordRequest Re
 /// <param name="hasher">The hasher value.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
     IClock clock,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    IUserSessionRepository sessions
 ) : ICommandHandler<ChangePasswordCommand, Result>
 {
     /// <summary>
@@ -57,6 +59,7 @@ public sealed class ChangePasswordCommandHandler(
 
         user.ResetPassword(hasher.Hash(command.Request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
+        await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
         return Result.Success();
     }
 }
