@@ -125,6 +125,35 @@ describe('useTwoFactorLogin', () => {
     expect(result.loginRoute.value).toEqual({ name: 'login' })
   })
 
+  it.each(['//evil.test', 'https://evil.test', '/\\evil.test'])(
+    'ignores the hostile redirect %s and goes home after verifying',
+    async (redirect) => {
+      serveChallenge()
+      serveVerify()
+      const { result, router } = await mountReady(
+        `/login/verify?redirect=${encodeURIComponent(redirect)}`,
+      )
+      result.form.code = '123456'
+
+      result.submit()
+      await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
+
+      expect(result.loginRoute.value).toEqual({ name: 'login' })
+    },
+  )
+
+  it('honours a redirect to /account after verifying', async () => {
+    serveChallenge()
+    serveVerify()
+    const { result, router } = await mountReady('/login/verify?redirect=/account')
+    result.form.code = '123456'
+
+    expect(result.loginRoute.value).toEqual({ name: 'login', query: { redirect: '/account' } })
+
+    result.submit()
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/account'))
+  })
+
   it('does not call the API for a blank code', async () => {
     serveChallenge()
     const received = serveVerify()
