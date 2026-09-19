@@ -19,7 +19,9 @@ public sealed record VerifyTwoFactorLoginCommand(Guid UserId, string Code)
 
 /// <summary>
 /// Executes the second step of the login. Wrong codes are counted and lock the account's second
-/// factor for a while once the limit is reached, so short codes cannot be brute forced.
+/// factor for a while once the limit is reached, so short codes cannot be brute forced. An account
+/// locked after repeated wrong passwords is refused like an expired challenge, even when its
+/// challenge ticket was obtained before the lock, so no session is opened on a locked account.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -55,6 +57,12 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
+        if (user.IsPasswordLocked())
+        {
+            logger.PasswordLockoutBlocked(user.Id, Operation);
+            return Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired);
         }
 
         var now = clock.UtcNow;

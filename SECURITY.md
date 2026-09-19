@@ -66,8 +66,9 @@ non-sliding) instead of a session; it is bound to the password fingerprint and a
 change or block invalidates it. The ticket is not self-sufficient either: the password step stores a random
 challenge id on the account and puts it in the ticket, so a copied challenge cookie is refused as soon as
 that id changes or is cleared — a newer password step rotates it, and an accepted second factor, a
-second-factor lockout, a password change or reset and signing out all clear it, making each challenge
-single-use instead of valid for its whole 10 minutes. Reading or resending the current challenge keeps
+second-factor lockout, a password lockout, a password change or reset and signing out all clear it, making
+each challenge single-use instead of valid for its whole 10 minutes. A challenge obtained just before the
+account was locked by wrong passwords is refused at both the ticket and the handler. Reading or resending the current challenge keeps
 working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor` once the
 second factor is accepted, which is also when the login timestamp is recorded.
 
