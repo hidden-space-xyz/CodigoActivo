@@ -178,7 +178,9 @@ undelivered messages at shutdown.
 ## Demo mode and initial administrator
 
 On first start the API writes the selected `DEMO_MODE` value to `/app/state/deployment-mode` in `api-state`;
-later starts must use the same value. Demo mode seeds realistic content and invented accounts under
+later starts must use the same value. Only a containerized API persists that file (the official .NET base
+image sets `DOTNET_RUNNING_IN_CONTAINER=true`); a direct `dotnet run` still validates `DEMO_MODE`, logs that
+the lock is skipped and writes nothing to the host filesystem. Demo mode seeds realistic content and invented accounts under
 `demo.codigoactivo.es` with random, discarded passwords, so they cannot log in; the demonstrator signs in with
 the bootstrap administrator from `.env`, the only administrator, whose login codes arrive at
 `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server.
