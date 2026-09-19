@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Auth;
 
 /// <summary>
-/// Declares every security event the application handlers emit. Templates only ever take entity
-/// identifiers, enum values and counts: never names, addresses, identifiers typed by the client,
-/// passwords, hashes, codes or tokens. Successful logins are deliberately absent.
+/// Declares every security event the application handlers and the session plumbing emit. Templates
+/// only ever take entity identifiers, enum values and counts: never names, addresses, identifiers
+/// typed by the client, passwords, hashes, codes or tokens.
 /// </summary>
-internal static partial class SecurityLog
+public static partial class SecurityLog
 {
     /// <summary>
     /// Records that the password step was attempted for an identifier that matches no account.
@@ -105,7 +105,10 @@ internal static partial class SecurityLog
         Level = LogLevel.Warning,
         Message = "Authenticator enrollment code rejected for user {UserId}"
     )]
-    public static partial void AuthenticatorEnrollmentCodeRejected(this ILogger logger, Guid userId);
+    public static partial void AuthenticatorEnrollmentCodeRejected(
+        this ILogger logger,
+        Guid userId
+    );
 
     /// <summary>
     /// Records that a route asking for the caller's own password got a wrong or missing one.
@@ -156,6 +159,48 @@ internal static partial class SecurityLog
     );
 
     /// <summary>
+    /// Records that the password step was accepted and a second-factor challenge was issued. No
+    /// session exists yet: only <see cref="LoginCompleted"/> reports one.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="twoFactorMethod">Second factor the challenge asks for.</param>
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Login password step accepted for user {UserId}; second-factor challenge issued "
+            + "for method {TwoFactorMethod}"
+    )]
+    public static partial void LoginChallengeIssued(
+        this ILogger logger,
+        Guid userId,
+        TwoFactorMethod twoFactorMethod
+    );
+
+    /// <summary>
+    /// Records that the second factor was accepted, which is when the session starts.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="twoFactorMethod">Second factor the accepted code came from.</param>
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Login completed for user {UserId} with second factor {TwoFactorMethod}"
+    )]
+    public static partial void LoginCompleted(
+        this ILogger logger,
+        Guid userId,
+        TwoFactorMethod twoFactorMethod
+    );
+
+    /// <summary>
+    /// Records that the session row behind a presented ticket was revoked on sign out.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    [LoggerMessage(Level = LogLevel.Information, Message = "Session ended for user {UserId}")]
+    public static partial void SessionEnded(this ILogger logger, Guid userId);
+
+    /// <summary>
     /// Records that an account replaced its password after proving the previous one.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -179,7 +224,10 @@ internal static partial class SecurityLog
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Authenticator enrolled for user {UserId}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Authenticator enrolled for user {UserId}"
+    )]
     public static partial void AuthenticatorEnrolled(this ILogger logger, Guid userId);
 
     /// <summary>
@@ -187,7 +235,10 @@ internal static partial class SecurityLog
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Authenticator removed for user {UserId}")]
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Authenticator removed for user {UserId}"
+    )]
     public static partial void AuthenticatorRemoved(this ILogger logger, Guid userId);
 
     /// <summary>

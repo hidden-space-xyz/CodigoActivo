@@ -117,6 +117,7 @@ public sealed class LoginCommandHandler(
         }
 
         await uow.SaveChangesAsync(ct);
+        logger.LoginChallengeIssued(user.Id, user.TwoFactorMethod);
 
         return new LoginChallenge(
             user.Id,

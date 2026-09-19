@@ -73,7 +73,8 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
                     command.Code,
                     user.AuthenticatorLastUsedStep
                 )
-            ) is not null,
+            )
+                is not null,
             _ => otpValidator.IsCodeValid(
                 command.Code,
                 user.LoginCodeHash,
@@ -104,8 +105,10 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
             user.AuthenticatorLastUsedStep = step;
         }
 
+        var acceptedMethod = user.TwoFactorMethod;
         user.CompleteTwoFactorLogin(now);
         await uow.SaveChangesAsync(ct);
+        logger.LoginCompleted(user.Id, acceptedMethod);
 
         var signedIn = await users.GetByIdWithDetailsAsync(user.Id, ct);
         return signedIn!.ToResponse();

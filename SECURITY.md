@@ -178,8 +178,10 @@ recovery); dead tuples until the next `VACUUM`; PostgreSQL statement logs if `lo
 backups/dumps taken **before** the migration, which still link ratings to authors (rotate them out, see
 [DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery)); differential observation of two dumps taken
 before/after a submission; and, for events with one or two ratings, deducible authorship from count or
-free-text content (no minimum-rating threshold exists). HTTP logs never record the authenticated user (see
-[Logging](#logging)), so correlation only narrows a rating to an IP, time and user agent.
+free-text content (no minimum-rating threshold exists). Logs also correlate: API security logs record the
+user id and time of every login (see [Logging](#logging)), while the nginx access log records client IP, time
+and request paths that can contain user ids, so an operator holding both can link an IP to an account and a
+rating submission request to a person. The stored rating content still carries no author reference.
 
 ### Logging
 
@@ -188,12 +190,13 @@ passwords/hashes, one-time codes, TOTP secrets, cookies, CSRF tokens, request bo
 and SMTP replies quoting a recipient or message. Logged: HTTP method, route path (GUID parameters), status,
 timing, entity ids, enum values, email kind, counts, SMTP status codes, and exception messages/stack traces.
 
-- **Security events**: handlers emit the events declared in `Application/Auth/SecurityLog.cs` — failed
+- **Security events**: handlers and the session plumbing emit the events declared in
+  `Application/Auth/SecurityLog.cs` — accepted password steps, completed logins and ended sessions, failed
   password and second-factor steps, lockouts, refused logins, password changes and resets, authenticator and
   administrator changes, wrong re-authentication passwords, identifier changes and deletions — at `Warning`
-  for failures and `Information` for completed changes, carrying only entity and catalog ids, enum values and
-  counts. Successful logins and session starts are deliberately absent; failed password and second-factor
-  attempts are recorded with the user id and the time, so the logs do show when a given account was tried.
+  for failures and `Information` for completed steps and changes, carrying only entity and catalog ids, enum
+  values and counts. Successful and failed authentication steps alike are recorded with the user id, the
+  second-factor method and the time, so the logs show when a given account signed in, was tried or signed out.
 - **API**: `RequestLoggingMiddleware` logs 4xx/5xx only. Only `CodigoActivo`, `Program` and
   `Microsoft.Hosting.Lifetime` log at `Information`; other categories log at `Warning`. EF Core
   sensitive-data logging stays disabled; `SmtpEmailSender` strips recipient/server replies from exceptions.

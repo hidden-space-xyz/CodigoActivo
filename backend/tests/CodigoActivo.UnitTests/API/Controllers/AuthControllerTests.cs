@@ -25,14 +25,18 @@ public sealed class AuthControllerTests
     {
         var sessions = Substitute.For<IUserSessionRepository>();
         sessions
-            .RemoveAsync(Arg.Any<Expression<Func<UserSession, bool>>>(), Arg.Any<CancellationToken>())
+            .RemoveAsync(
+                Arg.Any<Expression<Func<UserSession, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns<Task<int>>(_ => throw new InvalidOperationException("db down"));
         var validator = new SessionTicketValidator(
             null!,
             sessions,
             Substitute.For<IUnitOfWork>(),
             new TestClock(),
-            new SessionLifetimeOptions()
+            new SessionLifetimeOptions(),
+            NullLogger<SessionTicketValidator>.Instance
         );
 
         var authenticationService = Substitute.For<IAuthenticationService>();

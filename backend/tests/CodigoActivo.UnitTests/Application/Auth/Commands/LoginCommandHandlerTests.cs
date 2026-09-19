@@ -44,7 +44,12 @@ public sealed class LoginCommandHandlerTests
             clock,
             new CredentialTimingProtector(hasher),
             twoFactor,
-            new LoginCodeIssuer(hasher, twoFactor, accountEmails, NullLogger<LoginCodeIssuer>.Instance),
+            new LoginCodeIssuer(
+                hasher,
+                twoFactor,
+                accountEmails,
+                NullLogger<LoginCodeIssuer>.Instance
+            ),
             logger
         );
     }
@@ -138,7 +143,11 @@ public sealed class LoginCommandHandlerTests
 
         await LoginAsync(password: "wrong");
 
-        logger.Entries.Should().ContainSingle().Which.Should().Be($"Login password step failed for user {known.Id}");
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be($"Login password step failed for user {known.Id}");
         logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Warning);
 
         users
@@ -188,8 +197,13 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync("  ana@test.com  ");
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new LoginChallenge(user.Id, TwoFactorMethod.Email, "a***@test.com"));
-        result.Value.ToResponse().Should().Be(new LoginChallengeResponse(TwoFactorMethod.Email, "a***@test.com"));
+        result
+            .Value.Should()
+            .Be(new LoginChallenge(user.Id, TwoFactorMethod.Email, "a***@test.com"));
+        result
+            .Value.ToResponse()
+            .Should()
+            .Be(new LoginChallengeResponse(TwoFactorMethod.Email, "a***@test.com"));
 
         var code = emailSender.LastLoginCode();
         emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.TwoFactorCode);
@@ -204,9 +218,46 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncAcceptedPasswordLogsTheIssuedChallengeWithIdsAndMethodOnly()
+    {
+        var user = Returns(NewUser());
+
+        await LoginAsync("  ana@test.com  ");
+
+        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Information);
+        entry
+            .Message.Should()
+            .Be(
+                $"Login password step accepted for user {user.Id}; second-factor challenge issued "
+                    + "for method Email"
+            )
+            .And.NotContain("ana@test.com");
+    }
+
+    [Fact]
+    public async Task HandleAsyncAuthenticatorUserLogsTheIssuedChallengeWithItsOwnMethod()
+    {
+        var user = Returns(NewUserWithAuthenticator("SECRET"));
+
+        await LoginAsync();
+
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be(
+                $"Login password step accepted for user {user.Id}; second-factor challenge issued "
+                    + "for method Authenticator"
+            );
+    }
+
+    [Fact]
     public async Task HandleAsyncRecentCodeStillValidReusesItInsteadOfEmailingAgain()
     {
-        var user = Returns(NewUserWithLoginCode(clock, code: "654321", lastSentAt: clock.UtcNow.AddSeconds(-30)));
+        var user = Returns(
+            NewUserWithLoginCode(clock, code: "654321", lastSentAt: clock.UtcNow.AddSeconds(-30))
+        );
 
         var result = await LoginAsync();
 
@@ -219,7 +270,9 @@ public sealed class LoginCommandHandlerTests
     [Fact]
     public async Task HandleAsyncOldCodeOutsideCooldownIssuesANewOne()
     {
-        var user = Returns(NewUserWithLoginCode(clock, code: "654321", lastSentAt: clock.UtcNow.AddMinutes(-2)));
+        var user = Returns(
+            NewUserWithLoginCode(clock, code: "654321", lastSentAt: clock.UtcNow.AddMinutes(-2))
+        );
 
         var result = await LoginAsync();
 
