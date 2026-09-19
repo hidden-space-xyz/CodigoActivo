@@ -17,7 +17,8 @@ authentication are not supported.
 - Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
   eight hours by default. In Production it is `Secure` and uses a `__Host-` name. The ticket is not
   self-sufficient: completing the second factor also writes a `user_sessions` row whose id travels in the
-  ticket's `sid` claim, dropping that user's already-expired rows. The row carries the expiry that decides
+  ticket's `sid` claim, dropping that user's already-expired rows; a background worker additionally deletes
+  every expired row on the `SessionCleanup:IntervalMinutes` schedule. The row carries the expiry that decides
   access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its row,
   and the ticket is rejected as soon as the row is missing or expired.
 - Every authenticated request revalidates account status, password fingerprint, administrator flag and the

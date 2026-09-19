@@ -44,6 +44,7 @@ using CodigoActivo.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 
 namespace CodigoActivo.Composition;
@@ -66,6 +67,7 @@ public static class DependencyInjection
     {
         AddPersistence(services, configuration);
         AddRepositories(services);
+        AddSessionCleanup(services, configuration);
         AddFileStorage(services, configuration);
         AddClock(services, configuration);
         AddApplicationOptions(services, configuration);
@@ -170,7 +172,9 @@ public static class DependencyInjection
                 TimeSpan.FromMinutes,
                 TwoFactorOptions.DefaultLockoutDuration
             ),
-            Issuer = string.IsNullOrWhiteSpace(issuer) ? TwoFactorOptions.DefaultIssuer : issuer.Trim(),
+            Issuer = string.IsNullOrWhiteSpace(issuer)
+                ? TwoFactorOptions.DefaultIssuer
+                : issuer.Trim(),
         };
         services.AddSingleton(options);
 
@@ -227,7 +231,10 @@ public static class DependencyInjection
             FromName = configuration["SMTP_FROM_NAME"] ?? "Código Activo",
         };
 
-        if (string.IsNullOrWhiteSpace(options.Host) || string.IsNullOrWhiteSpace(options.FromAddress))
+        if (
+            string.IsNullOrWhiteSpace(options.Host)
+            || string.IsNullOrWhiteSpace(options.FromAddress)
+        )
         {
             throw new InvalidOperationException(
                 "SMTP is not configured (SMTP_HOST and SMTP_FROM_ADDRESS are required). "
@@ -454,6 +461,25 @@ public static class DependencyInjection
         services.AddScoped<ITermsDocumentRepository, TermsDocumentRepository>();
         services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
+    }
+
+    private static void AddSessionCleanup(IServiceCollection services, IConfiguration configuration)
+    {
+        var interval = ReadTimeSpan(
+            configuration["SessionCleanup:IntervalMinutes"],
+            TimeSpan.FromMinutes,
+            SessionCleanupOptions.DefaultInterval
+        );
+        services.AddSingleton(
+            new SessionCleanupOptions
+            {
+                Interval =
+                    interval > SessionCleanupOptions.MaxInterval
+                        ? SessionCleanupOptions.MaxInterval
+                        : interval,
+            }
+        );
+        services.AddHostedService<ExpiredSessionCleaner>();
     }
 
     private static void AddFileStorage(IServiceCollection services, IConfiguration configuration)
