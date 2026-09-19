@@ -27,10 +27,11 @@ const emit = defineEmits<{
   /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
   /**
-   * Fired with the validated changes. Email and phone are required for adults only, blank values
-   * are sent as `null`, and the user's current `parentId` is preserved. `currentPassword` carries
-   * the signed-in user's password when the change replaces the login identifiers of the account or
-   * the server already refused one, and is `null` otherwise.
+   * Fired with the validated changes. Email and phone are optional only while the user is a
+   * dependent minor, blank values are sent as `null`, and the user's current `parentId` is
+   * preserved. `currentPassword` carries the signed-in user's password when the change replaces
+   * the login identifiers of the account or the server already refused one, and is `null`
+   * otherwise.
    */
   submit: [body: UpdateUserInput]
 }>()
@@ -61,10 +62,13 @@ function disabledBirthDate(date: Date): boolean {
   return date > new Date()
 }
 
-const isMinor = computed(() => {
+const isDependent = computed(() => Boolean(props.user?.parentId))
+const isMinorBirthDate = computed(() => {
   const age = ageFrom(form.birthDate)
   return age !== null && age < 18
 })
+const isMinor = computed(() => isDependent.value && isMinorBirthDate.value)
+const minorNotAllowed = computed(() => !isDependent.value && isMinorBirthDate.value)
 const birthDateInvalid = computed(() => !form.birthDate || form.birthDate > new Date())
 const emailInvalid = computed(() => {
   const value = form.email.trim()
@@ -74,7 +78,7 @@ const contactMissing = computed(() => !isMinor.value && (!form.email.trim() || !
 const storedEmail = computed(() => props.user?.email ?? '')
 const storedPhone = computed(() => props.user?.phone ?? '')
 const replacesIdentifiers = computed(() => {
-  if (isMinor.value) return Boolean(storedEmail.value || storedPhone.value)
+  if (isMinor.value) return false
   return (
     form.email.trim().toLowerCase() !== storedEmail.value.toLowerCase() ||
     form.phone.trim() !== storedPhone.value
@@ -117,6 +121,7 @@ function save(): void {
     !form.firstName.trim() ||
     !form.lastName.trim() ||
     birthDateInvalid.value ||
+    minorNotAllowed.value ||
     emailInvalid.value ||
     contactMissing.value ||
     passwordMissing.value ||
@@ -177,10 +182,13 @@ function save(): void {
           type="date"
           :format="DATE_FORMAT"
           :disabled-date="disabledBirthDate"
-          :class="{ 'ca-invalid': submitted && birthDateInvalid }"
+          :class="{ 'ca-invalid': submitted && (birthDateInvalid || minorNotAllowed) }"
         />
         <small v-if="submitted && birthDateInvalid" class="form__error">{{
           $t('features.manageUsers.birthDateInvalid')
+        }}</small>
+        <small v-else-if="submitted && minorNotAllowed" class="form__error">{{
+          $t('features.manageUsers.minorNotAllowed')
         }}</small>
       </div>
       <div class="form__field">

@@ -45,9 +45,11 @@ public sealed class UpdateUserCommandHandler(
     private const string Operation = "UpdateUser";
 
     /// <summary>
-    /// Handles the request to update the user. Replacing the login identifiers of the account, or
-    /// dropping them by turning it into a dependent minor, first re-authenticates the acting
-    /// caller, so a hijacked session alone cannot take the account over.
+    /// Handles the request to update the user. The stored account decides which rules apply, never
+    /// the request: an account that is not a dependent can neither become a minor nor be given a
+    /// guardian, and a dependent keeps the guardian it already has. Replacing the login identifiers
+    /// of the account first re-authenticates the acting caller, so a hijacked session alone cannot
+    /// take the account over. Dependents are created only through <c>POST /api/users/{id}/children</c>.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -68,9 +70,9 @@ public sealed class UpdateUserCommandHandler(
         var previousEmail = user.Email;
         var previousPhone = user.Phone;
 
-        var rules = request.BirthDate.IsMinor(clock.Today)
-            ? await ApplyMinorContactRulesAsync(command, user, ct)
-            : await ApplyAdultContactRulesAsync(command, user, ct);
+        var rules = user.ParentId is null
+            ? await ApplyStandaloneAccountRulesAsync(command, user, ct)
+            : await ApplyDependentRulesAsync(command, user, ct);
         if (rules.IsFailure)
         {
             return rules.Error!;
@@ -105,65 +107,59 @@ public sealed class UpdateUserCommandHandler(
         return await getById.HandleAsync(new GetUserByIdQuery(command.UserId), ct);
     }
 
-    private async Task<Result> ApplyMinorContactRulesAsync(
-        UpdateUserCommand command,
-        User user,
-        CancellationToken ct
-    )
-    {
-        if (command.Request.ParentId is not { } parent)
-        {
-            return Error.BadRequest(ErrorCode.UserParentIdRequired);
-        }
-
-        if (parent == command.UserId)
-        {
-            return Error.BadRequest(ErrorCode.UserCannotBeOwnParent);
-        }
-
-        var parentUser = await users.FindAsync(u => u.Id == parent, ct);
-        if (parentUser is null)
-        {
-            return Error.NotFound(ErrorCode.ParentUserNotFound);
-        }
-
-        if (parentUser.BirthDate.IsMinor(clock.Today))
-        {
-            return Error.BadRequest(ErrorCode.UserParentIsMinor);
-        }
-
-        if (user.ParentId is { } currentParent && currentParent != parent)
-        {
-            return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
-        }
-
-        var dropsAccessFactors =
-            user.Email is not null || user.Phone is not null || user.PasswordHash is not null;
-        if (dropsAccessFactors && !await IsActingPasswordValidAsync(command, ct))
-        {
-            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
-        }
-
-        user.ParentId = parent;
-        user.Email = null;
-        user.Phone = null;
-        user.PasswordHash = null;
-        user.ClearOtp();
-        return Result.Success();
-    }
-
-    private async Task<Result> ApplyAdultContactRulesAsync(
+    private async Task<Result> ApplyStandaloneAccountRulesAsync(
         UpdateUserCommand command,
         User user,
         CancellationToken ct
     )
     {
         var request = command.Request;
+        if (request.BirthDate.IsMinor(clock.Today))
+        {
+            return Error.BadRequest(ErrorCode.UserCannotBecomeMinor);
+        }
+
         if (request.ParentId is not null)
         {
             return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
         }
 
+        return await ApplyLoginIdentifierRulesAsync(command, user, ct);
+    }
+
+    private async Task<Result> ApplyDependentRulesAsync(
+        UpdateUserCommand command,
+        User user,
+        CancellationToken ct
+    )
+    {
+        var request = command.Request;
+        if (request.ParentId is { } parent && parent != user.ParentId)
+        {
+            return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
+        }
+
+        if (request.BirthDate.IsMinor(clock.Today))
+        {
+            return Result.Success();
+        }
+
+        var grownUp = await ApplyLoginIdentifierRulesAsync(command, user, ct);
+        if (grownUp.IsSuccess)
+        {
+            user.ParentId = null;
+        }
+
+        return grownUp;
+    }
+
+    private async Task<Result> ApplyLoginIdentifierRulesAsync(
+        UpdateUserCommand command,
+        User user,
+        CancellationToken ct
+    )
+    {
+        var request = command.Request;
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
         if (email is null || phone is null)
@@ -189,7 +185,6 @@ public sealed class UpdateUserCommandHandler(
             return Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
         }
 
-        user.ParentId = null;
         user.Email = email;
         user.Phone = phone;
         return Result.Success();

@@ -468,6 +468,141 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task UpdateTurningAnAccountIntoAMinorIsRefusedAndKeepsItsCredentials()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            new UpdateUserRequest(
+                "Marta",
+                "Miembro",
+                TestSeedData.MemberEmail,
+                "+34600000002",
+                MinorBirthDate,
+                Gender.Female,
+                TestSeedData.Users.AdminId,
+                TestSeedData.Password
+            ),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserCannotBecomeMinor);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.ParentId.Should().BeNull();
+        stored.Email.Should().Be(TestSeedData.MemberEmail);
+        stored.PasswordHash.Should().Be(TestSeedData.PasswordHash);
+        stored.BirthDate.Should().Be(new DateOnly(1992, 7, 30));
+    }
+
+    [Fact]
+    public async Task UpdateGivingAStandaloneAccountAGuardianReturnsBadRequest()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(
+                parentId: TestSeedData.Users.AdminId,
+                currentPassword: TestSeedData.Password
+            ),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserParentNotAllowedForAdult);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.ParentId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateMovingADependentToAnotherGuardianReturnsForbidden()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            ChildUpdate(parentId: TestSeedData.Users.AdminId),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserParentReassignmentForbidden);
+        (await FindAsync<User>(TestSeedData.Users.MemberChildId))!
+            .ParentId.Should()
+            .Be(TestSeedData.Users.MemberId);
+    }
+
+    [Fact]
+    public async Task UpdateDependentWithoutAParentIdKeepsTheGuardianAndEditsTheRest()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            ChildUpdate(firstName: "Mateo Nuevo", gender: Gender.Other),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
+        stored!.FirstName.Should().Be("Mateo Nuevo");
+        stored.Gender.Should().Be(Gender.Other);
+        stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
+    }
+
+    [Fact]
+    public async Task UpdateDependentReachingAdulthoodNeedsContactAndTheCallerPassword()
+    {
+        var client = await LoginAsMemberAsync();
+        var grownUp = new UpdateUserRequest(
+            "Mateo",
+            "Miembro",
+            "mateo@codigoactivo.test",
+            "+34600000055",
+            new DateOnly(1999, 5, 5),
+            Gender.Male,
+            null,
+            null
+        );
+
+        using var withoutPassword = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            grownUp,
+            Ct
+        );
+        await withoutPassword.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
+        (await FindAsync<User>(TestSeedData.Users.MemberChildId))!
+            .ParentId.Should()
+            .Be(TestSeedData.Users.MemberId);
+
+        using var withoutContact = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            grownUp with
+            {
+                Email = null,
+                Phone = null,
+                CurrentPassword = TestSeedData.Password,
+            },
+            Ct
+        );
+        await withoutContact.ShouldBeBadRequestAsync(ErrorCode.UserContactInfoRequired);
+
+        using var accepted = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            grownUp with
+            {
+                CurrentPassword = TestSeedData.Password,
+            },
+            Ct
+        );
+        accepted.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
+        stored!.ParentId.Should().BeNull();
+        stored.Email.Should().Be("mateo@codigoactivo.test");
+        stored.Phone.Should().Be("+34600000055");
+        stored.PasswordHash.Should().BeNull("growing up does not create credentials by itself");
+    }
+
+    [Fact]
     public async Task UpdateBlankNameReturnsValidationError()
     {
         var client = await LoginAsMemberAsync();

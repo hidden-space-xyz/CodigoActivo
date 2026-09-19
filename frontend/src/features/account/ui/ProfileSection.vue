@@ -8,7 +8,14 @@ import { genderLabel, genderOptions } from '@/entities/user'
 import { ApiError } from '@/shared/api'
 import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, getErrorMessage, toDateInput, todayIso, useCrudFeedback } from '@/shared/lib'
+import {
+  ageFrom,
+  formatDate,
+  getErrorMessage,
+  toDateInput,
+  todayIso,
+  useCrudFeedback,
+} from '@/shared/lib'
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
@@ -49,6 +56,10 @@ const replacesIdentifiers = computed(() => {
 })
 const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
 const passwordMissing = computed(() => requiresPassword.value && !editForm.currentPassword)
+const birthDateIsMinor = computed(() => {
+  const age = ageFrom(editForm.birthDate)
+  return age !== null && age < 18
+})
 
 function openEdit(): void {
   editSubmitted.value = false
@@ -68,7 +79,7 @@ function saveEdit(): void {
   editSubmitted.value = true
   editError.value = ''
   const gender = editForm.gender
-  if (!gender || passwordMissing.value) return
+  if (!gender || passwordMissing.value || birthDateIsMinor.value) return
   const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
     lastName: editForm.lastName.trim(),
@@ -219,6 +230,9 @@ function savePassword(): void {
               :max="maxBirthDateIso"
               required
             />
+            <small v-if="editSubmitted && birthDateIsMinor" class="acc-form__error">{{
+              $t('features.account.profile.birthDateMinor')
+            }}</small>
           </div>
           <div class="acc-form__field">
             <label for="p-gender">{{ $t('common.gender') }}</label>

@@ -265,6 +265,7 @@
     "UserParentIdRequired": "Debes indicar el usuario responsable.",
     "UserCannotBeOwnParent": "Un usuario no puede ser su propio responsable.",
     "UserParentNotAllowedForAdult": "Un usuario mayor de edad no puede tener un responsable.",
+    "UserCannotBecomeMinor": "Una cuenta existente no puede convertirse en menor a cargo de un responsable. Los menores se añaden desde la sección de familia.",
     "UserParentReassignmentForbidden": "No puedes reasignar este menor a otro responsable.",
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
@@ -1064,6 +1065,7 @@
       "editHeader": "Editar usuario",
       "optionalSuffix": " (opcional)",
       "birthDateInvalid": "Indica una fecha de nacimiento válida.",
+      "minorNotAllowed": "Esta cuenta no depende de nadie, así que no puede pasar a ser menor de edad. Los menores se añaden desde la sección de familia.",
       "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
       "identifierChange": {
         "message": "Vas a cambiar el correo o el teléfono con los que esta persona inicia sesión y recibe sus códigos. Por seguridad, confirma tu contraseña.",
@@ -1171,6 +1173,7 @@
         "editData": "Editar datos",
         "changePassword": "Cambiar contraseña",
         "editDialogHeader": "Editar mis datos",
+        "birthDateMinor": "Indica una fecha de nacimiento de una persona mayor de edad: tu cuenta no puede pasar a ser la de un menor a cargo.",
         "identifierChange": {
           "message": "Con el correo y el teléfono inicias sesión y recibes los códigos de verificación. Por seguridad, confirma tu contraseña actual.",
           "passwordLabel": "Tu contraseña actual",

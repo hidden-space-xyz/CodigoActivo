@@ -76,6 +76,7 @@ export const ErrorCode = {
   UserCannotBeOwnParent: 'UserCannotBeOwnParent',
   UserParentReassignmentForbidden: 'UserParentReassignmentForbidden',
   UserParentNotAllowedForAdult: 'UserParentNotAllowedForAdult',
+  UserCannotBecomeMinor: 'UserCannotBecomeMinor',
   UserContactInfoRequired: 'UserContactInfoRequired',
   UserEmailAlreadyInUse: 'UserEmailAlreadyInUse',
   UserPhoneAlreadyInUse: 'UserPhoneAlreadyInUse',

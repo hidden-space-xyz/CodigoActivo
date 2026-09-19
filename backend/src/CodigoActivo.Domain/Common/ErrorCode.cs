@@ -277,6 +277,10 @@ public enum ErrorCode
     /// </summary>
     UserParentNotAllowedForAdult,
     /// <summary>
+    /// Selects the user cannot become a dependent minor option.
+    /// </summary>
+    UserCannotBecomeMinor,
+    /// <summary>
     /// Selects the user contact info required option.
     /// </summary>
     UserContactInfoRequired,
