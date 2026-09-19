@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Auth;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
@@ -24,12 +25,14 @@ namespace CodigoActivo.API.Security;
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="options">Lifetime shared by the cookie and its session row.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class SessionTicketValidator(
     CodigoActivoDbContext db,
     IUserSessionRepository sessions,
     IUnitOfWork uow,
     IClock clock,
-    SessionLifetimeOptions options
+    SessionLifetimeOptions options,
+    ILogger<SessionTicketValidator> logger
 )
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
@@ -88,10 +91,14 @@ public sealed class SessionTicketValidator(
             return;
         }
 
-        await sessions.RemoveAsync(
+        var revoked = await sessions.RemoveAsync(
             candidate => candidate.Id == session && candidate.UserId == user,
             ct
         );
+        if (revoked > 0)
+        {
+            logger.SessionEnded(user);
+        }
     }
 
     /// <summary>
@@ -115,10 +122,7 @@ public sealed class SessionTicketValidator(
             sessionId,
             context.HttpContext.RequestAborted
         );
-        if (
-            user is null
-            || !FixedTimeEquals(presentedFingerprint, Fingerprint(user.PasswordHash))
-        )
+        if (user is null || !FixedTimeEquals(presentedFingerprint, Fingerprint(user.PasswordHash)))
         {
             await RejectAsync(context);
             return;
@@ -200,10 +204,14 @@ public sealed class SessionTicketValidator(
 
     private static bool ClaimsMatch(ClaimsPrincipal current, ClaimsPrincipal refreshed)
     {
-        return current.Claims.OrderBy(claim => claim.Type).ThenBy(claim => claim.Value)
+        return current
+            .Claims.OrderBy(claim => claim.Type)
+            .ThenBy(claim => claim.Value)
             .Select(claim => (claim.Type, claim.Value))
             .SequenceEqual(
-                refreshed.Claims.OrderBy(claim => claim.Type).ThenBy(claim => claim.Value)
+                refreshed
+                    .Claims.OrderBy(claim => claim.Type)
+                    .ThenBy(claim => claim.Value)
                     .Select(claim => (claim.Type, claim.Value))
             );
     }
@@ -225,9 +233,7 @@ public sealed class SessionTicketValidator(
     private static async Task RejectAsync(CookieValidatePrincipalContext context)
     {
         context.RejectPrincipal();
-        await context.HttpContext.SignOutAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme
-        );
+        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     }
 
     private sealed record SessionUser(

@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
@@ -23,6 +24,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 3 };
+    private readonly RecordingLogger<VerifyTwoFactorLoginCommandHandler> logger = new();
     private readonly VerifyTwoFactorLoginCommandHandler sut;
 
     public VerifyTwoFactorLoginCommandHandlerTests()
@@ -39,7 +41,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
             options,
-            NullLogger<VerifyTwoFactorLoginCommandHandler>.Instance
+            logger
         );
     }
 
@@ -83,7 +85,8 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
         user.TwoFactorFailedAttempts.Should().Be(0);
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -120,7 +123,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     [Fact]
     public async Task HandleAsyncExpiredEmailCodeIsRejected()
     {
-        var user = Prepare(NewUserWithLoginCode(clock, code: "123456", expiresAt: clock.UtcNow.AddSeconds(-1)));
+        var user = Prepare(
+            NewUserWithLoginCode(clock, code: "123456", expiresAt: clock.UtcNow.AddSeconds(-1))
+        );
 
         var result = await VerifyAsync(user.Id, "123456");
 
@@ -168,12 +173,54 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncCompletedLoginLogsTheUserIdAndTheSecondFactorMethod()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+
+        await VerifyAsync(user.Id, "123456");
+
+        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Information);
+        entry
+            .Message.Should()
+            .Be($"Login completed for user {user.Id} with second factor Email")
+            .And.NotContain("123456");
+    }
+
+    [Fact]
+    public async Task HandleAsyncAuthenticatorLoginLogsItsOwnSecondFactorMethod()
+    {
+        var user = Prepare(NewUserWithAuthenticator(Secret, lastUsedStep: 41));
+        totp.MatchStep(Secret, "222333", clock.UtcNow).Returns(42);
+
+        await VerifyAsync(user.Id, "222333");
+
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be($"Login completed for user {user.Id} with second factor Authenticator");
+    }
+
+    [Fact]
+    public async Task HandleAsyncRejectedCodeNeverLogsACompletedLogin()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+
+        await VerifyAsync(user.Id, "000000");
+
+        logger.Entries.Should().NotContain(entry => entry.Contains("Login completed"));
+        logger.LevelEntries.Should().OnlyContain(entry => entry.Level == LogLevel.Warning);
+    }
+
+    [Fact]
     public async Task HandleAsyncAuthenticatorUserIgnoresEmailedCodes()
     {
         var user = Prepare(NewUserWithAuthenticator(Secret));
         user.LoginCodeHash = FakePasswordHasher.Prefix + "123456";
         user.LoginCodeExpiresAt = clock.UtcNow.AddMinutes(5);
-        totp.MatchStep(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>()).Returns((long?)null);
+        totp.MatchStep(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>())
+            .Returns((long?)null);
 
         var result = await VerifyAsync(user.Id, "123456");
 
