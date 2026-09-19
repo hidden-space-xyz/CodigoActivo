@@ -72,8 +72,13 @@ a public DNS name; IP addresses, localhost and reserved example/test domains are
 
 The external proxy must terminate HTTPS, accepting only TLS 1.3 with TLS 1.2 as the sole fallback and
 disabling TLS 1.1, TLS 1.0 and SSL; overwrite client-supplied forwarding headers; and send the effective
-scheme as `X-Forwarded-Proto`. The API accepts one forwarded hop, redirects HTTP to HTTPS in Production, and
-sets secure `__Host-` cookies; nginx emits HSTS only when the forwarded scheme is HTTPS. The API honours
+scheme as `X-Forwarded-Proto`. nginx normalizes that header itself before forwarding it to the API: only an
+exact `https` value (case-insensitive) counts, so any other value — including a comma-separated list such as
+`https, http` — or a missing header becomes `http`. Because nginx only reads the header value, not the peer,
+the external proxy must overwrite `X-Forwarded-Proto` rather than append to it; appending makes nginx see
+`http`, so it skips HSTS and forwards `http` to the API. The API accepts one forwarded hop, redirects HTTP to
+HTTPS in Production, and sets secure `__Host-` cookies; nginx emits HSTS only when its normalized scheme is
+HTTPS. The API honours
 `X-Forwarded-For`/`X-Forwarded-Proto` only from loopback and private peers (RFC 1918 and `fc00::/7`), so a
 proxy or container network outside those ranges makes it ignore both headers, which in Production means an
 HTTPS redirect loop and a single shared rate-limit partition for every client. `APP_BASE_URL`

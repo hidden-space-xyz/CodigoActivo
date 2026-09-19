@@ -178,6 +178,8 @@ covers isolated units, `tests/integration/` mounts components or `App.vue` with 
 - Shared state (session, CSRF token, handlers, storage, fake timers, media queries) resets after each test.
 - Coverage covers `src/**/*.{ts,vue}` except the generated client and `main.ts`, at or above 90% for
   statements, branches, functions and lines.
+- `tests/unit/docker/nginx-config.spec.ts` statically pins the `frontend/docker/*.conf` files (headers, proxy
+  routing, caching); update it whenever those files change. It does not replace `nginx -t`.
 
 Before opening a pull request:
 
