@@ -65,7 +65,9 @@ internal static class ApiServiceConfiguration
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.AllowDuplicateProperties = false;
-                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                options.JsonSerializerOptions.Converters.Add(
+                    new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false)
+                );
             })
             .ConfigureApiBehaviorOptions(options =>
             {

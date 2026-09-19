@@ -279,6 +279,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             FirstName = firstName,
             LastName = "Menor",
             BirthDate = new DateOnly(2017, 3, 3),
+            Gender = Gender.Other,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
             UserTypeId = SeedIds.UserTypes.Participant,
