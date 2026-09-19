@@ -121,6 +121,7 @@ syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the 
 | Setting                                       | Default             |
 | --------------------------------------------- | ------------------- |
 | `Auth:ExpireHours`                            | `8`                 |
+| `SessionCleanup:IntervalMinutes`              | `60`                |
 | `FileStorage:MaxSizeBytes`                    | `10485760` (10 MiB) |
 | `AccountVerification:OtpLifetimeMinutes`      | `15`                |
 | `AccountVerification:ResendCooldownSeconds`   | `60`                |

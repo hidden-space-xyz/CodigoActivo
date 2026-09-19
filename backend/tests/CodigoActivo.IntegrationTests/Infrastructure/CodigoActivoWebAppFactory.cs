@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Storage;
@@ -105,6 +106,8 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
         builder.ConfigureTestServices(services =>
         {
+            RemoveExpiredSessionCleaner(services);
+
             services.RemoveAll<DeploymentModeLock>();
             services.AddSingleton(sp => new DeploymentModeLock(
                 deploymentModeFile,
@@ -137,6 +140,22 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             services.RemoveAll<FileStorageOptions>();
             services.AddSingleton(new FileStorageOptions { RootPath = fileStorageRoot });
         });
+    }
+
+    /// <summary>
+    /// Drops the periodic session purge: its runs would delete rows behind tests that move the test
+    /// clock past a session expiry on purpose. <see cref="ExpiredSessionCleaner.PurgeAsync"/> is
+    /// exercised directly instead.
+    /// </summary>
+    private static void RemoveExpiredSessionCleaner(IServiceCollection services)
+    {
+        var descriptors = services
+            .Where(descriptor => descriptor.ImplementationType == typeof(ExpiredSessionCleaner))
+            .ToList();
+        foreach (var descriptor in descriptors)
+        {
+            services.Remove(descriptor);
+        }
     }
 
     private void UseTestDatabase(IServiceCollection services)
