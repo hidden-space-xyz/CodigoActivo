@@ -353,6 +353,25 @@ public sealed class Ed25519DataProtectionTests : IDisposable
     }
 
     [Fact]
+    public void MigratePrivateKeyFailureLeavesNoTemporaryFileBehind()
+    {
+        var keyPath = Path.Join(directory, PrivateKeyFileName);
+        Directory.CreateDirectory(keyPath);
+        var logger = new RecordingLogger<Ed25519CertificateStore>();
+
+        Ed25519CertificateStore.MigratePrivateKey(
+            keyPath,
+            new Ed25519PrivateKeyParameters(new SecureRandom()),
+            Password,
+            logger
+        );
+
+        File.Exists(keyPath + ".migrating").Should().BeFalse();
+        Directory.Exists(keyPath).Should().BeTrue("the key that could not be replaced is kept");
+        logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Error);
+    }
+
+    [Fact]
     public void DataProtectionProviderPersistsAndReloadsCmsProtectedKeyRing()
     {
         var certificateDirectory = Path.Join(directory, "certificate");

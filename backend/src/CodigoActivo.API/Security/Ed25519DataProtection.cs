@@ -24,7 +24,8 @@ namespace CodigoActivo.API.Security;
 /// Loads and maintains the persisted Ed25519 certificate material. The private key is stored as a
 /// PKCS#8 <c>EncryptedPrivateKeyInfo</c> (PBES2: PBKDF2-HMAC-SHA-512 with AES-256-CBC) produced and
 /// parsed by BouncyCastle. A key file still written in the retired v1 JSON envelope is read through
-/// <see cref="Ed25519XmlDecryptor"/>'s legacy reader and rewritten in the standard format on load.
+/// <see cref="Ed25519XmlDecryptor"/>'s legacy reader and rewritten in the standard format on load; a
+/// rewrite that fails keeps the previous file and leaves no temporary file behind.
 /// The store also carries the certificate password, because it derives the key-wrapping key of the
 /// CMS container that protects the Data Protection key ring.
 /// </summary>
@@ -225,7 +226,7 @@ public sealed partial class Ed25519CertificateStore
         }
     }
 
-    private static void MigratePrivateKey(
+    internal static void MigratePrivateKey(
         string privateKeyPath,
         Ed25519PrivateKeyParameters privateKey,
         string password,
@@ -247,6 +248,22 @@ public sealed partial class Ed25519CertificateStore
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             LogPrivateKeyMigrationFailed(logger, ex);
+            DeleteMigrationFile(temporaryPath, logger);
+        }
+    }
+
+    private static void DeleteMigrationFile(
+        string temporaryPath,
+        ILogger<Ed25519CertificateStore> logger
+    )
+    {
+        try
+        {
+            File.Delete(temporaryPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogMigrationFileLeftBehind(logger, ex);
         }
     }
 
@@ -282,6 +299,13 @@ public sealed partial class Ed25519CertificateStore
             + "private key; the previous file is still in use"
     )]
     private static partial void LogPrivateKeyMigrationFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The half-written Ed25519 Data Protection private key of the failed migration could "
+            + "not be deleted and is still in the key volume"
+    )]
+    private static partial void LogMigrationFileLeftBehind(ILogger logger, Exception exception);
 }
 
 /// <summary>
