@@ -3,9 +3,10 @@ using System.Text;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Freezes deployment mode settings after startup validation. The choice is only persisted when the
-/// process runs inside a container, where the file lives in the <c>api-state</c> volume; a host run
-/// validates the configured value and keeps no state on the developer's filesystem.
+/// Freezes deployment mode settings after startup validation. The choice is always persisted, in
+/// the <c>api-state</c> volume when the process runs in a container, except for a Development
+/// process outside a container: a developer running the API directly validates the configured value
+/// and keeps no state on their own filesystem.
 /// </summary>
 public sealed partial class DeploymentModeLock
 {
@@ -33,14 +34,16 @@ public sealed partial class DeploymentModeLock
     /// Validates deployment settings and prevents later mutation.
     /// </summary>
     /// <param name="configuration">Application configuration to validate or consume.</param>
+    /// <param name="environment">Host environment that decides whether the choice is persisted.</param>
     /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public bool Lock(IConfiguration configuration)
+    public bool Lock(IConfiguration configuration, IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
 
         var configuredMode = ReadConfiguredMode(configuration["DEMO_MODE"]);
         var configuredValue = configuredMode ? "demo" : "normal";
-        if (!RunsInContainer(configuration))
+        if (environment.IsDevelopment() && !RunsInContainer(configuration))
         {
             LogLockSkipped(configuredValue);
             return configuredMode;
@@ -107,14 +110,16 @@ public sealed partial class DeploymentModeLock
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Deployment mode lock skipped: the process is not running in a container, so the "
-            + "selected {ConfiguredMode} mode is not persisted"
+        Message = "Deployment mode lock skipped: this is a Development process outside a container, "
+            + "so the selected {ConfiguredMode} mode is not persisted"
     )]
     private partial void LogLockSkipped(string configuredMode);
 
     private static bool RunsInContainer(IConfiguration configuration)
     {
-        return bool.TryParse(configuration[ContainerKey], out var inContainer) && inContainer;
+        var value = configuration[ContainerKey]?.Trim();
+        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "1", StringComparison.Ordinal);
     }
 
     private static bool ReadConfiguredMode(string? value)
