@@ -1,10 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Content Include="TestData\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
     <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>

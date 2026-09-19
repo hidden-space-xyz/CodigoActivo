@@ -149,8 +149,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = (await response.ReadJsonAsync<SendEmailResultResponse>(Ct))!;
-        result.Sent.Should().Be(4);
-        result.Failed.Should().Be(0);
+        result.Queued.Should().Be(4);
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
@@ -175,7 +174,6 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         }
 
         Factory.EmailSender.Sent.Should().HaveCount(12);
-        Factory.EmailSender.Batches.Should().Be(3);
     }
 
     [Fact]

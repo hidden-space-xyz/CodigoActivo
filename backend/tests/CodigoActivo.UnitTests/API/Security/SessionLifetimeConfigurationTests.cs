@@ -47,4 +47,11 @@ public sealed class SessionLifetimeConfigurationTests
     {
         Build("2").Lifetime.Should().Be(TimeSpan.FromHours(2));
     }
+
+    [Fact]
+    public void DefaultLifetimeKeepsTheSessionForThirtyDays()
+    {
+        SessionLifetimeOptions.DefaultLifetime.Should().Be(TimeSpan.FromDays(30));
+        new SessionLifetimeOptions().Lifetime.Should().Be(TimeSpan.FromDays(30));
+    }
 }

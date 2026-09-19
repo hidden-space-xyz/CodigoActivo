@@ -29,6 +29,7 @@ const genders = genderOptions()
 
 const maxBirthDateIso = todayIso()
 const adultThresholdIso = yearsAgoIso(18)
+const minBirthDateIso = computed(() => (mode.value === 'add' ? adultThresholdIso : undefined))
 
 const saving = computed(() => addChild.isPending.value || updateChild.isPending.value)
 
@@ -191,7 +192,7 @@ function confirmDelete(): void {
               v-model="form.birthDate"
               type="date"
               class="acc-date"
-              :min="adultThresholdIso"
+              :min="minBirthDateIso"
               :max="maxBirthDateIso"
               required
             />

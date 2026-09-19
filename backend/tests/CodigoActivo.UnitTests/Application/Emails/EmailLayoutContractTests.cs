@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Resources.Localization;
 using CodigoActivo.Domain.Communication;
+using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Emails;
@@ -140,12 +141,13 @@ public sealed class EmailLayoutContractTests
                 TimeZoneInfo.Utc,
                 Site
             ),
-            "manual" => ManualEmail.Create(
-                ManualEmail.Render("Aviso", "Cambiamos de aula.", Site),
-                "ada@test.com",
-                "Ada",
-                []
-            ),
+            "manual" => ManualEmail
+                .Create(
+                    ManualEmail.Render("Aviso", "Cambiamos de aula.", Site),
+                    [new EmailRecipient("ada@test.com", "Ada")],
+                    []
+                )
+                .ToMessages()[0],
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown template."),
         };
     }

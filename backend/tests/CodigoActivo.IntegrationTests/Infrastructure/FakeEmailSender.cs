@@ -3,7 +3,7 @@ using CodigoActivo.Domain.Communication;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
+public sealed partial class FakeEmailSender : IEmailTransport
 {
     private readonly List<EmailMessage> sent = [];
     private readonly HashSet<string> failingRecipients = new(StringComparer.OrdinalIgnoreCase);
@@ -19,8 +19,6 @@ public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
         }
     }
 
-    public int Batches { get; private set; }
-
     public Exception? ThrowOnSend { get; set; }
 
     public void FailFor(params string[] addresses)
@@ -31,20 +29,8 @@ public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
         }
     }
 
-    public bool TryEnqueue(EmailMessage message)
-    {
-        Record(message);
-        return true;
-    }
-
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
-        Record(message);
-        return Task.CompletedTask;
-    }
-
-    private void Record(EmailMessage message)
-    {
         if (ThrowOnSend is not null)
         {
             throw ThrowOnSend;
@@ -52,36 +38,23 @@ public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
 
         lock (sent)
         {
+            if (failingRecipients.Contains(message.ToAddress))
+            {
+                throw new InvalidOperationException(
+                    "The fake SMTP server rejected a configured recipient."
+                );
+            }
+
             sent.Add(message);
         }
-    }
 
-    public Task<EmailBatchResult> SendManyAsync(
-        IReadOnlyList<EmailMessage> messages,
-        CancellationToken ct = default
-    )
-    {
-        if (ThrowOnSend is not null)
-        {
-            throw ThrowOnSend;
-        }
-
-        lock (sent)
-        {
-            Batches++;
-            var delivered = messages.Where(m => !failingRecipients.Contains(m.ToAddress)).ToList();
-            sent.AddRange(delivered);
-            return Task.FromResult(
-                new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
-            );
-        }
+        return Task.CompletedTask;
     }
 
     public void Clear()
     {
         lock (sent)
         {
-            Batches = 0;
             sent.Clear();
             failingRecipients.Clear();
             ThrowOnSend = null;

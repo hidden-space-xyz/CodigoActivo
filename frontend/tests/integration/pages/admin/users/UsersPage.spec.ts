@@ -653,14 +653,14 @@ describe('admin users page', () => {
     await expectNotification(t('common.error'))
   })
 
-  it('emails all filtered users after confirmation', async () => {
+  it('queues an email for all filtered users after confirmation', async () => {
     serveUsers([ada, tim])
     let received: { url: string; subject: unknown } | undefined
     server.use(
       http.post('/api/emails/users', async ({ request }) => {
         const form = await request.formData()
         received = { url: request.url, subject: form.get('subject') }
-        return HttpResponse.json({ sent: 2 })
+        return HttpResponse.json({ queued: 2 })
       }),
     )
     const { wrapper } = await renderPage()
@@ -674,14 +674,14 @@ describe('admin users page', () => {
     await click(findButton(t('features.sendEmail.send'), dialog))
     await acceptMessageBox()
 
-    await expectNotification(tp('features.sendEmail.toast.sent', 2, { count: 2 }))
+    await expectNotification(tp('features.sendEmail.toast.queued', 2, { count: 2 }))
     expect(received?.subject).toBe('News')
     expect(queryOf(received?.url ?? '')).toEqual({ parentId: 'user-1' })
     await vi.waitFor(() => expect(isDialogOpen(t(EMAIL_TITLE))).toBe(false))
     expect(wrapper.find('.relation-filter').exists()).toBe(true)
   })
 
-  it('emails a single user and reports failures', async () => {
+  it('queues an email for a single user and reports failures', async () => {
     serveUsers([ada])
     const sentTo: string[] = []
     let fail = false
@@ -689,7 +689,7 @@ describe('admin users page', () => {
       http.post('/api/emails/users/:userId', ({ params }) => {
         if (fail) return apiError(500)
         sentTo.push(String(params.userId))
-        return HttpResponse.json({ sent: 1 })
+        return HttpResponse.json({ queued: 1 })
       }),
     )
     await renderPage()
@@ -701,7 +701,7 @@ describe('admin users page', () => {
     await typeInto('#send-email-body', 'Personal note')
     await click(findButton(t('features.sendEmail.send'), dialog))
     await acceptMessageBox()
-    await expectNotification(tp('features.sendEmail.toast.sent', 1, { count: 1 }))
+    await expectNotification(tp('features.sendEmail.toast.queued', 1, { count: 1 }))
     expect(sentTo).toEqual(['user-1'])
 
     fail = true

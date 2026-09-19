@@ -6452,15 +6452,11 @@
       "SendEmailResultResponse": {
         "type": "object",
         "properties": {
-          "sent": {
+          "queued": {
             "type": "integer",
             "format": "int32"
           },
           "skipped": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "failed": {
             "type": "integer",
             "format": "int32"
           }

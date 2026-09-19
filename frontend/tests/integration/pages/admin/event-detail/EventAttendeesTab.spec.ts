@@ -298,18 +298,18 @@ describe('EventAttendeesTab', () => {
     await vi.waitFor(() => expect(notificationsText()).toContain(t('errors.generic')))
   })
 
-  it('emails the filtered attendees and a single attendee', async () => {
+  it('queues email for the filtered attendees and for a single attendee', async () => {
     const sent: { path: string; query: Record<string, string> }[] = []
     server.use(
       http.post('/api/emails/events/:eventId/attendees', ({ request }) => {
         const url = new URL(request.url)
         sent.push({ path: url.pathname, query: Object.fromEntries(url.searchParams) })
-        return HttpResponse.json({ sent: 2, failed: 0, skipped: 0 })
+        return HttpResponse.json({ queued: 2, skipped: 0 })
       }),
       http.post('/api/emails/users/:userId', ({ request }) => {
         const url = new URL(request.url)
         sent.push({ path: url.pathname, query: Object.fromEntries(url.searchParams) })
-        return HttpResponse.json({ sent: 1 })
+        return HttpResponse.json({ queued: 1 })
       }),
     )
     const { wrapper } = await renderTab()

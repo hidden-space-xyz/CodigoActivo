@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.IntegrationTests.Infrastructure;
@@ -85,7 +86,7 @@ public sealed class ExpiredSessionCleanerTests(CodigoActivoWebAppFactory factory
         await LoginAsMemberAsync();
         (await RemainingSessionIdsAsync()).Should().ContainSingle();
 
-        Factory.Clock.UtcNow += TimeSpan.FromDays(1);
+        Factory.Clock.UtcNow += SessionLifetimeOptions.DefaultLifetime + TimeSpan.FromMinutes(1);
         var removed = await Build().PurgeAsync(Ct);
 
         removed.Should().Be(1);

@@ -1,5 +1,7 @@
 using CodigoActivo.API.Security;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace CodigoActivo.API.Configuration;
@@ -47,6 +49,8 @@ internal static class ApiHostConfiguration
             .Services.AddDataProtection()
             .SetApplicationName("CodigoActivo");
 
+        ProtectPayloadsWithAesGcm(dataProtection);
+
         if (!builder.Environment.IsProduction())
         {
             return;
@@ -60,6 +64,19 @@ internal static class ApiHostConfiguration
         );
     }
 
+    internal static void ProtectPayloadsWithAesGcm(IDataProtectionBuilder dataProtection)
+    {
+        ArgumentNullException.ThrowIfNull(dataProtection);
+
+        dataProtection.UseCryptographicAlgorithms(
+            new AuthenticatedEncryptorConfiguration
+            {
+                EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
+                ValidationAlgorithm = ValidationAlgorithm.HMACSHA512,
+            }
+        );
+    }
+
     internal static Ed25519CertificateStore ProtectKeysWithEd25519Certificate(
         IServiceCollection services,
         IDataProtectionBuilder dataProtection,
@@ -70,17 +87,15 @@ internal static class ApiHostConfiguration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(dataProtection);
 
-        using var loggerFactory = LoggerFactory.Create(ConfigureLogging);
         var certificateStore = Ed25519CertificateStore.LoadOrCreate(
             keysDirectory,
-            certificatePassword,
-            loggerFactory.CreateLogger<Ed25519CertificateStore>()
+            certificatePassword
         );
 
         services.AddSingleton(certificateStore);
         dataProtection.PersistKeysToFileSystem(keysDirectory);
         services.Configure<KeyManagementOptions>(options =>
-            options.XmlEncryptor = new Ed25519CmsXmlEncryptor(certificateStore)
+            options.XmlEncryptor = new Ed25519AesGcmXmlEncryptor(certificateStore)
         );
         return certificateStore;
     }

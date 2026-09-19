@@ -1,18 +1,16 @@
 using CodigoActivo.Domain.Communication;
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Logging;
 using MimeKit;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Sends email through the configured smtp transport.
+/// Sends email through the configured smtp transport. Failures leave as exceptions: the outbox
+/// delivery worker decides whether they are retried and records them.
 /// </summary>
 /// <param name="options">Configuration values used by the component.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
-public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender> logger)
-    : IEmailTransport
+public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
 {
     /// <summary>
     /// Sends the prepared smtp email sender message.
@@ -28,85 +26,6 @@ public sealed class SmtpEmailSender(SmtpOptions options, ILogger<SmtpEmailSender
         await ConnectAsync(client, ct);
         await DeliverAsync(client, message, ct);
         await client.DisconnectAsync(quit: true, ct);
-    }
-
-    /// <summary>
-    /// Sends the many message to its recipients.
-    /// </summary>
-    /// <param name="messages">Email messages to deliver as a batch.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an email batch.</returns>
-    public async Task<EmailBatchResult> SendManyAsync(
-        IReadOnlyList<EmailMessage> messages,
-        CancellationToken ct = default
-    )
-    {
-        if (messages.Count is 0)
-        {
-            return new EmailBatchResult(0, 0);
-        }
-
-        EnsureConfigured();
-
-        var sent = 0;
-        var failed = 0;
-        var completed = false;
-
-        using var client = new SmtpClient();
-        await ConnectAsync(client, ct);
-        try
-        {
-            foreach (var message in messages)
-            {
-                ct.ThrowIfCancellationRequested();
-                var connectionDropped = false;
-                try
-                {
-                    await DeliverAsync(client, message, ct);
-                    sent++;
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    failed++;
-                    logger.LogError(ex, "Failed to send a {Kind} email", message.Kind);
-                    connectionDropped = !client.IsConnected;
-                }
-
-                if (connectionDropped)
-                {
-                    var unattempted = messages.Count - sent - failed;
-                    failed += unattempted;
-                    logger.LogError(
-                        "The SMTP connection dropped mid-batch after {Sent} of {Total} messages; {Unattempted} were never attempted",
-                        sent,
-                        messages.Count,
-                        unattempted
-                    );
-                    break;
-                }
-            }
-
-            completed = true;
-        }
-        finally
-        {
-            if (!completed)
-            {
-                logger.LogWarning(
-                    "A batch send stopped early after {Sent} sent and {Failed} failed of {Total} messages",
-                    sent,
-                    failed,
-                    messages.Count
-                );
-            }
-
-            if (client.IsConnected)
-            {
-                await client.DisconnectAsync(quit: true, CancellationToken.None);
-            }
-        }
-
-        return new EmailBatchResult(sent, failed);
     }
 
     private void EnsureConfigured()

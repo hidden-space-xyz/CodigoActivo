@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -106,7 +107,8 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
         builder.ConfigureTestServices(services =>
         {
-            RemoveExpiredSessionCleaner(services);
+            RemoveHostedService<ExpiredSessionCleaner>(services);
+            RemoveHostedService<EmailOutboxProcessor>(services);
 
             services.RemoveAll<DeploymentModeLock>();
             services.AddSingleton(sp => new DeploymentModeLock(
@@ -128,8 +130,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             services.RemoveAll<IEmailTransport>();
             services.AddSingleton<IEmailTransport>(EmailSender);
 
-            services.RemoveAll<IEmailDispatcher>();
-            services.AddSingleton<IEmailDispatcher>(EmailSender);
+            UseSynchronousEmailOutbox(services);
 
             services.RemoveAll<EmailGuardOptions>();
             services.AddSingleton(UnboundedEmailGuard());
@@ -143,19 +144,44 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     }
 
     /// <summary>
-    /// Drops the periodic session purge: its runs would delete rows behind tests that move the test
-    /// clock past a session expiry on purpose. <see cref="ExpiredSessionCleaner.PurgeAsync"/> is
-    /// exercised directly instead.
+    /// Drops a background worker whose timing would race the tests: the periodic session purge would
+    /// delete rows behind a test that moves the clock past a session expiry on purpose, and the email
+    /// delivery worker would compete with the synchronous drain installed by
+    /// <see cref="UseSynchronousEmailOutbox"/>. Both are exercised directly instead.
     /// </summary>
-    private static void RemoveExpiredSessionCleaner(IServiceCollection services)
+    /// <typeparam name="T">Hosted service to unregister.</typeparam>
+    private static void RemoveHostedService<T>(IServiceCollection services)
+        where T : IHostedService
     {
         var descriptors = services
-            .Where(descriptor => descriptor.ImplementationType == typeof(ExpiredSessionCleaner))
+            .Where(descriptor => descriptor.ImplementationType == typeof(T))
             .ToList();
         foreach (var descriptor in descriptors)
         {
             services.Remove(descriptor);
         }
+    }
+
+    /// <summary>
+    /// Keeps the real PostgreSQL outbox but delivers it inline: a request that queues email leaves
+    /// with the message already handed to <see cref="FakeEmailSender"/>, so tests observe mail
+    /// without polling, sleeping or racing a background worker.
+    /// </summary>
+    private static void UseSynchronousEmailOutbox(IServiceCollection services)
+    {
+        services.RemoveAll<IEmailOutbox>();
+        services.AddSingleton<IEmailOutbox, DrainingEmailOutbox>();
+    }
+
+    /// <summary>
+    /// Delivers whatever the outbox holds and is due, for tests that queue email indirectly or move
+    /// the clock to a scheduled retry.
+    /// </summary>
+    public Task DrainEmailOutboxAsync()
+    {
+        return Services.GetRequiredService<IEmailOutbox>() is DrainingEmailOutbox draining
+            ? draining.DrainAsync(TestCancellation.Ct)
+            : Task.CompletedTask;
     }
 
     private void UseTestDatabase(IServiceCollection services)

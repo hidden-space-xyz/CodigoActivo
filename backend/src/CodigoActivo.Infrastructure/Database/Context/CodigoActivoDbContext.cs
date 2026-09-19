@@ -130,6 +130,21 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<Partner> Partners => Set<Partner>();
 
+    /// <summary>
+    /// Gets the email outbox messages value.
+    /// </summary>
+    public DbSet<EmailOutboxMessage> EmailOutboxMessages => Set<EmailOutboxMessage>();
+
+    /// <summary>
+    /// Gets the email outbox contents value.
+    /// </summary>
+    public DbSet<EmailOutboxContent> EmailOutboxContents => Set<EmailOutboxContent>();
+
+    /// <summary>
+    /// Gets the email outbox content parts value.
+    /// </summary>
+    public DbSet<EmailOutboxContentPart> EmailOutboxContentParts => Set<EmailOutboxContentPart>();
+
     async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
     {
         try

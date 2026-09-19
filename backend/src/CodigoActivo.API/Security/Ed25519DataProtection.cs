@@ -1,42 +1,46 @@
+using System.Buffers.Binary;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
+using CodigoActivo.Infrastructure.Security;
 using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.DependencyInjection;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Asn1.Cms;
 using Org.BouncyCastle.Asn1.EdEC;
-using Org.BouncyCastle.Asn1.Nist;
-using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Cms;
 using Org.BouncyCastle.Crypto.Operators;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
-using ContentInfo = Org.BouncyCastle.Asn1.Cms.ContentInfo;
 
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Loads and maintains the persisted Ed25519 certificate material. The private key is stored as a
-/// PKCS#8 <c>EncryptedPrivateKeyInfo</c> (PBES2: PBKDF2-HMAC-SHA-512 with AES-256-CBC) produced and
-/// parsed by BouncyCastle. A key file still written in the retired v1 JSON envelope is read through
-/// <see cref="Ed25519XmlDecryptor"/>'s legacy reader and rewritten in the standard format on load; a
-/// rewrite that fails keeps the previous file and leaves no temporary file behind.
-/// The store also carries the certificate password, because it derives the key-wrapping key of the
-/// CMS container that protects the Data Protection key ring.
+/// Loads and maintains the persisted Ed25519 certificate material. The private key file is a fixed-size
+/// binary container: a one-byte version, the Argon2id salt, the AES-256-GCM nonce, the authentication tag
+/// and the encrypted 32-byte Ed25519 seed. The key encrypting it is Argon2id over the certificate
+/// password, and the DER bytes of the certificate are the associated data, so a key file only opens
+/// next to the certificate it belongs to. The store also carries the certificate password because the
+/// same derivation protects the Data Protection key ring elements.
 /// </summary>
-public sealed partial class Ed25519CertificateStore
+public sealed class Ed25519CertificateStore
 {
-    internal const int Pbkdf2Iterations = 600_000;
-    internal const int SaltSize = 32;
+    internal const byte FormatVersion = 1;
+    internal const int NonceSize = 12;
+    internal const int TagSize = 16;
+
+    internal const int SaltOffset = 1;
+    internal const int NonceOffset = SaltOffset + Argon2idKeyDerivation.SaltSize;
+    internal const int TagOffset = NonceOffset + NonceSize;
+    internal const int CiphertextOffset = TagOffset + TagSize;
 
     private const string CertificateFileName = "key-encryption-ed25519.cer";
     private const string PrivateKeyFileName = "key-encryption-ed25519.key";
-    private const string MigrationFileSuffix = ".migrating";
+
+    private static readonly int PrivateKeyFileSize =
+        CiphertextOffset + Ed25519PrivateKeyParameters.KeySize;
 
     private readonly Ed25519PrivateKeyParameters privateKey;
 
@@ -65,17 +69,11 @@ public sealed partial class Ed25519CertificateStore
     /// </summary>
     /// <param name="directory">Directory where the certificate material is stored.</param>
     /// <param name="password">Plain-text password protecting the private key and the key ring.</param>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <returns>The certificate store containing the certificate and private key.</returns>
-    public static Ed25519CertificateStore LoadOrCreate(
-        DirectoryInfo directory,
-        string password,
-        ILogger<Ed25519CertificateStore> logger
-    )
+    public static Ed25519CertificateStore LoadOrCreate(DirectoryInfo directory, string password)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
-        ArgumentNullException.ThrowIfNull(logger);
 
         directory.Create();
         var certificatePath = Path.Join(directory.FullName, CertificateFileName);
@@ -95,7 +93,7 @@ public sealed partial class Ed25519CertificateStore
             Create(certificatePath, privateKeyPath, password);
         }
 
-        return Load(certificatePath, privateKeyPath, password, logger);
+        return Load(certificatePath, privateKeyPath, password);
     }
 
     private static void Create(string certificatePath, string privateKeyPath, string password)
@@ -128,16 +126,11 @@ public sealed partial class Ed25519CertificateStore
         );
         certificate.Verify(publicKey);
 
-        WriteFile(
-            certificatePath,
-            certificate.GetEncoded(),
-            FileMode.CreateNew,
-            privateFile: false
-        );
+        var certificateBytes = certificate.GetEncoded();
+        WriteFile(certificatePath, certificateBytes, privateFile: false);
         WriteFile(
             privateKeyPath,
-            EncryptPrivateKey(privateKey, password, random),
-            FileMode.CreateNew,
+            EncryptPrivateKey(privateKey, password, certificateBytes),
             privateFile: true
         );
     }
@@ -145,8 +138,7 @@ public sealed partial class Ed25519CertificateStore
     private static Ed25519CertificateStore Load(
         string certificatePath,
         string privateKeyPath,
-        string password,
-        ILogger<Ed25519CertificateStore> logger
+        string password
     )
     {
         var certificateBytes = File.ReadAllBytes(certificatePath);
@@ -166,11 +158,11 @@ public sealed partial class Ed25519CertificateStore
 
         certificate.Verify(publicKey);
 
-        var contents = File.ReadAllBytes(privateKeyPath);
-        var isLegacy = LegacyEd25519Protection.IsLegacyPrivateKey(contents);
-        var privateKey = isLegacy
-            ? LegacyEd25519Protection.DecryptPrivateKey(contents, certificateBytes, password)
-            : DecryptPrivateKey(contents, password);
+        var privateKey = DecryptPrivateKey(
+            File.ReadAllBytes(privateKeyPath),
+            password,
+            certificateBytes
+        );
 
         if (
             !CryptographicOperations.FixedTimeEquals(
@@ -184,104 +176,96 @@ public sealed partial class Ed25519CertificateStore
             );
         }
 
-        if (isLegacy)
-        {
-            MigratePrivateKey(privateKeyPath, privateKey, password, logger);
-        }
-
         return new Ed25519CertificateStore(certificate, privateKey, password);
     }
 
     private static byte[] EncryptPrivateKey(
         Ed25519PrivateKeyParameters privateKey,
         string password,
-        SecureRandom random
+        byte[] certificateBytes
     )
     {
-        return EncryptedPrivateKeyInfoFactory
-            .CreateEncryptedPrivateKeyInfo(
-                NistObjectIdentifiers.IdAes256Cbc,
-                PkcsObjectIdentifiers.IdHmacWithSha512,
-                password.ToCharArray(),
-                SecureRandom.GetNextBytes(random, SaltSize),
-                Pbkdf2Iterations,
-                random,
-                privateKey
-            )
-            .GetEncoded(Asn1Encodable.Der);
-    }
+        var contents = new byte[PrivateKeyFileSize];
+        var salt = Argon2idKeyDerivation.CreateSalt();
+        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        var encryptionKey = Argon2idKeyDerivation.DeriveKey(password, salt);
+        var plaintext = privateKey.GetEncoded();
 
-    private static Ed25519PrivateKeyParameters DecryptPrivateKey(byte[] contents, string password)
-    {
         try
         {
-            if (
-                PrivateKeyFactory.DecryptKey(password.ToCharArray(), contents)
-                is not Ed25519PrivateKeyParameters privateKey
-            )
-            {
-                throw new CryptographicException(
-                    "The Ed25519 private key file does not hold an Ed25519 key."
-                );
-            }
+            contents[0] = FormatVersion;
+            salt.CopyTo(contents, SaltOffset);
+            nonce.CopyTo(contents, NonceOffset);
 
-            return privateKey;
+            using var cipher = new AesGcm(encryptionKey, TagSize);
+            cipher.Encrypt(
+                nonce,
+                plaintext,
+                contents.AsSpan(CiphertextOffset),
+                contents.AsSpan(TagOffset, TagSize),
+                certificateBytes
+            );
+
+            return contents;
         }
-        catch (Exception ex) when (ex is not CryptographicException)
+        finally
+        {
+            CryptographicOperations.ZeroMemory(encryptionKey);
+            CryptographicOperations.ZeroMemory(plaintext);
+        }
+    }
+
+    private static Ed25519PrivateKeyParameters DecryptPrivateKey(
+        byte[] contents,
+        string password,
+        byte[] certificateBytes
+    )
+    {
+        if (contents.Length != PrivateKeyFileSize || contents[0] != FormatVersion)
+        {
+            throw new CryptographicException(
+                "The Ed25519 private key file is invalid. Recreate the api-dataprotection volume."
+            );
+        }
+
+        var encryptionKey = Argon2idKeyDerivation.DeriveKey(
+            password,
+            contents.AsSpan(SaltOffset, Argon2idKeyDerivation.SaltSize)
+        );
+        var plaintext = new byte[Ed25519PrivateKeyParameters.KeySize];
+
+        try
+        {
+            using var cipher = new AesGcm(encryptionKey, TagSize);
+            cipher.Decrypt(
+                contents.AsSpan(NonceOffset, NonceSize),
+                contents.AsSpan(CiphertextOffset),
+                contents.AsSpan(TagOffset, TagSize),
+                plaintext,
+                certificateBytes
+            );
+
+            return new Ed25519PrivateKeyParameters(plaintext);
+        }
+        catch (CryptographicException ex)
         {
             throw new CryptographicException(
                 "The Ed25519 private key file could not be decrypted.",
                 ex
             );
         }
-    }
-
-    internal static void MigratePrivateKey(
-        string privateKeyPath,
-        Ed25519PrivateKeyParameters privateKey,
-        string password,
-        ILogger<Ed25519CertificateStore> logger
-    )
-    {
-        var temporaryPath = privateKeyPath + MigrationFileSuffix;
-        try
+        finally
         {
-            WriteFile(
-                temporaryPath,
-                EncryptPrivateKey(privateKey, password, new SecureRandom()),
-                FileMode.Create,
-                privateFile: true
-            );
-            File.Move(temporaryPath, privateKeyPath, overwrite: true);
-            LogMigrated(logger);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            LogPrivateKeyMigrationFailed(logger, ex);
-            DeleteMigrationFile(temporaryPath, logger);
+            CryptographicOperations.ZeroMemory(encryptionKey);
+            CryptographicOperations.ZeroMemory(plaintext);
         }
     }
 
-    private static void DeleteMigrationFile(
-        string temporaryPath,
-        ILogger<Ed25519CertificateStore> logger
-    )
-    {
-        try
-        {
-            File.Delete(temporaryPath);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            LogMigrationFileLeftBehind(logger, ex);
-        }
-    }
-
-    private static void WriteFile(string path, byte[] contents, FileMode mode, bool privateFile)
+    private static void WriteFile(string path, byte[] contents, bool privateFile)
     {
         using var stream = new FileStream(
             path,
-            mode,
+            FileMode.CreateNew,
             FileAccess.Write,
             FileShare.None,
             bufferSize: 4096,
@@ -296,61 +280,62 @@ public sealed partial class Ed25519CertificateStore
         stream.Write(contents);
         stream.Flush(flushToDisk: true);
     }
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "The Ed25519 Data Protection private key was rewritten as a PKCS#8 encrypted private key"
-    )]
-    private static partial void LogMigrated(ILogger logger);
-
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The Ed25519 Data Protection private key could not be rewritten as a PKCS#8 encrypted "
-            + "private key; the previous file is still in use"
-    )]
-    private static partial void LogPrivateKeyMigrationFailed(ILogger logger, Exception exception);
-
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "The half-written Ed25519 Data Protection private key of the failed migration could "
-            + "not be deleted and is still in the key volume"
-    )]
-    private static partial void LogMigrationFileLeftBehind(ILogger logger, Exception exception);
 }
 
 /// <summary>
-/// Protects data-protection key elements as a CMS (RFC 5652) blob: the element is encrypted into an
-/// <c>EnvelopedData</c> whose single <c>PasswordRecipientInfo</c> derives its key-encryption key from
-/// the certificate password (PBKDF2, AES-256 RFC 3211 key wrap, AES-256-CBC content encryption), and
-/// that blob is then wrapped in a <c>SignedData</c> signed with the Ed25519 certificate. No certificate
-/// travels inside the blob: the signature is only ever checked against the certificate pinned in the
-/// key volume, and that check runs before anything is decrypted.
+/// Protects data-protection key elements with AES-256-GCM under a key derived from the certificate
+/// password with Argon2id, and signs the result with the Ed25519 certificate. The signature covers a
+/// length-prefixed encoding of the version, salt, nonce, tag and ciphertext, and it is verified against
+/// the certificate pinned in the key volume before any key is derived or any byte is decrypted.
 /// </summary>
-internal static class CmsKeyProtection
+internal static class Ed25519KeyProtection
 {
-    internal const int SignedDataVersion = 1;
-    internal const int SignerInfoVersion = 1;
-    internal const int MaximumBlobSize = 1024 * 1024;
+    internal const int ElementVersion = 1;
+    internal const int MaximumCiphertextSize = 1024 * 1024;
 
-    internal static readonly XNamespace Namespace = "urn:codigoactivo:data-protection:cms:v2";
-    internal const int ElementVersion = 2;
+    internal static readonly XNamespace Namespace = "urn:codigoactivo:data-protection:aes-gcm:v1";
+
+    private const string ElementName = "encryptedSecret";
+    private const string VersionAttributeName = "version";
+
+    private static readonly byte[] AdditionalData = Encoding.UTF8.GetBytes(
+        "CodigoActivo Data Protection key element v1"
+    );
 
     internal static XElement Encrypt(XElement plaintextElement, Ed25519CertificateStore store)
     {
         var plaintext = Encoding.UTF8.GetBytes(
             plaintextElement.ToString(SaveOptions.DisableFormatting)
         );
+        var salt = Argon2idKeyDerivation.CreateSalt();
+        var nonce = RandomNumberGenerator.GetBytes(Ed25519CertificateStore.NonceSize);
+        var tag = new byte[Ed25519CertificateStore.TagSize];
+        var ciphertext = new byte[plaintext.Length];
+        var encryptionKey = Argon2idKeyDerivation.DeriveKey(store.CertificatePassword, salt);
 
         try
         {
+            using var cipher = new AesGcm(encryptionKey, Ed25519CertificateStore.TagSize);
+            cipher.Encrypt(nonce, plaintext, ciphertext, tag, AdditionalData);
+
+            var signature = Sign(
+                store.PrivateKey,
+                BuildSignedPayload(ElementVersion, salt, nonce, tag, ciphertext)
+            );
+
             return new XElement(
-                Namespace + "encryptedSecret",
-                new XAttribute("version", ElementVersion),
-                Convert.ToBase64String(Protect(plaintext, store))
+                Namespace + ElementName,
+                new XAttribute(VersionAttributeName, ElementVersion),
+                new XElement(Namespace + "salt", Convert.ToBase64String(salt)),
+                new XElement(Namespace + "nonce", Convert.ToBase64String(nonce)),
+                new XElement(Namespace + "tag", Convert.ToBase64String(tag)),
+                new XElement(Namespace + "ciphertext", Convert.ToBase64String(ciphertext)),
+                new XElement(Namespace + "signature", Convert.ToBase64String(signature))
             );
         }
         finally
         {
+            CryptographicOperations.ZeroMemory(encryptionKey);
             CryptographicOperations.ZeroMemory(plaintext);
         }
     }
@@ -360,199 +345,139 @@ internal static class CmsKeyProtection
         ArgumentNullException.ThrowIfNull(encryptedElement);
 
         if (
-            encryptedElement.Name != Namespace + "encryptedSecret"
-            || !int.TryParse((string?)encryptedElement.Attribute("version"), out var version)
+            encryptedElement.Name != Namespace + ElementName
+            || !int.TryParse(
+                (string?)encryptedElement.Attribute(VersionAttributeName),
+                CultureInfo.InvariantCulture,
+                out var version
+            )
             || version != ElementVersion
         )
         {
-            throw new CryptographicException("The encrypted Data Protection key is invalid.");
+            throw Invalid();
         }
 
-        byte[] blob;
+        var salt = Decode(encryptedElement, "salt", Argon2idKeyDerivation.SaltSize);
+        var nonce = Decode(encryptedElement, "nonce", Ed25519CertificateStore.NonceSize);
+        var tag = Decode(encryptedElement, "tag", Ed25519CertificateStore.TagSize);
+        var signature = Decode(
+            encryptedElement,
+            "signature",
+            Ed25519PrivateKeyParameters.SignatureSize
+        );
+        var ciphertext = Decode(encryptedElement, "ciphertext", expectedSize: null);
+
+        if (ciphertext.Length is 0 or > MaximumCiphertextSize)
+        {
+            throw Invalid();
+        }
+
+        Verify(
+            store.Certificate,
+            BuildSignedPayload(version, salt, nonce, tag, ciphertext),
+            signature
+        );
+
+        var encryptionKey = Argon2idKeyDerivation.DeriveKey(store.CertificatePassword, salt);
+        var plaintext = new byte[ciphertext.Length];
+
         try
         {
-            blob = Convert.FromBase64String(encryptedElement.Value);
+            using var cipher = new AesGcm(encryptionKey, Ed25519CertificateStore.TagSize);
+            cipher.Decrypt(nonce, ciphertext, tag, plaintext, AdditionalData);
+
+            return XElement.Parse(
+                Encoding.UTF8.GetString(plaintext),
+                LoadOptions.PreserveWhitespace
+            );
+        }
+        catch (Exception ex) when (ex is not CryptographicException and not OutOfMemoryException)
+        {
+            throw new CryptographicException("The decrypted Data Protection key is invalid.", ex);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(encryptionKey);
+            CryptographicOperations.ZeroMemory(plaintext);
+        }
+    }
+
+    private static byte[] Sign(Ed25519PrivateKeyParameters privateKey, byte[] payload)
+    {
+        var signer = new Ed25519Signer();
+        signer.Init(forSigning: true, privateKey);
+        signer.BlockUpdate(payload, 0, payload.Length);
+        return signer.GenerateSignature();
+    }
+
+    private static void Verify(X509Certificate certificate, byte[] payload, byte[] signature)
+    {
+        var verifier = new Ed25519Signer();
+        verifier.Init(forSigning: false, certificate.GetPublicKey());
+        verifier.BlockUpdate(payload, 0, payload.Length);
+
+        if (!verifier.VerifySignature(signature))
+        {
+            throw new CryptographicException(
+                "The encrypted Data Protection key has an invalid Ed25519 signature."
+            );
+        }
+    }
+
+    private static byte[] BuildSignedPayload(
+        int version,
+        byte[] salt,
+        byte[] nonce,
+        byte[] tag,
+        byte[] ciphertext
+    )
+    {
+        ReadOnlySpan<byte[]> fields = [salt, nonce, tag, ciphertext];
+        var length = sizeof(int);
+        foreach (var field in fields)
+        {
+            length += sizeof(int) + field.Length;
+        }
+
+        var payload = new byte[length];
+        BinaryPrimitives.WriteInt32BigEndian(payload, version);
+        var offset = sizeof(int);
+        foreach (var field in fields)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(offset), field.Length);
+            offset += sizeof(int);
+            field.CopyTo(payload, offset);
+            offset += field.Length;
+        }
+
+        return payload;
+    }
+
+    private static byte[] Decode(XElement parent, string name, int? expectedSize)
+    {
+        var element = parent.Element(Namespace + name);
+        if (element is null)
+        {
+            throw Invalid();
+        }
+
+        byte[] decoded;
+        try
+        {
+            decoded = Convert.FromBase64String(element.Value);
         }
         catch (FormatException ex)
         {
             throw new CryptographicException("The encrypted Data Protection key is invalid.", ex);
         }
 
-        if (blob.Length is 0 or > MaximumBlobSize)
+        if (expectedSize is null || decoded.Length == expectedSize)
         {
-            throw new CryptographicException("The encrypted Data Protection key is invalid.");
+            return decoded;
         }
 
-        var plaintext = Unprotect(blob, store);
-        try
-        {
-            return XElement.Parse(
-                Encoding.UTF8.GetString(plaintext),
-                LoadOptions.PreserveWhitespace
-            );
-        }
-        catch (Exception ex) when (ex is not CryptographicException)
-        {
-            throw new CryptographicException("The decrypted Data Protection key is invalid.", ex);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(plaintext);
-        }
-    }
-
-    private static byte[] Protect(byte[] plaintext, Ed25519CertificateStore store)
-    {
-        var random = new SecureRandom();
-        var envelopedGenerator = new CmsEnvelopedDataGenerator(random);
-        envelopedGenerator.AddPasswordRecipient(
-            new Pkcs5Scheme2Utf8PbeKey(
-                store.CertificatePassword.ToCharArray(),
-                SecureRandom.GetNextBytes(random, Ed25519CertificateStore.SaltSize),
-                Ed25519CertificateStore.Pbkdf2Iterations
-            ),
-            CmsEnvelopedGenerator.Aes256Cbc
-        );
-
-        var enveloped = envelopedGenerator
-            .Generate(new CmsProcessableByteArray(plaintext), NistObjectIdentifiers.IdAes256Cbc)
-            .ContentInfo.GetEncoded(Asn1Encodable.Der);
-
-        var signedGenerator = new CmsSignedDataGenerator(random) { UseDefiniteLength = true };
-        signedGenerator.AddSignerInfoGenerator(
-            new SignerInfoGeneratorBuilder().Build(
-                new Asn1SignatureFactory("Ed25519", store.PrivateKey, random),
-                store.Certificate
-            )
-        );
-
-        return signedGenerator
-            .Generate(new CmsProcessableByteArray(enveloped), encapsulate: true)
-            .GetEncoded(Asn1Encodable.Der);
-    }
-
-    private static byte[] Unprotect(byte[] blob, Ed25519CertificateStore store)
-    {
-        try
-        {
-            return DecryptEnvelope(VerifySignature(blob, store), store);
-        }
-        catch (Exception ex) when (ex is not CryptographicException)
-        {
-            throw new CryptographicException("The encrypted Data Protection key is invalid.", ex);
-        }
-    }
-
-    private static byte[] VerifySignature(byte[] blob, Ed25519CertificateStore store)
-    {
-        var contentInfo = ContentInfo.GetInstance(Asn1Object.FromByteArray(blob));
-        if (!PkcsObjectIdentifiers.SignedData.Equals(contentInfo.ContentType))
-        {
-            throw Invalid();
-        }
-
-        var signedData = new CmsSignedData(contentInfo);
-        if (
-            signedData.Version != SignedDataVersion
-            || !PkcsObjectIdentifiers.Data.Equals(signedData.SignedContentType)
-        )
-        {
-            throw Invalid();
-        }
-
-        var digests = signedData.GetDigestAlgorithms().ToList();
-        if (digests.Count != 1 || !NistObjectIdentifiers.IdSha512.Equals(digests[0].Algorithm))
-        {
-            throw Invalid();
-        }
-
-        var signers = signedData.GetSignerInfos().GetSigners();
-        if (signers.Count != 1)
-        {
-            throw Invalid();
-        }
-
-        var signer = signers[0];
-        if (
-            signer.Version != SignerInfoVersion
-            || !NistObjectIdentifiers.IdSha512.Equals(signer.DigestAlgorithmID.Algorithm)
-            || !EdECObjectIdentifiers.id_Ed25519.Equals(signer.SignatureAlgorithm.Algorithm)
-            || !signer.SignerID.Match(store.Certificate)
-        )
-        {
-            throw Invalid();
-        }
-
-        if (
-            signedData.GetCertificates().EnumerateMatches(null).Any()
-            || signedData.GetCrls().EnumerateMatches(null).Any()
-        )
-        {
-            throw Invalid();
-        }
-
-        if (!signer.Verify(store.Certificate))
-        {
-            throw new CryptographicException(
-                "The encrypted Data Protection key has an invalid Ed25519 signature."
-            );
-        }
-
-        using var content = new MemoryStream();
-        signedData.SignedContent.Write(content);
-        return content.ToArray();
-    }
-
-    private static byte[] DecryptEnvelope(byte[] enveloped, Ed25519CertificateStore store)
-    {
-        var contentInfo = ContentInfo.GetInstance(Asn1Object.FromByteArray(enveloped));
-        if (!PkcsObjectIdentifiers.EnvelopedData.Equals(contentInfo.ContentType))
-        {
-            throw Invalid();
-        }
-
-        var envelopedData = new CmsEnvelopedData(contentInfo);
-        if (
-            !NistObjectIdentifiers.IdAes256Cbc.Equals(envelopedData.EncryptionAlgorithmID.Algorithm)
-        )
-        {
-            throw Invalid();
-        }
-
-        var recipients = envelopedData.GetRecipientInfos().GetRecipients();
-        if (recipients.Count != 1 || recipients[0] is not PasswordRecipientInformation recipient)
-        {
-            throw Invalid();
-        }
-
-        var keyEncryption = recipient.KeyEncryptionAlgorithmID;
-        if (
-            !PkcsObjectIdentifiers.IdAlgPwriKek.Equals(keyEncryption.Algorithm)
-            || !NistObjectIdentifiers.IdAes256Cbc.Equals(
-                AlgorithmIdentifier.GetInstance(keyEncryption.Parameters).Algorithm
-            )
-            || !PkcsObjectIdentifiers.IdPbkdf2.Equals(recipient.KeyDerivationAlgorithm.Algorithm)
-        )
-        {
-            throw Invalid();
-        }
-
-        var derivation = Pbkdf2Params.GetInstance(recipient.KeyDerivationAlgorithm.Parameters);
-        if (
-            derivation.IterationCount.CompareTo(
-                BigInteger.ValueOf(Ed25519CertificateStore.Pbkdf2Iterations)
-            ) < 0
-        )
-        {
-            throw Invalid();
-        }
-
-        return recipient.GetContent(
-            new Pkcs5Scheme2Utf8PbeKey(
-                store.CertificatePassword.ToCharArray(),
-                recipient.KeyDerivationAlgorithm
-            )
-        );
+        CryptographicOperations.ZeroMemory(decoded);
+        throw Invalid();
     }
 
     private static CryptographicException Invalid()
@@ -562,11 +487,12 @@ internal static class CmsKeyProtection
 }
 
 /// <summary>
-/// Encrypts data-protection key elements into the CMS container described by
-/// <see cref="CmsKeyProtection"/>.
+/// Encrypts data-protection key elements into the signed AES-256-GCM element described by
+/// <see cref="Ed25519KeyProtection"/>.
 /// </summary>
 /// <param name="certificateStore">Store that provides the certificate, signing key and password.</param>
-public sealed class Ed25519CmsXmlEncryptor(Ed25519CertificateStore certificateStore) : IXmlEncryptor
+public sealed class Ed25519AesGcmXmlEncryptor(Ed25519CertificateStore certificateStore)
+    : IXmlEncryptor
 {
     /// <summary>
     /// Encrypts and signs the XML element for data-protection storage.
@@ -579,24 +505,25 @@ public sealed class Ed25519CmsXmlEncryptor(Ed25519CertificateStore certificateSt
         ArgumentNullException.ThrowIfNull(certificateStore);
 
         return new EncryptedXmlInfo(
-            CmsKeyProtection.Encrypt(plaintextElement, certificateStore),
-            typeof(Ed25519CmsXmlDecryptor)
+            Ed25519KeyProtection.Encrypt(plaintextElement, certificateStore),
+            typeof(Ed25519AesGcmXmlDecryptor)
         );
     }
 }
 
 /// <summary>
-/// Verifies and decrypts the CMS container written by <see cref="Ed25519CmsXmlEncryptor"/>.
+/// Verifies and decrypts the elements written by <see cref="Ed25519AesGcmXmlEncryptor"/>. Data
+/// Protection resolves this type by the name recorded in each key file.
 /// </summary>
-public sealed class Ed25519CmsXmlDecryptor : IXmlDecryptor
+public sealed class Ed25519AesGcmXmlDecryptor : IXmlDecryptor
 {
     private readonly Ed25519CertificateStore certificateStore;
 
     /// <summary>
-    /// Initializes a CMS xml decryptor with its required dependencies.
+    /// Initializes the decryptor with its required dependencies.
     /// </summary>
     /// <param name="services">Service collection or provider used to resolve dependencies.</param>
-    public Ed25519CmsXmlDecryptor(IServiceProvider services)
+    public Ed25519AesGcmXmlDecryptor(IServiceProvider services)
     {
         ArgumentNullException.ThrowIfNull(services);
         certificateStore = services.GetRequiredService<Ed25519CertificateStore>();
@@ -609,6 +536,6 @@ public sealed class Ed25519CmsXmlDecryptor : IXmlDecryptor
     /// <returns>The resulting x element value.</returns>
     public XElement Decrypt(XElement encryptedElement)
     {
-        return CmsKeyProtection.Decrypt(encryptedElement, certificateStore);
+        return Ed25519KeyProtection.Decrypt(encryptedElement, certificateStore);
     }
 }

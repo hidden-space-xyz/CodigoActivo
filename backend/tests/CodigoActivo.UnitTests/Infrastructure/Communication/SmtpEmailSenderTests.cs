@@ -3,8 +3,6 @@ using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
 using MailKit.Net.Smtp;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using MimeKit;
 using Xunit;
 
@@ -30,12 +28,9 @@ public sealed class SmtpEmailSenderTests
         };
     }
 
-    private static SmtpEmailSender Create(
-        SmtpOptions options,
-        ILogger<SmtpEmailSender>? logger = null
-    )
+    private static SmtpEmailSender Create(SmtpOptions options)
     {
-        return new SmtpEmailSender(options, logger ?? NullLogger<SmtpEmailSender>.Instance);
+        return new SmtpEmailSender(options);
     }
 
     private static EmailMessage Message(
@@ -179,116 +174,38 @@ public sealed class SmtpEmailSenderTests
     }
 
     [Fact]
-    public async Task SendManyAsyncNoMessagesReturnsEmptyResultWithoutConfiguration()
-    {
-        var sender = Create(new SmtpOptions());
-
-        var result = await sender.SendManyAsync([], TestContext.Current.CancellationToken);
-
-        result.Should().Be(new EmailBatchResult(0, 0));
-    }
-
-    [Fact]
-    public async Task SendManyAsyncWithoutFromAddressThrowsInvalidOperation()
-    {
-        var sender = Create(new SmtpOptions { Host = "127.0.0.1" });
-
-        var act = () => sender.SendManyAsync([Message()], TestContext.Current.CancellationToken);
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-    }
-
-    [Fact]
-    public async Task SendManyAsyncAutoSecurityDeliversEveryMessageOverOneConnection()
+    public async Task SendAsyncAutoSecurityDeliversWithoutAuthentication()
     {
         await using var server = new FakeSmtpServer();
         var sender = Create(Options(server, SmtpSecurityMode.Auto));
 
-        var result = await sender.SendManyAsync(
-            [Message("one@example.test"), Message("two@example.test")],
-            Timeout()
-        );
+        await sender.SendAsync(Message("one@example.test"), Timeout());
 
-        result.Should().Be(new EmailBatchResult(2, 0));
         server.AuthenticatedUser.Should().BeNull();
-        server
-            .Messages.SelectMany(m => m.Recipients)
-            .Should()
-            .Equal("one@example.test", "two@example.test");
+        server.Messages.SelectMany(m => m.Recipients).Should().Equal("one@example.test");
     }
 
     [Fact]
-    public async Task SendManyAsyncRejectedRecipientCountsFailureAndContinues()
+    public async Task SendAsyncConnectionDroppedThrowsWithoutDelivering()
     {
-        await using var server = new FakeSmtpServer { RejectedRecipient = "bounce@example.test" };
+        await using var server = new FakeSmtpServer { DropConnectionOnDataCommand = 1 };
         var sender = Create(Options(server));
 
-        var result = await sender.SendManyAsync(
-            [
-                Message("one@example.test"),
-                Message("bounce@example.test"),
-                Message("two@example.test"),
-            ],
-            Timeout()
-        );
+        var act = () => sender.SendAsync(Message(), Timeout());
 
-        result.Should().Be(new EmailBatchResult(2, 1));
-        server
-            .Messages.SelectMany(m => m.Recipients)
-            .Should()
-            .Equal("one@example.test", "two@example.test");
+        await act.Should().ThrowAsync<Exception>();
+        server.Messages.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task SendManyAsyncRejectedRecipientLogsWithoutTheAddress()
-    {
-        await using var server = new FakeSmtpServer { RejectedRecipient = "bounce@example.test" };
-        var logger = new RecordingLogger<SmtpEmailSender>();
-        var sender = Create(Options(server), logger);
-
-        await sender.SendManyAsync([Message("bounce@example.test")], Timeout());
-
-        logger.Entries.Should().ContainSingle().Which.Should().Contain("RecipientNotAccepted");
-        logger.Entries.Should().NotContain(entry => entry.Contains("bounce@example.test"));
-    }
-
-    [Fact]
-    public async Task SendManyAsyncConnectionDroppedCountsUnattemptedMessagesAsFailed()
-    {
-        await using var server = new FakeSmtpServer { DropConnectionOnDataCommand = 2 };
-        var sender = Create(Options(server));
-
-        var result = await sender.SendManyAsync(
-            [
-                Message("one@example.test"),
-                Message("two@example.test"),
-                Message("three@example.test"),
-                Message("four@example.test"),
-            ],
-            Timeout()
-        );
-
-        result.Should().Be(new EmailBatchResult(1, 3));
-        server.Messages.Should().ContainSingle();
-    }
-
-    [Fact]
-    public async Task SendManyAsyncCancelledMidBatchStopsAndThrows()
+    public async Task SendAsyncCancelledWhileSendingThrowsOperationCanceled()
     {
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Timeout());
         await using var server = new FakeSmtpServer { OnMessageData = cancellation.Cancel };
         var sender = Create(Options(server));
 
-        var act = () =>
-            sender.SendManyAsync(
-                [Message("one@example.test"), Message("two@example.test")],
-                cancellation.Token
-            );
+        var act = () => sender.SendAsync(Message("one@example.test"), cancellation.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
-        server
-            .Messages.Select(m => m.Recipients)
-            .Should()
-            .NotContain(r => r.Contains("two@example.test"));
     }
 }

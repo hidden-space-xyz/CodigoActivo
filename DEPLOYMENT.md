@@ -29,7 +29,8 @@ Networks: `frontend` (shared by `web` and `api`) and internal-only `backend` (sh
 
 Logs go to stdout and contain personal data (client IPs, user agents), so the base Compose file rotates every
 container's `json-file` log at 10 MB with five files kept; see [SECURITY.md](SECURITY.md#logging) for the
-logging policy. Automatic email waiting in memory is not persistent.
+logging policy. Queued email is persisted in `db-data`, not held in memory; see
+[Email delivery](#email-delivery).
 
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
 read-only root filesystems with explicit writable mounts. Health checks target `/api/auth/csrf` (API) and
@@ -69,7 +70,8 @@ a public DNS name; IP addresses, localhost and reserved example/test domains are
 
 ### TLS and proxy boundary
 
-The external proxy must terminate HTTPS, overwrite client-supplied forwarding headers, and send the effective
+The external proxy must terminate HTTPS, accepting only TLS 1.3 with TLS 1.2 as the sole fallback and
+disabling TLS 1.1, TLS 1.0 and SSL; overwrite client-supplied forwarding headers; and send the effective
 scheme as `X-Forwarded-Proto`. The API accepts one forwarded hop, redirects HTTP to HTTPS in Production, and
 sets secure `__Host-` cookies; nginx emits HSTS only when the forwarded scheme is HTTPS. The API honours
 `X-Forwarded-For`/`X-Forwarded-Proto` only from loopback and private peers (RFC 1918 and `fc00::/7`), so a
@@ -120,7 +122,7 @@ syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the 
 
 | Setting                                       | Default             |
 | --------------------------------------------- | ------------------- |
-| `Auth:ExpireHours`                            | `8`                 |
+| `Auth:ExpireHours`                            | `720` (30 days)     |
 | `SessionCleanup:IntervalMinutes`              | `60`                |
 | `FileStorage:MaxSizeBytes`                    | `10485760` (10 MiB) |
 | `AccountVerification:OtpLifetimeMinutes`      | `15`                |
@@ -145,9 +147,12 @@ limits request bodies to `12m`; raising the application limit may also require c
 
 ## Email delivery
 
-Automatic messages pass through a process-local rate limiter and a bounded in-memory queue. Administrator
-bulk email is synchronous, uses a single SMTP connection, and bypasses the automatic-message budget so its
-response can report delivered, failed and skipped recipients.
+Every email — automatic messages and administrator-written bulk mail alike — is stored in a PostgreSQL
+outbox (`email_outbox_messages`, `email_outbox_contents`, `email_outbox_content_parts`) and delivered in the
+background by the `EmailOutboxProcessor` hosted service; a request that queues email returns once the row
+is committed, not once SMTP accepts it. Automatic messages still pass through a process-local rate limiter
+before reaching the outbox; administrator bulk email bypasses that budget but is queued the same way, so its
+response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
 The guard cannot be disabled and falls back to defaults on invalid settings. Limits are per API process:
 restarts refill them, replicas multiply them.
@@ -164,18 +169,32 @@ restarts refill them, replicas multiply them.
 | `EmailGuard:SweepIntervalMinutes`    | Idle-budget cleanup interval                                             | `5`     |
 | `EmailGuard:AlertIntervalMinutes`    | Minimum interval between repeated guard alerts                           | `15`    |
 
-The queue has no persistence or retry; a full queue rejects new messages. Shutdown drain must stay below the
-API service's 30-second `stop_grace_period`.
+Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
+order (2FA/verification/reset codes first, ordinary automatic mail next, administrator bulk mail last), by
+a poll loop (`EmailQueue:PollIntervalSeconds`) also woken immediately by same-process enqueues. A message is
+attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four
+failures; the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a
+successful send and removing the row can resend it. `EmailQueue:Capacity` only bounds ordinary automatic and
+bulk mail; login, verification and password-reset codes are always accepted (and still bounded by the
+`ThrottledEmailSender` budgets above). Shutdown only waits for sends already in flight, up to
+`EmailQueue:ShutdownDrainSeconds`, which must stay below the API service's 30-second `stop_grace_period`;
+whatever is not delivered by then stays in the outbox for the next start. Raising `EmailQueue:BatchSize`
+without also raising `EmailQueue:Workers` lengthens the lease held on a claimed batch.
 
-| Setting                           | Purpose                                    | Default |
-| --------------------------------- | ------------------------------------------ | ------- |
-| `EmailQueue:Capacity`             | Maximum queued messages                    | `1000`  |
-| `EmailQueue:Workers`              | Concurrent SMTP workers, capped at 16      | `4`     |
-| `EmailQueue:ShutdownDrainSeconds` | Graceful drain time, capped at 300 seconds | `20`    |
-| `EmailQueue:SendTimeoutSeconds`   | Per-message timeout, capped at 600 seconds | `60`    |
+| Setting                           | Purpose                                               | Default |
+| --------------------------------- | ------------------------------------------------------ | ------- |
+| `EmailQueue:Capacity`             | Approximate cap on pending non-critical messages      | `1000`  |
+| `EmailQueue:Workers`              | Concurrent SMTP sends per claimed batch, capped at 16 | `4`     |
+| `EmailQueue:BatchSize`            | Due messages claimed at once, capped at 100           | `10`    |
+| `EmailQueue:ShutdownDrainSeconds` | Graceful drain time, capped at 300 seconds            | `20`    |
+| `EmailQueue:SendTimeoutSeconds`   | Per-message timeout, capped at 600 seconds            | `60`    |
+| `EmailQueue:PollIntervalSeconds`  | Wait between poll passes, capped at 300 seconds       | `5`     |
 
-Monitor logs for recipient throttling, global-budget exhaustion, a full queue, SMTP delivery errors and
-undelivered messages at shutdown.
+None of the `EmailQueue:*` settings are forwarded by the base Compose file; changing one requires both the
+uppercase environment variable and adding it to `api.environment` in `docker-compose.yml`.
+
+Monitor logs for recipient throttling, global-budget exhaustion, messages that exhausted their attempts,
+SMTP delivery errors and undelivered messages at shutdown.
 
 ## Locked accounts
 
@@ -268,8 +287,10 @@ Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test r
 the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
 every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
 which invalidates all sessions and stored authenticator secrets (see
-[SECURITY.md](SECURITY.md#data-protection-and-containers)). The email queue is intentionally absent from
-backups: a restart can lose pending mail, but the requesting database action has already committed.
+[SECURITY.md](SECURITY.md#data-protection-and-containers)). The email outbox lives in `db-data`, so a
+`db-data` backup includes pending mail; restoring an older backup can redeliver or drop messages queued
+after it was taken, and its protected content depends on the Data Protection key ring in effect when it was
+queued.
 
 - Any `db-data` backup/dump taken before `AnonymizeEventRatings` ran, or any physical volume copy or
   point-in-time recovery material (which includes `pg_wal`), still links event ratings to their author;

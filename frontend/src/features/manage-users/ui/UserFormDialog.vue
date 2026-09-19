@@ -27,11 +27,11 @@ const emit = defineEmits<{
   /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
   /**
-   * Fired with the validated changes. Email and phone are optional only while the user is a
-   * dependent minor, blank values are sent as `null`, and the user's current `parentId` is
-   * preserved. `currentPassword` carries the signed-in user's password when the change replaces
-   * the login identifiers of the account or the server already refused one, and is `null`
-   * otherwise.
+   * Fired with the validated changes. A dependent always reports `null` email and phone, whatever
+   * its birth date, because the server keeps the guardian's contact details; for a standalone
+   * account blank values are sent as `null`. The user's current `parentId` is preserved.
+   * `currentPassword` carries the signed-in user's password when the change replaces the login
+   * identifiers of the account or the server already refused one, and is `null` otherwise.
    */
   submit: [body: UpdateUserInput]
 }>()
@@ -67,18 +67,20 @@ const isMinorBirthDate = computed(() => {
   const age = ageFrom(form.birthDate)
   return age !== null && age < 18
 })
-const isMinor = computed(() => isDependent.value && isMinorBirthDate.value)
 const minorNotAllowed = computed(() => !isDependent.value && isMinorBirthDate.value)
 const birthDateInvalid = computed(() => !form.birthDate || form.birthDate > new Date())
 const emailInvalid = computed(() => {
+  if (isDependent.value) return false
   const value = form.email.trim()
   return value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 })
-const contactMissing = computed(() => !isMinor.value && (!form.email.trim() || !form.phone.trim()))
+const contactMissing = computed(
+  () => !isDependent.value && (!form.email.trim() || !form.phone.trim()),
+)
 const storedEmail = computed(() => props.user?.email ?? '')
 const storedPhone = computed(() => props.user?.phone ?? '')
 const replacesIdentifiers = computed(() => {
-  if (isMinor.value) return false
+  if (isDependent.value) return false
   return (
     form.email.trim().toLowerCase() !== storedEmail.value.toLowerCase() ||
     form.phone.trim() !== storedPhone.value
@@ -135,8 +137,8 @@ function save(): void {
   const body: UpdateUserInput = {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
-    email: form.email.trim() ? form.email.trim() : null,
-    phone: form.phone.trim() ? form.phone.trim() : null,
+    email: isDependent.value || !form.email.trim() ? null : form.email.trim(),
+    phone: isDependent.value || !form.phone.trim() ? null : form.phone.trim(),
     birthDate: toDateOnly(birthDate),
     gender,
     parentId: props.user?.parentId ?? null,
@@ -209,42 +211,41 @@ function save(): void {
           $t('validation.genderRequired')
         }}</small>
       </div>
-      <div class="form__field">
-        <label for="user-email"
-          >{{ $t('common.email')
-          }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label
-        >
-        <el-input
-          id="user-email"
-          v-model="form.email"
-          type="email"
-          :maxlength="256"
-          :class="{
-            'ca-invalid': submitted && (emailInvalid || (contactMissing && !form.email.trim())),
-          }"
-        />
-        <small v-if="submitted && emailInvalid" class="form__error">{{
-          $t('validation.emailFormat')
-        }}</small>
-      </div>
-      <div class="form__field">
-        <label for="user-phone"
-          >{{ $t('common.phone')
-          }}{{ isMinor ? $t('features.manageUsers.optionalSuffix') : '' }}</label
-        >
-        <el-input
-          id="user-phone"
-          v-model="form.phone"
-          type="tel"
-          :maxlength="40"
-          :class="{
-            'ca-invalid': submitted && contactMissing && !form.phone.trim(),
-          }"
-        />
-        <small v-if="submitted && contactMissing" class="form__error">{{
-          $t('features.manageUsers.contactRequired')
-        }}</small>
-      </div>
+      <p v-if="isDependent" class="form__hint">
+        {{ $t('features.manageUsers.dependentContact') }}
+      </p>
+      <template v-else>
+        <div class="form__field">
+          <label for="user-email">{{ $t('common.email') }}</label>
+          <el-input
+            id="user-email"
+            v-model="form.email"
+            type="email"
+            :maxlength="256"
+            :class="{
+              'ca-invalid': submitted && (emailInvalid || (contactMissing && !form.email.trim())),
+            }"
+          />
+          <small v-if="submitted && emailInvalid" class="form__error">{{
+            $t('validation.emailFormat')
+          }}</small>
+        </div>
+        <div class="form__field">
+          <label for="user-phone">{{ $t('common.phone') }}</label>
+          <el-input
+            id="user-phone"
+            v-model="form.phone"
+            type="tel"
+            :maxlength="40"
+            :class="{
+              'ca-invalid': submitted && contactMissing && !form.phone.trim(),
+            }"
+          />
+          <small v-if="submitted && contactMissing" class="form__error">{{
+            $t('features.manageUsers.contactRequired')
+          }}</small>
+        </div>
+      </template>
       <div v-if="requiresPassword" class="form__field">
         <label for="user-current-password">{{
           $t('features.manageUsers.identifierChange.passwordLabel')

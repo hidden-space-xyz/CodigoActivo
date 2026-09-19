@@ -1,11 +1,14 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -81,6 +84,43 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         using var replay = await PresentAsync(client, code);
         await replay.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+    }
+
+    [Fact]
+    public async Task TwoFactorSessionCookieIsPersistentWhileTheChallengeCookieIsNot()
+    {
+        var client = CreateClient();
+
+        using var challenge = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.MemberEmail, TestSeedData.Password),
+            Ct
+        );
+
+        challenge.StatusCode.Should().Be(HttpStatusCode.OK);
+        var challengeCookie = CookieNamed(challenge, "CodigoActivo.TwoFactor");
+        challengeCookie.Expires.Should().BeNull("the challenge dies with the browser session");
+        challengeCookie.MaxAge.Should().BeNull();
+
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+        using var response = await PresentAsync(client, code);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var sessionCookie = CookieNamed(response, "CodigoActivo.Session");
+        sessionCookie.Expires.Should().NotBeNull("the session survives closing the browser");
+        (sessionCookie.Expires!.Value - DateTimeOffset.UtcNow)
+            .Should()
+            .BeCloseTo(SessionLifetimeOptions.DefaultLifetime, TimeSpan.FromMinutes(10));
+
+        var stored = await Factory.QueryAsync(db =>
+            db.UserSessions.SingleAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+        );
+        stored
+            .ExpiresAt.Should()
+            .Be(
+                Factory.Clock.UtcNow + SessionLifetimeOptions.DefaultLifetime,
+                "the session row holds the absolute expiry and never slides"
+            );
     }
 
     [Fact]
@@ -612,6 +652,16 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId.Should().BeNull();
         using var stale = await client.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
         await stale.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+    }
+
+    private static SetCookieHeaderValue CookieNamed(HttpResponseMessage response, string name)
+    {
+        var raw = response
+            .Headers.GetValues("Set-Cookie")
+            .Where(value => value.StartsWith($"{name}=", StringComparison.Ordinal))
+            .ToList();
+        raw.Should().ContainSingle();
+        return SetCookieHeaderValue.Parse(raw[0]);
     }
 
     private HttpClient ClientWithCookiesOf(HttpResponseMessage response)

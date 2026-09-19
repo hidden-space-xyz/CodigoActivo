@@ -262,9 +262,9 @@
     "UserChildBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
     "UserPasswordNotSet": "El usuario no tiene una contraseña configurada.",
     "UserCurrentPasswordIncorrect": "La contraseña actual no es correcta.",
-    "UserParentNotAllowedForAdult": "Un usuario mayor de edad no puede tener un responsable.",
+    "UserParentNotAllowedForAdult": "Una cuenta propia no puede tener un responsable.",
     "UserCannotBecomeMinor": "Una cuenta existente no puede convertirse en menor a cargo de un responsable. Los menores se añaden desde la sección de familia.",
-    "UserParentReassignmentForbidden": "No puedes reasignar este menor a otro responsable.",
+    "UserParentReassignmentForbidden": "No puedes reasignar esta persona a cargo a otro responsable.",
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
     "UserPhoneAlreadyInUse": "Este teléfono ya está en uso.",
@@ -1061,7 +1061,7 @@
     },
     "manageUsers": {
       "editHeader": "Editar usuario",
-      "optionalSuffix": " (opcional)",
+      "dependentContact": "Esta persona está a cargo de un responsable, así que no tiene correo ni teléfono propios: se usan los de su responsable.",
       "birthDateInvalid": "Indica una fecha de nacimiento válida.",
       "minorNotAllowed": "Esta cuenta no depende de nadie, así que no puede pasar a ser menor de edad. Los menores se añaden desde la sección de familia.",
       "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
@@ -1127,8 +1127,7 @@
         "message": "El correo se enviará a {target}. Esta acción no se puede deshacer. Cada persona recibe su propio mensaje y no ve al resto de destinatarios."
       },
       "toast": {
-        "sent": "Correo enviado a 1 persona. | Correo enviado a {count} personas.",
-        "failed": "No se ha podido entregar el correo a 1 persona. Revisa el registro del servidor. | No se ha podido entregar el correo a {count} personas. Revisa el registro del servidor.",
+        "queued": "1 correo en cola de envío. Se entregará en unos instantes. | {count} correos en cola de envío. Se entregarán en unos instantes.",
         "skipped": "1 persona sin correo electrónico se ha omitido. | {count} personas sin correo electrónico se han omitido."
       }
     },

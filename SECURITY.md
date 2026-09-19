@@ -14,8 +14,9 @@ authentication are not supported.
 
 ### Authentication and authorization
 
-- Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
-  eight hours by default. In Production it is `Secure` and uses a `__Host-` name. The ticket is not
+- Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, persistent (it survives
+  closing the browser), non-sliding, expiring after 30 days by default. In Production it is `Secure` and uses
+  a `__Host-` name. The ticket is not
   self-sufficient: completing the second factor also writes a `user_sessions` row whose id travels in the
   ticket's `sid` claim, dropping that user's already-expired rows; a background worker additionally deletes
   every expired row on the `SessionCleanup:IntervalMinutes` schedule. The row carries the expiry that decides
@@ -54,11 +55,11 @@ authentication are not supported.
   is refused a guardian (`UserParentNotAllowedForAdult`) and a minor birth date (`UserCannotBecomeMinor`)
   and keeps its credentials, so no request can demote an account into somebody's dependent; a dependent
   only accepts its own guardian repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is
-  never reassigned. Giving a dependent an adult birth date only detaches it from its guardian, and therefore
-  requires its own email and phone and the caller's password like any other identifier change: the row keeps
-  the `Dependent` status and no password, so it still cannot log in (`UserAccountIsDependent`) and
-  `forgot-password` still ignores it; promoting such an account to a standalone one is not implemented.
-  Dependents are created only through `POST /api/users/{id}/children`.
+  never reassigned. Giving a dependent an adult birth date changes nothing else: the request's email and
+  phone are ignored, the row keeps its guardian, the `Dependent` status and no password, so it still cannot
+  log in (`UserAccountIsDependent`) and `forgot-password` still ignores it. Dependents are created only
+  through `POST /api/users/{id}/children`, must be minors at creation, and leave their guardian only when
+  the guardian deletes them.
 
 ### Two-factor authentication
 
@@ -158,8 +159,9 @@ In Production the API accepts one forwarded hop, redirects HTTP to HTTPS and emi
 `X-Forwarded-For`/`X-Forwarded-Proto` are honoured only from loopback and private ranges (`127.0.0.0/8`,
 `::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`); other peers are ignored. The base
 Compose file keeps `api` and `db` off host ports but publishes nginx as `8080:8080` on all interfaces. The
-operator must terminate TLS externally, overwrite untrusted `X-Forwarded-For`/`X-Forwarded-Proto`, and
-prevent clients from bypassing the proxy to reach port `8080` directly. nginx sends HSTS only when the
+operator must terminate TLS externally, accepting only TLS 1.3 with TLS 1.2 as the sole fallback, overwrite
+untrusted `X-Forwarded-For`/`X-Forwarded-Proto`, and prevent clients from bypassing the proxy to reach port
+`8080` directly. nginx sends HSTS only when the
 forwarded scheme is HTTPS, plus CSP, frame denial, MIME sniffing, referrer, permissions and cross-origin
 isolation headers. See [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
 
@@ -241,26 +243,33 @@ Protection certificate password separate from the key-volume backup.
 
 ### Data Protection and containers
 
-Production persists ASP.NET Data Protection keys in `api-dataprotection`. BouncyCastle writes each key
-element as CMS (RFC 5652): an `EnvelopedData` whose single `PasswordRecipientInfo` derives its
-key-encryption key from `DATA_PROTECTION_CERTIFICATE_PASSWORD` (PBKDF2, 600,000 iterations, RFC 3211
-AES-256 key wrap, AES-256-CBC content), wrapped in a `SignedData` signed with a locally generated
-Ed25519 certificate, whose signature is verified against the certificate in the volume before anything
-is decrypted; that certificate's private key is a PKCS#8 `EncryptedPrivateKeyInfo` (PBES2:
-PBKDF2-HMAC-SHA-512, 600,000 iterations, AES-256-CBC) under the same password, rewritten from the
-retired v1 format on startup while v1 key elements stay readable. Since the password now also derives
-the key-wrapping key, there is no rotation procedure: changing it means recreating the volume, which
-invalidates every session and every stored authenticator secret. Application
-containers run as non-root, drop all capabilities, enable `no-new-privileges` and use read-only root
-filesystems; PostgreSQL is reachable only on the internal backend network. The development override removes
-parts of this boundary and must not be deployed.
+Production persists ASP.NET Data Protection keys in `api-dataprotection`. Every key ring element is stored
+as an `urn:codigoactivo:data-protection:aes-gcm:v1` XML element carrying a salt, nonce, authentication tag,
+ciphertext and an Ed25519 signature; decryption first verifies that signature against the certificate pinned
+in the volume, then derives the AES-256-GCM key from `DATA_PROTECTION_CERTIFICATE_PASSWORD` with Argon2id
+(`Argon2idKeyDerivation`: 3 iterations, 64 MiB, 4 lanes, a 16-byte salt — the same parameters and code path
+that hash passwords) before decrypting with `System.Security.Cryptography.AesGcm`. The locally generated
+Ed25519 certificate's own private key is stored the same way, in a fixed-size binary container (version,
+salt, nonce, tag, ciphertext) with the certificate's DER bytes as associated data. BouncyCastle is used only
+to generate and parse the Ed25519 certificate and to sign/verify; it performs no encryption. There is no
+reader for any earlier key-ring or private-key format: a volume created by a previous build must be
+recreated, and startup reports the failure when it is not. Since the certificate password derives the
+key-wrapping key, there is no rotation procedure either: changing it means recreating the volume, which
+invalidates every session and every stored authenticator secret. Outside Production the key ring is
+unencrypted on disk, as before, but every environment protects Data Protection payloads themselves — session
+and two-factor cookies, antiforgery tokens, authenticator secrets and the email outbox content described
+below — with AES-256-GCM. Application containers run as non-root, drop all capabilities, enable
+`no-new-privileges` and use read-only root filesystems; PostgreSQL is reachable only on the internal backend
+network. The development override removes parts of this boundary and must not be deployed.
 
 ### Files and multipart requests
 
 Stored uploads are limited to 10 MiB by default and saved under `/app/files` in the `api-files` volume; nginx
 also enforces a `12m` request-body limit. Access to stored files goes through API authorization, not a direct
-static volume mount. Administrator email attachments are transient — read into the outbound message and
-discarded, never stored — with count, combined bytes and recipient count bounded by application settings.
+static volume mount. Administrator email attachments never reach the `api-files` volume: they are read once
+per batch into the Data Protection-protected outbox content described above and removed once every message
+referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by
+application settings.
 
 ## Email abuse controls
 
@@ -282,18 +291,23 @@ reserve that login codes rely on.
 Every automatic verification, password-reset, second-factor-code, security-change and activity-decision email
 passes through `ThrottledEmailSender`: each normalized destination has burst/hourly/daily budgets, the
 process has a global budget with a credential-email reserve, and normalization lowercases addresses, strips
-sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on attempt, before queueing; SMTP
-failure and a full queue do not refund it. The limiter is always enabled, in-memory, resets on restart and is
-multiplied by the number of API replicas.
+sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on attempt, before the message
+reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter is always enabled,
+in-memory, resets on restart and is multiplied by the number of API replicas.
 
-Accepted mail enters a bounded in-memory channel drained by a fixed worker pool with no retry or persistence;
-graceful shutdown drains it within 20 seconds by default. SMTP failures are logged per message. Operational
-settings and log signals are in [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery).
+Both automatic and administrator-written mail are stored in a PostgreSQL outbox (`email_outbox_messages`)
+and delivered in the background by `EmailOutboxProcessor`, so a request that queues email returns once the
+row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
+delivery schedule, capacity and monitoring. The stored subject, bodies and attachments are protected with
+Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, kind and attachment names
+are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
+discarded on their next delivery attempt.
 
 Only administrators may use `/api/emails/...` endpoints; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,
 minors without their own address are skipped, and attachments remain transient. This mail bypasses the
-automatic-message limiter and is delivered synchronously. Single-recipient messages allow 30 requests/minute
+automatic-message limiter; the endpoint reports how many messages were queued and how many recipients were
+skipped, not what SMTP later did with them. Single-recipient messages allow 30 requests/minute
 per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2 active, no waiting
 queue). All requests remain subject to nginx's general API limit, application recipient/attachment limits and
 the five-minute nginx upstream timeout.

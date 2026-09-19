@@ -39,14 +39,14 @@ describe('useSendEmail', () => {
     server.use(
       http.post('/api/emails/users/:userId', async ({ request }) => {
         received = await capture(request)
-        return HttpResponse.json({ sent: 1 })
+        return HttpResponse.json({ queued: 1 })
       }),
     )
     const { result } = await withSetup(() => useSendEmail())
 
     const response = await result.sendToUser.mutateAsync({ userId: 'user-7', payload })
 
-    expect(response).toEqual({ sent: 1 })
+    expect(response).toEqual({ queued: 1 })
     expect(received).toEqual({
       url: 'http://localhost:3000/api/emails/users/user-7',
       subject: 'Hello',
@@ -60,7 +60,7 @@ describe('useSendEmail', () => {
     server.use(
       http.post('/api/emails/users', async ({ request }) => {
         received = await capture(request)
-        return HttpResponse.json({ sent: 2, skipped: 1 })
+        return HttpResponse.json({ queued: 2, skipped: 1 })
       }),
     )
     const { result } = await withSetup(() => useSendEmail())
@@ -82,7 +82,7 @@ describe('useSendEmail', () => {
     server.use(
       http.post('/api/emails/events/:eventId/attendees', async ({ request }) => {
         received = await capture(request)
-        return HttpResponse.json({ sent: 3 })
+        return HttpResponse.json({ queued: 3 })
       }),
     )
     const { result } = await withSetup(() => useSendEmail())
@@ -136,14 +136,14 @@ describe('useSendEmailDialog', () => {
     expect(result.target.value).toBe('everyone')
   })
 
-  it('reports sent, failed and skipped counts and closes after a send to one user', async () => {
+  it('reports queued and skipped counts and closes after a send to one user', async () => {
     let release: (() => void) | undefined
     server.use(
       http.post('/api/emails/users/:userId', async () => {
         await new Promise<void>((resolve) => {
           release = resolve
         })
-        return HttpResponse.json({ sent: 1, failed: 2, skipped: 3 })
+        return HttpResponse.json({ queued: 1, skipped: 3 })
       }),
     )
     const { result } = await setupDialog()
@@ -155,13 +155,12 @@ describe('useSendEmailDialog', () => {
     release?.()
 
     await vi.waitFor(() => expect(result.visible.value).toBe(false))
-    await expectNotification(tp('features.sendEmail.toast.sent', 1, { count: 1 }))
-    await expectNotification(tp('features.sendEmail.toast.failed', 2, { count: 2 }))
+    await expectNotification(tp('features.sendEmail.toast.queued', 1, { count: 1 }))
     await expectNotification(tp('features.sendEmail.toast.skipped', 3, { count: 3 }))
     expect(result.sending.value).toBe(false)
   })
 
-  it('keeps the dialog open when nothing was sent', async () => {
+  it('keeps the dialog open when nothing was queued', async () => {
     server.use(http.post('/api/emails/users/:userId', () => HttpResponse.json({})))
     const { result } = await setupDialog()
 
@@ -211,8 +210,8 @@ describe('useSendEmailDialog', () => {
     expect(sentPayload).toBe(payload)
     expect(handlers.onError).toBe(onError)
 
-    handlers.onSuccess({ sent: 4 })
+    handlers.onSuccess({ queued: 4 })
     expect(result.visible.value).toBe(false)
-    await expectNotification(tp('features.sendEmail.toast.sent', 4, { count: 4 }))
+    await expectNotification(tp('features.sendEmail.toast.queued', 4, { count: 4 }))
   })
 })
