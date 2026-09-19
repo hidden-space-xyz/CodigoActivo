@@ -133,9 +133,9 @@ public sealed class LoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
-        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordFailedAttempts.Should().Be(1, "the guard counts the failure on its own");
         user.PasswordLockedAt.Should().BeNull();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertNotSavedAsync();
     }
 
     [Fact]

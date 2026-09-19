@@ -427,7 +427,8 @@ public sealed class UpdateUserCommandHandlerTests
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.Email.Should().Be("ana@test.com");
         actingUser.PasswordFailedAttempts.Should().Be(countedFailures);
-        await uow.Received(countedFailures).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
         logger
             .Entries.Should()
             .ContainSingle()

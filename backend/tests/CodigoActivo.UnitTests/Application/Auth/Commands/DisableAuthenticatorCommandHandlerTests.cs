@@ -99,7 +99,8 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         user.PasswordFailedAttempts.Should().Be(1);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

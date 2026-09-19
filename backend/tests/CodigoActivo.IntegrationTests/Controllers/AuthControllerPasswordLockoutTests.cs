@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
@@ -45,6 +46,65 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         );
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         return Factory.EmailSender.LastOtpSentTo(TestSeedData.MemberEmail);
+    }
+
+    private static async Task<HttpResponseMessage> SendPreparedAttemptAsync(
+        HttpClient client,
+        string csrfToken
+    )
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, LoginUrl);
+        request.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        request.Content = JsonContent.Create(
+            new LoginRequest(TestSeedData.MemberEmail, WrongPassword),
+            options: TestJson.Options
+        );
+        return await client.SendAsync(request, Ct);
+    }
+
+    [Fact]
+    public async Task LoginParallelWrongPasswordsCountEveryAttemptOnceAndAlertOnlyOnce()
+    {
+        const int Attempts = Threshold + 3;
+        var clients = new List<HttpClient>();
+        var prepared = new List<Task<HttpResponseMessage>>();
+        for (var attempt = 0; attempt < Attempts; attempt++)
+        {
+            var client = CreateClient();
+            clients.Add(client);
+        }
+
+        var tokens = new List<string>();
+        foreach (var client in clients)
+        {
+            tokens.Add(await client.FetchCsrfTokenAsync(Ct));
+        }
+
+        for (var attempt = 0; attempt < Attempts; attempt++)
+        {
+            prepared.Add(SendPreparedAttemptAsync(clients[attempt], tokens[attempt]));
+        }
+
+        var responses = await Task.WhenAll(prepared);
+        foreach (var response in responses)
+        {
+            await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+            response.Dispose();
+        }
+
+        foreach (var client in clients)
+        {
+            client.Dispose();
+        }
+
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.IsPasswordLocked().Should().BeTrue();
+        stored
+            .PasswordFailedAttempts.Should()
+            .BeGreaterThanOrEqualTo(Threshold, "no attempt may be lost");
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle(message => message.Kind == EmailKind.SecurityAlert);
     }
 
     [Fact]
@@ -160,6 +220,36 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         accepted.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.PasswordFailedAttempts.Should().Be(0);
+        stored.IsPasswordLocked().Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LoginCorrectPasswordRefusedForTheAccountStatusStillPersistsTheClearedCount()
+    {
+        var client = CreateClient();
+        for (var attempt = 0; attempt < Threshold - 1; attempt++)
+        {
+            using var wrong = await client.PostJsonAsync(
+                LoginUrl,
+                new LoginRequest(TestSeedData.BlockedEmail, WrongPassword),
+                Ct
+            );
+            await wrong.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+        }
+
+        (await FindAsync<User>(TestSeedData.Users.BlockedId))!
+            .PasswordFailedAttempts.Should()
+            .Be(Threshold - 1);
+
+        using var refused = await client.PostJsonAsync(
+            LoginUrl,
+            new LoginRequest(TestSeedData.BlockedEmail, TestSeedData.Password),
+            Ct
+        );
+        await refused.ShouldBeForbiddenAsync(ErrorCode.UserAccountBlocked);
+
+        var stored = await FindAsync<User>(TestSeedData.Users.BlockedId);
         stored!.PasswordFailedAttempts.Should().Be(0);
         stored.IsPasswordLocked().Should().BeFalse();
     }
