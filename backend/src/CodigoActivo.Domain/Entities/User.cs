@@ -246,31 +246,10 @@ public class User : IdentifiableEntity
     }
 
     /// <summary>
-    /// Counts a wrong account password and locks the account once the limit is reached. An account
-    /// that is already locked is left untouched, so later attempts neither count nor report again.
-    /// </summary>
-    /// <param name="now">Current timestamp.</param>
-    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
-    /// <returns><see langword="true"/> when this failure triggered the lock.</returns>
-    public bool RecordPasswordFailure(DateTimeOffset now, int maxFailedAttempts)
-    {
-        if (IsPasswordLocked())
-        {
-            return false;
-        }
-
-        PasswordFailedAttempts++;
-        if (PasswordFailedAttempts < maxFailedAttempts)
-        {
-            return false;
-        }
-
-        PasswordLockedAt = now;
-        return true;
-    }
-
-    /// <summary>
-    /// Forgets the consecutive wrong passwords counted so far.
+    /// Forgets the consecutive wrong passwords counted so far. Counting a wrong password and
+    /// locking the account happen in one atomic statement in
+    /// <see cref="Repositories.IUserRepository.RecordPasswordFailureAsync"/>, never in memory, so
+    /// parallel attempts cannot lose each other's increments.
     /// </summary>
     public void ClearPasswordFailures()
     {

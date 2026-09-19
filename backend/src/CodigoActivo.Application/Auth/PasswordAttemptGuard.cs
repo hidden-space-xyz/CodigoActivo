@@ -10,12 +10,15 @@ namespace CodigoActivo.Application.Auth;
 
 /// <summary>
 /// Owns every check of an account password used for authentication: the login password step and
-/// the routes that ask the acting caller to re-enter their own password. Consecutive failures are
-/// counted on the account and committed even when the calling handler returns without saving;
-/// reaching the limit locks the account, closes its pending second-factor challenge, deletes its
-/// open sessions and warns its owner, and only a completed password reset clears the lock. A locked
-/// account refuses every password, so a correct one cannot be told apart from a wrong one.
+/// the routes that ask the acting caller to re-enter their own password. Every wrong password is
+/// counted by one atomic database statement, so parallel attempts cannot lose each other's
+/// increments; reaching the limit locks the account, closes its pending second-factor challenge,
+/// deletes its open sessions and warns its owner exactly once, and only a completed password reset
+/// clears the lock. A correct password commits the reset of the counter here, because the calling
+/// handler may return without saving. A locked account refuses every password, so a correct one
+/// cannot be told apart from a wrong one.
 /// </summary>
+/// <param name="users">Repository that counts the failures and locks the account atomically.</param>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -25,6 +28,7 @@ namespace CodigoActivo.Application.Auth;
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class PasswordAttemptGuard(
+    IUserRepository users,
     IUserSessionRepository sessions,
     IUnitOfWork uow,
     IClock clock,
@@ -68,7 +72,7 @@ public sealed class PasswordAttemptGuard(
             return false;
         }
 
-        user.ClearPasswordFailures();
+        await ForgetFailuresAsync(user, ct);
         return true;
     }
 
@@ -103,19 +107,29 @@ public sealed class PasswordAttemptGuard(
             return false;
         }
 
-        actingUser.ClearPasswordFailures();
+        await ForgetFailuresAsync(actingUser, ct);
         return true;
+    }
+
+    private async Task ForgetFailuresAsync(User user, CancellationToken ct)
+    {
+        if (user.PasswordFailedAttempts == 0)
+        {
+            return;
+        }
+
+        user.ClearPasswordFailures();
+        await uow.SaveChangesAsync(ct);
     }
 
     private async Task RecordFailureAsync(User user, CancellationToken ct)
     {
-        var locked = user.RecordPasswordFailure(clock.UtcNow, options.MaxFailedAttempts);
-        if (locked)
-        {
-            user.ClearLoginChallenge();
-        }
-
-        await uow.SaveChangesAsync(ct);
+        var locked = await users.RecordPasswordFailureAsync(
+            user,
+            options.MaxFailedAttempts,
+            clock.UtcNow,
+            ct
+        );
         if (!locked)
         {
             return;

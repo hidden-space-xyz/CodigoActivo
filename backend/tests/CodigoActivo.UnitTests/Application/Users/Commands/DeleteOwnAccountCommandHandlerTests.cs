@@ -138,7 +138,8 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.PasswordFailedAttempts.Should().Be(1);
         AssertNothingRemoved();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

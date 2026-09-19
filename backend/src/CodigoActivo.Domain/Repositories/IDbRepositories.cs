@@ -75,6 +75,26 @@ public interface IUserRepository : IDbRepository<User>
     );
 
     /// <summary>
+    /// Counts one wrong account password in the database itself, so concurrent attempts cannot lose
+    /// each other's increments, and locks the account and closes its pending second-factor challenge
+    /// once the counter reached <paramref name="maxFailedAttempts"/>. Only an account that is not
+    /// locked yet is touched, so exactly one caller observes the transition and a locked account
+    /// counts nothing more. The writes execute immediately, outside any staged unit of work, and the
+    /// tracked entity is left holding the values that were persisted.
+    /// </summary>
+    /// <param name="user">Account whose wrong password is being counted.</param>
+    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <param name="now">Current timestamp stored when the account locks.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when this call locked the account.</returns>
+    public Task<bool> RecordPasswordFailureAsync(
+        User user,
+        int maxFailedAttempts,
+        DateTimeOffset now,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Determines whether published content still credits the user or any minor under their
     /// guardianship as its author, uploader or last editor. Such rows keep the account alive
     /// because they reference it with a restricted foreign key.

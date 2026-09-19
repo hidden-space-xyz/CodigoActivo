@@ -277,49 +277,11 @@ public sealed class UserEntityTests
     }
 
     [Fact]
-    public void RecordPasswordFailureBelowTheLimitOnlyCounts()
-    {
-        var user = NewPendingUser();
-
-        user.RecordPasswordFailure(Now, 5).Should().BeFalse();
-
-        user.PasswordFailedAttempts.Should().Be(1);
-        user.PasswordLockedAt.Should().BeNull();
-        user.IsPasswordLocked().Should().BeFalse();
-    }
-
-    [Fact]
-    public void RecordPasswordFailureAtTheLimitLocksTheAccountWithoutExpiry()
-    {
-        var user = NewPendingUser();
-        user.PasswordFailedAttempts = 4;
-
-        user.RecordPasswordFailure(Now, 5).Should().BeTrue();
-
-        user.PasswordLockedAt.Should().Be(Now);
-        user.IsPasswordLocked().Should().BeTrue();
-    }
-
-    [Fact]
-    public void RecordPasswordFailureOnALockedAccountNeitherCountsNorReportsAgain()
-    {
-        var user = NewPendingUser();
-        user.PasswordFailedAttempts = 4;
-        user.RecordPasswordFailure(Now, 5).Should().BeTrue();
-        var counted = user.PasswordFailedAttempts;
-
-        user.RecordPasswordFailure(Now.AddHours(1), 5).Should().BeFalse();
-
-        user.PasswordFailedAttempts.Should().Be(counted);
-        user.PasswordLockedAt.Should().Be(Now);
-    }
-
-    [Fact]
     public void ClearPasswordFailuresForgetsTheCountWithoutLiftingAnExistingLock()
     {
         var user = NewPendingUser();
-        user.PasswordFailedAttempts = 4;
-        user.RecordPasswordFailure(Now, 5);
+        user.PasswordFailedAttempts = 5;
+        user.PasswordLockedAt = Now;
 
         user.ClearPasswordFailures();
 
@@ -331,8 +293,8 @@ public sealed class UserEntityTests
     public void ResetPasswordClearsTheLockAndTheFailureCount()
     {
         var user = NewPendingUser();
-        user.PasswordFailedAttempts = 4;
-        user.RecordPasswordFailure(Now, 5);
+        user.PasswordFailedAttempts = 5;
+        user.PasswordLockedAt = Now;
         user.IssuePasswordResetCode("HASH", Now, TimeSpan.FromMinutes(15));
 
         user.ResetPassword("new-hash", Now.AddMinutes(1));
@@ -349,8 +311,8 @@ public sealed class UserEntityTests
     public void ResetTwoFactorLeavesAPasswordLockInPlace()
     {
         var user = NewPendingUser();
-        user.PasswordFailedAttempts = 4;
-        user.RecordPasswordFailure(Now, 5);
+        user.PasswordFailedAttempts = 5;
+        user.PasswordLockedAt = Now;
 
         user.ResetTwoFactor(Now);
 

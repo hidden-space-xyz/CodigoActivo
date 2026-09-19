@@ -79,7 +79,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.PendingAuthenticatorKey.Should().BeNull();
         user.PasswordFailedAttempts.Should().Be(countedFailures);
-        await uow.Received(countedFailures).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertNotSavedAsync();
     }
 
     [Fact]

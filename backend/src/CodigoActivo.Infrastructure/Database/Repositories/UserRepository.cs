@@ -3,6 +3,7 @@ using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
@@ -97,6 +98,86 @@ public class UserRepository(CodigoActivoDbContext context)
     }
 
     /// <summary>
+    /// Counts one wrong account password by incrementing the stored counter inside the database, so
+    /// parallel attempts cannot overwrite each other with a value they read earlier. A second
+    /// statement locks the account and closes its pending second-factor challenge once the counter
+    /// reached <paramref name="maxFailedAttempts"/>; both statements only match a row that is not
+    /// locked yet, so the row lock of PostgreSQL leaves exactly one caller reporting the lock and
+    /// stops counting afterwards.
+    /// </summary>
+    /// <param name="user">Account whose wrong password is being counted.</param>
+    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <param name="now">Current timestamp stored when the account locks.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when this call locked the account.</returns>
+    public async Task<bool> RecordPasswordFailureAsync(
+        User user,
+        int maxFailedAttempts,
+        DateTimeOffset now,
+        CancellationToken ct = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        var counted = await Set.Where(u => u.Id == user.Id && u.PasswordLockedAt == null)
+            .ExecuteUpdateAsync(
+                setters =>
+                    setters.SetProperty(
+                        u => u.PasswordFailedAttempts,
+                        u => u.PasswordFailedAttempts + 1
+                    ),
+                ct
+            );
+
+        var locked = counted == 1 && await LockAsync(user.Id, maxFailedAttempts, now, ct);
+
+        var persisted = await Set.AsNoTracking()
+            .Where(u => u.Id == user.Id)
+            .Select(u => new
+            {
+                u.PasswordFailedAttempts,
+                u.PasswordLockedAt,
+                u.LoginChallengeId,
+            })
+            .FirstOrDefaultAsync(ct);
+        if (persisted is null)
+        {
+            return false;
+        }
+
+        Refresh(
+            user,
+            persisted.PasswordFailedAttempts,
+            persisted.PasswordLockedAt,
+            persisted.LoginChallengeId
+        );
+        return locked;
+    }
+
+    private async Task<bool> LockAsync(
+        Guid userId,
+        int maxFailedAttempts,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        var lockedAt = (DateTimeOffset?)now;
+        var locked = await Set.Where(u =>
+                u.Id == userId
+                && u.PasswordLockedAt == null
+                && u.PasswordFailedAttempts >= maxFailedAttempts
+            )
+            .ExecuteUpdateAsync(
+                setters =>
+                    setters
+                        .SetProperty(u => u.PasswordLockedAt, lockedAt)
+                        .SetProperty(u => u.LoginChallengeId, (Guid?)null),
+                ct
+            );
+        return locked == 1;
+    }
+
+    /// <summary>
     /// Determines whether published content still credits the user or any minor under their
     /// guardianship as its author, uploader or last editor.
     /// </summary>
@@ -158,5 +239,33 @@ public class UserRepository(CodigoActivoDbContext context)
     {
         var query = tracked ? Set : Set.AsNoTracking();
         return query.Include(u => u.UserStatusType);
+    }
+
+    private void Refresh(User user, int attempts, DateTimeOffset? lockedAt, Guid? challengeId)
+    {
+        user.PasswordFailedAttempts = attempts;
+        user.PasswordLockedAt = lockedAt;
+        user.LoginChallengeId = challengeId;
+
+        var entry = Context
+            .ChangeTracker.Entries<User>()
+            .FirstOrDefault(tracked => ReferenceEquals(tracked.Entity, user));
+        if (entry is null || entry.State is not (EntityState.Unchanged or EntityState.Modified))
+        {
+            return;
+        }
+
+        MarkPersisted(entry.Property(u => u.PasswordFailedAttempts), attempts);
+        MarkPersisted(entry.Property(u => u.PasswordLockedAt), lockedAt);
+        MarkPersisted(entry.Property(u => u.LoginChallengeId), challengeId);
+    }
+
+    private static void MarkPersisted<TProperty>(
+        PropertyEntry<User, TProperty> property,
+        TProperty value
+    )
+    {
+        property.OriginalValue = value;
+        property.IsModified = false;
     }
 }

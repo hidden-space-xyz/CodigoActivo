@@ -120,7 +120,7 @@ public sealed class SetAdminCommandHandlerTests
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         actingAdmin.PasswordFailedAttempts.Should().Be(1);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertNotSavedAsync();
     }
 
     [Fact]

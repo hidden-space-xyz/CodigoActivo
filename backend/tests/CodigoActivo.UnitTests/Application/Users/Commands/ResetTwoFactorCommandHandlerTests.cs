@@ -88,7 +88,8 @@ public sealed class ResetTwoFactorCommandHandlerTests
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         actingAdmin.PasswordFailedAttempts.Should().Be(1);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

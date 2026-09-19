@@ -108,8 +108,9 @@ public sealed class ChangePasswordCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.PasswordHash.Should().Be(hasher.Hash("correct"));
-        user.PasswordFailedAttempts.Should().Be(1);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        user.PasswordFailedAttempts.Should().Be(1, "the guard counts the failure on its own");
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
