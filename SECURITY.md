@@ -47,11 +47,16 @@ authentication are not supported.
   creates the first administrator from `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a
   user exists.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
-  password whenever the update would replace the account's login identifiers: a different email or phone,
-  or turning an account that still has an email, a phone or a password into a dependent minor. A missing or
-  wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave both
-  identifiers untouched need none. A new address is stored as given and is not confirmed by an emailed
-  code.
+  password whenever the update would replace the account's login identifiers: a different email or phone.
+  A missing or wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave
+  both identifiers untouched need none. A new address is stored as given and is not confirmed by an emailed
+  code. The stored account, never the request, decides the rest: an account that is not already a dependent
+  is refused a guardian (`UserParentNotAllowedForAdult`) and a minor birth date (`UserCannotBecomeMinor`)
+  and keeps its credentials, so no request can demote an account into somebody's dependent; a dependent
+  only accepts its own guardian repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is
+  never reassigned. Giving a dependent an adult birth date releases it into a standalone account, which
+  therefore requires its own email and phone and the caller's password, like any other identifier change.
+  Dependents are created only through `POST /api/users/{id}/children`.
 
 ### Two-factor authentication
 

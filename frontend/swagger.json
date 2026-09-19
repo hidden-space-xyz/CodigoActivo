@@ -4846,6 +4846,7 @@
           "UserCannotBeOwnParent",
           "UserParentReassignmentForbidden",
           "UserParentNotAllowedForAdult",
+          "UserCannotBecomeMinor",
           "UserContactInfoRequired",
           "UserEmailAlreadyInUse",
           "UserPhoneAlreadyInUse",

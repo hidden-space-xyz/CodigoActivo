@@ -147,22 +147,42 @@ describe('UserFormDialog', () => {
     })
   })
 
-  it('demands the password when an account with contact details becomes a minor', async () => {
+  it('refuses a minor birth date for an account that depends on nobody', async () => {
     const { wrapper, dialog } = await renderDialog(adult)
     const picker = wrapper.findComponent(ElDatePicker)
 
     picker.vm.$emit('update:modelValue', new Date(2016, 1, 1))
     await flushPromises()
-    expect(dialog.querySelector('#user-current-password')).not.toBeNull()
+    expect(dialog.querySelector('#user-current-password')).toBeNull()
 
     await click(findButton(t('common.save'), dialog))
+
+    expect(dialog.textContent).toContain(t('features.manageUsers.minorNotAllowed'))
+    expect(wrapper.emitted('submit')).toBeUndefined()
+  })
+
+  it('lets a dependent grow up by asking for contact details and the password', async () => {
+    const { wrapper, dialog } = await renderDialog(minor)
+    const picker = wrapper.findComponent(ElDatePicker)
+
+    picker.vm.$emit('update:modelValue', new Date(1999, 4, 5))
+    await flushPromises()
+    expect(dialog.textContent).not.toContain(t('features.manageUsers.minorNotAllowed'))
+
+    await click(findButton(t('common.save'), dialog))
+    expect(dialog.textContent).toContain(t('features.manageUsers.contactRequired'))
     expect(wrapper.emitted('submit')).toBeUndefined()
 
+    await typeInto('#user-email', 'tim@example.test')
+    await typeInto('#user-phone', '600000000')
     await typeInto('#user-current-password', 'admin-password')
     await click(findButton(t('common.save'), dialog))
 
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
-      birthDate: '2016-02-01',
+      birthDate: '1999-05-05',
+      email: 'tim@example.test',
+      phone: '600000000',
+      parentId: 'user-1',
       currentPassword: 'admin-password',
     })
   })

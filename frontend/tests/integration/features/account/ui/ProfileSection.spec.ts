@@ -266,6 +266,31 @@ describe('ProfileSection', () => {
     expect(updated).not.toHaveBeenCalled()
   })
 
+  it('refuses a birth date that would turn the account into a minor', async () => {
+    serveProfile()
+    const updated = vi.fn()
+    server.use(
+      http.put('/api/users/:userId', () => {
+        updated()
+        return HttpResponse.json(buildUserResponse())
+      }),
+    )
+    await renderSection()
+
+    await click(buttonByText(document.body, t('features.account.profile.editData')))
+    const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
+    await fill(dialog, '#p-dob', '2016-02-01')
+    await click(buttonByText(dialog, t('common.save')))
+
+    expect(dialog.textContent).toContain(t('features.account.profile.birthDateMinor'))
+    expect(updated).not.toHaveBeenCalled()
+
+    await fill(dialog, '#p-dob', '1990-05-10')
+    await click(buttonByText(dialog, t('common.save')))
+
+    await vi.waitFor(() => expect(updated).toHaveBeenCalledTimes(1))
+  })
+
   it('opens an empty edit form when the profile is unavailable', async () => {
     await renderSection()
 

@@ -30,8 +30,10 @@ export interface User {
 }
 
 /**
- * Fields an admin edits on a user. The backend applies them by age: minors require `parentId` and
- * lose email and phone; adults require email and phone and must not have `parentId`.
+ * Fields an admin edits on a user. The stored account decides which rules the backend applies: a
+ * dependent keeps its guardian and may omit email and phone, while any other account requires both
+ * and is refused a guardian or a minor birth date. Dependents are only created under their
+ * guardian, never by editing an existing account.
  */
 export interface UpdateUserInput {
   readonly firstName: string
@@ -43,8 +45,7 @@ export interface UpdateUserInput {
   readonly parentId: string | null
   /**
    * Password of the signed-in user, required by the API whenever the change replaces the login
-   * identifiers of the account: another email or phone, or turning a user that still has contact
-   * details into a dependent minor. `null` for every other edit.
+   * identifiers of the account: another email or phone. `null` for every other edit.
    */
   readonly currentPassword: string | null
 }
