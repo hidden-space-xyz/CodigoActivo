@@ -109,6 +109,37 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
         };
     }
 
+    /// <summary>
+    /// Inserts a user with SQL naming only the columns this historical schema has. Seeding users
+    /// through EF would write every column of the current model, including the ones that later
+    /// migrations add and that do not exist yet at <see cref="PreviousMigrationId"/>.
+    /// </summary>
+    /// <param name="db">Database context used for persistence.</param>
+    /// <param name="id">Identifier of the user.</param>
+    /// <param name="email">Email address of the user.</param>
+    /// <param name="phone">Phone number of the user.</param>
+    /// <returns>A task whose result contains the number of inserted rows.</returns>
+    private static Task<int> InsertUserAsync(
+        CodigoActivoDbContext db,
+        Guid id,
+        string email,
+        string phone
+    )
+    {
+        var birthDate = new DateOnly(1990, 1, 1);
+        return db.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO users (id, first_name, last_name, email, phone, birth_date, gender,
+                user_status_type_id, user_type_id, is_admin, two_factor_method,
+                two_factor_failed_attempts, created_at)
+            VALUES ({id}, 'Nombre', 'Apellido', {email}, {phone}, {birthDate}, 'Other',
+                {SeedIds.UserStatusTypes.Active}, {SeedIds.UserTypes.Member}, false, 'Email', 0,
+                {Fixed})
+            """,
+            Ct
+        );
+    }
+
     private static async Task ExecuteAsync(
         NpgsqlConnection connection,
         string sql,
@@ -170,10 +201,8 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
             await GetMigrator(db).MigrateAsync(PreviousMigrationId, Ct);
             await new DatabaseSeeder(db).SeedAsync(Ct);
 
-            db.Users.AddRange(
-                NewUser(authorId, "author@terms-migration.local", "+34600000920"),
-                NewUser(raterId, "rater@terms-migration.local", "+34600000921")
-            );
+            await InsertUserAsync(db, authorId, "author@terms-migration.local", "+34600000920");
+            await InsertUserAsync(db, raterId, "rater@terms-migration.local", "+34600000921");
             db.Files.AddRange(
                 new FileEntity
                 {

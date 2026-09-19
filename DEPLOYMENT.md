@@ -127,6 +127,7 @@ syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the 
 | `AccountVerification:ResendCooldownSeconds`   | `60`                |
 | `PasswordReset:CodeLifetimeMinutes`           | `15`                |
 | `PasswordReset:ResendCooldownSeconds`         | `60`                |
+| `PasswordLockout:MaxFailedAttempts`           | `5`                 |
 | `TwoFactor:ChallengeLifetimeMinutes`          | `10`                |
 | `TwoFactor:ResendCooldownSeconds`             | `60`                |
 | `TwoFactor:AuthenticatorSetupLifetimeMinutes` | `15`                |

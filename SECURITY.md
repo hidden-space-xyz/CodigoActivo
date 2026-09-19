@@ -63,8 +63,13 @@ authentication are not supported.
 Every account logs in in two steps; there is no opt-out. `POST /api/auth/login` verifies the password and
 issues a short-lived challenge cookie (`__Host-CodigoActivo.TwoFactor` in Production, 10 minutes,
 non-sliding) instead of a session; it is bound to the password fingerprint and account status, so a password
-change or block invalidates it. The session cookie is only issued by `POST /api/auth/login/two-factor` once
-the second factor is accepted, which is also when the login timestamp is recorded.
+change or block invalidates it. The ticket is not self-sufficient either: the password step stores a random
+challenge id on the account and puts it in the ticket, so a copied challenge cookie is refused as soon as
+that id changes or is cleared — a newer password step rotates it, and an accepted second factor, a
+second-factor lockout, a password change or reset and signing out all clear it, making each challenge
+single-use instead of valid for its whole 10 minutes. Reading or resending the current challenge keeps
+working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor` once the
+second factor is accepted, which is also when the login timestamp is recorded.
 
 Each user chooses one second factor from their account:
 

@@ -136,7 +136,9 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         }
 
         using var locked = await PresentAsync(client, code);
-        await locked.ShouldBeForbiddenAsync(ErrorCode.TwoFactorLocked);
+        await locked.ShouldBeUnauthorizedAsync(
+            ErrorCode.TwoFactorChallengeExpired
+        );
 
         using var lockedLogin = await client.PostJsonAsync(
             "/api/auth/login",
@@ -148,6 +150,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.TwoFactorLockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
         stored.LoginCodeHash.Should().BeNull("locking discards the challenged code");
+        stored.LoginChallengeId.Should().BeNull("locking closes the open challenge");
 
         Factory.Clock.UtcNow += TimeSpan.FromMinutes(16);
         var signedIn = await LoginAsMemberAsync();
@@ -482,5 +485,118 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         var challenge = await client.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
         await challenge.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task TwoFactorChallengeSurvivesReloadsUntilItIsUsed()
+    {
+        var client = await StartMemberChallengeAsync();
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.LoginChallengeId.Should().NotBeNull();
+
+        for (var reload = 0; reload < 3; reload++)
+        {
+            using var reread = await client.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
+            reread.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        using var resend = await client.PostJsonAsync(ResendUrl, body: null, Ct);
+        resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .LoginChallengeId.Should()
+            .Be(stored.LoginChallengeId, "a resend answers the same challenge");
+
+        await CompleteTwoFactorAsync(
+            client,
+            Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail)
+        );
+
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .LoginChallengeId.Should()
+            .BeNull("an accepted second factor consumes the challenge");
+    }
+
+    [Fact]
+    public async Task TwoFactorCopiedChallengeCookieStopsWorkingOnceTheLoginCompletes()
+    {
+        var client = CreateClient();
+        using var password = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.MemberEmail, TestSeedData.Password),
+            Ct
+        );
+        password.StatusCode.Should().Be(HttpStatusCode.OK);
+        var copy = ClientWithCookiesOf(password);
+
+        using var beforeUse = await copy.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
+        beforeUse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        await CompleteTwoFactorAsync(
+            client,
+            Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail)
+        );
+
+        using var reused = await copy.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
+        await reused.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+    }
+
+    [Fact]
+    public async Task TwoFactorANewerPasswordStepInvalidatesTheEarlierChallengeCookie()
+    {
+        var first = await StartMemberChallengeAsync();
+        var firstChallenge = (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId;
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        var second = await StartMemberChallengeAsync();
+        var secondChallenge = (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId;
+        firstChallenge.Should().NotBeNull();
+        secondChallenge.Should().NotBeNull();
+        secondChallenge.Should().NotBe(firstChallenge!.Value);
+
+        using var stale = await first.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
+        await stale.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+
+        using var fresh = await second.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
+        fresh.StatusCode.Should().Be(HttpStatusCode.OK);
+        first.Dispose();
+    }
+
+    [Fact]
+    public async Task TwoFactorChallengeCookieStopsWorkingAfterAPasswordReset()
+    {
+        var client = await StartMemberChallengeAsync();
+
+        using var forgot = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(TestSeedData.MemberEmail),
+            Ct
+        );
+        forgot.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using var reset = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/reset-password",
+            new ResetPasswordRequest(
+                Factory.EmailSender.LastOtpSentTo(TestSeedData.MemberEmail),
+                "NuevaPass123!"
+            ),
+            Ct
+        );
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId.Should().BeNull();
+        using var stale = await client.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
+        await stale.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+    }
+
+    private HttpClient ClientWithCookiesOf(HttpResponseMessage response)
+    {
+        var copy = Factory.CreateDefaultClient();
+        foreach (var cookie in response.Headers.GetValues("Set-Cookie"))
+        {
+            copy.DefaultRequestHeaders.Add("Cookie", cookie.Split(';')[0]);
+        }
+
+        return copy;
     }
 }

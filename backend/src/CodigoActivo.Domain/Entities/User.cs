@@ -142,6 +142,11 @@ public class User : IdentifiableEntity
     /// </summary>
     public DateTimeOffset? LoginCodeLastSentAt { get; set; }
     /// <summary>
+    /// Gets or sets the identifier of the open second-factor challenge. The challenge cookie
+    /// carries it, so a copied cookie stops working as soon as this value changes or is cleared.
+    /// </summary>
+    public Guid? LoginChallengeId { get; set; }
+    /// <summary>
     /// Gets or sets the consecutive wrong second-factor codes since the last success or lockout.
     /// </summary>
     public int TwoFactorFailedAttempts { get; set; }
@@ -225,6 +230,7 @@ public class User : IdentifiableEntity
         PasswordHash = passwordHash;
         ClearPasswordResetCode();
         ClearPasswordFailures();
+        ClearLoginChallenge();
         PasswordLockedAt = null;
         UpdatedAt = now;
     }
@@ -316,6 +322,24 @@ public class User : IdentifiableEntity
     }
 
     /// <summary>
+    /// Opens a second-factor challenge under a new identifier, replacing any open one so the
+    /// cookie of an earlier password step stops being accepted.
+    /// </summary>
+    /// <param name="challengeId">Identifier the challenge cookie will carry.</param>
+    public void StartLoginChallenge(Guid challengeId)
+    {
+        LoginChallengeId = challengeId;
+    }
+
+    /// <summary>
+    /// Closes the open second-factor challenge, if any, so its cookie is refused from now on.
+    /// </summary>
+    public void ClearLoginChallenge()
+    {
+        LoginChallengeId = null;
+    }
+
+    /// <summary>
     /// Determines whether an emailed login code exists that is still valid and was sent recently
     /// enough that a new one should not be issued yet.
     /// </summary>
@@ -361,6 +385,7 @@ public class User : IdentifiableEntity
         TwoFactorFailedAttempts = 0;
         TwoFactorLockedUntil = now + lockoutDuration;
         ClearLoginCode();
+        ClearLoginChallenge();
         return true;
     }
 
@@ -371,6 +396,7 @@ public class User : IdentifiableEntity
     public void CompleteTwoFactorLogin(DateTimeOffset now)
     {
         ClearLoginCode();
+        ClearLoginChallenge();
         TwoFactorFailedAttempts = 0;
         TwoFactorLockedUntil = null;
         RegisterLogin(now);
