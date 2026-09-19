@@ -123,7 +123,7 @@ public sealed class GetSitemapXmlQueryHandler(
 
     private sealed class Utf8StringWriter() : StringWriter(CultureInfo.InvariantCulture)
     {
-/// <inheritdoc />
+        /// <inheritdoc />
         public override Encoding Encoding => Encoding.UTF8;
     }
 }

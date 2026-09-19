@@ -236,9 +236,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         await ReadResultAsync(response);
         Factory
             .EmailSender.Sent.Should()
-            .OnlyContain(m =>
-                m.Attachments!.Count == 1 && m.Attachments[0].FileName == "acta.pdf"
-            );
+            .OnlyContain(m => m.Attachments!.Count == 1 && m.Attachments[0].FileName == "acta.pdf");
 
         var filesAfter = await Factory.QueryAsync(db =>
             Task.FromResult(db.Files.Count(f => f.Id != ThumbnailId))

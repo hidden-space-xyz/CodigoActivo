@@ -90,7 +90,9 @@ public static class EventRules
         var desired = termsDocuments ?? [];
         var desiredIds = desired.Select(t => t.TermsDocumentId).ToHashSet();
 
-        var removed = ev.TermsDocuments.Where(t => !desiredIds.Contains(t.TermsDocumentId)).ToList();
+        var removed = ev
+            .TermsDocuments.Where(t => !desiredIds.Contains(t.TermsDocumentId))
+            .ToList();
         foreach (var existing in removed)
         {
             ev.TermsDocuments.Remove(existing);

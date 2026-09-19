@@ -81,7 +81,11 @@ public sealed class CreateEventCommandHandlerTests
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        termsDocuments.CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+        termsDocuments
+            .CountAsync(
+                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(0);
 
         var result = await sut.HandleAsync(
@@ -135,7 +139,11 @@ public sealed class CreateEventCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        termsDocuments.CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+        termsDocuments
+            .CountAsync(
+                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
         CaptureCreatedEvents();
 

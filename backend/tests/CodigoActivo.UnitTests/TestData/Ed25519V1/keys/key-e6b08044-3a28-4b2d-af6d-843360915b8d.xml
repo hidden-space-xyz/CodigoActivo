@@ -7,7 +7,10 @@
     <descriptor>
       <encryption algorithm="AES_256_CBC" />
       <validation algorithm="HMACSHA256" />
-      <encryptedSecret decryptorType="CodigoActivo.API.Security.Ed25519XmlDecryptor, CodigoActivo.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" xmlns="http://schemas.asp.net/2015/03/dataProtection">
+      <encryptedSecret
+        decryptorType="CodigoActivo.API.Security.Ed25519XmlDecryptor, CodigoActivo.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+        xmlns="http://schemas.asp.net/2015/03/dataProtection"
+      >
         <encryptedSecret version="1" xmlns="urn:codigoactivo:data-protection:ed25519:v1">
           <nonce>AtZ7JiHTL+jcs1j0</nonce>
           <tag>wLWkRhqRMf95SOKsk7PDRw==</tag>

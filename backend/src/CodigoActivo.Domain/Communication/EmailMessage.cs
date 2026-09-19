@@ -9,22 +9,27 @@ public enum EmailKind
     /// Selects the account verification option.
     /// </summary>
     AccountVerification,
+
     /// <summary>
     /// Selects the password reset option.
     /// </summary>
     PasswordReset,
+
     /// <summary>
     /// Selects the two factor login code option.
     /// </summary>
     TwoFactorCode,
+
     /// <summary>
     /// Selects the activity notification option.
     /// </summary>
     ActivityNotification,
+
     /// <summary>
     /// Selects the security change notification option.
     /// </summary>
     SecurityAlert,
+
     /// <summary>
     /// Selects the manual option.
     /// </summary>

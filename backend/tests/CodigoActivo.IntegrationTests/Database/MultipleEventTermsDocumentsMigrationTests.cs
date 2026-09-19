@@ -293,10 +293,12 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
         await verify.OpenAsync(Ct);
 
         var eventColumns = await QueryColumnsAsync(verify, "events");
-        eventColumns.Should().NotContain(
-            "terms_document_id",
-            "the single-document column is replaced by the bridge table"
-        );
+        eventColumns
+            .Should()
+            .NotContain(
+                "terms_document_id",
+                "the single-document column is replaced by the bridge table"
+            );
 
         await using (var bridgeCommand = verify.CreateCommand())
         {
@@ -304,10 +306,13 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
                 "SELECT event_id, terms_document_id, is_required, display_order "
                 + "FROM event_terms_documents";
             await using var reader = await bridgeCommand.ExecuteReaderAsync(Ct);
-            var rows = new List<(Guid EventId, Guid TermsDocumentId, bool IsRequired, int DisplayOrder)>();
+            var rows =
+                new List<(Guid EventId, Guid TermsDocumentId, bool IsRequired, int DisplayOrder)>();
             while (await reader.ReadAsync(Ct))
             {
-                rows.Add((reader.GetGuid(0), reader.GetGuid(1), reader.GetBoolean(2), reader.GetInt32(3)));
+                rows.Add(
+                    (reader.GetGuid(0), reader.GetGuid(1), reader.GetBoolean(2), reader.GetInt32(3))
+                );
             }
 
             rows.Should().Equal([(linkedEventId, termsDocumentId, true, 0)]);
@@ -316,10 +321,9 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
         var acceptanceColumns = await QueryColumnsAsync(verify, "event_terms_acceptances");
         acceptanceColumns.Should().Contain("accepted");
         acceptanceColumns.Should().Contain("decided_at");
-        acceptanceColumns.Should().NotContain(
-            "accepted_at",
-            "accepted_at is renamed to decided_at, not duplicated"
-        );
+        acceptanceColumns
+            .Should()
+            .NotContain("accepted_at", "accepted_at is renamed to decided_at, not duplicated");
 
         await using (var acceptanceCommand = verify.CreateCommand())
         {
@@ -331,9 +335,10 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
             acceptanceCommand.Parameters.AddWithValue("termsDocumentId", termsDocumentId);
             await using var reader = await acceptanceCommand.ExecuteReaderAsync(Ct);
             (await reader.ReadAsync(Ct)).Should().BeTrue();
-            reader.GetBoolean(0).Should().BeTrue(
-                "every pre-migration row only ever recorded an acceptance"
-            );
+            reader
+                .GetBoolean(0)
+                .Should()
+                .BeTrue("every pre-migration row only ever recorded an acceptance");
             reader.GetFieldValue<DateTimeOffset>(1).Should().Be(acceptedAt);
         }
     }
@@ -459,16 +464,18 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
         await using var verify = new NpgsqlConnection(downConnectionString);
         await verify.OpenAsync(Ct);
 
-        (await TableExistsAsync(verify, "event_terms_documents")).Should().BeFalse(
-            "the bridge table only exists after this migration"
-        );
+        (await TableExistsAsync(verify, "event_terms_documents"))
+            .Should()
+            .BeFalse("the bridge table only exists after this migration");
 
         var acceptanceColumns = await QueryColumnsAsync(verify, "event_terms_acceptances");
         acceptanceColumns.Should().Contain("accepted_at");
-        acceptanceColumns.Should().NotContain(
-            "accepted",
-            "the per-document accepted flag has no meaning once collapsed to one row per user"
-        );
+        acceptanceColumns
+            .Should()
+            .NotContain(
+                "accepted",
+                "the per-document accepted flag has no meaning once collapsed to one row per user"
+            );
         acceptanceColumns.Should().NotContain("decided_at");
 
         await using (var acceptanceCommand = verify.CreateCommand())
@@ -480,14 +487,17 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
             acceptanceCommand.Parameters.AddWithValue("userId", userId);
             await using var reader = await acceptanceCommand.ExecuteReaderAsync(Ct);
             (await reader.ReadAsync(Ct)).Should().BeTrue();
-            reader.GetGuid(0).Should().Be(
-                requiredDocumentId,
-                "the rejection is discarded first, leaving the earliest surviving acceptance"
-            );
+            reader
+                .GetGuid(0)
+                .Should()
+                .Be(
+                    requiredDocumentId,
+                    "the rejection is discarded first, leaving the earliest surviving acceptance"
+                );
             reader.GetFieldValue<DateTimeOffset>(1).Should().Be(earliestAcceptedAt);
-            (await reader.ReadAsync(Ct)).Should().BeFalse(
-                "only one row per (event, user) must survive the collapse"
-            );
+            (await reader.ReadAsync(Ct))
+                .Should()
+                .BeFalse("only one row per (event, user) must survive the collapse");
         }
 
         await using (var eventCommand = verify.CreateCommand())
@@ -495,10 +505,12 @@ public sealed class MultipleEventTermsDocumentsMigrationTests(PostgresContainerF
             eventCommand.CommandText = "SELECT terms_document_id FROM events WHERE id = @eventId";
             eventCommand.Parameters.AddWithValue("eventId", eventId);
             var repopulated = await eventCommand.ExecuteScalarAsync(Ct);
-            repopulated.Should().Be(
-                requiredDocumentId,
-                "required documents are preferred over display order when repopulating the single column"
-            );
+            repopulated
+                .Should()
+                .Be(
+                    requiredDocumentId,
+                    "required documents are preferred over display order when repopulating the single column"
+                );
         }
     }
 }

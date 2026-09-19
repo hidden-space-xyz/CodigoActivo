@@ -9,10 +9,12 @@ public sealed class EmailQueueOptions
     /// Identifies the default capacity configuration or policy value.
     /// </summary>
     public const int DefaultCapacity = 1000;
+
     /// <summary>
     /// Identifies the default workers configuration or policy value.
     /// </summary>
     public const int DefaultWorkers = 4;
+
     /// <summary>
     /// Identifies the max workers configuration or policy value.
     /// </summary>
@@ -22,14 +24,17 @@ public sealed class EmailQueueOptions
     /// Stores the shared default shutdown drain value.
     /// </summary>
     public static readonly TimeSpan DefaultShutdownDrain = TimeSpan.FromSeconds(20);
+
     /// <summary>
     /// Stores the shared default send timeout value.
     /// </summary>
     public static readonly TimeSpan DefaultSendTimeout = TimeSpan.FromSeconds(60);
+
     /// <summary>
     /// Stores the shared max shutdown drain value.
     /// </summary>
     public static readonly TimeSpan MaxShutdownDrain = TimeSpan.FromMinutes(5);
+
     /// <summary>
     /// Stores the shared max send timeout value.
     /// </summary>

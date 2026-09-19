@@ -61,9 +61,7 @@ internal static class ApiSecurityConfiguration
                         Error.Unauthorized(ErrorCode.AuthenticationRequired)
                     );
                 options.Events.OnRedirectToAccessDenied = context =>
-                    context.HttpContext.WriteApiErrorAsync(
-                        Error.Forbidden(ErrorCode.AccessDenied)
-                    );
+                    context.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
                 options.Events.OnValidatePrincipal = context =>
                     context
                         .HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>()
@@ -132,8 +130,6 @@ internal static class ApiSecurityConfiguration
     {
         services
             .AddAuthorizationBuilder()
-            .SetFallbackPolicy(
-                new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()
-            );
+            .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
     }
 }

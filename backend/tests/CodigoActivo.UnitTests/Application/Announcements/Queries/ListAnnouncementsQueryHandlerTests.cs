@@ -18,11 +18,7 @@ public sealed class ListAnnouncementsQueryHandlerTests
 
     public ListAnnouncementsQueryHandlerTests()
     {
-        sut = new ListAnnouncementsQueryHandler(
-            announcements,
-            new FakeQueryExecutor(),
-            clock
-        );
+        sut = new ListAnnouncementsQueryHandler(announcements, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
@@ -213,7 +209,9 @@ public sealed class ListAnnouncementsQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new ListAnnouncementsQuery(new AnnouncementListQuery { Search = "reunion", Year = 2025 }),
+            new ListAnnouncementsQuery(
+                new AnnouncementListQuery { Search = "reunion", Year = 2025 }
+            ),
             TestContext.Current.CancellationToken
         );
 

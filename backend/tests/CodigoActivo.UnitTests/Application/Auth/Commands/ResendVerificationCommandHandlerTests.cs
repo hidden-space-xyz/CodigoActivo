@@ -32,7 +32,13 @@ public sealed class ResendVerificationCommandHandlerTests
             clock,
             new FakePasswordHasher(),
             verification,
-            new AccountEmails(emailSender, verification, passwordReset, application, new TwoFactorOptions())
+            new AccountEmails(
+                emailSender,
+                verification,
+                passwordReset,
+                application,
+                new TwoFactorOptions()
+            )
         );
     }
 
@@ -140,7 +146,9 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         var newCode = emailSender.LastCode();
-        newCode.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
+        newCode
+            .Should()
+            .MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
         newCode.Should().NotBe("old-code");
         user.OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + newCode);
         user.OtpExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);

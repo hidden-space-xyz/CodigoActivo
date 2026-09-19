@@ -237,7 +237,8 @@ public sealed class UserEntityTests
         user.PendingAuthenticatorExpiresAt.Should().Be(Now.AddMinutes(15));
         user.HasPendingAuthenticator(Now.AddMinutes(14)).Should().BeTrue();
         user.HasPendingAuthenticator(Now.AddMinutes(15)).Should().BeFalse();
-        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email, "setup does not change the factor yet");
+        user.TwoFactorMethod.Should()
+            .Be(TwoFactorMethod.Email, "setup does not change the factor yet");
     }
 
     [Fact]

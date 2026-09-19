@@ -11,6 +11,7 @@ public interface IPasswordHasher
     /// <param name="password">Plain-text password to hash or verify.</param>
     /// <returns>The generated text.</returns>
     public string Hash(string password);
+
     /// <summary>
     /// Verifies the supplied value against its stored cryptographic representation.
     /// </summary>

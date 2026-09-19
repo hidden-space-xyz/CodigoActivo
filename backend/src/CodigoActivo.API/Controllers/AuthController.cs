@@ -238,7 +238,8 @@ public class AuthController : ApiControllerBase
             return ToProblem(result.Error!);
         }
 
-        var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
+        var sessionTickets =
+            HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
         var principal = await sessionTickets.StartSessionAsync(userId.Value, ct);
         if (principal is null)
         {
@@ -355,7 +356,8 @@ public class AuthController : ApiControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> LogoutAsync(CancellationToken ct)
     {
-        var sessionTickets = HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
+        var sessionTickets =
+            HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
         try
         {
             await sessionTickets.EndSessionAsync(User, ct);

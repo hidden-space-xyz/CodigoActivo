@@ -9,6 +9,7 @@ public class ActivityRoleCapacity
     /// Gets or sets the identifier of the associated activity.
     /// </summary>
     public Guid ActivityId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated activity.
     /// </summary>
@@ -18,6 +19,7 @@ public class ActivityRoleCapacity
     /// Gets or sets the identifier of the associated activity role type.
     /// </summary>
     public Guid ActivityRoleTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated activity role type.
     /// </summary>

@@ -9,14 +9,17 @@ public enum SmtpSecurityMode
     /// Selects the start tls option.
     /// </summary>
     StartTls = 0,
+
     /// <summary>
     /// Selects the ssl on connect option.
     /// </summary>
     SslOnConnect = 1,
+
     /// <summary>
     /// No option is selected.
     /// </summary>
     None = 2,
+
     /// <summary>
     /// Selects the auto option.
     /// </summary>

@@ -21,12 +21,7 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
 
     public DeleteTermsDocumentCommandHandlerTests()
     {
-        sut = new DeleteTermsDocumentCommandHandler(
-            termsDocuments,
-            events,
-            orphanCleaner,
-            uow
-        );
+        sut = new DeleteTermsDocumentCommandHandler(termsDocuments, events, orphanCleaner, uow);
     }
 
     [Fact]

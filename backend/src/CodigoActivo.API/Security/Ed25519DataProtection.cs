@@ -112,17 +112,28 @@ public sealed partial class Ed25519CertificateStore
         generator.SetNotBefore(DateTime.UtcNow.AddMinutes(-5));
         generator.SetNotAfter(DateTime.UtcNow.AddYears(20));
         generator.SetPublicKey(publicKey);
-        generator.AddExtension(X509Extensions.BasicConstraints, critical: true, new BasicConstraints(false));
+        generator.AddExtension(
+            X509Extensions.BasicConstraints,
+            critical: true,
+            new BasicConstraints(false)
+        );
         generator.AddExtension(
             X509Extensions.KeyUsage,
             critical: true,
             new KeyUsage(KeyUsage.DigitalSignature)
         );
 
-        var certificate = generator.Generate(new Asn1SignatureFactory("Ed25519", privateKey, random));
+        var certificate = generator.Generate(
+            new Asn1SignatureFactory("Ed25519", privateKey, random)
+        );
         certificate.Verify(publicKey);
 
-        WriteFile(certificatePath, certificate.GetEncoded(), FileMode.CreateNew, privateFile: false);
+        WriteFile(
+            certificatePath,
+            certificate.GetEncoded(),
+            FileMode.CreateNew,
+            privateFile: false
+        );
         WriteFile(
             privateKeyPath,
             EncryptPrivateKey(privateKey, password, random),
@@ -145,8 +156,7 @@ public sealed partial class Ed25519CertificateStore
                 certificate.SigAlgOid,
                 EdECObjectIdentifiers.id_Ed25519.Id,
                 StringComparison.Ordinal
-            )
-            || certificate.GetPublicKey() is not Ed25519PublicKeyParameters publicKey
+            ) || certificate.GetPublicKey() is not Ed25519PublicKeyParameters publicKey
         )
         {
             throw new InvalidOperationException(
@@ -351,10 +361,7 @@ internal static class CmsKeyProtection
 
         if (
             encryptedElement.Name != Namespace + "encryptedSecret"
-            || !int.TryParse(
-                (string?)encryptedElement.Attribute("version"),
-                out var version
-            )
+            || !int.TryParse((string?)encryptedElement.Attribute("version"), out var version)
             || version != ElementVersion
         )
         {
@@ -368,10 +375,7 @@ internal static class CmsKeyProtection
         }
         catch (FormatException ex)
         {
-            throw new CryptographicException(
-                "The encrypted Data Protection key is invalid.",
-                ex
-            );
+            throw new CryptographicException("The encrypted Data Protection key is invalid.", ex);
         }
 
         if (blob.Length is 0 or > MaximumBlobSize)
@@ -435,10 +439,7 @@ internal static class CmsKeyProtection
         }
         catch (Exception ex) when (ex is not CryptographicException)
         {
-            throw new CryptographicException(
-                "The encrypted Data Protection key is invalid.",
-                ex
-            );
+            throw new CryptographicException("The encrypted Data Protection key is invalid.", ex);
         }
     }
 
@@ -511,7 +512,9 @@ internal static class CmsKeyProtection
         }
 
         var envelopedData = new CmsEnvelopedData(contentInfo);
-        if (!NistObjectIdentifiers.IdAes256Cbc.Equals(envelopedData.EncryptionAlgorithmID.Algorithm))
+        if (
+            !NistObjectIdentifiers.IdAes256Cbc.Equals(envelopedData.EncryptionAlgorithmID.Algorithm)
+        )
         {
             throw Invalid();
         }

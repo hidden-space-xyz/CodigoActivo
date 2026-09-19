@@ -6,8 +6,8 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -139,7 +139,11 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
 
         using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/events/{eventId}"), Ct);
         var before = await warm.ReadJsonAsync<EventResponse>(Ct);
-        before!.TermsDocuments.Should().ContainSingle().Which.Name.Should().Be("Términos originales");
+        before!
+            .TermsDocuments.Should()
+            .ContainSingle()
+            .Which.Name.Should()
+            .Be("Términos originales");
 
         var admin = await LoginAsAdminAsync();
         using var renamed = await admin.PutJsonAsync(
@@ -302,9 +306,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     public async Task CatalogReadCachesIntoTheSizeLimitedApplicationCache()
     {
         var admin = await LoginAsAdminAsync();
-        await Factory
-            .Services.GetRequiredService<HybridCache>()
-            .RemoveAsync("resources:types", Ct);
+        await Factory.Services.GetRequiredService<HybridCache>().RemoveAsync("resources:types", Ct);
         var localCache = Factory
             .Services.GetRequiredService<IMemoryCache>()
             .Should()

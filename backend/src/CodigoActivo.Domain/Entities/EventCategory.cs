@@ -9,6 +9,7 @@ public class EventCategory
     /// Gets or sets the identifier of the associated event.
     /// </summary>
     public Guid EventId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated event.
     /// </summary>
@@ -18,6 +19,7 @@ public class EventCategory
     /// Gets or sets the identifier of the associated event category type.
     /// </summary>
     public Guid EventCategoryTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated event category type.
     /// </summary>

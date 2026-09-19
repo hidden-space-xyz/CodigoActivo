@@ -134,15 +134,23 @@ public sealed class GetEventTermsStateQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        var required = result.Documents.Should().ContainSingle(d => d.TermsDocumentId == requiredId).Subject;
+        var required = result
+            .Documents.Should()
+            .ContainSingle(d => d.TermsDocumentId == requiredId)
+            .Subject;
         required.Accepted.Should().BeTrue();
         required.DecidedAt.Should().Be(decidedAt);
-        var optional = result.Documents.Should().ContainSingle(d => d.TermsDocumentId == optionalId).Subject;
+        var optional = result
+            .Documents.Should()
+            .ContainSingle(d => d.TermsDocumentId == optionalId)
+            .Subject;
         optional.Accepted.Should().BeNull();
         optional.DecidedAt.Should().BeNull();
-        result.SignupBlocked.Should().BeFalse(
-            "every required document is accepted, regardless of undecided optional documents"
-        );
+        result
+            .SignupBlocked.Should()
+            .BeFalse(
+                "every required document is accepted, regardless of undecided optional documents"
+            );
     }
 
     [Fact]
@@ -181,7 +189,9 @@ public sealed class GetEventTermsStateQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Documents.Should().ContainSingle(d => d.TermsDocumentId == optionalId && d.Accepted == false);
+        result
+            .Documents.Should()
+            .ContainSingle(d => d.TermsDocumentId == optionalId && d.Accepted == false);
         result.SignupBlocked.Should().BeFalse();
     }
 

@@ -135,7 +135,9 @@ public sealed class FakeSmtpServer : IAsyncDisposable
                     var recipient = ParsePath(line);
                     if (string.Equals(recipient, RejectedRecipient, StringComparison.Ordinal))
                     {
-                        await writer.WriteLineAsync($"550 5.1.1 <{recipient}>: Mailbox unavailable");
+                        await writer.WriteLineAsync(
+                            $"550 5.1.1 <{recipient}>: Mailbox unavailable"
+                        );
                     }
                     else
                     {
@@ -187,7 +189,8 @@ public sealed class FakeSmtpServer : IAsyncDisposable
             response = await reader.ReadLineAsync(ct);
         }
 
-        var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(response ?? string.Empty))
+        var credentials = Encoding
+            .UTF8.GetString(Convert.FromBase64String(response ?? string.Empty))
             .Split('\0');
         AuthenticatedUser = credentials.ElementAtOrDefault(1);
         AuthenticatedPassword = credentials.ElementAtOrDefault(2);
@@ -225,4 +228,8 @@ public sealed class FakeSmtpServer : IAsyncDisposable
 }
 
 /// <summary>Message accepted by <see cref="FakeSmtpServer"/>.</summary>
-public sealed record ReceivedEmail(string From, IReadOnlyList<string> Recipients, MimeMessage Message);
+public sealed record ReceivedEmail(
+    string From,
+    IReadOnlyList<string> Recipients,
+    MimeMessage Message
+);

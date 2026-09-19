@@ -62,10 +62,7 @@ public sealed class ActivityEmailDetailsTests
             new DateTimeOffset(2026, 7, 20, 18, 30, 0, TimeSpan.Zero)
         );
 
-        details
-            .ToBlock(TimeZoneInfo.Utc, "Voluntario")
-            .Text.Should()
-            .Contain("Rol: Voluntario");
+        details.ToBlock(TimeZoneInfo.Utc, "Voluntario").Text.Should().Contain("Rol: Voluntario");
         details.ToBlock(TimeZoneInfo.Utc).Text.Should().NotContain("Rol:");
     }
 

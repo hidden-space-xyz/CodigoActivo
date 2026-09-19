@@ -9,22 +9,27 @@ public sealed class TwoFactorOptions
     /// Stores the shared default challenge lifetime value.
     /// </summary>
     public static readonly TimeSpan DefaultChallengeLifetime = TimeSpan.FromMinutes(10);
+
     /// <summary>
     /// Stores the shared default resend cooldown value.
     /// </summary>
     public static readonly TimeSpan DefaultResendCooldown = TimeSpan.FromSeconds(60);
+
     /// <summary>
     /// Stores the shared default authenticator setup lifetime value.
     /// </summary>
     public static readonly TimeSpan DefaultSetupLifetime = TimeSpan.FromMinutes(15);
+
     /// <summary>
     /// Stores the shared default lockout duration value.
     /// </summary>
     public static readonly TimeSpan DefaultLockoutDuration = TimeSpan.FromMinutes(15);
+
     /// <summary>
     /// Stores the shared default maximum failed attempts value.
     /// </summary>
     public const int DefaultMaxFailedAttempts = 5;
+
     /// <summary>
     /// Stores the shared default issuer shown by authenticator applications.
     /// </summary>

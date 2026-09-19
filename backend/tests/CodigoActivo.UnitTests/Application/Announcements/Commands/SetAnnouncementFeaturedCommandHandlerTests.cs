@@ -23,10 +23,7 @@ public sealed class SetAnnouncementFeaturedCommandHandlerTests
         sut = new SetAnnouncementFeaturedCommandHandler(
             announcements,
             cacheInvalidator,
-            new GetAnnouncementByIdQueryHandler(
-                announcements,
-                new FakeQueryExecutor()
-            )
+            new GetAnnouncementByIdQueryHandler(announcements, new FakeQueryExecutor())
         );
     }
 

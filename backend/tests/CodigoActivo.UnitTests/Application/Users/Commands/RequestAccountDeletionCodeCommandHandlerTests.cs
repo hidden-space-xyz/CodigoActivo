@@ -42,7 +42,12 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
             clock,
             hasher,
             options,
-            new LoginCodeIssuer(hasher, options, accountEmails, NullLogger<LoginCodeIssuer>.Instance)
+            new LoginCodeIssuer(
+                hasher,
+                options,
+                accountEmails,
+                NullLogger<LoginCodeIssuer>.Instance
+            )
         );
     }
 

@@ -202,8 +202,14 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var fromResponse = await client.GetAsync(TestUri.Rel("/api/activities?activityDateFrom=2026-07-13"), Ct);
-        var toResponse = await client.GetAsync(TestUri.Rel("/api/activities?activityDateTo=2026-07-12"), Ct);
+        var fromResponse = await client.GetAsync(
+            TestUri.Rel("/api/activities?activityDateFrom=2026-07-13"),
+            Ct
+        );
+        var toResponse = await client.GetAsync(
+            TestUri.Rel("/api/activities?activityDateTo=2026-07-12"),
+            Ct
+        );
 
         fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
@@ -651,7 +657,10 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel("/api/activities/assignment-status-types"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel("/api/activities/assignment-status-types"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<IReadOnlyList<AssignmentStatusTypeResponse>>(

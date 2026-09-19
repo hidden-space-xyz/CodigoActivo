@@ -69,9 +69,7 @@ public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
         lock (sent)
         {
             Batches++;
-            var delivered = messages
-                .Where(m => !failingRecipients.Contains(m.ToAddress))
-                .ToList();
+            var delivered = messages.Where(m => !failingRecipients.Contains(m.ToAddress)).ToList();
             sent.AddRange(delivered);
             return Task.FromResult(
                 new EmailBatchResult(delivered.Count, messages.Count - delivered.Count)
@@ -149,9 +147,17 @@ public sealed partial class FakeEmailSender : IEmailTransport, IEmailDispatcher
             : match.Groups["code"].Value;
     }
 
-    [GeneratedRegex(@"[?&]code=(?<code>[^\s&]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(
+        @"[?&]code=(?<code>[^\s&]+)",
+        RegexOptions.ExplicitCapture,
+        matchTimeoutMilliseconds: 1000
+    )]
     private static partial Regex OtpPattern { get; }
 
-    [GeneratedRegex(@"^(?<code>\d{6})$", RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(
+        @"^(?<code>\d{6})$",
+        RegexOptions.ExplicitCapture | RegexOptions.Multiline,
+        matchTimeoutMilliseconds: 1000
+    )]
     private static partial Regex LoginCodePattern { get; }
 }

@@ -160,7 +160,9 @@ public sealed class SetAdminCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await AssertNotSavedAsync();
-        emailSender.Sent.Should().BeEmpty("an unchanged flag is not a security event worth reporting");
+        emailSender
+            .Sent.Should()
+            .BeEmpty("an unchanged flag is not a security event worth reporting");
     }
 
     [Fact]

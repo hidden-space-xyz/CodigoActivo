@@ -9,26 +9,32 @@ public sealed class EmailGuardOptions
     /// Identifies the default recipient burst configuration or policy value.
     /// </summary>
     public const int DefaultRecipientBurst = 20;
+
     /// <summary>
     /// Identifies the default recipient per hour configuration or policy value.
     /// </summary>
     public const int DefaultRecipientPerHour = 10;
+
     /// <summary>
     /// Identifies the default recipient per day configuration or policy value.
     /// </summary>
     public const int DefaultRecipientPerDay = 50;
+
     /// <summary>
     /// Identifies the default global burst configuration or policy value.
     /// </summary>
     public const int DefaultGlobalBurst = 1000;
+
     /// <summary>
     /// Identifies the default global per hour configuration or policy value.
     /// </summary>
     public const int DefaultGlobalPerHour = 1000;
+
     /// <summary>
     /// Identifies the default global credential reserve configuration or policy value.
     /// </summary>
     public const int DefaultGlobalCredentialReserve = 200;
+
     /// <summary>
     /// Identifies the default max tracked recipients configuration or policy value.
     /// </summary>
@@ -38,6 +44,7 @@ public sealed class EmailGuardOptions
     /// Stores the shared default sweep interval value.
     /// </summary>
     public static readonly TimeSpan DefaultSweepInterval = TimeSpan.FromMinutes(5);
+
     /// <summary>
     /// Stores the shared default alert interval value.
     /// </summary>

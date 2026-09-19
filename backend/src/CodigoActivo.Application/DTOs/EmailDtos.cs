@@ -11,6 +11,7 @@ public record SendEmailRequest(string Subject, string Body)
     /// Identifies the subject max length configuration or policy value.
     /// </summary>
     public const int SubjectMaxLength = 200;
+
     /// <summary>
     /// Identifies the body max length configuration or policy value.
     /// </summary>

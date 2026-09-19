@@ -46,8 +46,7 @@ public sealed record EmailDocument(
 /// </summary>
 public static class EmailLayout
 {
-    private const string TextRule =
-        "------------------------------------------------------------";
+    private const string TextRule = "------------------------------------------------------------";
 
     private const string BlockSeparator = "\n\n";
 
@@ -99,8 +98,8 @@ public static class EmailLayout
         var preheader = WebUtility.HtmlEncode(document.Preheader);
         var body = string.Concat(blocks.Select(block => block.Html));
         var accentBar = $"{EmailStyles.AccentBar}background-color:{document.Accent.Line};";
-        var greeting =
-            document.RecipientName is null ? string.Empty
+        var greeting = document.RecipientName is null
+            ? string.Empty
             : EmailBlocks.Paragraph(
                 AppStrings.EmailsSharedGreeting(WebUtility.HtmlEncode(document.RecipientName))
             );

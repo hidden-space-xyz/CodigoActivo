@@ -197,7 +197,10 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await UploadAsAdminAsync(TestSeedData.ValidPng(), "cached.png");
         var client = CreateClient();
 
-        using var first = await client.GetAsync(TestUri.Rel($"/api/files/{created.Id}/content"), Ct);
+        using var first = await client.GetAsync(
+            TestUri.Rel($"/api/files/{created.Id}/content"),
+            Ct
+        );
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         var etag = first.Headers.ETag;
         etag.Should().NotBeNull();

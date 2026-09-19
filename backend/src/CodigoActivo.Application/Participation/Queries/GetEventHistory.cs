@@ -161,66 +161,82 @@ public sealed class GetEventHistoryQueryHandler(
         /// Gets or sets the identifier of the associated event.
         /// </summary>
         public Guid EventId { get; init; }
+
         /// <summary>
         /// Gets or sets the event title value.
         /// </summary>
         public string EventTitle { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the event subtitle value.
         /// </summary>
         public string EventSubtitle { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the date and time when the event starts.
         /// </summary>
         public DateOnly EventStartsAt { get; init; }
+
         /// <summary>
         /// Gets or sets the date and time when the event ends.
         /// </summary>
         public DateOnly EventEndsAt { get; init; }
+
         /// <summary>
         /// Gets or sets the identifier of the associated thumbnail.
         /// </summary>
         public Guid ThumbnailId { get; init; }
+
         /// <summary>
         /// Gets or sets the identifier of the associated activity.
         /// </summary>
         public Guid ActivityId { get; init; }
+
         /// <summary>
         /// Gets or sets the activity title value.
         /// </summary>
         public string ActivityTitle { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the location value.
         /// </summary>
         public string Location { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the modality name value.
         /// </summary>
         public string ModalityName { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the identifier of the associated user.
         /// </summary>
         public Guid UserId { get; init; }
+
         /// <summary>
         /// Gets or sets the first name value.
         /// </summary>
         public string FirstName { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the last name value.
         /// </summary>
         public string LastName { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the identifier of the associated role type.
         /// </summary>
         public Guid RoleTypeId { get; init; }
+
         /// <summary>
         /// Gets or sets the role type name value.
         /// </summary>
         public string RoleTypeName { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the identifier of the associated status.
         /// </summary>
         public Guid StatusId { get; init; }
+
         /// <summary>
         /// Gets or sets the status name value.
         /// </summary>

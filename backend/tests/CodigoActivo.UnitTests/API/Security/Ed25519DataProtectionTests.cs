@@ -248,10 +248,7 @@ public sealed class Ed25519DataProtectionTests : IDisposable
         Directory.CreateDirectory(missingCertificate);
         File.WriteAllBytes(Path.Join(missingCertificate, PrivateKeyFileName), [0x30]);
 
-        FluentActions
-            .Invoking(() => Load(missingKey))
-            .Should()
-            .Throw<InvalidOperationException>();
+        FluentActions.Invoking(() => Load(missingKey)).Should().Throw<InvalidOperationException>();
         FluentActions
             .Invoking(() => Load(missingCertificate))
             .Should()
@@ -267,10 +264,7 @@ public sealed class Ed25519DataProtectionTests : IDisposable
 
         var decrypted = new Ed25519XmlDecryptor(Services(store)).Decrypt(encryptedElement);
 
-        decrypted
-            .ToString(SaveOptions.DisableFormatting)
-            .Should()
-            .Be(ReadFixture("plaintext.xml"));
+        decrypted.ToString(SaveOptions.DisableFormatting).Should().Be(ReadFixture("plaintext.xml"));
     }
 
     [Fact]
@@ -432,7 +426,8 @@ public sealed class Ed25519DataProtectionTests : IDisposable
         var decryptor = (IXmlDecryptor)
             ActivatorUtilities.CreateInstance(provider, encrypted.DecryptorType);
 
-        XNode.DeepEquals(decryptor.Decrypt(encrypted.EncryptedElement), plaintext)
+        XNode
+            .DeepEquals(decryptor.Decrypt(encrypted.EncryptedElement), plaintext)
             .Should()
             .BeTrue();
         ActivatorUtilities

@@ -113,7 +113,10 @@ public static class ActivitySignupDecisionEmail
 
         blocks.Add(EmailBlocks.Action(content.ButtonLabel, details.EventUrl));
         blocks.Add(
-            EmailBlocks.Prose(AppStrings.EmailsSharedSignoffHtml, AppStrings.EmailsSharedSignoffText)
+            EmailBlocks.Prose(
+                AppStrings.EmailsSharedSignoffHtml,
+                AppStrings.EmailsSharedSignoffText
+            )
         );
 
         var rendered = EmailLayout.Render(

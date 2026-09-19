@@ -514,13 +514,19 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         certificates.Should().AllSatisfy(certificate => certificate.EventId.Should().Be(eventId));
         certificates
             .Should()
-            .Contain(certificate => certificate.UserId == TestSeedData.Users.MemberId && certificate.IsSelf);
+            .Contain(certificate =>
+                certificate.UserId == TestSeedData.Users.MemberId && certificate.IsSelf
+            );
         certificates
             .Should()
             .Contain(certificate =>
                 certificate.UserId == TestSeedData.Users.MemberChildId && !certificate.IsSelf
             );
-        certificates.Select(certificate => certificate.Code).Distinct(StringComparer.Ordinal).Should().HaveCount(2);
+        certificates
+            .Select(certificate => certificate.Code)
+            .Distinct(StringComparer.Ordinal)
+            .Should()
+            .HaveCount(2);
     }
 
     [Fact]
@@ -587,11 +593,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         {
             db.EventRatings.Add(new EventRating { EventId = eventId, Score = 4 });
             db.EventRatingSubmissions.Add(
-                new EventRatingSubmission
-                {
-                    EventId = eventId,
-                    UserId = TestSeedData.Users.AdminId,
-                }
+                new EventRatingSubmission { EventId = eventId, UserId = TestSeedData.Users.AdminId }
             );
             return Task.CompletedTask;
         });

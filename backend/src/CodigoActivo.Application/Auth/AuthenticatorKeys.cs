@@ -21,7 +21,10 @@ public static class AuthenticatorKeys
             Enumerable
                 .Range(0, (secret.Length + GroupSize - 1) / GroupSize)
                 .Select(index =>
-                    secret.Substring(index * GroupSize, Math.Min(GroupSize, secret.Length - index * GroupSize))
+                    secret.Substring(
+                        index * GroupSize,
+                        Math.Min(GroupSize, secret.Length - index * GroupSize)
+                    )
                 )
         );
     }

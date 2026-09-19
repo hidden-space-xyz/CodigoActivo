@@ -197,7 +197,27 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
 
         captured.Should().NotBeNull();
         var accepts = captured.Compile();
-        accepts(new User { LastName = "Apellido", FirstName = "Nombre", Id = childId, ParentId = callerId }).Should().BeTrue();
-        accepts(new User { LastName = "Apellido", FirstName = "Nombre", Id = childId, ParentId = Guid.NewGuid() }).Should().BeFalse();
+        accepts(
+                new User
+                {
+                    LastName = "Apellido",
+                    FirstName = "Nombre",
+                    Id = childId,
+                    ParentId = callerId,
+                }
+            )
+            .Should()
+            .BeTrue();
+        accepts(
+                new User
+                {
+                    LastName = "Apellido",
+                    FirstName = "Nombre",
+                    Id = childId,
+                    ParentId = Guid.NewGuid(),
+                }
+            )
+            .Should()
+            .BeFalse();
     }
 }

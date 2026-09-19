@@ -11,65 +11,75 @@ public static class AppStrings
     /// <summary>
     /// Identifies the base name configuration or policy value.
     /// </summary>
-    public const string BaseName =
-        "CodigoActivo.Application.Resources.Localization.AppStrings";
+    public const string BaseName = "CodigoActivo.Application.Resources.Localization.AppStrings";
     private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
     private static readonly ResourceManager Manager = new(BaseName, typeof(AppStrings).Assembly);
 
     /// <summary>
     /// Gets the emails account deletion code heading value.
     /// </summary>
-    public static string EmailsAccountDeletionCodeHeading => Get("emails.accountDeletionCode.heading");
+    public static string EmailsAccountDeletionCodeHeading =>
+        Get("emails.accountDeletionCode.heading");
 
     /// <summary>
     /// Gets the emails account deletion code ignore note value.
     /// </summary>
-    public static string EmailsAccountDeletionCodeIgnoreNote => Get("emails.accountDeletionCode.ignoreNote");
+    public static string EmailsAccountDeletionCodeIgnoreNote =>
+        Get("emails.accountDeletionCode.ignoreNote");
 
     /// <summary>
     /// Gets the emails account deletion code intro html value.
     /// </summary>
-    public static string EmailsAccountDeletionCodeIntroHtml => Get("emails.accountDeletionCode.introHtml");
+    public static string EmailsAccountDeletionCodeIntroHtml =>
+        Get("emails.accountDeletionCode.introHtml");
 
     /// <summary>
     /// Gets the emails account deletion code intro text value.
     /// </summary>
-    public static string EmailsAccountDeletionCodeIntroText => Get("emails.accountDeletionCode.introText");
+    public static string EmailsAccountDeletionCodeIntroText =>
+        Get("emails.accountDeletionCode.introText");
 
     /// <summary>
     /// Gets the emails account deletion code subject value.
     /// </summary>
-    public static string EmailsAccountDeletionCodeSubject => Get("emails.accountDeletionCode.subject");
+    public static string EmailsAccountDeletionCodeSubject =>
+        Get("emails.accountDeletionCode.subject");
 
     /// <summary>
     /// Gets the emails activity decision confirmed button label value.
     /// </summary>
-    public static string EmailsActivityDecisionConfirmedButtonLabel => Get("emails.activityDecision.confirmedButtonLabel");
+    public static string EmailsActivityDecisionConfirmedButtonLabel =>
+        Get("emails.activityDecision.confirmedButtonLabel");
 
     /// <summary>
     /// Gets the emails activity decision confirmed heading value.
     /// </summary>
-    public static string EmailsActivityDecisionConfirmedHeading => Get("emails.activityDecision.confirmedHeading");
+    public static string EmailsActivityDecisionConfirmedHeading =>
+        Get("emails.activityDecision.confirmedHeading");
 
     /// <summary>
     /// Gets the emails activity decision confirmed note value.
     /// </summary>
-    public static string EmailsActivityDecisionConfirmedNote => Get("emails.activityDecision.confirmedNote");
+    public static string EmailsActivityDecisionConfirmedNote =>
+        Get("emails.activityDecision.confirmedNote");
 
     /// <summary>
     /// Gets the emails activity decision denied button label value.
     /// </summary>
-    public static string EmailsActivityDecisionDeniedButtonLabel => Get("emails.activityDecision.deniedButtonLabel");
+    public static string EmailsActivityDecisionDeniedButtonLabel =>
+        Get("emails.activityDecision.deniedButtonLabel");
 
     /// <summary>
     /// Gets the emails activity decision denied heading value.
     /// </summary>
-    public static string EmailsActivityDecisionDeniedHeading => Get("emails.activityDecision.deniedHeading");
+    public static string EmailsActivityDecisionDeniedHeading =>
+        Get("emails.activityDecision.deniedHeading");
 
     /// <summary>
     /// Gets the emails activity decision signup phrase self value.
     /// </summary>
-    public static string EmailsActivityDecisionSignupPhraseSelf => Get("emails.activityDecision.signupPhraseSelf");
+    public static string EmailsActivityDecisionSignupPhraseSelf =>
+        Get("emails.activityDecision.signupPhraseSelf");
 
     /// <summary>
     /// Gets the emails details activity label value.
@@ -174,22 +184,26 @@ public static class AppStrings
     /// <summary>
     /// Gets the emails security alert admin granted value.
     /// </summary>
-    public static string EmailsSecurityAlertAdminGranted => Get("emails.securityAlert.adminGranted");
+    public static string EmailsSecurityAlertAdminGranted =>
+        Get("emails.securityAlert.adminGranted");
 
     /// <summary>
     /// Gets the emails security alert admin revoked value.
     /// </summary>
-    public static string EmailsSecurityAlertAdminRevoked => Get("emails.securityAlert.adminRevoked");
+    public static string EmailsSecurityAlertAdminRevoked =>
+        Get("emails.securityAlert.adminRevoked");
 
     /// <summary>
     /// Gets the emails security alert authenticator disabled value.
     /// </summary>
-    public static string EmailsSecurityAlertAuthenticatorDisabled => Get("emails.securityAlert.authenticatorDisabled");
+    public static string EmailsSecurityAlertAuthenticatorDisabled =>
+        Get("emails.securityAlert.authenticatorDisabled");
 
     /// <summary>
     /// Gets the emails security alert authenticator enabled value.
     /// </summary>
-    public static string EmailsSecurityAlertAuthenticatorEnabled => Get("emails.securityAlert.authenticatorEnabled");
+    public static string EmailsSecurityAlertAuthenticatorEnabled =>
+        Get("emails.securityAlert.authenticatorEnabled");
 
     /// <summary>
     /// Gets the emails security alert heading value.
@@ -199,7 +213,8 @@ public static class AppStrings
     /// <summary>
     /// Gets the emails security alert identifiers changed value.
     /// </summary>
-    public static string EmailsSecurityAlertIdentifiersChanged => Get("emails.securityAlert.identifiersChanged");
+    public static string EmailsSecurityAlertIdentifiersChanged =>
+        Get("emails.securityAlert.identifiersChanged");
 
     /// <summary>
     /// Gets the emails security alert intro html value.
@@ -214,22 +229,26 @@ public static class AppStrings
     /// <summary>
     /// Gets the emails security alert no action note value.
     /// </summary>
-    public static string EmailsSecurityAlertNoActionNote => Get("emails.securityAlert.noActionNote");
+    public static string EmailsSecurityAlertNoActionNote =>
+        Get("emails.securityAlert.noActionNote");
 
     /// <summary>
     /// Gets the emails security alert password changed value.
     /// </summary>
-    public static string EmailsSecurityAlertPasswordChanged => Get("emails.securityAlert.passwordChanged");
+    public static string EmailsSecurityAlertPasswordChanged =>
+        Get("emails.securityAlert.passwordChanged");
 
     /// <summary>
     /// Gets the emails security alert password locked value.
     /// </summary>
-    public static string EmailsSecurityAlertPasswordLocked => Get("emails.securityAlert.passwordLocked");
+    public static string EmailsSecurityAlertPasswordLocked =>
+        Get("emails.securityAlert.passwordLocked");
 
     /// <summary>
     /// Gets the emails security alert password reset value.
     /// </summary>
-    public static string EmailsSecurityAlertPasswordReset => Get("emails.securityAlert.passwordReset");
+    public static string EmailsSecurityAlertPasswordReset =>
+        Get("emails.securityAlert.passwordReset");
 
     /// <summary>
     /// Gets the emails security alert subject value.
@@ -239,7 +258,8 @@ public static class AppStrings
     /// <summary>
     /// Gets the emails security alert two factor reset value.
     /// </summary>
-    public static string EmailsSecurityAlertTwoFactorReset => Get("emails.securityAlert.twoFactorReset");
+    public static string EmailsSecurityAlertTwoFactorReset =>
+        Get("emails.securityAlert.twoFactorReset");
 
     /// <summary>
     /// Gets the emails security alert warning value.

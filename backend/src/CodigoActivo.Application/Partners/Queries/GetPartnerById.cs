@@ -17,10 +17,8 @@ public sealed record GetPartnerByIdQuery(Guid PartnerId) : IQuery<Result<Partner
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetPartnerByIdQueryHandler(
-    IPartnerRepository partners,
-    IQueryExecutor executor
-) : IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>>
+public sealed class GetPartnerByIdQueryHandler(IPartnerRepository partners, IQueryExecutor executor)
+    : IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve partner by identifier.

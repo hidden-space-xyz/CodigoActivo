@@ -96,9 +96,17 @@ public sealed partial class RecordingEmailSender : IEmailTransport, IEmailSender
             : match.Groups["code"].Value;
     }
 
-    [GeneratedRegex(@"[?&]code=(?<code>[^\s&]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(
+        @"[?&]code=(?<code>[^\s&]+)",
+        RegexOptions.ExplicitCapture,
+        matchTimeoutMilliseconds: 1000
+    )]
     private static partial Regex CodePattern { get; }
 
-    [GeneratedRegex(@"^(?<code>\d{6})$", RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(
+        @"^(?<code>\d{6})$",
+        RegexOptions.ExplicitCapture | RegexOptions.Multiline,
+        matchTimeoutMilliseconds: 1000
+    )]
     private static partial Regex LoginCodePattern { get; }
 }

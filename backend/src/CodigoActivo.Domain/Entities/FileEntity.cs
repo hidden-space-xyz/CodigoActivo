@@ -11,6 +11,7 @@ public class FileEntity : IdentifiableEntity
     /// Gets or sets the human-readable name.
     /// </summary>
     public required string Name { get; set; }
+
     /// <summary>
     /// Gets or sets the extension value.
     /// </summary>
@@ -20,6 +21,7 @@ public class FileEntity : IdentifiableEntity
     /// Gets or sets the uploaded at value.
     /// </summary>
     public DateTimeOffset UploadedAt { get; set; }
+
     /// <summary>
     /// Gets or sets the uploaded by value.
     /// </summary>

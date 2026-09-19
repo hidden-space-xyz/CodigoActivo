@@ -21,8 +21,8 @@ public sealed class CamelCaseQueryParametersFilter : IOperationFilter
         }
 
         foreach (
-            var concrete in operation.Parameters
-                .OfType<OpenApiParameter>()
+            var concrete in operation
+                .Parameters.OfType<OpenApiParameter>()
                 .Where(parameter =>
                     parameter.In is ParameterLocation.Query
                     && !string.IsNullOrEmpty(parameter.Name)

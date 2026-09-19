@@ -10,6 +10,7 @@ public class EventTermsDocument
     /// Gets or sets the identifier of the associated event.
     /// </summary>
     public Guid EventId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated event.
     /// </summary>
@@ -19,6 +20,7 @@ public class EventTermsDocument
     /// Gets or sets the identifier of the associated terms document.
     /// </summary>
     public Guid TermsDocumentId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated terms document.
     /// </summary>

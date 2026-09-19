@@ -11,15 +11,7 @@ namespace CodigoActivo.IntegrationTests.Infrastructure;
 public sealed class InitialAdministratorSeederTests(PostgresContainerFixture postgres)
     : IAsyncLifetime
 {
-    private static readonly DateTimeOffset CreatedAt = new(
-        2026,
-        9,
-        4,
-        12,
-        0,
-        0,
-        TimeSpan.Zero
-    );
+    private static readonly DateTimeOffset CreatedAt = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
 
     public async ValueTask InitializeAsync()
     {
@@ -85,8 +77,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
             NullLogger<InitialAdministratorSeeder>.Instance
         );
 
-        var act = () =>
-            seeder.SeedAsync("admin@codigoactivo.test", null, TestCancellation.Ct);
+        var act = () => seeder.SeedAsync("admin@codigoactivo.test", null, TestCancellation.Ct);
 
         await act.Should()
             .ThrowAsync<InvalidOperationException>()

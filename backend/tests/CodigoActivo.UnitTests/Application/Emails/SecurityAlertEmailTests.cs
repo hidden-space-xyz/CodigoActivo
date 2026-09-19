@@ -14,7 +14,10 @@ public sealed class SecurityAlertEmailTests
     {
         return new()
         {
-            { AccountSecurityChange.PasswordChanged, AppStrings.EmailsSecurityAlertPasswordChanged },
+            {
+                AccountSecurityChange.PasswordChanged,
+                AppStrings.EmailsSecurityAlertPasswordChanged
+            },
             { AccountSecurityChange.PasswordReset, AppStrings.EmailsSecurityAlertPasswordReset },
             {
                 AccountSecurityChange.AuthenticatorEnabled,
@@ -37,7 +40,10 @@ public sealed class SecurityAlertEmailTests
 
     [Theory]
     [MemberData(nameof(Sentences))]
-    public void CreateRendersTheSentenceForEveryChange(AccountSecurityChange change, string expected)
+    public void CreateRendersTheSentenceForEveryChange(
+        AccountSecurityChange change,
+        string expected
+    )
     {
         var message = SecurityAlertEmail.Create(
             "owner@test.com",

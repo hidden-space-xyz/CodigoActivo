@@ -55,7 +55,11 @@ public sealed class AppStringsTests
     public void FormatEveryCompositeValueUsesOneHolePerParameter()
     {
         var values = ReadAllValues()
-            .ToDictionary(pair => ToMemberName(pair.Key), pair => pair.Value, StringComparer.Ordinal);
+            .ToDictionary(
+                pair => ToMemberName(pair.Key),
+                pair => pair.Value,
+                StringComparer.Ordinal
+            );
 
         foreach (var method in CompositeMethods())
         {

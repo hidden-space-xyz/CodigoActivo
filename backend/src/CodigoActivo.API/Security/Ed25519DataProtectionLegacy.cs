@@ -30,8 +30,7 @@ internal static class LegacyEd25519Protection
     private const int EncryptionKeySize = 32;
     private const int MaximumCiphertextSize = 1024 * 1024;
 
-    private static readonly XNamespace Namespace =
-        "urn:codigoactivo:data-protection:ed25519:v1";
+    private static readonly XNamespace Namespace = "urn:codigoactivo:data-protection:ed25519:v1";
     private static readonly byte[] AdditionalData = Encoding.UTF8.GetBytes(
         "CodigoActivo Data Protection XML v1"
     );
@@ -225,9 +224,7 @@ internal static class LegacyEd25519Protection
             written += cipher.DoFinal(output, written);
             if (written != ciphertext.Length)
             {
-                throw new CryptographicException(
-                    "The encrypted Data Protection key is invalid."
-                );
+                throw new CryptographicException("The encrypted Data Protection key is invalid.");
             }
 
             return output;
@@ -235,10 +232,7 @@ internal static class LegacyEd25519Protection
         catch (Exception ex) when (ex is not CryptographicException)
         {
             CryptographicOperations.ZeroMemory(output);
-            throw new CryptographicException(
-                "The encrypted Data Protection key is invalid.",
-                ex
-            );
+            throw new CryptographicException("The encrypted Data Protection key is invalid.", ex);
         }
         finally
         {
@@ -271,10 +265,7 @@ internal static class LegacyEd25519Protection
         }
         catch (FormatException ex)
         {
-            throw new CryptographicException(
-                "The encrypted Data Protection key is invalid.",
-                ex
-            );
+            throw new CryptographicException("The encrypted Data Protection key is invalid.", ex);
         }
 
         if (expectedSize is null || decoded.Length == expectedSize)
@@ -295,10 +286,7 @@ internal static class LegacyEd25519Protection
         }
         catch (FormatException ex)
         {
-            throw new CryptographicException(
-                $"The Ed25519 private key {field} is invalid.",
-                ex
-            );
+            throw new CryptographicException($"The Ed25519 private key {field} is invalid.", ex);
         }
 
         if (decoded.Length == expectedSize)
@@ -307,9 +295,7 @@ internal static class LegacyEd25519Protection
         }
 
         CryptographicOperations.ZeroMemory(decoded);
-        throw new CryptographicException(
-            $"The Ed25519 private key {field} has an invalid length."
-        );
+        throw new CryptographicException($"The Ed25519 private key {field} has an invalid length.");
     }
 
     private sealed record PrivateKeyEnvelope(

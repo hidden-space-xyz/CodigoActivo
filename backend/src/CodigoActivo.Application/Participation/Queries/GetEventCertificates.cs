@@ -121,30 +121,37 @@ public sealed class GetEventCertificatesQueryHandler(
         /// Gets or sets the identifier of the associated event.
         /// </summary>
         public Guid EventId { get; init; }
+
         /// <summary>
         /// Gets or sets the event title value.
         /// </summary>
         public string EventTitle { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the event subtitle value.
         /// </summary>
         public string EventSubtitle { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the date and time when the event starts.
         /// </summary>
         public DateOnly EventStartsAt { get; init; }
+
         /// <summary>
         /// Gets or sets the date and time when the event ends.
         /// </summary>
         public DateOnly EventEndsAt { get; init; }
+
         /// <summary>
         /// Gets or sets the identifier of the associated user.
         /// </summary>
         public Guid UserId { get; init; }
+
         /// <summary>
         /// Gets or sets the first name value.
         /// </summary>
         public string FirstName { get; init; } = string.Empty;
+
         /// <summary>
         /// Gets or sets the last name value.
         /// </summary>

@@ -16,10 +16,7 @@ public sealed class GetPartnerByIdQueryHandlerTests
 
     public GetPartnerByIdQueryHandlerTests()
     {
-        sut = new GetPartnerByIdQueryHandler(
-            partners,
-            new FakeQueryExecutor()
-        );
+        sut = new GetPartnerByIdQueryHandler(partners, new FakeQueryExecutor());
     }
 
     [Fact]

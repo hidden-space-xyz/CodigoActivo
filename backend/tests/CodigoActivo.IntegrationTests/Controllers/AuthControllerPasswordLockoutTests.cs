@@ -154,9 +154,11 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
 
         using var after = await signedIn.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
         await after.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
-        (await Factory.QueryAsync(db =>
-            db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
-        ))
+        (
+            await Factory.QueryAsync(db =>
+                db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+            )
+        )
             .Should()
             .Be(0);
 
@@ -184,9 +186,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         );
 
         await response.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
-        var cookies = response.Headers.TryGetValues("Set-Cookie", out var values)
-            ? values
-            : [];
+        var cookies = response.Headers.TryGetValues("Set-Cookie", out var values) ? values : [];
         cookies
             .Should()
             .NotContain(cookie =>
@@ -196,9 +196,11 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.LoginChallengeId.Should().BeNull("locking closes the open challenge");
         stored.LastLoginAt.Should().BeNull();
-        (await Factory.QueryAsync(db =>
-            db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
-        ))
+        (
+            await Factory.QueryAsync(db =>
+                db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+            )
+        )
             .Should()
             .Be(0);
 
@@ -289,10 +291,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         );
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .IsPasswordLocked()
-            .Should()
-            .BeTrue();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsPasswordLocked().Should().BeTrue();
         using var login = await AttemptAsync(CreateClient(), TestSeedData.Password);
         await login.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
     }

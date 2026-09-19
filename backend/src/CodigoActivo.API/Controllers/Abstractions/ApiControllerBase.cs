@@ -43,10 +43,8 @@ public abstract class ApiControllerBase : ControllerBase
     {
         return result.IsFailure
             ? (ActionResult<T>)ToProblem(result.Error!)
-            : (ActionResult<T>)Created(
-                new Uri(location(result.Value), UriKind.Relative),
-                result.Value
-            );
+            : (ActionResult<T>)
+                Created(new Uri(location(result.Value), UriKind.Relative), result.Value);
     }
 
     /// <summary>

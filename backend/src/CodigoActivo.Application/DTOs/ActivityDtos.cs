@@ -156,10 +156,7 @@ public record AssignmentStatusResponse(Guid Id, string Name);
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Accepted">Whether the user accepted the document.</param>
-public record TermsDecisionRequest(
-    [Required] Guid TermsDocumentId,
-    [Required] bool? Accepted
-);
+public record TermsDecisionRequest([Required] Guid TermsDocumentId, [Required] bool? Accepted);
 
 /// <summary>
 /// Contains the client-supplied data used to assign.

@@ -28,7 +28,10 @@ public interface IQueryExecutor
     /// <param name="source">Source sequence to query.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the matching t items.</returns>
-    public Task<IReadOnlyList<T>> ToListAsync<T>(IQueryable<T> source, CancellationToken ct = default);
+    public Task<IReadOnlyList<T>> ToListAsync<T>(
+        IQueryable<T> source,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Returns the first matching query result, or <see langword="null"/> when none exists.

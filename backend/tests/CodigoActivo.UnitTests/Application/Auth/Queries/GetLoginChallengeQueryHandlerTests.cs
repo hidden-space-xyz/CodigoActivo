@@ -23,14 +23,19 @@ public sealed class GetLoginChallengeQueryHandlerTests
 
     private Task<Result<LoginChallengeResponse>> QueryAsync(Guid userId)
     {
-        return sut.HandleAsync(new GetLoginChallengeQuery(userId), TestContext.Current.CancellationToken);
+        return sut.HandleAsync(
+            new GetLoginChallengeQuery(userId),
+            TestContext.Current.CancellationToken
+        );
     }
 
     [Fact]
     public async Task HandleAsyncUserMissingReturnsUnauthorized()
     {
         User? missing = null;
-        users.GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(missing);
+        users
+            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(missing);
 
         var result = await QueryAsync(Guid.NewGuid());
 
@@ -46,7 +51,9 @@ public sealed class GetLoginChallengeQueryHandlerTests
         var result = await QueryAsync(user.Id);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new LoginChallengeResponse(TwoFactorMethod.Email, "a***@test.com"));
+        result
+            .Value.Should()
+            .Be(new LoginChallengeResponse(TwoFactorMethod.Email, "a***@test.com"));
     }
 
     [Fact]

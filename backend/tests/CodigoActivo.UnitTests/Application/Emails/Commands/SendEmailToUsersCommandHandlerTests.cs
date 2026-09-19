@@ -35,12 +35,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     {
         var content = new MemoryStream(Encoding.UTF8.GetBytes(new string('x', size)));
         attachmentStreams.Add(content);
-        return new(
-            content,
-            name,
-            "text/plain",
-            size
-        );
+        return new(content, name, "text/plain", size);
     }
 
     public void Dispose()

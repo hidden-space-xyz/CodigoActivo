@@ -19,8 +19,9 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
 {
     private async Task<string> ForgeSessionCookieAsync(ClaimsPrincipal principal)
     {
-        var monitor = Factory
-            .Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>();
+        var monitor = Factory.Services.GetRequiredService<
+            IOptionsMonitor<CookieAuthenticationOptions>
+        >();
         var options = monitor.Get(CookieAuthenticationDefaults.AuthenticationScheme);
         var ticket = new AuthenticationTicket(
             principal,
@@ -87,7 +88,8 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
     public async Task MeSessionRowReassignedToAnotherUserIsRejected()
     {
         var client = await LoginAsMemberAsync();
-        var session = (await SessionsForAsync(TestSeedData.Users.MemberId)).Should()
+        var session = (await SessionsForAsync(TestSeedData.Users.MemberId))
+            .Should()
             .ContainSingle()
             .Subject;
 
@@ -109,8 +111,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
 
         await Factory.SeedAsync(async db =>
         {
-            var rows = await db
-                .Set<UserSession>()
+            var rows = await db.Set<UserSession>()
                 .Where(s => s.UserId == TestSeedData.Users.MemberId)
                 .ToListAsync(Ct);
             db.Set<UserSession>().RemoveRange(rows);
@@ -144,7 +145,9 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         await LoginAsMemberAsync();
 
         var memberSessions = await SessionsForAsync(TestSeedData.Users.MemberId);
-        memberSessions.Should().HaveCount(1, "the expired row was purged when the user logged in again");
+        memberSessions
+            .Should()
+            .HaveCount(1, "the expired row was purged when the user logged in again");
         memberSessions[0].ExpiresAt.Should().BeAfter(Factory.Clock.UtcNow);
 
         var adminSessions = await SessionsForAsync(TestSeedData.Users.AdminId);
@@ -225,8 +228,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         await Factory.SeedAsync(async db =>
         {
-            var rows = await db
-                .Set<UserSession>()
+            var rows = await db.Set<UserSession>()
                 .Where(s => s.UserId == TestSeedData.Users.MemberId)
                 .ToListAsync(Ct);
             db.Set<UserSession>().RemoveRange(rows);
@@ -236,5 +238,4 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
 
         logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
-
 }

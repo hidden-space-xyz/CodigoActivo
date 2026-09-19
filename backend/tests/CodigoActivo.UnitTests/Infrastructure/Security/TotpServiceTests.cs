@@ -29,7 +29,10 @@ public sealed class TotpServiceTests
         string expected
     )
     {
-        TotpService.ComputeCode(RfcSecret, TotpService.StepOf(Instant(unixSeconds))).Should().Be(expected);
+        TotpService
+            .ComputeCode(RfcSecret, TotpService.StepOf(Instant(unixSeconds)))
+            .Should()
+            .Be(expected);
     }
 
     [Fact]
@@ -46,8 +49,12 @@ public sealed class TotpServiceTests
         var now = Instant(1_111_111_111);
         var step = TotpService.StepOf(now);
 
-        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step - 1), now).Should().Be(step - 1);
-        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step + 1), now).Should().Be(step + 1);
+        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step - 1), now)
+            .Should()
+            .Be(step - 1);
+        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step + 1), now)
+            .Should()
+            .Be(step + 1);
     }
 
     [Fact]
@@ -56,8 +63,12 @@ public sealed class TotpServiceTests
         var now = Instant(1_111_111_111);
         var step = TotpService.StepOf(now);
 
-        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step - 2), now).Should().BeNull();
-        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step + 2), now).Should().BeNull();
+        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step - 2), now)
+            .Should()
+            .BeNull();
+        sut.MatchStep(RfcSecret, TotpService.ComputeCode(RfcSecret, step + 2), now)
+            .Should()
+            .BeNull();
     }
 
     [Fact]
@@ -107,6 +118,8 @@ public sealed class TotpServiceTests
 
         first.Should().HaveLength(32).And.MatchRegex("^[A-Z2-7]+$");
         second.Should().NotBe(first);
-        sut.MatchStep(first, TotpService.ComputeCode(first, 1_000), Instant(30_000)).Should().Be(1_000);
+        sut.MatchStep(first, TotpService.ComputeCode(first, 1_000), Instant(30_000))
+            .Should()
+            .Be(1_000);
     }
 }

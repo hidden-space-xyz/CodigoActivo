@@ -62,9 +62,7 @@ internal static class ApplicationInitializer
     )
     {
         logger.LogInformation("Seeding database");
-        await services
-            .GetRequiredService<DatabaseSeeder>()
-            .SeedAsync(cancellationToken);
+        await services.GetRequiredService<DatabaseSeeder>().SeedAsync(cancellationToken);
         logger.LogInformation("Database seeding complete");
     }
 

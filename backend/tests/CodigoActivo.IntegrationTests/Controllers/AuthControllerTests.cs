@@ -467,8 +467,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
-        cookies.Should().Contain(c => c.Contains("CodigoActivo.TwoFactor=", StringComparison.Ordinal));
-        cookies.Should().NotContain(c => c.Contains("CodigoActivo.Session=", StringComparison.Ordinal));
+        cookies
+            .Should()
+            .Contain(c => c.Contains("CodigoActivo.TwoFactor=", StringComparison.Ordinal));
+        cookies
+            .Should()
+            .NotContain(c => c.Contains("CodigoActivo.Session=", StringComparison.Ordinal));
         var raw = await response.Content.ReadAsStringAsync(Ct);
         var body = await response.ReadJsonAsync<LoginChallengeResponse>(Ct);
         body!.Method.Should().Be(TwoFactorMethod.Email);

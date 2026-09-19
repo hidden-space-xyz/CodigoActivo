@@ -118,9 +118,7 @@ public sealed class GetEventSignupStatsQueryHandler(
                 a.Id,
                 a.Title,
                 a.ActivityStartsAt,
-                cellsByActivity.TryGetValue(a.Id, out var activityCells)
-                    ? activityCells
-                    : []
+                cellsByActivity.TryGetValue(a.Id, out var activityCells) ? activityCells : []
             ))
             .ToList();
 

@@ -25,7 +25,10 @@ public sealed class GetPastEventCategoryTypesQueryHandlerTests
         );
     }
 
-    private static EventCategoryType WithEvents(EventCategoryType categoryType, params Event[] events)
+    private static EventCategoryType WithEvents(
+        EventCategoryType categoryType,
+        params Event[] events
+    )
     {
         foreach (var ev in events)
         {
@@ -47,9 +50,21 @@ public sealed class GetPastEventCategoryTypesQueryHandlerTests
     public async Task HandleAsyncMixedEventsReturnsCategoriesOfPastEventsOrderedByName()
     {
         clock.Today = new DateOnly(2026, 7, 4);
-        var past = NewEvent("Pasado", starts: new DateOnly(2026, 1, 1), ends: new DateOnly(2026, 1, 2));
-        var endsToday = NewEvent("Hoy", starts: new DateOnly(2026, 7, 3), ends: new DateOnly(2026, 7, 4));
-        var upcoming = NewEvent("Futuro", starts: new DateOnly(2026, 8, 1), ends: new DateOnly(2026, 8, 2));
+        var past = NewEvent(
+            "Pasado",
+            starts: new DateOnly(2026, 1, 1),
+            ends: new DateOnly(2026, 1, 2)
+        );
+        var endsToday = NewEvent(
+            "Hoy",
+            starts: new DateOnly(2026, 7, 3),
+            ends: new DateOnly(2026, 7, 4)
+        );
+        var upcoming = NewEvent(
+            "Futuro",
+            starts: new DateOnly(2026, 8, 1),
+            ends: new DateOnly(2026, 8, 2)
+        );
         categoryTypes.HasCategoryTypes(
             WithEvents(NewCategoryType("Talleres", "#AA0000"), past, upcoming),
             WithEvents(NewCategoryType("Charlas", "#00AA00"), past),

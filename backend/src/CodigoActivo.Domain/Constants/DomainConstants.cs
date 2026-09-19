@@ -14,10 +14,12 @@ public static class SeedIds
         /// Stores the shared pending value.
         /// </summary>
         public static readonly Guid Pending = new("086e64b7-79e4-4b2d-a6c9-f69ff8243df1");
+
         /// <summary>
         /// Stores the shared active value.
         /// </summary>
         public static readonly Guid Active = new("766f114c-6168-4be5-89f2-bae2a7a919e4");
+
         /// <summary>
         /// Stores the shared blocked value.
         /// </summary>
@@ -38,10 +40,12 @@ public static class SeedIds
         /// Stores the shared member value.
         /// </summary>
         public static readonly Guid Member = new("b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c");
+
         /// <summary>
         /// Stores the shared sponsor value.
         /// </summary>
         public static readonly Guid Sponsor = new("8e0b7dc4-59d3-4c3b-9a71-4f25c6b0de88");
+
         /// <summary>
         /// Stores the shared participant value.
         /// </summary>
@@ -57,10 +61,12 @@ public static class SeedIds
         /// Stores the shared leader value.
         /// </summary>
         public static readonly Guid Leader = new("5bd627de-831a-4169-874e-26a90550db9f");
+
         /// <summary>
         /// Stores the shared volunteer value.
         /// </summary>
         public static readonly Guid Volunteer = new("3b31564d-9879-434c-9152-5907db0c46fb");
+
         /// <summary>
         /// Stores the shared participant value.
         /// </summary>
@@ -76,10 +82,12 @@ public static class SeedIds
         /// Stores the shared requested value.
         /// </summary>
         public static readonly Guid Requested = new("3d717eeb-de06-44b8-b7df-2cc3e2ce5cb0");
+
         /// <summary>
         /// Stores the shared confirmed value.
         /// </summary>
         public static readonly Guid Confirmed = new("3c172c13-d238-4f0b-a61b-0a5ffc6a53ba");
+
         /// <summary>
         /// Stores the shared denied value.
         /// </summary>
@@ -95,6 +103,7 @@ public static class SeedIds
         /// Stores the shared presencial value.
         /// </summary>
         public static readonly Guid Presencial = new("3a7956c5-2346-4fc3-b3e8-10ecc07f1e1f");
+
         /// <summary>
         /// Stores the shared online value.
         /// </summary>
@@ -110,6 +119,7 @@ public static class SeedIds
         /// Stores the shared internal value.
         /// </summary>
         public static readonly Guid Internal = new("47833436-b131-4536-87a6-737a9680a423");
+
         /// <summary>
         /// Stores the shared external value.
         /// </summary>

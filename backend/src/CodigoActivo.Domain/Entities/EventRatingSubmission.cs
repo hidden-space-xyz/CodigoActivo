@@ -17,6 +17,7 @@ public class EventRatingSubmission
     /// Gets or sets the identifier of the associated event.
     /// </summary>
     public Guid EventId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated event.
     /// </summary>
@@ -26,6 +27,7 @@ public class EventRatingSubmission
     /// Gets or sets the identifier of the associated user.
     /// </summary>
     public Guid UserId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated user.
     /// </summary>

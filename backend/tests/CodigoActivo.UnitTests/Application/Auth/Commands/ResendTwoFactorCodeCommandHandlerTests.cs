@@ -37,7 +37,12 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
             uow,
             clock,
             options,
-            new LoginCodeIssuer(hasher, options, accountEmails, NullLogger<LoginCodeIssuer>.Instance)
+            new LoginCodeIssuer(
+                hasher,
+                options,
+                accountEmails,
+                NullLogger<LoginCodeIssuer>.Instance
+            )
         );
     }
 
@@ -93,7 +98,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncWithinCooldownReturnsConflictWithoutEmailing()
     {
-        var user = users.FindReturns(NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddSeconds(-30)));
+        var user = users.FindReturns(
+            NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddSeconds(-30))
+        );
 
         var result = await ResendAsync(user.Id);
 
@@ -105,7 +112,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAfterCooldownEmailsAndStoresANewCode()
     {
-        var user = users.FindReturns(NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2)));
+        var user = users.FindReturns(
+            NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2))
+        );
 
         var result = await ResendAsync(user.Id);
 
@@ -133,7 +142,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     public async Task HandleAsyncQuotaDeniedReturnsConflictAndKeepsTheOldCode()
     {
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
-        var user = users.FindReturns(NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2)));
+        var user = users.FindReturns(
+            NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2))
+        );
 
         var result = await ResendAsync(user.Id);
 

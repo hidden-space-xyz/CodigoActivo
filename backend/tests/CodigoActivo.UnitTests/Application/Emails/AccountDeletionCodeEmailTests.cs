@@ -23,18 +23,35 @@ public sealed class AccountDeletionCodeEmailTests
         message.Kind.Should().Be(EmailKind.TwoFactorCode);
         message.ToAddress.Should().Be("ana@test.com");
         message.ToName.Should().Be("Ana");
-        message.Subject.Should().NotContain("482913", "the code must not appear in the subject line");
+        message
+            .Subject.Should()
+            .NotContain("482913", "the code must not appear in the subject line");
         message.Subject.Should().Contain("eliminación");
-        message.TextBody.Should().Contain("Ana").And.Contain("\n482913\n").And.Contain("10 minutos");
+        message
+            .TextBody.Should()
+            .Contain("Ana")
+            .And.Contain("\n482913\n")
+            .And.Contain("10 minutos");
         message.TextBody.Should().Contain("menores a tu cargo");
         message.HtmlBody.Should().Contain("Ana").And.Contain(">482913<").And.Contain("10 minutos");
-        message.HtmlBody.Should().NotContain("href=\"https://app.test/login", "the email carries a code, never a link that deletes anything");
+        message
+            .HtmlBody.Should()
+            .NotContain(
+                "href=\"https://app.test/login",
+                "the email carries a code, never a link that deletes anything"
+            );
     }
 
     [Fact]
     public void CreateShortLifetimeRoundsUpToOneMinute()
     {
-        var message = AccountDeletionCodeEmail.Create("ana@test.com", "Ana", "000000", SiteUrl, TimeSpan.FromSeconds(20));
+        var message = AccountDeletionCodeEmail.Create(
+            "ana@test.com",
+            "Ana",
+            "000000",
+            SiteUrl,
+            TimeSpan.FromSeconds(20)
+        );
 
         message.TextBody.Should().Contain("1 minutos");
     }

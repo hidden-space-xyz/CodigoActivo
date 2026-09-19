@@ -16,10 +16,7 @@ public sealed class GetResourceByIdQueryHandlerTests
 
     public GetResourceByIdQueryHandlerTests()
     {
-        sut = new GetResourceByIdQueryHandler(
-            resources,
-            new FakeQueryExecutor()
-        );
+        sut = new GetResourceByIdQueryHandler(resources, new FakeQueryExecutor());
     }
 
     [Fact]

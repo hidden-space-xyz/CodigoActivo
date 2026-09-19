@@ -44,15 +44,14 @@ internal static class ApiRateLimitConfiguration
             context =>
                 RateLimitPartition.GetSlidingWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    _ =>
-                        new SlidingWindowRateLimiterOptions
-                        {
-                            PermitLimit = limits.CredentialRequestsPerMinutePerIp,
-                            Window = TimeSpan.FromMinutes(1),
-                            SegmentsPerWindow = 6,
-                            QueueLimit = 0,
-                            AutoReplenishment = true,
-                        }
+                    _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = limits.CredentialRequestsPerMinutePerIp,
+                        Window = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 6,
+                        QueueLimit = 0,
+                        AutoReplenishment = true,
+                    }
                 )
         );
         options.AddPolicy(
@@ -83,7 +82,8 @@ internal static class ApiRateLimitConfiguration
 
     private static string GetRetryAfter(RateLimitLease lease)
     {
-        return lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+        return
+            lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
             && retryAfter > TimeSpan.Zero
             ? Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture)
             : "1";

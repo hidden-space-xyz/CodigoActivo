@@ -1,13 +1,14 @@
 <Project>
-
   <PropertyGroup>
-    <AlwaysReportAnalyzerWarnings Condition="'$(AlwaysReportAnalyzerWarnings)' == ''">true</AlwaysReportAnalyzerWarnings>
+    <AlwaysReportAnalyzerWarnings Condition="'$(AlwaysReportAnalyzerWarnings)' == ''"
+      >true</AlwaysReportAnalyzerWarnings>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(AlwaysReportAnalyzerWarnings)' == 'true'
+  <ItemGroup
+    Condition="'$(AlwaysReportAnalyzerWarnings)' == 'true'
                         and '$(DesignTimeBuild)' != 'true'
-                        and '$(MSBuildProjectExtension)' == '.csproj'">
+                        and '$(MSBuildProjectExtension)' == '.csproj'"
+  >
     <CustomAdditionalCompileOutputs Include="$(IntermediateOutputPath)__always-recompile__" />
   </ItemGroup>
-
 </Project>

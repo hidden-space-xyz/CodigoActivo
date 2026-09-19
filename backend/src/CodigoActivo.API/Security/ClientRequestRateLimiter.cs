@@ -30,9 +30,7 @@ public static class ClientRequestRateLimiter
             var key = userId is null
                 ? $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}"
                 : $"user:{userId.Value:N}";
-            var permitLimit = userId is null
-                ? anonymousPermitLimit
-                : authenticatedPermitLimit;
+            var permitLimit = userId is null ? anonymousPermitLimit : authenticatedPermitLimit;
 
             return SlidingWindow(key, permitLimit);
         });
@@ -55,13 +53,12 @@ public static class ClientRequestRateLimiter
         return PartitionedRateLimiter.Create<HttpContext, string>(_ =>
             RateLimitPartition.GetConcurrencyLimiter(
                 "api",
-                _ =>
-                    new ConcurrencyLimiterOptions
-                    {
-                        PermitLimit = permitLimit,
-                        QueueLimit = queueLimit,
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    }
+                _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = permitLimit,
+                    QueueLimit = queueLimit,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                }
             )
         );
     }
@@ -71,10 +68,9 @@ public static class ClientRequestRateLimiter
     /// </summary>
     /// <param name="permitLimit">Requests allowed per user and window.</param>
     /// <returns>A partition factory for the named policy.</returns>
-    public static Func<
-        HttpContext,
-        RateLimitPartition<string>
-    > CreateAuthenticatedPolicy(int permitLimit)
+    public static Func<HttpContext, RateLimitPartition<string>> CreateAuthenticatedPolicy(
+        int permitLimit
+    )
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);
 
@@ -92,15 +88,14 @@ public static class ClientRequestRateLimiter
     {
         return RateLimitPartition.GetSlidingWindowLimiter(
             key,
-            _ =>
-                new SlidingWindowRateLimiterOptions
-                {
-                    PermitLimit = permitLimit,
-                    Window = Window,
-                    SegmentsPerWindow = 6,
-                    QueueLimit = 0,
-                    AutoReplenishment = true,
-                }
+            _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = Window,
+                SegmentsPerWindow = 6,
+                QueueLimit = 0,
+                AutoReplenishment = true,
+            }
         );
     }
 }

@@ -11,7 +11,7 @@ namespace CodigoActivo.Application.Validation;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotBlankAttribute : ValidationAttribute
 {
-/// <inheritdoc />
+    /// <inheritdoc />
     public override bool IsValid(object? value)
     {
         return value is not string text || !string.IsNullOrWhiteSpace(text);
@@ -29,7 +29,7 @@ public sealed class JsonStringAttribute : ValidationAttribute
         AllowDuplicateProperties = false,
     };
 
-/// <inheritdoc />
+    /// <inheritdoc />
     public override bool IsValid(object? value)
     {
         if (value is not string text)
@@ -55,7 +55,7 @@ public sealed class JsonStringAttribute : ValidationAttribute
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class HttpUrlAttribute : ValidationAttribute
 {
-/// <inheritdoc />
+    /// <inheritdoc />
     public override bool IsValid(object? value)
     {
         if (value is null)
@@ -77,7 +77,7 @@ public sealed class HttpUrlAttribute : ValidationAttribute
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 {
-/// <inheritdoc />
+    /// <inheritdoc />
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is not DateOnly date)
@@ -86,8 +86,9 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
         }
 
         var today = validationContext.GetRequiredService<IClock>().Today;
-        string[]? memberNames =
-            validationContext.MemberName is { } memberName ? [memberName] : null;
+        string[]? memberNames = validationContext.MemberName is { } memberName
+            ? [memberName]
+            : null;
         return date != default && date <= today
             ? ValidationResult.Success
             : new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);

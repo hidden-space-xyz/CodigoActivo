@@ -35,13 +35,12 @@ public static class EndpointConcurrencyLimiter
             return string.Equals(endpointPolicy, policyName, StringComparison.Ordinal)
                 ? RateLimitPartition.GetConcurrencyLimiter(
                     policyName,
-                    _ =>
-                        new ConcurrencyLimiterOptions
-                        {
-                            PermitLimit = permitLimit,
-                            QueueLimit = queueLimit,
-                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        }
+                    _ => new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = permitLimit,
+                        QueueLimit = queueLimit,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    }
                 )
                 : RateLimitPartition.GetNoLimiter("unlimited");
         });

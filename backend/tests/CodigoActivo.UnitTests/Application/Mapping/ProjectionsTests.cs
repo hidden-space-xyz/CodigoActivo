@@ -340,7 +340,12 @@ public sealed class ProjectionsTests
                 EventId = eventId,
             },
             ActivityRoleTypeId = roleTypeId,
-            ActivityRoleType = new ActivityRoleType { Description = "Descripción de prueba", Id = roleTypeId, Name = "Speaker" },
+            ActivityRoleType = new ActivityRoleType
+            {
+                Description = "Descripción de prueba",
+                Id = roleTypeId,
+                Name = "Speaker",
+            },
             AssignmentStatusId = statusId,
             AssignmentStatus = new AssignmentStatusType
             {

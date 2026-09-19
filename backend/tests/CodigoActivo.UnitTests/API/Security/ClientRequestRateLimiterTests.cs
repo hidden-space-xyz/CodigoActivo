@@ -30,11 +30,15 @@ public sealed class ClientRequestRateLimiterTests
     {
         using var sut = ClientRequestRateLimiter.CreateGlobal(300, 3_000);
 
-        var allAccepted = Enumerable.Range(0, 1_000).All(_ =>
-        {
-            using var lease = sut.AttemptAcquire(NewContext(IPAddress.Loopback, Guid.NewGuid()));
-            return lease.IsAcquired;
-        });
+        var allAccepted = Enumerable
+            .Range(0, 1_000)
+            .All(_ =>
+            {
+                using var lease = sut.AttemptAcquire(
+                    NewContext(IPAddress.Loopback, Guid.NewGuid())
+                );
+                return lease.IsAcquired;
+            });
 
         allAccepted.Should().BeTrue();
     }

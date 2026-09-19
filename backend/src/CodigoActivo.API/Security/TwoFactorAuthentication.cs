@@ -104,10 +104,7 @@ public sealed class TwoFactorTicketValidator(
     /// <param name="principal">Principal read from the challenge cookie, if any.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task EndChallengeAsync(
-        ClaimsPrincipal? principal,
-        CancellationToken ct = default
-    )
+    public async Task EndChallengeAsync(ClaimsPrincipal? principal, CancellationToken ct = default)
     {
         var userId = principal?.GetUserId();
         var challengeId = ReadChallengeId(principal);

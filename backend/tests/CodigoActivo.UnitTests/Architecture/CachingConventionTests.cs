@@ -47,11 +47,7 @@ public sealed class CachingConventionTests
     public void OutputCachedActionsAlwaysAreAnonymousReadsWithRegisteredPolicies()
     {
         var cachedActions = ControllerActions()
-            .Select(action => new
-            {
-                Action = action,
-                Cache = OutputCacheOf(action),
-            })
+            .Select(action => new { Action = action, Cache = OutputCacheOf(action) })
             .Where(entry => entry.Cache is { NoStore: false })
             .ToList();
 
@@ -90,7 +86,9 @@ public sealed class CachingConventionTests
             .Assembly.GetTypes()
             .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
             .SelectMany(type =>
-                type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                type.GetMethods(
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly
+                )
             );
     }
 

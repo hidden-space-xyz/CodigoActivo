@@ -17,11 +17,7 @@ public sealed class ListResourcesQueryHandlerTests
 
     public ListResourcesQueryHandlerTests()
     {
-        sut = new ListResourcesQueryHandler(
-            resources,
-            new FakeQueryExecutor(),
-            clock
-        );
+        sut = new ListResourcesQueryHandler(resources, new FakeQueryExecutor(), clock);
     }
 
     [Fact]

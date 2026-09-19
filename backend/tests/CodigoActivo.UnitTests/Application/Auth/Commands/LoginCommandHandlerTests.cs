@@ -343,11 +343,7 @@ public sealed class LoginCommandHandlerTests
 
         user.IsPasswordLocked().Should().BeTrue();
         user.PasswordLockedAt.Should().Be(clock.UtcNow);
-        emailSender
-            .Sent.Should()
-            .ContainSingle()
-            .Which.Kind.Should()
-            .Be(EmailKind.SecurityAlert);
+        emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.SecurityAlert);
     }
 
     [Fact]
