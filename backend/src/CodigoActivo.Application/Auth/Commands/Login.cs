@@ -21,7 +21,8 @@ public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginC
 /// it opens a second-factor challenge that <see cref="VerifyTwoFactorLoginCommandHandler"/> closes.
 /// An identifier matching no account, and an account locked after repeated wrong passwords, still
 /// pay the same Argon2 work and answer the same error, so neither the response nor its timing
-/// discloses which identifiers exist or which accounts are locked.
+/// discloses which identifiers exist or which accounts are locked. Every accepted password step
+/// stores a fresh challenge identifier, so the challenge cookie of an earlier attempt stops working.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -117,6 +118,7 @@ public sealed class LoginCommandHandler(
             }
         }
 
+        user.StartLoginChallenge(Guid.NewGuid());
         await uow.SaveChangesAsync(ct);
         logger.LoginChallengeIssued(user.Id, user.TwoFactorMethod);
 

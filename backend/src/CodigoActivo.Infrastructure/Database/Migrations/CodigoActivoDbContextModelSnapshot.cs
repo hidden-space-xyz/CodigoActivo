@@ -849,6 +849,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
+                    b.Property<Guid?>("LoginChallengeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("login_challenge_id");
+
                     b.Property<DateTimeOffset?>("LoginCodeExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("login_code_expires_at");

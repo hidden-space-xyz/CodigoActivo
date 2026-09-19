@@ -101,11 +101,9 @@ public sealed class AnonymizeEventRatingsMigrationTests(PostgresContainerFixture
 
             await new DatabaseSeeder(db).SeedAsync(Ct);
 
-            db.Users.AddRange(
-                NewUser(authorId, "author@migration-test.local", "+34600000910"),
-                NewUser(raterOneId, "rater1@migration-test.local", "+34600000911"),
-                NewUser(raterTwoId, "rater2@migration-test.local", "+34600000912")
-            );
+            await InsertUserAsync(db, authorId, "author@migration-test.local", "+34600000910");
+            await InsertUserAsync(db, raterOneId, "rater1@migration-test.local", "+34600000911");
+            await InsertUserAsync(db, raterTwoId, "rater2@migration-test.local", "+34600000912");
             db.Files.Add(
                 new FileEntity
                 {
@@ -197,21 +195,35 @@ public sealed class AnonymizeEventRatingsMigrationTests(PostgresContainerFixture
         ratingIndexes.Should().Contain("ix_event_ratings_event_id");
     }
 
-    private static User NewUser(Guid id, string email, string phone)
+    /// <summary>
+    /// Inserts a user with SQL naming only the columns this historical schema has. Seeding users
+    /// through EF would write every column of the current model, including the ones that later
+    /// migrations add and that do not exist yet at <see cref="PreviousMigrationId"/>.
+    /// </summary>
+    /// <param name="db">Database context used for persistence.</param>
+    /// <param name="id">Identifier of the user.</param>
+    /// <param name="email">Email address of the user.</param>
+    /// <param name="phone">Phone number of the user.</param>
+    /// <returns>A task whose result contains the number of inserted rows.</returns>
+    private static Task<int> InsertUserAsync(
+        CodigoActivoDbContext db,
+        Guid id,
+        string email,
+        string phone
+    )
     {
-        return new User
-        {
-            Id = id,
-            FirstName = "Nombre",
-            LastName = "Apellido",
-            Email = email,
-            Phone = phone,
-            BirthDate = new DateOnly(1990, 1, 1),
-            Gender = Gender.Other,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
-            CreatedAt = Fixed,
-        };
+        var birthDate = new DateOnly(1990, 1, 1);
+        return db.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO users (id, first_name, last_name, email, phone, birth_date, gender,
+                user_status_type_id, user_type_id, is_admin, two_factor_method,
+                two_factor_failed_attempts, created_at)
+            VALUES ({id}, 'Nombre', 'Apellido', {email}, {phone}, {birthDate}, 'Other',
+                {SeedIds.UserStatusTypes.Active}, {SeedIds.UserTypes.Member}, false, 'Email', 0,
+                {Fixed})
+            """,
+            Ct
+        );
     }
 
     private static async Task ExecuteAsync(

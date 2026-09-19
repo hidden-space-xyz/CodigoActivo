@@ -343,10 +343,11 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Closes the caller's session: the server-side session row is revoked before the cookies are
-    /// deleted, so the presented ticket stops being accepted even if a copy of it survives. The
-    /// endpoint is idempotent and needs no valid session, so a ticket whose row is already gone is
-    /// still answered by clearing both cookies; a failed revocation is logged and never keeps them.
+    /// Closes the caller's session: the server-side session row is revoked, and a pending
+    /// second-factor challenge is closed on the account, before the cookies are deleted, so neither
+    /// presented ticket stops being accepted only because a copy of it survives. The endpoint is
+    /// idempotent and needs no valid session, so a ticket whose row is already gone is still
+    /// answered by clearing both cookies; a failed revocation is logged and never keeps them.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
@@ -364,6 +365,20 @@ public class AuthController : ApiControllerBase
             HttpContext
                 .RequestServices.GetRequiredService<ILogger<AuthController>>()
                 .LogError(ex, "Failed to revoke the session row while signing out");
+        }
+
+        try
+        {
+            var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
+            await HttpContext
+                .RequestServices.GetRequiredService<TwoFactorTicketValidator>()
+                .EndChallengeAsync(pending.Principal, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            HttpContext
+                .RequestServices.GetRequiredService<ILogger<AuthController>>()
+                .LogError(ex, "Failed to close the pending challenge while signing out");
         }
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

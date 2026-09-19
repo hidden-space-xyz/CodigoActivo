@@ -155,6 +155,7 @@ public sealed class UserEntityTests
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+        user.StartLoginChallenge(Guid.NewGuid());
         user.TwoFactorFailedAttempts = 2;
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeTrue();
@@ -164,6 +165,47 @@ public sealed class UserEntityTests
         user.IsTwoFactorLocked(Now.AddMinutes(14)).Should().BeTrue();
         user.IsTwoFactorLocked(Now.AddMinutes(15)).Should().BeFalse();
         user.LoginCodeHash.Should().BeNull();
+        user.LoginChallengeId.Should().BeNull();
+    }
+
+    [Fact]
+    public void StartLoginChallengeReplacesTheIdentifierOfAnyOpenChallenge()
+    {
+        var user = NewPendingUser();
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+
+        user.StartLoginChallenge(first);
+        user.LoginChallengeId.Should().Be(first);
+
+        user.StartLoginChallenge(second);
+        user.LoginChallengeId.Should().Be(second);
+
+        user.ClearLoginChallenge();
+        user.LoginChallengeId.Should().BeNull();
+    }
+
+    [Fact]
+    public void RecordTwoFactorFailureBelowTheLimitKeepsTheOpenChallenge()
+    {
+        var user = NewPendingUser();
+        var challengeId = Guid.NewGuid();
+        user.StartLoginChallenge(challengeId);
+
+        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeFalse();
+
+        user.LoginChallengeId.Should().Be(challengeId);
+    }
+
+    [Fact]
+    public void ResetPasswordClosesAnyOpenChallenge()
+    {
+        var user = NewPendingUser();
+        user.StartLoginChallenge(Guid.NewGuid());
+
+        user.ResetPassword("new-hash", Now);
+
+        user.LoginChallengeId.Should().BeNull();
     }
 
     [Fact]
@@ -171,12 +213,14 @@ public sealed class UserEntityTests
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+        user.StartLoginChallenge(Guid.NewGuid());
         user.TwoFactorFailedAttempts = 2;
         user.TwoFactorLockedUntil = Now.AddMinutes(-1);
 
         user.CompleteTwoFactorLogin(Now);
 
         user.LoginCodeHash.Should().BeNull();
+        user.LoginChallengeId.Should().BeNull();
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.TwoFactorLockedUntil.Should().BeNull();
         user.LastLoginAt.Should().Be(Now);

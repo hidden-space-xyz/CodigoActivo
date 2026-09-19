@@ -351,6 +351,45 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncAcceptedPasswordStoresAFreshChallengeIdentifier()
+    {
+        var user = Returns(NewUser());
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        user.LoginChallengeId.Should().NotBeNull().And.NotBe(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task HandleAsyncSecondPasswordStepRotatesTheChallengeIdentifier()
+    {
+        var user = Returns(NewUser());
+        await LoginAsync();
+        var first = user.LoginChallengeId;
+
+        clock.UtcNow = clock.UtcNow.AddMinutes(2);
+        await LoginAsync();
+
+        first.Should().NotBeNull();
+        user.LoginChallengeId.Should().NotBeNull();
+        user.LoginChallengeId.Should().NotBe(first!.Value);
+    }
+
+    [Fact]
+    public async Task HandleAsyncRefusedPasswordLeavesTheOpenChallengeUntouched()
+    {
+        var user = Returns(NewUser(passwordHash: "fake:correct"));
+        var challengeId = Guid.NewGuid();
+        user.StartLoginChallenge(challengeId);
+
+        var result = await LoginAsync(password: "not-the-password");
+
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        user.LoginChallengeId.Should().Be(challengeId);
+    }
+
+    [Fact]
     public async Task HandleAsyncCorrectPasswordForgetsEarlierWrongAttempts()
     {
         var user = Returns(NewUser());
