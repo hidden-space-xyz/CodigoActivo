@@ -3,23 +3,30 @@ using System.Text;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Freezes deployment mode settings after startup validation.
+/// Freezes deployment mode settings after startup validation. The choice is only persisted when the
+/// process runs inside a container, where the file lives in the <c>api-state</c> volume; a host run
+/// validates the configured value and keeps no state on the developer's filesystem.
 /// </summary>
-public sealed class DeploymentModeLock
+public sealed partial class DeploymentModeLock
 {
     private const string PersistentFilePath = "/app/state/deployment-mode";
+    private const string ContainerKey = "DOTNET_RUNNING_IN_CONTAINER";
     private readonly string filePath;
+    private readonly ILogger<DeploymentModeLock> logger;
 
     /// <summary>
     /// Initializes a deployment mode lock with its required dependencies.
     /// </summary>
-    public DeploymentModeLock()
-        : this(PersistentFilePath) { }
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    public DeploymentModeLock(ILogger<DeploymentModeLock> logger)
+        : this(PersistentFilePath, logger) { }
 
-    internal DeploymentModeLock(string filePath)
+    internal DeploymentModeLock(string filePath, ILogger<DeploymentModeLock> logger)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(logger);
         this.filePath = Path.GetFullPath(filePath);
+        this.logger = logger;
     }
 
     /// <summary>
@@ -32,6 +39,13 @@ public sealed class DeploymentModeLock
         ArgumentNullException.ThrowIfNull(configuration);
 
         var configuredMode = ReadConfiguredMode(configuration["DEMO_MODE"]);
+        var configuredValue = configuredMode ? "demo" : "normal";
+        if (!RunsInContainer(configuration))
+        {
+            LogLockSkipped(configuredValue);
+            return configuredMode;
+        }
+
         var directory = Path.GetDirectoryName(filePath);
         if (string.IsNullOrEmpty(directory))
         {
@@ -39,7 +53,6 @@ public sealed class DeploymentModeLock
         }
 
         Directory.CreateDirectory(directory);
-        var configuredValue = configuredMode ? "demo" : "normal";
         if (!File.Exists(filePath))
         {
             CreateLockFile(configuredValue);
@@ -82,10 +95,7 @@ public sealed class DeploymentModeLock
 
             if (OperatingSystem.IsLinux())
             {
-                File.SetUnixFileMode(
-                    filePath,
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite
-                );
+                File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             }
         }
         catch (IOException) when (File.Exists(filePath))
@@ -93,6 +103,18 @@ public sealed class DeploymentModeLock
             // A concurrent process created the immutable lock first. The caller validates it next.
             return;
         }
+    }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Deployment mode lock skipped: the process is not running in a container, so the "
+            + "selected {ConfiguredMode} mode is not persisted"
+    )]
+    private partial void LogLockSkipped(string configuredMode);
+
+    private static bool RunsInContainer(IConfiguration configuration)
+    {
+        return bool.TryParse(configuration[ContainerKey], out var inContainer) && inContainer;
     }
 
     private static bool ReadConfiguredMode(string? value)

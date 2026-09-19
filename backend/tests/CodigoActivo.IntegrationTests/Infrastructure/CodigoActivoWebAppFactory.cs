@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
@@ -96,6 +97,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         builder.UseEnvironment("Development");
 
         builder.UseSetting("DEMO_MODE", "false");
+        builder.UseSetting("DOTNET_RUNNING_IN_CONTAINER", "true");
         builder.UseSetting("BOOTSTRAP_ADMIN_EMAIL", "bootstrap@codigoactivo.test");
         builder.UseSetting("BOOTSTRAP_ADMIN_PASSWORD", "bootstrap-password-123");
         builder.UseSetting("SMTP_HOST", "smtp.test");
@@ -104,7 +106,10 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DeploymentModeLock>();
-            services.AddSingleton(new DeploymentModeLock(deploymentModeFile));
+            services.AddSingleton(sp => new DeploymentModeLock(
+                deploymentModeFile,
+                sp.GetRequiredService<ILogger<DeploymentModeLock>>()
+            ));
 
             UseTestDatabase(services);
 
