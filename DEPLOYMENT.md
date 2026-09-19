@@ -177,6 +177,18 @@ API service's 30-second `stop_grace_period`.
 Monitor logs for recipient throttling, global-budget exhaustion, a full queue, SMTP delivery errors and
 undelivered messages at shutdown.
 
+## Locked accounts
+
+Five wrong passwords lock an account for good: the lock has no expiry and is lifted only by a completed
+password reset, which needs working SMTP. Anyone who knows an email or phone can lock accounts in bulk, so
+alert on the `PasswordLockoutTriggered` log event. If every administrator is locked while email is
+unavailable, unlock against the `db` container:
+
+```bash
+docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "UPDATE users SET password_failed_attempts = 0, password_locked_at = NULL WHERE email = 'admin@example.org';"
+```
+
 ## Demo mode and initial administrator
 
 On first start the API writes the selected `DEMO_MODE` value to `/app/state/deployment-mode` in `api-state`;

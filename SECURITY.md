@@ -54,8 +54,10 @@ authentication are not supported.
   is refused a guardian (`UserParentNotAllowedForAdult`) and a minor birth date (`UserCannotBecomeMinor`)
   and keeps its credentials, so no request can demote an account into somebody's dependent; a dependent
   only accepts its own guardian repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is
-  never reassigned. Giving a dependent an adult birth date releases it into a standalone account, which
-  therefore requires its own email and phone and the caller's password, like any other identifier change.
+  never reassigned. Giving a dependent an adult birth date only detaches it from its guardian, and therefore
+  requires its own email and phone and the caller's password like any other identifier change: the row keeps
+  the `Dependent` status and no password, so it still cannot log in (`UserAccountIsDependent`) and
+  `forgot-password` still ignores it; promoting such an account to a standalone one is not implemented.
   Dependents are created only through `POST /api/users/{id}/children`.
 
 ### Two-factor authentication
