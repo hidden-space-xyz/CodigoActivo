@@ -28,7 +28,7 @@ internal static class ApplicationInitializer
         var logger = services.GetRequiredService<ILogger<Program>>();
         var demoMode = services
             .GetRequiredService<DeploymentModeLock>()
-            .Lock(app.Configuration);
+            .Lock(app.Configuration, app.Environment);
 
         await MigrateDatabaseAsync(services, logger, cancellationToken);
         await SeedDatabaseAsync(services, logger, cancellationToken);
