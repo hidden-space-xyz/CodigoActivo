@@ -780,7 +780,7 @@
       "intro": "Inicia sesión en tu cuenta para participar en nuestras actividades.",
       "identifierLabel": "Correo o usuario",
       "forgotLink": "¿Has olvidado tu contraseña?",
-      "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo.",
+      "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo. Tras varios intentos fallidos seguidos bloqueamos la cuenta por seguridad; si te ha pasado, tendrás que restablecer la contraseña desde el enlace de arriba.",
       "noAccount": "¿Aún no tienes cuenta?"
     },
     "loginTwoFactor": {

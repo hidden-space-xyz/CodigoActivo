@@ -65,6 +65,23 @@ public static partial class SecurityLog
     );
 
     /// <summary>
+    /// Records that the wrong passwords reached the limit and locked the account, revoking every
+    /// open session. Only a completed password reset lifts the lock.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Account locked for user {UserId} after {MaxFailedAttempts} wrong passwords"
+    )]
+    public static partial void PasswordLockoutTriggered(
+        this ILogger logger,
+        Guid userId,
+        int maxFailedAttempts
+    );
+
+    /// <summary>
     /// Records a wrong second-factor code.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

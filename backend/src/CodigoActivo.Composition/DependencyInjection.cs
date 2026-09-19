@@ -73,6 +73,7 @@ public static class DependencyInjection
         AddApplicationOptions(services, configuration);
         AddAccountVerification(services, configuration);
         AddPasswordReset(services, configuration);
+        AddPasswordLockout(services, configuration);
         AddTwoFactor(services, configuration);
         AddEmail(services, configuration);
         AddCaching(services);
@@ -138,6 +139,21 @@ public static class DependencyInjection
                 configuration["PasswordReset:ResendCooldownSeconds"],
                 TimeSpan.FromSeconds,
                 PasswordResetOptions.DefaultResendCooldown
+            ),
+        };
+        services.AddSingleton(options);
+    }
+
+    private static void AddPasswordLockout(
+        IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var options = new PasswordLockoutOptions
+        {
+            MaxFailedAttempts = ReadPositiveInt(
+                configuration["PasswordLockout:MaxFailedAttempts"],
+                PasswordLockoutOptions.DefaultMaxFailedAttempts
             ),
         };
         services.AddSingleton(options);
@@ -663,6 +679,7 @@ public static class DependencyInjection
         services.AddScoped<DisableAuthenticatorCommandHandler>();
         services.AddScoped<AccountEmails>();
         services.AddScoped<AccountSecurityNotifier>();
+        services.AddScoped<PasswordAttemptGuard>();
         services.AddScoped<OtpValidator>();
         services.AddScoped<LoginCodeIssuer>();
         services.AddScoped<AuthenticatorCodeVerifier>();

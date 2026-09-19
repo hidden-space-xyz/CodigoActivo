@@ -4,7 +4,6 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
@@ -27,14 +26,14 @@ public sealed record ResetTwoFactorCommand(
 /// so the administrator re-enters their own password first.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="hasher">Hasher used to verify the acting administrator's password.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ResetTwoFactorCommandHandler(
     IUserRepository users,
-    IPasswordHasher hasher,
+    PasswordAttemptGuard passwordAttempts,
     IClock clock,
     IUnitOfWork uow,
     AccountSecurityNotifier securityNotifier,
@@ -56,8 +55,11 @@ public sealed class ResetTwoFactorCommandHandler(
     {
         var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
         if (
-            string.IsNullOrEmpty(actingUser?.PasswordHash)
-            || !hasher.Verify(command.Request.CurrentPassword, actingUser.PasswordHash)
+            !await passwordAttempts.VerifyReauthenticationAsync(
+                actingUser,
+                command.Request.CurrentPassword,
+                ct
+            )
         )
         {
             logger.ReauthenticationRejected(command.ActingUserId, Operation);

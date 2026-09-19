@@ -34,6 +34,7 @@ public sealed class ChangePasswordCommandHandlerTests
             clock,
             uow,
             sessions,
+            PasswordGuards.Create(hasher, uow, clock),
             new AccountSecurityNotifier(
                 emailSender,
                 clock,
@@ -106,7 +107,9 @@ public sealed class ChangePasswordCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
-        await AssertNotSavedAsync();
+        user.PasswordHash.Should().Be(hasher.Hash("correct"));
+        user.PasswordFailedAttempts.Should().Be(1);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

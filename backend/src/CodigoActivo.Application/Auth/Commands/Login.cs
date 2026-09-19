@@ -19,13 +19,14 @@ public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginC
 /// <summary>
 /// Executes the password step of the login. A correct password never opens a session by itself:
 /// it opens a second-factor challenge that <see cref="VerifyTwoFactorLoginCommandHandler"/> closes.
-/// An identifier matching no account still pays the same Argon2 work, so the response time does not
-/// disclose which identifiers exist.
+/// An identifier matching no account, and an account locked after repeated wrong passwords, still
+/// pay the same Argon2 work and answer the same error, so neither the response nor its timing
+/// discloses which identifiers exist or which accounts are locked.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="credentialTiming">The credential timing value.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -33,7 +34,7 @@ public sealed class LoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    CredentialTimingProtector credentialTiming,
+    PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions twoFactor,
     LoginCodeIssuer loginCodes,
     ILogger<LoginCommandHandler> logger
@@ -55,19 +56,19 @@ public sealed class LoginCommandHandler(
         var identifier = command.Request.Identifier.Trim();
         var user = await users.GetByEmailOrPhoneAsync(identifier, ct);
 
+        var accepted = await passwordAttempts.VerifyLoginPasswordAsync(
+            user,
+            command.Request.Password,
+            ct
+        );
+
         if (user is null)
         {
-            credentialTiming.Verify(command.Request.Password, null);
             logger.LoginUnknownIdentifierRejected();
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
         }
 
-        if (
-            !credentialTiming.Verify(
-                command.Request.Password,
-                string.IsNullOrEmpty(user.PasswordHash) ? null : user.PasswordHash
-            )
-        )
+        if (!accepted)
         {
             logger.LoginPasswordRejected(user.Id);
             return Error.Unauthorized(ErrorCode.InvalidCredentials);

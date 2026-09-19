@@ -31,6 +31,7 @@ public sealed class SecurityAlertEmailTests
                 AccountSecurityChange.IdentifiersChanged,
                 AppStrings.EmailsSecurityAlertIdentifiersChanged
             },
+            { AccountSecurityChange.PasswordLocked, AppStrings.EmailsSecurityAlertPasswordLocked },
         };
     }
 

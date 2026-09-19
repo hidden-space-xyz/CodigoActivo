@@ -877,9 +877,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
 
+                    b.Property<int>("PasswordFailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("password_failed_attempts");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<DateTimeOffset?>("PasswordLockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_locked_at");
 
                     b.Property<string>("PasswordResetCodeHash")
                         .HasColumnType("text")

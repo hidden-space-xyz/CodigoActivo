@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using CodigoActivo.Application.Resources.Localization;
 using CodigoActivo.Domain.Communication;
 
@@ -41,6 +41,10 @@ public enum AccountSecurityChange
     /// Selects the login identifiers replaced option.
     /// </summary>
     IdentifiersChanged,
+    /// <summary>
+    /// Selects the account locked after repeated wrong passwords option.
+    /// </summary>
+    PasswordLocked,
 }
 
 /// <summary>
@@ -138,6 +142,7 @@ public static class SecurityAlertEmail
             AccountSecurityChange.AdminRevoked => AppStrings.EmailsSecurityAlertAdminRevoked,
             AccountSecurityChange.IdentifiersChanged =>
                 AppStrings.EmailsSecurityAlertIdentifiersChanged,
+            AccountSecurityChange.PasswordLocked => AppStrings.EmailsSecurityAlertPasswordLocked,
             _ => throw new ArgumentOutOfRangeException(nameof(change), change, null),
         };
     }

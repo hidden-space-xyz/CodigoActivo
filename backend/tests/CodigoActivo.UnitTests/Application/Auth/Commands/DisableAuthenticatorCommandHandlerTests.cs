@@ -34,7 +34,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
             users,
             uow,
             clock,
-            new FakePasswordHasher(),
+            PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
             new AuthenticatorCodeVerifier(
                 totp,
                 new FakeSecretProtector(),
@@ -97,7 +97,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
-        await AssertNotSavedAsync();
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
+        user.PasswordFailedAttempts.Should().Be(1);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -6,7 +6,6 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
@@ -29,7 +28,7 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">Hasher used to verify the current password.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="otpValidator">Validator of emailed codes.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
@@ -39,7 +38,7 @@ public sealed class DeleteOwnAccountCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    PasswordAttemptGuard passwordAttempts,
     OtpValidator otpValidator,
     AuthenticatorCodeVerifier authenticatorCodes,
     TwoFactorOptions options,
@@ -72,8 +71,11 @@ public sealed class DeleteOwnAccountCommandHandler(
         }
 
         if (
-            string.IsNullOrEmpty(user.PasswordHash)
-            || !hasher.Verify(command.Request.CurrentPassword, user.PasswordHash)
+            !await passwordAttempts.VerifyReauthenticationAsync(
+                user,
+                command.Request.CurrentPassword,
+                ct
+            )
         )
         {
             logger.ReauthenticationRejected(user.Id, Operation);

@@ -202,6 +202,9 @@ Equipo de Código Activo</value>
   <data name="emails.securityAlert.identifiersChanged" xml:space="preserve">
     <value>Se han cambiado los datos de acceso de tu cuenta (correo electrónico o teléfono). Te avisamos en esta dirección porque era la anterior.</value>
   </data>
+  <data name="emails.securityAlert.passwordLocked" xml:space="preserve">
+    <value>Hemos bloqueado tu cuenta tras varios intentos seguidos con una contraseña incorrecta y hemos cerrado todas tus sesiones. Para volver a entrar tienes que restablecer la contraseña desde «¿Has olvidado tu contraseña?».</value>
+  </data>
   <data name="emails.activityDecision.confirmedSubject" xml:space="preserve">
     <value>Inscripción confirmada: {0}</value>
   </data>

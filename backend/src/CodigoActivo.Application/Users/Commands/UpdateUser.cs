@@ -7,7 +7,6 @@ using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
@@ -25,7 +24,7 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// Executes the command to update the user.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="hasher">Hasher used to verify the acting caller's password.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
@@ -34,7 +33,7 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
-    IPasswordHasher hasher,
+    PasswordAttemptGuard passwordAttempts,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
@@ -222,7 +221,6 @@ public sealed class UpdateUserCommandHandler(
         }
 
         var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
-        return !string.IsNullOrEmpty(actingUser?.PasswordHash)
-            && hasher.Verify(password, actingUser.PasswordHash);
+        return await passwordAttempts.VerifyReauthenticationAsync(actingUser, password, ct);
     }
 }

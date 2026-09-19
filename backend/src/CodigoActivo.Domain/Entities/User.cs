@@ -151,6 +151,16 @@ public class User : IdentifiableEntity
     public DateTimeOffset? TwoFactorLockedUntil { get; set; }
 
     /// <summary>
+    /// Gets or sets the consecutive wrong account passwords since the last accepted one.
+    /// </summary>
+    public int PasswordFailedAttempts { get; set; }
+    /// <summary>
+    /// Gets or sets when the account was locked after too many wrong passwords. The lock does not
+    /// expire: only a completed password reset clears it.
+    /// </summary>
+    public DateTimeOffset? PasswordLockedAt { get; set; }
+
+    /// <summary>
     /// Gets or sets the related children collection.
     /// </summary>
     public ICollection<User> Children { get; set; } = [];
@@ -214,7 +224,51 @@ public class User : IdentifiableEntity
     {
         PasswordHash = passwordHash;
         ClearPasswordResetCode();
+        ClearPasswordFailures();
+        PasswordLockedAt = null;
         UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Determines whether the account is locked after too many wrong passwords. A locked account
+    /// refuses every password, correct or not, until its password is reset through recovery.
+    /// </summary>
+    /// <returns><see langword="true"/> when passwords must be rejected regardless of their value.</returns>
+    public bool IsPasswordLocked()
+    {
+        return PasswordLockedAt is not null;
+    }
+
+    /// <summary>
+    /// Counts a wrong account password and locks the account once the limit is reached. An account
+    /// that is already locked is left untouched, so later attempts neither count nor report again.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <returns><see langword="true"/> when this failure triggered the lock.</returns>
+    public bool RecordPasswordFailure(DateTimeOffset now, int maxFailedAttempts)
+    {
+        if (IsPasswordLocked())
+        {
+            return false;
+        }
+
+        PasswordFailedAttempts++;
+        if (PasswordFailedAttempts < maxFailedAttempts)
+        {
+            return false;
+        }
+
+        PasswordLockedAt = now;
+        return true;
+    }
+
+    /// <summary>
+    /// Forgets the consecutive wrong passwords counted so far.
+    /// </summary>
+    public void ClearPasswordFailures()
+    {
+        PasswordFailedAttempts = 0;
     }
 
     /// <summary>

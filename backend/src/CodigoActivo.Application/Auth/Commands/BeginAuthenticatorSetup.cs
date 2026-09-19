@@ -24,7 +24,7 @@ public sealed record BeginAuthenticatorSetupCommand(Guid UserId, AuthenticatorSe
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">Hasher used to verify the current password.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="totp">Generator of shared secrets.</param>
 /// <param name="protector">Protector that encrypts the secret before it is stored.</param>
 /// <param name="options">Second-factor configuration.</param>
@@ -33,7 +33,7 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    PasswordAttemptGuard passwordAttempts,
     ITotpService totp,
     ISecretProtector protector,
     TwoFactorOptions options,
@@ -60,8 +60,11 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
         }
 
         if (
-            string.IsNullOrEmpty(user.PasswordHash)
-            || !hasher.Verify(command.Request.CurrentPassword, user.PasswordHash)
+            !await passwordAttempts.VerifyReauthenticationAsync(
+                user,
+                command.Request.CurrentPassword,
+                ct
+            )
         )
         {
             logger.ReauthenticationRejected(user.Id, Operation);

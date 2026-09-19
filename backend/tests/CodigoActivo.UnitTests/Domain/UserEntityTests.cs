@@ -233,6 +233,87 @@ public sealed class UserEntityTests
     }
 
     [Fact]
+    public void RecordPasswordFailureBelowTheLimitOnlyCounts()
+    {
+        var user = NewPendingUser();
+
+        user.RecordPasswordFailure(Now, 5).Should().BeFalse();
+
+        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordLockedAt.Should().BeNull();
+        user.IsPasswordLocked().Should().BeFalse();
+    }
+
+    [Fact]
+    public void RecordPasswordFailureAtTheLimitLocksTheAccountWithoutExpiry()
+    {
+        var user = NewPendingUser();
+        user.PasswordFailedAttempts = 4;
+
+        user.RecordPasswordFailure(Now, 5).Should().BeTrue();
+
+        user.PasswordLockedAt.Should().Be(Now);
+        user.IsPasswordLocked().Should().BeTrue();
+    }
+
+    [Fact]
+    public void RecordPasswordFailureOnALockedAccountNeitherCountsNorReportsAgain()
+    {
+        var user = NewPendingUser();
+        user.PasswordFailedAttempts = 4;
+        user.RecordPasswordFailure(Now, 5).Should().BeTrue();
+        var counted = user.PasswordFailedAttempts;
+
+        user.RecordPasswordFailure(Now.AddHours(1), 5).Should().BeFalse();
+
+        user.PasswordFailedAttempts.Should().Be(counted);
+        user.PasswordLockedAt.Should().Be(Now);
+    }
+
+    [Fact]
+    public void ClearPasswordFailuresForgetsTheCountWithoutLiftingAnExistingLock()
+    {
+        var user = NewPendingUser();
+        user.PasswordFailedAttempts = 4;
+        user.RecordPasswordFailure(Now, 5);
+
+        user.ClearPasswordFailures();
+
+        user.PasswordFailedAttempts.Should().Be(0);
+        user.IsPasswordLocked().Should().BeTrue();
+    }
+
+    [Fact]
+    public void ResetPasswordClearsTheLockAndTheFailureCount()
+    {
+        var user = NewPendingUser();
+        user.PasswordFailedAttempts = 4;
+        user.RecordPasswordFailure(Now, 5);
+        user.IssuePasswordResetCode("HASH", Now, TimeSpan.FromMinutes(15));
+
+        user.ResetPassword("new-hash", Now.AddMinutes(1));
+
+        user.PasswordHash.Should().Be("new-hash");
+        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockedAt.Should().BeNull();
+        user.IsPasswordLocked().Should().BeFalse();
+        user.PasswordResetCodeHash.Should().BeNull();
+        user.UpdatedAt.Should().Be(Now.AddMinutes(1));
+    }
+
+    [Fact]
+    public void ResetTwoFactorLeavesAPasswordLockInPlace()
+    {
+        var user = NewPendingUser();
+        user.PasswordFailedAttempts = 4;
+        user.RecordPasswordFailure(Now, 5);
+
+        user.ResetTwoFactor(Now);
+
+        user.IsPasswordLocked().Should().BeTrue();
+    }
+
+    [Fact]
     public void ResetTwoFactorReturnsEverySecondFactorFieldToItsDefault()
     {
         var user = NewPendingUser();
