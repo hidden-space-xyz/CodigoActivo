@@ -25,6 +25,7 @@ public sealed record ChangePasswordCommand(Guid UserId, ChangePasswordRequest Re
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ChangePasswordCommandHandler(
@@ -33,6 +34,7 @@ public sealed class ChangePasswordCommandHandler(
     IClock clock,
     IUnitOfWork uow,
     IUserSessionRepository sessions,
+    PasswordAttemptGuard passwordAttempts,
     AccountSecurityNotifier securityNotifier,
     ILogger<ChangePasswordCommandHandler> logger
 ) : ICommandHandler<ChangePasswordCommand, Result>
@@ -61,7 +63,13 @@ public sealed class ChangePasswordCommandHandler(
             return Error.BadRequest(ErrorCode.UserPasswordNotSet);
         }
 
-        if (!hasher.Verify(command.Request.CurrentPassword, user.PasswordHash))
+        if (
+            !await passwordAttempts.VerifyReauthenticationAsync(
+                user,
+                command.Request.CurrentPassword,
+                ct
+            )
+        )
         {
             logger.ReauthenticationRejected(user.Id, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);

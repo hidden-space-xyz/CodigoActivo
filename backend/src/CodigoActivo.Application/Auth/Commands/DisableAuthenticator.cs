@@ -5,7 +5,6 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
@@ -26,7 +25,7 @@ public sealed record DisableAuthenticatorCommand(Guid UserId, DisableAuthenticat
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">Hasher used to verify the current password.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
@@ -35,7 +34,7 @@ public sealed class DisableAuthenticatorCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    PasswordAttemptGuard passwordAttempts,
     AuthenticatorCodeVerifier authenticatorCodes,
     TwoFactorOptions options,
     AccountSecurityNotifier securityNotifier,
@@ -67,8 +66,11 @@ public sealed class DisableAuthenticatorCommandHandler(
         }
 
         if (
-            string.IsNullOrEmpty(user.PasswordHash)
-            || !hasher.Verify(command.Request.CurrentPassword, user.PasswordHash)
+            !await passwordAttempts.VerifyReauthenticationAsync(
+                user,
+                command.Request.CurrentPassword,
+                ct
+            )
         )
         {
             logger.ReauthenticationRejected(user.Id, Operation);

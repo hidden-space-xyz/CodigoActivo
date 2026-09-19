@@ -33,7 +33,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
         actingAdmin.PasswordHash = hasher.Hash(ActingPassword);
         sut = new ResetTwoFactorCommandHandler(
             users,
-            hasher,
+            PasswordGuards.Create(hasher, uow, clock),
             clock,
             uow,
             new AccountSecurityNotifier(
@@ -87,7 +87,8 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        await AssertNotSavedAsync();
+        actingAdmin.PasswordFailedAttempts.Should().Be(1);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

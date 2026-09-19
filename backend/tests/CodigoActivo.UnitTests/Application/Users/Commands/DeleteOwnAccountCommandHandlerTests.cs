@@ -37,7 +37,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             users,
             uow,
             clock,
-            hasher,
+            PasswordGuards.Create(hasher, uow, clock),
             new OtpValidator(clock, hasher),
             new AuthenticatorCodeVerifier(
                 totp,
@@ -136,8 +136,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorFailedAttempts.Should().Be(0);
+        user.PasswordFailedAttempts.Should().Be(1);
         AssertNothingRemoved();
-        await AssertNotSavedAsync();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

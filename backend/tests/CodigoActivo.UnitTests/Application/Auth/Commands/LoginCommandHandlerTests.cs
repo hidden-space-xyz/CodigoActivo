@@ -42,7 +42,7 @@ public sealed class LoginCommandHandlerTests
             users,
             uow,
             clock,
-            new CredentialTimingProtector(hasher),
+            PasswordGuards.Create(hasher, uow, clock, emailSender: emailSender),
             twoFactor,
             new LoginCodeIssuer(
                 hasher,
@@ -127,13 +127,15 @@ public sealed class LoginCommandHandlerTests
     [Fact]
     public async Task HandleAsyncPasswordDoesNotVerifyReturnsUnauthorizedWithoutEmailing()
     {
-        Returns(NewUser(passwordHash: "fake:correct"));
+        var user = Returns(NewUser(passwordHash: "fake:correct"));
 
         var result = await LoginAsync(password: "wrong");
 
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
+        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordLockedAt.Should().BeNull();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -293,6 +295,72 @@ public sealed class LoginCommandHandlerTests
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncLockedAccountAnswersLikeAWrongPasswordAndStillHashes()
+    {
+        var user = Returns(NewUser(passwordHash: "fake:password123"));
+        user.PasswordLockedAt = clock.UtcNow.AddMinutes(-5);
+        var before = hasher.VerifyCalls;
+
+        var result = await LoginAsync();
+
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        hasher.VerifyCalls.Should().Be(before + 1);
+        emailSender.Sent.Should().BeEmpty();
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be($"Login password step failed for user {user.Id}");
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncLockedAccountWithAWrongPasswordAnswersTheSameWay()
+    {
+        var user = Returns(NewUser(passwordHash: "fake:password123"));
+        user.PasswordLockedAt = clock.UtcNow.AddMinutes(-5);
+
+        var correct = await LoginAsync();
+        var wrong = await LoginAsync(password: "not-the-password");
+
+        correct.Error.Should().BeEquivalentTo(wrong.Error);
+        user.PasswordFailedAttempts.Should().Be(0);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncFifthWrongPasswordLocksTheAccountAndEmailsItsOwner()
+    {
+        var user = Returns(NewUser(passwordHash: "fake:password123"));
+
+        for (var attempt = 0; attempt < PasswordLockoutOptions.DefaultMaxFailedAttempts; attempt++)
+        {
+            await LoginAsync(password: "not-the-password");
+        }
+
+        user.IsPasswordLocked().Should().BeTrue();
+        user.PasswordLockedAt.Should().Be(clock.UtcNow);
+        emailSender
+            .Sent.Should()
+            .ContainSingle()
+            .Which.Kind.Should()
+            .Be(EmailKind.SecurityAlert);
+    }
+
+    [Fact]
+    public async Task HandleAsyncCorrectPasswordForgetsEarlierWrongAttempts()
+    {
+        var user = Returns(NewUser());
+        user.PasswordFailedAttempts = 3;
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        user.PasswordFailedAttempts.Should().Be(0);
+        user.IsPasswordLocked().Should().BeFalse();
     }
 
     [Fact]

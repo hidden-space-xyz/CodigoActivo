@@ -100,6 +100,14 @@ need the same administrator reset.
 Passwords require 12–128 characters and are hashed with Argon2id, never stored or logged in plaintext. Login
 performs fallback Argon2 work for unknown identifiers to reduce timing differences.
 
+Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
+login password step and every route that asks the caller to re-enter their own password — lock the account,
+delete its `user_sessions` rows and email its owner; one correct password before the limit clears the count.
+A locked account answers every password, right or wrong, with the same `InvalidCredentials` after the same
+Argon2 work, and only a completed password reset lifts it: `forgot-password` keeps working, while an
+administrator's second-factor reset does not unlock. The accepted trade-off is that anyone who knows an
+account's email or phone can lock it, so recovery depends on the owner's mailbox.
+
 Credential routes (both login steps and code resend, registration, verification, password recovery/change,
 authenticator enrollment/removal, administrator grants, second-factor resets, user updates and the two
 self-service account-deletion steps) have layered controls:

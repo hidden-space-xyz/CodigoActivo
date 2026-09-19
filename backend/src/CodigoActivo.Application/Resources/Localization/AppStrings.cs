@@ -222,6 +222,11 @@ public static class AppStrings
     public static string EmailsSecurityAlertPasswordChanged => Get("emails.securityAlert.passwordChanged");
 
     /// <summary>
+    /// Gets the emails security alert password locked value.
+    /// </summary>
+    public static string EmailsSecurityAlertPasswordLocked => Get("emails.securityAlert.passwordLocked");
+
+    /// <summary>
     /// Gets the emails security alert password reset value.
     /// </summary>
     public static string EmailsSecurityAlertPasswordReset => Get("emails.securityAlert.passwordReset");

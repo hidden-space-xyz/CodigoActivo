@@ -34,7 +34,7 @@ public sealed class SetAdminCommandHandlerTests
         actingAdmin.PasswordHash = hasher.Hash(ActingPassword);
         sut = new SetAdminCommandHandler(
             users,
-            hasher,
+            PasswordGuards.Create(hasher, uow, clock),
             clock,
             uow,
             new AccountSecurityNotifier(
@@ -119,7 +119,8 @@ public sealed class SetAdminCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
-        await AssertNotSavedAsync();
+        actingAdmin.PasswordFailedAttempts.Should().Be(1);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

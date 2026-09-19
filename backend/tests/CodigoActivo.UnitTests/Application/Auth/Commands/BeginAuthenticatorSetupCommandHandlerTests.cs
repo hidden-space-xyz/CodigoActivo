@@ -31,7 +31,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
             users,
             uow,
             clock,
-            new FakePasswordHasher(),
+            PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
             totp,
             new FakeSecretProtector(),
             options,
@@ -65,9 +65,12 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     }
 
     [Theory]
-    [InlineData("wrong")]
-    [InlineData("")]
-    public async Task HandleAsyncWrongPasswordReturnsBadRequestWithoutStoringAKey(string password)
+    [InlineData("wrong", 1)]
+    [InlineData("", 0)]
+    public async Task HandleAsyncWrongPasswordReturnsBadRequestWithoutStoringAKey(
+        string password,
+        int countedFailures
+    )
     {
         var user = users.FindReturns(NewUser());
 
@@ -75,7 +78,8 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.PendingAuthenticatorKey.Should().BeNull();
-        await AssertNotSavedAsync();
+        user.PasswordFailedAttempts.Should().Be(countedFailures);
+        await uow.Received(countedFailures).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -39,7 +39,7 @@ public sealed class UpdateUserCommandHandlerTests
         actingUser.PasswordHash = hasher.Hash(ActingPassword);
         sut = new UpdateUserCommandHandler(
             users,
-            hasher,
+            PasswordGuards.Create(hasher, uow, clock),
             clock,
             uow,
             cacheInvalidator,
@@ -400,11 +400,12 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("wrong-password")]
+    [InlineData(null, 0)]
+    [InlineData("", 0)]
+    [InlineData("wrong-password", 1)]
     public async Task HandleAsyncAdultChangedEmailWithoutValidPasswordReturnsBadRequest(
-        string? currentPassword
+        string? currentPassword,
+        int countedFailures
     )
     {
         var id = Guid.NewGuid();
@@ -425,7 +426,8 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.Email.Should().Be("ana@test.com");
-        await AssertNotSavedAsync();
+        actingUser.PasswordFailedAttempts.Should().Be(countedFailures);
+        await uow.Received(countedFailures).SaveChangesAsync(Arg.Any<CancellationToken>());
         logger
             .Entries.Should()
             .ContainSingle()
