@@ -53,20 +53,37 @@ internal static class ApiHostConfiguration
             return;
         }
 
-        var keysDirectory = new DirectoryInfo("/home/app/.aspnet/DataProtection-Keys");
-        var certificatePassword = builder.Configuration[
-            "DATA_PROTECTION_CERTIFICATE_PASSWORD"
-        ]!;
+        ProtectKeysWithEd25519Certificate(
+            builder.Services,
+            dataProtection,
+            new DirectoryInfo("/home/app/.aspnet/DataProtection-Keys"),
+            builder.Configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"]!
+        );
+    }
+
+    internal static Ed25519CertificateStore ProtectKeysWithEd25519Certificate(
+        IServiceCollection services,
+        IDataProtectionBuilder dataProtection,
+        DirectoryInfo keysDirectory,
+        string certificatePassword
+    )
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(dataProtection);
+
+        using var loggerFactory = LoggerFactory.Create(ConfigureLogging);
         var certificateStore = Ed25519CertificateStore.LoadOrCreate(
             keysDirectory,
-            certificatePassword
+            certificatePassword,
+            loggerFactory.CreateLogger<Ed25519CertificateStore>()
         );
 
-        builder.Services.AddSingleton(certificateStore);
+        services.AddSingleton(certificateStore);
         dataProtection.PersistKeysToFileSystem(keysDirectory);
-        builder.Services.Configure<KeyManagementOptions>(options =>
-            options.XmlEncryptor = new Ed25519XmlEncryptor(certificateStore)
+        services.Configure<KeyManagementOptions>(options =>
+            options.XmlEncryptor = new Ed25519CmsXmlEncryptor(certificateStore)
         );
+        return certificateStore;
     }
 
     private static void ConfigureKestrel(WebApplicationBuilder builder)

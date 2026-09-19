@@ -238,8 +238,16 @@ Protection certificate password separate from the key-volume backup.
 
 ### Data Protection and containers
 
-Production persists ASP.NET Data Protection keys in `api-dataprotection`, encrypted and signed with a
-locally generated Ed25519 certificate protected by `DATA_PROTECTION_CERTIFICATE_PASSWORD`. Application
+Production persists ASP.NET Data Protection keys in `api-dataprotection`. BouncyCastle writes each key
+element as CMS (RFC 5652): an `EnvelopedData` whose single `PasswordRecipientInfo` derives its
+key-encryption key from `DATA_PROTECTION_CERTIFICATE_PASSWORD` (PBKDF2, 600,000 iterations, RFC 3211
+AES-256 key wrap, AES-256-CBC content), wrapped in a `SignedData` signed with a locally generated
+Ed25519 certificate, whose signature is verified against the certificate in the volume before anything
+is decrypted; that certificate's private key is a PKCS#8 `EncryptedPrivateKeyInfo` (PBES2:
+PBKDF2-HMAC-SHA-512, 600,000 iterations, AES-256-CBC) under the same password, rewritten from the
+retired v1 format on startup while v1 key elements stay readable. Since the password now also derives
+the key-wrapping key, there is no rotation procedure: changing it means recreating the volume, which
+invalidates every session and every stored authenticator secret. Application
 containers run as non-root, drop all capabilities, enable `no-new-privileges` and use read-only root
 filesystems; PostgreSQL is reachable only on the internal backend network. The development override removes
 parts of this boundary and must not be deployed.

@@ -91,7 +91,7 @@ value to `.env` has no effect until the same variable is added under `api.enviro
 | `POSTGRES_DB`                          | Database name                                                                      | `codigoactivo`                                 |
 | `POSTGRES_USER`                        | Database user                                                                      | `codigoactivo`                                 |
 | `POSTGRES_PASSWORD`                    | Database password; 16+ characters in Production                                    | Empty                                          |
-| `DATA_PROTECTION_CERTIFICATE_PASSWORD` | Encrypts the generated Ed25519 private key; 32+ characters                         | Empty                                          |
+| `DATA_PROTECTION_CERTIFICATE_PASSWORD` | Encrypts the Ed25519 private key and the key ring; 32+ characters, not rotatable   | Empty                                          |
 | `APP_BASE_URL`                         | Public origin for links and SEO output                                             | `https://example.org` (invalid for Production) |
 | `APP_TIMEZONE`                         | IANA or Windows time-zone ID used by the application clock                         | `Europe/Madrid`                                |
 | `DEMO_MODE`                            | `true` or `false`; locked on first start                                           | `false`                                        |
@@ -251,7 +251,10 @@ a single acceptance, and collapses an event's linked documents into the one that
 
 Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test restoration regularly. Keep
 `DATA_PROTECTION_CERTIFICATE_PASSWORD` separately from the `api-dataprotection` backup; losing either makes
-the protected key ring unusable and invalidates sessions. The email queue is intentionally absent from
+the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
+every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
+which invalidates all sessions and stored authenticator secrets (see
+[SECURITY.md](SECURITY.md#data-protection-and-containers)). The email queue is intentionally absent from
 backups: a restart can lose pending mail, but the requesting database action has already committed.
 
 - Any `db-data` backup/dump taken before `AnonymizeEventRatings` ran, or any physical volume copy or
