@@ -42,6 +42,18 @@ const minor = toUser(
     parentName: 'Ada Lovelace',
   }),
 )
+const dependentWithContact = toUser(
+  buildUserResponse({
+    id: 'child-2',
+    firstName: 'Tim',
+    email: 'tim@example.test',
+    phone: '622222222',
+    birthDate: '1999-05-05',
+    gender: 'Male',
+    parentId: 'user-1',
+    parentName: 'Ada Lovelace',
+  }),
+)
 
 describe('UserFormDialog', () => {
   beforeEach(() => {
@@ -58,7 +70,7 @@ describe('UserFormDialog', () => {
 
     expect(inputValue('#user-first-name')).toBe('Ada')
     expect(inputValue('#user-email')).toBe('ada@example.test')
-    expect(dialog.textContent).not.toContain(t('features.manageUsers.optionalSuffix').trim())
+    expect(dialog.textContent).not.toContain(t('features.manageUsers.dependentContact'))
 
     await typeInto('#user-first-name', ' Augusta ')
     await typeInto('#user-phone', ' 611111111 ')
@@ -132,7 +144,7 @@ describe('UserFormDialog', () => {
   it('lets minors omit contact details and keeps their guardian', async () => {
     const { wrapper, dialog } = await renderDialog(minor)
 
-    expect(dialog.textContent).toContain(t('features.manageUsers.optionalSuffix').trim())
+    expect(dialog.textContent).toContain(t('features.manageUsers.dependentContact'))
     await click(findButton(t('common.save'), dialog))
 
     expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
@@ -161,29 +173,50 @@ describe('UserFormDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('lets a dependent grow up by asking for contact details and the password', async () => {
+  it('keeps a dependent under its guardian when its birth date turns adult', async () => {
     const { wrapper, dialog } = await renderDialog(minor)
     const picker = wrapper.findComponent(ElDatePicker)
 
     picker.vm.$emit('update:modelValue', new Date(1999, 4, 5))
     await flushPromises()
     expect(dialog.textContent).not.toContain(t('features.manageUsers.minorNotAllowed'))
+    expect(dialog.textContent).toContain(t('features.manageUsers.dependentContact'))
+    expect(dialog.querySelector('#user-current-password')).toBeNull()
 
     await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('features.manageUsers.contactRequired'))
-    expect(wrapper.emitted('submit')).toBeUndefined()
 
-    await typeInto('#user-email', 'tim@example.test')
-    await typeInto('#user-phone', '600000000')
-    await typeInto('#user-current-password', 'admin-password')
-    await click(findButton(t('common.save'), dialog))
-
-    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+    expect(dialog.textContent).not.toContain(t('features.manageUsers.contactRequired'))
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
+      firstName: 'Tim',
+      lastName: 'Lovelace',
+      email: null,
+      phone: null,
       birthDate: '1999-05-05',
-      email: 'tim@example.test',
-      phone: '600000000',
+      gender: 'Male',
       parentId: 'user-1',
-      currentPassword: 'admin-password',
+      currentPassword: null,
+    })
+  })
+
+  it('never lets a dependent carry contact details the server would ignore', async () => {
+    const { wrapper, dialog } = await renderDialog(dependentWithContact)
+
+    expect(dialog.querySelector('#user-email')).toBeNull()
+    expect(dialog.querySelector('#user-phone')).toBeNull()
+    expect(dialog.textContent).toContain(t('features.manageUsers.dependentContact'))
+    expect(dialog.textContent).not.toContain('tim@example.test')
+
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
+      firstName: 'Tim',
+      lastName: 'Lovelace',
+      email: null,
+      phone: null,
+      birthDate: '1999-05-05',
+      gender: 'Male',
+      parentId: 'user-1',
+      currentPassword: null,
     })
   })
 

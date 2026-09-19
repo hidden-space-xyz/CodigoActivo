@@ -1,8 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
-using System.Text;
 using CodigoActivo.Domain.Security;
-using Konscious.Security.Cryptography;
 
 namespace CodigoActivo.Infrastructure.Security;
 
@@ -12,13 +10,13 @@ namespace CodigoActivo.Infrastructure.Security;
 public sealed class Argon2idPasswordHasher : IPasswordHasher
 {
     private const string Prefix = "argon2id";
-    private const int SaltSize = 16;
-    private const int HashSize = 32;
     private const int MaxEncodedHashLength = 128;
 
-    private const int Iterations = 3;
-    private const int MemoryKiB = 64 * 1024;
-    private const int Parallelism = 4;
+    private const int SaltSize = Argon2idKeyDerivation.SaltSize;
+    private const int HashSize = Argon2idKeyDerivation.KeySize;
+    private const int Iterations = Argon2idKeyDerivation.Iterations;
+    private const int MemoryKiB = Argon2idKeyDerivation.MemoryKiB;
+    private const int Parallelism = Argon2idKeyDerivation.Parallelism;
 
     private static readonly int EncodedSaltLength = Convert
         .ToBase64String(new byte[SaltSize])
@@ -34,8 +32,15 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     /// <returns>The generated text.</returns>
     public string Hash(string password)
     {
-        var salt = RandomNumberGenerator.GetBytes(SaltSize);
-        var hash = Compute(password, salt, Iterations, MemoryKiB, Parallelism, HashSize);
+        var salt = Argon2idKeyDerivation.CreateSalt();
+        var hash = Argon2idKeyDerivation.Compute(
+            password,
+            salt,
+            Iterations,
+            MemoryKiB,
+            Parallelism,
+            HashSize
+        );
 
         return string.Join(
             '$',
@@ -98,7 +103,14 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
             return false;
         }
 
-        var actual = Compute(password, salt, iterations, memoryKiB, parallelism, HashSize);
+        var actual = Argon2idKeyDerivation.Compute(
+            password,
+            salt,
+            iterations,
+            memoryKiB,
+            parallelism,
+            HashSize
+        );
         try
         {
             return CryptographicOperations.FixedTimeEquals(actual, expected);
@@ -106,33 +118,6 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
         finally
         {
             CryptographicOperations.ZeroMemory(actual);
-        }
-    }
-
-    private static byte[] Compute(
-        string password,
-        byte[] salt,
-        int iterations,
-        int memoryKiB,
-        int parallelism,
-        int hashSize
-    )
-    {
-        var passwordBytes = Encoding.UTF8.GetBytes(password);
-        try
-        {
-            using var argon2 = new Argon2id(passwordBytes)
-            {
-                Salt = salt,
-                DegreeOfParallelism = parallelism,
-                Iterations = iterations,
-                MemorySize = memoryKiB,
-            };
-            return argon2.GetBytes(hashSize);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(passwordBytes);
         }
     }
 }

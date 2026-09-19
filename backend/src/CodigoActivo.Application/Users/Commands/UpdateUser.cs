@@ -47,9 +47,11 @@ public sealed class UpdateUserCommandHandler(
     /// <summary>
     /// Handles the request to update the user. The stored account decides which rules apply, never
     /// the request: an account that is not a dependent can neither become a minor nor be given a
-    /// guardian, and a dependent keeps the guardian it already has. Replacing the login identifiers
-    /// of the account first re-authenticates the acting caller, so a hijacked session alone cannot
-    /// take the account over. Dependents are created only through <c>POST /api/users/{id}/children</c>.
+    /// guardian, and a dependent keeps the guardian it already has, including after its birth date
+    /// turns it into an adult. Replacing the login identifiers of the account first re-authenticates
+    /// the acting caller, so a hijacked session alone cannot take the account over. Dependents are
+    /// created only through <c>POST /api/users/{id}/children</c>, and they leave their guardian only
+    /// when the guardian deletes them.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -72,7 +74,7 @@ public sealed class UpdateUserCommandHandler(
 
         var rules = user.ParentId is null
             ? await ApplyStandaloneAccountRulesAsync(command, user, ct)
-            : await ApplyDependentRulesAsync(command, user, ct);
+            : ApplyDependentRules(request, user);
         if (rules.IsFailure)
         {
             return rules.Error!;
@@ -127,30 +129,14 @@ public sealed class UpdateUserCommandHandler(
         return await ApplyLoginIdentifierRulesAsync(command, user, ct);
     }
 
-    private async Task<Result> ApplyDependentRulesAsync(
-        UpdateUserCommand command,
-        User user,
-        CancellationToken ct
-    )
+    private static Result ApplyDependentRules(UpdateUserRequest request, User user)
     {
-        var request = command.Request;
         if (request.ParentId is { } parent && parent != user.ParentId)
         {
             return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
         }
 
-        if (request.BirthDate.IsMinor(clock.Today))
-        {
-            return Result.Success();
-        }
-
-        var grownUp = await ApplyLoginIdentifierRulesAsync(command, user, ct);
-        if (grownUp.IsSuccess)
-        {
-            user.ParentId = null;
-        }
-
-        return grownUp;
+        return Result.Success();
     }
 
     private async Task<Result> ApplyLoginIdentifierRulesAsync(

@@ -17,14 +17,16 @@ namespace CodigoActivo.Application.Emails;
 public sealed record Recipient(string? Email, string FirstName);
 
 /// <summary>
-/// Dispatches manual email work through the configured queue.
+/// Validates administrator-written email and stores it for delivery. The whole batch is queued at
+/// once or not at all, and the response reports what was accepted, not what the SMTP server did with
+/// it: delivery happens in the background.
 /// </summary>
-/// <param name="emailSender">The email sender value.</param>
+/// <param name="outbox">Outbox the batch is stored in for background delivery.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="application">The application value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ManualEmailDispatcher(
-    IEmailTransport emailSender,
+    IEmailOutbox outbox,
     ManualEmailOptions options,
     ApplicationOptions application,
     ILogger<ManualEmailDispatcher> logger
@@ -66,21 +68,32 @@ public sealed class ManualEmailDispatcher(
             request.Body.Trim(),
             application.BaseUrl.TrimEnd('/')
         );
-        var messages = recipients
-            .Select(r => ManualEmail.Create(content, r.Email!, r.FirstName, buffered.Value))
-            .ToList();
+        var batch = ManualEmail.Create(
+            content,
+            [.. recipients.Select(r => new EmailRecipient(r.Email!, r.FirstName))],
+            buffered.Value
+        );
 
-        EmailBatchResult batch;
+        bool queued;
         try
         {
-            batch = await emailSender.SendManyAsync(messages, ct);
+            queued = await outbox.TryEnqueueAsync(batch, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(
                 ex,
-                "Could not deliver a manual email to {Count} recipients",
-                messages.Count
+                "Could not queue a manual email for {Count} recipients",
+                batch.Recipients.Count
+            );
+            return Error.BadRequest(ErrorCode.EmailSendFailed);
+        }
+
+        if (!queued)
+        {
+            logger.LogError(
+                "The outbound email outbox has no room for a manual email to {Count} recipients",
+                batch.Recipients.Count
             );
             return Error.BadRequest(ErrorCode.EmailSendFailed);
         }
@@ -88,15 +101,13 @@ public sealed class ManualEmailDispatcher(
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation(
-                "An admin sent a manual email to {Recipients} recipients ({Sent} delivered, {Failed} failed, {Skipped} without an address)",
-                messages.Count,
-                batch.Sent,
-                batch.Failed,
+                "An admin queued a manual email for {Recipients} recipients ({Skipped} without an address)",
+                batch.Recipients.Count,
                 skipped
             );
         }
 
-        return new SendEmailResultResponse(batch.Sent, skipped, batch.Failed);
+        return new SendEmailResultResponse(batch.Recipients.Count, skipped);
     }
 
     private async Task<Result<IReadOnlyList<EmailAttachment>>> BufferAsync(

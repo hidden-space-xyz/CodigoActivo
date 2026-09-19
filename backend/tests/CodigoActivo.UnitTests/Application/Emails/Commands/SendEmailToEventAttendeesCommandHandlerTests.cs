@@ -20,7 +20,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly RecordingEmailSender emailSender = new();
+    private readonly RecordingEmailOutbox outbox = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToEventAttendeesCommandHandler sut;
 
@@ -35,7 +35,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
             events,
             new FakeQueryExecutor(),
             options,
-            NewDispatcher(emailSender, options)
+            NewDispatcher(outbox, options)
         );
     }
 
@@ -81,7 +81,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.local");
+        outbox.Messages.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.local");
     }
 
     [Fact]
@@ -102,6 +102,6 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.EventNotFound);
-        emailSender.Sent.Should().BeEmpty();
+        outbox.Messages.Should().BeEmpty();
     }
 }

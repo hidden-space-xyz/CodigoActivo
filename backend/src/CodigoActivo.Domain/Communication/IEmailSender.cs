@@ -26,28 +26,22 @@ public interface IEmailTransport
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendAsync(EmailMessage message, CancellationToken ct = default);
-
-    /// <summary>
-    /// Sends the many message to its recipients.
-    /// </summary>
-    /// <param name="messages">Email messages to deliver as a batch.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an email batch.</returns>
-    public Task<EmailBatchResult> SendManyAsync(
-        IReadOnlyList<EmailMessage> messages,
-        CancellationToken ct = default
-    );
 }
 
 /// <summary>
-/// Dispatches email work through the configured queue.
+/// Stores outbound email so a background worker delivers it and a restart never loses a message.
 /// </summary>
-public interface IEmailDispatcher
+public interface IEmailOutbox
 {
     /// <summary>
-    /// Attempts to add the email to the bounded delivery queue.
+    /// Stores every recipient of the batch as one pending message, all of them or none, in a unit of
+    /// work of its own that is committed before returning.
     /// </summary>
-    /// <param name="message">Email message to deliver.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public bool TryEnqueue(EmailMessage message);
+    /// <param name="batch">Email batch to store for delivery.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the batch was stored; <see langword="false"/>
+    /// when the pending message cap would be exceeded, in which case nothing was stored.
+    /// </returns>
+    public Task<bool> TryEnqueueAsync(EmailBatch batch, CancellationToken ct = default);
 }

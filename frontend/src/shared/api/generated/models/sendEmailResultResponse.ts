@@ -6,7 +6,6 @@
  */
 
 export interface SendEmailResultResponse {
-  sent?: number;
+  queued?: number;
   skipped?: number;
-  failed?: number;
 }

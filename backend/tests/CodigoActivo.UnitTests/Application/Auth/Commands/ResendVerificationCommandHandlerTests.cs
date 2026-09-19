@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Auth.AuthTestData;
@@ -22,6 +23,7 @@ public sealed class ResendVerificationCommandHandlerTests
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
+    private readonly RecordingLogger<ResendVerificationCommandHandler> logger = new();
     private readonly ResendVerificationCommandHandler sut;
 
     public ResendVerificationCommandHandlerTests()
@@ -38,7 +40,8 @@ public sealed class ResendVerificationCommandHandlerTests
                 passwordReset,
                 application,
                 new TwoFactorOptions()
-            )
+            ),
+            logger
         );
     }
 
@@ -158,23 +161,28 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEmailSendFailsDoesNotPersistNewCode()
+    public async Task HandleAsyncEmailSendFailsReturnsConflictAndDoesNotPersistNewCode()
     {
-        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
+        emailSender.ThrowOnSend = new InvalidOperationException("the outbox insert failed");
         var user = users.FindReturns(
             NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddMinutes(-5))
         );
         var previousHash = user.OtpCodeHash;
 
-        var act = () =>
-            sut.HandleAsync(
-                new ResendVerificationCommand(user.Id),
-                TestContext.Current.CancellationToken
-            );
+        var result = await sut.HandleAsync(
+            new ResendVerificationCommand(user.Id),
+            TestContext.Current.CancellationToken
+        );
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
         user.OtpCodeHash.Should().Be(previousHash);
         await AssertNotSavedAsync();
+        logger
+            .LevelEntries.Should()
+            .ContainSingle(entry => entry.Level == LogLevel.Error)
+            .Which.Message.Should()
+            .Contain(user.Id.ToString());
+        logger.Entries.Should().NotContain(entry => entry.Contains(user.Email!));
     }
 
     [Fact]

@@ -7,13 +7,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Sends email through the configured throttled transport.
 /// </summary>
-/// <param name="dispatcher">The dispatcher value.</param>
+/// <param name="outbox">Outbox the accepted message is stored in for background delivery.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="queueOptions">The queue options value.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ThrottledEmailSender(
-    IEmailDispatcher dispatcher,
+    IEmailOutbox outbox,
     EmailGuardOptions options,
     EmailQueueOptions queueOptions,
     IClock clock,
@@ -28,8 +28,10 @@ public sealed class ThrottledEmailSender(
     /// <param name="message">Email message to deliver.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public Task SendAsync(EmailMessage message, CancellationToken ct = default)
+    public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         var decision = limiter.TryConsume(message.Kind, message.ToAddress);
         Report(decision);
 
@@ -38,16 +40,14 @@ public sealed class ThrottledEmailSender(
             throw new EmailRateLimitedException(decision.Scope);
         }
 
-        if (!dispatcher.TryEnqueue(message))
+        if (!await outbox.TryEnqueueAsync(EmailBatch.ForOne(message), ct))
         {
             logger.LogError(
-                "The outbound email queue is full at {Capacity} messages; an email was held back",
+                "The outbound email outbox is full at {Capacity} pending messages; an email was held back",
                 queueOptions.Capacity
             );
             throw new EmailRateLimitedException(EmailLimitScope.Global);
         }
-
-        return Task.CompletedTask;
     }
 
     private void Report(EmailSendDecision decision)

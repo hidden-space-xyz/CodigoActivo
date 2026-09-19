@@ -17,7 +17,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
 {
     private readonly List<MemoryStream> attachmentStreams = [];
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly RecordingEmailSender emailSender = new();
+    private readonly RecordingEmailOutbox outbox = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToUsersCommandHandler sut;
 
@@ -27,7 +27,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             users,
             new FakeQueryExecutor(),
             options,
-            NewDispatcher(emailSender, options)
+            NewDispatcher(outbox, options)
         );
     }
 
@@ -47,7 +47,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleAsyncSeveralRecipientsSendsOneMessagePerRecipientInOneBatch()
+    public async Task HandleAsyncSeveralRecipientsQueuesOneMessagePerRecipientInOneBatch()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
 
@@ -57,13 +57,14 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Sent.Should().Be(2);
-        emailSender.Batches.Should().Be(1, "every recipient shares one SMTP connection");
-        emailSender
-            .Sent.Select(m => m.ToAddress)
+        result.Value.Queued.Should().Be(2);
+        outbox
+            .Batches.Should()
+            .ContainSingle("the whole batch is queued as one shared content")
+            .Which.Recipients.Select(r => r.Address)
             .Should()
             .BeEquivalentTo("ana@test.local", "berto@test.local");
-        emailSender.Sent.Should().OnlyContain(m => m.Subject == "Asunto");
+        outbox.Messages.Should().OnlyContain(m => m.Subject == "Asunto");
     }
 
     [Fact]
@@ -78,9 +79,9 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Sent.Should().Be(1);
+        result.Value.Queued.Should().Be(1);
         result.Value.Skipped.Should().Be(1);
-        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("marta@test.local");
+        outbox.Messages.Should().ContainSingle().Which.ToAddress.Should().Be("marta@test.local");
     }
 
     [Fact]
@@ -95,7 +96,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailNoRecipients);
-        emailSender.Sent.Should().BeEmpty();
+        outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
@@ -109,7 +110,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.IsSuccess.Should().BeTrue();
-        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("berto@test.local");
+        outbox.Messages.Should().ContainSingle().Which.ToAddress.Should().Be("berto@test.local");
     }
 
     [Fact]
@@ -124,30 +125,29 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailTooManyRecipients);
-        emailSender.Sent.Should().BeEmpty();
+        outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncSomeRecipientsRejectedReportsThemAsFailed()
+    public async Task HandleAsyncOutboxWithoutRoomReturnsSendFailedAndQueuesNothing()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
-        emailSender.FailingRecipients.Add("berto@test.local");
+        outbox.RejectAll = true;
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
             TestContext.Current.CancellationToken
         );
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Sent.Should().Be(1);
-        result.Value.Failed.Should().Be(1);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailSendFailed);
+        outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncSmtpUnavailableReturnsSendFailed()
+    public async Task HandleAsyncOutboxWriteFailsReturnsSendFailed()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"));
-        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
+        outbox.ThrowOnEnqueue = new InvalidOperationException("database down");
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
@@ -158,7 +158,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleAsyncWithAttachmentBuffersItForEveryRecipient()
+    public async Task HandleAsyncWithAttachmentSharesOneCopyForEveryRecipient()
     {
         users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
 
@@ -168,9 +168,13 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.IsSuccess.Should().BeTrue();
-        emailSender
-            .Sent.Should()
-            .OnlyContain(m => m.Attachments!.Count == 1 && m.Attachments[0].Content.Length == 6);
+        var batch = outbox.Batches.Should().ContainSingle().Subject;
+        batch.Recipients.Should().HaveCount(2);
+        batch
+            .Attachments.Should()
+            .ContainSingle()
+            .Which.Content.Length.Should()
+            .Be(6, "the bytes are stored once for the whole batch");
     }
 
     [Theory]
@@ -189,7 +193,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        emailSender.Sent[0].Attachments![0].FileName.Should().Be("passwd");
+        outbox.Messages[0].Attachments![0].FileName.Should().Be("passwd");
     }
 
     [Fact]
@@ -204,7 +208,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailAttachmentsTooLarge);
-        emailSender.Sent.Should().BeEmpty();
+        outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]

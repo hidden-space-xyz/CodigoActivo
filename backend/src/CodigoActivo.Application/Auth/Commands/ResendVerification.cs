@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -23,13 +24,15 @@ public sealed record ResendVerificationCommand(Guid UserId) : ICommand<Result>;
 /// <param name="hasher">The hasher value.</param>
 /// <param name="verification">The verification value.</param>
 /// <param name="accountEmails">The account emails value.</param>
+/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ResendVerificationCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
     AccountVerificationOptions verification,
-    AccountEmails accountEmails
+    AccountEmails accountEmails,
+    ILogger<ResendVerificationCommandHandler> logger
 ) : ICommandHandler<ResendVerificationCommand, Result>
 {
     /// <summary>
@@ -71,6 +74,11 @@ public sealed class ResendVerificationCommandHandler(
         catch (EmailRateLimitedException)
         {
             return Error.Conflict(ErrorCode.OtpResendCooldownActive);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Failed to send the verification email for user {UserId}", user.Id);
+            return Error.Conflict(ErrorCode.EmailSendFailed);
         }
 
         user.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);

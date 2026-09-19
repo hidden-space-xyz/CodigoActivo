@@ -54,27 +54,27 @@ public static class ManualEmail
     }
 
     /// <summary>
-    /// Creates a manual email from the validated request.
+    /// Creates the manual email batch from the validated request, so every recipient receives their
+    /// own message while the stored copy of the content and its attachments is shared.
     /// </summary>
     /// <param name="content">Content stream to store or inspect.</param>
-    /// <param name="toAddress">The to address value.</param>
-    /// <param name="toName">The to name value.</param>
+    /// <param name="recipients">The recipients value.</param>
     /// <param name="attachments">The attachments value.</param>
-    /// <returns>The resulting email message value.</returns>
-    public static EmailMessage Create(
+    /// <returns>The resulting email batch value.</returns>
+    public static EmailBatch Create(
         ManualEmailContent content,
-        string toAddress,
-        string toName,
+        IReadOnlyList<EmailRecipient> recipients,
         IReadOnlyList<EmailAttachment> attachments
     )
     {
-        return new EmailMessage(
+        ArgumentNullException.ThrowIfNull(content);
+
+        return new EmailBatch(
             EmailKind.Manual,
-            toAddress,
-            toName,
             content.Subject,
             content.HtmlBody,
             content.TextBody,
+            recipients,
             attachments,
             content.InlineImages
         );

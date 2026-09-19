@@ -13,7 +13,7 @@ namespace CodigoActivo.UnitTests.Application.Emails.Commands;
 public sealed class SendEmailToUserCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly RecordingEmailSender emailSender = new();
+    private readonly RecordingEmailOutbox outbox = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToUserCommandHandler sut;
 
@@ -22,7 +22,7 @@ public sealed class SendEmailToUserCommandHandlerTests
         sut = new SendEmailToUserCommandHandler(
             users,
             new FakeQueryExecutor(),
-            NewDispatcher(emailSender, options)
+            NewDispatcher(outbox, options)
         );
     }
 
@@ -39,7 +39,7 @@ public sealed class SendEmailToUserCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailRecipientWithoutAddress);
-        emailSender.Sent.Should().BeEmpty();
+        outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
@@ -67,8 +67,8 @@ public sealed class SendEmailToUserCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Sent.Should().Be(1);
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        result.Value.Queued.Should().Be(1);
+        var message = outbox.Messages.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("ana@test.local");
         message.ToName.Should().Be("Ana");
         message.TextBody.Should().Contain("Nos vemos el sábado");

@@ -19,9 +19,9 @@ public record SendEmailRequest(string Subject, string Body)
 }
 
 /// <summary>
-/// Contains the send email data returned by the API.
+/// Contains the send email data returned by the API. The email is delivered in the background, so
+/// the response reports how many messages were accepted, not how many reached their mailbox.
 /// </summary>
-/// <param name="Sent">The sent value.</param>
+/// <param name="Queued">The queued value.</param>
 /// <param name="Skipped">The skipped value.</param>
-/// <param name="Failed">The failed value.</param>
-public record SendEmailResultResponse(int Sent, int Skipped, int Failed);
+public record SendEmailResultResponse(int Queued, int Skipped);

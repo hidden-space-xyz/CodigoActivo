@@ -107,9 +107,11 @@ UI localization resources.
 
 ### Email boundaries
 
-Automatic messages (`IEmailSender`, throttled and queued through `ChannelEmailDispatcher`/`IEmailTransport`,
-bounded and retry-less) and administrator-authored bulk mail (`ManualEmailDispatcher`/`IEmailTransport`
-directly, so the HTTP response reports delivery results) follow separate paths. Operational values are in
+Automatic messages (`IEmailSender`/`ThrottledEmailSender`, rate-limited per recipient and globally) and
+administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
+a PostgreSQL outbox, in a unit of work of its own committed before the call returns; a background
+`EmailOutboxProcessor` hosted service claims due rows and delivers them through `IEmailTransport`
+(`SmtpEmailSender`), with retries and an attempt limit. Operational values are in
 [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery); security properties are in
 [SECURITY.md](SECURITY.md#email-abuse-controls).
 

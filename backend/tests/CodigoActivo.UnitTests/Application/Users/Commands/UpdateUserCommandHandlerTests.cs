@@ -633,44 +633,15 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncDependentReachingAdulthoodBecomesAStandaloneAccount()
+    public async Task HandleAsyncDependentReachingAdulthoodKeepsItsGuardianAndCredentials()
     {
         var id = Guid.NewGuid();
         var parentId = Guid.NewGuid();
         var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
-        users.FindReturns(user, actingUser);
+        users.FindReturns(user);
         users.HasUsers(user);
         var request = new UpdateUserRequest(
-            "Kid",
-            "Doe",
-            "grown@test.com",
-            "555-0199",
-            AdultDob,
-            Gender.Male,
-            null,
-            ActingPassword
-        );
-
-        var result = await HandleAsync(id, request);
-
-        result.IsSuccess.Should().BeTrue();
-        user.ParentId.Should().BeNull();
-        user.Email.Should().Be("grown@test.com");
-        user.Phone.Should().Be("555-0199");
-        AssertIdentifierChangeLogged(id);
-        emailSender.Sent.Should().BeEmpty("the account had no previous address to warn");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncDependentReachingAdulthoodWithoutAPasswordKeepsItsGuardian()
-    {
-        var id = Guid.NewGuid();
-        var parentId = Guid.NewGuid();
-        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
-        users.FindReturns(user, actingUser);
-        var request = new UpdateUserRequest(
-            "Kid",
+            "Grown",
             "Doe",
             "grown@test.com",
             "555-0199",
@@ -682,34 +653,75 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.IsSuccess.Should().BeTrue();
+        user.FirstName.Should().Be("Grown");
+        user.BirthDate.Should().Be(AdultDob);
         user.ParentId.Should().Be(parentId);
-        user.Email.Should().BeNull();
-        await AssertNotSavedAsync();
+        user.Email.Should()
+            .BeNull("an adult dependent is still a dependent without login identifiers");
+        user.Phone.Should().BeNull();
+        user.PasswordHash.Should().BeNull();
+        logger.Entries.Should().BeEmpty();
+        emailSender.Sent.Should().BeEmpty();
+        await AssertActingUserNotLoadedAsync();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsyncDependentReachingAdulthoodWithoutContactReturnsBadRequest()
+    public async Task HandleAsyncDependentReachingAdulthoodNeedsNoContactOrPassword()
     {
         var id = Guid.NewGuid();
         var parentId = Guid.NewGuid();
         var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
         users.FindReturns(user);
+        users.HasUsers(user);
         var request = new UpdateUserRequest(
-            "Kid",
+            "Grown",
             "Doe",
             null,
             null,
             AdultDob,
             Gender.Male,
+            parentId,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.ParentId.Should().Be(parentId);
+        await AssertActingUserNotLoadedAsync();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdultDependentReassignedToDifferentParentReturnsForbidden()
+    {
+        var id = Guid.NewGuid();
+        var currentParentId = Guid.NewGuid();
+        var user = NewUser(
+            id: id,
+            parentId: currentParentId,
+            email: null,
+            phone: null,
+            dob: AdultDob
+        );
+        users.FindReturns(user);
+        var request = new UpdateUserRequest(
+            "Grown",
+            "Doe",
             null,
+            null,
+            AdultDob,
+            Gender.Male,
+            Guid.NewGuid(),
             ActingPassword
         );
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserContactInfoRequired);
-        user.ParentId.Should().Be(parentId);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserParentReassignmentForbidden);
+        user.ParentId.Should().Be(currentParentId);
         await AssertNotSavedAsync();
     }
 }

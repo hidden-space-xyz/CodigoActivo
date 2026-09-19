@@ -67,12 +67,11 @@ function useSendEmailFeedback() {
   const feedback = useCrudFeedback()
 
   function reportSendResult(result: SendEmailResultResponse): void {
-    const sent = result.sent ?? 0
-    const failed = result.failed ?? 0
+    const queued = result.queued ?? 0
     const skipped = result.skipped ?? 0
 
-    if (sent > 0) feedback.success(t('features.sendEmail.toast.sent', { count: sent }, sent))
-    if (failed > 0) feedback.warn(t('features.sendEmail.toast.failed', { count: failed }, failed))
+    if (queued > 0)
+      feedback.success(t('features.sendEmail.toast.queued', { count: queued }, queued))
     if (skipped > 0)
       feedback.warn(t('features.sendEmail.toast.skipped', { count: skipped }, skipped))
   }
@@ -102,8 +101,8 @@ export interface SendEmailDialogOptions<T> {
 
 /**
  * State for `SendEmailDialog` on a list page. `open(row)` targets one recipient and `open(null)`
- * the whole filtered audience. After sending, toasts report sent, failed and skipped counts, and
- * the dialog closes only if at least one email was sent.
+ * the whole filtered audience. After sending, toasts report the queued and skipped counts, and the
+ * dialog closes only if at least one email was accepted for delivery.
  */
 export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
   const { sendToUser } = useSendEmail()
@@ -127,7 +126,7 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
   function submit(payload: SendEmailPayload): void {
     const handlers: SendEmailHandlers = {
       onSuccess: (result) => {
-        if ((result.sent ?? 0) > 0) visible.value = false
+        if ((result.queued ?? 0) > 0) visible.value = false
         reportSendResult(result)
       },
       onError: options.onError,

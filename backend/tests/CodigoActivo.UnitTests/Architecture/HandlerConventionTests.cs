@@ -14,7 +14,7 @@ public sealed class HandlerConventionTests
         typeof(IUnitOfWork),
         typeof(ICacheInvalidator),
         typeof(IEmailSender),
-        typeof(IEmailDispatcher),
+        typeof(IEmailOutbox),
         typeof(IEmailTransport),
     ];
 

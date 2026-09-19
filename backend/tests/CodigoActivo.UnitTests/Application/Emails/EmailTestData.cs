@@ -37,12 +37,12 @@ internal static class EmailTestData
     }
 
     public static ManualEmailDispatcher NewDispatcher(
-        RecordingEmailSender emailSender,
+        RecordingEmailOutbox outbox,
         ManualEmailOptions options
     )
     {
         return new ManualEmailDispatcher(
-            emailSender,
+            outbox,
             options,
             new ApplicationOptions(),
             NullLogger<ManualEmailDispatcher>.Instance

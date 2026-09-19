@@ -164,7 +164,9 @@ The five required steps are documented once, in
 
 Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute; integration tests share a disposable
 PostgreSQL 18 Testcontainers instance and disable parallel execution. The test host lifts the email guard and
-request rate limits by default; use the factory's `WithEmailGuard`/`WithRateLimits` to exercise them.
+request rate limits by default; use the factory's `WithEmailGuard`/`WithRateLimits` to exercise them. The
+test host also delivers the email outbox inline instead of running the background worker; tests that queue
+mail indirectly or advance the clock to a scheduled retry call `Factory.DrainEmailOutboxAsync()`.
 
 Frontend tests use Vitest, Vue Test Utils and jsdom in `frontend/tests/`, mirroring `src/`: `tests/unit/`
 covers isolated units, `tests/integration/` mounts components or `App.vue` with real plugins.

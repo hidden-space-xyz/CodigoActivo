@@ -262,11 +262,12 @@ public static class DependencyInjection
         services.AddSingleton(options);
         services.AddSingleton<IEmailTransport, SmtpEmailSender>();
         services.AddSingleton(BuildEmailQueueOptions(configuration));
-        services.AddSingleton<ChannelEmailDispatcher>();
-        services.AddSingleton<IEmailDispatcher>(sp =>
-            sp.GetRequiredService<ChannelEmailDispatcher>()
-        );
-        services.AddHostedService(sp => sp.GetRequiredService<ChannelEmailDispatcher>());
+        services.AddSingleton<EmailOutboxSignal>();
+        services.AddSingleton<EmailOutboxProtector>();
+        services.AddSingleton<IEmailOutboxStore, EmailOutboxStore>();
+        services.AddSingleton<IEmailOutbox>(sp => sp.GetRequiredService<IEmailOutboxStore>());
+        services.AddSingleton<EmailOutboxDeliverer>();
+        services.AddHostedService<EmailOutboxProcessor>();
         services.AddSingleton<IEmailSender, ThrottledEmailSender>();
         services.AddSingleton(BuildEmailGuardOptions(configuration));
         services.AddSingleton(
@@ -348,6 +349,13 @@ public static class DependencyInjection
                 ),
                 EmailQueueOptions.MaxWorkers
             ),
+            BatchSize = Math.Min(
+                ReadPositiveInt(
+                    configuration["EmailQueue:BatchSize"],
+                    EmailQueueOptions.DefaultBatchSize
+                ),
+                EmailQueueOptions.MaxBatchSize
+            ),
             ShutdownDrain = ReadBoundedTimeSpan(
                 configuration["EmailQueue:ShutdownDrainSeconds"],
                 EmailQueueOptions.DefaultShutdownDrain,
@@ -357,6 +365,11 @@ public static class DependencyInjection
                 configuration["EmailQueue:SendTimeoutSeconds"],
                 EmailQueueOptions.DefaultSendTimeout,
                 EmailQueueOptions.MaxSendTimeout
+            ),
+            PollInterval = ReadBoundedTimeSpan(
+                configuration["EmailQueue:PollIntervalSeconds"],
+                EmailQueueOptions.DefaultPollInterval,
+                EmailQueueOptions.MaxPollInterval
             ),
         };
     }

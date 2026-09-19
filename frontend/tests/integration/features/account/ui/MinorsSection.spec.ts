@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import MinorsSection from '@/features/account/ui/MinorsSection.vue'
 import { genderLabel } from '@/entities/user'
 import type { UserResponse } from '@/shared/api/generated/models'
-import { formatDate } from '@/shared/lib'
+import { formatDate, yearsAgoIso } from '@/shared/lib'
 
 import { buildChildResponse, omit } from '../../../../support/fixtures/account/account'
 import {
@@ -210,6 +210,32 @@ describe('MinorsSection', () => {
     })
     await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
     expect(notificationTexts().join()).toContain(t('features.account.minors.updatedSummary'))
+  })
+
+  it('accepts an adult birth date when editing but not when adding a minor', async () => {
+    serveChildren()
+    let body: unknown
+    server.use(
+      http.put('/api/users/:userId', async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json(BYRON)
+      }),
+    )
+    await renderSection()
+
+    await click(buttonByText(document.body, t('features.account.minors.add')))
+    const addDialog = dialogByTitle(t('features.account.minors.addHeader'))
+    expect(addDialog.querySelector('#m-dob')?.getAttribute('min')).toBe(yearsAgoIso(18))
+    await click(buttonByText(addDialog, t('common.cancel')))
+
+    await click(buttonByText(minorItem('Byron Lovelace'), t('common.edit')))
+    const editDialog = dialogByTitle(t('features.account.minors.editHeader'))
+    expect(editDialog.querySelector('#m-dob')?.getAttribute('min')).toBeNull()
+    await fill(editDialog, '#m-dob', '1999-05-05')
+    await click(buttonByText(editDialog, t('common.save')))
+
+    await vi.waitFor(() => expect(body).toBeDefined())
+    expect(body).toMatchObject({ birthDate: '1999-05-05', parentId: 'user-1' })
   })
 
   it('requires choosing a gender when editing a minor without one', async () => {

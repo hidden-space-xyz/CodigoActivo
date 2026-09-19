@@ -312,6 +312,149 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignment_status_types", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("HtmlBody")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("html_body");
+
+                    b.Property<byte[]>("Subject")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("subject");
+
+                    b.Property<byte[]>("TextBody")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("text_body");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_contents");
+
+                    b.ToTable("email_outbox_contents", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ContentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_type");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("disposition");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("InlineContentId")
+                        .HasColumnType("text")
+                        .HasColumnName("inline_content_id");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("payload");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_content_parts");
+
+                    b.HasIndex("ContentId")
+                        .HasDatabaseName("ix_email_outbox_content_parts_content_id");
+
+                    b.ToTable("email_outbox_content_parts", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<Guid>("ContentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<string>("ToAddress")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("to_address");
+
+                    b.Property<string>("ToName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("to_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_messages");
+
+                    b.HasIndex("ContentId")
+                        .HasDatabaseName("ix_email_outbox_messages_content_id");
+
+                    b.HasIndex("Priority", "NextAttemptAt")
+                        .HasDatabaseName("ix_email_outbox_messages_priority_next_attempt_at");
+
+                    b.ToTable("email_outbox_messages", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1191,6 +1334,30 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Thumbnail");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
+                        .WithMany("Parts")
+                        .HasForeignKey("ContentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_email_outbox_content_parts_email_outbox_contents_content_id");
+
+                    b.Navigation("Content");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxMessage", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
+                        .WithMany()
+                        .HasForeignKey("ContentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_email_outbox_messages_email_outbox_contents_content_id");
+
+                    b.Navigation("Content");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Entities.User", null)
@@ -1449,6 +1616,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Entities.AssignmentStatusType", b =>
                 {
                     b.Navigation("Assignments");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
+                {
+                    b.Navigation("Parts");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>

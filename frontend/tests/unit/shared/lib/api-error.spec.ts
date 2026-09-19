@@ -23,6 +23,20 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage(error, 'Custom fallback')).toBe('Custom fallback')
   })
 
+  it('describes the guardianship errors without calling the dependent a minor', () => {
+    const reassignment = getErrorMessage(
+      new ApiError(403, 'Raw', undefined, ErrorCode.UserParentReassignmentForbidden),
+    )
+    const standalone = getErrorMessage(
+      new ApiError(400, 'Raw', undefined, ErrorCode.UserParentNotAllowedForAdult),
+    )
+
+    expect(reassignment).toContain('persona a cargo')
+    expect(reassignment).not.toMatch(/menor|mayor de edad/i)
+    expect(standalone).toContain('cuenta propia')
+    expect(standalone).not.toMatch(/menor|mayor de edad/i)
+  })
+
   it('never exposes the text of other errors', () => {
     expect(getErrorMessage(new Error('Secret stack'))).toBe(t('errors.generic'))
     expect(getErrorMessage('string failure', 'Fallback')).toBe('Fallback')

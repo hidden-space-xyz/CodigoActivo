@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -115,11 +116,9 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         var result = await ReadResultAsync(response);
-        result.Sent.Should().Be(4);
+        result.Queued.Should().Be(4);
         result.Skipped.Should().Be(1, "the dependent minor has no address of their own");
-        result.Failed.Should().Be(0);
 
-        Factory.EmailSender.Batches.Should().Be(1, "one SMTP connection serves the whole batch");
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
@@ -158,7 +157,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsersSomeRecipientsRejectedReportsThemAsFailed()
+    public async Task SendToUsersSomeRecipientsRejectedStillReportsThemAsQueuedAndKeepsThemStored()
     {
         var client = await LoginAsAdminAsync();
         Factory.EmailSender.FailFor(TestSeedData.PendingEmail, TestSeedData.BlockedEmail);
@@ -166,17 +165,26 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
         var result = await ReadResultAsync(response);
-        result.Sent.Should().Be(2);
-        result.Failed.Should().Be(2);
+        result.Queued.Should().Be(4, "the response reports acceptance, not delivery");
         result.Skipped.Should().Be(1);
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
             .BeEquivalentTo(TestSeedData.AdminEmail, TestSeedData.MemberEmail);
+
+        var pending = await Factory.QueryAsync(db =>
+            db.EmailOutboxMessages.Select(m => m.ToAddress).ToListAsync(Ct)
+        );
+        pending
+            .Should()
+            .BeEquivalentTo(
+                [TestSeedData.PendingEmail, TestSeedData.BlockedEmail],
+                "a rejected recipient stays queued for the scheduled retry"
+            );
     }
 
     [Fact]
-    public async Task SendToUsersSmtpUnavailableReturnsBadRequestSendFailed()
+    public async Task SendToUsersSmtpUnavailableAcceptsTheMailAndLeavesItQueued()
     {
         var client = await LoginAsAdminAsync();
         Factory.EmailSender.ThrowOnSend = new InvalidOperationException(
@@ -185,8 +193,17 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
 
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
-        await response.ShouldBeBadRequestAsync(ErrorCode.EmailSendFailed);
+        var result = await ReadResultAsync(response);
+        result.Queued.Should().Be(4);
         Factory.EmailSender.Sent.Should().BeEmpty();
+
+        var stored = await Factory.QueryAsync(db =>
+            Task.FromResult(
+                (Messages: db.EmailOutboxMessages.Count(), Contents: db.EmailOutboxContents.Count())
+            )
+        );
+        stored.Messages.Should().Be(4);
+        stored.Contents.Should().Be(1, "the four recipients share one stored copy of the email");
     }
 
     [Fact]
@@ -199,7 +216,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         var result = await ReadResultAsync(response);
-        result.Sent.Should().Be(1);
+        result.Queued.Should().Be(1);
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle()
@@ -334,7 +351,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         var result = await ReadResultAsync(response);
-        result.Sent.Should().Be(1);
+        result.Queued.Should().Be(1);
         var message = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be(TestSeedData.MemberEmail);
         message.Subject.Should().Be("Recordatorio");
@@ -373,7 +390,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.SendEmailFormAsync(AttendeesUrl);
 
         var result = await ReadResultAsync(response);
-        result.Sent.Should().Be(2);
+        result.Queued.Should().Be(2);
         result.Skipped.Should().Be(1);
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
@@ -392,7 +409,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         var result = await ReadResultAsync(response);
-        result.Sent.Should().Be(1);
+        result.Queued.Should().Be(1);
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle()
