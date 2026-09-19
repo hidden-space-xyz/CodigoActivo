@@ -12,9 +12,9 @@ namespace CodigoActivo.Application.Auth;
 /// Owns every check of an account password used for authentication: the login password step and
 /// the routes that ask the acting caller to re-enter their own password. Consecutive failures are
 /// counted on the account and committed even when the calling handler returns without saving;
-/// reaching the limit locks the account, deletes its open sessions and warns its owner, and only a
-/// completed password reset clears the lock. A locked account refuses every password, so a correct
-/// one cannot be told apart from a wrong one.
+/// reaching the limit locks the account, closes its pending second-factor challenge, deletes its
+/// open sessions and warns its owner, and only a completed password reset clears the lock. A locked
+/// account refuses every password, so a correct one cannot be told apart from a wrong one.
 /// </summary>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -110,6 +110,11 @@ public sealed class PasswordAttemptGuard(
     private async Task RecordFailureAsync(User user, CancellationToken ct)
     {
         var locked = user.RecordPasswordFailure(clock.UtcNow, options.MaxFailedAttempts);
+        if (locked)
+        {
+            user.ClearLoginChallenge();
+        }
+
         await uow.SaveChangesAsync(ct);
         if (!locked)
         {

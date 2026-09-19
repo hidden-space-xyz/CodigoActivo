@@ -90,6 +90,29 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncPasswordLockedAccountIsRefusedLikeAnExpiredChallenge()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+        user.PasswordLockedAt = clock.UtcNow.AddMinutes(-1);
+
+        var result = await VerifyAsync(user.Id, "123456");
+
+        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.TwoFactorChallengeExpired);
+        user.LastLoginAt.Should().BeNull();
+        user.LoginCodeHash.Should().NotBeNull();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        logger
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be(
+                $"Operation VerifyTwoFactorLogin refused for user {user.Id} because the account "
+                    + "password is locked"
+            );
+    }
+
+    [Fact]
     public async Task HandleAsyncCorrectEmailCodeCompletesLoginAndClearsTheCode()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));

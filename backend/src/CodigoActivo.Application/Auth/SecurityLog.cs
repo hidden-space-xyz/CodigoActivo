@@ -82,6 +82,22 @@ public static partial class SecurityLog
     );
 
     /// <summary>
+    /// Records that an operation was refused because the account password is locked.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="operation">Name of the use case that was refused.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Operation {Operation} refused for user {UserId} because the account password is locked"
+    )]
+    public static partial void PasswordLockoutBlocked(
+        this ILogger logger,
+        Guid userId,
+        string operation
+    );
+
+    /// <summary>
     /// Records a wrong second-factor code.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

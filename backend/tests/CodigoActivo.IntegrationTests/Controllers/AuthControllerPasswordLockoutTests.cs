@@ -109,6 +109,44 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
     }
 
     [Fact]
+    public async Task TwoFactorChallengeOpenedBeforeTheLockCannotBeCompleted()
+    {
+        var pending = CreateClient();
+        await PassPasswordStepAsync(pending, TestSeedData.MemberCredentials);
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+
+        await LockMemberAsync(CreateClient());
+
+        using var response = await pending.PostJsonAsync(
+            "/api/auth/login/two-factor",
+            new TwoFactorLoginRequest(code),
+            Ct
+        );
+
+        await response.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+        var cookies = response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values
+            : [];
+        cookies
+            .Should()
+            .NotContain(cookie =>
+                cookie.Contains("CodigoActivo.Session=", StringComparison.Ordinal)
+            );
+
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.LoginChallengeId.Should().BeNull("locking closes the open challenge");
+        stored.LastLoginAt.Should().BeNull();
+        (await Factory.QueryAsync(db =>
+            db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+        ))
+            .Should()
+            .Be(0);
+
+        using var me = await pending.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        await me.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
+    }
+
+    [Fact]
     public async Task LoginCorrectPasswordBeforeTheLimitClearsTheCountedFailures()
     {
         var client = CreateClient();

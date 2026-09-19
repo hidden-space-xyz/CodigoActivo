@@ -26,7 +26,8 @@ public static class TwoFactorAuthentication
 /// ticket is not self-sufficient: it names the <c>login_challenge_id</c> the password step stored on
 /// the account, so a copied challenge cookie stops working as soon as that value is replaced by a
 /// newer password step or cleared by an accepted second factor, a lockout, a password change or a
-/// sign out, instead of lasting until the cookie expires.
+/// sign out, instead of lasting until the cookie expires. An account locked after repeated wrong
+/// passwords has no pending challenge either, so a ticket obtained just before the lock is refused.
 /// </summary>
 /// <param name="db">Database context used for persistence.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -136,6 +137,7 @@ public sealed class TwoFactorTicketValidator(
                 user.Id == userId
                 && user.UserStatusTypeId == SeedIds.UserStatusTypes.Active
                 && user.PasswordHash != null
+                && user.PasswordLockedAt == null
                 && user.LoginChallengeId != null
             )
             .Select(user => new PendingChallenge(user.PasswordHash!, user.LoginChallengeId!.Value))

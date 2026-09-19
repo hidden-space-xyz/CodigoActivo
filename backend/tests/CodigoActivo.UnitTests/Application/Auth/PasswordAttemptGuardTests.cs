@@ -125,6 +125,22 @@ public sealed class PasswordAttemptGuardTests
     }
 
     [Fact]
+    public async Task VerifyLoginPasswordAsyncReachingTheLimitClosesThePendingChallenge()
+    {
+        var user = Account();
+        user.PasswordFailedAttempts = 1;
+        user.StartLoginChallenge(Guid.NewGuid());
+
+        await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
+        user.LoginChallengeId.Should().NotBeNull("the limit is not reached yet");
+
+        await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
+
+        user.IsPasswordLocked().Should().BeTrue();
+        user.LoginChallengeId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task VerifyLoginPasswordAsyncLockedAccountRefusesTheCorrectPasswordToo()
     {
         var user = Account();
