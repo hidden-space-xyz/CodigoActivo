@@ -120,7 +120,8 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 
 ### Input, output and error handling
 
-- DataAnnotations and custom attributes validate request models.
+- DataAnnotations and custom attributes validate request models. JSON bodies accept enum values only by
+  their declared name, never as integers, and enums bound from the query string reject undefined values.
 - Expected failures use a string `ErrorCode`; all failures return
   `ApiErrorResponse(Title, Status, Code, TraceId)` without stack traces or internal details.
 - User-supplied links allow only absolute HTTP(S) URLs without embedded credentials.
