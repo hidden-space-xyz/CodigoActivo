@@ -157,22 +157,32 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 
 In Production the API accepts one forwarded hop, redirects HTTP to HTTPS and emits secure cookies.
 `X-Forwarded-For`/`X-Forwarded-Proto` are honoured only from loopback and private ranges (`127.0.0.0/8`,
-`::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`); other peers are ignored. The base
+`::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`); other peers are ignored. nginx applies
+no peer filtering of its own: it normalizes whatever `X-Forwarded-Proto` it receives before forwarding it to
+the API — only an exact `https` value (case-insensitive) counts; any other value, a comma-separated list such
+as `https, http`, or a missing header become `http` — so the external TLS proxy must overwrite the header
+rather than append to it. The base
 Compose file keeps `api` and `db` off host ports but publishes nginx as `8080:8080` on all interfaces. The
 operator must terminate TLS externally, accepting only TLS 1.3 with TLS 1.2 as the sole fallback, overwrite
 untrusted `X-Forwarded-For`/`X-Forwarded-Proto`, and prevent clients from bypassing the proxy to reach port
-`8080` directly. nginx sends HSTS only when the
-forwarded scheme is HTTPS, plus CSP, frame denial, MIME sniffing, referrer, permissions and cross-origin
-isolation headers. See [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
+`8080` directly. nginx sends HSTS (`max-age=63072000; includeSubDomains`, no `preload`) only when its
+normalized scheme is HTTPS, plus CSP, frame denial, MIME sniffing, referrer, permissions and cross-origin
+isolation headers; `includeSubDomains` requires every subdomain of the public host to work over HTTPS only.
+Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still sends
+`Server: nginx` without a version (`server_tokens off`). See
+[DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
 
 ### Privacy and third parties
 
 - Browsers load nothing from third parties: fonts are bundled from Fontsource and served from the application
   origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus
-  `data:`/`blob:` images). Do not add CDNs, analytics or embeds without a legal basis and consent review.
+  `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
+  normalized scheme is HTTPS. Do not add CDNs, analytics or embeds without a legal basis and consent review.
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
   `localStorage` and is never sent to the server. `Referrer-Policy: same-origin` keeps page URLs out of
-  requests to external sites.
+  requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
+  destinations. API responses whose body is `application/json` or `application/problem+json` also carry
+  `X-Robots-Tag: noindex, nofollow`, so search engines do not index API payloads.
 - Terms-document consent is recorded for the acting user, not the enrolled person: enrolling a household
   minor stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
   for that event covers later minor signups without a new prompt (`TermsGate`). An acceptance is immutable

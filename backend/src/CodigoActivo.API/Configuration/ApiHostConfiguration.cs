@@ -104,6 +104,7 @@ internal static class ApiHostConfiguration
     {
         builder.WebHost.ConfigureKestrel(options =>
         {
+            options.AddServerHeader = false;
             options.Limits.MaxRequestBodySize = 12 * 1024 * 1024;
             options.Limits.MaxRequestHeadersTotalSize = 32 * 1024;
             options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(15);
