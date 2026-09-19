@@ -262,8 +262,6 @@
     "UserChildBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
     "UserPasswordNotSet": "El usuario no tiene una contraseña configurada.",
     "UserCurrentPasswordIncorrect": "La contraseña actual no es correcta.",
-    "UserParentIdRequired": "Debes indicar el usuario responsable.",
-    "UserCannotBeOwnParent": "Un usuario no puede ser su propio responsable.",
     "UserParentNotAllowedForAdult": "Un usuario mayor de edad no puede tener un responsable.",
     "UserCannotBecomeMinor": "Una cuenta existente no puede convertirse en menor a cargo de un responsable. Los menores se añaden desde la sección de familia.",
     "UserParentReassignmentForbidden": "No puedes reasignar este menor a otro responsable.",

@@ -72,8 +72,6 @@ export const ErrorCode = {
   UserChildBirthDateNotMinor: 'UserChildBirthDateNotMinor',
   UserPasswordNotSet: 'UserPasswordNotSet',
   UserCurrentPasswordIncorrect: 'UserCurrentPasswordIncorrect',
-  UserParentIdRequired: 'UserParentIdRequired',
-  UserCannotBeOwnParent: 'UserCannotBeOwnParent',
   UserParentReassignmentForbidden: 'UserParentReassignmentForbidden',
   UserParentNotAllowedForAdult: 'UserParentNotAllowedForAdult',
   UserCannotBecomeMinor: 'UserCannotBecomeMinor',

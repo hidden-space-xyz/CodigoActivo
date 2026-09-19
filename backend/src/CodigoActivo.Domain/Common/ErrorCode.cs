@@ -324,16 +324,6 @@ public enum ErrorCode
     UserCurrentPasswordIncorrect,
 
     /// <summary>
-    /// Selects the user parent identifier required option.
-    /// </summary>
-    UserParentIdRequired,
-
-    /// <summary>
-    /// Selects the user cannot be own parent option.
-    /// </summary>
-    UserCannotBeOwnParent,
-
-    /// <summary>
     /// Selects the user parent reassignment forbidden option.
     /// </summary>
     UserParentReassignmentForbidden,
