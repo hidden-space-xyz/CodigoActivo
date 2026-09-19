@@ -40,7 +40,10 @@ foreach (var (name, covered, total) in metrics)
 if (failed)
 {
     Console.Error.WriteLine(
-        string.Create(CultureInfo.InvariantCulture, $"Backend coverage is below the {minimum}% minimum.")
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"Backend coverage is below the {minimum}% minimum."
+        )
     );
     return 1;
 }

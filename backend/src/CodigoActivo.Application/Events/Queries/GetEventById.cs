@@ -17,10 +17,8 @@ public sealed record GetEventByIdQuery(Guid EventId) : IQuery<Result<EventRespon
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventByIdQueryHandler(
-    IEventRepository events,
-    IQueryExecutor executor
-) : IQueryHandler<GetEventByIdQuery, Result<EventResponse>>
+public sealed class GetEventByIdQueryHandler(IEventRepository events, IQueryExecutor executor)
+    : IQueryHandler<GetEventByIdQuery, Result<EventResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve event by identifier.

@@ -195,7 +195,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private EmailGuardAlert GlobalLowAlert(DateTimeOffset now, int reserve)
     {
         var available = global.Tokens - reserve;
-        return available < options.GlobalBurst * GlobalLowWatermark
+        return
+            available < options.GlobalBurst * GlobalLowWatermark
             && ShouldAlert(ref lastGlobalLowAlertAt, now)
             ? EmailGuardAlert.GlobalBudgetLow
             : EmailGuardAlert.None;
@@ -292,7 +293,9 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         public Bucket Refill(DateTimeOffset now, double capacity, double perHour)
         {
             var elapsed = now - UpdatedAt;
-            return elapsed <= TimeSpan.Zero ? this : new Bucket(Math.Min(capacity, Tokens + (elapsed.TotalHours * perHour)), now);
+            return elapsed <= TimeSpan.Zero
+                ? this
+                : new Bucket(Math.Min(capacity, Tokens + (elapsed.TotalHours * perHour)), now);
         }
 
         /// <summary>

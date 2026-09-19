@@ -9,6 +9,7 @@ public abstract class PageQuery
     /// Identifies the max page size configuration or policy value.
     /// </summary>
     public const int MaxPageSize = 100;
+
     /// <summary>
     /// Identifies the default page size configuration or policy value.
     /// </summary>

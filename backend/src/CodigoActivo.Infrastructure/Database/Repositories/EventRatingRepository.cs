@@ -30,7 +30,11 @@ public class EventRatingRepository(CodigoActivoDbContext context)
     /// <see langword="false"/> when the user had already submitted a rating for the event, in which
     /// case nothing was written.
     /// </returns>
-    public async Task<bool> SubmitAsync(EventRating rating, Guid userId, CancellationToken ct = default)
+    public async Task<bool> SubmitAsync(
+        EventRating rating,
+        Guid userId,
+        CancellationToken ct = default
+    )
     {
         var eventId = rating.EventId;
 

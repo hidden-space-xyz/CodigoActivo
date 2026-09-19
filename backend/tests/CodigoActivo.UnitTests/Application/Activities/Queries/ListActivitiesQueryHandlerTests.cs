@@ -17,11 +17,7 @@ public sealed class ListActivitiesQueryHandlerTests
 
     public ListActivitiesQueryHandlerTests()
     {
-        sut = new ListActivitiesQueryHandler(
-            activities,
-            new FakeQueryExecutor(),
-            clock
-        );
+        sut = new ListActivitiesQueryHandler(activities, new FakeQueryExecutor(), clock);
     }
 
     [Fact]

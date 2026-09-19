@@ -18,11 +18,7 @@ public sealed class ListEventsQueryHandlerTests
 
     public ListEventsQueryHandlerTests()
     {
-        sut = new ListEventsQueryHandler(
-            events,
-            new FakeQueryExecutor(),
-            clock
-        );
+        sut = new ListEventsQueryHandler(events, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
@@ -317,17 +313,29 @@ public sealed class ListEventsQueryHandlerTests
         var categoryId = Guid.NewGuid();
         events.HasEvents(
             WithCategory(
-                NewEvent("Robótica 2025", starts: new DateOnly(2025, 5, 1), ends: new DateOnly(2025, 5, 2)),
+                NewEvent(
+                    "Robótica 2025",
+                    starts: new DateOnly(2025, 5, 1),
+                    ends: new DateOnly(2025, 5, 2)
+                ),
                 categoryId,
                 "Talleres"
             ),
             WithCategory(
-                NewEvent("Robótica 2024", starts: new DateOnly(2024, 5, 1), ends: new DateOnly(2024, 5, 2)),
+                NewEvent(
+                    "Robótica 2024",
+                    starts: new DateOnly(2024, 5, 1),
+                    ends: new DateOnly(2024, 5, 2)
+                ),
                 categoryId,
                 "Talleres"
             ),
             WithCategory(
-                NewEvent("Robótica charla", starts: new DateOnly(2025, 6, 1), ends: new DateOnly(2025, 6, 2)),
+                NewEvent(
+                    "Robótica charla",
+                    starts: new DateOnly(2025, 6, 1),
+                    ends: new DateOnly(2025, 6, 2)
+                ),
                 Guid.NewGuid(),
                 "Charlas"
             )

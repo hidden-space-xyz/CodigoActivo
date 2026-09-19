@@ -216,29 +216,31 @@ public sealed class DemoDataSeeder(
     private static List<User> BuildUsers(DateTimeOffset now, string passwordHash)
     {
         return UserSeeds
-            .Select((seed, index) =>
-            {
-                var isChild = seed.Kind is UserKind.Child;
-                return new User
+            .Select(
+                (seed, index) =>
                 {
-                    Id = UserId(index),
-                    FirstName = seed.FirstName,
-                    LastName = seed.LastName,
-                    Email = isChild ? null : BuildEmail(seed),
-                    Phone = isChild ? null : BuildPhone(index),
-                    PasswordHash = isChild ? null : passwordHash,
-                    BirthDate = BuildBirthDate(index, seed.BirthYear),
-                    Gender = seed.Gender,
-                    ParentId = seed.ParentIndex is { } parent ? UserId(parent) : null,
-                    UserStatusTypeId = isChild
-                        ? SeedIds.UserStatusTypes.Dependent
-                        : SeedIds.UserStatusTypes.Active,
-                    UserTypeId = ResolveUserTypeId(seed.Kind),
-                    IsAdmin = false,
-                    LastLoginAt = isChild ? null : now.AddDays(-(index % 9)),
-                    CreatedAt = SpreadCreatedAt(now, index, UserSeeds.Length, 450, 35),
-                };
-            })
+                    var isChild = seed.Kind is UserKind.Child;
+                    return new User
+                    {
+                        Id = UserId(index),
+                        FirstName = seed.FirstName,
+                        LastName = seed.LastName,
+                        Email = isChild ? null : BuildEmail(seed),
+                        Phone = isChild ? null : BuildPhone(index),
+                        PasswordHash = isChild ? null : passwordHash,
+                        BirthDate = BuildBirthDate(index, seed.BirthYear),
+                        Gender = seed.Gender,
+                        ParentId = seed.ParentIndex is { } parent ? UserId(parent) : null,
+                        UserStatusTypeId = isChild
+                            ? SeedIds.UserStatusTypes.Dependent
+                            : SeedIds.UserStatusTypes.Active,
+                        UserTypeId = ResolveUserTypeId(seed.Kind),
+                        IsAdmin = false,
+                        LastLoginAt = isChild ? null : now.AddDays(-(index % 9)),
+                        CreatedAt = SpreadCreatedAt(now, index, UserSeeds.Length, 450, 35),
+                    };
+                }
+            )
             .ToList();
     }
 
@@ -248,12 +250,15 @@ public sealed class DemoDataSeeder(
     ) BuildCategoryTypes()
     {
         var categoryTypes = DemoCategories
-            .Select((name, index) => new EventCategoryType
-            {
-                Id = CategoryId(index),
-                Name = name,
-                Color = CategoryColors[index % CategoryColors.Length],
-            })
+            .Select(
+                (name, index) =>
+                    new EventCategoryType
+                    {
+                        Id = CategoryId(index),
+                        Name = name,
+                        Color = CategoryColors[index % CategoryColors.Length],
+                    }
+            )
             .ToList();
         return (
             categoryTypes,
@@ -268,12 +273,15 @@ public sealed class DemoDataSeeder(
     private static List<TermsDocument> BuildTermsDocuments()
     {
         return DemoTermsDocuments
-            .Select((seed, index) => new TermsDocument
-            {
-                Id = TermsDocumentId(index),
-                Name = seed.Name,
-                Description = BuildRichText(seed.Description, null, null),
-            })
+            .Select(
+                (seed, index) =>
+                    new TermsDocument
+                    {
+                        Id = TermsDocumentId(index),
+                        Name = seed.Name,
+                        Description = BuildRichText(seed.Description, null, null),
+                    }
+            )
             .ToList();
     }
 
@@ -297,18 +305,11 @@ public sealed class DemoDataSeeder(
             var seed = DemoEvents[eventIndex];
             var eventId = Guid.NewGuid();
             var duration = 1 + (eventIndex % 3);
-            var start = clock.Today.AddDays(
-                (eventIndex - FinishedEventCount) * EventSpacingDays
-            );
+            var start = clock.Today.AddDays((eventIndex - FinishedEventCount) * EventSpacingDays);
             var end = start.AddDays(duration - 1);
             var (earlyOpensDaysBeforeStart, opensDaysBeforeStart, closesDaysBeforeStart) =
                 SignupWindows[eventIndex % SignupWindows.Length];
-            var signupOpensAt = ToUtc(
-                clock.TimeZone,
-                start.AddDays(-opensDaysBeforeStart),
-                9,
-                0
-            );
+            var signupOpensAt = ToUtc(clock.TimeZone, start.AddDays(-opensDaysBeforeStart), 9, 0);
             var signupClosesAt = ToUtc(
                 clock.TimeZone,
                 start.AddDays(-closesDaysBeforeStart),
@@ -371,9 +372,7 @@ public sealed class DemoDataSeeder(
                 var activity = seed.Activities[activityIndex];
                 var activityId = Guid.NewGuid();
                 var globalIndex = (eventIndex * 5) + activityIndex;
-                var activityLabel = (activityIndex + 1).ToString(
-                    CultureInfo.InvariantCulture
-                );
+                var activityLabel = (activityIndex + 1).ToString(CultureInfo.InvariantCulture);
                 var activityStart = ToUtc(
                     clock.TimeZone,
                     start.AddDays(activityIndex % duration),
@@ -417,7 +416,11 @@ public sealed class DemoDataSeeder(
 
             if (end < clock.Today)
             {
-                var (eventRatings, eventSubmissions) = BuildRatings(eventIndex, eventId, eventAssignments);
+                var (eventRatings, eventSubmissions) = BuildRatings(
+                    eventIndex,
+                    eventId,
+                    eventAssignments
+                );
                 ratings.AddRange(eventRatings);
                 ratingSubmissions.AddRange(eventSubmissions);
             }
@@ -434,63 +437,66 @@ public sealed class DemoDataSeeder(
         );
     }
 
-    private static List<Announcement> BuildAnnouncements(
-        DateTimeOffset now,
-        List<FileEntity> files
-    )
+    private static List<Announcement> BuildAnnouncements(DateTimeOffset now, List<FileEntity> files)
     {
         return DemoNews
-            .Select((seed, index) =>
-            {
-                var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-                return new Announcement
+            .Select(
+                (seed, index) =>
                 {
-                    Id = Guid.NewGuid(),
-                    Title = seed.Title,
-                    Subtitle = seed.Subtitle,
-                    Description = BuildRichText(seed.Description, null, null),
-                    Featured = index is FeaturedAnnouncementIndex,
-                    ThumbnailId = NewFile(files, $"noticia-{label}-portada.jpg", now),
-                    CreatedAt = now.AddDays(-(index * 6) - 3),
-                    CreatedBy = DemoAuthorId,
-                };
-            })
+                    var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
+                    return new Announcement
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = seed.Title,
+                        Subtitle = seed.Subtitle,
+                        Description = BuildRichText(seed.Description, null, null),
+                        Featured = index is FeaturedAnnouncementIndex,
+                        ThumbnailId = NewFile(files, $"noticia-{label}-portada.jpg", now),
+                        CreatedAt = now.AddDays(-(index * 6) - 3),
+                        CreatedBy = DemoAuthorId,
+                    };
+                }
+            )
             .ToList();
     }
 
     private static List<Resource> BuildResources(DateTimeOffset now, List<FileEntity> files)
     {
-        var internalResources = DemoResources.Select((seed, index) =>
-        {
-            var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-            return new Resource
+        var internalResources = DemoResources.Select(
+            (seed, index) =>
             {
-                Id = Guid.NewGuid(),
-                Title = seed.Title,
-                Subtitle = seed.Subtitle,
-                Description = BuildRichText(seed.Description, null, null),
-                ResourceTypeId = SeedIds.ResourceTypes.Internal,
-                ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
-                CreatedAt = now.AddDays(-(index * 8) - 5),
-                CreatedBy = DemoAuthorId,
-            };
-        });
-        var externalResources = DemoExternalResources.Select((seed, index) =>
-        {
-            var globalIndex = DemoResources.Length + index;
-            var label = (globalIndex + 1).ToString("D2", CultureInfo.InvariantCulture);
-            return new Resource
+                var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
+                return new Resource
+                {
+                    Id = Guid.NewGuid(),
+                    Title = seed.Title,
+                    Subtitle = seed.Subtitle,
+                    Description = BuildRichText(seed.Description, null, null),
+                    ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                    ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
+                    CreatedAt = now.AddDays(-(index * 8) - 5),
+                    CreatedBy = DemoAuthorId,
+                };
+            }
+        );
+        var externalResources = DemoExternalResources.Select(
+            (seed, index) =>
             {
-                Id = Guid.NewGuid(),
-                Title = seed.Title,
-                Subtitle = seed.Subtitle,
-                Url = seed.Url,
-                ResourceTypeId = SeedIds.ResourceTypes.External,
-                ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
-                CreatedAt = now.AddDays(-(globalIndex * 8) - 5),
-                CreatedBy = DemoAuthorId,
-            };
-        });
+                var globalIndex = DemoResources.Length + index;
+                var label = (globalIndex + 1).ToString("D2", CultureInfo.InvariantCulture);
+                return new Resource
+                {
+                    Id = Guid.NewGuid(),
+                    Title = seed.Title,
+                    Subtitle = seed.Subtitle,
+                    Url = seed.Url,
+                    ResourceTypeId = SeedIds.ResourceTypes.External,
+                    ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
+                    CreatedAt = now.AddDays(-(globalIndex * 8) - 5),
+                    CreatedBy = DemoAuthorId,
+                };
+            }
+        );
         return internalResources.Concat(externalResources).ToList();
     }
 
@@ -501,21 +507,23 @@ public sealed class DemoDataSeeder(
     )
     {
         return DemoPartners
-            .Select((seed, index) =>
-            {
-                var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-                return new Partner
+            .Select(
+                (seed, index) =>
                 {
-                    Id = Guid.NewGuid(),
-                    Name = seed.Name,
-                    Tier = seed.Tier,
-                    Web = seed.Web,
-                    FromDate = clock.Today.AddMonths(-(6 + (index * 4))),
-                    ThumbnailId = NewFile(files, $"partner-{label}-logo.jpg", now),
-                    CreatedAt = SpreadCreatedAt(now, index, DemoPartners.Length, 720, 30),
-                    CreatedBy = DemoAuthorId,
-                };
-            })
+                    var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
+                    return new Partner
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = seed.Name,
+                        Tier = seed.Tier,
+                        Web = seed.Web,
+                        FromDate = clock.Today.AddMonths(-(6 + (index * 4))),
+                        ThumbnailId = NewFile(files, $"partner-{label}-logo.jpg", now),
+                        CreatedAt = SpreadCreatedAt(now, index, DemoPartners.Length, 720, 30),
+                        CreatedBy = DemoAuthorId,
+                    };
+                }
+            )
             .ToList();
     }
 
@@ -880,10 +888,12 @@ public sealed class DemoDataSeeder(
         /// Selects the member option.
         /// </summary>
         Member,
+
         /// <summary>
         /// Selects the sponsor option.
         /// </summary>
         Sponsor,
+
         /// <summary>
         /// Selects the child option.
         /// </summary>

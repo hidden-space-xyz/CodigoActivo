@@ -26,8 +26,7 @@ internal static class ApiHostConfiguration
             )
         )
         {
-            builder.Configuration["AllowedHosts"] =
-                $"{baseUri.IdnHost};localhost;127.0.0.1;api";
+            builder.Configuration["AllowedHosts"] = $"{baseUri.IdnHost};localhost;127.0.0.1;api";
         }
     }
 

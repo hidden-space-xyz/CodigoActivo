@@ -72,7 +72,11 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
         }
 
         var secret = totp.GenerateSecret();
-        user.BeginAuthenticatorSetup(protector.Protect(secret), clock.UtcNow, options.SetupLifetime);
+        user.BeginAuthenticatorSetup(
+            protector.Protect(secret),
+            clock.UtcNow,
+            options.SetupLifetime
+        );
         await uow.SaveChangesAsync(ct);
 
         var account = user.Email ?? user.Id.ToString();

@@ -52,10 +52,17 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         );
     }
 
-    private Task<Result> DisableAsync(Guid userId, string password = "password123", string code = "123456")
+    private Task<Result> DisableAsync(
+        Guid userId,
+        string password = "password123",
+        string code = "123456"
+    )
     {
         return sut.HandleAsync(
-            new DisableAuthenticatorCommand(userId, new DisableAuthenticatorRequest(password, code)),
+            new DisableAuthenticatorCommand(
+                userId,
+                new DisableAuthenticatorRequest(password, code)
+            ),
             TestContext.Current.CancellationToken
         );
     }

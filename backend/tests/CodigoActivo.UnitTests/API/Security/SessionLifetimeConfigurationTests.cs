@@ -23,7 +23,9 @@ public sealed class SessionLifetimeConfigurationTests
 
         return (SessionLifetimeOptions)
             builder
-                .Services.Single(descriptor => descriptor.ServiceType == typeof(SessionLifetimeOptions))
+                .Services.Single(descriptor =>
+                    descriptor.ServiceType == typeof(SessionLifetimeOptions)
+                )
                 .ImplementationInstance!;
     }
 

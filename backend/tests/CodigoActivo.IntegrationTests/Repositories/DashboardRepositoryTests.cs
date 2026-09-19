@@ -103,12 +103,10 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     private static void AddUsers(CodigoActivoDbContext ctx)
     {
         ctx.Users.AddRange(
-            Enumerable.Range(0, 5)
+            Enumerable
+                .Range(0, 5)
                 .Select(i =>
-                    NewUser(
-                        Guid.NewGuid(),
-                        $"User{i.ToString(CultureInfo.InvariantCulture)}"
-                    )
+                    NewUser(Guid.NewGuid(), $"User{i.ToString(CultureInfo.InvariantCulture)}")
                 )
         );
     }
@@ -116,12 +114,10 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     private static void AddActivities(CodigoActivoDbContext ctx, Guid eventId)
     {
         ctx.Activities.AddRange(
-            Enumerable.Range(0, 3)
+            Enumerable
+                .Range(0, 3)
                 .Select(i =>
-                    NewActivity(
-                        eventId,
-                        $"Actividad {i.ToString(CultureInfo.InvariantCulture)}"
-                    )
+                    NewActivity(eventId, $"Actividad {i.ToString(CultureInfo.InvariantCulture)}")
                 )
         );
     }
@@ -129,7 +125,8 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     private static void AddAnnouncements(CodigoActivoDbContext ctx)
     {
         ctx.Announcements.AddRange(
-            Enumerable.Range(0, 4)
+            Enumerable
+                .Range(0, 4)
                 .Select(i => new Announcement
                 {
                     Id = Guid.NewGuid(),
@@ -146,7 +143,8 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
     private static void AddPartners(CodigoActivoDbContext ctx)
     {
         ctx.Partners.AddRange(
-            Enumerable.Range(0, 5)
+            Enumerable
+                .Range(0, 5)
                 .Select(i => new Partner
                 {
                     Id = Guid.NewGuid(),

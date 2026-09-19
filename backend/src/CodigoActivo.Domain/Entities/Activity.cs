@@ -26,6 +26,7 @@ public class Activity : AuditableEntity
     /// Gets or sets the date and time when the activity starts.
     /// </summary>
     public DateTimeOffset ActivityStartsAt { get; set; }
+
     /// <summary>
     /// Gets or sets the date and time when the activity ends.
     /// </summary>
@@ -35,6 +36,7 @@ public class Activity : AuditableEntity
     /// Gets or sets the identifier of the associated event.
     /// </summary>
     public Guid EventId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated event.
     /// </summary>
@@ -44,6 +46,7 @@ public class Activity : AuditableEntity
     /// Gets or sets the identifier of the associated activity modality type.
     /// </summary>
     public Guid ActivityModalityTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated activity modality type.
     /// </summary>
@@ -53,6 +56,7 @@ public class Activity : AuditableEntity
     /// Gets or sets the identifier of the associated thumbnail.
     /// </summary>
     public Guid ThumbnailId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated thumbnail.
     /// </summary>

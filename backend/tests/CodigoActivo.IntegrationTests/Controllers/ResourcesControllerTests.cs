@@ -122,8 +122,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var fromResponse = await client.GetAsync(TestUri.Rel("/api/resources?createdFrom=2026-03-10"), Ct);
-        var toResponse = await client.GetAsync(TestUri.Rel("/api/resources?createdTo=2026-03-09"), Ct);
+        var fromResponse = await client.GetAsync(
+            TestUri.Rel("/api/resources?createdFrom=2026-03-10"),
+            Ct
+        );
+        var toResponse = await client.GetAsync(
+            TestUri.Rel("/api/resources?createdTo=2026-03-09"),
+            Ct
+        );
 
         fromResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var fromPage = await fromResponse.ReadJsonAsync<PagedResult<ResourceListItemResponse>>(Ct);

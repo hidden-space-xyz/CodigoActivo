@@ -11,6 +11,7 @@ public class Event : AuditableEntity, IFeaturable
     /// Gets or sets the title displayed to users.
     /// </summary>
     public required string Title { get; set; }
+
     /// <summary>
     /// Gets or sets the supporting subtitle displayed to users.
     /// </summary>
@@ -25,18 +26,22 @@ public class Event : AuditableEntity, IFeaturable
     /// Gets or sets the date and time when the event starts.
     /// </summary>
     public DateOnly EventStartsAt { get; set; }
+
     /// <summary>
     /// Gets or sets the date and time when the event ends.
     /// </summary>
     public DateOnly EventEndsAt { get; set; }
+
     /// <summary>
     /// Gets or sets the date and time when the early signup starts.
     /// </summary>
     public DateTimeOffset? EarlySignupStartsAt { get; set; }
+
     /// <summary>
     /// Gets or sets the date and time when the signup starts.
     /// </summary>
     public DateTimeOffset SignupStartsAt { get; set; }
+
     /// <summary>
     /// Gets or sets the date and time when the signup ends.
     /// </summary>
@@ -51,6 +56,7 @@ public class Event : AuditableEntity, IFeaturable
     /// Gets or sets the identifier of the associated thumbnail.
     /// </summary>
     public Guid ThumbnailId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated thumbnail.
     /// </summary>
@@ -66,10 +72,12 @@ public class Event : AuditableEntity, IFeaturable
     /// Gets or sets the related activities collection.
     /// </summary>
     public ICollection<Activity> Activities { get; set; } = [];
+
     /// <summary>
     /// Gets or sets the related categories collection.
     /// </summary>
     public ICollection<EventCategory> Categories { get; set; } = [];
+
     /// <summary>
     /// Gets or sets the related ratings collection.
     /// </summary>

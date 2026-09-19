@@ -23,16 +23,33 @@ public sealed class LoginCodeEmailTests
         message.Kind.Should().Be(EmailKind.TwoFactorCode);
         message.ToAddress.Should().Be("ana@test.com");
         message.ToName.Should().Be("Ana");
-        message.Subject.Should().NotContain("482913", "the code must not appear in the subject line");
-        message.TextBody.Should().Contain("Ana").And.Contain("\n482913\n").And.Contain("10 minutos");
+        message
+            .Subject.Should()
+            .NotContain("482913", "the code must not appear in the subject line");
+        message
+            .TextBody.Should()
+            .Contain("Ana")
+            .And.Contain("\n482913\n")
+            .And.Contain("10 minutos");
         message.HtmlBody.Should().Contain("Ana").And.Contain(">482913<").And.Contain("10 minutos");
-        message.HtmlBody.Should().NotContain("href=\"https://app.test/login", "the email carries a code, never a link that logs in");
+        message
+            .HtmlBody.Should()
+            .NotContain(
+                "href=\"https://app.test/login",
+                "the email carries a code, never a link that logs in"
+            );
     }
 
     [Fact]
     public void CreateShortLifetimeRoundsUpToOneMinute()
     {
-        var message = LoginCodeEmail.Create("ana@test.com", "Ana", "000000", SiteUrl, TimeSpan.FromSeconds(20));
+        var message = LoginCodeEmail.Create(
+            "ana@test.com",
+            "Ana",
+            "000000",
+            SiteUrl,
+            TimeSpan.FromSeconds(20)
+        );
 
         message.TextBody.Should().Contain("1 minutos");
     }

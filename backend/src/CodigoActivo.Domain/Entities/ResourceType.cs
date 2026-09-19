@@ -11,6 +11,7 @@ public class ResourceType : NamedEntity
     /// Gets or sets the display color associated with the item.
     /// </summary>
     public required string Color { get; set; }
+
     /// <summary>
     /// Gets or sets whether external.
     /// </summary>

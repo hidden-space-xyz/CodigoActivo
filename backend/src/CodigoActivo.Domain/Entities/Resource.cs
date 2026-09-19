@@ -11,6 +11,7 @@ public class Resource : AuditableEntity
     /// Gets or sets the title displayed to users.
     /// </summary>
     public required string Title { get; set; }
+
     /// <summary>
     /// Gets or sets the supporting subtitle displayed to users.
     /// </summary>
@@ -20,6 +21,7 @@ public class Resource : AuditableEntity
     /// Gets or sets the detailed description.
     /// </summary>
     public string Description { get; set; } = "{}";
+
     /// <summary>
     /// Gets or sets the url value.
     /// </summary>
@@ -29,6 +31,7 @@ public class Resource : AuditableEntity
     /// Gets or sets the identifier of the associated resource type.
     /// </summary>
     public Guid ResourceTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated resource type.
     /// </summary>
@@ -38,6 +41,7 @@ public class Resource : AuditableEntity
     /// Gets or sets the identifier of the associated thumbnail.
     /// </summary>
     public Guid ThumbnailId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated thumbnail.
     /// </summary>

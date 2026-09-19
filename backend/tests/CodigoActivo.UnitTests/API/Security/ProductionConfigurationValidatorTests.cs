@@ -18,9 +18,7 @@ public sealed class ProductionConfigurationValidatorTests
     [Fact]
     public void ValidateDemoModeInProductionDoesNotThrow()
     {
-        var config = BuildConfiguration(
-            new KeyValuePair<string, string?>("DEMO_MODE", "true")
-        );
+        var config = BuildConfiguration(new KeyValuePair<string, string?>("DEMO_MODE", "true"));
 
         var act = () => ProductionConfigurationValidator.Validate(config);
 
@@ -43,11 +41,7 @@ public sealed class ProductionConfigurationValidatorTests
     [InlineData("SMTP_PORT", "70000", "SMTP_PORT")]
     [InlineData("SMTP_FROM_ADDRESS", "Sender <sender@app.test>", "SMTP_FROM_ADDRESS")]
     [InlineData("SMTP_USERNAME", "mailer", "SMTP_USERNAME")]
-    public void ValidateUnsafeConfigurationThrows(
-        string key,
-        string value,
-        string expectedMessage
-    )
+    public void ValidateUnsafeConfigurationThrows(string key, string value, string expectedMessage)
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
 
@@ -64,8 +58,7 @@ public sealed class ProductionConfigurationValidatorTests
         {
             ["DEMO_MODE"] = "false",
             ["POSTGRES_PASSWORD"] = "a-strong-32-character-db-password",
-            ["DATA_PROTECTION_CERTIFICATE_PASSWORD"] =
-                "a-separate-strong-data-protection-password",
+            ["DATA_PROTECTION_CERTIFICATE_PASSWORD"] = "a-separate-strong-data-protection-password",
             ["APP_BASE_URL"] = "https://codigoactivo.es",
             ["SMTP_SECURITY"] = "StartTls",
             ["SMTP_HOST"] = "smtp.app.test",

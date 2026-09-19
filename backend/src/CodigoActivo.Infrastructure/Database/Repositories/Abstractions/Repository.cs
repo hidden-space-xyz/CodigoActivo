@@ -18,6 +18,7 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
     /// Gets the context value.
     /// </summary>
     protected CodigoActivoDbContext Context { get; } = context;
+
     /// <summary>
     /// Gets the set value.
     /// </summary>

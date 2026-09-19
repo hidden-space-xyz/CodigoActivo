@@ -28,9 +28,7 @@ public sealed class RequestLoggingMiddlewareTests
         var context = new DefaultHttpContext();
         context.Request.Method = HttpMethods.Get;
         context.Request.Path = "/api/users";
-        context.Request.QueryString = new QueryString(
-            "?email=ana%40example.test&phone=600111222"
-        );
+        context.Request.QueryString = new QueryString("?email=ana%40example.test&phone=600111222");
         context.Request.Headers.Cookie = "__Host-CodigoActivo.Session=secret-ticket";
         context.Request.Headers.Referer = "https://codigoactivo.test/admin/users?search=ana";
         context.Request.Headers["X-CSRF-TOKEN"] = "csrf-secret";

@@ -31,7 +31,11 @@ public sealed class GetEventSignupStatsQueryHandlerTests
             events,
             activities,
             users,
-            new ListActivityRoleTypesQueryHandler(roleTypeRepository, executor, new FakeHybridCache()),
+            new ListActivityRoleTypesQueryHandler(
+                roleTypeRepository,
+                executor,
+                new FakeHybridCache()
+            ),
             new ListAssignmentStatusTypesQueryHandler(
                 statusTypeRepository,
                 executor,
@@ -201,9 +205,10 @@ public sealed class GetEventSignupStatsQueryHandlerTests
     [InlineData("Sponsor")]
     public async Task HandleAsyncNonMemberUserTypeReturnsAccessDenied(string userTypeName)
     {
-        var userTypeId = userTypeName == "Participant"
-            ? SeedIds.UserTypes.Participant
-            : SeedIds.UserTypes.Sponsor;
+        var userTypeId =
+            userTypeName == "Participant"
+                ? SeedIds.UserTypes.Participant
+                : SeedIds.UserTypes.Sponsor;
         var eventId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         UserType(userId, userTypeId);
@@ -252,7 +257,9 @@ public sealed class GetEventSignupStatsQueryHandlerTests
             new DateTimeOffset(2026, 8, 1, 16, 0, 0, TimeSpan.Zero)
         );
         EventExists(true);
-        activities.Query().Returns(new List<Activity> { lateActivity, earlyActivity }.AsQueryable());
+        activities
+            .Query()
+            .Returns(new List<Activity> { lateActivity, earlyActivity }.AsQueryable());
         activities
             .QueryAssignments()
             .Returns(
@@ -292,18 +299,21 @@ public sealed class GetEventSignupStatsQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.EventId.Should().Be(eventId);
-        result.Value.Activities.Select(a => a.ActivityId)
+        result
+            .Value.Activities.Select(a => a.ActivityId)
             .Should()
             .Equal(earlyActivity.Id, lateActivity.Id);
 
         var earlyCells = result.Value.Activities.First(a => a.ActivityId == earlyActivity.Id).Cells;
-        earlyCells.Should()
+        earlyCells
+            .Should()
             .ContainSingle(c =>
                 c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
                 && c.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested
                 && c.Count == 2
             );
-        earlyCells.Should()
+        earlyCells
+            .Should()
             .ContainSingle(c =>
                 c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
                 && c.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
@@ -311,7 +321,8 @@ public sealed class GetEventSignupStatsQueryHandlerTests
             );
 
         var lateCells = result.Value.Activities.First(a => a.ActivityId == lateActivity.Id).Cells;
-        lateCells.Should()
+        lateCells
+            .Should()
             .ContainSingle(c =>
                 c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
                 && c.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Denied
@@ -397,9 +408,17 @@ public sealed class GetEventSignupStatsQueryHandlerTests
         json.Should().NotContain(seededFirstName);
         json.Should().NotContain(seededLastName);
         json.Should().NotContain(seededEmail);
-        lowerJson.Should().NotContain("firstname", "no per-user field should ever be added to this DTO");
-        lowerJson.Should().NotContain("lastname", "no per-user field should ever be added to this DTO");
-        lowerJson.Should().NotContain("email", "no per-user field should ever be added to this DTO");
-        lowerJson.Should().NotContain("userid", "no per-user field should ever be added to this DTO");
+        lowerJson
+            .Should()
+            .NotContain("firstname", "no per-user field should ever be added to this DTO");
+        lowerJson
+            .Should()
+            .NotContain("lastname", "no per-user field should ever be added to this DTO");
+        lowerJson
+            .Should()
+            .NotContain("email", "no per-user field should ever be added to this DTO");
+        lowerJson
+            .Should()
+            .NotContain("userid", "no per-user field should ever be added to this DTO");
     }
 }

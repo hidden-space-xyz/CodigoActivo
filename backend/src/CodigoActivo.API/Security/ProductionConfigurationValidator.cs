@@ -25,15 +25,17 @@ public static class ProductionConfigurationValidator
         var dataProtectionPassword = config["DATA_PROTECTION_CERTIFICATE_PASSWORD"];
         if (string.IsNullOrEmpty(dataProtectionPassword) || dataProtectionPassword.Length < 32)
         {
-            errors.Add(
-                "DATA_PROTECTION_CERTIFICATE_PASSWORD must contain at least 32 characters"
-            );
+            errors.Add("DATA_PROTECTION_CERTIFICATE_PASSWORD must contain at least 32 characters");
         }
 
         var baseUrl = config["APP_BASE_URL"];
         if (
             !Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
-            || !string.Equals(baseUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(
+                baseUri.Scheme,
+                Uri.UriSchemeHttps,
+                StringComparison.OrdinalIgnoreCase
+            )
             || !string.IsNullOrEmpty(baseUri.UserInfo)
             || !string.IsNullOrEmpty(baseUri.Query)
             || !string.IsNullOrEmpty(baseUri.Fragment)

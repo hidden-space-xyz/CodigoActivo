@@ -88,7 +88,11 @@ public sealed class SmtpEmailSenderTests
         delivered.From.Should().Be("no-reply@codigoactivo.test");
         delivered.Recipients.Should().Equal("member@example.test");
         delivered.Message.Subject.Should().Be("Asunto");
-        delivered.Message.From.Mailboxes.Should().ContainSingle().Which.Name.Should().Be("Codigo Activo");
+        delivered
+            .Message.From.Mailboxes.Should()
+            .ContainSingle()
+            .Which.Name.Should()
+            .Be("Codigo Activo");
         delivered.Message.TextBody.Should().Contain("Hola");
         delivered.Message.HtmlBody.Should().Contain("<p>Hola</p>");
 
@@ -118,8 +122,7 @@ public sealed class SmtpEmailSenderTests
 
         var act = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
-        (await act.Should().ThrowAsync<InvalidOperationException>())
-            .WithMessage("*SMTP_HOST*");
+        (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("*SMTP_HOST*");
     }
 
     [Fact]
@@ -129,8 +132,9 @@ public sealed class SmtpEmailSenderTests
 
         var act = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
 
-        (await act.Should().ThrowAsync<InvalidOperationException>())
-            .WithMessage("*SMTP_FROM_ADDRESS*");
+        (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+            "*SMTP_FROM_ADDRESS*"
+        );
     }
 
     [Theory]
@@ -220,7 +224,11 @@ public sealed class SmtpEmailSenderTests
         var sender = Create(Options(server));
 
         var result = await sender.SendManyAsync(
-            [Message("one@example.test"), Message("bounce@example.test"), Message("two@example.test")],
+            [
+                Message("one@example.test"),
+                Message("bounce@example.test"),
+                Message("two@example.test"),
+            ],
             Timeout()
         );
 
@@ -278,6 +286,9 @@ public sealed class SmtpEmailSenderTests
             );
 
         await act.Should().ThrowAsync<OperationCanceledException>();
-        server.Messages.Select(m => m.Recipients).Should().NotContain(r => r.Contains("two@example.test"));
+        server
+            .Messages.Select(m => m.Recipients)
+            .Should()
+            .NotContain(r => r.Contains("two@example.test"));
     }
 }

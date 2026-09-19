@@ -16,10 +16,7 @@ public sealed class ListPartnersQueryHandlerTests
 
     public ListPartnersQueryHandlerTests()
     {
-        sut = new ListPartnersQueryHandler(
-            partners,
-            new FakeQueryExecutor()
-        );
+        sut = new ListPartnersQueryHandler(partners, new FakeQueryExecutor());
     }
 
     [Fact]

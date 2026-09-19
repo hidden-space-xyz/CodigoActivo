@@ -188,7 +188,10 @@ public sealed class ChangePasswordCommandHandlerTests
 
         Func<Task> act = () =>
             sut.HandleAsync(
-                new ChangePasswordCommand(user.Id, new ChangePasswordRequest("correct", "brandnew")),
+                new ChangePasswordCommand(
+                    user.Id,
+                    new ChangePasswordRequest("correct", "brandnew")
+                ),
                 TestContext.Current.CancellationToken
             );
 

@@ -48,7 +48,10 @@ public sealed class TermsGateTests
             );
     }
 
-    private void HasDocuments(Guid eventId, params (Guid TermsDocumentId, bool Required)[] documents)
+    private void HasDocuments(
+        Guid eventId,
+        params (Guid TermsDocumentId, bool Required)[] documents
+    )
     {
         events
             .QueryTermsDocuments()
@@ -69,7 +72,11 @@ public sealed class TermsGateTests
     private void HasAcceptances(params EventTermsAcceptance[] acceptances)
     {
         events
-            .ListTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ListTermsAcceptancesAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<Guid>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(acceptances.ToList());
     }
 
@@ -174,9 +181,11 @@ public sealed class TermsGateTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsSuccess.Should().BeTrue(
-            "a rejection is revisable, so accepting afterwards must not leave the user permanently excluded"
-        );
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                "a rejection is revisable, so accepting afterwards must not leave the user permanently excluded"
+            );
         stored.Accepted.Should().BeTrue();
         stored.DecidedAt.Should().Be(clock.UtcNow);
         await events
@@ -212,9 +221,11 @@ public sealed class TermsGateTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        stored.Accepted.Should().BeTrue(
-            "a rejection is revisable regardless of whether the document is required or optional"
-        );
+        stored
+            .Accepted.Should()
+            .BeTrue(
+                "a rejection is revisable regardless of whether the document is required or optional"
+            );
         stored.DecidedAt.Should().Be(clock.UtcNow);
         await events
             .DidNotReceiveWithAnyArgs()
@@ -249,14 +260,16 @@ public sealed class TermsGateTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsSuccess.Should().BeTrue(
-            "an optional document never blocks the signup, regardless of the decision"
-        );
+        result
+            .IsSuccess.Should()
+            .BeTrue("an optional document never blocks the signup, regardless of the decision");
         stored.Accepted.Should().BeFalse();
-        stored.DecidedAt.Should().Be(
-            originalDecidedAt,
-            "a repeated rejection is not a change, so the original decision instant must survive"
-        );
+        stored
+            .DecidedAt.Should()
+            .Be(
+                originalDecidedAt,
+                "a repeated rejection is not a change, so the original decision instant must survive"
+            );
         await events
             .DidNotReceiveWithAnyArgs()
             .AddTermsAcceptanceAsync(
@@ -291,9 +304,11 @@ public sealed class TermsGateTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        stored.Accepted.Should().BeTrue(
-            "an acceptance is the proof of consent and must never be overwritten by a later rejection"
-        );
+        stored
+            .Accepted.Should()
+            .BeTrue(
+                "an acceptance is the proof of consent and must never be overwritten by a later rejection"
+            );
         stored.DecidedAt.Should().Be(originalDecidedAt);
         await events
             .DidNotReceiveWithAnyArgs()
@@ -413,9 +428,9 @@ public sealed class TermsGateTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsSuccess.Should().BeTrue(
-            "an optional document never blocks the signup, regardless of the decision"
-        );
+        result
+            .IsSuccess.Should()
+            .BeTrue("an optional document never blocks the signup, regardless of the decision");
         await events
             .Received(1)
             .AddTermsAcceptanceAsync(

@@ -86,7 +86,10 @@ public sealed class UpdateEventCommandHandlerTests
         var ev = NewEvent();
         PrepareUpdate(ev);
         termsDocuments
-            .CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+            .CountAsync(
+                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(0);
 
         var result = await sut.HandleAsync(
@@ -143,7 +146,10 @@ public sealed class UpdateEventCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         PrepareUpdate(ev);
         termsDocuments
-            .CountAsync(Arg.Any<Expression<Func<TermsDocument, bool>>>(), Arg.Any<CancellationToken>())
+            .CountAsync(
+                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
 
         var result = await sut.HandleAsync(
@@ -159,7 +165,10 @@ public sealed class UpdateEventCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        ev.TermsDocuments.Should().ContainSingle().Which.TermsDocumentId.Should().Be(termsDocumentId);
+        ev.TermsDocuments.Should()
+            .ContainSingle()
+            .Which.TermsDocumentId.Should()
+            .Be(termsDocumentId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

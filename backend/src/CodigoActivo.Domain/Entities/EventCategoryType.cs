@@ -11,6 +11,7 @@ public class EventCategoryType : IdentifiableEntity
     /// Gets or sets the human-readable name.
     /// </summary>
     public required string Name { get; set; }
+
     /// <summary>
     /// Gets or sets the display color associated with the item.
     /// </summary>

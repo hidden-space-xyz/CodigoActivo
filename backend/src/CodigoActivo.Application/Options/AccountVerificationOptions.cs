@@ -9,6 +9,7 @@ public sealed class AccountVerificationOptions
     /// Stores the shared default otp lifetime value.
     /// </summary>
     public static readonly TimeSpan DefaultOtpLifetime = TimeSpan.FromMinutes(15);
+
     /// <summary>
     /// Stores the shared default resend cooldown value.
     /// </summary>

@@ -19,10 +19,7 @@ public sealed class GetActivityByIdQueryHandlerTests
 
     public GetActivityByIdQueryHandlerTests()
     {
-        sut = new GetActivityByIdQueryHandler(
-            activities,
-            new FakeQueryExecutor()
-        );
+        sut = new GetActivityByIdQueryHandler(activities, new FakeQueryExecutor());
     }
 
     private static ActivityUserRoleAssignment RoleAssignment(

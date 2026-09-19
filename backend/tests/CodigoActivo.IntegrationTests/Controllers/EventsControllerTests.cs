@@ -314,10 +314,12 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var categories = await response.ReadJsonAsync<IReadOnlyList<EventCategoryTypeResponse>>(Ct);
-        categories.Should().Equal(
-            new EventCategoryTypeResponse(charlas, "Charlas", "#00AA00"),
-            new EventCategoryTypeResponse(talleres, "Talleres", "#AA0000")
-        );
+        categories
+            .Should()
+            .Equal(
+                new EventCategoryTypeResponse(charlas, "Charlas", "#00AA00"),
+                new EventCategoryTypeResponse(talleres, "Talleres", "#AA0000")
+            );
     }
 
     [Fact]
@@ -447,7 +449,10 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         );
         var client = CreateClient();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/events?categoryTypeId={robotica}"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/events?categoryTypeId={robotica}"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventListItemResponse>>(Ct);
@@ -467,7 +472,10 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             TestUri.Rel("/api/events?eventDateFrom=2026-08-06&eventDateTo=2026-08-10"),
             Ct
         );
-        var boundaryResponse = await client.GetAsync(TestUri.Rel("/api/events?eventDateTo=2026-08-01"), Ct);
+        var boundaryResponse = await client.GetAsync(
+            TestUri.Rel("/api/events?eventDateTo=2026-08-01"),
+            Ct
+        );
 
         rangeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var rangePage = await rangeResponse.ReadJsonAsync<PagedResult<EventListItemResponse>>(Ct);
@@ -750,7 +758,10 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedCategoryTypeAsync("Charlas", "#445566");
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel("/api/events/categoryType?name=ROBOTICA"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel("/api/events/categoryType?name=ROBOTICA"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(Ct);
@@ -765,7 +776,10 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedCategoryTypeAsync("Charlas", "#CCDD02");
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel("/api/events/categoryType?color=aabb01"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel("/api/events/categoryType?color=aabb01"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(Ct);
@@ -781,8 +795,14 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedCategoryTypeAsync("Gamma", "#222222");
         var client = await LoginAsAdminAsync();
 
-        var ascending = await client.GetAsync(TestUri.Rel("/api/events/categoryType?sort=color"), Ct);
-        var descending = await client.GetAsync(TestUri.Rel("/api/events/categoryType?sort=-color"), Ct);
+        var ascending = await client.GetAsync(
+            TestUri.Rel("/api/events/categoryType?sort=color"),
+            Ct
+        );
+        var descending = await client.GetAsync(
+            TestUri.Rel("/api/events/categoryType?sort=-color"),
+            Ct
+        );
 
         ascending.StatusCode.Should().Be(HttpStatusCode.OK);
         var ascendingPage = await ascending.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(
@@ -817,7 +837,10 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedCategoryTypeAsync("Alpha", "#111111");
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel("/api/events/categoryType?pageSize=1&page=2"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel("/api/events/categoryType?pageSize=1&page=2"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventCategoryTypeResponse>>(Ct);
@@ -915,8 +938,12 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stats = await response.ReadJsonAsync<EventSignupStatsResponse>(Ct);
         stats!.EventId.Should().Be(eventId);
-        var activity = stats.Activities.Should().ContainSingle(a => a.ActivityId == activityId).Subject;
-        activity.Cells.Should()
+        var activity = stats
+            .Activities.Should()
+            .ContainSingle(a => a.ActivityId == activityId)
+            .Subject;
+        activity
+            .Cells.Should()
             .ContainSingle(c =>
                 c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
                 && c.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
@@ -959,8 +986,8 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         document.Required.Should().BeTrue();
         document.Accepted.Should().BeNull();
         document.DecidedAt.Should().BeNull();
-        state.SignupBlocked.Should().BeTrue(
-            "the member has not yet decided on the event's only, required document"
-        );
+        state
+            .SignupBlocked.Should()
+            .BeTrue("the member has not yet decided on the event's only, required document");
     }
 }

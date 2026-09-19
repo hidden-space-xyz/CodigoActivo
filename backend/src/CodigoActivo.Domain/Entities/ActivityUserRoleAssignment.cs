@@ -9,6 +9,7 @@ public class ActivityUserRoleAssignment
     /// Gets or sets the identifier of the associated user.
     /// </summary>
     public Guid UserId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated user.
     /// </summary>
@@ -18,6 +19,7 @@ public class ActivityUserRoleAssignment
     /// Gets or sets the identifier of the associated activity.
     /// </summary>
     public Guid ActivityId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated activity.
     /// </summary>
@@ -27,6 +29,7 @@ public class ActivityUserRoleAssignment
     /// Gets or sets the identifier of the associated activity role type.
     /// </summary>
     public Guid ActivityRoleTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated activity role type.
     /// </summary>
@@ -36,6 +39,7 @@ public class ActivityUserRoleAssignment
     /// Gets or sets the identifier of the associated assignment status.
     /// </summary>
     public Guid AssignmentStatusId { get; set; }
+
     /// <summary>
     /// Gets or sets the assignment status value.
     /// </summary>

@@ -108,9 +108,7 @@ public sealed class FileUploadSizeLimitAttributeTests
 
         BuildFilter(maxSizeBytes: 256 * 1024).OnAuthorization(BuildContext(httpContext));
 
-        var form = await httpContext.Request.ReadFormAsync(
-            TestContext.Current.CancellationToken
-        );
+        var form = await httpContext.Request.ReadFormAsync(TestContext.Current.CancellationToken);
         form["file"].ToString().Should().HaveLength(128 * 1024);
     }
 

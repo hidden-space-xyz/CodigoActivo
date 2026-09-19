@@ -9,18 +9,22 @@ public enum ErrorKind
     /// Selects the bad request option.
     /// </summary>
     BadRequest = 0,
+
     /// <summary>
     /// Selects the not found option.
     /// </summary>
     NotFound = 1,
+
     /// <summary>
     /// Selects the forbidden option.
     /// </summary>
     Forbidden = 2,
+
     /// <summary>
     /// Selects the unauthorized option.
     /// </summary>
     Unauthorized = 3,
+
     /// <summary>
     /// Selects the conflict option.
     /// </summary>

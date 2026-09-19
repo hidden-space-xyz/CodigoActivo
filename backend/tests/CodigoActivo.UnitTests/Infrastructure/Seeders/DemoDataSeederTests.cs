@@ -32,7 +32,10 @@ public sealed class DemoDataSeederTests
         adults.Should().NotBeEmpty();
         hashes.Should().ContainSingle("one random password is hashed per seeding run");
         var password = hashes[0]![FakePasswordHasher.Prefix.Length..];
-        Convert.FromBase64String(password).Should().HaveCount(32, "the password carries 32 bytes of entropy");
+        Convert
+            .FromBase64String(password)
+            .Should()
+            .HaveCount(32, "the password carries 32 bytes of entropy");
 
         var rerun = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
         rerun
@@ -420,9 +423,7 @@ public sealed class DemoDataSeederTests
     {
         var eventIdByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
         var confirmed = graph
-            .Assignments.Where(x =>
-                x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
-            )
+            .Assignments.Where(x => x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed)
             .Select(x => (eventIdByActivity[x.ActivityId], x.UserId))
             .ToHashSet();
 
@@ -452,10 +453,7 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultSubmissionsAreUniquePerEventAndUser()
     {
-        graph
-            .RatingSubmissions.Select(s => (s.EventId, s.UserId))
-            .Should()
-            .OnlyHaveUniqueItems();
+        graph.RatingSubmissions.Select(s => (s.EventId, s.UserId)).Should().OnlyHaveUniqueItems();
     }
 
     [Fact]
@@ -470,7 +468,9 @@ public sealed class DemoDataSeederTests
         // The submission and rating lists for an event are built with the same rater count but
         // shuffled independently of each other, so only their per-event counts - never a
         // by-position or by-order link - can be asserted as coherent.
-        var ratingsByEvent = graph.Ratings.GroupBy(r => r.EventId).ToDictionary(g => g.Key, g => g.Count());
+        var ratingsByEvent = graph
+            .Ratings.GroupBy(r => r.EventId)
+            .ToDictionary(g => g.Key, g => g.Count());
         var submissionsByEvent = graph
             .RatingSubmissions.GroupBy(s => s.EventId)
             .ToDictionary(g => g.Key, g => g.Count());

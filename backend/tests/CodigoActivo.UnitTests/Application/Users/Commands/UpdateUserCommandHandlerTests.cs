@@ -573,7 +573,8 @@ public sealed class UpdateUserCommandHandlerTests
         user.BirthDate.Should().Be(MinorDob.AddDays(1));
         user.Gender.Should().Be(Gender.Female);
         user.ParentId.Should().Be(parentId);
-        user.Email.Should().BeNull("a dependent's contact details are never taken from the request");
+        user.Email.Should()
+            .BeNull("a dependent's contact details are never taken from the request");
         user.Phone.Should().BeNull();
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

@@ -14,7 +14,10 @@ public sealed class LoginCodeIssuerTests
 {
     private readonly RecordingEmailSender emailSender = new();
     private readonly TestClock clock = new();
-    private readonly TwoFactorOptions options = new() { ChallengeLifetime = TimeSpan.FromMinutes(7) };
+    private readonly TwoFactorOptions options = new()
+    {
+        ChallengeLifetime = TimeSpan.FromMinutes(7),
+    };
     private readonly LoginCodeIssuer sut;
 
     public LoginCodeIssuerTests()
@@ -39,7 +42,11 @@ public sealed class LoginCodeIssuerTests
     {
         var user = NewUser(email: "ana@test.com");
 
-        var result = await sut.IssueAsync(user, clock.UtcNow, TestContext.Current.CancellationToken);
+        var result = await sut.IssueAsync(
+            user,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
 
         result.IsSuccess.Should().BeTrue();
         var message = emailSender.Sent.Should().ContainSingle().Subject;
@@ -73,7 +80,11 @@ public sealed class LoginCodeIssuerTests
     {
         var user = NewUser(email: null);
 
-        var result = await sut.IssueAsync(user, clock.UtcNow, TestContext.Current.CancellationToken);
+        var result = await sut.IssueAsync(
+            user,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
         emailSender.Sent.Should().BeEmpty();
@@ -86,7 +97,11 @@ public sealed class LoginCodeIssuerTests
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         var user = NewUser();
 
-        var result = await sut.IssueAsync(user, clock.UtcNow, TestContext.Current.CancellationToken);
+        var result = await sut.IssueAsync(
+            user,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
 
         result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
         user.LoginCodeHash.Should().BeNull();

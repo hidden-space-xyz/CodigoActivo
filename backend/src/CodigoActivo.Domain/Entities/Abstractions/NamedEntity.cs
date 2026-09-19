@@ -9,6 +9,7 @@ public abstract class NamedEntity : IdentifiableEntity
     /// Gets or sets the human-readable name.
     /// </summary>
     public required string Name { get; set; }
+
     /// <summary>
     /// Gets or sets the detailed description.
     /// </summary>

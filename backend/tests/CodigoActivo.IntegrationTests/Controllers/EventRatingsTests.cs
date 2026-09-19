@@ -344,7 +344,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/events/{Guid.NewGuid()}/ratings"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/events/{Guid.NewGuid()}/ratings"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -478,15 +481,22 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             }
         });
 
-        columns.Should()
+        columns
+            .Should()
             .NotBeEmpty()
             .And.NotContain("user_id")
             .And.NotContain("created_at")
             .And.NotContain("updated_at");
-        columns.Should()
-            .BeEquivalentTo(
-                ["id", "event_id", "score", "most_liked", "least_liked", "suggestions"]
-            );
+        columns
+            .Should()
+            .BeEquivalentTo([
+                "id",
+                "event_id",
+                "score",
+                "most_liked",
+                "least_liked",
+                "suggestions",
+            ]);
     }
 
     [Fact]
@@ -503,7 +513,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/summary"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/summary"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
@@ -517,7 +530,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/reports/events/{EventId}/summary"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/summary"),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);

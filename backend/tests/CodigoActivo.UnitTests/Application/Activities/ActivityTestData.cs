@@ -263,7 +263,18 @@ internal static class ActivityTestData
         Guid? eventId = null
     )
     {
-        activities.Query().Returns(BuildActivityWindow(activityId, signupStart, signupEnd, earlySignupStart, eventId ?? Guid.Empty).AsQueryable());
+        activities
+            .Query()
+            .Returns(
+                BuildActivityWindow(
+                        activityId,
+                        signupStart,
+                        signupEnd,
+                        earlySignupStart,
+                        eventId ?? Guid.Empty
+                    )
+                    .AsQueryable()
+            );
     }
 
     /// <summary>
@@ -286,23 +297,28 @@ internal static class ActivityTestData
         activities
             .Query()
             .Returns(
-                BuildActivityWindow(activityId, signupStart, signupEnd, earlySignupStart, resolvedEventId)
+                BuildActivityWindow(
+                        activityId,
+                        signupStart,
+                        signupEnd,
+                        earlySignupStart,
+                        resolvedEventId
+                    )
                     .AsQueryable()
             );
 
-        var documents =
-            termsDocumentId is { } termsId
-                ? new List<EventTermsDocument>
+        var documents = termsDocumentId is { } termsId
+            ? new List<EventTermsDocument>
+            {
+                new()
                 {
-                    new()
-                    {
-                        EventId = resolvedEventId,
-                        TermsDocumentId = termsId,
-                        IsRequired = termsRequired,
-                        DisplayOrder = 0,
-                    },
-                }
-                : [];
+                    EventId = resolvedEventId,
+                    TermsDocumentId = termsId,
+                    IsRequired = termsRequired,
+                    DisplayOrder = 0,
+                },
+            }
+            : [];
         events.QueryTermsDocuments().Returns(documents.AsQueryable());
     }
 
@@ -340,7 +356,11 @@ internal static class ActivityTestData
     public static void TermsAccepted(this IEventRepository events, Guid? acceptedTermsDocumentId)
     {
         events
-            .ListTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ListTermsAcceptancesAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<Guid>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(
                 acceptedTermsDocumentId is { } termsDocumentId
                     ? new List<EventTermsAcceptance>
@@ -357,7 +377,11 @@ internal static class ActivityTestData
     )
     {
         events
-            .ListTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ListTermsAcceptancesAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<Guid>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(acceptances.ToList());
     }
 

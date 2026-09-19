@@ -17,10 +17,7 @@ public sealed class ListTermsDocumentsQueryHandlerTests
 
     public ListTermsDocumentsQueryHandlerTests()
     {
-        sut = new ListTermsDocumentsQueryHandler(
-            termsDocuments,
-            new FakeQueryExecutor()
-        );
+        sut = new ListTermsDocumentsQueryHandler(termsDocuments, new FakeQueryExecutor());
     }
 
     [Fact]

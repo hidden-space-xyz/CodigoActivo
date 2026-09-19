@@ -25,18 +25,22 @@ public static class EmailBranding
     /// Identifies the canvas configuration or policy value.
     /// </summary>
     public const string Canvas = "#f5f5f5";
+
     /// <summary>
     /// Identifies the surface configuration or policy value.
     /// </summary>
     public const string Surface = "#ffffff";
+
     /// <summary>
     /// Identifies the panel configuration or policy value.
     /// </summary>
     public const string Panel = "#f5f5f5";
+
     /// <summary>
     /// Identifies the border configuration or policy value.
     /// </summary>
     public const string Border = "#e8e8e8";
+
     /// <summary>
     /// Identifies the border soft configuration or policy value.
     /// </summary>
@@ -46,14 +50,17 @@ public static class EmailBranding
     /// Identifies the text bright configuration or policy value.
     /// </summary>
     public const string TextBright = "#171717";
+
     /// <summary>
     /// Identifies the text configuration or policy value.
     /// </summary>
     public const string Text = "#262626";
+
     /// <summary>
     /// Identifies the text muted configuration or policy value.
     /// </summary>
     public const string TextMuted = "#616161";
+
     /// <summary>
     /// Identifies the text dim configuration or policy value.
     /// </summary>
@@ -63,14 +70,17 @@ public static class EmailBranding
     /// Identifies the primary configuration or policy value.
     /// </summary>
     public const string Primary = "#f9a320";
+
     /// <summary>
     /// Identifies the primary ink configuration or policy value.
     /// </summary>
     public const string PrimaryInk = "#8f5900";
+
     /// <summary>
     /// Identifies the primary soft configuration or policy value.
     /// </summary>
     public const string PrimarySoft = "#fef3e2";
+
     /// <summary>
     /// Identifies the on primary configuration or policy value.
     /// </summary>
@@ -80,6 +90,7 @@ public static class EmailBranding
     /// Identifies the logo content identifier configuration or policy value.
     /// </summary>
     public const string LogoContentId = "codigoactivo-logo";
+
     /// <summary>
     /// Identifies the logo file name configuration or policy value.
     /// </summary>
@@ -89,10 +100,12 @@ public static class EmailBranding
     /// Stores the shared brand value.
     /// </summary>
     public static readonly EmailAccent Brand = new(Primary, PrimarySoft, PrimaryInk);
+
     /// <summary>
     /// Stores the shared success value.
     /// </summary>
     public static readonly EmailAccent Success = new("#2e9e57", "#e4f2e9", "#257f46");
+
     /// <summary>
     /// Stores the shared danger value.
     /// </summary>

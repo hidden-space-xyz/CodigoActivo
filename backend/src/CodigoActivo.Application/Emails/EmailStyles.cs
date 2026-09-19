@@ -69,14 +69,16 @@ public static class EmailStyles
     /// Identifies the brand configuration or policy value.
     /// </summary>
     public const string Brand =
-        Font + "font-size:19px;font-weight:700;letter-spacing:-0.2px;"
+        Font
+        + "font-size:19px;font-weight:700;letter-spacing:-0.2px;"
         + $"color:{EmailBranding.TextBright};";
 
     /// <summary>
     /// Identifies the heading configuration or policy value.
     /// </summary>
     public const string Heading =
-        Font + "margin:0 0 18px 0;font-size:24px;line-height:1.25;font-weight:700;"
+        Font
+        + "margin:0 0 18px 0;font-size:24px;line-height:1.25;font-weight:700;"
         + $"letter-spacing:-0.4px;color:{EmailBranding.TextBright};";
 
     /// <summary>
@@ -130,7 +132,8 @@ public static class EmailStyles
     /// Identifies the button link configuration or policy value.
     /// </summary>
     public const string ButtonLink =
-        Font + "display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;"
+        Font
+        + "display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;"
         + $"line-height:1.2;text-decoration:none;border-radius:10px;color:{EmailBranding.OnPrimary};";
 
     /// <summary>
@@ -176,14 +179,16 @@ public static class EmailStyles
     /// Identifies the details label configuration or policy value.
     /// </summary>
     public const string DetailsLabel =
-        Font + "padding:11px 16px 11px 0;font-size:13px;line-height:1.5;vertical-align:top;"
+        Font
+        + "padding:11px 16px 11px 0;font-size:13px;line-height:1.5;vertical-align:top;"
         + $"white-space:nowrap;color:{EmailBranding.TextMuted};";
 
     /// <summary>
     /// Identifies the details value configuration or policy value.
     /// </summary>
     public const string DetailsValue =
-        Font + "padding:11px 0;font-size:14px;line-height:1.5;font-weight:600;"
+        Font
+        + "padding:11px 0;font-size:14px;line-height:1.5;font-weight:600;"
         + $"vertical-align:top;color:{EmailBranding.Text};";
 
     /// <summary>

@@ -11,10 +11,12 @@ public class EventRating : IdentifiableEntity
     /// Identifies the min score configuration or policy value.
     /// </summary>
     public const int MinScore = 0;
+
     /// <summary>
     /// Identifies the max score configuration or policy value.
     /// </summary>
     public const int MaxScore = 5;
+
     /// <summary>
     /// Identifies the max answer length configuration or policy value.
     /// </summary>
@@ -24,6 +26,7 @@ public class EventRating : IdentifiableEntity
     /// Gets or sets the identifier of the associated event.
     /// </summary>
     public Guid EventId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated event.
     /// </summary>
@@ -38,10 +41,12 @@ public class EventRating : IdentifiableEntity
     /// Gets or sets the most liked value.
     /// </summary>
     public string? MostLiked { get; set; }
+
     /// <summary>
     /// Gets or sets the least liked value.
     /// </summary>
     public string? LeastLiked { get; set; }
+
     /// <summary>
     /// Gets or sets the suggestions value.
     /// </summary>

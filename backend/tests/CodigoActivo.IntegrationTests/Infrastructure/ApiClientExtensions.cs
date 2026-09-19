@@ -105,8 +105,9 @@ public static class ApiClientExtensions
         }
 
         using var form = new MultipartFormDataContent();
-        using var filePart =
-            fileBytes is null ? null : CreateBinaryPart(fileBytes, partContentType);
+        using var filePart = fileBytes is null
+            ? null
+            : CreateBinaryPart(fileBytes, partContentType);
         if (filePart is not null)
         {
             form.Add(filePart, "file", fileName);

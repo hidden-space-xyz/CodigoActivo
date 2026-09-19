@@ -11,6 +11,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the first name value.
     /// </summary>
     public required string FirstName { get; set; }
+
     /// <summary>
     /// Gets or sets the last name value.
     /// </summary>
@@ -20,10 +21,12 @@ public class User : IdentifiableEntity
     /// Gets or sets the email value.
     /// </summary>
     public string? Email { get; set; }
+
     /// <summary>
     /// Gets or sets the phone value.
     /// </summary>
     public string? Phone { get; set; }
+
     /// <summary>
     /// Gets or sets the password hash value.
     /// </summary>
@@ -33,6 +36,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the birth date value.
     /// </summary>
     public DateOnly BirthDate { get; set; }
+
     /// <summary>
     /// Gets or sets the associated gender.
     /// </summary>
@@ -42,10 +46,12 @@ public class User : IdentifiableEntity
     /// Gets or sets the UTC timestamp of the user's most recent login.
     /// </summary>
     public DateTimeOffset? LastLoginAt { get; set; }
+
     /// <summary>
     /// Gets or sets the UTC timestamp when the entity was created.
     /// </summary>
     public DateTimeOffset CreatedAt { get; set; }
+
     /// <summary>
     /// Gets or sets the UTC timestamp of the most recent update.
     /// </summary>
@@ -55,6 +61,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the identifier of the associated parent.
     /// </summary>
     public Guid? ParentId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated parent.
     /// </summary>
@@ -64,6 +71,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the identifier of the associated user status type.
     /// </summary>
     public Guid UserStatusTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated user status type.
     /// </summary>
@@ -73,6 +81,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the identifier of the associated user type.
     /// </summary>
     public Guid UserTypeId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated user type.
     /// </summary>
@@ -87,10 +96,12 @@ public class User : IdentifiableEntity
     /// Gets or sets the otp code hash value.
     /// </summary>
     public string? OtpCodeHash { get; set; }
+
     /// <summary>
     /// Gets or sets the otp expires at value.
     /// </summary>
     public DateTimeOffset? OtpExpiresAt { get; set; }
+
     /// <summary>
     /// Gets or sets the otp last sent at value.
     /// </summary>
@@ -100,10 +111,12 @@ public class User : IdentifiableEntity
     /// Gets or sets the password reset code hash value.
     /// </summary>
     public string? PasswordResetCodeHash { get; set; }
+
     /// <summary>
     /// Gets or sets the password reset expires at value.
     /// </summary>
     public DateTimeOffset? PasswordResetExpiresAt { get; set; }
+
     /// <summary>
     /// Gets or sets the password reset last sent at value.
     /// </summary>
@@ -113,43 +126,53 @@ public class User : IdentifiableEntity
     /// Gets or sets the second factor required after the password. Every account has one.
     /// </summary>
     public TwoFactorMethod TwoFactorMethod { get; set; } = TwoFactorMethod.Email;
+
     /// <summary>
     /// Gets or sets the protected shared secret of the active authenticator application.
     /// </summary>
     public string? AuthenticatorKey { get; set; }
+
     /// <summary>
     /// Gets or sets the last authenticator time step accepted, so a code cannot be replayed.
     /// </summary>
     public long? AuthenticatorLastUsedStep { get; set; }
+
     /// <summary>
     /// Gets or sets the protected shared secret of an authenticator being enrolled.
     /// </summary>
     public string? PendingAuthenticatorKey { get; set; }
+
     /// <summary>
     /// Gets or sets when the pending authenticator enrollment stops being confirmable.
     /// </summary>
     public DateTimeOffset? PendingAuthenticatorExpiresAt { get; set; }
+
     /// <summary>
     /// Gets or sets the hash of the emailed login code of the open two-factor challenge.
     /// </summary>
     public string? LoginCodeHash { get; set; }
+
     /// <summary>
     /// Gets or sets when the emailed login code expires.
     /// </summary>
     public DateTimeOffset? LoginCodeExpiresAt { get; set; }
+
     /// <summary>
     /// Gets or sets when the emailed login code was last sent.
     /// </summary>
     public DateTimeOffset? LoginCodeLastSentAt { get; set; }
+
     /// <summary>
     /// Gets or sets the identifier of the open second-factor challenge. The challenge cookie
     /// carries it, so a copied cookie stops working as soon as this value changes or is cleared.
     /// </summary>
     public Guid? LoginChallengeId { get; set; }
+
     /// <summary>
     /// Gets or sets the consecutive wrong second-factor codes since the last success or lockout.
     /// </summary>
     public int TwoFactorFailedAttempts { get; set; }
+
     /// <summary>
     /// Gets or sets until when second-factor codes are rejected after too many failures.
     /// </summary>
@@ -159,6 +182,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the consecutive wrong account passwords since the last accepted one.
     /// </summary>
     public int PasswordFailedAttempts { get; set; }
+
     /// <summary>
     /// Gets or sets when the account was locked after too many wrong passwords. The lock does not
     /// expire: only a completed password reset clears it.
@@ -169,6 +193,7 @@ public class User : IdentifiableEntity
     /// Gets or sets the related children collection.
     /// </summary>
     public ICollection<User> Children { get; set; } = [];
+
     /// <summary>
     /// Gets or sets the related assignments collection.
     /// </summary>

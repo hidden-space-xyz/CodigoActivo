@@ -437,11 +437,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         var unknown = Guid.NewGuid();
         users.HasUsers(
             AnalyticsUser(unknown, SeedIds.UserStatusTypes.Active, Utc(2026, 3, 1)),
-            AnalyticsUser(
-                SeedIds.UserTypes.Member,
-                SeedIds.UserStatusTypes.Active,
-                Utc(2026, 3, 1)
-            )
+            AnalyticsUser(SeedIds.UserTypes.Member, SeedIds.UserStatusTypes.Active, Utc(2026, 3, 1))
         );
         activities.HasAssignments(
             Insc(Guid.NewGuid(), unknown, Utc(2026, 3, 1)),

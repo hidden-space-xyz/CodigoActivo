@@ -19,10 +19,8 @@ public sealed record ListPartnersQuery(PartnerListQuery Filters)
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class ListPartnersQueryHandler(
-    IPartnerRepository partners,
-    IQueryExecutor executor
-) : IQueryHandler<ListPartnersQuery, PagedResult<PartnerResponse>>
+public sealed class ListPartnersQueryHandler(IPartnerRepository partners, IQueryExecutor executor)
+    : IQueryHandler<ListPartnersQuery, PagedResult<PartnerResponse>>
 {
     private static readonly SortMap<PartnerResponse> Sort = new SortMap<PartnerResponse>()
         .Add("name", p => p.Name)

@@ -101,7 +101,11 @@ public sealed class EventRatingRepositorySubmitAsyncTests(PostgresContainerFixtu
     {
         await using var db = postgres.CreateContext();
         var repository = new EventRatingRepository(db);
-        return await repository.SubmitAsync(new EventRating { EventId = EventId, Score = score }, userId, Ct);
+        return await repository.SubmitAsync(
+            new EventRating { EventId = EventId, Score = score },
+            userId,
+            Ct
+        );
     }
 
     private async Task<long> CountDistinctXminsAsync()
@@ -111,10 +115,10 @@ public sealed class EventRatingRepositorySubmitAsyncTests(PostgresContainerFixtu
         await using var command = connection.CreateCommand();
         command.CommandText =
             "SELECT COUNT(DISTINCT xmin::text) FROM ("
-                + "SELECT xmin FROM event_ratings WHERE event_id = @eventId "
-                + "UNION ALL "
-                + "SELECT xmin FROM event_rating_submissions WHERE event_id = @eventId"
-                + ") combined";
+            + "SELECT xmin FROM event_ratings WHERE event_id = @eventId "
+            + "UNION ALL "
+            + "SELECT xmin FROM event_rating_submissions WHERE event_id = @eventId"
+            + ") combined";
         command.Parameters.AddWithValue("eventId", EventId);
         return (long)(await command.ExecuteScalarAsync(Ct))!;
     }

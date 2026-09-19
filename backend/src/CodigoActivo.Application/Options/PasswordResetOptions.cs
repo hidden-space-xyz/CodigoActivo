@@ -9,6 +9,7 @@ public sealed class PasswordResetOptions
     /// Stores the shared default code lifetime value.
     /// </summary>
     public static readonly TimeSpan DefaultCodeLifetime = TimeSpan.FromMinutes(15);
+
     /// <summary>
     /// Stores the shared default resend cooldown value.
     /// </summary>

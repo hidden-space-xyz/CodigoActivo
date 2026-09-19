@@ -20,12 +20,12 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     private const int MemoryKiB = 64 * 1024;
     private const int Parallelism = 4;
 
-    private static readonly int EncodedSaltLength = Convert.ToBase64String(
-        new byte[SaltSize]
-    ).Length;
-    private static readonly int EncodedHashLength = Convert.ToBase64String(
-        new byte[HashSize]
-    ).Length;
+    private static readonly int EncodedSaltLength = Convert
+        .ToBase64String(new byte[SaltSize])
+        .Length;
+    private static readonly int EncodedHashLength = Convert
+        .ToBase64String(new byte[HashSize])
+        .Length;
 
     /// <summary>
     /// Determines whether h exists.

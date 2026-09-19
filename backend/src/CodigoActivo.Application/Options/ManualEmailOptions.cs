@@ -9,10 +9,12 @@ public sealed class ManualEmailOptions
     /// Identifies the default max recipients configuration or policy value.
     /// </summary>
     public const int DefaultMaxRecipients = 500;
+
     /// <summary>
     /// Identifies the default max attachments configuration or policy value.
     /// </summary>
     public const int DefaultMaxAttachments = 10;
+
     /// <summary>
     /// Identifies the default max attachments bytes configuration or policy value.
     /// </summary>

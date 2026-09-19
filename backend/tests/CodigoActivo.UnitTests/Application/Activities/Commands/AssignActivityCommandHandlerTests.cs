@@ -1017,10 +1017,12 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
-        result.Error.Code.Should().Be(
-            ErrorCode.EventTermsAcceptanceRequired,
-            "rejecting a required document must not be stored as a permanent, unrecoverable decision"
-        );
+        result
+            .Error.Code.Should()
+            .Be(
+                ErrorCode.EventTermsAcceptanceRequired,
+                "rejecting a required document must not be stored as a permanent, unrecoverable decision"
+            );
         await events
             .DidNotReceiveWithAnyArgs()
             .AddTermsAcceptanceAsync(
@@ -1081,9 +1083,11 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        accepted.IsSuccess.Should().BeTrue(
-            "a mistaken rejection of a required document must not permanently lock the user out of the event"
-        );
+        accepted
+            .IsSuccess.Should()
+            .BeTrue(
+                "a mistaken rejection of a required document must not permanently lock the user out of the event"
+            );
         await events
             .Received(1)
             .AddTermsAcceptanceAsync(
@@ -1131,9 +1135,11 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsSuccess.Should().BeTrue(
-            "an optional document never blocks the signup, regardless of the user's decision"
-        );
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                "an optional document never blocks the signup, regardless of the user's decision"
+            );
         await events
             .Received(1)
             .AddTermsAcceptanceAsync(
@@ -1192,9 +1198,11 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        stored.Accepted.Should().BeTrue(
-            "a rejection is revisable: a later acceptance overwrites the stored row in place"
-        );
+        stored
+            .Accepted.Should()
+            .BeTrue(
+                "a rejection is revisable: a later acceptance overwrites the stored row in place"
+            );
         stored.DecidedAt.Should().Be(Now);
         await events
             .DidNotReceiveWithAnyArgs()

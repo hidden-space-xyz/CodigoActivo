@@ -34,10 +34,7 @@ public sealed class GetActivityByIdQueryHandler(
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            activities
-                .Query()
-                .Where(a => a.Id == query.ActivityId)
-                .Select(Projections.Activity),
+            activities.Query().Where(a => a.Id == query.ActivityId).Select(Projections.Activity),
             ct
         );
         return response is null ? Error.NotFound(ErrorCode.ActivityNotFound) : response;

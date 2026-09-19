@@ -1,9 +1,9 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Reports.Queries;
-using CodigoActivo.API.Security;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;

@@ -40,7 +40,8 @@ public sealed class StreamExtensionsTests
 
     public static TheoryData<byte[]> RejectedHeaders()
     {
-        return [
+        return
+        [
             new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 },
             new byte[] { 0xFF, 0xD8, 0xFF },
             Jpeg(0xBF),

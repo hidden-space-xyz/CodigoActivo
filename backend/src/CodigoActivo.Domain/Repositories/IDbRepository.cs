@@ -44,7 +44,10 @@ public interface IDbRepository<TEntity>
     /// <param name="predicate">Condition that an entity must satisfy.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains an int.</returns>
-    public Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+    public Task<int> CountAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Determines whether any entity satisfies the supplied predicate.
@@ -64,6 +67,7 @@ public interface IDbRepository<TEntity>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task AddAsync(TEntity entity, CancellationToken ct = default);
+
     /// <summary>
     /// Removes the selected entity from persistent storage.
     /// </summary>

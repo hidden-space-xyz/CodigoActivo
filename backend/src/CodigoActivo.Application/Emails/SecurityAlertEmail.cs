@@ -13,34 +13,42 @@ public enum AccountSecurityChange
     /// Selects the password changed option.
     /// </summary>
     PasswordChanged,
+
     /// <summary>
     /// Selects the password reset through recovery option.
     /// </summary>
     PasswordReset,
+
     /// <summary>
     /// Selects the authenticator confirmed option.
     /// </summary>
     AuthenticatorEnabled,
+
     /// <summary>
     /// Selects the authenticator removed option.
     /// </summary>
     AuthenticatorDisabled,
+
     /// <summary>
     /// Selects the second factor reset by an administrator option.
     /// </summary>
     TwoFactorReset,
+
     /// <summary>
     /// Selects the administrator flag granted option.
     /// </summary>
     AdminGranted,
+
     /// <summary>
     /// Selects the administrator flag revoked option.
     /// </summary>
     AdminRevoked,
+
     /// <summary>
     /// Selects the login identifiers replaced option.
     /// </summary>
     IdentifiersChanged,
+
     /// <summary>
     /// Selects the account locked after repeated wrong passwords option.
     /// </summary>
@@ -93,7 +101,10 @@ public static class SecurityAlertEmail
 
         blocks.Add(EmailBlocks.Prose(AppStrings.EmailsSecurityAlertWarning));
         blocks.Add(
-            EmailBlocks.Prose(AppStrings.EmailsSharedSignoffHtml, AppStrings.EmailsSharedSignoffText)
+            EmailBlocks.Prose(
+                AppStrings.EmailsSharedSignoffHtml,
+                AppStrings.EmailsSharedSignoffText
+            )
         );
         blocks.Add(EmailBlocks.Note(AppStrings.EmailsSecurityAlertNoActionNote));
 

@@ -18,10 +18,8 @@ public sealed record GetEventTermsStateQuery(Guid EventId, Guid UserId)
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventTermsStateQueryHandler(
-    IEventRepository events,
-    IQueryExecutor executor
-) : IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse>
+public sealed class GetEventTermsStateQueryHandler(IEventRepository events, IQueryExecutor executor)
+    : IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse>
 {
     /// <summary>
     /// Handles the request to retrieve the current user's terms state for an event.

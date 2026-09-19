@@ -294,10 +294,7 @@ public record EventTermsDocumentResponse(
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
-public record EventTermsDocumentRequest(
-    [Required] Guid TermsDocumentId,
-    bool Required = false
-);
+public record EventTermsDocumentRequest([Required] Guid TermsDocumentId, bool Required = false);
 
 /// <summary>
 /// Contains the per-user state of a terms document linked to an event, returned by the API.

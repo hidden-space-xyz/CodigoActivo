@@ -16,10 +16,7 @@ public sealed class GetAnnouncementByIdQueryHandlerTests
 
     public GetAnnouncementByIdQueryHandlerTests()
     {
-        sut = new GetAnnouncementByIdQueryHandler(
-            announcements,
-            new FakeQueryExecutor()
-        );
+        sut = new GetAnnouncementByIdQueryHandler(announcements, new FakeQueryExecutor());
     }
 
     [Fact]

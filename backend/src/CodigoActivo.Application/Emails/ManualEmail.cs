@@ -50,12 +50,7 @@ public static class ManualEmail
             [.. paragraphs.Select(paragraph => EmailBlocks.Prose(ToHtml(paragraph), paragraph))]
         );
 
-        return new ManualEmailContent(
-            subject,
-            content.Html,
-            content.Text,
-            content.InlineImages
-        );
+        return new ManualEmailContent(subject, content.Html, content.Text, content.InlineImages);
     }
 
     /// <summary>
@@ -96,17 +91,12 @@ public static class ManualEmail
 
     private static string ToHtml(string paragraph)
     {
-        return WebUtility
-            .HtmlEncode(paragraph)
-            .Replace("\n", "<br>", StringComparison.Ordinal);
+        return WebUtility.HtmlEncode(paragraph).Replace("\n", "<br>", StringComparison.Ordinal);
     }
 
     private static string Preheader(string body)
     {
-        var flat = string.Join(
-            ' ',
-            body.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries)
-        );
+        var flat = string.Join(' ', body.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries));
 
         if (flat.Length <= PreheaderLength)
         {

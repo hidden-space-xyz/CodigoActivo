@@ -304,6 +304,7 @@ public interface IActivityRepository : IDbRepository<Activity>
         ActivityUserRoleAssignment assignment,
         CancellationToken ct = default
     );
+
     /// <summary>
     /// Removes an assignment from persistent storage.
     /// </summary>

@@ -213,9 +213,7 @@ internal static class EventTestData
 
     public static void TermsDocumentInUse(this IEventRepository events, bool inUse)
     {
-        events
-            .HasTermsDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(inUse);
+        events.HasTermsDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(inUse);
     }
 
     public static void TermsDocumentAccepted(this IEventRepository events, bool accepted)

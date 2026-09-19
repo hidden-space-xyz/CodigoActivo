@@ -11,14 +11,17 @@ public class Partner : AuditableEntity
     /// Gets or sets the human-readable name.
     /// </summary>
     public required string Name { get; set; }
+
     /// <summary>
     /// Gets or sets the from date value.
     /// </summary>
     public DateOnly FromDate { get; set; }
+
     /// <summary>
     /// Gets or sets the tier value.
     /// </summary>
     public int Tier { get; set; }
+
     /// <summary>
     /// Gets or sets the web value.
     /// </summary>
@@ -28,6 +31,7 @@ public class Partner : AuditableEntity
     /// Gets or sets the identifier of the associated thumbnail.
     /// </summary>
     public Guid ThumbnailId { get; set; }
+
     /// <summary>
     /// Gets or sets the associated thumbnail.
     /// </summary>

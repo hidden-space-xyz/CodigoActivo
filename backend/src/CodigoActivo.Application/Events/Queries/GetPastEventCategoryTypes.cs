@@ -9,7 +9,8 @@ namespace CodigoActivo.Application.Events.Queries;
 /// <summary>
 /// Carries the criteria used to retrieve the category types assigned to past events.
 /// </summary>
-public sealed record GetPastEventCategoryTypesQuery : IQuery<IReadOnlyList<EventCategoryTypeResponse>>;
+public sealed record GetPastEventCategoryTypesQuery
+    : IQuery<IReadOnlyList<EventCategoryTypeResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve the category types assigned to past events.

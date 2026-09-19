@@ -11,7 +11,14 @@ public sealed class ThrottledEmailSenderTests
 {
     private static EmailMessage Message(EmailKind kind = EmailKind.ActivityNotification)
     {
-        return new EmailMessage(kind, "member@example.test", "Ana", "Asunto", "<p>Hola</p>", "Hola");
+        return new EmailMessage(
+            kind,
+            "member@example.test",
+            "Ana",
+            "Asunto",
+            "<p>Hola</p>",
+            "Hola"
+        );
     }
 
     private static ThrottledEmailSender Create(
