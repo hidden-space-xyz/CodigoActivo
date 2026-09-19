@@ -4842,8 +4842,6 @@
           "UserChildBirthDateNotMinor",
           "UserPasswordNotSet",
           "UserCurrentPasswordIncorrect",
-          "UserParentIdRequired",
-          "UserCannotBeOwnParent",
           "UserParentReassignmentForbidden",
           "UserParentNotAllowedForAdult",
           "UserCannotBecomeMinor",
