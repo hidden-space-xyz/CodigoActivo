@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { AppIcon, DataState } from '@/shared/ui'
+import { AppIcon, BaseButton, DataState } from '@/shared/ui'
 
 import { fullName, hexLuminance, normalizeHexColor } from '@/shared/lib'
 import { useEventBadges } from '@/features/manage-events'
@@ -124,9 +124,13 @@ function printSheets(): void {
 <template>
   <div ref="rootEl" class="badges">
     <div class="back-row no-print">
-      <RouterLink :to="{ name: 'admin-event-detail', params: { eventId } }" class="back">
+      <BaseButton
+        variant="back"
+        :to="{ name: 'admin-event-detail', params: { eventId } }"
+        class="back"
+      >
         {{ $t('pages.admin.eventBadges.back') }}
-      </RouterLink>
+      </BaseButton>
       <button type="button" class="print-btn" @click="printSheets">
         <AppIcon name="print" />
         <span>{{ $t('pages.admin.eventBadges.print') }}</span>
@@ -213,15 +217,7 @@ function printSheets(): void {
 }
 
 .back {
-  display: inline-block;
   margin-bottom: 14px;
-  color: var(--ca-text-muted);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.back:hover {
-  color: var(--ca-text);
 }
 
 .sheet {

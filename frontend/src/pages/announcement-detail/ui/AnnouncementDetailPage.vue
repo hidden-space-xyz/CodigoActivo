@@ -59,7 +59,7 @@ useSeo(seo)
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="link" :to="{ name: 'announcements' }">
+        <BaseButton variant="back" :to="{ name: 'announcements' }">
           {{ $t('pages.announcementDetail.back') }}
         </BaseButton>
       </div>

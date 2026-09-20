@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AppIcon, DataState } from '@/shared/ui'
+import { AppIcon, BaseButton, DataState } from '@/shared/ui'
 
 import { useEventRoster } from '@/features/manage-events'
 import type {
@@ -175,9 +175,13 @@ function printSheets(): void {
 <template>
   <div class="roster">
     <div class="back-row no-print">
-      <RouterLink :to="{ name: 'admin-event-detail', params: { eventId } }" class="back">
+      <BaseButton
+        variant="back"
+        :to="{ name: 'admin-event-detail', params: { eventId } }"
+        class="back"
+      >
         {{ $t('pages.admin.eventRoster.back') }}
-      </RouterLink>
+      </BaseButton>
       <button type="button" class="print-btn" @click="printSheets">
         <AppIcon name="print" />
         <span>{{ $t('pages.admin.eventRoster.print') }}</span>
@@ -344,15 +348,7 @@ function printSheets(): void {
 }
 
 .back {
-  display: inline-block;
   margin-bottom: 14px;
-  color: var(--ca-text-muted);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.back:hover {
-  color: var(--ca-text);
 }
 
 .sheet {

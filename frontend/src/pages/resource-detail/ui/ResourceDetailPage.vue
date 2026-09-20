@@ -46,7 +46,7 @@ watchEffect(() => {
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="link" :to="{ name: 'resources' }">
+        <BaseButton variant="back" :to="{ name: 'resources' }">
           {{ $t('pages.resourceDetail.back') }}
         </BaseButton>
       </div>

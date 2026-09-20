@@ -35,7 +35,7 @@ const declined = ref(false)
       <p class="age-gate__lead">
         {{ $t('features.register.ageGate.blockedLead') }}
       </p>
-      <BaseButton variant="link" @click="declined = false">{{
+      <BaseButton variant="back" @click="declined = false">{{
         $t('features.register.back')
       }}</BaseButton>
     </div>

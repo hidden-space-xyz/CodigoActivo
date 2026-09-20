@@ -75,7 +75,7 @@
     "footerTagline": "Programación para tod{'@'}s.",
     "footerContact": "Contáctanos",
     "footerFollow": "Síguenos",
-    "adminGoToSite": "← Ir al sitio",
+    "adminGoToSite": "Ir al sitio",
     "openMenu": "Abrir menú",
     "menuTitle": "Menú",
     "adminMenuTitle": "Administración",
@@ -308,7 +308,7 @@
       "noResults": "No hay anuncios que coincidan con tu búsqueda."
     },
     "announcementDetail": {
-      "back": "← Volver a anuncios",
+      "back": "Volver a anuncios",
       "notFound": "No hemos encontrado ese anuncio.",
       "notFoundTitle": "Anuncio no encontrado"
     },
@@ -363,7 +363,7 @@
       "noResults": "No hay recursos que coincidan con tu búsqueda."
     },
     "resourceDetail": {
-      "back": "← Volver a recursos",
+      "back": "Volver a recursos",
       "notFound": "No hemos encontrado ese recurso.",
       "redirecting": "Redirigiendo al recurso…",
       "noDescription": "Este recurso todavía no tiene una descripción.",
@@ -434,14 +434,14 @@
         }
       },
       "eventBadges": {
-        "back": "← Volver al evento",
+        "back": "Volver al evento",
         "emptyText": "Este evento no tiene asignaciones confirmadas, así que no hay etiquetas que imprimir.",
         "print": "Imprimir",
         "moreActivities": "+{n} más",
         "guardianAria": "Responsable"
       },
       "eventRoster": {
-        "back": "← Volver al evento",
+        "back": "Volver al evento",
         "emptyText": "Este evento no tiene asignaciones confirmadas, así que no hay listados que imprimir.",
         "print": "Imprimir",
         "sheetHeader": "{title} · Listado de asistencia",
@@ -580,7 +580,7 @@
         "subtitle": "Catálogos configurables del sistema"
       },
       "eventDetail": {
-        "back": "← Volver a eventos",
+        "back": "Volver a eventos",
         "headerFallback": "Evento",
         "newActivity": "Nueva actividad",
         "printBadges": "Imprimir etiquetas",
@@ -866,7 +866,7 @@
       }
     },
     "eventDetail": {
-      "backToEvents": "← Volver a eventos",
+      "backToEvents": "Volver a eventos",
       "notFound": "No hemos encontrado ese evento.",
       "slogan": "«{subtitle}»",
       "aboutEvent": "Sobre el evento",
@@ -1298,7 +1298,7 @@
       }
     },
     "register": {
-      "back": "← Volver",
+      "back": "Volver",
       "ageGate": {
         "heading": "Antes de empezar…",
         "lead": "Para registrarte necesitas ser mayor de edad. Si tienes menores a tu cargo, podrás inscribirlos a todos durante el registro.",

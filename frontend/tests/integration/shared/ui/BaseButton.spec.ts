@@ -37,6 +37,18 @@ describe('BaseButton', () => {
     )
   })
 
+  it('renders the shared back treatment with a vector arrow', async () => {
+    const { wrapper } = await renderWithProviders(BaseButton, {
+      props: { variant: 'back' },
+      slots: { default: 'Volver' },
+    })
+
+    const button = wrapper.find('button')
+    expect(button.classes()).toContain('base-button--back')
+    expect(button.text()).toBe('Volver')
+    expect(button.find('.base-button__back-icon').exists()).toBe(true)
+  })
+
   it('shows a spinner, marks itself busy and disables the button while loading', async () => {
     const { wrapper } = await renderWithProviders(BaseButton, {
       props: { loading: true },
