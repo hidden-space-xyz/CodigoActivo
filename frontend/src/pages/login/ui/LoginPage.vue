@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { useLogin } from '@/features/auth'
-import { BaseButton, PageHead } from '@/shared/ui'
+import { BaseButton, PageHeading } from '@/shared/ui'
 
 const { form, submit, isSubmitting, isError } = useLogin()
 </script>
 
 <template>
   <div>
-    <PageHead :eyebrow="$t('pages.login.eyebrow')" :title="$t('pages.login.title')">
-      <p class="login-head__intro">
-        {{ $t('pages.login.intro') }}
-      </p>
-    </PageHead>
+    <section class="login-head">
+      <div class="ca-container">
+        <PageHeading :title="$t('pages.login.title')" :description="$t('pages.login.intro')" />
+      </div>
+    </section>
 
     <section class="login-body">
       <div class="login-card">
@@ -67,12 +67,8 @@ const { form, submit, isSubmitting, isError } = useLogin()
 </template>
 
 <style scoped>
-.login-head__intro {
-  margin-top: 14px;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-  max-width: 520px;
+.login-head {
+  padding: 48px var(--ca-gutter) 20px;
 }
 
 .login-body {

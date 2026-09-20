@@ -5,7 +5,7 @@ import {
   RegistrationSuccess,
   useRegistration,
 } from '@/features/register'
-import { PageHead } from '@/shared/ui'
+import { PageHeading } from '@/shared/ui'
 
 const {
   step,
@@ -25,11 +25,14 @@ const {
 
 <template>
   <div>
-    <PageHead :eyebrow="$t('pages.register.eyebrow')" :title="$t('pages.register.title')">
-      <p class="register-head__intro">
-        {{ $t('pages.register.intro') }}
-      </p>
-    </PageHead>
+    <section class="register-head">
+      <div class="ca-container">
+        <PageHeading
+          :title="$t('pages.register.title')"
+          :description="$t('pages.register.intro')"
+        />
+      </div>
+    </section>
 
     <section class="register-body">
       <div class="ca-container--narrow">
@@ -58,12 +61,8 @@ const {
 </template>
 
 <style scoped>
-.register-head__intro {
-  margin-top: 14px;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-  max-width: 560px;
+.register-head {
+  padding: 48px var(--ca-gutter) 20px;
 }
 
 .register-body {

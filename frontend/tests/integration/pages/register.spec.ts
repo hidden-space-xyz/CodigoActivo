@@ -54,7 +54,10 @@ function serveRegister(response: () => Response) {
 describe('register page', () => {
   it('stops minors at the age gate with guardian instructions', async () => {
     const { wrapper } = await renderApp('/register')
-    expect(page(wrapper).text()).toContain(t('pages.register.title'))
+    const heading = page(wrapper).get('.register-head')
+    expect(heading.get('h1').text()).toBe(t('pages.register.title'))
+    expect(heading.get('.page-heading__comment').text()).toBe(`//${t('pages.register.intro')}`)
+    expect(heading.find('.eyebrow').exists()).toBe(false)
 
     await clickButton(wrapper, t('features.register.ageGate.decline'))
 
