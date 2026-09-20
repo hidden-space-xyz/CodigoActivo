@@ -5,11 +5,11 @@ import type { RouteLocationRaw } from 'vue-router'
 
 import AppIcon from './AppIcon.vue'
 
-type Variant = 'primary' | 'ghost' | 'light' | 'link'
+type Variant = 'primary' | 'ghost' | 'light' | 'link' | 'back'
 
 const props = withDefaults(
   defineProps<{
-    /** Visual style; `link` is a borderless text button with an enlarged tap target. */
+    /** Visual style; `back` includes the standard leading arrow for return actions. */
     variant?: Variant
     /** Renders a `RouterLink` to this route; takes precedence over `href`. */
     to?: RouteLocationRaw | undefined
@@ -67,6 +67,7 @@ const bindings = computed(() => {
     :aria-busy="loading ? 'true' : undefined"
   >
     <AppIcon v-if="loading" name="spinner" spin class="base-button__spinner" />
+    <AppIcon v-else-if="variant === 'back'" name="arrow-left" class="base-button__back-icon" />
     <slot />
   </component>
 </template>
@@ -89,7 +90,9 @@ const bindings = computed(() => {
   transition:
     transform 0.15s ease,
     background 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
 }
 
 .base-button--block {
@@ -134,6 +137,34 @@ const bindings = computed(() => {
 }
 .base-button--link:hover {
   color: var(--ca-text-bright);
+}
+
+.base-button--back {
+  min-height: var(--ca-tap);
+  padding: 0 15px 0 12px;
+  border-color: var(--ca-border);
+  background: var(--ca-surface);
+  color: var(--ca-text-muted);
+  font-size: 14px;
+  box-shadow: var(--ca-shadow-sm);
+}
+.base-button--back:hover {
+  border-color: var(--ca-orange);
+  background: var(--ca-orange-soft);
+  color: var(--ca-orange-ink);
+  transform: translateY(-1px);
+}
+.base-button--back:active {
+  transform: translateY(0);
+}
+
+.base-button__back-icon {
+  flex: none;
+  font-size: 17px;
+  transition: transform 0.15s ease;
+}
+.base-button--back:hover .base-button__back-icon {
+  transform: translateX(-2px);
 }
 
 .base-button--disabled,

@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useAuth } from '@/features/auth'
-import { AppIcon, ThemeToggle } from '@/shared/ui'
+import { AppIcon, BaseButton, ThemeToggle } from '@/shared/ui'
 import { ADMIN_NAV } from '@/shared/config'
 
 const route = useRoute()
@@ -50,9 +50,9 @@ watch(
         >
           <AppIcon name="bars" />
         </button>
-        <RouterLink :to="{ name: 'home' }" class="admin__home">{{
-          $t('layout.adminGoToSite')
-        }}</RouterLink>
+        <BaseButton variant="back" :to="{ name: 'home' }" class="admin__home">
+          {{ $t('layout.adminGoToSite') }}
+        </BaseButton>
         <div class="admin__user">
           <ThemeToggle />
           <span class="admin__username">{{ displayName }}</span>
@@ -219,13 +219,7 @@ watch(
 }
 
 .admin__home {
-  color: var(--ca-text-muted);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.admin__home:hover {
-  color: var(--ca-text);
+  margin-right: auto;
 }
 
 .admin__user {

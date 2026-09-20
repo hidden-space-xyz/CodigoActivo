@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import {
   AdminPageHeader,
   AppButton as Button,
+  BaseButton,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
@@ -139,9 +140,9 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 <template>
   <div>
-    <RouterLink :to="{ name: 'admin-events' }" class="back">{{
-      $t('pages.admin.eventDetail.back')
-    }}</RouterLink>
+    <BaseButton variant="back" :to="{ name: 'admin-events' }" class="back">
+      {{ $t('pages.admin.eventDetail.back') }}
+    </BaseButton>
 
     <AdminPageHeader
       :title="event.data.value?.title ?? $t('pages.admin.eventDetail.headerFallback')"
@@ -299,17 +300,7 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 <style scoped>
 .back {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--ca-tap);
   margin-bottom: 4px;
-  color: var(--ca-text-muted);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.back:hover {
-  color: var(--ca-text);
 }
 
 .summary {

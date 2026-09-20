@@ -2,6 +2,7 @@
 import { computed, type Component } from 'vue'
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowRight,
   BottomRight,
   Calendar,
@@ -56,6 +57,7 @@ interface CustomIcon {
 
 const ELEMENT_ICONS: Record<string, Component> = {
   'arrow-down-right': BottomRight,
+  'arrow-left': ArrowLeft,
   'arrow-up-right': TopRight,
   book: Notebook,
   building: OfficeBuilding,

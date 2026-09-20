@@ -64,7 +64,7 @@ function removeMinor(index: number): void {
 <template>
   <div class="reg">
     <div class="reg__head">
-      <BaseButton variant="link" @click="emit('back')">{{
+      <BaseButton variant="back" @click="emit('back')">{{
         $t('features.register.back')
       }}</BaseButton>
     </div>
