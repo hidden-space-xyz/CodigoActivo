@@ -773,7 +773,6 @@
       }
     },
     "login": {
-      "eyebrow": "// iniciar sesión",
       "title": "Bienvenido de nuevo",
       "intro": "Inicia sesión en tu cuenta para participar en nuestras actividades.",
       "identifierLabel": "Correo o usuario",
@@ -799,7 +798,6 @@
       "backToLogin": "Volver a iniciar sesión"
     },
     "register": {
-      "eyebrow": "// regístrate",
       "title": "Únete a Código Activo",
       "intro": "Regístrate y, si tienes menores a tu cargo, inscríbelos a todos en un solo paso."
     },

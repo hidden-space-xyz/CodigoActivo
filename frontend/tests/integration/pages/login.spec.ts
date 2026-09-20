@@ -24,7 +24,10 @@ describe('login page', () => {
     serveChallenge()
 
     const { wrapper, router } = await renderApp('/login?redirect=/about')
-    expect(wrapper.text()).toContain(t('pages.login.title'))
+    const heading = wrapper.get('.login-head')
+    expect(heading.get('h1').text()).toBe(t('pages.login.title'))
+    expect(heading.get('.page-heading__comment').text()).toBe(`//${t('pages.login.intro')}`)
+    expect(heading.find('.eyebrow').exists()).toBe(false)
 
     await wrapper.find('#login-identifier').setValue('grace@example.test')
     await wrapper.find('#login-password').setValue('secret')
