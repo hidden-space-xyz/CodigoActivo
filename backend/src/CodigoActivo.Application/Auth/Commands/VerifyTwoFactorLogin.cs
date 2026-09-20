@@ -40,8 +40,6 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
     ILogger<VerifyTwoFactorLoginCommandHandler> logger
 ) : ICommandHandler<VerifyTwoFactorLoginCommand, Result<UserResponse>>
 {
-    private const string Operation = "VerifyTwoFactorLogin";
-
     /// <summary>
     /// Handles the request to complete the login.
     /// </summary>
@@ -61,14 +59,12 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
 
         if (user.IsPasswordLocked())
         {
-            logger.PasswordLockoutBlocked(user.Id, Operation);
             return Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
@@ -92,17 +88,15 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
 
         if (!accepted)
         {
-            var method = user.TwoFactorMethod;
             var locked = user.RecordTwoFactorFailure(
                 now,
                 options.MaxFailedAttempts,
                 options.LockoutDuration
             );
             await uow.SaveChangesAsync(ct);
-            logger.TwoFactorCodeRejected(user.Id, method);
             if (locked)
             {
-                logger.TwoFactorLockoutTriggered(user.Id, options.MaxFailedAttempts);
+                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
             }
 
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
@@ -113,10 +107,8 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
             user.AuthenticatorLastUsedStep = step;
         }
 
-        var acceptedMethod = user.TwoFactorMethod;
         user.CompleteTwoFactorLogin(now);
         await uow.SaveChangesAsync(ct);
-        logger.LoginCompleted(user.Id, acceptedMethod);
 
         var signedIn = await users.GetByIdWithDetailsAsync(user.Id, ct);
         return signedIn!.ToResponse();

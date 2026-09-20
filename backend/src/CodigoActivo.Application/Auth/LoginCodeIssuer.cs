@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
@@ -79,11 +80,7 @@ public sealed class LoginCodeIssuer(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Failed to send the one-time code email for user {UserId}",
-                user.Id
-            );
+            logger.EmailSendFailed(EmailKind.TwoFactorCode, ex);
             return Error.Conflict(ErrorCode.EmailSendFailed);
         }
 

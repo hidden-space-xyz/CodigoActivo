@@ -35,8 +35,6 @@ public sealed class SetAdminCommandHandler(
     ILogger<SetAdminCommandHandler> logger
 ) : ICommandHandler<SetAdminCommand, Result>
 {
-    private const string Operation = "SetAdmin";
-
     /// <summary>
     /// Handles the request to set admin. Granting the role first re-authenticates the acting
     /// administrator, so a hijacked session alone cannot escalate another account.
@@ -49,7 +47,6 @@ public sealed class SetAdminCommandHandler(
         var isAdmin = command.Request.IsAdmin;
         if (isAdmin && !await IsActingPasswordValidAsync(command, ct))
         {
-            logger.ReauthenticationRejected(command.ActingUserId, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
@@ -72,7 +69,7 @@ public sealed class SetAdminCommandHandler(
         user.IsAdmin = isAdmin;
         user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
-        logger.AdministratorFlagChanged(command.ActingUserId, user.Id, isAdmin);
+        logger.AdministratorFlagChanged(isAdmin);
         await securityNotifier.NotifyAsync(
             user,
             isAdmin ? AccountSecurityChange.AdminGranted : AccountSecurityChange.AdminRevoked,

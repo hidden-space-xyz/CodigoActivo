@@ -1,4 +1,5 @@
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Auth.Commands;
@@ -367,7 +368,7 @@ public class AuthController : ApiControllerBase
         {
             HttpContext
                 .RequestServices.GetRequiredService<ILogger<AuthController>>()
-                .LogError(ex, "Failed to revoke the session row while signing out");
+                .SessionRevocationFailed(ex);
         }
 
         try
@@ -381,7 +382,7 @@ public class AuthController : ApiControllerBase
         {
             HttpContext
                 .RequestServices.GetRequiredService<ILogger<AuthController>>()
-                .LogError(ex, "Failed to close the pending challenge while signing out");
+                .PendingChallengeCloseFailed(ex);
         }
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Security;
 using Microsoft.Extensions.Logging;
@@ -40,10 +41,7 @@ public sealed class AuthenticatorCodeVerifier(
         }
         catch (CryptographicException ex)
         {
-            logger.LogError(
-                ex,
-                "A stored authenticator key could not be decrypted; the data protection keys may have changed"
-            );
+            logger.AuthenticatorKeyUnreadable(ex);
             return null;
         }
 

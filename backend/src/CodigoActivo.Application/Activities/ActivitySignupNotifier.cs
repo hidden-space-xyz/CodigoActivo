@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
@@ -96,11 +97,7 @@ public sealed class ActivitySignupNotifier(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Failed to send the signup decision email for activity {ActivityId}",
-                activityId
-            );
+            logger.EmailSendFailed(EmailKind.ActivityNotification, ex);
         }
     }
 

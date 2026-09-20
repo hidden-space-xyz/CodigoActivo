@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Resources.Localization;
@@ -81,30 +82,14 @@ public sealed class ManualEmailDispatcher(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Could not queue a manual email for {Count} recipients",
-                batch.Recipients.Count
-            );
+            logger.ManualEmailQueueFailed(batch.Recipients.Count, ex);
             return Error.BadRequest(ErrorCode.EmailSendFailed);
         }
 
         if (!queued)
         {
-            logger.LogError(
-                "The outbound email outbox has no room for a manual email to {Count} recipients",
-                batch.Recipients.Count
-            );
+            logger.ManualEmailOutboxFull(batch.Recipients.Count);
             return Error.BadRequest(ErrorCode.EmailSendFailed);
-        }
-
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            logger.LogInformation(
-                "An admin queued a manual email for {Recipients} recipients ({Skipped} without an address)",
-                batch.Recipients.Count,
-                skipped
-            );
         }
 
         return new SendEmailResultResponse(batch.Recipients.Count, skipped);

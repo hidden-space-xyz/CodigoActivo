@@ -163,7 +163,8 @@ public sealed class PasswordAttemptGuardTests
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()
-            .Be($"Account locked for user {user.Id} after 3 wrong passwords")
+            .Be("An account was locked after 3 wrong passwords")
+            .And.NotContain(user.Id.ToString())
             .And.NotContain(Correct)
             .And.NotContain("guessed-secret")
             .And.NotContain(user.Email!);

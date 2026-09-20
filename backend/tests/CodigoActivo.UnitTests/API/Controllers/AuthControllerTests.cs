@@ -35,8 +35,7 @@ public sealed class AuthControllerTests
             sessions,
             Substitute.For<IUnitOfWork>(),
             new TestClock(),
-            new SessionLifetimeOptions(),
-            NullLogger<SessionTicketValidator>.Instance
+            new SessionLifetimeOptions()
         );
 
         var authenticationService = Substitute.For<IAuthenticationService>();

@@ -3,7 +3,6 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -24,14 +23,12 @@ public sealed record ConfirmAuthenticatorCommand(Guid UserId, ConfirmAuthenticat
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ConfirmAuthenticatorCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     AuthenticatorCodeVerifier authenticatorCodes,
-    AccountSecurityNotifier securityNotifier,
-    ILogger<ConfirmAuthenticatorCommandHandler> logger
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<ConfirmAuthenticatorCommand, Result>
 {
     /// <summary>
@@ -64,13 +61,11 @@ public sealed class ConfirmAuthenticatorCommandHandler(
         );
         if (step is null)
         {
-            logger.AuthenticatorEnrollmentCodeRejected(user.Id);
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
         }
 
         user.EnableAuthenticator(step.Value, now);
         await uow.SaveChangesAsync(ct);
-        logger.AuthenticatorEnrolled(user.Id);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorEnabled, ct);
         return Result.Success();
     }

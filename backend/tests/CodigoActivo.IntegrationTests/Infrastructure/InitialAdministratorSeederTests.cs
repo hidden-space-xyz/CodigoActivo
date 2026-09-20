@@ -3,7 +3,6 @@ using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -25,12 +24,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
     {
         await using var db = postgres.CreateContext();
         var clock = new TestClock { UtcNow = CreatedAt };
-        var seeder = new InitialAdministratorSeeder(
-            db,
-            new FakePasswordHasher(),
-            clock,
-            NullLogger<InitialAdministratorSeeder>.Instance
-        );
+        var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), clock);
 
         await seeder.SeedAsync(
             "  ADMIN@CodigoActivo.Test  ",
@@ -53,12 +47,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         await using var db = postgres.CreateContext();
         db.Users.Add(NewExistingUser());
         await db.SaveChangesAsync(TestCancellation.Ct);
-        var seeder = new InitialAdministratorSeeder(
-            db,
-            new FakePasswordHasher(),
-            new TestClock(),
-            NullLogger<InitialAdministratorSeeder>.Instance
-        );
+        var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
         var act = () => seeder.SeedAsync(null, null, TestCancellation.Ct);
 
@@ -70,12 +59,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
     public async Task SeedAsyncEmptyDatabaseWithoutPasswordFails()
     {
         await using var db = postgres.CreateContext();
-        var seeder = new InitialAdministratorSeeder(
-            db,
-            new FakePasswordHasher(),
-            new TestClock(),
-            NullLogger<InitialAdministratorSeeder>.Instance
-        );
+        var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
         var act = () => seeder.SeedAsync("admin@codigoactivo.test", null, TestCancellation.Ct);
 

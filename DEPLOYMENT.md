@@ -26,10 +26,12 @@ Networks: `frontend` (shared by `web` and `api`) and internal-only `backend` (sh
 | `api-files`          | Uploaded files                                                     |
 | `api-dataprotection` | ASP.NET Data Protection keys and the generated Ed25519 certificate |
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
+| `logs-api`           | Daily API log files                                                |
 
-Logs go to stdout and contain personal data (client IPs, user agents), so the base Compose file rotates every
-container's `json-file` log at 10 MB with five files kept; see [SECURITY.md](SECURITY.md#logging) for the
-logging policy. Queued email is persisted in `db-data`, not held in memory; see
+Every base service disables container logging (`logging: driver: none`); `docker compose logs` shows nothing.
+Only the API writes log files, into `logs-api`, and purges them itself; see [SECURITY.md](SECURITY.md#logging)
+for what is logged and how retention works. Do not include `logs-api` in backups: it holds only diagnostics
+subject to that retention. Queued email is persisted in `db-data`, not held in memory; see
 [Email delivery](#email-delivery).
 
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
@@ -55,13 +57,17 @@ curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/ma
 # Edit .env and replace all required or placeholder values.
 docker compose up -d
 docker compose ps
-docker compose logs api
+docker compose exec api sh -c 'tail -n 100 /var/log/codigoactivo/api-*.log'
 ```
 
 Set at least `POSTGRES_PASSWORD` (16+ chars), `DATA_PROTECTION_CERTIFICATE_PASSWORD` (32+ chars),
 `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for these
 volumes), `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` (used only when the user table is empty), and
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_FROM_ADDRESS` plus any SMTP credentials.
+
+With `logging: driver: none`, an `api` container that keeps restarting without a new file appearing in
+`logs-api` means `LOG_DIRECTORY` is not writable or the startup configuration is invalid; the fatal event
+still reaches the file whenever the directory is writable.
 
 Every login is completed with a one-time code, emailed unless the user enrolled an authenticator app, so
 startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing. Production also requires an
@@ -198,8 +204,10 @@ without also raising `EmailQueue:Workers` lengthens the lease held on a claimed 
 None of the `EmailQueue:*` settings are forwarded by the base Compose file; changing one requires both the
 uppercase environment variable and adding it to `api.environment` in `docker-compose.yml`.
 
-Monitor logs for recipient throttling, global-budget exhaustion, messages that exhausted their attempts,
-SMTP delivery errors and undelivered messages at shutdown.
+Monitor the `InfrastructureLog` events for recipient throttling (`RecipientEmailQuotaReached`), global-budget
+pressure (`GlobalEmailBudgetLow`, `GlobalEmailBudgetExhausted`), delivery failures and exhausted attempts
+(`EmailDeliveryAttemptFailed`, `EmailDeliveryGaveUp`), and an incomplete shutdown drain
+(`EmailOutboxDrainIncomplete`). See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
 ## Locked accounts
 
@@ -247,7 +255,9 @@ Inside the repository, `docker compose up --build` merges `docker-compose.overri
 publishing SMTP on port `1025` and its inbox UI on port `8025`, exposes PostgreSQL on port `5432` and makes
 the backend network non-internal, and disables the API read-only root filesystem in favor of
 debugger-oriented privileges. Visual Studio uses the same Compose project through
-`backend/docker-compose.dcproj`.
+`backend/docker-compose.dcproj`. As a development-only exception to the log policy in
+[SECURITY.md](SECURITY.md#logging), the overlay clears `LOG_DIRECTORY`, so the API logs to the console
+unmasked, kept by Docker's `json-file` driver at 5 MB per file, two files.
 
 ## Releases and upgrades
 
@@ -278,7 +288,9 @@ version; rerunning a commit older than the latest release is rejected. Actions n
 repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
-review logs and smoke test. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from
+review the daily log files in `logs-api` (see [SECURITY.md](SECURITY.md#logging)) and smoke test. Recreating
+the containers this way discards any `json-file` logs Docker kept from an earlier version; the daily files in
+`logs-api` are unaffected. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from
 older major versions. Once `AnonymizeEventRatings` has run, the schema cannot be rolled back; see
 [SECURITY.md](SECURITY.md#event-rating-anonymity). Reverting `RemoveEventRatingSubmissions` recreates its
 table empty, so it does not recover which user rated which event. Reverting `AddMultipleEventTermsDocuments`

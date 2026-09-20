@@ -6,7 +6,6 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -15,7 +14,6 @@ namespace CodigoActivo.UnitTests.API.Security;
 public sealed class SessionTicketValidatorTests
 {
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
-    private readonly RecordingLogger<SessionTicketValidator> logger = new();
 
     private SessionTicketValidator Build()
     {
@@ -24,8 +22,7 @@ public sealed class SessionTicketValidatorTests
             sessions,
             Substitute.For<IUnitOfWork>(),
             new TestClock(),
-            new SessionLifetimeOptions(),
-            logger
+            new SessionLifetimeOptions()
         );
     }
 
@@ -53,26 +50,9 @@ public sealed class SessionTicketValidatorTests
     }
 
     [Fact]
-    public async Task EndSessionAsyncRevokedRowLogsTheUserIdOnly()
+    public async Task EndSessionAsyncRevokesTheRowNamedByTheTicket()
     {
         RemovedRows(1);
-        var userId = Guid.NewGuid();
-
-        await Build()
-            .EndSessionAsync(
-                Ticket(userId, Guid.NewGuid().ToString()),
-                TestContext.Current.CancellationToken
-            );
-
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Information);
-        entry.Message.Should().Be($"Session ended for user {userId}");
-    }
-
-    [Fact]
-    public async Task EndSessionAsyncAlreadyGoneRowLogsNothing()
-    {
-        RemovedRows(0);
 
         await Build()
             .EndSessionAsync(
@@ -80,7 +60,12 @@ public sealed class SessionTicketValidatorTests
                 TestContext.Current.CancellationToken
             );
 
-        logger.Entries.Should().BeEmpty();
+        await sessions
+            .ReceivedWithAnyArgs(1)
+            .RemoveAsync(
+                Arg.Any<Expression<Func<UserSession, bool>>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Theory]
@@ -102,7 +87,6 @@ public sealed class SessionTicketValidatorTests
                 Arg.Any<Expression<Func<UserSession, bool>>>(),
                 TestContext.Current.CancellationToken
             );
-        logger.Entries.Should().BeEmpty();
     }
 
     [Fact]
@@ -118,6 +102,5 @@ public sealed class SessionTicketValidatorTests
                 Arg.Any<Expression<Func<UserSession, bool>>>(),
                 TestContext.Current.CancellationToken
             );
-        logger.Entries.Should().BeEmpty();
     }
 }

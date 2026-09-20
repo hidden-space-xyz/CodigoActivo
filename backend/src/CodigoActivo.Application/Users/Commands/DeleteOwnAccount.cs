@@ -46,8 +46,6 @@ public sealed class DeleteOwnAccountCommandHandler(
     ILogger<DeleteOwnAccountCommandHandler> logger
 ) : ICommandHandler<DeleteOwnAccountCommand, Result>
 {
-    private const string Operation = "DeleteOwnAccount";
-
     /// <summary>
     /// Handles the request to delete the signed-in user's own account.
     /// </summary>
@@ -78,30 +76,26 @@ public sealed class DeleteOwnAccountCommandHandler(
             )
         )
         {
-            logger.ReauthenticationRejected(user.Id, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
         if (!IsCodeAccepted(user, command.Request.Code))
         {
-            var method = user.TwoFactorMethod;
             var locked = user.RecordTwoFactorFailure(
                 now,
                 options.MaxFailedAttempts,
                 options.LockoutDuration
             );
             await uow.SaveChangesAsync(ct);
-            logger.TwoFactorCodeRejected(user.Id, method);
             if (locked)
             {
-                logger.TwoFactorLockoutTriggered(user.Id, options.MaxFailedAttempts);
+                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
             }
 
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
@@ -112,11 +106,9 @@ public sealed class DeleteOwnAccountCommandHandler(
             return Error.Conflict(ErrorCode.UserDeleteAuthoredContentExists);
         }
 
-        var deletedId = user.Id;
         users.Remove(user);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
-        logger.AccountDeletedByOwner(deletedId);
         return Result.Success();
     }
 

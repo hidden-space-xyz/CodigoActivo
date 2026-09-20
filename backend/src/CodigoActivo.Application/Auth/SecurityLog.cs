@@ -1,355 +1,52 @@
 using CodigoActivo.Application.Emails;
-using CodigoActivo.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth;
 
 /// <summary>
-/// Declares every security event the application handlers and the session plumbing emit. Templates
-/// only ever take entity identifiers, enum values and counts: never names, addresses, identifiers
-/// typed by the client, passwords, hashes, codes or tokens.
+/// Declares the security events the application keeps. Routine authentication outcomes are not
+/// recorded: only the lockouts that stop an account, the administrator flag and the security
+/// notification the limiter dropped are. No template carries an identifier, an address, a name or
+/// anything typed by the client, so no entry can be traced back to a person.
 /// </summary>
 public static partial class SecurityLog
 {
     /// <summary>
-    /// Records that the password step was attempted for an identifier that matches no account.
+    /// Records that the wrong passwords reached the limit and locked an account, revoking every open
+    /// session. Only a completed password reset lifts the lock.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Login password step failed for an unknown identifier"
-    )]
-    public static partial void LoginUnknownIdentifierRejected(this ILogger logger);
-
-    /// <summary>
-    /// Records that the password step was rejected for a known account.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Login password step failed for user {UserId}"
-    )]
-    public static partial void LoginPasswordRejected(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that a correct password did not open a challenge because of the account status.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="userStatusTypeId">Identifier of the user status type.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Login refused for user {UserId} because the account status {UserStatusTypeId} cannot sign in"
-    )]
-    public static partial void LoginRefusedForAccountStatus(
-        this ILogger logger,
-        Guid userId,
-        Guid userStatusTypeId
-    );
-
-    /// <summary>
-    /// Records that an operation was refused while the second factor was locked.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="operation">Name of the use case that was refused.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Operation {Operation} refused for user {UserId} because the second factor is locked"
-    )]
-    public static partial void TwoFactorLockoutBlocked(
-        this ILogger logger,
-        Guid userId,
-        string operation
-    );
-
-    /// <summary>
-    /// Records that the wrong passwords reached the limit and locked the account, revoking every
-    /// open session. Only a completed password reset lifts the lock.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
     /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Account locked for user {UserId} after {MaxFailedAttempts} wrong passwords"
+        Message = "An account was locked after {MaxFailedAttempts} wrong passwords"
     )]
-    public static partial void PasswordLockoutTriggered(
-        this ILogger logger,
-        Guid userId,
-        int maxFailedAttempts
-    );
+    public static partial void PasswordLockoutTriggered(this ILogger logger, int maxFailedAttempts);
 
     /// <summary>
-    /// Records that an operation was refused because the account password is locked.
+    /// Records that the wrong codes reached the limit and locked the second factor of an account.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="operation">Name of the use case that was refused.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Operation {Operation} refused for user {UserId} because the account password is locked"
-    )]
-    public static partial void PasswordLockoutBlocked(
-        this ILogger logger,
-        Guid userId,
-        string operation
-    );
-
-    /// <summary>
-    /// Records a wrong second-factor code.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="twoFactorMethod">Second factor the code was checked against.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Second-factor code rejected for user {UserId} using method {TwoFactorMethod}"
-    )]
-    public static partial void TwoFactorCodeRejected(
-        this ILogger logger,
-        Guid userId,
-        TwoFactorMethod twoFactorMethod
-    );
-
-    /// <summary>
-    /// Records that the wrong codes reached the limit and locked the second factor.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
     /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Second factor locked for user {UserId} after {MaxFailedAttempts} wrong codes"
+        Message = "The second factor of an account was locked after {MaxFailedAttempts} wrong codes"
     )]
     public static partial void TwoFactorLockoutTriggered(
         this ILogger logger,
-        Guid userId,
         int maxFailedAttempts
-    );
-
-    /// <summary>
-    /// Records a wrong code while confirming an authenticator enrollment.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Authenticator enrollment code rejected for user {UserId}"
-    )]
-    public static partial void AuthenticatorEnrollmentCodeRejected(
-        this ILogger logger,
-        Guid userId
-    );
-
-    /// <summary>
-    /// Records that a route asking for the caller's own password got a wrong or missing one.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="actingUserId">Identifier of the acting user.</param>
-    /// <param name="operation">Name of the use case that asked for the password.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Re-authentication rejected for user {ActingUserId} during {Operation}"
-    )]
-    public static partial void ReauthenticationRejected(
-        this ILogger logger,
-        Guid actingUserId,
-        string operation
-    );
-
-    /// <summary>
-    /// Records a wrong or expired password-reset code for a known account.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="userStatusTypeId">Identifier of the user status type.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Password-reset code rejected for user {UserId} with account status {UserStatusTypeId}"
-    )]
-    public static partial void PasswordResetCodeRejected(
-        this ILogger logger,
-        Guid userId,
-        Guid userStatusTypeId
-    );
-
-    /// <summary>
-    /// Records a wrong or expired account-verification code for a known account.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="userStatusTypeId">Identifier of the user status type.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Account verification code rejected for user {UserId} with account status {UserStatusTypeId}"
-    )]
-    public static partial void AccountVerificationCodeRejected(
-        this ILogger logger,
-        Guid userId,
-        Guid userStatusTypeId
-    );
-
-    /// <summary>
-    /// Records that the password step was accepted and a second-factor challenge was issued. No
-    /// session exists yet: only <see cref="LoginCompleted"/> reports one.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="twoFactorMethod">Second factor the challenge asks for.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Login password step accepted for user {UserId}; second-factor challenge issued "
-            + "for method {TwoFactorMethod}"
-    )]
-    public static partial void LoginChallengeIssued(
-        this ILogger logger,
-        Guid userId,
-        TwoFactorMethod twoFactorMethod
-    );
-
-    /// <summary>
-    /// Records that the second factor was accepted, which is when the session starts.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="twoFactorMethod">Second factor the accepted code came from.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Login completed for user {UserId} with second factor {TwoFactorMethod}"
-    )]
-    public static partial void LoginCompleted(
-        this ILogger logger,
-        Guid userId,
-        TwoFactorMethod twoFactorMethod
-    );
-
-    /// <summary>
-    /// Records that the session row behind a presented ticket was revoked on sign out.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Session ended for user {UserId}")]
-    public static partial void SessionEnded(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that an account replaced its password after proving the previous one.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Password changed for user {UserId}")]
-    public static partial void PasswordChanged(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that an account replaced its password through the recovery flow.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Password reset completed for user {UserId}"
-    )]
-    public static partial void PasswordResetCompleted(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that an authenticator application became the second factor.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Authenticator enrolled for user {UserId}"
-    )]
-    public static partial void AuthenticatorEnrolled(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that the authenticator was removed and email became the second factor again.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Authenticator removed for user {UserId}"
-    )]
-    public static partial void AuthenticatorRemoved(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that an administrator returned somebody's second factor to email.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="actingUserId">Identifier of the acting user.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Second factor reset by administrator {ActingUserId} for user {UserId}"
-    )]
-    public static partial void TwoFactorResetByAdministrator(
-        this ILogger logger,
-        Guid actingUserId,
-        Guid userId
     );
 
     /// <summary>
     /// Records that the administrator flag of an account was granted or revoked.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="actingUserId">Identifier of the acting user.</param>
-    /// <param name="userId">Identifier of the user.</param>
     /// <param name="isAdmin">State the flag was set to.</param>
     [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Administrator flag set to {IsAdmin} by user {ActingUserId} for user {UserId}"
+        Level = LogLevel.Warning,
+        Message = "The administrator flag of an account was set to {IsAdmin}"
     )]
-    public static partial void AdministratorFlagChanged(
-        this ILogger logger,
-        Guid actingUserId,
-        Guid userId,
-        bool isAdmin
-    );
-
-    /// <summary>
-    /// Records that the email or phone an account signs in with was replaced.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="actingUserId">Identifier of the acting user.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Login identifiers changed by user {ActingUserId} for user {UserId}"
-    )]
-    public static partial void LoginIdentifiersChanged(
-        this ILogger logger,
-        Guid actingUserId,
-        Guid userId
-    );
-
-    /// <summary>
-    /// Records that an account erased itself after the password and the second factor.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Account deleted by its own owner {UserId}"
-    )]
-    public static partial void AccountDeletedByOwner(this ILogger logger, Guid userId);
-
-    /// <summary>
-    /// Records that an administrator or guardian deleted somebody else's account.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="actingUserId">Identifier of the acting user.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "User {UserId} deleted by user {ActingUserId}"
-    )]
-    public static partial void UserDeletedByAnotherUser(
-        this ILogger logger,
-        Guid actingUserId,
-        Guid userId
-    );
+    public static partial void AdministratorFlagChanged(this ILogger logger, bool isAdmin);
 
     /// <summary>
     /// Records that the automatic-message limiter refused a security notification, so the owner of
@@ -357,26 +54,12 @@ public static partial class SecurityLog
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="securityChange">Change the dropped notification was reporting.</param>
-    /// <param name="userId">Identifier of the user.</param>
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Security notification {SecurityChange} for user {UserId} was dropped by the email limiter"
+        Message = "A {SecurityChange} security notification was dropped by the email limiter"
     )]
     public static partial void SecurityNotificationRateLimited(
         this ILogger logger,
-        AccountSecurityChange securityChange,
-        Guid userId
+        AccountSecurityChange securityChange
     );
-
-    /// <summary>
-    /// Records that an administrator moved an account to another user type.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="userTypeId">Identifier of the user type.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "User {UserId} moved to user type {UserTypeId} by an administrator"
-    )]
-    public static partial void UserTypeChanged(this ILogger logger, Guid userId, Guid userTypeId);
 }

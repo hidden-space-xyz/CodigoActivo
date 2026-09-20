@@ -181,7 +181,8 @@ public sealed class ResendVerificationCommandHandlerTests
             .LevelEntries.Should()
             .ContainSingle(entry => entry.Level == LogLevel.Error)
             .Which.Message.Should()
-            .Contain(user.Id.ToString());
+            .StartWith("Sending a AccountVerification email failed")
+            .And.NotContain(user.Id.ToString());
         logger.Entries.Should().NotContain(entry => entry.Contains(user.Email!));
     }
 

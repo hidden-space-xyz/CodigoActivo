@@ -28,7 +28,6 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RecordingEmailSender emailSender = new();
-    private readonly RecordingLogger<UpdateUserCommandHandler> logger = new();
     private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
     private readonly User actingUser;
     private readonly UpdateUserCommandHandler sut;
@@ -49,19 +48,8 @@ public sealed class UpdateUserCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 notifierLogger
-            ),
-            logger
+            )
         );
-    }
-
-    private void AssertIdentifierChangeLogged(Guid userId)
-    {
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be($"Login identifiers changed by user {actingUser.Id} for user {userId}");
-        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Information);
     }
 
     private Task<Result<UserResponse>> HandleAsync(Guid userId, UpdateUserRequest request)
@@ -284,7 +272,6 @@ public sealed class UpdateUserCommandHandlerTests
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("old@test.com");
         message.TextBody.Should().Contain("b***@test.com").And.NotContain("brandnew@test.com");
-        AssertIdentifierChangeLogged(id);
     }
 
     [Fact]
@@ -311,7 +298,6 @@ public sealed class UpdateUserCommandHandlerTests
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("ana@test.com");
         message.TextBody.Should().NotContain("a***@test.com");
-        AssertIdentifierChangeLogged(id);
     }
 
     [Fact]
@@ -337,7 +323,6 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.Email.Should().Be("ana@test.com");
         emailSender.Sent.Should().BeEmpty();
-        AssertIdentifierChangeLogged(id);
     }
 
     [Fact]
@@ -363,13 +348,12 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        notifierLogger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be(
-                $"Security notification IdentifiersChanged for user {id} was dropped by the email limiter"
-            );
+        var entry = notifierLogger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Warning);
+        entry
+            .Message.Should()
+            .Be("A IdentifiersChanged security notification was dropped by the email limiter")
+            .And.NotContain(id.ToString());
     }
 
     [Fact]
@@ -429,18 +413,6 @@ public sealed class UpdateUserCommandHandlerTests
         actingUser.PasswordFailedAttempts.Should().Be(countedFailures);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be($"Re-authentication rejected for user {actingUser.Id} during UpdateUser")
-            .And.NotContain("attacker@test.com");
-        if (!string.IsNullOrEmpty(currentPassword))
-        {
-            logger.Entries[0].Should().NotContain(currentPassword);
-        }
-
-        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Warning);
     }
 
     [Fact]
@@ -661,7 +633,6 @@ public sealed class UpdateUserCommandHandlerTests
             .BeNull("an adult dependent is still a dependent without login identifiers");
         user.Phone.Should().BeNull();
         user.PasswordHash.Should().BeNull();
-        logger.Entries.Should().BeEmpty();
         emailSender.Sent.Should().BeEmpty();
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

@@ -10,7 +10,6 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
@@ -25,7 +24,6 @@ public sealed class LoginCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly TwoFactorOptions twoFactor = new();
-    private readonly RecordingLogger<LoginCommandHandler> logger = new();
     private readonly CountingPasswordHasher hasher = new();
     private readonly LoginCommandHandler sut;
 
@@ -49,8 +47,7 @@ public sealed class LoginCommandHandlerTests
                 twoFactor,
                 accountEmails,
                 NullLogger<LoginCodeIssuer>.Instance
-            ),
-            logger
+            )
         );
     }
 
@@ -138,36 +135,6 @@ public sealed class LoginCommandHandlerTests
         await AssertNotSavedAsync();
     }
 
-    [Fact]
-    public async Task HandleAsyncFailedPasswordStepLogsIdsOnlyAndNeverTheIdentifier()
-    {
-        var known = Returns(NewUser(passwordHash: "fake:correct"));
-
-        await LoginAsync(password: "wrong");
-
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be($"Login password step failed for user {known.Id}");
-        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Warning);
-
-        users
-            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((User?)null);
-
-        await LoginAsync("someone@test.com");
-
-        logger.Entries.Should().HaveCount(2);
-        logger
-            .Entries[1]
-            .Should()
-            .Be("Login password step failed for an unknown identifier")
-            .And.NotContain("someone@test.com")
-            .And.NotContain("wrong");
-        logger.LevelEntries[1].Level.Should().Be(LogLevel.Warning);
-    }
-
     [Theory]
     [MemberData(nameof(BlockedStatuses))]
     public async Task HandleAsyncNonActiveStatusReturnsForbidden(Guid statusId, ErrorCode expected)
@@ -217,41 +184,6 @@ public sealed class LoginCommandHandlerTests
             .Received(1)
             .GetByEmailOrPhoneAsync("ana@test.com", Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncAcceptedPasswordLogsTheIssuedChallengeWithIdsAndMethodOnly()
-    {
-        var user = Returns(NewUser());
-
-        await LoginAsync("  ana@test.com  ");
-
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Information);
-        entry
-            .Message.Should()
-            .Be(
-                $"Login password step accepted for user {user.Id}; second-factor challenge issued "
-                    + "for method Email"
-            )
-            .And.NotContain("ana@test.com");
-    }
-
-    [Fact]
-    public async Task HandleAsyncAuthenticatorUserLogsTheIssuedChallengeWithItsOwnMethod()
-    {
-        var user = Returns(NewUserWithAuthenticator("SECRET"));
-
-        await LoginAsync();
-
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be(
-                $"Login password step accepted for user {user.Id}; second-factor challenge issued "
-                    + "for method Authenticator"
-            );
     }
 
     [Fact]
@@ -309,11 +241,6 @@ public sealed class LoginCommandHandlerTests
         result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
         hasher.VerifyCalls.Should().Be(before + 1);
         emailSender.Sent.Should().BeEmpty();
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be($"Login password step failed for user {user.Id}");
         await AssertNotSavedAsync();
     }
 

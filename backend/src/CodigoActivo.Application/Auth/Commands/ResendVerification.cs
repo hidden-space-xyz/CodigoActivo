@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
@@ -77,7 +78,7 @@ public sealed class ResendVerificationCommandHandler(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Failed to send the verification email for user {UserId}", user.Id);
+            logger.EmailSendFailed(EmailKind.AccountVerification, ex);
             return Error.Conflict(ErrorCode.EmailSendFailed);
         }
 

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Options;
@@ -33,21 +34,19 @@ public sealed class AccountSecurityNotifier(
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task NotifyAsync(User user, AccountSecurityChange change, CancellationToken ct)
     {
-        return SendAsync(user.Id, user.Email, user.FirstName, change, maskedNewEmail: null, ct);
+        return SendAsync(user.Email, user.FirstName, change, maskedNewEmail: null, ct);
     }
 
     /// <summary>
     /// Notifies the address the account used before its login identifiers were replaced. The new
     /// address is only ever quoted masked.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
     /// <param name="previousEmail">Address the account had before the change.</param>
     /// <param name="recipientName">The recipient name value.</param>
     /// <param name="newEmail">Address the account has now, quoted masked or not at all.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task NotifyIdentifiersChangedAsync(
-        Guid userId,
         string? previousEmail,
         string recipientName,
         string? newEmail,
@@ -55,7 +54,6 @@ public sealed class AccountSecurityNotifier(
     )
     {
         return SendAsync(
-            userId,
             previousEmail,
             recipientName,
             AccountSecurityChange.IdentifiersChanged,
@@ -65,7 +63,6 @@ public sealed class AccountSecurityNotifier(
     }
 
     private async Task SendAsync(
-        Guid userId,
         string? address,
         string recipientName,
         AccountSecurityChange change,
@@ -93,16 +90,11 @@ public sealed class AccountSecurityNotifier(
         }
         catch (EmailRateLimitedException)
         {
-            logger.SecurityNotificationRateLimited(change, userId);
+            logger.SecurityNotificationRateLimited(change);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Failed to send the {SecurityChange} notification for user {UserId}",
-                change,
-                userId
-            );
+            logger.EmailSendFailed(EmailKind.SecurityAlert, ex);
         }
     }
 }

@@ -25,8 +25,7 @@ public sealed class VerifyUserCommandHandlerTests
             users,
             uow,
             clock,
-            new OtpValidator(clock, new FakePasswordHasher()),
-            NullLogger<VerifyUserCommandHandler>.Instance
+            new OtpValidator(clock, new FakePasswordHasher())
         );
     }
 

@@ -41,8 +41,6 @@ public sealed class DisableAuthenticatorCommandHandler(
     ILogger<DisableAuthenticatorCommandHandler> logger
 ) : ICommandHandler<DisableAuthenticatorCommand, Result>
 {
-    private const string Operation = "DisableAuthenticator";
-
     /// <summary>
     /// Handles the request to remove the authenticator.
     /// </summary>
@@ -73,14 +71,12 @@ public sealed class DisableAuthenticatorCommandHandler(
             )
         )
         {
-            logger.ReauthenticationRejected(user.Id, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
@@ -97,10 +93,9 @@ public sealed class DisableAuthenticatorCommandHandler(
                 options.LockoutDuration
             );
             await uow.SaveChangesAsync(ct);
-            logger.TwoFactorCodeRejected(user.Id, TwoFactorMethod.Authenticator);
             if (locked)
             {
-                logger.TwoFactorLockoutTriggered(user.Id, options.MaxFailedAttempts);
+                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
             }
 
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
@@ -109,7 +104,6 @@ public sealed class DisableAuthenticatorCommandHandler(
         user.UseEmailTwoFactor(now);
         user.TwoFactorFailedAttempts = 0;
         await uow.SaveChangesAsync(ct);
-        logger.AuthenticatorRemoved(user.Id);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorDisabled, ct);
         return Result.Success();
     }
