@@ -1,4 +1,5 @@
 using System.Text;
+using CodigoActivo.API.Diagnostics;
 
 namespace CodigoActivo.API.Security;
 
@@ -8,21 +9,21 @@ namespace CodigoActivo.API.Security;
 /// process outside a container: a developer running the API directly validates the configured value
 /// and keeps no state on their own filesystem.
 /// </summary>
-public sealed partial class DeploymentModeLock
+public sealed class DeploymentModeLock
 {
     private const string PersistentFilePath = "/app/state/deployment-mode";
     private const string ContainerKey = "DOTNET_RUNNING_IN_CONTAINER";
     private readonly string filePath;
-    private readonly ILogger<DeploymentModeLock> logger;
+    private readonly ILogger logger;
 
     /// <summary>
     /// Initializes a deployment mode lock with its required dependencies.
     /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    public DeploymentModeLock(ILogger<DeploymentModeLock> logger)
-        : this(PersistentFilePath, logger) { }
+    /// <param name="loggerFactory">Factory of the lifecycle logger.</param>
+    public DeploymentModeLock(ILoggerFactory loggerFactory)
+        : this(PersistentFilePath, CreateLogger(loggerFactory)) { }
 
-    internal DeploymentModeLock(string filePath, ILogger<DeploymentModeLock> logger)
+    internal DeploymentModeLock(string filePath, ILogger logger)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         ArgumentNullException.ThrowIfNull(logger);
@@ -45,7 +46,7 @@ public sealed partial class DeploymentModeLock
         var configuredValue = configuredMode ? "demo" : "normal";
         if (environment.IsDevelopment() && !RunsInContainer(configuration))
         {
-            LogLockSkipped(configuredValue);
+            logger.DeploymentModeLockSkipped(configuredValue);
             return configuredMode;
         }
 
@@ -108,12 +109,12 @@ public sealed partial class DeploymentModeLock
         }
     }
 
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Deployment mode lock skipped: this is a Development process outside a container, "
-            + "so the selected {ConfiguredMode} mode is not persisted"
-    )]
-    private partial void LogLockSkipped(string configuredMode);
+    private static ILogger CreateLogger(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+
+        return loggerFactory.CreateLogger(LogCategories.Lifecycle);
+    }
 
     private static bool RunsInContainer(IConfiguration configuration)
     {

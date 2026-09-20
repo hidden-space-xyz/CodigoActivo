@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
@@ -155,7 +156,7 @@ public sealed class RegisterCommandHandler(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Failed to send the verification email for user {UserId}", user.Id);
+            logger.EmailSendFailed(EmailKind.AccountVerification, ex);
 
             user.OtpLastSentAt = null;
             await uow.SaveChangesAsync(ct);

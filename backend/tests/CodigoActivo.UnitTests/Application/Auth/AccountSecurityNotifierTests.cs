@@ -70,7 +70,6 @@ public sealed class AccountSecurityNotifierTests
     public async Task NotifyIdentifiersChangedAsyncSendsToThePreviousAddressWithTheNewOneMasked()
     {
         await sut.NotifyIdentifiersChangedAsync(
-            Guid.NewGuid(),
             "old@test.com",
             "Owner",
             "brandnew@test.com",
@@ -92,14 +91,12 @@ public sealed class AccountSecurityNotifierTests
             sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Warning);
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be(
-                $"Security notification PasswordChanged for user {user.Id} was dropped by the email limiter"
-            );
+        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Warning);
+        entry
+            .Message.Should()
+            .Be("A PasswordChanged security notification was dropped by the email limiter")
+            .And.NotContain(user.Id.ToString());
     }
 
     [Fact]
@@ -112,6 +109,9 @@ public sealed class AccountSecurityNotifierTests
             sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        logger.LevelEntries.Should().ContainSingle().Which.Level.Should().Be(LogLevel.Error);
+        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Error);
+        entry.Message.Should().StartWith("Sending a SecurityAlert email failed");
+        entry.Message.Should().NotContain(user.Id.ToString()).And.NotContain("owner@test.com");
     }
 }

@@ -3,7 +3,6 @@ using System.Security.Cryptography;
 using System.Text;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Application.Auth;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
@@ -25,14 +24,12 @@ namespace CodigoActivo.API.Security;
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="options">Lifetime shared by the cookie and its session row.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class SessionTicketValidator(
     CodigoActivoDbContext db,
     IUserSessionRepository sessions,
     IUnitOfWork uow,
     IClock clock,
-    SessionLifetimeOptions options,
-    ILogger<SessionTicketValidator> logger
+    SessionLifetimeOptions options
 )
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
@@ -91,14 +88,10 @@ public sealed class SessionTicketValidator(
             return;
         }
 
-        var revoked = await sessions.RemoveAsync(
+        await sessions.RemoveAsync(
             candidate => candidate.Id == session && candidate.UserId == user,
             ct
         );
-        if (revoked > 0)
-        {
-            logger.SessionEnded(user);
-        }
     }
 
     /// <summary>

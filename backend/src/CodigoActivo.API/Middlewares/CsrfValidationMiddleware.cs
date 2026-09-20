@@ -1,3 +1,4 @@
+using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;
@@ -39,7 +40,7 @@ public sealed class CsrfValidationMiddleware(
             }
             catch (AntiforgeryValidationException ex)
             {
-                logger.LogWarning(ex, "CSRF validation failed");
+                logger.CsrfValidationFailed(ex);
 
                 await context.WriteApiErrorAsync(Error.BadRequest(ErrorCode.InvalidCsrfToken));
                 return;

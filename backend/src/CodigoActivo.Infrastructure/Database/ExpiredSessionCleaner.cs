@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -64,15 +65,11 @@ public sealed class ExpiredSessionCleaner(
     {
         try
         {
-            var removed = await PurgeAsync(ct);
-            if (removed > 0 && logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Removed {RemovedSessions} expired session rows", removed);
-            }
+            await PurgeAsync(ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "The expired session cleanup run failed; the next run will retry");
+            logger.ExpiredSessionCleanupFailed(ex);
         }
     }
 }

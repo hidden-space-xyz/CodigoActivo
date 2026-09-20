@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Storage;
 using Microsoft.Extensions.Logging;
@@ -77,10 +78,7 @@ public sealed class OrphanFileCleaner(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(ex, "Best-effort orphan cleanup failed for file {FileId}", fileId);
-            }
+            logger.OrphanFileCleanupFailed(ex);
         }
     }
 
@@ -132,14 +130,7 @@ public sealed class OrphanFileCleaner(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(
-                    ex,
-                    "Best-effort orphan cleanup failed for files {FileIds}",
-                    fileIds
-                );
-            }
+            logger.OrphanFileCleanupFailed(ex);
         }
     }
 
@@ -151,14 +142,7 @@ public sealed class OrphanFileCleaner(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(
-                    ex,
-                    "Best-effort stored content deletion failed for file {FileId}",
-                    fileId
-                );
-            }
+            logger.OrphanFileCleanupFailed(ex);
         }
     }
 }

@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Communication;
@@ -42,10 +43,7 @@ public sealed class ThrottledEmailSender(
 
         if (!await outbox.TryEnqueueAsync(EmailBatch.ForOne(message), ct))
         {
-            logger.LogError(
-                "The outbound email outbox is full at {Capacity} pending messages; an email was held back",
-                queueOptions.Capacity
-            );
+            logger.EmailOutboxFull(queueOptions.Capacity);
             throw new EmailRateLimitedException(EmailLimitScope.Global);
         }
     }
@@ -55,28 +53,16 @@ public sealed class ThrottledEmailSender(
         switch (decision.Alert)
         {
             case EmailGuardAlert.RecipientThrottled:
-                logger.LogWarning(
-                    "The per-recipient outbound email quota is now holding mail; an email was not sent"
-                );
+                logger.RecipientEmailQuotaReached();
                 break;
             case EmailGuardAlert.GlobalBudgetLow:
-                logger.LogWarning(
-                    "The global outbound email budget is running low with {Remaining} messages left before automatic mail is held",
-                    decision.GlobalRemaining
-                );
+                logger.GlobalEmailBudgetLow(decision.GlobalRemaining);
                 break;
             case EmailGuardAlert.GlobalBudgetExhausted:
-                logger.LogError(
-                    "The global outbound email budget is exhausted and an email was denied; automatic mail is held "
-                        + "until the budget refills, admin-written email is unaffected"
-                );
+                logger.GlobalEmailBudgetExhausted();
                 break;
             case EmailGuardAlert.TrackingSaturated:
-                logger.LogWarning(
-                    "The outbound email quota already tracks {Limit} recipients, so new addresses are accounted against the global budget "
-                        + "only",
-                    options.MaxTrackedRecipients
-                );
+                logger.EmailRecipientTrackingSaturated(options.MaxTrackedRecipients);
                 break;
             case EmailGuardAlert.None:
             default:

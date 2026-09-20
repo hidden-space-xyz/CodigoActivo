@@ -1,3 +1,4 @@
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -34,10 +35,7 @@ public sealed class EmailOutboxProcessor(
 
         if (ExecuteTask is { IsCompleted: false })
         {
-            logger.LogWarning(
-                "The email outbox did not finish delivering within {Drain}; the messages in flight stay stored",
-                options.ShutdownDrain
-            );
+            logger.EmailOutboxDrainIncomplete(options.ShutdownDrain);
         }
     }
 
@@ -75,7 +73,7 @@ public sealed class EmailOutboxProcessor(
                 return 0;
             }
 
-            logger.LogError(ex, "An email outbox delivery run failed; the next run will retry");
+            logger.EmailOutboxRunFailed(ex);
             return 0;
         }
     }

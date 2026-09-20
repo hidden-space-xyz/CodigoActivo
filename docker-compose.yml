@@ -1,17 +1,12 @@
 name: codigoactivo
 
-# Container logs hold client IP addresses and user agents: rotate them so they are not kept indefinitely.
 x-logging: &logging
-  driver: json-file
-  options:
-    max-size: "10m"
-    max-file: "5"
+  driver: none
 
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
-    # Terse error reports omit DETAIL lines, which quote row values such as a duplicated email address.
     command: ["postgres", "-c", "log_error_verbosity=terse"]
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -46,6 +41,7 @@ services:
       APP_BASE_URL: ${APP_BASE_URL}
       APP_TIMEZONE: ${APP_TIMEZONE}
       DEMO_MODE: ${DEMO_MODE}
+      LOG_DIRECTORY: /var/log/codigoactivo
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
       SMTP_HOST: ${SMTP_HOST}
@@ -59,6 +55,7 @@ services:
       - api-files:/app/files
       - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
       - api-state:/app/state
+      - logs-api:/var/log/codigoactivo
     networks: [backend, frontend]
     read_only: true
     tmpfs: [/tmp]
@@ -97,3 +94,4 @@ volumes:
   api-files:
   api-dataprotection:
   api-state:
+  logs-api:

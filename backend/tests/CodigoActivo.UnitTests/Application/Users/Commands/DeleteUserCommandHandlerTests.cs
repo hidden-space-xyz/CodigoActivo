@@ -21,12 +21,7 @@ public sealed class DeleteUserCommandHandlerTests
 
     public DeleteUserCommandHandlerTests()
     {
-        sut = new DeleteUserCommandHandler(
-            users,
-            uow,
-            cacheInvalidator,
-            NullLogger<DeleteUserCommandHandler>.Instance
-        );
+        sut = new DeleteUserCommandHandler(users, uow, cacheInvalidator);
     }
 
     private Task<int> AssertNotSavedAsync()

@@ -9,7 +9,6 @@ using CodigoActivo.Domain.Security;
 using CodigoActivo.Domain.Storage;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
@@ -20,13 +19,11 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
 /// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DemoDataSeeder(
     CodigoActivoDbContext context,
     ILocalFileSystemRepository storage,
     IPasswordHasher passwordHasher,
-    IClock clock,
-    ILogger<DemoDataSeeder> logger
+    IClock clock
 )
 {
     /// <summary>
@@ -103,7 +100,6 @@ public sealed class DemoDataSeeder(
 
         if (await IsSeededAsync(ct))
         {
-            logger.LogInformation("Demo data already present, skipping demo seed");
             return;
         }
 
@@ -112,14 +108,6 @@ public sealed class DemoDataSeeder(
 
         try
         {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation(
-                    "Downloading {Count} demo images from picsum.photos",
-                    fileIds.Count
-                );
-            }
-
             await DownloadImagesAsync(fileIds, ct);
 
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -164,18 +152,6 @@ public sealed class DemoDataSeeder(
             }
 
             throw;
-        }
-
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            logger.LogInformation(
-                "Demo data seeded: {Users} users, {Events} events, {Activities} activities, {Ratings} ratings, {Files} images",
-                graph.Users.Count,
-                graph.Events.Count,
-                graph.Activities.Count,
-                graph.Ratings.Count,
-                graph.Files.Count
-            );
         }
     }
 
@@ -686,14 +662,8 @@ public sealed class DemoDataSeeder(
                     await storage.SaveAsync(StoredName(fileId), stream, ct);
                     return;
                 }
-                catch (Exception ex) when (!ct.IsCancellationRequested && attempt < 3)
+                catch (Exception) when (!ct.IsCancellationRequested && attempt < 3)
                 {
-                    logger.LogWarning(
-                        ex,
-                        "Retrying demo image {FileId} (attempt {Attempt})",
-                        fileId,
-                        attempt
-                    );
                     await Task.Delay(
                         TimeSpan.FromMilliseconds(400 * attempt),
                         TimeProvider.System,

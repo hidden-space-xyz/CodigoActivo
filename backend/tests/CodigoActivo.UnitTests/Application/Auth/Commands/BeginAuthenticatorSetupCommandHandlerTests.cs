@@ -34,8 +34,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
             PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
             totp,
             new FakeSecretProtector(),
-            options,
-            NullLogger<BeginAuthenticatorSetupCommandHandler>.Instance
+            options
         );
     }
 

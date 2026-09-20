@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Options;
@@ -82,11 +83,7 @@ public sealed class ForgotPasswordCommandHandler(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Failed to send the password reset email for user {UserId}",
-                user.Id
-            );
+            logger.EmailSendFailed(EmailKind.PasswordReset, ex);
             return Result.Success();
         }
 

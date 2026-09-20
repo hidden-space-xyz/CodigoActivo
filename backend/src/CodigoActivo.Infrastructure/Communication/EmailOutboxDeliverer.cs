@@ -1,6 +1,7 @@
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
 using CodigoActivo.Domain.Entities;
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Communication;
@@ -114,22 +115,11 @@ public sealed class EmailOutboxDeliverer(
                 Describe(failure),
                 CancellationToken.None
             );
-            logger.LogWarning(
-                failure,
-                "Attempt {Attempts} to deliver a {Kind} email failed; the next attempt is due at {NextAttemptAt}",
-                attempts,
-                message.Kind,
-                nextAttemptAt
-            );
+            logger.EmailDeliveryAttemptFailed(attempts, message.Kind, failure);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Could not record the failed attempt {Attempts} of a {Kind} email; its lease will expire and it will be retried",
-                attempts,
-                message.Kind
-            );
+            logger.EmailAttemptNotRecorded(attempts, message.Kind, ex);
         }
     }
 
@@ -144,10 +134,7 @@ public sealed class EmailOutboxDeliverer(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Could not remove the email whose delivery attempts are spent; the next run will retry"
-            );
+            logger.ExhaustedEmailNotRemoved(ex);
         }
     }
 
@@ -159,21 +146,13 @@ public sealed class EmailOutboxDeliverer(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                ex,
-                "Could not clear the stored content of delivered email; the next run will retry"
-            );
+            logger.EmailContentSweepFailed(ex);
         }
     }
 
     private void LogGaveUp(Exception? failure, EmailKind kind, int attempts)
     {
-        logger.LogError(
-            failure,
-            "Gave up on a {Kind} email after {Attempts} failed delivery attempts and removed it from the outbox",
-            kind,
-            attempts
-        );
+        logger.EmailDeliveryGaveUp(kind, attempts, failure);
     }
 
     private static string Describe(Exception failure)

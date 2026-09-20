@@ -88,7 +88,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsyncFirstRunPurgesAfterTheStartupDelayAndLogsTheCount()
+    public async Task ExecuteAsyncFirstRunPurgesAfterTheStartupDelayWithoutLogging()
     {
         var signal = new TaskCompletionSource();
         RemovesAndSignals(signal, removed: 2);
@@ -104,12 +104,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         await signal.Task.WaitAsync(WaitBudget, TestContext.Current.CancellationToken);
         await cleaner.StopAsync(TestContext.Current.CancellationToken);
 
-        logger
-            .LevelEntries.Should()
-            .Contain(entry =>
-                entry.Level == LogLevel.Information
-                && entry.Message == "Removed 2 expired session rows"
-            );
+        logger.Entries.Should().BeEmpty();
     }
 
     [Fact]

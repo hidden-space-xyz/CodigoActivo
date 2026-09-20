@@ -40,8 +40,7 @@ public sealed class ResetPasswordCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
-            ),
-            NullLogger<ResetPasswordCommandHandler>.Instance
+            )
         );
     }
 

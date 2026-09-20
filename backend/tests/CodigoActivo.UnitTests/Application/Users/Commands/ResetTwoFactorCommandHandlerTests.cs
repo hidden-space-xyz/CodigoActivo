@@ -41,8 +41,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 NullLogger<AccountSecurityNotifier>.Instance
-            ),
-            NullLogger<ResetTwoFactorCommandHandler>.Instance
+            )
         );
     }
 

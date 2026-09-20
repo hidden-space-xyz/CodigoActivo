@@ -5,7 +5,6 @@ using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Security;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
@@ -15,12 +14,10 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class InitialAdministratorSeeder(
     CodigoActivoDbContext context,
     IPasswordHasher passwordHasher,
-    IClock clock,
-    ILogger<InitialAdministratorSeeder> logger
+    IClock clock
 )
 {
     /// <summary>
@@ -79,12 +76,5 @@ public sealed class InitialAdministratorSeeder(
         };
         context.Users.Add(administrator);
         await context.SaveChangesAsync(ct);
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            logger.LogInformation(
-                "Created the initial administrator account {UserId}",
-                administrator.Id
-            );
-        }
     }
 }

@@ -7,7 +7,6 @@ internal static class ApiRequestPipeline
     internal static void ConfigureRequestPipeline(this WebApplication app)
     {
         app.UseForwardedHeaders();
-        app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseExceptionHandler();
 
         if (app.Environment.IsDevelopment())

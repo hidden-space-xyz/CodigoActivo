@@ -31,8 +31,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
             clock,
             uow,
             cacheInvalidator,
-            new GetUserByIdQueryHandler(users, new FakeQueryExecutor()),
-            NullLogger<ChangeUserTypeCommandHandler>.Instance
+            new GetUserByIdQueryHandler(users, new FakeQueryExecutor())
         );
     }
 

@@ -6,7 +6,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Auth.Commands;
 
@@ -30,19 +29,15 @@ public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginC
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions twoFactor,
-    LoginCodeIssuer loginCodes,
-    ILogger<LoginCommandHandler> logger
+    LoginCodeIssuer loginCodes
 ) : ICommandHandler<LoginCommand, Result<LoginChallenge>>
 {
-    private const string Operation = "Login";
-
     /// <summary>
     /// Handles the request to login.
     /// </summary>
@@ -65,23 +60,12 @@ public sealed class LoginCommandHandler(
 
         if (user is null)
         {
-            logger.LoginUnknownIdentifierRejected();
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
         }
 
         if (!accepted)
         {
-            logger.LoginPasswordRejected(user.Id);
             return Error.Unauthorized(ErrorCode.InvalidCredentials);
-        }
-
-        if (
-            user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked
-            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-            || user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending
-        )
-        {
-            logger.LoginRefusedForAccountStatus(user.Id, user.UserStatusTypeId);
         }
 
         if (user.UserStatusTypeId == SeedIds.UserStatusTypes.Blocked)
@@ -102,7 +86,6 @@ public sealed class LoginCommandHandler(
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            logger.TwoFactorLockoutBlocked(user.Id, Operation);
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
@@ -120,7 +103,6 @@ public sealed class LoginCommandHandler(
 
         user.StartLoginChallenge(Guid.NewGuid());
         await uow.SaveChangesAsync(ct);
-        logger.LoginChallengeIssued(user.Id, user.TwoFactorMethod);
 
         return new LoginChallenge(
             user.Id,

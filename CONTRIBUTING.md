@@ -40,7 +40,8 @@ verification links.
 
 The API starts at <http://localhost:5150>; the `https` launch profile also uses <https://localhost:7039>.
 Swagger is available at `/swagger` only in Development. Startup applies migrations, seeds catalogs and
-requires bootstrap credentials when the user table is empty.
+requires bootstrap credentials when the user table is empty. Without `LOG_DIRECTORY` set, the API logs to the
+console; see [DEPLOYMENT.md](DEPLOYMENT.md#development-overlay) for the containerized case.
 
 ### Frontend
 
@@ -135,9 +136,12 @@ The five required steps are documented once, in
 - User-facing backend text belongs in
   `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`. Log messages, diagnostic
   exceptions and seeded content are not UI text.
-- Log identifiers, counts, kinds and error codes; never personal data, credentials, codes, tokens, request
-  bodies, query strings or third-party replies that may quote them. Exception messages you throw follow the
-  same rule because they are logged. See [SECURITY.md](SECURITY.md#logging).
+- Declare every log event with `[LoggerMessage]` in the layer's `*Log` class (`SecurityLog`, `ApplicationLog`,
+  `InfrastructureLog`, `ApiLog`); `CA1848` is an error. Use only the placeholder types the
+  `LoggingConventionTests`/`LoggingCallSiteTests` allow-list accepts, and never a user id, personal data, a
+  value typed by the client, a credential, a code, a token or a third-party reply that may quote them.
+  Exception messages you throw follow the same rule because they are logged. See
+  [SECURITY.md](SECURITY.md#logging).
 - Use `camelCase` private fields without a leading underscore.
 - Keep CSharpier formatting and all SDK analyzer rules clean. Warnings are errors.
 - Document every public type and member with XML comments (`CS1591` is a warning, so the build fails without

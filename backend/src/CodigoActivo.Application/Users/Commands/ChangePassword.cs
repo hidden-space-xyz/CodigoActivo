@@ -5,7 +5,6 @@ using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -27,7 +26,6 @@ public sealed record ChangePasswordCommand(Guid UserId, ChangePasswordRequest Re
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
     IPasswordHasher hasher,
@@ -35,12 +33,9 @@ public sealed class ChangePasswordCommandHandler(
     IUnitOfWork uow,
     IUserSessionRepository sessions,
     PasswordAttemptGuard passwordAttempts,
-    AccountSecurityNotifier securityNotifier,
-    ILogger<ChangePasswordCommandHandler> logger
+    AccountSecurityNotifier securityNotifier
 ) : ICommandHandler<ChangePasswordCommand, Result>
 {
-    private const string Operation = "ChangePassword";
-
     /// <summary>
     /// Handles the request to change password.
     /// </summary>
@@ -71,14 +66,12 @@ public sealed class ChangePasswordCommandHandler(
             )
         )
         {
-            logger.ReauthenticationRejected(user.Id, Operation);
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
         user.ResetPassword(hasher.Hash(command.Request.NewPassword), clock.UtcNow);
         await uow.SaveChangesAsync(ct);
         await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
-        logger.PasswordChanged(user.Id);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordChanged, ct);
         return Result.Success();
     }

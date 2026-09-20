@@ -214,38 +214,60 @@ order (and `xmin`) reflects write order again; the random-reorder step above onl
 `AnonymizeEventRatings` itself.
 
 **Known limitations:** PostgreSQL write-ahead log access (`pg_wal`, in volume copies and point-in-time
-recovery); dead tuples until the next `VACUUM`; PostgreSQL statement logs if `log_statement` is enabled;
-backups/dumps taken **before** `AnonymizeEventRatings` ran, which still link ratings to authors, or **before**
-`RemoveEventRatingSubmissions` ran, which still record who rated which event (not the rating content) (rotate
-them out, see [DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery)); differential observation of two dumps
-taken before/after a submission; and, for events with one or two ratings, deducible authorship from count or
-free-text content (no minimum-rating threshold exists). Logs also correlate: API security logs record the
-user id and time of every login (see [Logging](#logging)), while the nginx access log records client IP, time
-and request paths that can contain user ids, so an operator holding both can link an IP to an account and a
-rating submission request to a person, and now also to the row's physical write order. The stored rating
-content still carries no author reference.
+recovery); dead tuples until the next `VACUUM`; backups/dumps taken **before** `AnonymizeEventRatings` ran,
+which still link ratings to authors, or **before** `RemoveEventRatingSubmissions` ran, which still record who
+rated which event (not the rating content) (rotate them out, see
+[DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery)); differential observation of two dumps taken
+before/after a submission; and, for events with one or two ratings, deducible authorship from count or
+free-text content (no minimum-rating threshold exists). Stored logs do not correlate an IP with an account or
+a rating request (see [Logging](#logging)): the only stored logs are the API's, which carry no client IP,
+requested path or user id. The stored rating content still carries no author reference.
 
 ### Logging
 
-Never logged: names, emails, phone numbers, birth dates, login identifiers typed by the client,
-passwords/hashes, one-time codes, TOTP secrets, cookies, CSRF tokens, request bodies, query strings, Referer,
-and SMTP replies quoting a recipient or message. Logged: HTTP method, route path (GUID parameters), status,
-timing, entity ids, enum values, email kind, counts, SMTP status codes, and exception messages/stack traces.
+Logging follows GDPR data minimization: only what diagnosis needs is recorded, and no entry stored in
+Production survives more than 15 days. Never logged: user or personal-row ids, names, emails, phone numbers,
+anything typed by the client, the requested path or query, client IP, user agent, cookies, tokens and
+one-time codes. Logged: counters, enum/kind values, error/SMTP/HTTP codes, the HTTP method, the matched
+endpoint's route template, and exception type/message/stack traces.
 
-- **Security events**: handlers and the session plumbing emit the events declared in
-  `Application/Auth/SecurityLog.cs` — accepted password steps, completed logins and ended sessions, failed
-  password and second-factor steps, lockouts, refused logins, password changes and resets, authenticator and
-  administrator changes, wrong re-authentication passwords, identifier changes and deletions — at `Warning`
-  for failures and `Information` for completed steps and changes, carrying only entity and catalog ids, enum
-  values and counts. Successful and failed authentication steps alike are recorded with the user id, the
-  second-factor method and the time, so the logs show when a given account signed in, was tried or signed out.
-- **API**: `RequestLoggingMiddleware` logs 4xx/5xx only. Only `CodigoActivo`, `Program` and
-  `Microsoft.Hosting.Lifetime` log at `Information`; other categories log at `Warning`. EF Core
-  sensitive-data logging stays disabled; `SmtpEmailSender` strips recipient/server replies from exceptions.
-- **nginx**: access log keeps IP, time, method, path without query, status, size, upstream status and user
-  agent, not Referer; error log is limited to `crit`.
-- **PostgreSQL**: `log_error_verbosity=terse` drops `DETAIL` lines; failing statements show `$n` placeholders.
-- Container logs are rotated (see [DEPLOYMENT.md](DEPLOYMENT.md#production-topology)).
+- **API**: every event is declared with `[LoggerMessage]` in a `*Log` class per layer — `SecurityLog`,
+  `ApplicationLog`, `InfrastructureLog`, `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
+  architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
+  that `Information` is used only for process lifecycle. `Logging:LogLevel` in `appsettings.json` is the level
+  policy for both the console and the file sink: `Default` is `Warning`; `Information` is enabled only for
+  `CodigoActivo.Lifecycle` and `Microsoft.Hosting.Lifetime`; `Microsoft.EntityFrameworkCore.Database.Command`
+  is `None`, since the SQL of a failing command can carry literal values. An environment can override any
+  category with `Logging__LogLevel__<Category>`. There is no per-request logging middleware: unhandled
+  exceptions are recorded only by `GlobalExceptionHandler`, with the HTTP method and the route template, never
+  the requested path. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient
+  and server reply out of SMTP exceptions before they are logged.
+- **Security events**: only four events exist, all `Warning` and free of any user id —
+  `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked),
+  `AdministratorFlagChanged` (the administrator flag changed) and `SecurityNotificationRateLimited` (a
+  security-change email was dropped by the limiter). Logins, logouts and password changes are not recorded.
+- **API log output**: the flat `LOG_DIRECTORY` variable selects the sink. With a value, every event goes to
+  daily files `api-<yyyyMMdd>.log` (Serilog file sink; the file name uses the container's local date, event
+  timestamps are UTC), one line per event with embedded line breaks folded with `" | "`, and any GUID in the
+  message or the exception (dashed or plain form) masked as `<id>`; nothing goes to the console. Without a
+  value (or empty, the local-development case) events go to the console, unmasked. The fatal startup event
+  (`CRT CodigoActivo.Lifecycle The API host terminated unexpectedly`) is always recorded regardless of the
+  level policy, and the process exits non-zero. If the daily file cannot be opened for writing, the API does
+  not start.
+- **nginx**: `access_log off` and `error_log` writes to `/dev/stderr` at `crit`, so no request or error is
+  stored; a failed API shows in `docker compose ps`, and the 5xx it returns is logged by the API itself.
+- **PostgreSQL**: `log_error_verbosity=terse` drops `DETAIL` lines; stderr output is discarded, so nothing is
+  stored. A database failure is logged as the exception it raises in the API. A known residual: PostgreSQL
+  itself still logs the attempted role name in `FATAL` authentication failures on its discarded stderr; `db`
+  is reachable only from the internal `backend` network.
+- **Retention and container logs**: every base Compose service uses `logging: driver: none` (`docker compose
+  logs` shows nothing). Only the API writes log files, into the `logs-api` volume; `LogFileRetentionCleaner`,
+  a background service registered whenever `LOG_DIRECTORY` is set, sweeps that directory at startup and every
+  hour and deletes `api-<yyyyMMdd>[_N].log` files whose last write is older than 13 days. Because a daily file
+  spans 24 hours, no stored entry survives more than 14 days plus one sweep interval, under the 15-day limit.
+  A removal failure is logged as `LogFileRemovalFailed` (`Warning`) and does not stop the sweep; no other file
+  in the directory is ever touched. Purging stops while the API is stopped, so the effective retention
+  lengthens by however long it is down. See [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
 
 ### Production configuration and secrets
 

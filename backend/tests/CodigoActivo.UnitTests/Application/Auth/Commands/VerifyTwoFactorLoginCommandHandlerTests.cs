@@ -102,14 +102,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         user.LoginCodeHash.Should().NotBeNull();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be(
-                $"Operation VerifyTwoFactorLogin refused for user {user.Id} because the account "
-                    + "password is locked"
-            );
+        logger.Entries.Should().BeEmpty();
     }
 
     [Fact]
@@ -196,44 +189,41 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncCompletedLoginLogsTheUserIdAndTheSecondFactorMethod()
+    public async Task HandleAsyncAcceptedCodeLogsNothing()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
         await VerifyAsync(user.Id, "123456");
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Information);
-        entry
-            .Message.Should()
-            .Be($"Login completed for user {user.Id} with second factor Email")
-            .And.NotContain("123456");
+        logger.Entries.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncAuthenticatorLoginLogsItsOwnSecondFactorMethod()
-    {
-        var user = Prepare(NewUserWithAuthenticator(Secret, lastUsedStep: 41));
-        totp.MatchStep(Secret, "222333", clock.UtcNow).Returns(42);
-
-        await VerifyAsync(user.Id, "222333");
-
-        logger
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
-            .Be($"Login completed for user {user.Id} with second factor Authenticator");
-    }
-
-    [Fact]
-    public async Task HandleAsyncRejectedCodeNeverLogsACompletedLogin()
+    public async Task HandleAsyncRejectedCodeLogsNothingUntilTheLockout()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
         await VerifyAsync(user.Id, "000000");
 
-        logger.Entries.Should().NotContain(entry => entry.Contains("Login completed"));
-        logger.LevelEntries.Should().OnlyContain(entry => entry.Level == LogLevel.Warning);
+        logger.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncFailureLimitReachedLogsTheLockoutWithoutTheUserId()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+        user.TwoFactorFailedAttempts = options.MaxFailedAttempts - 1;
+
+        await VerifyAsync(user.Id, "000000");
+
+        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Warning);
+        entry
+            .Message.Should()
+            .Be(
+                $"The second factor of an account was locked after {options.MaxFailedAttempts} wrong codes"
+            )
+            .And.NotContain(user.Id.ToString());
     }
 
     [Fact]

@@ -319,7 +319,7 @@ function mapKeyRegex(entry: NginxMapEntry): RegExp {
 
 describe('nginx configuration parsing', () => {
   it('reads every statement of the shared configurations', () => {
-    expect(statements(nginxConf).length, 'nginx.conf').toBeGreaterThanOrEqual(22)
+    expect(statements(nginxConf).length, 'nginx.conf').toBeGreaterThanOrEqual(20)
     expect(statements(proxyApiConf).length, 'proxy-api.conf').toBeGreaterThanOrEqual(17)
     expect(statements(securityHeadersConf).length, 'security-headers.conf').toBeGreaterThanOrEqual(
       10,
@@ -518,6 +518,37 @@ describe('nginx robots policy for API responses', () => {
     )
     expect(statementsOf(defaultConf, 'add_header X-Robots-Tag')).toHaveLength(0)
     expect(statementsOf(securityHeadersConf, 'add_header X-Robots-Tag')).toHaveLength(0)
+  })
+})
+
+describe('nginx logging', () => {
+  function logStatements(config: string): string[] {
+    return [...statementsOf(config, 'access_log'), ...statementsOf(config, 'error_log')]
+  }
+
+  it('turns the access log off for every request', () => {
+    expect(statementsOf(nginxConf, 'access_log')).toEqual(['access_log off;'])
+  })
+
+  it('keeps only critical errors and hands them to the container', () => {
+    expect(onlyStatement(nginxConf, 'error_log')).toBe('error_log /dev/stderr crit;')
+  })
+
+  it('never stores a log in a file', () => {
+    for (const config of allConfigs) {
+      for (const statement of logStatements(config)) {
+        expect(statement).toMatch(/^(access_log off|error_log \/dev\/std(out|err) [a-z]+);$/)
+      }
+
+      expect(config).not.toContain('/var/log')
+      expect(statementsOf(config, 'open_log_file_cache')).toHaveLength(0)
+    }
+  })
+
+  it('declares no log format to write', () => {
+    for (const config of allConfigs) {
+      expect(statementsOf(config, 'log_format')).toHaveLength(0)
+    }
   })
 })
 

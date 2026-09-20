@@ -8,13 +8,13 @@ namespace CodigoActivo.API.Configuration;
 
 internal static class ApiHostConfiguration
 {
-    internal static void ConfigureApiHost(this WebApplicationBuilder builder)
+    internal static void ConfigureApiHost(this WebApplicationBuilder builder, ApiLogging logging)
     {
+        logging.Configure(builder.Logging);
         ConfigureAllowedHosts(builder);
         ValidateProductionConfiguration(builder.Environment, builder.Configuration);
         ConfigureDataProtection(builder);
         ConfigureKestrel(builder);
-        ConfigureLogging(builder.Logging);
     }
 
     private static void ConfigureAllowedHosts(WebApplicationBuilder builder)
@@ -108,17 +108,6 @@ internal static class ApiHostConfiguration
             options.Limits.MaxRequestBodySize = 12 * 1024 * 1024;
             options.Limits.MaxRequestHeadersTotalSize = 32 * 1024;
             options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(15);
-        });
-    }
-
-    private static void ConfigureLogging(ILoggingBuilder logging)
-    {
-        logging.ClearProviders();
-        logging.AddSimpleConsole(options =>
-        {
-            options.IncludeScopes = true;
-            options.SingleLine = true;
-            options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff zzz ";
         });
     }
 }

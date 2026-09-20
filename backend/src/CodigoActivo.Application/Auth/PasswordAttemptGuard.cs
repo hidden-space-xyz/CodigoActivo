@@ -136,7 +136,7 @@ public sealed class PasswordAttemptGuard(
         }
 
         await sessions.RemoveAsync(session => session.UserId == user.Id, ct);
-        logger.PasswordLockoutTriggered(user.Id, options.MaxFailedAttempts);
+        logger.PasswordLockoutTriggered(options.MaxFailedAttempts);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordLocked, ct);
     }
 }
