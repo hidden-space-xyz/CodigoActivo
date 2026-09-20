@@ -110,7 +110,7 @@ describe('account mapper', () => {
     expect(toUpdateMinorRequest(input, 'parent-1')).toEqual({ ...input, parentId: 'parent-1' })
   })
 
-  it('maps a history entry with its rated flag and activities', () => {
+  it('maps a history entry with its rateable flag and activities', () => {
     const entry = toAccountHistoryEntry({
       eventId: 'event-1',
       title: 'Día Código Activo',
@@ -120,7 +120,6 @@ describe('account mapper', () => {
       thumbnailId: 'thumb-1',
       isPast: true,
       canRate: true,
-      hasRated: true,
       activities: [
         {
           activityId: 'activity-1',
@@ -148,7 +147,6 @@ describe('account mapper', () => {
       thumbnailId: 'thumb-1',
       isPast: true,
       canRate: true,
-      hasRated: true,
       activities: [
         {
           activityId: 'activity-1',
@@ -177,7 +175,7 @@ describe('account mapper', () => {
     })
   })
 
-  it('maps an empty history entry as unrated with no activities', () => {
+  it('maps an empty history entry as not rateable with no activities', () => {
     expect(toAccountHistoryEntry({})).toEqual({
       eventId: '',
       title: '',
@@ -187,7 +185,6 @@ describe('account mapper', () => {
       thumbnailId: '',
       isPast: false,
       canRate: false,
-      hasRated: false,
       activities: [],
     })
   })

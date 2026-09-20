@@ -193,49 +193,10 @@ public interface IEventRepository : IDbRepository<Event>
 }
 
 /// <summary>
-/// Persists and retrieves event rating data from the database.
+/// Persists and retrieves event rating data from the database. Ratings are anonymous: no row
+/// references the user who wrote it, so the same user may rate an event more than once.
 /// </summary>
-public interface IEventRatingRepository : IDbRepository<EventRating>
-{
-    /// <summary>
-    /// Records an anonymous rating and its submission marker for an event in a single, immediately
-    /// executed transaction, following the same immediate-execution precedent as
-    /// <see cref="IEventRepository.SetFeaturedAsync"/>: it commits (or rolls back) on its own and
-    /// must not be mixed with other staged repository work expected to commit atomically through
-    /// <see cref="IUnitOfWork"/>.
-    /// </summary>
-    /// <remarks>
-    /// The transaction takes a row lock on the target event before checking or writing anything, so
-    /// concurrent submissions for the same event are serialized instead of racing. Once the write is
-    /// accepted, every <c>event_ratings</c> and <c>event_rating_submissions</c> row for that event is
-    /// deleted and reinserted in a random order, so all of them end up sharing this transaction's
-    /// identifier and no physical row order survives to hint which submission produced which rating.
-    /// </remarks>
-    /// <param name="rating">The anonymous rating content to persist, with its event already set.</param>
-    /// <param name="userId">Identifier of the user submitting the rating.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result is <see langword="true"/> when the rating and submission were persisted;
-    /// <see langword="false"/> when the user had already submitted a rating for the event, in which
-    /// case nothing was written.
-    /// </returns>
-    public Task<bool> SubmitAsync(EventRating rating, Guid userId, CancellationToken ct = default);
-}
-
-/// <summary>
-/// Persists and retrieves event rating submission data from the database. Submissions record who
-/// rated an event, kept apart from the anonymous rating content stored by
-/// <see cref="IEventRatingRepository"/>. Writes happen exclusively through
-/// <see cref="IEventRatingRepository.SubmitAsync"/>, which persists both tables atomically.
-/// </summary>
-public interface IEventRatingSubmissionRepository
-{
-    /// <summary>
-    /// Creates a query for the stored entities without tracking changes.
-    /// </summary>
-    /// <returns>The resulting event rating submission value.</returns>
-    public IQueryable<EventRatingSubmission> Query();
-}
+public interface IEventRatingRepository : IDbRepository<EventRating>;
 
 /// <summary>
 /// Persists and retrieves activity data from the database.

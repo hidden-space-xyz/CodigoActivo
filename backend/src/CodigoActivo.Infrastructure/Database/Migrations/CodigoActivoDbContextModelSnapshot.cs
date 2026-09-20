@@ -630,25 +630,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_ratings", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRatingSubmission", b =>
-                {
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("event_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("EventId", "UserId")
-                        .HasName("pk_event_rating_submissions");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_event_rating_submissions_user_id");
-
-                    b.ToTable("event_rating_submissions", (string)null);
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsAcceptance", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -1414,27 +1395,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_event_ratings_events_event_id");
 
                     b.Navigation("Event");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRatingSubmission", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
-                        .WithMany()
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_rating_submissions_events_event_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_rating_submissions_users_user_id");
-
-                    b.Navigation("Event");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsAcceptance", b =>

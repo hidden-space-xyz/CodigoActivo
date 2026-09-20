@@ -57,7 +57,6 @@ public sealed class DemoDataSeederTests
         graph.Activities.Should().HaveCount(100);
         graph.Assignments.Should().HaveCount(500);
         graph.Ratings.Should().HaveCount(36);
-        graph.RatingSubmissions.Should().HaveCount(36);
         graph.Announcements.Should().HaveCount(10);
         graph.Resources.Should().HaveCount(20);
         graph.Partners.Should().HaveCount(10);
@@ -419,64 +418,9 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultSubmittersHaveAConfirmedAssignmentInTheRatedEvent()
-    {
-        var eventIdByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
-        var confirmed = graph
-            .Assignments.Where(x => x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed)
-            .Select(x => (eventIdByActivity[x.ActivityId], x.UserId))
-            .ToHashSet();
-
-        graph.RatingSubmissions.Should().NotBeEmpty();
-        graph
-            .RatingSubmissions.Should()
-            .AllSatisfy(submission =>
-                confirmed.Should().Contain((submission.EventId, submission.UserId))
-            );
-    }
-
-    [Fact]
-    public void BuildGraphDefaultSubmittersCanSignIn()
-    {
-        var usersById = graph.Users.ToDictionary(u => u.Id);
-
-        graph
-            .RatingSubmissions.Should()
-            .AllSatisfy(submission =>
-            {
-                var submitter = usersById[submission.UserId];
-                submitter.PasswordHash.Should().NotBeNull();
-                submitter.ParentId.Should().BeNull();
-            });
-    }
-
-    [Fact]
-    public void BuildGraphDefaultSubmissionsAreUniquePerEventAndUser()
-    {
-        graph.RatingSubmissions.Select(s => (s.EventId, s.UserId)).Should().OnlyHaveUniqueItems();
-    }
-
-    [Fact]
     public void BuildGraphDefaultRatingsAreUniquelyIdentified()
     {
         graph.Ratings.Select(r => r.Id).Should().OnlyHaveUniqueItems();
-    }
-
-    [Fact]
-    public void BuildGraphDefaultSubmissionCountsMatchRatingCountsPerEvent()
-    {
-        // The submission and rating lists for an event are built with the same rater count but
-        // shuffled independently of each other, so only their per-event counts - never a
-        // by-position or by-order link - can be asserted as coherent.
-        var ratingsByEvent = graph
-            .Ratings.GroupBy(r => r.EventId)
-            .ToDictionary(g => g.Key, g => g.Count());
-        var submissionsByEvent = graph
-            .RatingSubmissions.GroupBy(s => s.EventId)
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        submissionsByEvent.Should().BeEquivalentTo(ratingsByEvent);
-        graph.RatingSubmissions.Should().HaveCount(graph.Ratings.Count);
     }
 
     [Fact]

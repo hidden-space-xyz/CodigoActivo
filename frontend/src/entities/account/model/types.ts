@@ -72,7 +72,5 @@ export interface AccountHistoryEntry {
   readonly thumbnailId: string
   readonly isPast: boolean
   readonly canRate: boolean
-  /** `true` once the user submitted a rating; ratings are anonymous and cannot be edited or reread. */
-  readonly hasRated: boolean
   readonly activities: readonly AccountHistoryActivity[]
 }

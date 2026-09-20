@@ -17,12 +17,10 @@ public sealed record GetEventHistoryQuery(Guid UserId)
 /// Executes the query to retrieve event history.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="submissions">Repository used to persist and retrieve rating submissions.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetEventHistoryQueryHandler(
     IActivityRepository activities,
-    IEventRatingSubmissionRepository submissions,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetEventHistoryQuery, IReadOnlyList<EventHistoryResponse>>
@@ -77,13 +75,6 @@ public sealed class GetEventHistoryQueryHandler(
             return [];
         }
 
-        var ratedEventIds = (
-            await executor.ToListAsync(
-                submissions.Query().Where(s => s.UserId == userId).Select(s => s.EventId),
-                ct
-            )
-        ).ToHashSet();
-
         var today = clock.Today;
         var upcoming = new List<EventHistoryResponse>();
         var past = new List<EventHistoryResponse>();
@@ -102,13 +93,7 @@ public sealed class GetEventHistoryQueryHandler(
                 continue;
             }
 
-            var entry = ToHistoryEntry(
-                visible,
-                isPast,
-                isPast && ratedEventIds.Contains(group.Key),
-                userId
-            );
-            (isPast ? past : upcoming).Add(entry);
+            (isPast ? past : upcoming).Add(ToHistoryEntry(visible, isPast, userId));
         }
 
         return
@@ -121,7 +106,6 @@ public sealed class GetEventHistoryQueryHandler(
     private static EventHistoryResponse ToHistoryEntry(
         IReadOnlyList<HistoryRow> rows,
         bool isPast,
-        bool hasRated,
         Guid userId
     )
     {
@@ -135,7 +119,6 @@ public sealed class GetEventHistoryQueryHandler(
             first.ThumbnailId,
             isPast,
             isPast,
-            hasRated,
             [
                 .. rows.Select(row => new EventHistoryActivityResponse(
                     row.ActivityId,

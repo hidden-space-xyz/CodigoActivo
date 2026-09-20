@@ -20,23 +20,23 @@ public sealed record SaveEventRatingCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to save event rating. Submissions are a single, immutable write: the rating
-/// content is stored anonymously, apart from the submission record that only tracks who already rated
-/// the event, so a second attempt is rejected instead of overwriting the first answer. The write
-/// itself is delegated to <see cref="IEventRatingRepository.SubmitAsync"/>, which persists both
-/// records immediately and atomically instead of going through <see cref="IUnitOfWork"/>.
+/// Executes the command to save event rating. Every accepted call appends one anonymous rating row:
+/// nothing records who wrote it, so an attendee may rate the same event more than once and no
+/// answer is ever overwritten.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
 public sealed class SaveEventRatingCommandHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
     IActivityRepository activities,
     IQueryExecutor executor,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<SaveEventRatingCommand, Result>
 {
     /// <summary>
@@ -92,10 +92,8 @@ public sealed class SaveEventRatingCommandHandler(
             request.Suggestions
         );
 
-        if (!await ratings.SubmitAsync(rating, userId, ct))
-        {
-            return Error.Conflict(ErrorCode.EventRatingAlreadySubmitted);
-        }
+        await ratings.AddAsync(rating, ct);
+        await uow.SaveChangesAsync(ct);
 
         return Result.Success();
     }

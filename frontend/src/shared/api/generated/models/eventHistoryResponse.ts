@@ -17,7 +17,6 @@ export interface EventHistoryResponse {
   thumbnailId?: string;
   isPast?: boolean;
   canRate?: boolean;
-  hasRated?: boolean;
   /** @nullable */
   activities?: EventHistoryActivityResponse[] | null;
 }

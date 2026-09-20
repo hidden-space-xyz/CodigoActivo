@@ -230,7 +230,6 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         var entry = history.Should().ContainSingle().Subject;
         entry.IsPast.Should().BeTrue();
         entry.CanRate.Should().BeTrue();
-        entry.HasRated.Should().BeFalse();
         entry.Activities.Should().ContainSingle().Which.Title.Should().Be("Taller pasado");
     }
 
@@ -540,7 +539,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistoryRatedPastEventSetsHasRatedTrue()
+    public async Task EventHistoryAlreadyRatedPastEventKeepsCanRateTrue()
     {
         var eventId = await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -561,46 +560,12 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                     MostLiked = "El ambiente",
                 }
             );
-            db.EventRatingSubmissions.Add(
-                new EventRatingSubmission
-                {
-                    EventId = eventId,
-                    UserId = TestSeedData.Users.MemberId,
-                }
-            );
             return Task.CompletedTask;
         });
 
         var history = await GetHistoryAsMemberAsync();
 
         var entry = history.Should().ContainSingle().Subject;
-        entry.HasRated.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task EventHistoryUnratedPastEventWithSomeoneElsesSubmissionKeepsHasRatedFalse()
-    {
-        var eventId = await SeedAssignmentAsync(
-            TestSeedData.Users.MemberId,
-            "Taller pasado",
-            new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
-            PastStart,
-            PastEnd
-        );
-        await Factory.SeedAsync(db =>
-        {
-            db.EventRatings.Add(new EventRating { EventId = eventId, Score = 4 });
-            db.EventRatingSubmissions.Add(
-                new EventRatingSubmission { EventId = eventId, UserId = TestSeedData.Users.AdminId }
-            );
-            return Task.CompletedTask;
-        });
-
-        var history = await GetHistoryAsMemberAsync();
-
-        var entry = history.Should().ContainSingle().Subject;
-        entry.HasRated.Should().BeFalse();
+        entry.CanRate.Should().BeTrue("a stored rating is anonymous and never closes the form");
     }
 }

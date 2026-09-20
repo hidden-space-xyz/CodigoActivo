@@ -111,8 +111,7 @@ function toAccountHistoryActivity(activity: EventHistoryActivityResponse): Accou
 
 /**
  * Maps an attended event with its activities for the account history, joining participant names.
- * `hasRated` reflects whether the anonymous rating was already submitted; it is never editable or
- * rereadable afterwards.
+ * Ratings are anonymous and unlimited, so a past entry stays rateable however many were sent.
  */
 export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHistoryEntry {
   return {
@@ -124,7 +123,6 @@ export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHisto
     thumbnailId: entry.thumbnailId ?? '',
     isPast: entry.isPast ?? false,
     canRate: entry.canRate ?? false,
-    hasRated: entry.hasRated ?? false,
     activities: (entry.activities ?? []).map(toAccountHistoryActivity),
   }
 }

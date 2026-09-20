@@ -1,8 +1,6 @@
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace CodigoActivo.Infrastructure.Database.Context;
 
@@ -43,11 +41,6 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// Gets the event ratings value.
     /// </summary>
     public DbSet<EventRating> EventRatings => Set<EventRating>();
-
-    /// <summary>
-    /// Gets the event rating submissions value.
-    /// </summary>
-    public DbSet<EventRatingSubmission> EventRatingSubmissions => Set<EventRatingSubmission>();
 
     /// <summary>
     /// Gets the activities value.
@@ -145,19 +138,9 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<EmailOutboxContentPart> EmailOutboxContentParts => Set<EmailOutboxContentPart>();
 
-    async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
+    Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
     {
-        try
-        {
-            return await base.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException ex)
-            when (ex.InnerException
-                    is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres
-            )
-        {
-            throw new UniqueConstraintViolationException(postgres.ConstraintName, ex);
-        }
+        return base.SaveChangesAsync(ct);
     }
 
     /// <inheritdoc />

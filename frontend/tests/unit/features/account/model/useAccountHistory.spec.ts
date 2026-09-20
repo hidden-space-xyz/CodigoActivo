@@ -36,7 +36,6 @@ describe('useAccountHistory', () => {
         eventId: 'past-1',
         isPast: true,
         canRate: true,
-        hasRated: true,
         activities: [
           buildHistoryActivityResponse({
             userId: 'child-1',
@@ -57,14 +56,14 @@ describe('useAccountHistory', () => {
     expect(result.past.value.map((entry) => entry.eventId)).toEqual(['past-1'])
 
     const [past] = result.past.value
-    expect(past?.hasRated).toBe(true)
+    expect(past?.canRate).toBe(true)
     expect(past?.activities[0]).toMatchObject({
       participantId: 'child-1',
       participantName: 'Byron',
       isSelf: false,
     })
     expect(result.upcoming.value[1]).toMatchObject({
-      hasRated: false,
+      canRate: false,
       activities: [],
       title: '',
     })
@@ -117,26 +116,34 @@ describe('useAccountHistory', () => {
     ).rejects.toMatchObject({ status: 400, code: 'EventNotFound' })
   })
 
-  it('invalidates the history when the rating was already submitted elsewhere', async () => {
+  it('refetches the history after each of several ratings for the same event', async () => {
     let historyRequests = 0
+    let ratingRequests = 0
     server.use(
       http.get('/api/me/event-history', () => {
         historyRequests += 1
         return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
       }),
-      http.post('/api/events/:eventId/rating', () => apiError(409, 'EventRatingAlreadySubmitted')),
+      http.post('/api/events/:eventId/rating', () => {
+        ratingRequests += 1
+        return new HttpResponse(null, { status: 204 })
+      }),
     )
 
     const { result } = await withSetup(() => useAccountHistory(), { user: {} })
     await vi.waitFor(() => expect(historyRequests).toBe(1))
 
-    await expect(
-      result.saveRating.mutateAsync({
-        eventId: 'event-1',
-        input: { score: 0, mostLiked: '', leastLiked: '', suggestions: '' },
-      }),
-    ).rejects.toMatchObject({ status: 409, code: 'EventRatingAlreadySubmitted' })
-
+    await result.saveRating.mutateAsync({
+      eventId: 'event-1',
+      input: { score: 5, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
+    })
     await vi.waitFor(() => expect(historyRequests).toBe(2))
+    await result.saveRating.mutateAsync({
+      eventId: 'event-1',
+      input: { score: 2, mostLiked: 'Otra cosa', leastLiked: '', suggestions: '' },
+    })
+
+    expect(ratingRequests).toBe(2)
+    await vi.waitFor(() => expect(historyRequests).toBe(3))
   })
 })
