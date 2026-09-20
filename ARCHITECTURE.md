@@ -80,8 +80,7 @@ handler for a read-after-write response; queries never call commands.
   consumer to handle retained values and failed refetches first.
 
 `RemoveAsync` and `SetFeaturedAsync` are deliberate set-based operations that execute immediately; do not
-combine them with other staged mutations expected to share a transaction. `IEventRatingRepository.SubmitAsync`
-is the same kind of exception: it opens and commits its own transaction.
+combine them with other staged mutations expected to share a transaction.
 
 Cross-handler behavior belongs in focused collaborators (`SignupGate`, `TermsGate`, `ActivityValidator`,
 `AccountEmails`, `FileUploadValidator`, `ManualEmailDispatcher`) rather than controllers. An event can link

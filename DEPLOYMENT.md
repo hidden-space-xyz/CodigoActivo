@@ -280,7 +280,9 @@ repository contents, packages and security events.
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
 review logs and smoke test. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from
 older major versions. Once `AnonymizeEventRatings` has run, the schema cannot be rolled back; see
-[SECURITY.md](SECURITY.md#event-rating-anonymity). Reverting `AddMultipleEventTermsDocuments` also loses data:
+[SECURITY.md](SECURITY.md#event-rating-anonymity). Reverting `RemoveEventRatingSubmissions` recreates its
+table empty, so it does not recover which user rated which event. Reverting `AddMultipleEventTermsDocuments`
+also loses data:
 its `Down` discards every recorded rejection and collapses each user's per-document decisions on an event into
 a single acceptance, and collapses an event's linked documents into the one that was required first. Back up
 `db-data` before rolling that migration back.
@@ -298,8 +300,9 @@ after it was taken, and its protected content depends on the Data Protection key
 queued.
 
 - Any `db-data` backup/dump taken before `AnonymizeEventRatings` ran, or any physical volume copy or
-  point-in-time recovery material (which includes `pg_wal`), still links event ratings to their author;
-  rotate such material out of retention, see [SECURITY.md](SECURITY.md#event-rating-anonymity).
+  point-in-time recovery material (which includes `pg_wal`), still links event ratings to their author; any
+  backup taken before `RemoveEventRatingSubmissions` ran still records who rated which event, though not the
+  rating content; rotate such material out of retention, see [SECURITY.md](SECURITY.md#event-rating-anonymity).
 
 Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
 database and volume recovery, registration and email verification, the two-step login, password reset,

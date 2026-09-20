@@ -74,7 +74,6 @@ export function buildHistoryResponse(overrides: EventHistoryResponse = {}): Even
     thumbnailId: 'thumb-1',
     isPast: false,
     canRate: false,
-    hasRated: false,
     activities: [buildHistoryActivityResponse()],
     ...overrides,
   }

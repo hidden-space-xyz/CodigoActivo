@@ -147,7 +147,6 @@ public sealed class DemoDataSeeder(
 
             context.ActivityUserRoleAssignments.AddRange(graph.Assignments);
             context.EventRatings.AddRange(graph.Ratings);
-            context.EventRatingSubmissions.AddRange(graph.RatingSubmissions);
             await context.SaveChangesAsync(ct);
 
             context.Announcements.AddRange(graph.Announcements);
@@ -206,7 +205,6 @@ public sealed class DemoDataSeeder(
             schedule.Activities,
             schedule.Assignments,
             schedule.Ratings,
-            schedule.RatingSubmissions,
             news,
             resources,
             partners
@@ -298,7 +296,6 @@ public sealed class DemoDataSeeder(
         var activities = new List<Activity>();
         var assignments = new List<ActivityUserRoleAssignment>();
         var ratings = new List<EventRating>();
-        var ratingSubmissions = new List<EventRatingSubmission>();
 
         for (var eventIndex = 0; eventIndex < DemoEvents.Length; eventIndex++)
         {
@@ -416,13 +413,7 @@ public sealed class DemoDataSeeder(
 
             if (end < clock.Today)
             {
-                var (eventRatings, eventSubmissions) = BuildRatings(
-                    eventIndex,
-                    eventId,
-                    eventAssignments
-                );
-                ratings.AddRange(eventRatings);
-                ratingSubmissions.AddRange(eventSubmissions);
+                ratings.AddRange(BuildRatings(eventIndex, eventId, eventAssignments));
             }
         }
 
@@ -432,8 +423,7 @@ public sealed class DemoDataSeeder(
             eventTermsDocuments,
             activities,
             assignments,
-            ratings,
-            ratingSubmissions
+            ratings
         );
     }
 
@@ -609,14 +599,15 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    private static (
-        List<EventRating> Ratings,
-        List<EventRatingSubmission> Submissions
-    ) BuildRatings(int eventIndex, Guid eventId, List<ActivityUserRoleAssignment> eventAssignments)
+    private static List<EventRating> BuildRatings(
+        int eventIndex,
+        Guid eventId,
+        List<ActivityUserRoleAssignment> eventAssignments
+    )
     {
         if (eventIndex % 4 is 3)
         {
-            return ([], []);
+            return [];
         }
 
         var adultIds = Enumerable.Range(0, AdultCount).Select(UserId).ToHashSet();
@@ -647,26 +638,7 @@ public sealed class DemoDataSeeder(
             );
         }
 
-        // Ratings are anonymous: shuffle the submission order independently from the ratings list so
-        // that neither array position nor insertion order pairs a specific rater with a specific
-        // rating's content.
-        var submissions = Shuffled(raters)
-            .Select(userId => new EventRatingSubmission { EventId = eventId, UserId = userId })
-            .ToList();
-
-        return (ratings, submissions);
-    }
-
-    private static List<Guid> Shuffled(IReadOnlyList<Guid> values)
-    {
-        var shuffled = new List<Guid>(values);
-        for (var i = shuffled.Count - 1; i > 0; i--)
-        {
-            var j = RandomNumberGenerator.GetInt32(i + 1);
-            (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
-        }
-
-        return shuffled;
+        return ratings;
     }
 
     private static DateTimeOffset MinTime(DateTimeOffset value, DateTimeOffset ceiling)
@@ -945,8 +917,7 @@ public sealed class DemoDataSeeder(
         List<EventTermsDocument> EventTermsDocuments,
         List<Activity> Activities,
         List<ActivityUserRoleAssignment> Assignments,
-        List<EventRating> Ratings,
-        List<EventRatingSubmission> RatingSubmissions
+        List<EventRating> Ratings
     );
 
     private static readonly RatingSeed[] DemoRatings =
@@ -2609,7 +2580,6 @@ internal sealed record DemoGraph(
     List<Activity> Activities,
     List<ActivityUserRoleAssignment> Assignments,
     List<EventRating> Ratings,
-    List<EventRatingSubmission> RatingSubmissions,
     List<Announcement> Announcements,
     List<Resource> Resources,
     List<Partner> Partners

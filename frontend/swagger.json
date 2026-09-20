@@ -4808,7 +4808,6 @@
           "EventEarlySignupNotBeforeSignup",
           "EventRatingNotFinished",
           "EventRatingAttendanceRequired",
-          "EventRatingAlreadySubmitted",
           "EventTermsAcceptanceRequired",
           "EventTermsDocumentDuplicated",
           "TermsDocumentNotFound",
@@ -5295,9 +5294,6 @@
             "type": "boolean"
           },
           "canRate": {
-            "type": "boolean"
-          },
-          "hasRated": {
             "type": "boolean"
           },
           "activities": {

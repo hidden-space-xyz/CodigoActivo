@@ -72,4 +72,24 @@ public sealed class EmailOutboxSignalTests
 
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
+
+    [Fact]
+    public async Task NotifyConcurrentCallersCollapseIntoASingleReleasedWait()
+    {
+        var sut = new EmailOutboxSignal();
+
+        var act = () => Parallel.For(0, 1000, _ => sut.Notify());
+
+        act.Should().NotThrow();
+        var signalled = await sut.WaitAsync(
+            TimeSpan.FromMinutes(5),
+            TestContext.Current.CancellationToken
+        );
+        var again = await sut.WaitAsync(
+            TimeSpan.FromMilliseconds(10),
+            TestContext.Current.CancellationToken
+        );
+        signalled.Should().BeTrue();
+        again.Should().BeFalse("notifications that nobody was waiting for collapse into one");
+    }
 }

@@ -228,7 +228,6 @@
     "EventEarlySignupNotBeforeSignup": "La inscripción anticipada debe abrir antes que la inscripción general.",
     "EventRatingNotFinished": "Solo puedes valorar eventos que ya han terminado.",
     "EventRatingAttendanceRequired": "Solo puedes valorar eventos en los que has participado con una inscripción confirmada.",
-    "EventRatingAlreadySubmitted": "Ya has enviado tu valoración de este evento.",
     "EventTermsAcceptanceRequired": "Debes aceptar los términos y condiciones del evento para apuntarte.",
     "EventTermsDocumentDuplicated": "No puedes vincular el mismo documento de términos y condiciones más de una vez.",
     "TermsDocumentNotFound": "No se encontraron los términos y condiciones.",
@@ -1262,7 +1261,6 @@
         "past": "Eventos anteriores",
         "activityCount": "ninguna actividad | 1 actividad | {count} actividades",
         "rate": "Valorar",
-        "rated": "Valoración enviada",
         "savedDetail": "Gracias por compartir tu opinión.",
         "savedSummary": "Valoración guardada",
         "dialog": {

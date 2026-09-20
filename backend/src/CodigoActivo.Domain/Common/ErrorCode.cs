@@ -154,11 +154,6 @@ public enum ErrorCode
     EventRatingAttendanceRequired,
 
     /// <summary>
-    /// Selects the event rating already submitted option.
-    /// </summary>
-    EventRatingAlreadySubmitted,
-
-    /// <summary>
     /// Selects the event terms acceptance required option.
     /// </summary>
     EventTermsAcceptanceRequired,

@@ -196,27 +196,34 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
 
 ### Event rating anonymity
 
-Event ratings use two unrelated tables: `event_rating_submissions` tracks only who rated an event (composite
-`event_id`/`user_id` key); `event_ratings` stores the answer under a random v4 `Guid`, with no user id or
-timestamps. `POST /api/events/{eventId}/rating` writes both rows in one transaction and rejects a second
-submission per event/user (`EventRatingAlreadySubmitted`); listings never expose the author.
+`event_ratings` stores the answer under a random v4 `Guid`, with no user id or timestamps: `id`, `event_id`,
+`score`, `most_liked`, `least_liked`, `suggestions`. `POST /api/events/{eventId}/rating` still requires the
+event to exist and have ended and the caller (or a dependent) to have confirmed attendance, but no longer
+tracks who already rated an event: the same attendee may submit more than once, and every accepted call
+appends one row through the standard repository-plus-`IUnitOfWork` write path. There is no per-user submission
+cap besides the general 300-requests/minute-per-authenticated-user budget described above; every accepted
+submission, repeats included, counts toward that event's rating count and average.
 
 Account deletion keeps past ratings, since their content carries no author reference. `AnonymizeEventRatings`
-retrofitted this onto previously linked data (moved `user_id` into the submission table, dropped
+retrofitted this onto previously linked data (moved `user_id` into a since-removed submission table, dropped
 `user_id`/`created_at`/`updated_at` from `event_ratings`, reinserted every row in random order, ran
-`CLUSTER`); its `Down` migration throws, since the author link was discarded. `SubmitAsync` repeats this
-reshuffle on every later submission, defending the API, admin UI, ordinary queries and any single post-commit
-dump.
+`CLUSTER`); its `Down` migration throws, since the author link was discarded. The submission table itself was
+later dropped (`RemoveEventRatingSubmissions`); its `Down` migration recreates it empty, so rolling back does
+not recover which user rated which event. Ratings are now plain inserts, so `event_ratings`' physical row
+order (and `xmin`) reflects write order again; the random-reorder step above only ever ran as part of
+`AnonymizeEventRatings` itself.
 
 **Known limitations:** PostgreSQL write-ahead log access (`pg_wal`, in volume copies and point-in-time
 recovery); dead tuples until the next `VACUUM`; PostgreSQL statement logs if `log_statement` is enabled;
-backups/dumps taken **before** the migration, which still link ratings to authors (rotate them out, see
-[DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery)); differential observation of two dumps taken
-before/after a submission; and, for events with one or two ratings, deducible authorship from count or
+backups/dumps taken **before** `AnonymizeEventRatings` ran, which still link ratings to authors, or **before**
+`RemoveEventRatingSubmissions` ran, which still record who rated which event (not the rating content) (rotate
+them out, see [DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery)); differential observation of two dumps
+taken before/after a submission; and, for events with one or two ratings, deducible authorship from count or
 free-text content (no minimum-rating threshold exists). Logs also correlate: API security logs record the
 user id and time of every login (see [Logging](#logging)), while the nginx access log records client IP, time
 and request paths that can contain user ids, so an operator holding both can link an IP to an account and a
-rating submission request to a person. The stored rating content still carries no author reference.
+rating submission request to a person, and now also to the row's physical write order. The stored rating
+content still carries no author reference.
 
 ### Logging
 

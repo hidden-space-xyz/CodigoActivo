@@ -28,6 +28,7 @@ public sealed class SaveEventRatingCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IEventRatingRepository ratings = Substitute.For<IEventRatingRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new(today: new DateOnly(2026, 7, 10));
     private readonly SaveEventRatingCommandHandler sut;
 
@@ -38,7 +39,8 @@ public sealed class SaveEventRatingCommandHandlerTests
             ratings,
             activities,
             new FakeQueryExecutor(),
-            clock
+            clock,
+            uow
         );
 
         // Attendance defaults to none; individual tests seed a confirmed assignment when the
@@ -46,12 +48,6 @@ public sealed class SaveEventRatingCommandHandlerTests
         activities
             .QueryAssignments()
             .Returns(Array.Empty<ActivityUserRoleAssignment>().AsQueryable());
-
-        // The atomic repository write defaults to succeeding; individual tests override it to
-        // exercise the already-submitted conflict path.
-        ratings
-            .SubmitAsync(Arg.Any<EventRating>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(true);
     }
 
     private static Event NewEvent(DateOnly endsAt)
@@ -149,7 +145,9 @@ public sealed class SaveEventRatingCommandHandlerTests
         result.Error!.Code.Should().Be(ErrorCode.EventRatingAttendanceRequired);
         await ratings
             .DidNotReceiveWithAnyArgs()
-            .SubmitAsync(default!, default, TestContext.Current.CancellationToken);
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -166,32 +164,12 @@ public sealed class SaveEventRatingCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         await ratings
             .Received(1)
-            .SubmitAsync(
-                Arg.Is<EventRating>(r => r.EventId == EventId),
-                UserId,
-                Arg.Any<CancellationToken>()
-            );
+            .AddAsync(Arg.Is<EventRating>(r => r.EventId == EventId), Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsyncAlreadySubmittedReturnsConflictWithoutPersisting()
-    {
-        SeedFinishedEvent();
-        SeedConfirmedAssignment(UserId);
-        ratings
-            .SubmitAsync(Arg.Any<EventRating>(), UserId, Arg.Any<CancellationToken>())
-            .Returns(false);
-
-        var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Code.Should().Be(ErrorCode.EventRatingAlreadySubmitted);
-    }
-
-    [Fact]
-    public async Task HandleAsyncValidSubmissionPersistsAnonymousRatingAndSubmission()
+    public async Task HandleAsyncValidSubmissionAddsAnonymousRatingAndCommits()
     {
         SeedFinishedEvent();
         SeedConfirmedAssignment(UserId);
@@ -204,12 +182,41 @@ public sealed class SaveEventRatingCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         await ratings
             .Received(1)
-            .SubmitAsync(
+            .AddAsync(
                 Arg.Is<EventRating>(r =>
-                    r.EventId == EventId && r.Score == 5 && r.MostLiked == "Bien"
+                    r.EventId == EventId
+                    && r.Score == 5
+                    && r.MostLiked == "Bien"
+                    && r.LeastLiked == "La cola"
+                    && r.Suggestions == "Más talleres"
                 ),
-                UserId,
                 Arg.Any<CancellationToken>()
             );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncRepeatedSubmissionAddsAnotherRating()
+    {
+        SeedFinishedEvent();
+        SeedConfirmedAssignment(UserId);
+
+        var first = await sut.HandleAsync(
+            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            TestContext.Current.CancellationToken
+        );
+        var second = await sut.HandleAsync(
+            new SaveEventRatingCommand(
+                EventId,
+                UserId,
+                new SaveEventRatingRequest(1, "Otra cosa", null, null)
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        first.IsSuccess.Should().BeTrue();
+        second.IsSuccess.Should().BeTrue();
+        await ratings.Received(2).AddAsync(Arg.Any<EventRating>(), Arg.Any<CancellationToken>());
+        await uow.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

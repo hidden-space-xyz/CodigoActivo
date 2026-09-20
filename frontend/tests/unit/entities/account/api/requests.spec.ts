@@ -317,7 +317,7 @@ describe('account requests', () => {
     const entries = await getAccountHistoryRequest()
 
     expect(entries).toHaveLength(1)
-    expect(entries[0]).toMatchObject({ eventId: 'event-1', title: 'Día', hasRated: false })
+    expect(entries[0]).toMatchObject({ eventId: 'event-1', title: 'Día', canRate: false })
   })
 
   it('returns an empty history when the API sends no body', async () => {
@@ -362,9 +362,9 @@ describe('account requests', () => {
     expect(body).toEqual({ score: 5, mostLiked: 'Todo', leastLiked: null, suggestions: null })
   })
 
-  it('surfaces the conflict when the event was already rated', async () => {
+  it('surfaces the conflict when the event has not finished yet', async () => {
     server.use(
-      http.post('/api/events/event-1/rating', () => apiError(409, 'EventRatingAlreadySubmitted')),
+      http.post('/api/events/event-1/rating', () => apiError(409, 'EventRatingNotFinished')),
     )
 
     await expect(
@@ -374,6 +374,6 @@ describe('account requests', () => {
         leastLiked: '',
         suggestions: '',
       }),
-    ).rejects.toMatchObject({ status: 409, code: 'EventRatingAlreadySubmitted' })
+    ).rejects.toMatchObject({ status: 409, code: 'EventRatingNotFinished' })
   })
 })

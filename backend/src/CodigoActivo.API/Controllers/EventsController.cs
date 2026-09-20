@@ -269,8 +269,8 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the save rating endpoint for events. Submissions are single and immutable: a second
-    /// attempt for the same event is rejected instead of overwriting the first answer.
+    /// Executes the save rating endpoint for events. Each call stores one more anonymous rating, so
+    /// an attendee may rate the same event as many times as they want.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="request">Validated client request data.</param>

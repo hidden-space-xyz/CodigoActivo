@@ -38,7 +38,6 @@ export const ErrorCode = {
   EventEarlySignupNotBeforeSignup: 'EventEarlySignupNotBeforeSignup',
   EventRatingNotFinished: 'EventRatingNotFinished',
   EventRatingAttendanceRequired: 'EventRatingAttendanceRequired',
-  EventRatingAlreadySubmitted: 'EventRatingAlreadySubmitted',
   EventTermsAcceptanceRequired: 'EventTermsAcceptanceRequired',
   EventTermsDocumentDuplicated: 'EventTermsDocumentDuplicated',
   TermsDocumentNotFound: 'TermsDocumentNotFound',

@@ -5,8 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { useAccountHistory } from '../model/useAccountHistory'
 import EventRatingDialog from './EventRatingDialog.vue'
 import type { AccountHistoryEntry, EventRatingInput } from '@/entities/account'
-import { ApiError } from '@/shared/api'
-import { ErrorCode } from '@/shared/api/generated/models'
 import { AppIcon, BaseButton } from '@/shared/ui'
 import { formatDateRange, useCrudFeedback } from '@/shared/lib'
 
@@ -54,10 +52,6 @@ function submitRating(input: EventRatingInput): void {
       },
       onError: (error) => {
         feedback.error(error)
-        // A 409 here means the history was stale (rated elsewhere); close and let it refetch.
-        if (error instanceof ApiError && error.code === ErrorCode.EventRatingAlreadySubmitted) {
-          ratingTarget.value = null
-        }
       },
     },
   )
@@ -111,11 +105,7 @@ const groups = computed(() => [
                 </button>
 
                 <div v-if="entry.canRate" class="acc-history__actions">
-                  <span v-if="entry.hasRated" class="acc-history__score">
-                    <AppIcon name="check-circle" />
-                    {{ $t('features.account.history.rated') }}
-                  </span>
-                  <BaseButton v-else variant="ghost" @click="openRating(entry)">
+                  <BaseButton variant="ghost" @click="openRating(entry)">
                     {{ $t('features.account.history.rate') }}
                   </BaseButton>
                 </div>
@@ -256,15 +246,6 @@ const groups = computed(() => [
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-}
-
-.acc-history__score {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-orange-ink);
 }
 
 .acc-history__activities {

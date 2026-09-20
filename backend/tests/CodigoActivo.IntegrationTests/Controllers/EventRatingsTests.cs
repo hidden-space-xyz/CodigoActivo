@@ -217,12 +217,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             rating.MostLiked.Should().Be("La organización");
             rating.LeastLiked.Should().Be("La cola de la comida");
             rating.Suggestions.Should().Be("Más talleres de robótica");
-
-            var submissions = await db
-                .EventRatingSubmissions.Where(s => s.EventId == EventId)
-                .ToListAsync(Ct);
-            var submission = submissions.Should().ContainSingle().Subject;
-            submission.UserId.Should().Be(TestSeedData.Users.MemberId);
             return true;
         });
     }
@@ -247,11 +241,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Factory.QueryAsync(async db =>
         {
-            var submission = await db.EventRatingSubmissions.SingleAsync(
-                s => s.EventId == EventId,
-                Ct
-            );
-            submission.UserId.Should().Be(TestSeedData.Users.MemberId);
             (await db.EventRatings.CountAsync(r => r.EventId == EventId, Ct)).Should().Be(1);
             return true;
         });
@@ -278,7 +267,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRatingCalledTwiceReturnsConflictAndKeepsTheOriginalRating()
+    public async Task SaveRatingCalledTwiceBySameUserStoresBothAnonymousRatings()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
@@ -288,25 +277,22 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             ValidRating,
             Ct
         );
-        first.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         using var second = await client.PostJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(1, "Otra cosa", "Otra más", "Otra sugerencia"),
             Ct
         );
 
-        await second.ShouldBeConflictAsync(ErrorCode.EventRatingAlreadySubmitted);
+        first.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        second.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Factory.QueryAsync(async db =>
         {
             var ratings = await db.EventRatings.Where(r => r.EventId == EventId).ToListAsync(Ct);
-            var rating = ratings.Should().ContainSingle().Subject;
-            rating.Score.Should().Be(5, "the rejected second attempt must not overwrite the first");
-            rating.MostLiked.Should().Be("La organización");
-
-            (await db.EventRatingSubmissions.CountAsync(s => s.EventId == EventId, Ct))
+            ratings
                 .Should()
-                .Be(1);
+                .HaveCount(2, "a second opinion is stored next to the first, not over it");
+            ratings.Select(r => r.Score).Should().BeEquivalentTo([5, 1]);
+            ratings.Select(r => r.Id).Should().OnlyHaveUniqueItems();
             return true;
         });
     }
@@ -364,13 +350,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
                     EventId = EventId,
                     Score = 3,
                     MostLiked = "El taller",
-                }
-            );
-            db.EventRatingSubmissions.Add(
-                new EventRatingSubmission
-                {
-                    EventId = EventId,
-                    UserId = TestSeedData.Users.MemberId,
                 }
             );
             return Task.CompletedTask;
