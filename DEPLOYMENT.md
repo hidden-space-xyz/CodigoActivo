@@ -268,8 +268,8 @@ is a reusable CI stage; it does not run independently or on a schedule.
 Pushes to `develop` start only the CodeQL workflow, which is independent of CI and does not gate
 publishing; `master` is not scanned, so fix findings on `develop` before merging. A newer push cancels
 the scan in progress.
-Findings never fail the run; review them in the repository's code scanning alerts. Only a broken build
-or analysis fails it.
+Findings never fail the run; review them in the repository's code scanning alerts or in the
+`codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build or analysis fails it.
 C# analysis uses a full .NET 10 build under CodeQL tracing, including source generators and test projects;
 JavaScript/TypeScript uses the build-free analysis mode.
 
