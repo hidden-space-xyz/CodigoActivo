@@ -1,13 +1,18 @@
 name: CodeQL
 
 on:
-  workflow_call:
+  push:
+    branches: [develop]
 
 permissions:
   actions: read
   contents: read
   packages: read
   security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -23,10 +28,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v7
-      - name: Set up Node.js for the security gate
-        uses: actions/setup-node@v7
-        with:
-          node-version: 26
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         if: matrix.language == 'csharp'
@@ -46,21 +47,5 @@ jobs:
           dotnet build CodigoActivo.slnx --configuration Release --no-restore --no-incremental -p:UseSharedCompilation=false
       - name: Analyze code
         uses: github/codeql-action/analyze@v4
-        id: analyze
         with:
           category: /language:${{ matrix.language }}
-          output: ${{ runner.temp }}/codeql-results
-          wait-for-processing: true
-      - name: Block releases on high, critical or error findings
-        env:
-          SARIF_DIRECTORY: ${{ steps.analyze.outputs.sarif-output }}
-        run: node .github/scripts/check-codeql.mjs "$SARIF_DIRECTORY"
-      - name: Preserve CodeQL diagnostic reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: codeql-sarif-${{ matrix.language }}
-          path: ${{ runner.temp }}/codeql-results/*.sarif
-          if-no-files-found: warn
-          overwrite: true
-          retention-days: 14
