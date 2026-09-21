@@ -269,9 +269,10 @@ Pushes to `develop` start only the CodeQL workflow, which is independent of CI a
 publishing; `master` is not scanned, so fix findings on `develop` before merging. A newer push cancels
 the scan in progress.
 Findings never fail the run; review them in the repository's code scanning alerts or in the
-`codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build or analysis fails it.
+`codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build, analysis or upload fails it.
 C# analysis uses a full .NET 10 build under CodeQL tracing, including source generators and test projects;
-JavaScript/TypeScript uses the build-free analysis mode.
+results located in `obj/` or `bin/` (generated code) are dropped before upload. JavaScript/TypeScript uses
+the build-free analysis mode.
 
 API and UI share one version and one GitHub release, tagged `vX.Y.Z`. All repository commits since the
 highest stable `vX.Y.Z` tag count. With no matching tag, the baseline is `0.0.0` and the full commit history

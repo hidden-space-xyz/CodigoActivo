@@ -208,7 +208,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public async Task HandleAsyncWrongAuthenticatorCodeReturnsBadRequest()
     {
         var user = SignedWithAuthenticator();
-        totp.MatchStep(Secret, "000000", clock.UtcNow).Returns((long?)null);
+        totp.MatchStep(Secret, "000000", clock.UtcNow).Returns(default(long?));
 
         var result = await DeleteAsync(user.Id, code: "000000");
 

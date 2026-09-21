@@ -15,14 +15,14 @@ public sealed partial class LoggingCallSiteTests
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (
-            current is not null && !File.Exists(Path.Combine(current.FullName, "CodigoActivo.slnx"))
+            current is not null && !File.Exists(Path.Join(current.FullName, "CodigoActivo.slnx"))
         )
         {
             current = current.Parent;
         }
 
         current.Should().NotBeNull();
-        var sources = new DirectoryInfo(Path.Combine(current!.FullName, "src"));
+        var sources = new DirectoryInfo(Path.Join(current!.FullName, "src"));
         sources.Exists.Should().BeTrue();
         return sources;
     }
@@ -66,7 +66,7 @@ public sealed partial class LoggingCallSiteTests
     public void TheAnalyzerThatForbidsDirectLoggerCallsIsAnError()
     {
         var sources = ProductionSources();
-        var editorConfig = Path.Combine(sources.Parent!.FullName, ".editorconfig");
+        var editorConfig = Path.Join(sources.Parent!.FullName, ".editorconfig");
 
         File.ReadAllText(editorConfig)
             .Should()

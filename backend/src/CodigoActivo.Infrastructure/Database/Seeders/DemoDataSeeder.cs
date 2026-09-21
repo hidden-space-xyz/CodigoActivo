@@ -798,12 +798,16 @@ public sealed class DemoDataSeeder(
     private static string AsciiLower(string value)
     {
         var builder = new StringBuilder(value.Length);
-        foreach (var folded in value.ToLowerInvariant().Select(FoldAccent))
+        foreach (
+            var folded in value
+                .ToLowerInvariant()
+                .Select(FoldAccent)
+                .Where(character =>
+                    char.IsAsciiLetterOrDigit(character) || character is ' ' or '.' or '-'
+                )
+        )
         {
-            if (char.IsAsciiLetterOrDigit(folded) || folded is ' ' or '.' or '-')
-            {
-                builder.Append(folded);
-            }
+            builder.Append(folded);
         }
 
         return builder.ToString();

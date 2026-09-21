@@ -83,7 +83,7 @@ internal sealed class ApiLogging : IDisposable
 
         logging.ClearProviders();
 
-        if (fileLogger is null)
+        if (fileLogger is not { } file)
         {
             logging.AddSimpleConsole(options =>
             {
@@ -94,7 +94,10 @@ internal sealed class ApiLogging : IDisposable
             return;
         }
 
-        logging.AddProvider(new SerilogLoggerProvider(fileLogger, dispose: false));
+        logging.Services.AddSingleton<ILoggerProvider>(_ => new SerilogLoggerProvider(
+            file,
+            dispose: false
+        ));
     }
 
     internal static Serilog.Core.Logger CreateFileLogger(string directory)
@@ -120,7 +123,7 @@ internal sealed class ApiLogging : IDisposable
     {
         return sink.File(
             formatter,
-            Path.Combine(directory, FileNamePattern),
+            Path.Join(directory, FileNamePattern),
             fileSizeLimitBytes: FileSizeLimitBytes,
             rollingInterval: RollingInterval.Day,
             rollOnFileSizeLimit: true,
@@ -154,7 +157,7 @@ internal sealed class ApiLogging : IDisposable
 
             probe.Write(LogEventLevel.Verbose, "Daily log file probe");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             thrown = ex;
         }

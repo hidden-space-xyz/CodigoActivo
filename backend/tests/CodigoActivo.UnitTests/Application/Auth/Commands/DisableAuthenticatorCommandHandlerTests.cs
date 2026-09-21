@@ -126,7 +126,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     public async Task HandleAsyncWrongCodeCountsFailureAndKeepsTheAuthenticator()
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
-        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns((long?)null);
+        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(default(long?));
 
         var result = await DisableAsync(user.Id);
 
@@ -142,7 +142,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
         user.TwoFactorFailedAttempts = 1;
-        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns((long?)null);
+        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(default(long?));
 
         await DisableAsync(user.Id);
 

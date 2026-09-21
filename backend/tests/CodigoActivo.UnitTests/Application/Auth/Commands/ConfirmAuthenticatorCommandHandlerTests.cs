@@ -108,7 +108,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     public async Task HandleAsyncWrongCodeReturnsBadRequestAndKeepsThePendingKey()
     {
         var user = PendingUser();
-        totp.MatchStep(Secret, "000000", clock.UtcNow).Returns((long?)null);
+        totp.MatchStep(Secret, "000000", clock.UtcNow).Returns(default(long?));
 
         var result = await ConfirmAsync(user.Id, "000000");
 

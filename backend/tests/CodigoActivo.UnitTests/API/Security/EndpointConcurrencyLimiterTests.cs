@@ -80,10 +80,7 @@ public sealed class EndpointConcurrencyLimiterTests
         }
         finally
         {
-            foreach (var lease in leases)
-            {
-                lease.Dispose();
-            }
+            Array.ForEach(leases, lease => lease.Dispose());
         }
     }
 
@@ -106,10 +103,7 @@ public sealed class EndpointConcurrencyLimiterTests
         }
         finally
         {
-            foreach (var lease in leases)
-            {
-                lease.Dispose();
-            }
+            Array.ForEach(leases, lease => lease.Dispose());
         }
     }
 

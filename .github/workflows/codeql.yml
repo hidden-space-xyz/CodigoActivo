@@ -50,6 +50,19 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
           output: ${{ runner.temp }}/codeql-results
+          upload: never
+      - name: Drop results in build output
+        working-directory: ${{ runner.temp }}/codeql-results
+        run: |
+          for sarif in *.sarif; do
+            jq '.runs[].results |= map(select(.locations[0].physicalLocation.artifactLocation.uri // "" | test("(^|/)(obj|bin)/") | not))' "$sarif" > "$sarif.filtered"
+            mv "$sarif.filtered" "$sarif"
+          done
+      - name: Upload results to code scanning
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/codeql-results
+          category: /language:${{ matrix.language }}
       - name: Upload SARIF report
         uses: actions/upload-artifact@v7
         with:
