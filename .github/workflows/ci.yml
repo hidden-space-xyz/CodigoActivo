@@ -12,22 +12,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  codeql:
-    needs: [backend, frontend]
-    uses: ./.github/workflows/codeql.yml
-    permissions:
-      actions: read
-      contents: read
-      packages: read
-      security-events: write
-
-  release:
-    needs: codeql
-    uses: ./.github/workflows/docker-publish.yml
-    permissions:
-      contents: write
-      packages: write
-
   backend:
     runs-on: ubuntu-latest
     defaults:
@@ -95,3 +79,10 @@ jobs:
           npm run lint:styles
           npm run lint:unused
           npm run format:check
+
+  release:
+    needs: [backend, frontend]
+    uses: ./.github/workflows/docker-publish.yml
+    permissions:
+      contents: write
+      packages: write

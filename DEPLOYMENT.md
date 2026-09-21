@@ -261,15 +261,17 @@ unmasked, kept by Docker's `json-file` driver at 5 MB per file, two files.
 
 ## Releases and upgrades
 
-Only pushes to `master` start CI (including merged PRs). `develop` and unmerged PRs run nothing.
-Backend build/unit/integration tests and frontend checks must pass before CodeQL scans both languages.
-CI groups related checks by phase; versioning and security-gate tests run in their own job.
-CodeQL high/critical security findings (score >= 7), error-level findings or analysis failures block publishing.
+Only pushes to `master` start CI (including merged PRs); unmerged PRs run nothing.
+Backend build/unit/integration tests and frontend checks must pass before publishing. The Docker workflow
+is a reusable CI stage; it does not run independently or on a schedule.
+
+Pushes to `develop` start only the CodeQL workflow, which is independent of CI and does not gate
+publishing; `master` is not scanned, so fix findings on `develop` before merging. A newer push cancels
+the scan in progress.
+Findings never fail the run; review them in the repository's code scanning alerts. Only a broken build
+or analysis fails it.
 C# analysis uses a full .NET 10 build under CodeQL tracing, including source generators and test projects;
 JavaScript/TypeScript uses the build-free analysis mode.
-The gate logs diagnostic messages and available source locations; SARIF reports are retained for 14 days
-as `codeql-sarif-<language>` workflow artifacts, including failed runs when reports were generated.
-The CodeQL and Docker workflows are reusable stages; neither runs independently or on a schedule.
 
 API and UI share one version and one GitHub release, tagged `vX.Y.Z`. All repository commits since the
 highest stable `vX.Y.Z` tag count. With no matching tag, the baseline is `0.0.0` and the full commit history
