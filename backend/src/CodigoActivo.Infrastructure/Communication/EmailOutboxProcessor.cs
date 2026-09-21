@@ -67,13 +67,13 @@ public sealed class EmailOutboxProcessor(
             return await deliverer.DeliverDueAsync(ct);
         }
         catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            if (ex is OperationCanceledException && ct.IsCancellationRequested)
-            {
-                return 0;
-            }
-
             logger.EmailOutboxRunFailed(ex);
+            return 0;
+        }
+        catch (OperationCanceledException)
+        {
             return 0;
         }
     }

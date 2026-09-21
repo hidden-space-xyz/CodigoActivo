@@ -57,7 +57,7 @@ public sealed class AccountSecurityNotifier(
             previousEmail,
             recipientName,
             AccountSecurityChange.IdentifiersChanged,
-            newEmail.MaskEmail(),
+            newEmail?.MaskEmail(),
             ct
         );
     }

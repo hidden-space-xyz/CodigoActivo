@@ -88,7 +88,7 @@ public sealed class EmailOutboxDeliverer(
             await transport.SendAsync(email, timeout.Token);
             await store.RemoveAsync(message.Id, message.AttemptCount, CancellationToken.None);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             await RecordFailureAsync(message, ex);
         }

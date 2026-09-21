@@ -72,7 +72,7 @@ public sealed class AuthenticatorCodeVerifierTests
     [Fact]
     public void MatchCodeRejectedByTotpReturnsNull()
     {
-        totp.MatchStep(Secret, "000000", clock.UtcNow).Returns((long?)null);
+        totp.MatchStep(Secret, "000000", clock.UtcNow).Returns(default(long?));
 
         sut.Match(ProtectedSecret, "000000", null).Should().BeNull();
     }

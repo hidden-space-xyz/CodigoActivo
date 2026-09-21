@@ -233,7 +233,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         user.LoginCodeHash = FakePasswordHasher.Prefix + "123456";
         user.LoginCodeExpiresAt = clock.UtcNow.AddMinutes(5);
         totp.MatchStep(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>())
-            .Returns((long?)null);
+            .Returns(default(long?));
 
         var result = await VerifyAsync(user.Id, "123456");
 
