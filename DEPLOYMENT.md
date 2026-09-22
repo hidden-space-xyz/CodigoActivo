@@ -265,8 +265,8 @@ Only pushes to `master` start CI (including merged PRs); unmerged PRs run nothin
 Backend build/unit/integration tests and frontend checks must pass before publishing. The Docker workflow
 is a reusable CI stage; it does not run independently or on a schedule.
 
-Pushes to `develop` start only the CodeQL workflow, which is independent of CI and does not gate
-publishing; `master` is not scanned, so fix findings on `develop` before merging. A newer push cancels
+Pushes to `develop` or `master` that change `backend/`, `frontend/` or the workflow itself start the CodeQL
+workflow, which is independent of CI and does not gate publishing. A newer push to the same branch cancels
 the scan in progress.
 Findings never fail the run; review them in the repository's code scanning alerts or in the
 `codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build, analysis or upload fails it.
