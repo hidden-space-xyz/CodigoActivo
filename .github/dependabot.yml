@@ -1,0 +1,40 @@
+version: 2
+
+multi-ecosystem-groups:
+  all-dependencies:
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "00:00"
+      timezone: "Europe/Madrid"
+    target-branch: "develop"
+    commit-message:
+      prefix: "bump"
+
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/backend"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/backend/src/CodigoActivo.API"
+      - "/frontend"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
+
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"

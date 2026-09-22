@@ -81,6 +81,8 @@ Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points
 PostgreSQL database.
 
 CI merges the coverage of both test projects and fails when line, branch or method coverage is below 90%.
+Dependabot (`.github/dependabot.yml`) opens a single pull request against `develop` every Saturday at 00:00
+(Europe/Madrid) with all NuGet, npm, Docker, Compose and GitHub Actions updates grouped together.
 Coverage uses Microsoft Code Coverage with `tests/CodeCoverage.config`, which measures the production
 assemblies and excludes EF Core migrations. To reproduce locally:
 
