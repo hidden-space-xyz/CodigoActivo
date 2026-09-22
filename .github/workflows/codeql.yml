@@ -2,7 +2,11 @@ name: CodeQL
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, master]
+    paths:
+      - backend/**
+      - frontend/**
+      - .github/workflows/codeql.yml
 
 permissions:
   actions: read
