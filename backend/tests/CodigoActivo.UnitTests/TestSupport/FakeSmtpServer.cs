@@ -81,7 +81,8 @@ public sealed class FakeSmtpServer : IAsyncDisposable
                 }
             }
         }
-        catch (Exception ex) when (ex is OperationCanceledException or SocketException)
+        catch (Exception ex)
+            when (ex is OperationCanceledException or SocketException or ObjectDisposedException)
         {
             // The server is stopping.
         }
