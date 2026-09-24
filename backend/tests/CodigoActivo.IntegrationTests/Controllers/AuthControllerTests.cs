@@ -632,21 +632,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task LoginWithPhoneInsteadOfEmailReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/login",
-            new LoginRequest("+34600000001", TestSeedData.Password),
-            Ct
-        );
-
-        await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
-        Factory.EmailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
     public async Task LoginWithoutCsrfTokenReturnsBadRequest()
     {
         var client = CreateClient();

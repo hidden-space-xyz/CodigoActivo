@@ -120,7 +120,7 @@ const secondaryPhoneRepeated = computed(
     !!form.secondaryPhone.trim() &&
     form.secondaryPhone.trim() === form.phone.trim(),
 )
-const replacesIdentifiers = computed(() => {
+const replacesContact = computed(() => {
   if (isDependent.value) return false
   return (
     form.email.trim().toLowerCase() !== storedEmail.value.toLowerCase() ||
@@ -129,7 +129,7 @@ const replacesIdentifiers = computed(() => {
   )
 })
 const passwordRejected = ref(false)
-const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
+const requiresPassword = computed(() => replacesContact.value || passwordRejected.value)
 const passwordMissing = computed(() => requiresPassword.value && !form.currentPassword)
 
 watch(
@@ -350,9 +350,9 @@ function save(): void {
       </template>
       <div v-if="requiresPassword" class="form__field">
         <label for="user-current-password">{{
-          $t('features.manageUsers.identifierChange.passwordLabel')
+          $t('features.manageUsers.contactChange.passwordLabel')
         }}</label>
-        <p class="form__hint">{{ $t('features.manageUsers.identifierChange.message') }}</p>
+        <p class="form__hint">{{ $t('features.manageUsers.contactChange.message') }}</p>
         <el-input
           id="user-current-password"
           v-model="form.currentPassword"
@@ -364,7 +364,7 @@ function save(): void {
         />
         <small v-if="error" class="form__error">{{ error }}</small>
         <small v-else-if="submitted && passwordMissing" class="form__error">{{
-          $t('features.manageUsers.identifierChange.passwordRequired')
+          $t('features.manageUsers.contactChange.passwordRequired')
         }}</small>
       </div>
     </form>

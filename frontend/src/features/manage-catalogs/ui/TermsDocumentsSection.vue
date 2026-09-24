@@ -174,6 +174,7 @@ function confirmDelete(item: TermsDocumentResponse): void {
             v-model="form.description"
             :label="$t('features.manageCatalogs.terms.content')"
             :upload="uploadFileRequest"
+            :invalid="submitted && descriptionMissing"
           />
           <small v-if="submitted && descriptionMissing" class="catalog__error">{{
             $t('features.manageCatalogs.terms.contentRequired')

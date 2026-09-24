@@ -1078,7 +1078,7 @@
       "birthDateInvalid": "Indica una fecha de nacimiento válida.",
       "childBirthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad.",
       "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
-      "identifierChange": {
+      "contactChange": {
         "message": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o sus teléfonos. Por seguridad, confirma tu contraseña.",
         "passwordLabel": "Tu contraseña",
         "passwordRequired": "Introduce tu contraseña."
@@ -1184,7 +1184,7 @@
         "editData": "Editar datos",
         "changePassword": "Cambiar contraseña",
         "editDialogHeader": "Editar mis datos",
-        "identifierChange": {
+        "contactChange": {
           "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar tus teléfonos, confirma por seguridad tu contraseña actual.",
           "passwordLabel": "Tu contraseña actual",
           "passwordRequired": "Introduce tu contraseña actual."

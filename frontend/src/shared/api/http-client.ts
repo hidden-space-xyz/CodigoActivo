@@ -58,11 +58,10 @@ async function buildApiError(response: Response): Promise<ApiError> {
       const detail = (await response.json()) as {
         title?: string
         detail?: string
-        message?: string
         traceId?: string
         code?: ErrorCode
       }
-      message = detail.detail ?? detail.title ?? detail.message ?? message
+      message = detail.detail ?? detail.title ?? message
       traceId = detail.traceId
       code = detail.code
     } else {

@@ -5,8 +5,8 @@ import { renderRichTextHtml } from '@/shared/lib/richtext'
 
 const props = defineProps<{
   /**
-   * Serialized TipTap JSON document, sanitized before rendering to HTML. Plain text is shown as a
-   * single paragraph; empty or unrenderable content outputs nothing.
+   * Serialized TipTap JSON document, sanitized before rendering to HTML. Empty or unrenderable
+   * content outputs nothing.
    */
   content?: string | null
 }>()

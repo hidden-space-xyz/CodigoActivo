@@ -24,10 +24,8 @@ function isExpanded(eventId: string): boolean {
 
 function statusSeverity(name: string): 'success' | 'danger' | 'info' {
   const value = name.toLowerCase()
-  if (value.includes('confirm') || value.includes('acept') || value.includes('aprob'))
-    return 'success'
-  if (value.includes('rechaz') || value.includes('deneg') || value.includes('cancel'))
-    return 'danger'
+  if (value.includes('confirm')) return 'success'
+  if (value.includes('rechaz')) return 'danger'
   return 'info'
 }
 

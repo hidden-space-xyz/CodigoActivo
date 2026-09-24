@@ -116,8 +116,8 @@ export function renderRichTextHtml(value?: string | null): string {
 /**
  * Parses stored rich text into a sanitized Tiptap document. Only allow-listed nodes, marks and
  * attributes survive (http/https/mailto/tel links, `/api/files/{id}/content` images, `#rrggbb`
- * colors), within node, depth and character limits. Non-JSON input becomes one plain paragraph;
- * other JSON yields an empty document.
+ * colors), within node, depth and character limits. Anything that is not a JSON document yields an
+ * empty document.
  */
 export function parseRichText(value?: string | null): JSONContent {
   if (!value) return { type: 'doc', content: [] }
@@ -126,18 +126,8 @@ export function parseRichText(value?: string | null): JSONContent {
     if (parsed && typeof parsed === 'object' && (parsed as JSONContent).type === 'doc') {
       return sanitizeRichText(parsed)
     }
-    return { type: 'doc', content: [] }
-  } catch {
-    return {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: value.slice(0, MAX_RICH_TEXT_CHARACTERS) }],
-        },
-      ],
-    }
-  }
+  } catch {}
+  return { type: 'doc', content: [] }
 }
 
 interface SanitizeState {

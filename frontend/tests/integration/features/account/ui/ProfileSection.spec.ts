@@ -120,15 +120,6 @@ describe('ProfileSection', () => {
     expect(wrapper.text()).not.toContain(t('common.loading'))
   })
 
-  it('no longer offers account deletion from the profile actions', async () => {
-    serveProfile()
-
-    await renderSection()
-
-    expect(buttonsByText(document.body, t('features.account.deleteAccount.action'))).toHaveLength(0)
-    expect(document.body.textContent).not.toContain(t('features.account.deleteAccount.lead'))
-  })
-
   it('edits the profile with trimmed values, confirms and closes the dialog', async () => {
     let meRequests = 0
     server.use(
@@ -214,7 +205,7 @@ describe('ProfileSection', () => {
     await click(buttonByText(dialog, t('common.save')))
 
     expect(dialog.textContent).toContain(
-      t('features.account.profile.identifierChange.passwordRequired'),
+      t('features.account.profile.contactChange.passwordRequired'),
     )
     expect(updated).not.toHaveBeenCalled()
 

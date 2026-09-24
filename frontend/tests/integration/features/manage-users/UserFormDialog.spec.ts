@@ -151,9 +151,7 @@ describe('UserFormDialog', () => {
     expect(dialog.querySelector('#user-current-password')).not.toBeNull()
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(
-      t('features.manageUsers.identifierChange.passwordRequired'),
-    )
+    expect(dialog.textContent).toContain(t('features.manageUsers.contactChange.passwordRequired'))
     expect(wrapper.emitted('submit')).toBeUndefined()
 
     await typeInto('#user-email', 'ADA@example.test')

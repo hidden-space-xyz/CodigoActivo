@@ -10,6 +10,8 @@ import type {
 } from '@/shared/api/generated/models'
 import type { ChartPalette } from '@/shared/lib'
 
+import { richText } from '../admin-content/builders'
+
 /** Copy of `value` without `keys`, for API payloads where a field is absent rather than undefined. */
 export function omit<T extends object, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
   const copy = { ...value }
@@ -27,7 +29,7 @@ export function buildEventResponse(overrides: EventResponse = {}): EventResponse
     id: 'event-1',
     title: 'Hackathon de primavera',
     subtitle: 'Programa tu futuro',
-    description: 'Un fin de semana de código.',
+    description: richText('Un fin de semana de código.'),
     eventStartsAt: '2099-06-10T09:00:00Z',
     eventEndsAt: '2099-06-11T18:00:00Z',
     earlySignupStartsAt: null,
@@ -91,7 +93,7 @@ export function buildResourceListItem(
 export function buildResourceResponse(overrides: ResourceResponse = {}): ResourceResponse {
   return {
     ...buildResourceListItem(),
-    description: 'Todo sobre Python.',
+    description: richText('Todo sobre Python.'),
     thumbnailId: 'thumb-resource',
     ...overrides,
   }
@@ -118,7 +120,7 @@ export function buildAnnouncementResponse(
 ): AnnouncementResponse {
   return {
     ...buildAnnouncementListItem(),
-    description: 'Ya puedes apuntarte.',
+    description: richText('Ya puedes apuntarte.'),
     updatedAt: '2026-02-03T10:00:00Z',
     thumbnailId: 'thumb-announcement',
     ...overrides,

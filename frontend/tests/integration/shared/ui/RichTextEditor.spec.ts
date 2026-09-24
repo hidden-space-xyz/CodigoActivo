@@ -97,13 +97,6 @@ describe('RichTextEditor', () => {
     expect(wrapper.find('.rt__error').exists()).toBe(false)
   })
 
-  it('loads plain text as a paragraph', async () => {
-    const { wrapper } = await renderEditor({ modelValue: 'Legacy text' })
-
-    expect(wrapper.find('.ProseMirror p').text()).toBe('Legacy text')
-    expect(wrapper.find('.rt').classes()).not.toContain('rt--invalid')
-  })
-
   it('emits the serialized document on user edits', async () => {
     const { wrapper, editor } = await renderEditor()
 

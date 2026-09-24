@@ -32,14 +32,9 @@ describe('RichTextContent', () => {
     expect(container.text()).toBe('Bold click')
   })
 
-  it('shows plain text as a paragraph and renders nothing for empty content', async () => {
-    const plain = await renderWithProviders(RichTextContent, {
-      props: { content: 'Legacy <b>text</b>' },
-    })
+  it('renders nothing for empty content', async () => {
     const empty = await renderWithProviders(RichTextContent, { props: { content: null } })
 
-    expect(plain.wrapper.find('p').text()).toBe('Legacy <b>text</b>')
-    expect(plain.wrapper.find('b').exists()).toBe(false)
     expect(empty.wrapper.find('.rich-text').text()).toBe('')
   })
 })

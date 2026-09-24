@@ -161,7 +161,7 @@ limits request bodies to `12m`; raising the application limit may also require c
 Every email — automatic messages and administrator-written bulk mail alike — is stored in a PostgreSQL
 outbox (`email_outbox_messages`, `email_outbox_contents`, `email_outbox_content_parts`) and delivered in the
 background by the `EmailOutboxProcessor` hosted service; a request that queues email returns once the row
-is committed, not once SMTP accepts it. Automatic messages still pass through a process-local rate limiter
+is committed, not once SMTP accepts it. Automatic messages pass through a process-local rate limiter
 before reaching the outbox; administrator bulk email bypasses that budget but is queued the same way, so its
 response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
@@ -292,10 +292,9 @@ version; rerunning a commit older than the latest release is rejected. Actions n
 repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
-review the daily log files in `logs-api` (see [SECURITY.md](SECURITY.md#logging)) and smoke test. Recreating
-the containers this way discards any `json-file` logs Docker kept from an earlier version; the daily files in
-`logs-api` are unaffected. PostgreSQL 18 is mounted at `/var/lib/postgresql`, with no in-place upgrade from
-older major versions.
+review the daily log files in `logs-api` (see [SECURITY.md](SECURITY.md#logging)) and smoke test. The
+PostgreSQL image does not upgrade `db-data` across major versions; changing from PostgreSQL 18 requires a
+dump and restore.
 
 ## Backups and recovery
 

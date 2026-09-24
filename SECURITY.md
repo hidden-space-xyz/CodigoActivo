@@ -30,8 +30,7 @@ authentication are not supported.
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
   cookies, including when the row is already gone or its deletion fails, which is logged. Deleting an account
-  removes its rows by cascade. Tickets issued before this behaviour existed carry no `sid`, so those users
-  are signed out once and log in again.
+  removes its rows by cascade.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
   such as `UserType` are not authorization roles, with one handler-level exception:
@@ -212,12 +211,12 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
 ### Event rating anonymity
 
 `event_ratings` stores the answer under a random v4 `Guid`, with no user id or timestamps: `id`, `event_id`,
-`score`, `most_liked`, `least_liked`, `suggestions`. `POST /api/events/{eventId}/rating` still requires the
-event to exist and have ended and the caller (or a dependent) to have confirmed attendance, but no longer
-tracks who already rated an event: the same attendee may submit more than once, and every accepted call
-appends one row through the standard repository-plus-`IUnitOfWork` write path. There is no per-user submission
-cap besides the general 300-requests/minute-per-authenticated-user budget described above; every accepted
-submission, repeats included, counts toward that event's rating count and average.
+`score`, `most_liked`, `least_liked`, `suggestions`. `POST /api/events/{eventId}/rating` requires the event
+to exist and have ended and the caller (or a dependent) to have confirmed attendance, but does not track who
+already rated an event: the same attendee may submit more than once, and every accepted call appends one row
+through the standard repository-plus-`IUnitOfWork` write path. There is no per-user submission cap besides
+the general 300-requests/minute-per-authenticated-user budget described above; every accepted submission,
+repeats included, counts toward that event's rating count and average.
 
 Account deletion keeps past ratings, since their content carries no author reference. Ratings are plain
 inserts, so `event_ratings`' physical row order (and `xmin`) reflects write order.
@@ -296,16 +295,14 @@ in the volume, then derives the AES-256-GCM key from `DATA_PROTECTION_CERTIFICAT
 that hash passwords) before decrypting with `System.Security.Cryptography.AesGcm`. The locally generated
 Ed25519 certificate's own private key is stored the same way, in a fixed-size binary container (version,
 salt, nonce, tag, ciphertext) with the certificate's DER bytes as associated data. BouncyCastle is used only
-to generate and parse the Ed25519 certificate and to sign/verify; it performs no encryption. There is no
-reader for any earlier key-ring or private-key format: a volume created by a previous build must be
-recreated, and startup reports the failure when it is not. Since the certificate password derives the
-key-wrapping key, there is no rotation procedure either: changing it means recreating the volume, which
-invalidates every session and every stored authenticator secret. Outside Production the key ring is
-unencrypted on disk, as before, but every environment protects Data Protection payloads themselves — session
-and two-factor cookies, antiforgery tokens, authenticator secrets and the email outbox content described
-below — with AES-256-GCM. Application containers run as non-root, drop all capabilities, enable
-`no-new-privileges` and use read-only root filesystems; PostgreSQL is reachable only on the internal backend
-network. The development override removes parts of this boundary and must not be deployed.
+to generate and parse the Ed25519 certificate and to sign/verify; it performs no encryption. Since the
+certificate password derives the key-wrapping key, there is no rotation procedure: changing it means
+recreating the volume, which invalidates every session and every stored authenticator secret. Outside
+Production the key ring is unencrypted on disk, but every environment protects Data Protection payloads
+themselves — session and two-factor cookies, antiforgery tokens, authenticator secrets and the email outbox
+content described below — with AES-256-GCM. Application containers run as non-root, drop all capabilities,
+enable `no-new-privileges` and use read-only root filesystems; PostgreSQL is reachable only on the internal
+backend network. The development override removes parts of this boundary and must not be deployed.
 
 ### Files and multipart requests
 

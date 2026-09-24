@@ -86,7 +86,7 @@ Cross-handler behavior belongs in focused collaborators (`SignupGate`, `TermsGat
 `AccountEmails`, `FileUploadValidator`, `ManualEmailDispatcher`) rather than controllers. An event can link
 several terms documents (`event_terms_documents`, each `is_required`/`display_order`); the signup wire
 contract (`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of
-`{TermsDocumentId, Accepted}` instead of one boolean. `TermsGate` records each decision in
+`{TermsDocumentId, Accepted}`. `TermsGate` records each decision in
 `event_terms_acceptances` (keyed by event, user and document) but never persists the rejection of a required
 document, so signup blocks without excluding the user permanently; `GET /api/events/{eventId}/terms` returns
 every linked document with the caller's current decision.

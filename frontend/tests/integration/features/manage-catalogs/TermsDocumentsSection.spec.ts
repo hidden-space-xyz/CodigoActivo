@@ -87,6 +87,7 @@ describe('TermsDocumentsSection', () => {
     await click(findButton(t('common.save'), dialog))
     expect(dialog.textContent).toContain(t('features.manageCatalogs.terms.contentRequired'))
     expect(dialog.querySelector('.ca-invalid')).not.toBeNull()
+    expect(wrapper.findComponent(RichTextEditor).props('invalid')).toBe(true)
 
     await typeInto('#terms-document-name', ' Cookies ')
     wrapper.findComponent(RichTextEditor).vm.$emit('update:modelValue', richText('   '))

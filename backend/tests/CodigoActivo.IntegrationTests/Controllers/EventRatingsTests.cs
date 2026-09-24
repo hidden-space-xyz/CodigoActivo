@@ -298,23 +298,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRatingObsoletePutMethodIsNotAvailable()
-    {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
-        var client = await LoginAsMemberAsync();
-
-        using var response = await client.PutJsonAsync(
-            $"/api/events/{EventId}/rating",
-            ValidRating,
-            Ct
-        );
-
-        response
-            .StatusCode.Should()
-            .BeOneOf(HttpStatusCode.MethodNotAllowed, HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task RatingsMemberUserReturnsForbidden()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);

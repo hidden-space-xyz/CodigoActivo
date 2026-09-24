@@ -7,7 +7,7 @@ namespace CodigoActivo.Application.DTOs;
 /// <summary>
 /// Contains the client-supplied data used to login.
 /// </summary>
-/// <param name="Identifier">Email address of the account; the phone is not a login identifier.</param>
+/// <param name="Identifier">Email address of the account.</param>
 /// <param name="Password">Plain-text password to hash or verify.</param>
 public record LoginRequest(
     [Required] [MaxLength(256)] [NotBlank] string Identifier,

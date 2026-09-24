@@ -58,9 +58,6 @@
   --ca-info-ink: var(--ca-azure-ink);
   --ca-info-soft: var(--ca-azure-soft);
 
-  --ca-primary: var(--ca-orange);
-  --ca-primary-ink: var(--ca-orange-ink);
-  --ca-primary-soft: var(--ca-orange-soft);
   --ca-on-primary: #2a1400;
 
   --ca-glass-bg: rgba(245, 245, 245, 0.82);

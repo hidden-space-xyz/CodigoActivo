@@ -189,6 +189,7 @@ async function save(): Promise<void> {
           v-model="form.description"
           :label="$t('features.manageResources.description')"
           :upload="uploadFileRequest"
+          :invalid="submitted && descriptionMissing"
         />
         <small v-if="submitted && descriptionMissing" class="form__error">{{
           $t('features.manageResources.descriptionRequired')

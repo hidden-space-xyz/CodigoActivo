@@ -76,30 +76,13 @@ public sealed class DemoDataSeeder(
     ];
 
     /// <summary>
-    /// Determines whether the expected seed data already exists.
-    /// </summary>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public Task<bool> IsSeededAsync(CancellationToken ct = default)
-    {
-        return context.Database.IsRelational()
-            ? context.Users.AnyAsync(u => u.Id == DemoAuthorId, ct)
-            : Task.FromResult(false);
-    }
-
-    /// <summary>
     /// Creates the required demo data records when they do not exist.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        if (!context.Database.IsRelational())
-        {
-            return;
-        }
-
-        if (await IsSeededAsync(ct))
+        if (await context.Users.AnyAsync(u => u.Id == DemoAuthorId, ct))
         {
             return;
         }
@@ -118,12 +101,7 @@ public sealed class DemoDataSeeder(
 
             context.Files.AddRange(graph.Files);
             context.EventCategoryTypes.AddRange(graph.CategoryTypes);
-            var existingTermsDocumentIds = await context
-                .TermsDocuments.Select(t => t.Id)
-                .ToListAsync(ct);
-            context.TermsDocuments.AddRange(
-                graph.TermsDocuments.Where(t => !existingTermsDocumentIds.Contains(t.Id))
-            );
+            context.TermsDocuments.AddRange(graph.TermsDocuments);
             await context.SaveChangesAsync(ct);
 
             context.Events.AddRange(graph.Events);
