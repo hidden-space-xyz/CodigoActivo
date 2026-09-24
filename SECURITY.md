@@ -219,24 +219,15 @@ appends one row through the standard repository-plus-`IUnitOfWork` write path. T
 cap besides the general 300-requests/minute-per-authenticated-user budget described above; every accepted
 submission, repeats included, counts toward that event's rating count and average.
 
-Account deletion keeps past ratings, since their content carries no author reference. `AnonymizeEventRatings`
-retrofitted this onto previously linked data (moved `user_id` into a since-removed submission table, dropped
-`user_id`/`created_at`/`updated_at` from `event_ratings`, reinserted every row in random order, ran
-`CLUSTER`); its `Down` migration throws, since the author link was discarded. The submission table itself was
-later dropped (`RemoveEventRatingSubmissions`); its `Down` migration recreates it empty, so rolling back does
-not recover which user rated which event. Ratings are now plain inserts, so `event_ratings`' physical row
-order (and `xmin`) reflects write order again; the random-reorder step above only ever ran as part of
-`AnonymizeEventRatings` itself.
+Account deletion keeps past ratings, since their content carries no author reference. Ratings are plain
+inserts, so `event_ratings`' physical row order (and `xmin`) reflects write order.
 
 **Known limitations:** PostgreSQL write-ahead log access (`pg_wal`, in volume copies and point-in-time
-recovery); dead tuples until the next `VACUUM`; backups/dumps taken **before** `AnonymizeEventRatings` ran,
-which still link ratings to authors, or **before** `RemoveEventRatingSubmissions` ran, which still record who
-rated which event (not the rating content) (rotate them out, see
-[DEPLOYMENT.md](DEPLOYMENT.md#backups-and-recovery)); differential observation of two dumps taken
-before/after a submission; and, for events with one or two ratings, deducible authorship from count or
-free-text content (no minimum-rating threshold exists). Stored logs do not correlate an IP with an account or
-a rating request (see [Logging](#logging)): the only stored logs are the API's, which carry no client IP,
-requested path or user id. The stored rating content still carries no author reference.
+recovery); dead tuples until the next `VACUUM`; differential observation of two dumps taken before/after a
+submission; and, for events with one or two ratings, deducible authorship from count or free-text content (no
+minimum-rating threshold exists). Stored logs do not correlate an IP with an account or a rating request (see
+[Logging](#logging)): the only stored logs are the API's, which carry no client IP, requested path or user id.
+The stored rating content still carries no author reference.
 
 ### Logging
 
