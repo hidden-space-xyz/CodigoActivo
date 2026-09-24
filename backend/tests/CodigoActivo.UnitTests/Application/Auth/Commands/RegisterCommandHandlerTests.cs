@@ -148,24 +148,6 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncNationalIdInUseReturnsConflict()
-    {
-        ExistsReturns(false);
-        users.NationalIdExistsAsync("X1234567L", null, Arg.Any<CancellationToken>()).Returns(true);
-
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(nationalId: " x-1234567-l ")),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterNationalIdAlreadyInUse);
-        await AssertNotSavedAsync();
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public async Task HandleAsyncNewAdultStoresNationalIdAndConsentButNoBirthDate()
     {
         var added = await CaptureAddedUsersAsync();
@@ -222,7 +204,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEmailOrPhoneInUseReturnsConflict()
+    public async Task HandleAsyncEmailInUseReturnsConflict()
     {
         ExistsReturns(true);
 
@@ -231,7 +213,7 @@ public sealed class RegisterCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterEmailAlreadyInUse);
         await AssertNotSavedAsync();
         await cacheInvalidator
             .DidNotReceive()

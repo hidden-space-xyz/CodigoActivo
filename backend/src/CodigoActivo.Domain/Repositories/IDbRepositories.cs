@@ -30,12 +30,12 @@ public interface IUserRepository : IDbRepository<User>
     public Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the user identified by an email address or phone number.
+    /// Gets the user identified by an email address, the only login identifier.
     /// </summary>
-    /// <param name="identifier">The identifier value.</param>
+    /// <param name="email">Normalized email address to locate.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the matching user, or <see langword="null"/> when it is not found.</returns>
-    public Task<User?> GetByEmailOrPhoneAsync(string identifier, CancellationToken ct = default);
+    public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
 
     /// <summary>
     /// Determines whether an email already exists.
@@ -46,32 +46,6 @@ public interface IUserRepository : IDbRepository<User>
     /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public Task<bool> EmailExistsAsync(
         string email,
-        Guid? excludeUserId = null,
-        CancellationToken ct = default
-    );
-
-    /// <summary>
-    /// Determines whether a phone already exists.
-    /// </summary>
-    /// <param name="phone">Phone number to validate or locate.</param>
-    /// <param name="excludeUserId">Identifier of the user to exclude from the check.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public Task<bool> PhoneExistsAsync(
-        string phone,
-        Guid? excludeUserId = null,
-        CancellationToken ct = default
-    );
-
-    /// <summary>
-    /// Determines whether a normalized DNI or NIE already exists.
-    /// </summary>
-    /// <param name="nationalId">Normalized national identity number to locate.</param>
-    /// <param name="excludeUserId">Identifier of the user to exclude from the check.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public Task<bool> NationalIdExistsAsync(
-        string nationalId,
         Guid? excludeUserId = null,
         CancellationToken ct = default
     );

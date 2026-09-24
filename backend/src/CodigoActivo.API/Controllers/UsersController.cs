@@ -88,7 +88,7 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Updates the selected user with the validated request. Replacing the login identifiers
+    /// Updates the selected user with the validated request. Replacing the email or the phone
     /// requires the caller's password, so the endpoint shares the credential rate limits.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>

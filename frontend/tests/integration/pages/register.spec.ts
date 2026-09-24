@@ -160,7 +160,7 @@ describe('register page', () => {
   })
 
   it('keeps the form and shows the API error when the email is already in use', async () => {
-    serveRegister(() => apiError(409, 'RegisterEmailOrPhoneAlreadyInUse'))
+    serveRegister(() => apiError(409, 'RegisterEmailAlreadyInUse'))
     const { wrapper } = await renderApp('/register')
     await clickButton(wrapper, t('features.register.ageGate.confirm'))
     await fillAdult(wrapper)
@@ -169,7 +169,7 @@ describe('register page', () => {
 
     await vi.waitFor(() =>
       expect(document.body.querySelector('.el-notification')?.textContent).toContain(
-        t('errors.RegisterEmailOrPhoneAlreadyInUse'),
+        t('errors.RegisterEmailAlreadyInUse'),
       ),
     )
     expect(wrapper.find('form').exists()).toBe(true)

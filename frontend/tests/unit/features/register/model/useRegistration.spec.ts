@@ -142,16 +142,14 @@ describe('useRegistration', () => {
   })
 
   it('shows an error notification and stays on the form when registration fails', async () => {
-    server.use(
-      http.post('/api/auth/register', () => apiError(409, 'RegisterEmailOrPhoneAlreadyInUse')),
-    )
+    server.use(http.post('/api/auth/register', () => apiError(409, 'RegisterEmailAlreadyInUse')))
     const { result } = await mountComposable(() => useRegistration(), { attach: true })
     fillAdult(result)
     result.confirmAdult()
 
     result.submit()
     await vi.waitFor(() =>
-      expect(notificationText()).toContain(t('errors.RegisterEmailOrPhoneAlreadyInUse')),
+      expect(notificationText()).toContain(t('errors.RegisterEmailAlreadyInUse')),
     )
 
     expect(notificationText()).toContain(t('common.error'))

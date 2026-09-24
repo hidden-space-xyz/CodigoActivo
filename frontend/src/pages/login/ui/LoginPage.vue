@@ -23,6 +23,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
             <el-input
               id="login-identifier"
               v-model="form.identifier"
+              type="email"
               autocomplete="username"
               autocapitalize="none"
               autocorrect="off"

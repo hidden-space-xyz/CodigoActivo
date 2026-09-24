@@ -73,14 +73,9 @@ public sealed class RegisterCommandHandler(
             return Error.BadRequest(ErrorCode.RequestValidationFailed);
         }
 
-        if (await users.ExistsAsync(u => u.Email == email || u.Phone == phone, ct))
+        if (await users.ExistsAsync(u => u.Email == email, ct))
         {
-            return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
-        }
-
-        if (await users.NationalIdExistsAsync(nationalId, null, ct))
-        {
-            return Error.Conflict(ErrorCode.RegisterNationalIdAlreadyInUse);
+            return Error.Conflict(ErrorCode.RegisterEmailAlreadyInUse);
         }
 
         var minorRequests = request.Minors ?? [];

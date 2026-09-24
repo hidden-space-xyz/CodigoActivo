@@ -174,35 +174,6 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAdultPhoneAlreadyInUseReturnsConflict()
-    {
-        users.FindReturns(NewUser(), actingUser);
-        users
-            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        users
-            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-        var request = new UpdateUserRequest(
-            "F",
-            "L",
-            "a@test.com",
-            "555",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
-
-        var result = await HandleAsync(Guid.NewGuid(), request);
-
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserPhoneAlreadyInUse);
-        await AssertNotSavedAsync();
-    }
-
-    [Fact]
     public async Task HandleAsyncValidAdultUpdateNormalizesContactPersistsAndInvalidatesCache()
     {
         var id = Guid.NewGuid();
@@ -210,9 +181,6 @@ public sealed class UpdateUserCommandHandlerTests
         users.FindReturns(user, actingUser);
         users
             .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        users
-            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
         users.HasUsers(user);
         clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
@@ -262,9 +230,6 @@ public sealed class UpdateUserCommandHandlerTests
         users.FindReturns(user, actingUser);
         users
             .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        users
-            .PhoneExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
         users.HasUsers(user);
         var request = new UpdateUserRequest(
@@ -584,35 +549,6 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncStandaloneAccountNationalIdOfAnotherUserReturnsConflict()
-    {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
-        users.FindReturns(user, actingUser);
-        users.NationalIdExistsAsync("X1234567L", id, Arg.Any<CancellationToken>()).Returns(true);
-        var request = new UpdateUserRequest(
-            "Ana",
-            "Lopez",
-            "other@test.com",
-            "555-0100",
-            null,
-            " x-1234567-l ",
-            true,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
-
-        var result = await HandleAsync(id, request);
-
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserNationalIdAlreadyInUse);
-        user.NationalId.Should().Be(AdultNationalId);
-        user.Email.Should().Be("ana@test.com");
-        actingUser.PasswordFailedAttempts.Should().Be(0);
-        await AssertNotSavedAsync();
-    }
-
-    [Fact]
     public async Task HandleAsyncStandaloneAccountStoresNormalizedNationalIdAndConsentWithoutPassword()
     {
         var id = Guid.NewGuid();
@@ -640,9 +576,6 @@ public sealed class UpdateUserCommandHandlerTests
         user.BirthDate.Should().BeNull();
         result.Value.NationalId.Should().Be("X1234567L");
         result.Value.PromotionalConsent.Should().BeTrue();
-        await users
-            .Received(1)
-            .NationalIdExistsAsync("X1234567L", id, Arg.Any<CancellationToken>());
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -708,9 +641,6 @@ public sealed class UpdateUserCommandHandlerTests
         user.Phone.Should().BeNull();
         user.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
         user.PromotionalConsent.Should().BeFalse();
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .NationalIdExistsAsync(default!, default, TestContext.Current.CancellationToken);
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

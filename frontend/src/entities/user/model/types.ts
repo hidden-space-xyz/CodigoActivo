@@ -56,8 +56,8 @@ export interface UpdateUserInput {
   readonly gender: Gender
   readonly parentId: string | null
   /**
-   * Password of the signed-in user, required by the API whenever the change replaces the login
-   * identifiers of the account: another email or phone. `null` for every other edit.
+   * Password of the signed-in user, required by the API whenever the change replaces the email or
+   * the phone of the account. `null` for every other edit.
    */
   readonly currentPassword: string | null
 }

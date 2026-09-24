@@ -145,7 +145,8 @@ public record AccountDeletionStatusResponse(bool Allowed);
 /// unset.
 /// </param>
 /// <param name="NationalId">
-/// DNI or NIE. Required and unique for an independent account; ignored for a dependent.
+/// DNI or NIE. Required for an independent account, never checked for uniqueness; ignored for a
+/// dependent.
 /// </param>
 /// <param name="PromotionalConsent">
 /// Whether the user agrees to receive promotional content; ignored for a dependent.
@@ -156,8 +157,8 @@ public record AccountDeletionStatusResponse(bool Allowed);
 /// repeating the guardian it already has; the guardian is never reassigned here.
 /// </param>
 /// <param name="CurrentPassword">
-/// Password of the acting caller. Required when the update changes the login identifiers of the
-/// target account, that is a different email or phone; ignored otherwise.
+/// Password of the acting caller. Required when the update changes the email or the phone of the
+/// target account; ignored otherwise.
 /// </param>
 public record UpdateUserRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,

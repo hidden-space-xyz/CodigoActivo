@@ -597,20 +597,41 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateStandaloneAccountNationalIdOfAnotherUserReturnsConflict()
+    public async Task UpdateStandaloneAccountNationalIdAndPhoneOfAnotherUserAreAccepted()
     {
         var client = await LoginAsMemberAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(nationalId: TestSeedData.PendingNationalId.ToLowerInvariant()),
+            AdultUpdate(
+                nationalId: TestSeedData.PendingNationalId.ToLowerInvariant(),
+                phone: "+34600000003",
+                currentPassword: TestSeedData.Password
+            ),
             Ct
         );
 
-        await response.ShouldBeConflictAsync(ErrorCode.UserNationalIdAlreadyInUse);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.NationalId.Should().Be(TestSeedData.PendingNationalId);
+        stored.Phone.Should().Be("+34600000003");
+    }
+
+    [Fact]
+    public async Task UpdateStandaloneAccountEmailOfAnotherUserReturnsConflict()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: TestSeedData.PendingEmail, currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.UserEmailAlreadyInUse);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .NationalId.Should()
-            .Be(TestSeedData.MemberNationalId);
+            .Email.Should()
+            .Be(TestSeedData.MemberEmail);
     }
 
     [Fact]

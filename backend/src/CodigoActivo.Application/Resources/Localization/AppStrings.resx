@@ -200,7 +200,7 @@ Equipo de Código Activo</value>
     <value>Tu cuenta ya no tiene permisos de administración.</value>
   </data>
   <data name="emails.securityAlert.identifiersChanged" xml:space="preserve">
-    <value>Se han cambiado los datos de acceso de tu cuenta (correo electrónico o teléfono). Te avisamos en esta dirección porque era la anterior.</value>
+    <value>Se ha cambiado el correo electrónico o el teléfono de tu cuenta. Te avisamos en esta dirección porque era la anterior.</value>
   </data>
   <data name="emails.securityAlert.passwordLocked" xml:space="preserve">
     <value>Hemos bloqueado tu cuenta tras varios intentos seguidos con una contraseña incorrecta y hemos cerrado todas tus sesiones. Para volver a entrar tienes que restablecer la contraseña desde «¿Has olvidado tu contraseña?».</value>

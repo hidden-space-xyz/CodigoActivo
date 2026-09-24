@@ -64,7 +64,7 @@ public sealed class LoginCommandHandlerTests
 
     private User Returns(User user)
     {
-        users.GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         return user;
     }
 
@@ -79,7 +79,7 @@ public sealed class LoginCommandHandlerTests
     {
         User? missing = null;
         users
-            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(missing);
 
         var result = await LoginAsync("nobody@test.com");
@@ -94,7 +94,7 @@ public sealed class LoginCommandHandlerTests
     {
         User? missing = null;
         users
-            .GetByEmailOrPhoneAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(missing);
 
         var result = await LoginAsync("nobody@test.com");
@@ -163,7 +163,7 @@ public sealed class LoginCommandHandlerTests
     {
         var user = Returns(NewUser());
 
-        var result = await LoginAsync("  ana@test.com  ");
+        var result = await LoginAsync("  Ana@Test.com  ");
 
         result.IsSuccess.Should().BeTrue();
         result
@@ -182,7 +182,7 @@ public sealed class LoginCommandHandlerTests
         user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
         await users
             .Received(1)
-            .GetByEmailOrPhoneAsync("ana@test.com", Arg.Any<CancellationToken>());
+            .GetByEmailAsync("ana@test.com", Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
