@@ -83,6 +83,7 @@ describe('ResourceFormDialog', () => {
 
     await click(findButton(t('common.save'), dialog))
     expect(dialog.textContent).toContain(t('features.manageResources.descriptionRequired'))
+    expect(wrapper.findComponent(RichTextEditor).props('invalid')).toBe(true)
     expect(wrapper.emitted('submit')).toBeUndefined()
 
     wrapper.findComponent(RichTextEditor).vm.$emit('update:modelValue', richText('Body'))

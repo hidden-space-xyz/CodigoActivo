@@ -172,11 +172,7 @@ describe('ActivityTimelineCard self signup', () => {
 describe('ActivityTimelineCard with an existing enrollment', () => {
   it.each([
     ['Confirmada', 'success'],
-    ['Aceptada', 'success'],
-    ['Aprobada', 'success'],
     ['Rechazada', 'danger'],
-    ['Denegada', 'danger'],
-    ['Cancelada', 'danger'],
     ['Solicitada', 'info'],
   ])('tags the %s status as %s', async (status, severity) => {
     const { wrapper } = await renderCard({

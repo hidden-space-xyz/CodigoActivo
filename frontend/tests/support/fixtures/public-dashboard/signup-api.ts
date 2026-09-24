@@ -9,6 +9,7 @@ import type {
 } from '@/shared/api/generated/models'
 
 import { apiError, http, HttpResponse, paged, server } from '../../server'
+import { richText } from '../admin-content/builders'
 import { buildUserResponse } from '../user'
 import { buildActivityResponse } from './builders'
 
@@ -39,7 +40,7 @@ export interface SignupApiState {
 export const TERMS_DOCUMENT = {
   termsDocumentId: 'terms-1',
   name: 'Normas del campamento',
-  description: 'Respeta a los demás.',
+  description: richText('Respeta a los demás.'),
   required: true,
   displayOrder: 0,
 }
@@ -48,7 +49,7 @@ export const TERMS_DOCUMENT = {
 export const OPTIONAL_TERMS_DOCUMENT = {
   termsDocumentId: 'terms-2',
   name: 'Boletín informativo',
-  description: 'Recibe noticias del evento por correo.',
+  description: richText('Recibe noticias del evento por correo.'),
   required: false,
   displayOrder: 1,
 }

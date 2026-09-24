@@ -49,7 +49,6 @@ console; see [DEPLOYMENT.md](DEPLOYMENT.md#development-overlay) for the containe
 cd frontend
 npm ci
 cp .env.example .env.local
-# Change VITE_API_PROXY_TARGET to http://localhost:5150.
 npm run dev
 ```
 

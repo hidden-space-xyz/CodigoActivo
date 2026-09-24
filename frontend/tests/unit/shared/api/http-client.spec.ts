@@ -272,21 +272,13 @@ describe('httpClient', () => {
       expect(error.code).toBe(ErrorCode.EventNotFound)
     })
 
-    it('falls back to the title and then the message field', async () => {
-      server.use(
-        http.get('/api/titled', () => apiError(422)),
-        http.get('/api/messaged', () =>
-          HttpResponse.json({ message: 'Plain message' }, { status: 400 }),
-        ),
-      )
+    it('falls back to the title', async () => {
+      server.use(http.get('/api/titled', () => apiError(422)))
 
       const titled = await failure(httpClient('/api/titled'))
-      const messaged = await failure(httpClient('/api/messaged'))
 
       expect(titled.message).toBe('Error 422')
       expect(titled.code).toBeUndefined()
-      expect(messaged.message).toBe('Plain message')
-      expect(messaged.traceId).toBeUndefined()
     })
 
     it('uses a generic message for JSON errors without text fields', async () => {

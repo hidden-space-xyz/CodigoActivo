@@ -9,12 +9,13 @@ import {
   openDialog,
   textOf,
 } from '../../../support/fixtures/public-dashboard/dom'
+import { richText } from '../../../support/fixtures/admin-content/builders'
 import { renderWithProviders, t } from '../../../support/render'
 
 const REQUIRED_DOC: EventTermsDocumentState = {
   id: 'terms-required',
   name: 'Normas del campamento',
-  description: 'Respeta a los demás.',
+  description: richText('Respeta a los demás.'),
   required: true,
   displayOrder: 0,
   accepted: null,
@@ -24,7 +25,7 @@ const REQUIRED_DOC: EventTermsDocumentState = {
 const OPTIONAL_DOC: EventTermsDocumentState = {
   id: 'terms-optional',
   name: 'Boletín informativo',
-  description: 'Recibe noticias del evento.',
+  description: richText('Recibe noticias del evento.'),
   required: false,
   displayOrder: 1,
   accepted: null,
@@ -107,13 +108,13 @@ describe('EventTermsDialog document preview', () => {
     await renderDialog([REQUIRED_DOC])
 
     expect(openDialog(REQUIRED_DOC.name)).toBeUndefined()
-    expect(document.body.textContent).not.toContain(REQUIRED_DOC.description)
+    expect(document.body.textContent).not.toContain('Respeta a los demás.')
 
     await clickElement(buttonByText(REQUIRED_DOC.name))
 
     const preview = openDialog(REQUIRED_DOC.name)
     expect(preview).toBeDefined()
-    expect(textOf(preview?.querySelector('.rich-text') ?? null)).toContain(REQUIRED_DOC.description)
+    expect(textOf(preview?.querySelector('.rich-text') ?? null)).toContain('Respeta a los demás.')
 
     await clickElement(buttonByText(t('features.activitySignup.terms.close'), preview))
 

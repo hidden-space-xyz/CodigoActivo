@@ -78,8 +78,8 @@ function scheduleLabel(): string {
 
 function statusSeverity(name: string): 'success' | 'danger' | 'info' {
   const n = name.toLowerCase()
-  if (n.includes('confirm') || n.includes('acept') || n.includes('aprob')) return 'success'
-  if (n.includes('rechaz') || n.includes('deneg') || n.includes('cancel')) return 'danger'
+  if (n.includes('confirm')) return 'success'
+  if (n.includes('rechaz')) return 'danger'
   return 'info'
 }
 

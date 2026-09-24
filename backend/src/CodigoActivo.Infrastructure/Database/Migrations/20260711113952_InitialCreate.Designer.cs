@@ -237,9 +237,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnName("description");
 
                     b.Property<bool>("Featured")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false)
                         .HasColumnName("featured");
 
                     b.Property<string>("Subtitle")
@@ -491,9 +489,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnName("event_starts_at");
 
                     b.Property<bool>("Featured")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false)
                         .HasColumnName("featured");
 
                     b.Property<DateTimeOffset>("SignupEndsAt")

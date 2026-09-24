@@ -51,14 +51,14 @@ const editForm = reactive<{
 })
 
 const passwordRejected = ref(false)
-const replacesIdentifiers = computed(() => {
+const replacesContact = computed(() => {
   return (
     editForm.email.trim().toLowerCase() !== (user.value?.email ?? '').toLowerCase() ||
     editForm.phone.trim() !== (user.value?.phone ?? '') ||
     editForm.secondaryPhone.trim() !== (user.value?.secondaryPhone ?? '')
   )
 })
-const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
+const requiresPassword = computed(() => replacesContact.value || passwordRejected.value)
 const passwordMissing = computed(() => requiresPassword.value && !editForm.currentPassword)
 const secondaryPhoneRepeated = computed(
   () =>
@@ -318,10 +318,10 @@ function savePassword(): void {
           </div>
           <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
             <label for="p-current">{{
-              $t('features.account.profile.identifierChange.passwordLabel')
+              $t('features.account.profile.contactChange.passwordLabel')
             }}</label>
             <p class="acc-form__hint">
-              {{ $t('features.account.profile.identifierChange.message') }}
+              {{ $t('features.account.profile.contactChange.message') }}
             </p>
             <el-input
               id="p-current"
@@ -333,7 +333,7 @@ function savePassword(): void {
             />
             <small v-if="editError" class="acc-form__error">{{ editError }}</small>
             <small v-else-if="editSubmitted && passwordMissing" class="acc-form__error">{{
-              $t('features.account.profile.identifierChange.passwordRequired')
+              $t('features.account.profile.contactChange.passwordRequired')
             }}</small>
           </div>
         </div>

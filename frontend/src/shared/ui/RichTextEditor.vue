@@ -11,7 +11,7 @@ import AppIcon from './AppIcon.vue'
 const { t } = useI18n()
 
 const props = defineProps<{
-  /** Serialized TipTap JSON document; plain text is loaded as a single paragraph. */
+  /** Serialized TipTap JSON document; anything else loads as an empty document. */
   modelValue?: string | null
   /** Applies the error border, e.g. when a required description is missing. */
   invalid?: boolean

@@ -46,7 +46,7 @@ internal static class ApiSecurityConfiguration
             {
                 options.Cookie.Name = builder.Environment.IsProduction()
                     ? "__Host-CodigoActivo.Session"
-                    : builder.Configuration["Auth:CookieName"] ?? "CodigoActivo.Session";
+                    : "CodigoActivo.Session";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.Path = "/";
                 options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()

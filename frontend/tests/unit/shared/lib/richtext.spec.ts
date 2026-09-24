@@ -43,11 +43,8 @@ describe('parseRichText', () => {
     expect(EMPTY_DOC_JSON).toBe('{"type":"doc","content":[]}')
   })
 
-  it('wraps non-JSON input in a single paragraph', () => {
-    expect(parseRichText('Just text')).toEqual({
-      type: 'doc',
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Just text' }] }],
-    })
+  it('returns an empty document for non-JSON input', () => {
+    expect(parseRichText('Just text')).toEqual({ type: 'doc', content: [] })
   })
 
   it('returns an empty document for JSON that is not a document', () => {
@@ -115,12 +112,6 @@ describe('parseRichText', () => {
 
     const lengths = parsed.content?.map((node) => node.content?.[0]?.text?.length)
     expect(lengths).toEqual([300_000, 200_000])
-  })
-
-  it('truncates plain text input to the character limit', () => {
-    const parsed = parseRichText('b'.repeat(600_000))
-
-    expect(parsed.content?.[0]?.content?.[0]?.text).toHaveLength(500_000)
   })
 
   describe('links', () => {
@@ -268,10 +259,6 @@ describe('renderRichTextHtml', () => {
     expect(html).not.toContain('javascript')
   })
 
-  it('renders plain text as a paragraph', () => {
-    expect(renderRichTextHtml('<b>not html</b>')).toBe('<p>&lt;b&gt;not html&lt;/b&gt;</p>')
-  })
-
   it('returns an empty string when the document cannot be rendered', () => {
     expect(renderRichTextHtml(doc(paragraph(text(''))))).toBe('')
   })
@@ -345,15 +332,15 @@ describe('richTextExcerpt', () => {
   })
 
   it('cuts long text at a word boundary with an ellipsis', () => {
-    expect(richTextExcerpt('one two three four', 10)).toBe('one two…')
+    expect(richTextExcerpt(doc(paragraph(text('one two three four'))), 10)).toBe('one two…')
   })
 
   it('cuts long text without spaces at the limit', () => {
-    expect(richTextExcerpt('abcdefghijkl', 5)).toBe('abcde…')
+    expect(richTextExcerpt(doc(paragraph(text('abcdefghijkl'))), 5)).toBe('abcde…')
   })
 
   it('returns short text unchanged and uses a 160 character default', () => {
-    expect(richTextExcerpt('short')).toBe('short')
-    expect(richTextExcerpt('x '.repeat(100))).toHaveLength(160)
+    expect(richTextExcerpt(doc(paragraph(text('short'))))).toBe('short')
+    expect(richTextExcerpt(doc(paragraph(text('x '.repeat(100)))))).toHaveLength(160)
   })
 })

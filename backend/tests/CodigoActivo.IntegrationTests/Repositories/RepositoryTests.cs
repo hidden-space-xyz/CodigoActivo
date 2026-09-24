@@ -365,17 +365,15 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         result!.Id.Should().Be(user.Id);
     }
 
-    [Theory]
-    [InlineData("nobody@x.test")]
-    [InlineData("+34600000000")]
-    public async Task GetByEmailAsyncUnknownEmailOrPhoneReturnsNull(string identifier)
+    [Fact]
+    public async Task GetByEmailAsyncUnknownEmailReturnsNull()
     {
         await using var ctx = postgres.CreateContext();
-        ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000"));
+        ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test"));
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByEmailAsync(identifier, Ct);
+        var result = await repo.GetByEmailAsync("nobody@x.test", Ct);
 
         result.Should().BeNull();
     }

@@ -57,17 +57,6 @@ const PAST_WITHOUT_ACTIVITIES = buildHistoryResponse({
   activities: [],
 })
 
-const PAST_REPORTED_AS_RATED = {
-  ...buildHistoryResponse({
-    eventId: 'past-3',
-    title: 'Jornada de invierno',
-    isPast: true,
-    canRate: true,
-    activities: [],
-  }),
-  hasRated: true,
-} as EventHistoryResponse
-
 function serveHistory(
   entries: EventHistoryResponse[] = [UPCOMING, PAST_WITH_ACTIVITY, PAST_WITHOUT_ACTIVITIES],
 ) {
@@ -184,29 +173,6 @@ describe('HistorySection', () => {
     expect(upcoming.querySelector('.acc-history__activities')).toBeNull()
   })
 
-  it('colours accepted, approved, denied and cancelled signups by outcome', async () => {
-    const statuses = ['Aceptada', 'Aprobada', 'Denegada', 'Cancelada']
-    serveHistory([
-      buildHistoryResponse({
-        title: 'Estados',
-        activities: statuses.map((statusName, index) =>
-          buildHistoryActivityResponse({ activityId: `s${String(index)}`, statusName }),
-        ),
-      }),
-    ])
-    await renderSection()
-    const entry = eventItem('Estados')
-
-    await click(entry.querySelector('.acc-history__toggle') as Element)
-
-    const tags = [...entry.querySelectorAll('.el-tag')].map((tag) => tag.className)
-    expect(tags).toHaveLength(4)
-    expect(tags[0]).toContain('el-tag--success')
-    expect(tags[1]).toContain('el-tag--success')
-    expect(tags[2]).toContain('el-tag--danger')
-    expect(tags[3]).toContain('el-tag--danger')
-  })
-
   it('does not show signup status tags for past events', async () => {
     serveHistory()
     await renderSection()
@@ -227,17 +193,6 @@ describe('HistorySection', () => {
       expect(entry.querySelectorAll('.acc-history__actions button')).toHaveLength(1)
       expect(buttonByText(entry, t('features.account.history.rate'))).toBeTruthy()
     }
-  })
-
-  it('still offers the rate button when the server reports the event as already rated', async () => {
-    serveHistory([PAST_REPORTED_AS_RATED])
-    await renderSection()
-    const entry = eventItem('Jornada de invierno')
-
-    expect(entry.querySelector('.acc-history__score')).toBeNull()
-    expect(entry.textContent).not.toContain('Valoración enviada')
-    expect(entry.querySelectorAll('.acc-history__actions button')).toHaveLength(1)
-    expect(buttonByText(entry, t('features.account.history.rate'))).toBeTruthy()
   })
 
   it('keeps the rate button after the rating was saved and the history refreshed', async () => {

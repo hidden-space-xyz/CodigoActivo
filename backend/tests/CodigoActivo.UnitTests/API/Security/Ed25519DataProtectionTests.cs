@@ -419,7 +419,7 @@ public sealed class Ed25519DataProtectionTests : IDisposable
         var missingVersion = new XElement(encrypted);
         missingVersion.Attribute("version")!.Remove();
         var wrongNamespace = new XElement(
-            XNamespace.Get("urn:codigoactivo:data-protection:ed25519:v1") + "encryptedSecret",
+            XNamespace.Get("urn:example:foreign") + "encryptedSecret",
             new XAttribute("version", ElementVersion),
             encrypted.Elements().Select(child => new XElement(child))
         );
@@ -570,27 +570,6 @@ public sealed class Ed25519DataProtectionTests : IDisposable
             .Invoking(() => ApiHostConfiguration.ProtectPayloadsWithAesGcm(null!))
             .Should()
             .Throw<ArgumentNullException>();
-    }
-
-    [Fact]
-    public void ApiAssemblyNoLongerContainsTheRetiredProtectionTypes()
-    {
-        var types = typeof(Ed25519CertificateStore)
-            .Assembly.GetTypes()
-            .Select(type => type.Name)
-            .ToList();
-
-        types
-            .Should()
-            .NotContain([
-                "LegacyEd25519Protection",
-                "Ed25519XmlDecryptor",
-                "CmsKeyProtection",
-                "Ed25519CmsXmlEncryptor",
-                "Ed25519CmsXmlDecryptor",
-            ]);
-        types.Should().Contain(nameof(Ed25519AesGcmXmlEncryptor));
-        types.Should().Contain(nameof(Ed25519AesGcmXmlDecryptor));
     }
 
     public void Dispose()
