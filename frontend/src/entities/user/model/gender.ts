@@ -7,11 +7,12 @@ export interface GenderOption {
   readonly value: Gender
 }
 
-const GENDERS: readonly Gender[] = ['Male', 'Female', 'Other']
+const GENDERS: readonly Gender[] = ['Male', 'Female', 'Other', 'PreferNotToSay']
 const GENDER_LABEL_KEYS: Record<Gender, TranslationKey> = {
   Male: 'entities.user.gender.Male',
   Female: 'entities.user.gender.Female',
   Other: 'entities.user.gender.Other',
+  PreferNotToSay: 'entities.user.gender.PreferNotToSay',
 }
 
 /** Translates an API `Gender` value for display. */

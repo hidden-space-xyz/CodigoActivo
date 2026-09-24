@@ -80,7 +80,10 @@ export const AUDIENCE_STYLE: StyleMap = {
   },
 }
 
-/** Participant gender slice styles, keyed by the API gender value (`Male`, `Female`, `Other`). */
+/**
+ * Participant gender slice styles, keyed by the API gender value. `PreferNotToSay` is neutral
+ * gray because it marks an undisclosed value rather than a category.
+ */
 export const GENDER_STYLE: StyleMap = {
   Male: {
     label: genderLabel('Male'),
@@ -96,6 +99,11 @@ export const GENDER_STYLE: StyleMap = {
     label: genderLabel('Other'),
     color: (p) => p.orange,
     soft: (p) => p.orangeSoft,
+  },
+  PreferNotToSay: {
+    label: genderLabel('PreferNotToSay'),
+    color: (p) => p.textDim,
+    soft: (p) => p.border,
   },
 }
 

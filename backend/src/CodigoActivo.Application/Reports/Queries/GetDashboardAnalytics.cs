@@ -46,7 +46,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
 
     private static readonly string[] InscriptionKeys = ["requested", "confirmed", "denied"];
 
-    private static readonly string[] GenderKeys = ["Male", "Female", "Other"];
+    private static readonly string[] GenderKeys = ["Male", "Female", "Other", "PreferNotToSay"];
 
     /// <summary>
     /// Handles the request to retrieve dashboard analytics.

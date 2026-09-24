@@ -75,6 +75,9 @@ describe('dashboard chart styles', () => {
     expect(GENDER_STYLE.Female?.soft(TEST_PALETTE)).toBe('lime-soft')
     expect(GENDER_STYLE.Other?.color(TEST_PALETTE)).toBe('orange')
     expect(GENDER_STYLE.Other?.soft(TEST_PALETTE)).toBe('orange-soft')
+    expect(GENDER_STYLE.PreferNotToSay?.label).toBe(t('entities.user.gender.PreferNotToSay'))
+    expect(GENDER_STYLE.PreferNotToSay?.color(TEST_PALETTE)).toBe('text-dim')
+    expect(GENDER_STYLE.PreferNotToSay?.soft(TEST_PALETTE)).toBe('border')
 
     expect(CONTENT_STYLE.news?.color(TEST_PALETTE)).toBe('orange')
     expect(CONTENT_STYLE.news?.soft(TEST_PALETTE)).toBe('orange-soft')
