@@ -57,6 +57,7 @@ const { sendToUsers, usersAudience } = useSendEmail()
 const dialogVisible = ref(false)
 const selected = ref<User | null>(null)
 const editError = ref('')
+const loadingDetail = ref(false)
 
 const typeDialogVisible = ref(false)
 const typeUser = ref<User | null>(null)
@@ -113,13 +114,15 @@ function clearRelationFilter(): void {
 }
 
 async function openEdit(user: User): Promise<void> {
-  selected.value = user
+  if (loadingDetail.value) return
   editError.value = ''
+  selected.value = user
+  if (user.id) {
+    loadingDetail.value = true
+    selected.value = (await fetchOne(user.id).catch(() => null)) ?? user
+    loadingDetail.value = false
+  }
   dialogVisible.value = true
-  if (!user.id) return
-  try {
-    selected.value = await fetchOne(user.id)
-  } catch {}
 }
 
 function onSubmit(body: UpdateUserInput): void {
@@ -515,6 +518,7 @@ function confirmDelete(user: User): void {
               text
               circle
               :aria-label="$t('common.edit')"
+              :disabled="loadingDetail"
               @click="openEdit(row)"
             />
             <Button

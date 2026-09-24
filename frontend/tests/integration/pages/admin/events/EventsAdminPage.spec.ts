@@ -304,9 +304,7 @@ describe('EventsAdminPage', () => {
     expect(wrapper.findComponent(EventFormDialog).props('visible')).toBe(false)
   })
 
-  // Suspected bug: EventsAdminPage passes the translated "not found" text to `feedback.error`, which
-  // expects an error object and replaces any non-ApiError value with the generic message.
-  it.skip('tells the admin when the edited event no longer exists', async () => {
+  it('tells the admin when the edited event no longer exists', async () => {
     server.use(http.get('/api/events/:eventId', () => apiError(404)))
     const { wrapper } = await renderPage()
 

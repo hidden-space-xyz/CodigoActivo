@@ -293,9 +293,7 @@ describe('admin announcements page', () => {
     expect(isDialogOpen(editTitle())).toBe(false)
   })
 
-  // Suspected bug: ContentEntityPage passes the translated "not found" text to `feedback.error`,
-  // which expects an error object and therefore shows the generic error message instead.
-  it.skip('reports a missing announcement with the not-found message', async () => {
+  it('reports a missing announcement with the not-found message', async () => {
     serveAnnouncements()
     server.use(http.get('/api/announcements/:id', () => apiError(404)))
     await renderPage()
