@@ -38,7 +38,7 @@ public sealed class AccountSecurityNotifier(
     }
 
     /// <summary>
-    /// Notifies the address the account used before its login identifiers were replaced. The new
+    /// Notifies the address the account used before its email or phone was replaced. The new
     /// address is only ever quoted masked.
     /// </summary>
     /// <param name="previousEmail">Address the account had before the change.</param>

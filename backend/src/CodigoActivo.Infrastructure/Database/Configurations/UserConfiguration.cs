@@ -30,8 +30,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired();
 
         builder.HasIndex(u => u.Email).IsUnique();
-        builder.HasIndex(u => u.Phone).IsUnique();
-        builder.HasIndex(u => u.NationalId).IsUnique();
         builder.HasIndex(u => new { u.FirstName, u.LastName });
 
         builder

@@ -267,17 +267,38 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RegisterNationalIdOfAnotherAccountReturnsConflict()
+    public async Task RegisterNationalIdAndPhoneOfAnotherAccountAreAccepted()
     {
         var client = CreateClient();
 
         var response = await client.PostJsonAsync(
             "/api/auth/register",
-            NewAdultRequest(nationalId: " 22222222-j "),
+            NewAdultRequest(nationalId: " 22222222-j ", phone: "+34600000002"),
             Ct
         );
 
-        await response.ShouldBeConflictAsync(ErrorCode.RegisterNationalIdAlreadyInUse);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
+        var stored = await FindAsync<User>(body!.Adult.Id);
+        stored!.NationalId.Should().Be(TestSeedData.MemberNationalId);
+        stored.Phone.Should().Be("+34600000002");
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .NationalId.Should()
+            .Be(TestSeedData.MemberNationalId);
+    }
+
+    [Fact]
+    public async Task RegisterEmailOfAnotherAccountReturnsConflict()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(email: " Member@CodigoActivo.test "),
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.RegisterEmailAlreadyInUse);
         (await CountNewAdultsAsync()).Should().Be(0);
     }
 
@@ -573,6 +594,21 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+    }
+
+    [Fact]
+    public async Task LoginWithPhoneInsteadOfEmailReturnsUnauthorized()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest("+34600000001", TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]

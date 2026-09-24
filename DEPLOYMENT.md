@@ -212,7 +212,7 @@ pressure (`GlobalEmailBudgetLow`, `GlobalEmailBudgetExhausted`), delivery failur
 ## Locked accounts
 
 Five wrong passwords lock an account for good: the lock has no expiry and is lifted only by a completed
-password reset, which needs working SMTP. Anyone who knows an email or phone can lock accounts in bulk, so
+password reset, which needs working SMTP. Anyone who knows an account's email can lock accounts in bulk, so
 alert on the `PasswordLockoutTriggered` log event. If every administrator is locked while email is
 unavailable, unlock against the `db` container:
 

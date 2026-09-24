@@ -41,15 +41,17 @@ public sealed class UpdateUserCommandHandler(
 {
     /// <summary>
     /// Handles the request to update the user. The stored account decides which rules apply, never
-    /// the request: an account that is not a dependent has no birth date, needs a unique DNI or NIE
-    /// and cannot be given a guardian, while a dependent keeps the guardian it already has, needs a
+    /// the request: an account that is not a dependent has no birth date, needs a DNI or NIE and
+    /// cannot be given a guardian, while a dependent keeps the guardian it already has, needs a
     /// birth date and never stores a DNI, NIE or promotional consent. A dependent birth date must
     /// keep it a minor only when it changes, so a dependent that has already come of age stays
-    /// editable with its stored birth date.
-    /// Replacing the login identifiers of the account first re-authenticates the acting caller, so a
-    /// hijacked session alone cannot take the account over; the DNI or NIE is not a login
-    /// identifier. Dependents are created only through <c>POST /api/users/{id}/children</c>, and
-    /// they leave their guardian only when the guardian deletes them.
+    /// editable with its stored birth date. Only the email must be unique; the phone and the DNI or
+    /// NIE are never checked against other accounts, so an update cannot reveal who uses them.
+    /// Replacing the email or the phone of the account first re-authenticates the acting caller, so
+    /// a hijacked session alone cannot take the account over or redirect its contact details; the
+    /// DNI or NIE needs no password. Dependents are created only through
+    /// <c>POST /api/users/{id}/children</c>, and they leave their guardian only when the guardian
+    /// deletes them.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -124,11 +126,6 @@ public sealed class UpdateUserCommandHandler(
             return Error.BadRequest(ErrorCode.UserNationalIdRequired);
         }
 
-        if (await users.NationalIdExistsAsync(nationalId, command.UserId, ct))
-        {
-            return Error.Conflict(ErrorCode.UserNationalIdAlreadyInUse);
-        }
-
         var identifiers = await ApplyLoginIdentifierRulesAsync(command, user, ct);
         if (identifiers.IsFailure)
         {
@@ -188,11 +185,6 @@ public sealed class UpdateUserCommandHandler(
         if (await users.EmailExistsAsync(email, command.UserId, ct))
         {
             return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
-        }
-
-        if (await users.PhoneExistsAsync(phone, command.UserId, ct))
-        {
-            return Error.Conflict(ErrorCode.UserPhoneAlreadyInUse);
         }
 
         user.Email = email;

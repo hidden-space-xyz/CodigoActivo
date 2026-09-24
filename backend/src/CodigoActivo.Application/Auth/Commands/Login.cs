@@ -18,6 +18,7 @@ public sealed record LoginCommand(LoginRequest Request) : ICommand<Result<LoginC
 /// <summary>
 /// Executes the password step of the login. A correct password never opens a session by itself:
 /// it opens a second-factor challenge that <see cref="VerifyTwoFactorLoginCommandHandler"/> closes.
+/// The identifier is the account email, the only value that stays unique across accounts.
 /// An identifier matching no account, and an account locked after repeated wrong passwords, still
 /// pay the same Argon2 work and answer the same error, so neither the response nor its timing
 /// discloses which identifiers exist or which accounts are locked. Every accepted password step
@@ -49,8 +50,8 @@ public sealed class LoginCommandHandler(
         CancellationToken ct = default
     )
     {
-        var identifier = command.Request.Identifier.Trim();
-        var user = await users.GetByEmailOrPhoneAsync(identifier, ct);
+        var email = command.Request.Identifier.NormalizeEmailOrNull() ?? string.Empty;
+        var user = await users.GetByEmailAsync(email, ct);
 
         var accepted = await passwordAttempts.VerifyLoginPasswordAsync(
             user,

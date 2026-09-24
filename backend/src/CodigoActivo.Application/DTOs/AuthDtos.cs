@@ -7,7 +7,7 @@ namespace CodigoActivo.Application.DTOs;
 /// <summary>
 /// Contains the client-supplied data used to login.
 /// </summary>
-/// <param name="Identifier">The identifier value.</param>
+/// <param name="Identifier">Email address of the account; the phone is not a login identifier.</param>
 /// <param name="Password">Plain-text password to hash or verify.</param>
 public record LoginRequest(
     [Required] [MaxLength(256)] [NotBlank] string Identifier,
@@ -75,7 +75,10 @@ public record CsrfTokenResponse(string Token, string HeaderName);
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
 /// <param name="Password">Plain-text password to hash or verify.</param>
-/// <param name="NationalId">Spanish DNI or NIE of the adult; unique across accounts.</param>
+/// <param name="NationalId">
+/// Spanish DNI or NIE of the adult. Not unique, so registering never reveals whether another
+/// account already uses it.
+/// </param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="PromotionalConsent">Whether the adult agrees to receive promotional content.</param>
 /// <param name="Minors">The minors value.</param>

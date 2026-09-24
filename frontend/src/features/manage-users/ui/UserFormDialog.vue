@@ -39,7 +39,7 @@ const emit = defineEmits<{
    * come of age is still accepted; a standalone account reports a `null` birth date, its normalized
    * DNI/NIE and its consent, and blank contact values are sent as `null`. The user's current
    * `parentId` is preserved. `currentPassword` carries the signed-in user's password when the
-   * change replaces the login identifiers of the account or the server already refused one, and
+   * change replaces the email or the phone of the account or the server already refused one, and
    * is `null` otherwise.
    */
   submit: [body: UpdateUserInput]

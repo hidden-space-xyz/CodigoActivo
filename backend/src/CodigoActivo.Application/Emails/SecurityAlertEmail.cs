@@ -45,7 +45,7 @@ public enum AccountSecurityChange
     AdminRevoked,
 
     /// <summary>
-    /// Selects the login identifiers replaced option.
+    /// Selects the option for a replaced email or phone.
     /// </summary>
     IdentifiersChanged,
 
@@ -72,7 +72,7 @@ public static class SecurityAlertEmail
     /// <param name="occurredAt">The occurred at value.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <param name="siteUrl">The site url value.</param>
-    /// <param name="maskedNewEmail">Masked new address, when the login identifiers changed.</param>
+    /// <param name="maskedNewEmail">Masked new address, when the email changed.</param>
     /// <returns>The resulting email message value.</returns>
     public static EmailMessage Create(
         string toAddress,

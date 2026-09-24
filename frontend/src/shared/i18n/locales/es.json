@@ -275,16 +275,13 @@
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
-    "UserPhoneAlreadyInUse": "Este teléfono ya está en uso.",
-    "UserNationalIdAlreadyInUse": "Este DNI o NIE ya está en uso en otra cuenta.",
     "InvalidCredentials": "El correo electrónico o la contraseña no son correctos.",
     "UserAccountBlocked": "Tu cuenta está bloqueada. Contacta al administrador.",
     "UserAccountIsDependent": "Esta cuenta depende de un responsable y no puede iniciar sesión directamente.",
     "UserAccountPendingVerification": "Tu cuenta aún no ha sido verificada.",
     "CurrentUserNotFound": "No se encontró el usuario de la sesión actual.",
     "RegisterContactInfoRequired": "Debes indicar al menos un dato de contacto para registrarte.",
-    "RegisterEmailOrPhoneAlreadyInUse": "El correo electrónico o el teléfono ya están en uso.",
-    "RegisterNationalIdAlreadyInUse": "Ya existe una cuenta con este DNI o NIE.",
+    "RegisterEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
     "RegisterMinorBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
     "OtpInvalidOrExpired": "El enlace de verificación no es válido o ha expirado.",
     "OtpResendNotAllowed": "No se puede reenviar el correo de verificación para esta cuenta.",
@@ -788,7 +785,7 @@
     "login": {
       "title": "Bienvenido de nuevo",
       "intro": "Inicia sesión en tu cuenta para participar en nuestras actividades.",
-      "identifierLabel": "Correo o usuario",
+      "identifierLabel": "Correo electrónico",
       "forgotLink": "¿Has olvidado tu contraseña?",
       "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo. Tras varios intentos fallidos seguidos bloqueamos la cuenta por seguridad; si te ha pasado, tendrás que restablecer la contraseña desde el enlace de arriba.",
       "noAccount": "¿Aún no tienes cuenta?"
@@ -1076,7 +1073,7 @@
       "childBirthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad.",
       "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
       "identifierChange": {
-        "message": "Vas a cambiar el correo o el teléfono con los que esta persona inicia sesión y recibe sus códigos. Por seguridad, confirma tu contraseña.",
+        "message": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o su teléfono. Por seguridad, confirma tu contraseña.",
         "passwordLabel": "Tu contraseña",
         "passwordRequired": "Introduce tu contraseña."
       },
@@ -1182,7 +1179,7 @@
         "changePassword": "Cambiar contraseña",
         "editDialogHeader": "Editar mis datos",
         "identifierChange": {
-          "message": "Con el correo y el teléfono inicias sesión y recibes los códigos de verificación. Por seguridad, confirma tu contraseña actual.",
+          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar el teléfono, confirma por seguridad tu contraseña actual.",
           "passwordLabel": "Tu contraseña actual",
           "passwordRequired": "Introduce tu contraseña actual."
         },

@@ -351,10 +351,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         (await repo.GetByIdWithDetailsAsync(Guid.NewGuid(), Ct)).Should().BeNull();
     }
 
-    [Theory]
-    [InlineData("user@x.test")]
-    [InlineData("+34600000000")]
-    public async Task GetByEmailOrPhoneAsyncEmailOrPhoneIdentifierReturnsTheUser(string identifier)
+    [Fact]
+    public async Task GetByEmailAsyncKnownEmailReturnsTheUser()
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000");
@@ -362,22 +360,48 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByEmailOrPhoneAsync(identifier, Ct);
+        var result = await repo.GetByEmailAsync("user@x.test", Ct);
 
         result!.Id.Should().Be(user.Id);
     }
 
-    [Fact]
-    public async Task GetByEmailOrPhoneAsyncUnknownIdentifierReturnsNull()
+    [Theory]
+    [InlineData("nobody@x.test")]
+    [InlineData("+34600000000")]
+    public async Task GetByEmailAsyncUnknownEmailOrPhoneReturnsNull(string identifier)
     {
         await using var ctx = postgres.CreateContext();
         ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000"));
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByEmailOrPhoneAsync("nobody@x.test", Ct);
+        var result = await repo.GetByEmailAsync(identifier, Ct);
 
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SaveChangesAsyncUsersSharingPhoneAndNationalIdArePersisted()
+    {
+        await using var ctx = postgres.CreateContext();
+        var first = NewUser(email: "first@x.test", phone: "+34600000000");
+        var second = NewUser(email: "second@x.test", phone: "+34600000000");
+        first.NationalId = "12345678Z";
+        second.NationalId = "12345678Z";
+        ctx.Users.AddRange(first, second);
+
+        await ctx.SaveChangesAsync(Ct);
+
+        (
+            await ctx
+                .Users.AsNoTracking()
+                .CountAsync(
+                    u => u.Phone == "+34600000000" && u.NationalId == "12345678Z",
+                    Ct
+                )
+        )
+            .Should()
+            .Be(2);
     }
 
     [Theory]
@@ -418,48 +442,6 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var repo = new UserRepository(ctx);
 
         (await repo.EmailExistsAsync("dup@x.test", excludeUserId: Guid.NewGuid(), ct: Ct))
-            .Should()
-            .BeTrue("another user still collides");
-    }
-
-    [Theory]
-    [InlineData("+100", true)]
-    [InlineData("+999", false)]
-    public async Task PhoneExistsAsyncNoExcludeUserIdReportsPresence(string phone, bool expected)
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser(phone: "+100");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
-
-        (await repo.PhoneExistsAsync(phone, ct: Ct)).Should().Be(expected);
-    }
-
-    [Fact]
-    public async Task PhoneExistsAsyncExcludeUserIdMatchesOwnerReturnsFalse()
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser(phone: "+100");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
-
-        (await repo.PhoneExistsAsync("+100", excludeUserId: user.Id, ct: Ct))
-            .Should()
-            .BeFalse("owner is excluded");
-    }
-
-    [Fact]
-    public async Task PhoneExistsAsyncExcludeUserIdIsOtherUserReturnsTrue()
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser(phone: "+100");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
-
-        (await repo.PhoneExistsAsync("+100", excludeUserId: Guid.NewGuid(), ct: Ct))
             .Should()
             .BeTrue("another user still collides");
     }

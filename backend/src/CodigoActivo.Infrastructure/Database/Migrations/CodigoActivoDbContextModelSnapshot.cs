@@ -1083,16 +1083,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
-                    b.HasIndex("NationalId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_national_id");
-
                     b.HasIndex("ParentId")
                         .HasDatabaseName("ix_users_parent_id");
-
-                    b.HasIndex("Phone")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_phone");
 
                     b.HasIndex("UserStatusTypeId")
                         .HasDatabaseName("ix_users_user_status_type_id");

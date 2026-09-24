@@ -359,16 +359,6 @@ public enum ErrorCode
     UserEmailAlreadyInUse,
 
     /// <summary>
-    /// Selects the user phone already in use option.
-    /// </summary>
-    UserPhoneAlreadyInUse,
-
-    /// <summary>
-    /// Selects the option for a DNI or NIE that another account already uses.
-    /// </summary>
-    UserNationalIdAlreadyInUse,
-
-    /// <summary>
     /// Selects the invalid credentials option.
     /// </summary>
     InvalidCredentials,
@@ -399,14 +389,9 @@ public enum ErrorCode
     RegisterContactInfoRequired,
 
     /// <summary>
-    /// Selects the register email or phone already in use option.
+    /// Selects the option for a registration whose email another account already uses.
     /// </summary>
-    RegisterEmailOrPhoneAlreadyInUse,
-
-    /// <summary>
-    /// Selects the option for a registration whose DNI or NIE another account already uses.
-    /// </summary>
-    RegisterNationalIdAlreadyInUse,
+    RegisterEmailAlreadyInUse,
 
     /// <summary>
     /// Selects the register minor birth date not minor option.
