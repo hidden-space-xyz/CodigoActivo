@@ -454,6 +454,28 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         Series(r.Inscriptions, "denied").Sum().Should().Be(0);
     }
 
+    [Fact]
+    public async Task HandleAsyncParticipantPreferringNotToSayGenderGetsItsOwnSlice()
+    {
+        HasNoData();
+        users.HasUsers(
+            AnalyticsUser(
+                SeedIds.UserTypes.Participant,
+                SeedIds.UserStatusTypes.Active,
+                Utc(2026, 3, 1),
+                gender: Gender.PreferNotToSay
+            )
+        );
+
+        var r = await Analytics(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
+
+        r.ParticipantsByGender.Select(s => s.Key)
+            .Should()
+            .Equal("Male", "Female", "Other", "PreferNotToSay");
+        Slice(r.ParticipantsByGender, "PreferNotToSay").Should().Be(1);
+        Slice(r.ParticipantsByGender, "Other").Should().Be(0);
+    }
+
     private static DateTimeOffset Utc(int year, int month, int day)
     {
         return new(year, month, day, 12, 0, 0, TimeSpan.Zero);

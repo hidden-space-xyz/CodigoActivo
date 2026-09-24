@@ -12,4 +12,5 @@ export const Gender = {
   Male: 'Male',
   Female: 'Female',
   Other: 'Other',
+  PreferNotToSay: 'PreferNotToSay',
 } as const;
