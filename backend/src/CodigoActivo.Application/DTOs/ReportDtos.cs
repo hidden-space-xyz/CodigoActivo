@@ -90,7 +90,7 @@ public record EventAttendeeGuardianResponse(
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
-/// <param name="BirthDate">User's date of birth.</param>
+/// <param name="BirthDate">User's date of birth; only dependents have one.</param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="UserTypeName">The user type name value.</param>
 /// <param name="UserTypeColor">The user type color value.</param>
@@ -102,7 +102,7 @@ public record EventAttendeeResponse(
     string? LastName,
     string? Email,
     string? Phone,
-    DateOnly BirthDate,
+    DateOnly? BirthDate,
     Gender Gender,
     string UserTypeName,
     string UserTypeColor,
@@ -172,7 +172,7 @@ public record EventRosterGuardianResponse(
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="FirstName">User's given name.</param>
 /// <param name="LastName">User's family name.</param>
-/// <param name="BirthDate">User's date of birth.</param>
+/// <param name="BirthDate">User's date of birth; only dependents have one.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
 /// <param name="RoleName">The role name value.</param>
@@ -181,7 +181,7 @@ public record EventRosterParticipantResponse(
     Guid UserId,
     string FirstName,
     string LastName,
-    DateOnly BirthDate,
+    DateOnly? BirthDate,
     string? Email,
     string? Phone,
     string RoleName,

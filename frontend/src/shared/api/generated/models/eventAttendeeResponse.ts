@@ -18,7 +18,8 @@ export interface EventAttendeeResponse {
   email?: string | null;
   /** @nullable */
   phone?: string | null;
-  birthDate?: string;
+  /** @nullable */
+  birthDate?: string | null;
   gender?: Gender;
   /** @nullable */
   userTypeName?: string | null;

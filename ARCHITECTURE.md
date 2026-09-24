@@ -110,7 +110,9 @@ Automatic messages (`IEmailSender`/`ThrottledEmailSender`, rate-limited per reci
 administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
 a PostgreSQL outbox, in a unit of work of its own committed before the call returns; a background
 `EmailOutboxProcessor` hosted service claims due rows and delivers them through `IEmailTransport`
-(`SmtpEmailSender`), with retries and an attempt limit. Operational values are in
+(`SmtpEmailSender`), with retries and an attempt limit. `ManualEmailDispatcher` and the audience-preview
+queries in `Application/Emails/Queries` share recipient selection through `ManualEmailAudience`, so a
+preview always matches what the corresponding send would reach. Operational values are in
 [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery); security properties are in
 [SECURITY.md](SECURITY.md#email-abuse-controls).
 

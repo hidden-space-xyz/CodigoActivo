@@ -34,7 +34,8 @@ async function fillAdult(wrapper: VueWrapper): Promise<void> {
   await wrapper.find('#reg-phone').setValue('600000000')
   await wrapper.find('#reg-password').setValue('correct-horse-battery')
   await wrapper.find('#reg-password-confirm').setValue('correct-horse-battery')
-  await wrapper.find('#reg-dob').setValue('1990-05-10')
+  await wrapper.find('#reg-national-id').setValue('x-1234567-l')
+  await wrapper.find('#reg-national-id-confirm').setValue('X1234567L')
   await selectGender(wrapper, 0, 'Female')
 }
 
@@ -60,9 +61,10 @@ describe('RegistrationForm', () => {
     expect(errors(wrapper)).toEqual([
       t('validation.emailInvalid'),
       t('validation.passwordMin'),
+      t('validation.nationalIdInvalid'),
       t('validation.genderRequired'),
     ])
-    expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(5)
+    expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(6)
   })
 
   it('does not show validation errors before the first submit', async () => {
@@ -85,6 +87,43 @@ describe('RegistrationForm', () => {
     expect(errors(wrapper)).toEqual([t('validation.passwordsMismatch')])
   })
 
+  it('reports mismatched DNI/NIE entries once the confirmation loses focus', async () => {
+    const { wrapper } = await renderForm()
+    await wrapper.find('#reg-national-id').setValue('12345678Z')
+    await wrapper.find('#reg-national-id-confirm').setValue('12345678X')
+    expect(errors(wrapper)).toEqual([])
+
+    await wrapper.find('#reg-national-id-confirm').trigger('blur')
+    expect(errors(wrapper)).toEqual([t('validation.nationalIdsMismatch')])
+
+    await wrapper.find('#reg-national-id-confirm').setValue(' 1234 5678-z ')
+    expect(errors(wrapper)).toEqual([])
+  })
+
+  it('rejects a DNI/NIE with a wrong control letter even when both entries match', async () => {
+    const { wrapper } = await renderForm()
+    await fillAdult(wrapper)
+    await wrapper.find('#reg-national-id').setValue('X1234567A')
+    await wrapper.find('#reg-national-id-confirm').setValue('X1234567A')
+
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    expect(errors(wrapper)).toEqual([t('validation.nationalIdInvalid')])
+  })
+
+  it('offers an unchecked promotional consent box that updates the form', async () => {
+    const { form, wrapper } = await renderForm()
+    const consent = wrapper.get('#reg-promotional-consent')
+
+    expect(wrapper.text()).toContain(t('common.promotionalConsentOption'))
+    expect((consent.element as HTMLInputElement).checked).toBe(false)
+
+    await consent.setValue(true)
+
+    expect(form.promotionalConsent).toBe(true)
+  })
+
   it('emits submit once every adult field is valid, keeping the data in the shared form', async () => {
     const { form, wrapper } = await renderForm()
     await fillAdult(wrapper)
@@ -100,8 +139,10 @@ describe('RegistrationForm', () => {
       phone: '600000000',
       password: 'correct-horse-battery',
       confirmPassword: 'correct-horse-battery',
-      dateOfBirth: '1990-05-10',
+      nationalId: 'x-1234567-l',
+      confirmNationalId: 'X1234567L',
       gender: 'Female',
+      promotionalConsent: false,
       minors: [],
     })
   })
@@ -113,7 +154,8 @@ describe('RegistrationForm', () => {
     ['#reg-phone', ' '],
     ['#reg-password', 'short'],
     ['#reg-password-confirm', 'different-password'],
-    ['#reg-dob', ''],
+    ['#reg-national-id', 'X1234567A'],
+    ['#reg-national-id-confirm', '12345678Z'],
   ])('does not emit when %s is set to %j', async (selector, value) => {
     const { wrapper } = await renderForm()
     await fillAdult(wrapper)
@@ -184,14 +226,14 @@ describe('RegistrationForm', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('limits the adult birth date to 18 years ago and minors to between then and today', async () => {
+  it('asks no birth date of the adult and limits minors to between 18 years ago and today', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-09-17T12:00:00Z'))
     const { wrapper } = await renderForm()
 
     await addMinorButton(wrapper).trigger('click')
 
-    expect(wrapper.get('#reg-dob').attributes('max')).toBe('2008-09-17')
+    expect(wrapper.find('#reg-dob').exists()).toBe(false)
     expect(wrapper.get('#minor-dob-0').attributes('min')).toBe('2008-09-17')
     expect(wrapper.get('#minor-dob-0').attributes('max')).toBe('2026-09-17')
   })

@@ -1,12 +1,17 @@
 import type { Gender } from '@/shared/api/generated/models'
 
-/** Values from the profile form for editing the signed-in adult's own data. */
+/**
+ * Values from the profile form for editing the signed-in adult's own data. Adults have no birth
+ * date; they are identified by their DNI or NIE, already normalized here.
+ */
 export interface UpdateProfileInput {
   firstName: string
   lastName: string
   email: string
   phone: string
-  birthDate: string
+  nationalId: string
+  /** Agreement to receive promotional content. */
+  promotionalConsent: boolean
   gender: Gender
   /**
    * Current password, required by the API only when the email or the phone changes, because both

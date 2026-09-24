@@ -35,7 +35,7 @@ const EMAIL_TITLE = 'features.sendEmail.header'
 const GRANT_TITLE = 'features.manageUsers.grantAdmin.header'
 const RESET_2FA_TITLE = 'features.manageUsers.resetTwoFactor.header'
 
-const ada = buildUserResponse({ dependentCount: 2 })
+const ada = buildUserResponse({ dependentCount: 2, promotionalConsent: true })
 const tim = without(
   without(
     buildUserResponse({
@@ -44,6 +44,7 @@ const tim = without(
       email: null,
       phone: null,
       birthDate: '2016-02-01',
+      nationalId: null,
       gender: 'Male',
       parentId: 'user-1',
       parentName: 'Ada Lovelace',
@@ -82,6 +83,9 @@ function serveUsers(pages: UserResponse[][] | UserResponse[] = [ada, tim]): Reco
     }),
     http.get('/api/users/types', () => HttpResponse.json(userTypes)),
     http.get('/api/users/status-types', () => HttpResponse.json(userStatusTypes)),
+    http.get('/api/emails/users/audience', () =>
+      HttpResponse.json({ recipients: 1, withoutConsent: 0 }),
+    ),
   )
   return recorded
 }
@@ -135,7 +139,8 @@ describe('admin users page', () => {
     const [first, second, third] = rows(wrapper)
     expect(first?.text()).toContain('Ada Lovelace')
     expect(first?.text()).toContain('ada@example.test')
-    expect(first?.text()).toContain('(35)')
+    expect(first?.text()).toContain('12345678Z')
+    expect(first?.text()).not.toContain('(')
     expect(first?.text()).toContain('Active')
     expect(first?.text()).toContain('Participant')
     expect(first?.text()).toContain(tp('pages.admin.users.dependentsLabel', 2, { count: 2 }))
@@ -183,14 +188,16 @@ describe('admin users page', () => {
     const recorded = serveUsers()
     const { wrapper } = await renderPage()
 
-    const [name, email, phone] = wrapper.findAllComponents(ColumnSearch)
+    const [name, email, phone, nationalId] = wrapper.findAllComponents(ColumnSearch)
     name?.vm.$emit('update:modelValue', 'ada')
     email?.vm.$emit('update:modelValue', 'example')
     phone?.vm.$emit('update:modelValue', '600')
+    nationalId?.vm.$emit('update:modelValue', 'x123')
     wrapper
       .findComponent(ColumnFilterDate)
       .vm.$emit('update:modelValue', [new Date(1980, 0, 1), new Date(2000, 11, 31)])
-    const [status, type, admin] = wrapper.findAllComponents(ColumnFilterSelect)
+    const [consent, status, type, admin] = wrapper.findAllComponents(ColumnFilterSelect)
+    consent?.vm.$emit('update:modelValue', true)
     status?.vm.$emit('update:modelValue', 'status-active')
     type?.vm.$emit('update:modelValue', 'type-member')
     admin?.vm.$emit('update:modelValue', false)
@@ -203,6 +210,8 @@ describe('admin users page', () => {
       name: 'ada',
       email: 'example',
       phone: '600',
+      nationalId: 'x123',
+      promotionalConsent: 'true',
       birthDateFrom: '1980-01-01',
       birthDateTo: '2000-12-31',
       userStatusTypeId: 'status-active',
@@ -213,6 +222,7 @@ describe('admin users page', () => {
       { label: 'Active', value: 'status-active' },
       { label: 'Blocked', value: 'status-blocked' },
     ])
+    expect(consent?.props('options')).toEqual(admin?.props('options'))
     expect(admin?.props('options')).toEqual([
       { label: t('common.yes'), value: true },
       { label: t('common.no'), value: false },
@@ -293,7 +303,9 @@ describe('admin users page', () => {
         lastName: 'King',
         email: 'ada@example.test',
         phone: '600000000',
-        birthDate: '1990-05-10',
+        birthDate: null,
+        nationalId: '12345678Z',
+        promotionalConsent: true,
         gender: 'Female',
         parentId: null,
         currentPassword: null,
@@ -586,7 +598,7 @@ describe('admin users page', () => {
     })
     const { wrapper } = await renderPage()
     wrapper
-      .findAllComponents(ColumnFilterSelect)[1]
+      .findAllComponents(ColumnFilterSelect)[2]
       ?.vm.$emit('update:modelValue', 'type-participant')
     await flushPromises()
 
@@ -606,22 +618,24 @@ describe('admin users page', () => {
         t('common.lastName'),
         t('common.email'),
         t('common.phone'),
+        t('common.nationalId'),
         t('common.birthDate'),
         t('common.gender'),
         t('common.status'),
         t('pages.admin.users.columns.type'),
         t('pages.admin.users.columns.admin'),
+        t('common.promotionalConsent'),
         t('pages.admin.users.export.columns.guardian'),
       ].join(';'),
     )
     expect(lines[1]).toMatch(
       new RegExp(
-        `^Ada;Lovelace;ada@example.test;600000000;[^;]+;${t('entities.user.gender.Female')};Active;Participant;${t('common.no')};$`,
+        `^Ada;Lovelace;ada@example.test;600000000;12345678Z;[^;]+;${t('entities.user.gender.Female')};Active;Participant;${t('common.no')};${t('common.yes')};$`,
       ),
     )
     expect(lines[2]).toMatch(
       new RegExp(
-        `^Tim;Lovelace;;;[^;]+;${t('entities.user.gender.Male')};;;${t('common.yes')};Ada Lovelace$`,
+        `^Tim;Lovelace;;;;[^;]+;${t('entities.user.gender.Male')};;;${t('common.yes')};${t('common.no')};Ada Lovelace$`,
       ),
     )
   })
@@ -639,7 +653,7 @@ describe('admin users page', () => {
     await click(findButton(t('pages.admin.users.export.label')))
     await expectNotification(tp('pages.admin.users.export.toast.exported', 1, { n: 1 }))
     expect((await blob?.text())?.split('\r\n')[1]).toMatch(
-      /^Ghost;User;ghost@example.test;600000000;[^;]+;;Active;/,
+      /^Ghost;User;ghost@example.test;600000000;12345678Z;[^;]+;;Active;/,
     )
 
     server.use(
@@ -656,11 +670,16 @@ describe('admin users page', () => {
   it('queues an email for all filtered users after confirmation', async () => {
     serveUsers([ada, tim])
     let received: { url: string; subject: unknown } | undefined
+    const audienceUrls: string[] = []
     server.use(
       http.post('/api/emails/users', async ({ request }) => {
         const form = await request.formData()
         received = { url: request.url, subject: form.get('subject') }
         return HttpResponse.json({ queued: 2 })
+      }),
+      http.get('/api/emails/users/audience', ({ request }) => {
+        audienceUrls.push(request.url)
+        return HttpResponse.json({ recipients: 2, withoutConsent: 1 })
       }),
     )
     const { wrapper } = await renderPage()
@@ -669,6 +688,12 @@ describe('admin users page', () => {
     await click(findButton(t('pages.admin.users.email.bulkLabel')))
     const dialog = openDialog(t(EMAIL_TITLE))
     expect(dialog.textContent).toContain(tp('pages.admin.users.email.targetFiltered', 2, { n: 2 }))
+    await vi.waitFor(() =>
+      expect(dialog.querySelector('.el-alert--warning')?.textContent).toContain(
+        tp('features.sendEmail.withoutConsentWarning', 1, { count: 1 }),
+      ),
+    )
+    expect(audienceUrls.map(queryOf)).toEqual([{ parentId: 'user-1' }])
     await typeInto('#send-email-subject', 'News')
     await typeInto('#send-email-body', 'Hello everyone')
     await click(findButton(t('features.sendEmail.send'), dialog))
@@ -684,6 +709,7 @@ describe('admin users page', () => {
   it('queues an email for a single user and reports failures', async () => {
     serveUsers([ada])
     const sentTo: string[] = []
+    const audienceUrls: string[] = []
     let fail = false
     server.use(
       http.post('/api/emails/users/:userId', ({ params }) => {
@@ -691,12 +717,19 @@ describe('admin users page', () => {
         sentTo.push(String(params.userId))
         return HttpResponse.json({ queued: 1 })
       }),
+      http.get('/api/emails/users/audience', ({ request }) => {
+        audienceUrls.push(request.url)
+        return HttpResponse.json({ recipients: 1, withoutConsent: 0 })
+      }),
     )
     await renderPage()
 
     await click(findButton(t('pages.admin.users.aria.sendEmail')))
     let dialog = openDialog(t(EMAIL_TITLE))
     expect(dialog.textContent).toContain('Ada Lovelace')
+    await vi.waitFor(() => expect(audienceUrls.map(queryOf)).toEqual([{ id: 'user-1' }]))
+    await flushPromises()
+    expect(dialog.querySelector('.el-alert')).toBeNull()
     await typeInto('#send-email-subject', 'Hi')
     await typeInto('#send-email-body', 'Personal note')
     await click(findButton(t('features.sendEmail.send'), dialog))

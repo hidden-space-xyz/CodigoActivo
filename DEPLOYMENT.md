@@ -245,8 +245,9 @@ docker compose up -d
 > it only for a deliberately disposable environment.
 
 When the user table is empty, startup requires a valid bootstrap email and a 12–128 character password and
-creates the first active administrator before accepting requests. Once any user exists, both bootstrap
-variables are ignored.
+creates the first active administrator before accepting requests, seeded with the fixed DNI/NIE `00000000T`;
+change it from the administrator's profile after first login, since no other account can register with that
+value while it is in use. Once any user exists, both bootstrap variables are ignored.
 
 ## Development overlay
 

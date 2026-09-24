@@ -33,7 +33,8 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
     lastName: user.lastName ?? '',
     email: user.email ?? '',
     phone: user.phone ?? '',
-    birthDate: user.birthDate ?? '',
+    nationalId: user.nationalId ?? '',
+    promotionalConsent: user.promotionalConsent ?? false,
     gender: user.gender ?? null,
     statusName: user.status?.name ?? '',
     isAdmin: user.isAdmin ?? false,
@@ -60,14 +61,19 @@ export function toAccountChild(user: UserResponse): AccountChild {
   }
 }
 
-/** Builds the user update body for the own profile; `parentId` is `null` for adults. */
+/**
+ * Builds the user update body for the own profile; adults send `null` as both `birthDate` and
+ * `parentId`.
+ */
 export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserRequest {
   return {
     firstName: input.firstName,
     lastName: input.lastName,
     email: input.email,
     phone: input.phone,
-    birthDate: input.birthDate,
+    birthDate: null,
+    nationalId: input.nationalId,
+    promotionalConsent: input.promotionalConsent,
     gender: input.gender,
     parentId: null,
     currentPassword: input.currentPassword,

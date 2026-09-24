@@ -35,6 +35,8 @@ public sealed class ListUsersQueryHandler(IUserRepository users, IQueryExecutor 
         .Add("status", u => u.UserStatusType.Name)
         .Add("type", u => u.UserType.Name)
         .Add("isAdmin", u => u.IsAdmin)
+        .Add("nationalId", u => u.NationalId)
+        .Add("promotionalConsent", u => u.PromotionalConsent)
         .Add("parentName", u => u.Parent!.FirstName)
         .Add("dependents", u => u.Children.Count)
         .Default("firstName")

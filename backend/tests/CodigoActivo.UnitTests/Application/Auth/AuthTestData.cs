@@ -28,7 +28,7 @@ internal static class AuthTestData
             Email = email,
             Phone = "+34123456789",
             PasswordHash = passwordHash,
-            BirthDate = AdultBirthDate,
+            NationalId = "12345678Z",
             UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
             OtpCodeHash = otpCodeHash,
             OtpExpiresAt = otpExpiresAt,

@@ -27,12 +27,15 @@ import { renderWithProviders, t } from '../../../support/render'
 
 const TITLE = 'features.sendEmail.header'
 
-async function renderDialog(props: { target?: string; sending?: boolean } = {}) {
+async function renderDialog(
+  props: { target?: string; sending?: boolean; withoutConsent?: number | null } = {},
+) {
   const rendered = await renderWithProviders(SendEmailDialog, {
     props: {
       visible: false,
       target: props.target ?? 'Ada Lovelace',
       sending: props.sending ?? false,
+      withoutConsent: props.withoutConsent ?? null,
     },
     attach: true,
   })
@@ -55,6 +58,39 @@ function files(count: number, size = 10): File[] {
 }
 
 describe('SendEmailDialog', () => {
+  it('warns in yellow, without blocking, when recipients lack promotional consent', async () => {
+    const { wrapper, dialog } = await renderDialog({ withoutConsent: 2 })
+
+    const alert = dialog.querySelector('.el-alert')
+    expect(alert?.classList).toContain('el-alert--warning')
+    expect(alert?.querySelector('.el-alert__close-btn')).toBeNull()
+    expect(alert?.querySelector('.el-alert__icon')).not.toBeNull()
+    expect(alert?.textContent).toContain(
+      tp('features.sendEmail.withoutConsentWarning', 2, { count: 2 }),
+    )
+
+    await typeInto('#send-email-subject', 'Asunto')
+    await typeInto('#send-email-body', 'Mensaje')
+    await click(findButton(t('features.sendEmail.send'), dialog))
+    await acceptMessageBox()
+
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+  })
+
+  it('uses the singular warning for one recipient without consent', async () => {
+    const { dialog } = await renderDialog({ withoutConsent: 1 })
+
+    expect(dialog.querySelector('.el-alert')?.textContent).toContain(
+      tp('features.sendEmail.withoutConsentWarning', 1, { count: 1 }),
+    )
+  })
+
+  it.each([0, null])('shows no consent warning when the count is %s', async (withoutConsent) => {
+    const { dialog } = await renderDialog({ withoutConsent })
+
+    expect(dialog.querySelector('.el-alert')).toBeNull()
+  })
+
   it('shows the recipients and the plain-text hint', async () => {
     const { dialog } = await renderDialog({ target: 'the 3 filtered users' })
 

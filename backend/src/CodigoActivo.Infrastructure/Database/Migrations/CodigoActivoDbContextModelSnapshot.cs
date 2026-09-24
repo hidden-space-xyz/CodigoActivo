@@ -937,7 +937,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("authenticator_last_used_step");
 
-                    b.Property<DateOnly>("BirthDate")
+                    b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 
@@ -988,6 +988,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<DateTimeOffset?>("LoginCodeLastSentAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("login_code_last_sent_at");
+
+                    b.Property<string>("NationalId")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("national_id");
 
                     b.Property<string>("OtpCodeHash")
                         .HasColumnType("text")
@@ -1041,6 +1046,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
+                    b.Property<bool>("PromotionalConsent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("promotional_consent");
+
                     b.Property<int>("TwoFactorFailedAttempts")
                         .HasColumnType("integer")
                         .HasColumnName("two_factor_failed_attempts");
@@ -1073,6 +1082,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
+
+                    b.HasIndex("NationalId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_national_id");
 
                     b.HasIndex("ParentId")
                         .HasDatabaseName("ix_users_parent_id");

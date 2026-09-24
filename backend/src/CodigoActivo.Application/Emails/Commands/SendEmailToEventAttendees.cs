@@ -53,19 +53,12 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
             return Error.NotFound(ErrorCode.EventNotFound);
         }
 
-        var source = UserFilters.ApplyEventAttendees(
-            users.Query(),
-            command.EventId,
-            command.Filters
-        );
-        var matched = await executor.ToListAsync(
-            source.Select(ManualEmailDispatcher.ToRecipient),
+        var audience = await ManualEmailAudience.LoadAsync(
+            UserFilters.ApplyEventAttendees(users.Query(), command.EventId, command.Filters),
+            executor,
             ct
         );
-        var addressable = matched.Where(r => !string.IsNullOrWhiteSpace(r.Email)).ToList();
-        var recipients = addressable
-            .DistinctBy(r => r.Email, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var recipients = audience.Recipients;
 
         return recipients.Count switch
         {
@@ -75,7 +68,7 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
             ),
             _ => await dispatcher.DispatchAsync(
                 recipients,
-                matched.Count - addressable.Count,
+                audience.Skipped,
                 command.Request,
                 command.Attachments,
                 ct

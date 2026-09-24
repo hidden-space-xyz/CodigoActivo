@@ -25,6 +25,8 @@ public sealed class MappingExtensionsTests
             Email = "ada@test.dev",
             Phone = "+34123",
             BirthDate = new DateOnly(1990, 3, 4),
+            NationalId = "12345678Z",
+            PromotionalConsent = true,
             Gender = Gender.Female,
             LastLoginAt = Updated,
             CreatedAt = Created,
@@ -57,6 +59,8 @@ public sealed class MappingExtensionsTests
         response.Email.Should().Be("ada@test.dev");
         response.Phone.Should().Be("+34123");
         response.BirthDate.Should().Be(new DateOnly(1990, 3, 4));
+        response.NationalId.Should().Be("12345678Z");
+        response.PromotionalConsent.Should().BeTrue();
         response.Gender.Should().Be(Gender.Female);
         response.LastLoginAt.Should().Be(Updated);
         response.CreatedAt.Should().Be(Created);

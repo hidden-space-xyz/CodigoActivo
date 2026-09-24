@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Extensions;
 using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Querying;
@@ -40,6 +41,11 @@ public static class UserFilters
             source = source.Where(u => u.IsAdmin == admin);
         }
 
+        if (query.PromotionalConsent is { } consent)
+        {
+            source = source.Where(u => u.PromotionalConsent == consent);
+        }
+
         if (query.BirthDateFrom is { } birthDateFrom)
         {
             source = source.Where(u => u.BirthDate >= birthDateFrom);
@@ -52,6 +58,10 @@ public static class UserFilters
 
         source = source.WhereContains(u => u.FirstName + " " + u.LastName, query.Name);
         source = source.WhereContains(u => u.Email, query.Email);
+        source = source.WhereContains(
+            u => u.NationalId,
+            query.NationalId.NormalizeNationalIdOrNull()
+        );
         return source.WhereContains(u => u.Phone, query.Phone);
     }
 

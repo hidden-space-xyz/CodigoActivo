@@ -7,7 +7,10 @@ export interface AccountProfile {
   readonly lastName: string
   readonly email: string
   readonly phone: string
-  readonly birthDate: string
+  /** Normalized DNI or NIE identifying the adult. */
+  readonly nationalId: string
+  /** Whether the user agreed to receive promotional content. */
+  readonly promotionalConsent: boolean
   readonly gender: Gender | null
   readonly statusName: string
   readonly isAdmin: boolean

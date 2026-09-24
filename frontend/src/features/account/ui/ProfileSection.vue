@@ -9,11 +9,9 @@ import { ApiError } from '@/shared/api'
 import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton } from '@/shared/ui'
 import {
-  ageFrom,
-  formatDate,
   getErrorMessage,
-  toDateInput,
-  todayIso,
+  isValidNationalId,
+  normalizeNationalId,
   useCrudFeedback,
 } from '@/shared/lib'
 
@@ -21,7 +19,6 @@ const { t } = useI18n()
 const feedback = useCrudFeedback()
 const { profile, updateProfile, changePassword } = useAccount()
 
-const maxBirthDateIso = todayIso()
 const user = computed(() => profile.data.value ?? null)
 
 const genders = genderOptions()
@@ -34,7 +31,9 @@ const editForm = reactive<{
   lastName: string
   email: string
   phone: string
-  birthDate: string
+  nationalId: string
+  confirmNationalId: string
+  promotionalConsent: boolean
   gender: Gender | null
   currentPassword: string
 }>({
@@ -42,7 +41,9 @@ const editForm = reactive<{
   lastName: '',
   email: '',
   phone: '',
-  birthDate: '',
+  nationalId: '',
+  confirmNationalId: '',
+  promotionalConsent: false,
   gender: null,
   currentPassword: '',
 })
@@ -56,10 +57,11 @@ const replacesIdentifiers = computed(() => {
 })
 const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
 const passwordMissing = computed(() => requiresPassword.value && !editForm.currentPassword)
-const birthDateIsMinor = computed(() => {
-  const age = ageFrom(editForm.birthDate)
-  return age !== null && age < 18
-})
+const nationalIdValid = computed(() => isValidNationalId(editForm.nationalId))
+const nationalIdsMismatch = computed(
+  () =>
+    normalizeNationalId(editForm.confirmNationalId) !== normalizeNationalId(editForm.nationalId),
+)
 
 function openEdit(): void {
   editSubmitted.value = false
@@ -69,7 +71,9 @@ function openEdit(): void {
   editForm.lastName = user.value?.lastName ?? ''
   editForm.email = user.value?.email ?? ''
   editForm.phone = user.value?.phone ?? ''
-  editForm.birthDate = toDateInput(user.value?.birthDate)
+  editForm.nationalId = user.value?.nationalId ?? ''
+  editForm.confirmNationalId = editForm.nationalId
+  editForm.promotionalConsent = user.value?.promotionalConsent ?? false
   editForm.gender = user.value?.gender ?? null
   editForm.currentPassword = ''
   editVisible.value = true
@@ -79,13 +83,15 @@ function saveEdit(): void {
   editSubmitted.value = true
   editError.value = ''
   const gender = editForm.gender
-  if (!gender || passwordMissing.value || birthDateIsMinor.value) return
+  if (!gender || passwordMissing.value || !nationalIdValid.value || nationalIdsMismatch.value)
+    return
   const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
     lastName: editForm.lastName.trim(),
     email: editForm.email.trim(),
     phone: editForm.phone.trim(),
-    birthDate: editForm.birthDate,
+    nationalId: normalizeNationalId(editForm.nationalId),
+    promotionalConsent: editForm.promotionalConsent,
     gender,
     currentPassword: requiresPassword.value ? editForm.currentPassword : null,
   }
@@ -177,8 +183,8 @@ function savePassword(): void {
         <dd>{{ user.phone || '—' }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>{{ $t('common.birthDate') }}</dt>
-        <dd>{{ formatDate(user.birthDate) }}</dd>
+        <dt>{{ $t('common.nationalId') }}</dt>
+        <dd>{{ user.nationalId || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.gender') }}</dt>
@@ -187,6 +193,10 @@ function savePassword(): void {
       <div class="acc-info__row">
         <dt>{{ $t('common.status') }}</dt>
         <dd>{{ user.statusName || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.promotionalConsent') }}</dt>
+        <dd>{{ user.promotionalConsent ? $t('common.yes') : $t('common.no') }}</dd>
       </div>
     </dl>
 
@@ -221,17 +231,35 @@ function savePassword(): void {
             <el-input id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required />
           </div>
           <div class="acc-form__field">
-            <label for="p-dob">{{ $t('common.birthDate') }}</label>
-            <input
-              id="p-dob"
-              v-model="editForm.birthDate"
-              type="date"
-              class="acc-date"
-              :max="maxBirthDateIso"
+            <label for="p-national-id">{{ $t('common.nationalId') }}</label>
+            <el-input
+              id="p-national-id"
+              v-model="editForm.nationalId"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              :maxlength="12"
+              :class="{ 'ca-invalid': editSubmitted && !nationalIdValid }"
               required
             />
-            <small v-if="editSubmitted && birthDateIsMinor" class="acc-form__error">{{
-              $t('features.account.profile.birthDateMinor')
+            <small v-if="editSubmitted && !nationalIdValid" class="acc-form__error">{{
+              $t('validation.nationalIdInvalid')
+            }}</small>
+          </div>
+          <div class="acc-form__field">
+            <label for="p-national-id-confirm">{{ $t('common.confirmNationalId') }}</label>
+            <el-input
+              id="p-national-id-confirm"
+              v-model="editForm.confirmNationalId"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              :maxlength="12"
+              :class="{ 'ca-invalid': editSubmitted && nationalIdsMismatch }"
+              required
+            />
+            <small v-if="editSubmitted && nationalIdsMismatch" class="acc-form__error">{{
+              $t('validation.nationalIdsMismatch')
             }}</small>
           </div>
           <div class="acc-form__field">
@@ -251,6 +279,10 @@ function savePassword(): void {
             <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
               $t('validation.genderRequired')
             }}</small>
+          </div>
+          <div class="acc-form__consent acc-form__field--wide">
+            <el-checkbox id="p-promotional-consent" v-model="editForm.promotionalConsent" />
+            <label for="p-promotional-consent">{{ $t('common.promotionalConsentOption') }}</label>
           </div>
           <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
             <label for="p-current">{{
@@ -403,16 +435,18 @@ function savePassword(): void {
   color: var(--ca-text-muted);
 }
 
-.acc-date {
-  width: 100%;
-  background: var(--ca-input-bg);
-  color: var(--ca-text);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 10px;
-  padding: 11px 13px;
-  font-family: inherit;
-  font-size: 15px;
-  outline: none;
+.acc-form__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.acc-form__consent label {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  cursor: pointer;
 }
 
 .acc-form__actions {
@@ -437,6 +471,12 @@ function savePassword(): void {
   font-size: 12.5px;
   line-height: 1.4;
   color: var(--ca-text-muted);
+}
+
+.ca-invalid {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
 }
 
 .ca-invalid :deep(.el-select__wrapper) {

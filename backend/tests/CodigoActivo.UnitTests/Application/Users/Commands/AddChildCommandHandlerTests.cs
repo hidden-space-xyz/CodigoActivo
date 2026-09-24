@@ -85,9 +85,9 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncParentIsMinorReturnsBadRequest()
+    public async Task HandleAsyncParentIsADependentReturnsBadRequest()
     {
-        users.FindReturns(NewUser(dob: MinorDob));
+        users.FindReturns(NewUser(parentId: Guid.NewGuid(), dob: MinorDob));
         var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
 
         var result = await sut.HandleAsync(
@@ -102,7 +102,7 @@ public sealed class AddChildCommandHandlerTests
     [Fact]
     public async Task HandleAsyncChildBirthDateNotMinorReturnsBadRequest()
     {
-        users.FindReturns(NewUser(dob: AdultDob));
+        users.FindReturns(NewUser());
         var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Gender.Male);
 
         var result = await sut.HandleAsync(
@@ -118,7 +118,7 @@ public sealed class AddChildCommandHandlerTests
     public async Task HandleAsyncValidRequestCreatesDependentChildPersistsAndInvalidatesCache()
     {
         var parentId = Guid.NewGuid();
-        var parent = NewUser(id: parentId, dob: AdultDob);
+        var parent = NewUser(id: parentId);
         users.FindReturns(parent);
         CaptureAddedUsers(parent);
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
@@ -136,6 +136,9 @@ public sealed class AddChildCommandHandlerTests
         result.Value.Type.Should().NotBeNull();
         result.Value.Type.Name.Should().Be("Participante");
         result.Value.DependentCount.Should().Be(0);
+        result.Value.BirthDate.Should().Be(MinorDob);
+        result.Value.NationalId.Should().BeNull();
+        result.Value.PromotionalConsent.Should().BeFalse();
         await users
             .Received(1)
             .AddAsync(

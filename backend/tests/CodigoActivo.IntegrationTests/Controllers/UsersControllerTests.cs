@@ -22,7 +22,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         string? phone = "+34600000002",
         Gender gender = Gender.Female,
         Guid? parentId = null,
-        string? currentPassword = null
+        string? currentPassword = null,
+        string? nationalId = TestSeedData.MemberNationalId,
+        bool promotionalConsent = true
     )
     {
         return new UpdateUserRequest(
@@ -30,7 +32,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             lastName,
             email,
             phone,
-            new DateOnly(1992, 7, 30),
+            null,
+            nationalId,
+            promotionalConsent,
             gender,
             parentId,
             currentPassword
@@ -40,7 +44,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     private static UpdateUserRequest ChildUpdate(
         string firstName = "MateoX",
         Gender gender = Gender.Male,
-        Guid? parentId = null
+        Guid? parentId = null,
+        DateOnly? birthDate = null
     )
     {
         return new UpdateUserRequest(
@@ -48,7 +53,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             "Miembro",
             null,
             null,
-            ChildBirthDate,
+            birthDate ?? ChildBirthDate,
+            null,
+            false,
             gender,
             parentId,
             null
@@ -111,7 +118,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                     Email = "avila@codigoactivo.test",
                     Phone = "+34600000099",
                     PasswordHash = TestSeedData.PasswordHash,
-                    BirthDate = new DateOnly(1990, 2, 2),
+                    NationalId = "55555555K",
                     Gender = Gender.Female,
                     UserStatusTypeId = SeedIds.UserStatusTypes.Active,
                     UserTypeId = SeedIds.UserTypes.Member,
@@ -144,7 +151,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                     Email = "lucia@codigoactivo.test",
                     Phone = "+34600000098",
                     PasswordHash = TestSeedData.PasswordHash,
-                    BirthDate = new DateOnly(1991, 4, 4),
+                    NationalId = "66666666Q",
                     Gender = Gender.Female,
                     UserStatusTypeId = SeedIds.UserStatusTypes.Active,
                     UserTypeId = SeedIds.UserTypes.Member,
@@ -211,21 +218,85 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
 
+        await Factory.SeedAsync(db =>
+        {
+            db.Users.AddRange(
+                SeedChild("Iris", TestSeedData.Users.AdminId),
+                SeedChild("Hugo", TestSeedData.Users.AdminId, new DateOnly(2018, 1, 1))
+            );
+            return Task.CompletedTask;
+        });
+
         var response = await client.GetAsync(
-            TestUri.Rel("/api/users?birthDateFrom=1988-09-09&birthDateTo=1992-07-30"),
+            TestUri.Rel("/api/users?birthDateFrom=2015-05-05&birthDateTo=2017-03-03"),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
-        page!.Total.Should().Be(3);
-        page.Items.Select(u => u.Id)
+        page!.Total.Should().Be(2);
+        page.Items.Select(u => u.FirstName).Should().BeEquivalentTo(["Mateo", "Iris"]);
+    }
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 4)]
+    public async Task ListFilterByPromotionalConsentReturnsOnlyMatchingUsers(
+        bool consent,
+        int expected
+    )
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/users?promotionalConsent={(consent ? "true" : "false")}"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
+        page!.Total.Should().Be(expected);
+        page.Items.Should().OnlyContain(u => u.PromotionalConsent == consent);
+        page.Items.Any(u => u.Id == TestSeedData.Users.MemberId).Should().Be(consent);
+    }
+
+    [Fact]
+    public async Task ListFilterByNationalIdMatchesPartOfTheStoredValue()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(TestUri.Rel("/api/users?nationalId=2222j"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
+        var member = page!.Items.Should().ContainSingle().Subject;
+        member.Id.Should().Be(TestSeedData.Users.MemberId);
+        member.NationalId.Should().Be(TestSeedData.MemberNationalId);
+        member.PromotionalConsent.Should().BeTrue();
+        member.BirthDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ListSortByNationalIdOrdersAdultsByTheirDni()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel("/api/users?sort=nationalId&isAdmin=false"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
+        page!
+            .Items.Where(u => u.NationalId is not null)
+            .Select(u => u.NationalId)
             .Should()
-            .BeEquivalentTo([
-                TestSeedData.Users.MemberId,
-                TestSeedData.Users.PendingId,
-                TestSeedData.Users.BlockedId,
-            ]);
+            .Equal(
+                TestSeedData.MemberNationalId,
+                TestSeedData.PendingNationalId,
+                TestSeedData.BlockedNationalId
+            );
     }
 
     [Fact]
@@ -271,14 +342,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             .Equal("Ada Admin", "Marta Miembro", null, null, null, null);
     }
 
-    private static User SeedChild(string firstName, Guid parentId)
+    private static User SeedChild(string firstName, Guid parentId, DateOnly? birthDate = null)
     {
         return new()
         {
             Id = Guid.NewGuid(),
             FirstName = firstName,
             LastName = "Menor",
-            BirthDate = new DateOnly(2017, 3, 3),
+            BirthDate = birthDate ?? new DateOnly(2017, 3, 3),
             Gender = Gender.Other,
             ParentId = parentId,
             UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
@@ -429,7 +500,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                 lastName = "Member",
                 email = TestSeedData.MemberEmail,
                 phone = "+34600000002",
-                birthDate = "1992-07-30",
+                nationalId = TestSeedData.MemberNationalId,
             },
             Ct
         );
@@ -468,31 +539,98 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateTurningAnAccountIntoAMinorIsRefusedAndKeepsItsCredentials()
+    public async Task UpdateGivingAStandaloneAccountABirthDateIsRefusedAndKeepsItsCredentials()
     {
         var client = await LoginAsAdminAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            new UpdateUserRequest(
-                "Marta",
-                "Miembro",
-                TestSeedData.MemberEmail,
-                "+34600000002",
-                MinorBirthDate,
-                Gender.Female,
-                TestSeedData.Users.AdminId,
-                TestSeedData.Password
-            ),
+            AdultUpdate(currentPassword: TestSeedData.Password) with
+            {
+                BirthDate = MinorBirthDate,
+                ParentId = TestSeedData.Users.AdminId,
+            },
             Ct
         );
 
-        await response.ShouldBeBadRequestAsync(ErrorCode.UserCannotBecomeMinor);
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserBirthDateNotAllowedForAdult);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.ParentId.Should().BeNull();
         stored.Email.Should().Be(TestSeedData.MemberEmail);
         stored.PasswordHash.Should().Be(TestSeedData.PasswordHash);
-        stored.BirthDate.Should().Be(new DateOnly(1992, 7, 30));
+        stored.BirthDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateStandaloneAccountWithoutNationalIdReturnsBadRequest()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(nationalId: null),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserNationalIdRequired);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .NationalId.Should()
+            .Be(TestSeedData.MemberNationalId);
+    }
+
+    [Theory]
+    [InlineData("22222222A")]
+    [InlineData("2222222J")]
+    public async Task UpdateStandaloneAccountInvalidNationalIdReturnsValidationError(
+        string nationalId
+    )
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(nationalId: nationalId),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
+    public async Task UpdateStandaloneAccountNationalIdOfAnotherUserReturnsConflict()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(nationalId: TestSeedData.PendingNationalId.ToLowerInvariant()),
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.UserNationalIdAlreadyInUse);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .NationalId.Should()
+            .Be(TestSeedData.MemberNationalId);
+    }
+
+    [Fact]
+    public async Task UpdateStandaloneAccountChangesNationalIdAndConsentWithoutPassword()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(nationalId: "x-1234567-l", promotionalConsent: false),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.ReadJsonAsync<UserResponse>(Ct);
+        updated!.NationalId.Should().Be("X1234567L");
+        updated.PromotionalConsent.Should().BeFalse();
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.NationalId.Should().Be("X1234567L");
+        stored.PromotionalConsent.Should().BeFalse();
     }
 
     [Fact]
@@ -549,66 +687,106 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateDependentReachingAdulthoodStaysADependentWithoutCredentials()
+    public async Task UpdateDependentGivenAnAdultBirthDateReturnsBadRequest()
     {
         var client = await LoginAsMemberAsync();
-        var grownUp = new UpdateUserRequest(
-            "Mateo",
-            "Miembro",
-            null,
-            null,
-            new DateOnly(1999, 5, 5),
-            Gender.Male,
-            null,
-            null
-        );
 
-        using var withoutContactOrPassword = await client.PutJsonAsync(
+        var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
-            grownUp,
+            ChildUpdate(firstName: "Mateo Mayor", birthDate: new DateOnly(1999, 5, 5)),
             Ct
         );
-        withoutContactOrPassword.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var repeatingTheGuardian = await client.PutJsonAsync(
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserChildBirthDateNotMinor);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
+        stored!.FirstName.Should().Be("Mateo");
+        stored.BirthDate.Should().Be(ChildBirthDate);
+    }
+
+    [Fact]
+    public async Task UpdateAdultDependentKeepingItsStoredBirthDateEditsTheRest()
+    {
+        var adultBirthDate = new DateOnly(1999, 5, 5);
+        await Factory.SeedAsync(async db =>
+        {
+            var child = await db.Users.FindAsync([TestSeedData.Users.MemberChildId], Ct);
+            child!.BirthDate = adultBirthDate;
+        });
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
-            grownUp with
+            ChildUpdate(firstName: "Mateo Mayor", birthDate: adultBirthDate),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
+        stored!.FirstName.Should().Be("Mateo Mayor");
+        stored.BirthDate.Should().Be(adultBirthDate);
+        stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
+    }
+
+    [Fact]
+    public async Task UpdateDependentWithoutBirthDateReturnsBadRequest()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            ChildUpdate() with
+            {
+                BirthDate = null,
+            },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserChildBirthDateRequired);
+        (await FindAsync<User>(TestSeedData.Users.MemberChildId))!
+            .BirthDate.Should()
+            .Be(ChildBirthDate);
+    }
+
+    [Fact]
+    public async Task UpdateDependentIgnoresNationalIdConsentAndContactDetails()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            ChildUpdate() with
             {
                 Email = "mateo@codigoactivo.test",
                 Phone = "+34600000055",
+                NationalId = "X1234567L",
+                PromotionalConsent = true,
                 ParentId = TestSeedData.Users.MemberId,
             },
             Ct
         );
-        repeatingTheGuardian.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
         stored!.ParentId.Should().Be(TestSeedData.Users.MemberId);
-        stored.BirthDate.Should().Be(new DateOnly(1999, 5, 5));
         stored.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
         stored.Email.Should().BeNull("a dependent never takes login identifiers from the request");
         stored.Phone.Should().BeNull();
-        stored.PasswordHash.Should().BeNull("growing up does not create credentials by itself");
+        stored.NationalId.Should().BeNull();
+        stored.PromotionalConsent.Should().BeFalse();
     }
 
     [Fact]
     public async Task UpdateAdultDependentMovedToAnotherGuardianReturnsForbidden()
     {
         var client = await LoginAsAdminAsync();
-        var grownUp = new UpdateUserRequest(
-            "Mateo",
-            "Miembro",
-            null,
-            null,
-            new DateOnly(1999, 5, 5),
-            Gender.Male,
-            TestSeedData.Users.AdminId,
-            null
-        );
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
-            grownUp,
+            ChildUpdate(
+                firstName: "Mateo",
+                parentId: TestSeedData.Users.AdminId,
+                birthDate: new DateOnly(1999, 5, 5)
+            ),
             Ct
         );
 
@@ -718,6 +896,25 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
         stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
+    }
+
+    [Fact]
+    public async Task AddChildToADependentReturnsBadRequest()
+    {
+        var client = await LoginAsAdminAsync();
+        var request = new RegisterMinorRequest("Nieto", "Miembro", MinorBirthDate, Gender.Male);
+
+        var response = await client.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}/children",
+            request,
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserParentIsMinor);
+        var children = await Factory.QueryAsync(db =>
+            Task.FromResult(db.Users.Count(u => u.ParentId == TestSeedData.Users.MemberChildId))
+        );
+        children.Should().Be(0);
     }
 
     [Fact]

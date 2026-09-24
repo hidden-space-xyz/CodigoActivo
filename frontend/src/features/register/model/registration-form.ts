@@ -12,7 +12,10 @@ export interface MinorForm {
 
 let minorKeySeq = 0
 
-/** Editable state of the registration form; every `dateOfBirth` holds a `YYYY-MM-DD` string. */
+/**
+ * Editable state of the registration form. Only minors carry a `dateOfBirth` (`YYYY-MM-DD`); the
+ * adult is identified by a DNI or NIE typed twice (`nationalId` and `confirmNationalId`).
+ */
 export interface RegistrationForm {
   firstName: string
   lastName: string
@@ -20,8 +23,11 @@ export interface RegistrationForm {
   phone: string
   password: string
   confirmPassword: string
-  dateOfBirth: string
+  nationalId: string
+  confirmNationalId: string
   gender: Gender | null
+  /** Optional agreement to receive promotional content; unchecked by default. */
+  promotionalConsent: boolean
   minors: MinorForm[]
 }
 
@@ -40,8 +46,10 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     phone: '',
     password: '',
     confirmPassword: '',
-    dateOfBirth: '',
+    nationalId: '',
+    confirmNationalId: '',
     gender: null,
+    promotionalConsent: false,
     minors: [],
   }
 }

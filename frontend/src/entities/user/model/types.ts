@@ -9,7 +9,9 @@ export interface UserCatalogRef {
 
 /**
  * User row and detail model for admin screens, mapped from `UserResponse`. `parentId` and
- * `parentName` identify the guardian of a minor; `dependentCount` counts this user's minors.
+ * `parentName` identify the guardian of a minor; `dependentCount` counts this user's minors. Only
+ * dependents have a `birthDate` and only independent accounts a `nationalId`; the missing one is
+ * `''`.
  */
 export interface User {
   readonly id: string
@@ -18,6 +20,10 @@ export interface User {
   readonly email: string
   readonly phone: string
   readonly birthDate: string
+  /** Normalized DNI or NIE of an independent account. */
+  readonly nationalId: string
+  /** Whether the user agreed to receive promotional content; always `false` for dependents. */
+  readonly promotionalConsent: boolean
   readonly gender: Gender | null
   readonly isAdmin: boolean
   readonly parentId: string | null
@@ -31,16 +37,22 @@ export interface User {
 
 /**
  * Fields an admin edits on a user. The stored account decides which rules the backend applies: a
- * dependent keeps its guardian and may omit email and phone, while any other account requires both
- * and is refused a guardian or a minor birth date. Dependents are only created under their
- * guardian, never by editing an existing account.
+ * dependent keeps its guardian, needs a birth date that keeps it a minor whenever it changes and
+ * may omit email, phone, DNI/NIE and consent, while any other account requires email, phone and a
+ * unique DNI/NIE and is refused a guardian or a birth date. Dependents are only created under
+ * their guardian, never by editing an existing account.
  */
 export interface UpdateUserInput {
   readonly firstName: string
   readonly lastName: string
   readonly email: string | null
   readonly phone: string | null
-  readonly birthDate: string
+  /** `YYYY-MM-DD` for a dependent; `null` for an independent account. */
+  readonly birthDate: string | null
+  /** Normalized DNI or NIE of an independent account; `null` for a dependent. */
+  readonly nationalId: string | null
+  /** Agreement to receive promotional content; ignored by the API for a dependent. */
+  readonly promotionalConsent: boolean
   readonly gender: Gender
   readonly parentId: string | null
   /**

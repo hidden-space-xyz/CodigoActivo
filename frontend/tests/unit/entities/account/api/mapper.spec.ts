@@ -16,13 +16,16 @@ import { buildUserResponse } from '../../../../support/fixtures/user'
 
 describe('account mapper', () => {
   it('maps a full user response to the account profile', () => {
-    expect(toAccountProfile(buildUserResponse({ isAdmin: true }))).toEqual({
+    expect(
+      toAccountProfile(buildUserResponse({ isAdmin: true, promotionalConsent: true })),
+    ).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '600000000',
-      birthDate: '1990-05-10',
+      nationalId: '12345678Z',
+      promotionalConsent: true,
       gender: 'Female',
       statusName: 'Active',
       isAdmin: true,
@@ -37,7 +40,8 @@ describe('account mapper', () => {
       lastName: '',
       email: '',
       phone: '',
-      birthDate: '',
+      nationalId: '',
+      promotionalConsent: false,
       gender: null,
       statusName: '',
       isAdmin: false,
@@ -59,11 +63,13 @@ describe('account mapper', () => {
   })
 
   it('maps a minor to the reduced child shape', () => {
-    expect(toAccountChild(buildUserResponse({ id: 'child-1', gender: 'Male' }))).toEqual({
+    expect(
+      toAccountChild(buildUserResponse({ id: 'child-1', gender: 'Male', birthDate: '2015-03-02' })),
+    ).toEqual({
       id: 'child-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
-      birthDate: '1990-05-10',
+      birthDate: '2015-03-02',
       gender: 'Male',
     })
     expect(toAccountChild({})).toEqual({
@@ -75,14 +81,15 @@ describe('account mapper', () => {
     })
   })
 
-  it('builds the profile update body with a null parent', () => {
+  it('builds the profile update body with a null parent and a null birth date', () => {
     expect(
       toUpdateProfileRequest({
         firstName: 'Ada',
         lastName: 'King',
         email: 'ada@example.test',
         phone: '611111111',
-        birthDate: '1990-05-10',
+        nationalId: 'X1234567L',
+        promotionalConsent: true,
         gender: 'Female',
         currentPassword: 'Str0ngPass!23',
       }),
@@ -91,7 +98,9 @@ describe('account mapper', () => {
       lastName: 'King',
       email: 'ada@example.test',
       phone: '611111111',
-      birthDate: '1990-05-10',
+      birthDate: null,
+      nationalId: 'X1234567L',
+      promotionalConsent: true,
       gender: 'Female',
       parentId: null,
       currentPassword: 'Str0ngPass!23',

@@ -299,7 +299,7 @@ public enum ErrorCode
     ParentUserNotFound,
 
     /// <summary>
-    /// Selects the user parent is minor option.
+    /// Selects the option for a parent that is itself a dependent.
     /// </summary>
     UserParentIsMinor,
 
@@ -329,14 +329,24 @@ public enum ErrorCode
     UserParentNotAllowedForAdult,
 
     /// <summary>
-    /// Selects the user cannot become a dependent minor option.
+    /// Selects the option for a birth date given to an account that is not a dependent.
     /// </summary>
-    UserCannotBecomeMinor,
+    UserBirthDateNotAllowedForAdult,
+
+    /// <summary>
+    /// Selects the option for a dependent updated without a birth date.
+    /// </summary>
+    UserChildBirthDateRequired,
 
     /// <summary>
     /// Selects the user contact info required option.
     /// </summary>
     UserContactInfoRequired,
+
+    /// <summary>
+    /// Selects the option for an independent account updated without a DNI or NIE.
+    /// </summary>
+    UserNationalIdRequired,
 
     /// <summary>
     /// Selects the user email already in use option.
@@ -347,6 +357,11 @@ public enum ErrorCode
     /// Selects the user phone already in use option.
     /// </summary>
     UserPhoneAlreadyInUse,
+
+    /// <summary>
+    /// Selects the option for a DNI or NIE that another account already uses.
+    /// </summary>
+    UserNationalIdAlreadyInUse,
 
     /// <summary>
     /// Selects the invalid credentials option.
@@ -374,11 +389,6 @@ public enum ErrorCode
     CurrentUserNotFound,
 
     /// <summary>
-    /// Selects the register adult cannot be minor option.
-    /// </summary>
-    RegisterAdultCannotBeMinor,
-
-    /// <summary>
     /// Selects the register contact info required option.
     /// </summary>
     RegisterContactInfoRequired,
@@ -387,6 +397,11 @@ public enum ErrorCode
     /// Selects the register email or phone already in use option.
     /// </summary>
     RegisterEmailOrPhoneAlreadyInUse,
+
+    /// <summary>
+    /// Selects the option for a registration whose DNI or NIE another account already uses.
+    /// </summary>
+    RegisterNationalIdAlreadyInUse,
 
     /// <summary>
     /// Selects the register minor birth date not minor option.

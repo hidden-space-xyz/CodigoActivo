@@ -33,8 +33,10 @@ describe('register requests', () => {
       phone: '600000000',
       password: 'correct-horse-battery',
       confirmPassword: 'correct-horse-battery',
-      dateOfBirth: '1990-05-10',
+      nationalId: '12345678z',
+      confirmNationalId: '12345678Z',
       gender: 'Female' as const,
+      promotionalConsent: true,
     }
 
     await expect(registerRequest(form)).resolves.toEqual({ adultId: 'adult-1', minorCount: 0 })
@@ -46,8 +48,9 @@ describe('register requests', () => {
         email: 'ada@example.test',
         phone: '600000000',
         password: 'correct-horse-battery',
-        birthDate: '1990-05-10',
+        nationalId: '12345678Z',
         gender: 'Female',
+        promotionalConsent: true,
         minors: [],
       },
     })

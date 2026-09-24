@@ -64,6 +64,19 @@ public interface IUserRepository : IDbRepository<User>
     );
 
     /// <summary>
+    /// Determines whether a normalized DNI or NIE already exists.
+    /// </summary>
+    /// <param name="nationalId">Normalized national identity number to locate.</param>
+    /// <param name="excludeUserId">Identifier of the user to exclude from the check.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    public Task<bool> NationalIdExistsAsync(
+        string nationalId,
+        Guid? excludeUserId = null,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Lists the children with details that match the supplied criteria.
     /// </summary>
     /// <param name="parentId">Identifier of the parent.</param>

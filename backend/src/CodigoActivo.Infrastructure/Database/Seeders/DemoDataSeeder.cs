@@ -36,6 +36,7 @@ public sealed class DemoDataSeeder(
     private const int AdultCount = 20;
     private const int MemberAdultCount = 14;
     private const int ChildCount = 5;
+    private const string NationalIdControlLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
 
     private const int EventSpacingDays = 14;
     private const int FinishedEventCount = 15;
@@ -202,7 +203,9 @@ public sealed class DemoDataSeeder(
                         Email = isChild ? null : BuildEmail(seed),
                         Phone = isChild ? null : BuildPhone(index),
                         PasswordHash = isChild ? null : passwordHash,
-                        BirthDate = BuildBirthDate(index, seed.BirthYear),
+                        BirthDate = seed.BirthYear is { } year ? BuildBirthDate(index, year) : null,
+                        NationalId = isChild ? null : BuildNationalId(index),
+                        PromotionalConsent = !isChild && index % 3 is not 0,
                         Gender = seed.Gender,
                         ParentId = seed.ParentIndex is { } parent ? UserId(parent) : null,
                         UserStatusTypeId = isChild
@@ -790,6 +793,15 @@ public sealed class DemoDataSeeder(
         return string.Create(CultureInfo.InvariantCulture, $"+3466{index:D7}");
     }
 
+    private static string BuildNationalId(int index)
+    {
+        var number = 20_000_000 + (index * 1_234_567);
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"{number:D8}{NationalIdControlLetters[number % NationalIdControlLetters.Length]}"
+        );
+    }
+
     private static DateOnly BuildBirthDate(int index, int year)
     {
         return new(year, (index * 7 % 12) + 1, (index * 5 % 28) + 1);
@@ -851,7 +863,7 @@ public sealed class DemoDataSeeder(
         string LastName,
         UserKind Kind,
         Gender Gender,
-        int BirthYear,
+        int? BirthYear,
         int? ParentIndex
     );
 
@@ -2515,26 +2527,26 @@ public sealed class DemoDataSeeder(
     ];
     private static readonly UserSeed[] UserSeeds =
     [
-        new("Lucía", "Fernández Ruiz", UserKind.Member, Gender.Female, 1986, null),
-        new("Marcos", "Serrano Vidal", UserKind.Member, Gender.Male, 1984, null),
-        new("Elena", "Navarro Gil", UserKind.Member, Gender.Female, 1990, null),
-        new("Javier", "Molina Castro", UserKind.Member, Gender.Male, 1979, null),
-        new("Sara", "Ortega Peña", UserKind.Member, Gender.Female, 1993, null),
-        new("Daniel", "Ramos León", UserKind.Member, Gender.Male, 1988, null),
-        new("Carmen", "Delgado Soto", UserKind.Member, Gender.Female, 1982, null),
-        new("Pablo", "Ibáñez Marín", UserKind.Member, Gender.Male, 1995, null),
-        new("Ana", "Herrera Cano", UserKind.Member, Gender.Female, 1991, null),
-        new("Sergio", "Vargas Prieto", UserKind.Member, Gender.Male, 1987, null),
-        new("Marta", "Reyes Nieto", UserKind.Member, Gender.Female, 1996, null),
-        new("David", "Campos Rubio", UserKind.Member, Gender.Male, 1983, null),
-        new("Raquel", "Mendoza Flores", UserKind.Member, Gender.Female, 1994, null),
-        new("Alberto", "Cortés Lozano", UserKind.Member, Gender.Male, 1980, null),
-        new("Nuria", "Gallego Bravo", UserKind.Sponsor, Gender.Female, 1992, null),
-        new("Iván", "Santos Crespo", UserKind.Sponsor, Gender.Male, 1998, null),
-        new("Cristina", "Vega Aguilar", UserKind.Sponsor, Gender.Female, 1989, null),
-        new("Rubén", "Márquez Fuentes", UserKind.Sponsor, Gender.Male, 1997, null),
-        new("Laura", "Domínguez Pardo", UserKind.Sponsor, Gender.Female, 1985, null),
-        new("Adrián", "Bautista Nogueira", UserKind.Sponsor, Gender.Male, 1999, null),
+        new("Lucía", "Fernández Ruiz", UserKind.Member, Gender.Female, null, null),
+        new("Marcos", "Serrano Vidal", UserKind.Member, Gender.Male, null, null),
+        new("Elena", "Navarro Gil", UserKind.Member, Gender.Female, null, null),
+        new("Javier", "Molina Castro", UserKind.Member, Gender.Male, null, null),
+        new("Sara", "Ortega Peña", UserKind.Member, Gender.Female, null, null),
+        new("Daniel", "Ramos León", UserKind.Member, Gender.Male, null, null),
+        new("Carmen", "Delgado Soto", UserKind.Member, Gender.Female, null, null),
+        new("Pablo", "Ibáñez Marín", UserKind.Member, Gender.Male, null, null),
+        new("Ana", "Herrera Cano", UserKind.Member, Gender.Female, null, null),
+        new("Sergio", "Vargas Prieto", UserKind.Member, Gender.Male, null, null),
+        new("Marta", "Reyes Nieto", UserKind.Member, Gender.Female, null, null),
+        new("David", "Campos Rubio", UserKind.Member, Gender.Male, null, null),
+        new("Raquel", "Mendoza Flores", UserKind.Member, Gender.Female, null, null),
+        new("Alberto", "Cortés Lozano", UserKind.Member, Gender.Male, null, null),
+        new("Nuria", "Gallego Bravo", UserKind.Sponsor, Gender.Female, null, null),
+        new("Iván", "Santos Crespo", UserKind.Sponsor, Gender.Male, null, null),
+        new("Cristina", "Vega Aguilar", UserKind.Sponsor, Gender.Female, null, null),
+        new("Rubén", "Márquez Fuentes", UserKind.Sponsor, Gender.Male, null, null),
+        new("Laura", "Domínguez Pardo", UserKind.Sponsor, Gender.Female, null, null),
+        new("Adrián", "Bautista Nogueira", UserKind.Sponsor, Gender.Male, null, null),
         new("Mateo", "Serrano Ferrer", UserKind.Child, Gender.Male, 2013, 1),
         new("Valeria", "Navarro Gil", UserKind.Child, Gender.Female, 2014, 2),
         new("Hugo", "Molina Ríos", UserKind.Child, Gender.Male, 2012, 3),

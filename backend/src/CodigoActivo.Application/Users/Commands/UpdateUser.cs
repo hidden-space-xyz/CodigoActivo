@@ -41,12 +41,15 @@ public sealed class UpdateUserCommandHandler(
 {
     /// <summary>
     /// Handles the request to update the user. The stored account decides which rules apply, never
-    /// the request: an account that is not a dependent can neither become a minor nor be given a
-    /// guardian, and a dependent keeps the guardian it already has, including after its birth date
-    /// turns it into an adult. Replacing the login identifiers of the account first re-authenticates
-    /// the acting caller, so a hijacked session alone cannot take the account over. Dependents are
-    /// created only through <c>POST /api/users/{id}/children</c>, and they leave their guardian only
-    /// when the guardian deletes them.
+    /// the request: an account that is not a dependent has no birth date, needs a unique DNI or NIE
+    /// and cannot be given a guardian, while a dependent keeps the guardian it already has, needs a
+    /// birth date and never stores a DNI, NIE or promotional consent. A dependent birth date must
+    /// keep it a minor only when it changes, so a dependent that has already come of age stays
+    /// editable with its stored birth date.
+    /// Replacing the login identifiers of the account first re-authenticates the acting caller, so a
+    /// hijacked session alone cannot take the account over; the DNI or NIE is not a login
+    /// identifier. Dependents are created only through <c>POST /api/users/{id}/children</c>, and
+    /// they leave their guardian only when the guardian deletes them.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -77,7 +80,6 @@ public sealed class UpdateUserCommandHandler(
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
-        user.BirthDate = request.BirthDate;
         user.Gender = request.Gender;
         user.UpdatedAt = clock.UtcNow;
 
@@ -106,9 +108,9 @@ public sealed class UpdateUserCommandHandler(
     )
     {
         var request = command.Request;
-        if (request.BirthDate.IsMinor(clock.Today))
+        if (request.BirthDate is not null)
         {
-            return Error.BadRequest(ErrorCode.UserCannotBecomeMinor);
+            return Error.BadRequest(ErrorCode.UserBirthDateNotAllowedForAdult);
         }
 
         if (request.ParentId is not null)
@@ -116,16 +118,48 @@ public sealed class UpdateUserCommandHandler(
             return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
         }
 
-        return await ApplyLoginIdentifierRulesAsync(command, user, ct);
+        var nationalId = request.NationalId.NormalizeNationalIdOrNull();
+        if (nationalId is null)
+        {
+            return Error.BadRequest(ErrorCode.UserNationalIdRequired);
+        }
+
+        if (await users.NationalIdExistsAsync(nationalId, command.UserId, ct))
+        {
+            return Error.Conflict(ErrorCode.UserNationalIdAlreadyInUse);
+        }
+
+        var identifiers = await ApplyLoginIdentifierRulesAsync(command, user, ct);
+        if (identifiers.IsFailure)
+        {
+            return identifiers;
+        }
+
+        user.NationalId = nationalId;
+        user.PromotionalConsent = request.PromotionalConsent;
+        return Result.Success();
     }
 
-    private static Result ApplyDependentRules(UpdateUserRequest request, User user)
+    private Result ApplyDependentRules(UpdateUserRequest request, User user)
     {
         if (request.ParentId is { } parent && parent != user.ParentId)
         {
             return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
         }
 
+        if (request.BirthDate is not { } birthDate)
+        {
+            return Error.BadRequest(ErrorCode.UserChildBirthDateRequired);
+        }
+
+        if (birthDate != user.BirthDate && !birthDate.IsMinor(clock.Today))
+        {
+            return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
+        }
+
+        user.BirthDate = birthDate;
+        user.NationalId = null;
+        user.PromotionalConsent = false;
         return Result.Success();
     }
 

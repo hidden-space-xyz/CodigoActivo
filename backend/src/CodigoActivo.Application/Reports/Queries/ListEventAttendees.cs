@@ -146,7 +146,7 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
         string? LastName,
         string? Email,
         string? Phone,
-        DateOnly BirthDate,
+        DateOnly? BirthDate,
         Gender Gender,
         string UserTypeName,
         string UserTypeColor,

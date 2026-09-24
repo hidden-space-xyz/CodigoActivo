@@ -24,6 +24,10 @@ const RANGE_SEPARATOR = '–'
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
+const NATIONAL_ID_CONTROL_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE'
+const NIE_PREFIXES: Readonly<Record<string, string>> = { X: '0', Y: '1', Z: '2' }
+const NATIONAL_ID_SHAPE = /^[XYZ\d]\d{7}[A-Z]$/
+
 /**
  * Parses the `YYYY-MM-DD` prefix as a local-midnight `Date`, avoiding `new Date()`'s UTC shift.
  * Returns `null` for empty or malformed input.
@@ -220,4 +224,27 @@ export function formatTimeRange(
     ? timeFormatter.format(endDate)
     : `${dayMonthFormatter.format(endDate)}, ${timeFormatter.format(endDate)}`
   return `${startText} ${RANGE_SEPARATOR} ${endText}`
+}
+
+/**
+ * Normalizes a Spanish DNI or NIE the way the API stores it: uppercase, without spaces or hyphens.
+ * Two entries that differ only in those details are the same identifier.
+ */
+export function normalizeNationalId(value: string): string {
+  return value.replace(/[\s-]/g, '').toUpperCase()
+}
+
+/**
+ * Checks a Spanish DNI (eight digits and a control letter) or NIE (X, Y or Z, seven digits and a
+ * control letter) after normalizing it, including the control letter the API also verifies.
+ */
+export function isValidNationalId(value: string): boolean {
+  const normalized = normalizeNationalId(value)
+  if (!NATIONAL_ID_SHAPE.test(normalized)) return false
+  const first = normalized.charAt(0)
+  const digits = `${NIE_PREFIXES[first] ?? first}${normalized.slice(1, 8)}`
+  return (
+    normalized.charAt(8) ===
+    NATIONAL_ID_CONTROL_LETTERS.charAt(Number(digits) % NATIONAL_ID_CONTROL_LETTERS.length)
+  )
 }

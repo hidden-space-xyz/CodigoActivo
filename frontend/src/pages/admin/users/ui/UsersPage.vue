@@ -52,7 +52,7 @@ const userTypes = useUserTypesList()
 const userStatusTypes = useUserStatusTypesList()
 const feedback = useCrudFeedback()
 const { confirmDelete: requireDelete } = useDeleteConfirm()
-const { sendToUsers } = useSendEmail()
+const { sendToUsers, usersAudience } = useSendEmail()
 
 const dialogVisible = ref(false)
 const selected = ref<User | null>(null)
@@ -85,7 +85,7 @@ const statusOptions = computed(() => toSelectOptions(userStatusTypes.data.value)
 
 const typeOptions = computed(() => toSelectOptions(userTypes.data.value))
 
-const adminOptions: { label: string; value: boolean }[] = [
+const yesNoOptions: { label: string; value: boolean }[] = [
   { label: t('common.yes'), value: true },
   { label: t('common.no'), value: false },
 ]
@@ -234,11 +234,13 @@ const exportHeaders = [
   t('common.lastName'),
   t('common.email'),
   t('common.phone'),
+  t('common.nationalId'),
   t('common.birthDate'),
   t('common.gender'),
   t('common.status'),
   t('pages.admin.users.columns.type'),
   t('pages.admin.users.columns.admin'),
+  t('common.promotionalConsent'),
   t('pages.admin.users.export.columns.guardian'),
 ]
 
@@ -248,11 +250,13 @@ function exportRow(user: User): CsvValue[] {
     user.lastName,
     user.email,
     user.phone,
+    user.nationalId,
     formatDate(user.birthDate),
     user.gender ? genderLabel(user.gender) : null,
     user.status?.name,
     user.type?.name,
     user.isAdmin ? t('common.yes') : t('common.no'),
+    user.promotionalConsent ? t('common.yes') : t('common.no'),
     user.parentName,
   ]
 }
@@ -270,6 +274,7 @@ const {
   visible: emailDialogVisible,
   target: emailTarget,
   sending: emailSending,
+  withoutConsent: emailWithoutConsent,
   open: openEmail,
   submit: submitEmail,
 } = useSendEmailDialog<User>({
@@ -279,6 +284,7 @@ const {
   bulkPending: () => sendToUsers.isPending.value,
   sendAll: (payload, handlers) =>
     sendToUsers.mutate({ params: table.filterParams.value, payload }, handlers),
+  fetchAudience: (user) => usersAudience(user ? { id: user.id } : table.filterParams.value),
   onError: (error) => feedback.error(error),
 })
 
@@ -379,6 +385,17 @@ function confirmDelete(user: User): void {
         </template>
         <template #default="{ row }">{{ row.phone || '—' }}</template>
       </el-table-column>
+      <el-table-column prop="nationalId" sortable="custom" min-width="150">
+        <template #header>
+          <ColumnSearch
+            v-model="table.columnFilter('nationalId').value"
+            :label="$t('pages.admin.users.columns.nationalId')"
+            :placeholder="$t('pages.admin.users.search.nationalId')"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #default="{ row }">{{ row.nationalId || '—' }}</template>
+      </el-table-column>
       <el-table-column prop="birthDate" sortable="custom" min-width="185">
         <template #header>
           <ColumnFilterDate
@@ -388,6 +405,19 @@ function confirmDelete(user: User): void {
           />
         </template>
         <template #default="{ row }">{{ birthDateWithAge(row) }}</template>
+      </el-table-column>
+      <el-table-column prop="promotionalConsent" sortable="custom" min-width="200">
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('promotionalConsent').value"
+            :label="$t('pages.admin.users.columns.promotionalConsent')"
+            :options="yesNoOptions"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #default="{ row }">{{
+          row.promotionalConsent ? $t('common.yes') : $t('common.no')
+        }}</template>
       </el-table-column>
       <el-table-column prop="status" sortable="custom" min-width="145">
         <template #header>
@@ -452,7 +482,7 @@ function confirmDelete(user: User): void {
           <ColumnFilterSelect
             v-model="table.columnFilter('isAdmin').value"
             :label="$t('pages.admin.users.columns.admin')"
-            :options="adminOptions"
+            :options="yesNoOptions"
             @apply="table.onFilter"
           />
         </template>
@@ -552,6 +582,7 @@ function confirmDelete(user: User): void {
       v-model:visible="emailDialogVisible"
       :target="emailTarget"
       :sending="emailSending"
+      :without-consent="emailWithoutConsent"
       @submit="submitEmail"
     />
 

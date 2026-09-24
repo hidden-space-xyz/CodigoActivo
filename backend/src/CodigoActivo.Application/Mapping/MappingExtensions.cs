@@ -28,6 +28,8 @@ public static class MappingExtensions
             user.Email,
             user.Phone,
             user.BirthDate,
+            user.NationalId,
+            user.PromotionalConsent,
             user.Gender,
             user.LastLoginAt,
             user.CreatedAt,

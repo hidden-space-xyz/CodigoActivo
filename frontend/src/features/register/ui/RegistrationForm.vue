@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
 import { genderOptions } from '@/entities/user'
 import { BaseButton } from '@/shared/ui'
-import { todayIso, yearsAgoIso } from '@/shared/lib'
+import { isValidNationalId, normalizeNationalId, todayIso, yearsAgoIso } from '@/shared/lib'
 
 const props = defineProps<{
   /** Reactive form state owned by the parent; the component edits it in place. */
@@ -30,12 +30,21 @@ const passwordsMismatch = computed(() => model.confirmPassword !== model.passwor
 const showMismatch = computed(
   () => (submitted.value || confirmTouched.value) && passwordsMismatch.value,
 )
+const nationalIdTouched = ref(false)
+const nationalIdValid = computed(() => isValidNationalId(model.nationalId))
+const nationalIdsMismatch = computed(
+  () => normalizeNationalId(model.confirmNationalId) !== normalizeNationalId(model.nationalId),
+)
+const showNationalIdMismatch = computed(
+  () => (submitted.value || nationalIdTouched.value) && nationalIdsMismatch.value,
+)
 
 const isValid = computed(() => {
   if (!model.firstName.trim() || !model.lastName.trim()) return false
   if (!emailValid.value || !model.phone.trim()) return false
   if (passwordTooShort.value || passwordsMismatch.value) return false
-  if (!model.dateOfBirth || !model.gender) return false
+  if (!nationalIdValid.value || nationalIdsMismatch.value) return false
+  if (!model.gender) return false
   return model.minors.every(
     (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.gender,
   )
@@ -162,15 +171,39 @@ function removeMinor(index: number): void {
           }}</small>
         </div>
         <div class="reg__field">
-          <label class="reg__label" for="reg-dob">{{ $t('common.birthDate') }}</label>
-          <input
-            id="reg-dob"
-            v-model="model.dateOfBirth"
-            type="date"
-            class="reg__date"
-            :max="adultThresholdIso"
+          <label class="reg__label" for="reg-national-id">{{ $t('common.nationalId') }}</label>
+          <el-input
+            id="reg-national-id"
+            v-model="model.nationalId"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            :maxlength="12"
+            :class="{ 'ca-invalid': submitted && !nationalIdValid }"
             required
           />
+          <small v-if="submitted && !nationalIdValid" class="reg__error">{{
+            $t('validation.nationalIdInvalid')
+          }}</small>
+        </div>
+        <div class="reg__field">
+          <label class="reg__label" for="reg-national-id-confirm">{{
+            $t('common.confirmNationalId')
+          }}</label>
+          <el-input
+            id="reg-national-id-confirm"
+            v-model="model.confirmNationalId"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            :maxlength="12"
+            :class="{ 'ca-invalid': showNationalIdMismatch }"
+            required
+            @blur="nationalIdTouched = true"
+          />
+          <small v-if="showNationalIdMismatch" class="reg__error">{{
+            $t('validation.nationalIdsMismatch')
+          }}</small>
         </div>
         <div class="reg__field">
           <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
@@ -190,6 +223,13 @@ function removeMinor(index: number): void {
             $t('validation.genderRequired')
           }}</small>
         </div>
+      </div>
+
+      <div class="reg__consent">
+        <el-checkbox id="reg-promotional-consent" v-model="model.promotionalConsent" />
+        <label for="reg-promotional-consent" class="reg__consent-label">{{
+          $t('common.promotionalConsentOption')
+        }}</label>
       </div>
 
       <div class="reg__minors">
@@ -357,6 +397,20 @@ function removeMinor(index: number): void {
 
 .ca-invalid :deep(.el-select__wrapper) {
   box-shadow: 0 0 0 1px var(--ca-danger) inset;
+}
+
+.reg__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.reg__consent-label {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  cursor: pointer;
 }
 
 .reg__minors {

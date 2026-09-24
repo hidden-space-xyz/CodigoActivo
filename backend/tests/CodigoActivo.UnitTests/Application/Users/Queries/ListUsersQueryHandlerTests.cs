@@ -171,6 +171,91 @@ public sealed class ListUsersQueryHandlerTests
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Boss");
     }
 
+    [Theory]
+    [InlineData(true, "Acepta")]
+    [InlineData(false, "Rechaza")]
+    public async Task HandleAsyncPromotionalConsentFilterReturnsOnlyMatchingUsers(
+        bool consent,
+        string expected
+    )
+    {
+        var accepts = NewUser(first: "Acepta");
+        accepts.PromotionalConsent = true;
+        users.HasUsers(accepts, NewUser(first: "Rechaza"));
+
+        var result = await ListAsAdminAsync(new UserListQuery { PromotionalConsent = consent });
+
+        var match = result.Items.Should().ContainSingle().Subject;
+        match.FirstName.Should().Be(expected);
+        match.PromotionalConsent.Should().Be(consent);
+    }
+
+    [Fact]
+    public async Task HandleAsyncNationalIdFilterMatchesPartOfTheIdIgnoringCase()
+    {
+        users.HasUsers(
+            NewUser(first: "Dni", nationalId: "12345678Z"),
+            NewUser(first: "Nie", nationalId: "X1234567L"),
+            NewUser(first: "Hijo", parentId: Guid.NewGuid())
+        );
+
+        var result = await ListAsAdminAsync(new UserListQuery { NationalId = "x123" });
+
+        var match = result.Items.Should().ContainSingle().Subject;
+        match.FirstName.Should().Be("Nie");
+        match.NationalId.Should().Be("X1234567L");
+    }
+
+    [Theory]
+    [InlineData("12345678-z")]
+    [InlineData(" 1234 5678 Z ")]
+    [InlineData("5678-z")]
+    public async Task HandleAsyncNationalIdFilterNormalizesTheTermLikeTheStoredValue(string term)
+    {
+        users.HasUsers(
+            NewUser(first: "Dni", nationalId: "12345678Z"),
+            NewUser(first: "Nie", nationalId: "X1234567L"),
+            NewUser(first: "Hijo", parentId: Guid.NewGuid())
+        );
+
+        var result = await ListAsAdminAsync(new UserListQuery { NationalId = term });
+
+        var match = result.Items.Should().ContainSingle().Subject;
+        match.FirstName.Should().Be("Dni");
+        match.NationalId.Should().Be("12345678Z");
+    }
+
+    [Theory]
+    [InlineData("-")]
+    [InlineData(" - - ")]
+    public async Task HandleAsyncNationalIdFilterMadeOnlyOfSeparatorsIsIgnored(string term)
+    {
+        users.HasUsers(
+            NewUser(first: "Dni", nationalId: "12345678Z"),
+            NewUser(first: "Nie", nationalId: "X1234567L"),
+            NewUser(first: "Hijo", parentId: Guid.NewGuid())
+        );
+
+        var result = await ListAsAdminAsync(new UserListQuery { NationalId = term });
+
+        result.Items.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task HandleAsyncSortByNationalIdAndConsentOrdersByThoseColumns()
+    {
+        var first = NewUser(first: "Primero", nationalId: "00000000T");
+        var second = NewUser(first: "Segundo", nationalId: "12345678Z");
+        second.PromotionalConsent = true;
+        users.HasUsers(second, first);
+
+        var byId = await ListAsAdminAsync(new UserListQuery { Sort = "nationalId" });
+        var byConsent = await ListAsAdminAsync(new UserListQuery { Sort = "-promotionalConsent" });
+
+        byId.Items.Select(u => u.FirstName).Should().ContainInOrder("Primero", "Segundo");
+        byConsent.Items.Select(u => u.FirstName).Should().ContainInOrder("Segundo", "Primero");
+    }
+
     [Fact]
     public async Task HandleAsyncBirthDateRangeFilterKeepsUsersWithinInclusiveBounds()
     {

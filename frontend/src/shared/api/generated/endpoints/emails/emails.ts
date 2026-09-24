@@ -5,13 +5,17 @@
  * OpenAPI spec version: 1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -26,6 +30,9 @@ import type {
 } from 'vue';
 
 import type {
+  EmailAudienceResponse,
+  GetApiEmailsEventsEventIdAttendeesAudienceParams,
+  GetApiEmailsUsersAudienceParams,
   PostApiEmailsEventsEventIdAttendeesBody,
   PostApiEmailsEventsEventIdAttendeesParams,
   PostApiEmailsUsersBody,
@@ -354,3 +361,177 @@ export function usePostApiEmailsEventsEventIdAttendees<TData = Awaited<ReturnTyp
 
 
 
+export type getApiEmailsUsersAudienceResponse200 = {
+  data: EmailAudienceResponse
+  status: 200
+}
+
+export type getApiEmailsUsersAudienceResponseSuccess = (getApiEmailsUsersAudienceResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEmailsUsersAudienceResponse = (getApiEmailsUsersAudienceResponseSuccess)
+
+export const getGetApiEmailsUsersAudienceUrl = (params?: GetApiEmailsUsersAudienceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/emails/users/audience?${stringifiedParams}` : `/api/emails/users/audience`
+}
+
+export const getApiEmailsUsersAudience = async (params?: GetApiEmailsUsersAudienceParams, options?: Parameters<typeof httpClient>[1]): Promise<getApiEmailsUsersAudienceResponse> => {
+
+  return httpClient<getApiEmailsUsersAudienceResponse>(getGetApiEmailsUsersAudienceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEmailsUsersAudienceMutationKey = () => ['getApiEmailsUsersAudience'] as const;
+
+export const getGetApiEmailsUsersAudienceMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, TError,GetApiEmailsUsersAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, TError,GetApiEmailsUsersAudienceMutationVariables, TContext> => {
+
+const mutationKey = getGetApiEmailsUsersAudienceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, GetApiEmailsUsersAudienceMutationVariables> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiEmailsUsersAudience(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEmailsUsersAudienceMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>>
+
+    export type GetApiEmailsUsersAudienceMutationError = unknown
+    export type GetApiEmailsUsersAudienceMutationVariables = {params?: GetApiEmailsUsersAudienceParams}
+
+    export const useGetApiEmailsUsersAudience = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, TError,GetApiEmailsUsersAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEmailsUsersAudience>>,
+        TError,
+        GetApiEmailsUsersAudienceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiEmailsUsersAudienceMutationOptions(options), queryClient);
+    }
+    export type getApiEmailsEventsEventIdAttendeesAudienceResponse200 = {
+  data: EmailAudienceResponse
+  status: 200
+}
+
+export type getApiEmailsEventsEventIdAttendeesAudienceResponseSuccess = (getApiEmailsEventsEventIdAttendeesAudienceResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEmailsEventsEventIdAttendeesAudienceResponse = (getApiEmailsEventsEventIdAttendeesAudienceResponseSuccess)
+
+export const getGetApiEmailsEventsEventIdAttendeesAudienceUrl = (eventId: string,
+    params?: GetApiEmailsEventsEventIdAttendeesAudienceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/emails/events/${eventId}/attendees/audience?${stringifiedParams}` : `/api/emails/events/${eventId}/attendees/audience`
+}
+
+export const getApiEmailsEventsEventIdAttendeesAudience = async (eventId: string,
+    params?: GetApiEmailsEventsEventIdAttendeesAudienceParams, options?: Parameters<typeof httpClient>[1]): Promise<getApiEmailsEventsEventIdAttendeesAudienceResponse> => {
+
+  return httpClient<getApiEmailsEventsEventIdAttendeesAudienceResponse>(getGetApiEmailsEventsEventIdAttendeesAudienceUrl(eventId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEmailsEventsEventIdAttendeesAudienceMutationKey = () => ['getApiEmailsEventsEventIdAttendeesAudience'] as const;
+
+export const getGetApiEmailsEventsEventIdAttendeesAudienceMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, TError,GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, TError,GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables, TContext> => {
+
+const mutationKey = getGetApiEmailsEventsEventIdAttendeesAudienceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables> = (props) => {
+          const {eventId,params} = props ?? {};
+
+          return  getApiEmailsEventsEventIdAttendeesAudience(eventId,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEmailsEventsEventIdAttendeesAudienceMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>>
+
+    export type GetApiEmailsEventsEventIdAttendeesAudienceMutationError = unknown
+    export type GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables = {eventId: string;params?: GetApiEmailsEventsEventIdAttendeesAudienceParams}
+
+    export const useGetApiEmailsEventsEventIdAttendeesAudience = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, TError,GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>,
+        TError,
+        GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiEmailsEventsEventIdAttendeesAudienceMutationOptions(options), queryClient);
+    }

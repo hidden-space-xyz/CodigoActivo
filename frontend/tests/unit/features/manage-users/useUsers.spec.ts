@@ -38,6 +38,25 @@ describe('useUsers', () => {
     expect(result.table.filterParams.value).toEqual({ parentId: 'user-1' })
   })
 
+  it('filters the table by promotional consent and DNI/NIE', async () => {
+    const urls = serveUserPages([[buildUserResponse()]])
+    const { result } = await withSetup(() => useUsers())
+    await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
+
+    result.table.columnFilter('promotionalConsent').value = false
+    result.table.columnFilter('nationalId').value = 'x123'
+    await flushPromises()
+
+    expect(result.table.filterParams.value).toEqual({
+      promotionalConsent: false,
+      nationalId: 'x123',
+    })
+    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({
+      promotionalConsent: 'false',
+      nationalId: 'x123',
+    })
+  })
+
   it('fetches every page with the current filters and sort for exports', async () => {
     const firstPage = Array.from({ length: 100 }, (_, index) =>
       buildUserResponse({ id: `user-${index}` }),
@@ -108,7 +127,9 @@ describe('useUsers', () => {
         lastName: 'King',
         email: null,
         phone: null,
-        birthDate: '1990-05-10',
+        birthDate: null,
+        nationalId: '12345678Z',
+        promotionalConsent: true,
         gender: 'Female',
         parentId: null,
         currentPassword: null,
@@ -120,7 +141,7 @@ describe('useUsers', () => {
     await result.resetTwoFactor.mutateAsync({ id: 'user-1', currentPassword: 'secret' })
 
     expect(requests).toEqual([
-      'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":"1990-05-10","gender":"Female","parentId":null,"currentPassword":null}',
+      'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":null,"nationalId":"12345678Z","promotionalConsent":true,"gender":"Female","parentId":null,"currentPassword":null}',
       'DELETE user-2',
       'TYPE ?userTypeId=type-member',
       'ADMIN {"isAdmin":true,"currentPassword":"secret"}',

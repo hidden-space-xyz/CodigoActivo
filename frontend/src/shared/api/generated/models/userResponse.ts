@@ -19,7 +19,11 @@ export interface UserResponse {
   email?: string | null;
   /** @nullable */
   phone?: string | null;
-  birthDate?: string;
+  /** @nullable */
+  birthDate?: string | null;
+  /** @nullable */
+  nationalId?: string | null;
+  promotionalConsent?: boolean;
   gender?: Gender;
   /** @nullable */
   lastLoginAt?: string | null;

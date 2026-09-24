@@ -44,10 +44,12 @@ export function useUsers() {
       name: { type: 'text' },
       email: { type: 'text' },
       phone: { type: 'text' },
+      nationalId: { type: 'text' },
       birthDate: { type: 'dateRange', fromParam: 'birthDateFrom', toParam: 'birthDateTo' },
       status: { param: 'userStatusTypeId' },
       type: { param: 'userTypeId' },
       isAdmin: { param: 'isAdmin' },
+      promotionalConsent: { param: 'promotionalConsent' },
     },
     extraParams: () => ({ ...relationFilter.value?.params }),
   })

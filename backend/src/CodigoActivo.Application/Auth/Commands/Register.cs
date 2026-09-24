@@ -60,21 +60,27 @@ public sealed class RegisterCommandHandler(
 
         var today = clock.Today;
 
-        if (request.BirthDate.IsMinor(today))
-        {
-            return Error.BadRequest(ErrorCode.RegisterAdultCannotBeMinor);
-        }
-
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
+        var nationalId = request.NationalId.NormalizeNationalIdOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
         {
             return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
         }
 
+        if (nationalId is null)
+        {
+            return Error.BadRequest(ErrorCode.RequestValidationFailed);
+        }
+
         if (await users.ExistsAsync(u => u.Email == email || u.Phone == phone, ct))
         {
             return Error.Conflict(ErrorCode.RegisterEmailOrPhoneAlreadyInUse);
+        }
+
+        if (await users.NationalIdExistsAsync(nationalId, null, ct))
+        {
+            return Error.Conflict(ErrorCode.RegisterNationalIdAlreadyInUse);
         }
 
         var minorRequests = request.Minors ?? [];
@@ -94,7 +100,8 @@ public sealed class RegisterCommandHandler(
         {
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
-            BirthDate = request.BirthDate,
+            NationalId = nationalId,
+            PromotionalConsent = request.PromotionalConsent,
             Gender = request.Gender,
             Email = email,
             Phone = phone,
