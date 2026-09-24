@@ -64,6 +64,7 @@ export const ErrorCode = {
   UserDeleteAdminForbidden: 'UserDeleteAdminForbidden',
   UserSelfDeleteRequiresVerification: 'UserSelfDeleteRequiresVerification',
   UserDeleteAuthoredContentExists: 'UserDeleteAuthoredContentExists',
+  UserDeleteLastAdminForbidden: 'UserDeleteLastAdminForbidden',
   UserCannotRemoveLastAdmin: 'UserCannotRemoveLastAdmin',
   UserTypeNotFound: 'UserTypeNotFound',
   ParentUserNotFound: 'ParentUserNotFound',

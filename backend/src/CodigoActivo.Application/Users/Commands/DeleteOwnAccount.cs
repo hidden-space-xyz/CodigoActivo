@@ -22,8 +22,9 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 /// Executes the command that erases the signed-in user, every minor under their guardianship and
 /// all their participation rows. Because the deletion cannot be undone it demands both the current
 /// password and the account's second factor, and wrong codes count towards the same lockout as
-/// logins. Administrators cannot delete themselves, and an account still credited as the author of
-/// published content is refused instead of breaking those rows.
+/// logins. The last administrator cannot delete themselves, so the application always keeps one, and
+/// an account still credited as the author of published content is refused instead of breaking those
+/// rows.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -63,11 +64,6 @@ public sealed class DeleteOwnAccountCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        if (user.IsAdmin)
-        {
-            return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
-        }
-
         if (
             !await passwordAttempts.VerifyReauthenticationAsync(
                 user,
@@ -99,6 +95,11 @@ public sealed class DeleteOwnAccountCommandHandler(
             }
 
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
+        }
+
+        if (user.IsAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
+        {
+            return Error.Forbidden(ErrorCode.UserDeleteLastAdminForbidden);
         }
 
         if (await users.HasAuthoredContentAsync(user.Id, ct))

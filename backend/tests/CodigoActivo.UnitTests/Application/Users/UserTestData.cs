@@ -123,6 +123,13 @@ internal static class UserTestData
         userStatusTypes.Query().Returns(items.AsQueryable());
     }
 
+    public static void CountsAdministrators(this IUserRepository users, int count)
+    {
+        users
+            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .Returns(count);
+    }
+
     public static void FindReturns(this IUserRepository users, params User?[]? sequence)
     {
         if (sequence is null || sequence.Length is 0)

@@ -125,6 +125,14 @@ public record DeleteAccountRequest(
 );
 
 /// <summary>
+/// Tells the signed-in user whether they may delete their own account.
+/// </summary>
+/// <param name="Allowed">
+/// Whether the deletion can be requested; <see langword="false"/> only for the last administrator.
+/// </param>
+public record AccountDeletionStatusResponse(bool Allowed);
+
+/// <summary>
 /// Contains the client-supplied data used to update the user.
 /// </summary>
 /// <param name="FirstName">User's given name.</param>

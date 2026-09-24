@@ -30,6 +30,7 @@ import type {
 
 import type {
   AccountDeletionCodeRequest,
+  AccountDeletionStatusResponse,
   AssignedActivityResponse,
   DeleteAccountRequest,
   EventCertificateResponse,
@@ -288,48 +289,34 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiMeCertificatesMutationOptions(options), queryClient);
     }
-    export type postApiMeDeletionCodeResponse200 = {
-  data: void
+    export type getApiMeDeletionResponse200 = {
+  data: AccountDeletionStatusResponse
   status: 200
 }
 
-export type postApiMeDeletionCodeResponseSuccess = (postApiMeDeletionCodeResponse200) & {
+export type getApiMeDeletionResponseSuccess = (getApiMeDeletionResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postApiMeDeletionCodeResponse = (postApiMeDeletionCodeResponseSuccess)
+export type getApiMeDeletionResponse = (getApiMeDeletionResponseSuccess)
 
-export const getPostApiMeDeletionCodeUrl = () => {
-
-
+export const getGetApiMeDeletionUrl = () => {
 
 
-  return `/api/me/deletion/code`
+
+
+  return `/api/me/deletion`
 }
 
-export const postApiMeDeletionCode = async (accountDeletionCodeRequest?: AccountDeletionCodeRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiMeDeletionCodeResponse> => {
+export const getApiMeDeletion = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMeDeletionResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return httpClient<postApiMeDeletionCodeResponse>(getPostApiMeDeletionCodeUrl(),
+  return httpClient<getApiMeDeletionResponse>(getGetApiMeDeletionUrl(),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(accountDeletionCodeRequest)
+    method: 'GET'
+
+
   }
 );}
 
@@ -337,56 +324,51 @@ return httpClient<postApiMeDeletionCodeResponse>(getPostApiMeDeletionCodeUrl(),
 
 
 
-export const getPostApiMeDeletionCodeQueryKey = (accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>,) => {
-    return [
-    'POST', 'api','me','deletion','code', accountDeletionCodeRequest
-    ] as const;
+export const getGetApiMeDeletionMutationKey = () => ['getApiMeDeletion'] as const;
+
+export const getGetApiMeDeletionMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeDeletion>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeDeletion>>, TError,void, TContext> => {
+
+const mutationKey = getGetApiMeDeletionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeDeletion>>, void> = () => {
+
+
+          return  getApiMeDeletion(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMeDeletionMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeDeletion>>>
+
+    export type GetApiMeDeletionMutationError = unknown
+
+
+    export const useGetApiMeDeletion = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeDeletion>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMeDeletion>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiMeDeletionMutationOptions(options), queryClient);
     }
-
-
-export const getPostApiMeDeletionCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError = unknown>(accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiMeDeletionCodeQueryKey(accountDeletionCodeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiMeDeletionCode>>> = ({ signal }) => postApiMeDeletionCode(toValue(accountDeletionCodeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>
-}
-
-export type PostApiMeDeletionCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiMeDeletionCode>>>
-export type PostApiMeDeletionCodeQueryError = unknown
-
-
-
-export function usePostApiMeDeletionCode<TData = Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError = unknown>(
- accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiMeDeletionCodeQueryOptions(accountDeletionCodeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type postApiMeDeletionResponse200 = {
+    export type postApiMeDeletionResponse200 = {
   data: void
   status: 200
 }
@@ -471,6 +453,104 @@ export function usePostApiMeDeletion<TData = Awaited<ReturnType<typeof postApiMe
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPostApiMeDeletionQueryOptions(deleteAccountRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiMeDeletionCodeResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiMeDeletionCodeResponseSuccess = (postApiMeDeletionCodeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiMeDeletionCodeResponse = (postApiMeDeletionCodeResponseSuccess)
+
+export const getPostApiMeDeletionCodeUrl = () => {
+
+
+
+
+  return `/api/me/deletion/code`
+}
+
+export const postApiMeDeletionCode = async (accountDeletionCodeRequest?: AccountDeletionCodeRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiMeDeletionCodeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiMeDeletionCodeResponse>(getPostApiMeDeletionCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(accountDeletionCodeRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiMeDeletionCodeQueryKey = (accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>,) => {
+    return [
+    'POST', 'api','me','deletion','code', accountDeletionCodeRequest
+    ] as const;
+    }
+
+
+export const getPostApiMeDeletionCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError = unknown>(accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiMeDeletionCodeQueryKey(accountDeletionCodeRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiMeDeletionCode>>> = ({ signal }) => postApiMeDeletionCode(toValue(accountDeletionCodeRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>
+}
+
+export type PostApiMeDeletionCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiMeDeletionCode>>>
+export type PostApiMeDeletionCodeQueryError = unknown
+
+
+
+export function usePostApiMeDeletionCode<TData = Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError = unknown>(
+ accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiMeDeletionCodeQueryOptions(accountDeletionCodeRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

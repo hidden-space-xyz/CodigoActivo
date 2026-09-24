@@ -7,6 +7,7 @@ import {
 import { postApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
 import {
   getApiMeCertificates,
+  getApiMeDeletion,
   getApiMeEventHistory,
   postApiMeDeletion,
   postApiMeDeletionCode,
@@ -73,6 +74,15 @@ export async function updateAccountProfileRequest(
 ): Promise<AccountProfile> {
   const response = await putApiUsersUserId(userId, toUpdateProfileRequest(input))
   return toAccountProfile(response.data)
+}
+
+/**
+ * Asks the API whether the signed-in user may delete their own account (`GET /api/me/deletion`);
+ * only the last administrator may not.
+ */
+export async function getAccountDeletionAllowedRequest(): Promise<boolean> {
+  const { data } = await getApiMeDeletion()
+  return data.allowed ?? false
 }
 
 /**

@@ -57,9 +57,9 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        if (user.IsAdmin)
+        if (user.IsAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
         {
-            return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
+            return Error.Forbidden(ErrorCode.UserDeleteLastAdminForbidden);
         }
 
         if (

@@ -4,6 +4,7 @@ using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Participation.Queries;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Application.Users.Queries;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -67,6 +68,24 @@ public class MeController : ApiControllerBase
     )
     {
         return Ok(await handler.HandleAsync(new GetEventCertificatesQuery(UserId), ct));
+    }
+
+    /// <summary>
+    /// Tells whether the signed-in user may delete their own account, which only the last
+    /// administrator may not.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the account deletion status.</returns>
+    [HttpGet("deletion")]
+    public async Task<ActionResult<AccountDeletionStatusResponse>> DeletionStatusAsync(
+        [FromServices] GetAccountDeletionStatusQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return Ok(
+            await handler.HandleAsync(new GetAccountDeletionStatusQuery(UserId, IsAdmin), ct)
+        );
     }
 
     /// <summary>

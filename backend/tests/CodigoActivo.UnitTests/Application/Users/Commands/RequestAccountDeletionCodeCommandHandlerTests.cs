@@ -89,15 +89,29 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAdministratorReturnsForbiddenWithoutCheckingThePassword()
+    public async Task HandleAsyncLastAdministratorReturnsForbiddenWithoutCheckingThePassword()
     {
         var user = Signed(isAdmin: true);
+        users.CountsAdministrators(1);
 
         var result = await RequestAsync(user.Id, password: "WrongPassword!");
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteLastAdminForbidden);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdministratorWithAnotherAdministratorEmailsTheCode()
+    {
+        var user = Signed(isAdmin: true);
+        users.CountsAdministrators(2);
+
+        var result = await RequestAsync(user.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().ContainSingle();
+        user.LoginCodeHash.Should().NotBeNull();
     }
 
     [Fact]

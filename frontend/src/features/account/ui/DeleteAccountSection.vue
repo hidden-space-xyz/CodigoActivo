@@ -2,11 +2,18 @@
 import { computed, reactive, ref } from 'vue'
 
 import { useDeleteAccount } from '../model/useDeleteAccount'
-import { useSession } from '@/entities/session'
 import { BaseButton } from '@/shared/ui'
 
-const session = useSession()
-const { isAuthenticator, email, errorMessage, reset, requestCode, confirm } = useDeleteAccount()
+const {
+  isAuthenticator,
+  email,
+  canDelete,
+  isLastAdmin,
+  errorMessage,
+  reset,
+  requestCode,
+  confirm,
+} = useDeleteAccount()
 
 const visible = ref(false)
 const codeStep = ref(false)
@@ -77,10 +84,10 @@ function submit(): void {
       <p class="acc-danger__lead">{{ $t('features.account.deleteAccount.lead') }}</p>
     </div>
 
-    <p v-if="session.isAdmin" class="acc-danger__note">
-      {{ $t('features.account.deleteAccount.adminNote') }}
+    <p v-if="isLastAdmin" class="acc-danger__note">
+      {{ $t('features.account.deleteAccount.lastAdminNote') }}
     </p>
-    <div v-else class="acc-danger__actions">
+    <div v-else-if="canDelete" class="acc-danger__actions">
       <BaseButton variant="ghost" class="acc-danger__trigger" @click="open">
         {{ $t('features.account.deleteAccount.action') }}
       </BaseButton>

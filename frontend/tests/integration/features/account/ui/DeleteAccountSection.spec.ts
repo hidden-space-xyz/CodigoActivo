@@ -69,13 +69,30 @@ describe('DeleteAccountSection', () => {
     expect(document.body.textContent).toContain(t('features.account.deleteAccount.title'))
     expect(document.body.textContent).toContain(t('features.account.deleteAccount.lead'))
     expect(buttonsByText(document.body, t(ACTION))).toHaveLength(1)
-    expect(document.body.textContent).not.toContain(t('features.account.deleteAccount.adminNote'))
+    expect(document.body.textContent).not.toContain(
+      t('features.account.deleteAccount.lastAdminNote'),
+    )
   })
 
-  it('tells administrators that their account cannot be deleted here', async () => {
+  it('offers the action to an administrator while another one remains', async () => {
+    server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: true })))
     await renderSection({ user: { isAdmin: true } })
 
-    expect(document.body.textContent).toContain(t('features.account.deleteAccount.adminNote'))
+    await vi.waitFor(() => expect(buttonsByText(document.body, t(ACTION))).toHaveLength(1))
+    expect(document.body.textContent).not.toContain(
+      t('features.account.deleteAccount.lastAdminNote'),
+    )
+  })
+
+  it('hides the action from the last administrator and explains why', async () => {
+    server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: false })))
+    await renderSection({ user: { isAdmin: true } })
+
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        t('features.account.deleteAccount.lastAdminNote'),
+      ),
+    )
     expect(buttonsByText(document.body, t(ACTION))).toHaveLength(0)
   })
 

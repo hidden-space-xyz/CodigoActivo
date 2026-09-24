@@ -104,9 +104,11 @@ shared keys are only returned to the authenticated owner over HTTPS and never lo
 `POST /api/me/deletion` (email code via `POST /api/me/deletion/code`, sharing storage/lifetime/cooldown with
 the login code, or the authenticator code). Deletion signs the caller out, cascades to remove the user, their
 minors and all participation rows (past ratings stay, see [Event rating anonymity](#event-rating-anonymity)),
-is refused with `UserDeleteAuthoredContentExists` while content credits the household, and is blocked for
-administrators (`UserDeleteAdminForbidden`). `DELETE /api/users/{id}` refuses the caller's own id
-(`UserSelfDeleteRequiresVerification`).
+is refused with `UserDeleteAuthoredContentExists` while content credits the household, and is blocked only
+for the last administrator (`UserDeleteLastAdminForbidden`). `GET /api/me/deletion` tells the caller whether
+they may delete their account, so the SPA hides the action from the last administrator. The last-administrator
+count is not locked against a concurrent deletion or demotion. `DELETE /api/users/{id}` refuses any
+administrator (`UserDeleteAdminForbidden`) and the caller's own id (`UserSelfDeleteRequiresVerification`).
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
