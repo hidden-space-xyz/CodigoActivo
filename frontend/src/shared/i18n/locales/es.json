@@ -26,7 +26,7 @@
     "nationalId": "DNI/NIE",
     "confirmNationalId": "Repite el DNI/NIE",
     "promotionalConsent": "Consentimiento promocional",
-    "promotionalConsentOption": "Quiero recibir por correo electrónico novedades, actividades y otras comunicaciones promocionales de la asociación. Es opcional y puedes cambiarlo cuando quieras desde «Mi cuenta».",
+    "promotionalConsentOption": "Opcional. Quiero recibir novedades y promociones por email. Esta preferencia puede modificarse en cualquier momento desde «Mi cuenta».",
     "gender": "Género",
     "image": "Imagen",
     "imageRequired": "La imagen es obligatoria.",
@@ -448,8 +448,10 @@
         "back": "Volver al evento",
         "emptyText": "Este evento no tiene asignaciones confirmadas, así que no hay etiquetas que imprimir.",
         "print": "Imprimir",
+        "printHint": "Formato APLI 01288: 12 etiquetas de 97 × 42,4 mm por hoja A4. Imprime a tamaño real (100 %).",
         "moreActivities": "+{n} más",
-        "guardianAria": "Responsable"
+        "guardianAria": "Responsable",
+        "locationAria": "Ubicación"
       },
       "eventRoster": {
         "back": "Volver al evento",

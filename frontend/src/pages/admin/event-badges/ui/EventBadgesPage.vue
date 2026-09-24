@@ -5,9 +5,9 @@ import { AppIcon, BaseButton, DataState } from '@/shared/ui'
 
 import { fullName, hexLuminance, normalizeHexColor } from '@/shared/lib'
 import { useEventBadges } from '@/features/manage-events'
-import type { EventBadgeResponse } from '@/shared/api/generated/models'
+import type { EventBadgeActivityResponse, EventBadgeResponse } from '@/shared/api/generated/models'
 
-const BADGES_PER_SHEET = 16
+const BADGES_PER_SHEET = 12
 const MAX_ACTIVITY_CHIPS = 6
 
 const pageStyle = document.createElement('style')
@@ -67,6 +67,10 @@ function fitBadge(el: HTMLElement): void {
   }
 
   if (fits(MAX_FIT)) return
+  while (nameFit > 1 && !fits(1)) {
+    nameFit = Math.max(1, nameFit * 0.9)
+    setNameFit(nameFit)
+  }
   let low = MIN_FIT
   let high = MAX_FIT
   for (let i = 0; i < 7; i += 1) {
@@ -109,7 +113,7 @@ function guardianName(badge: EventBadgeResponse): string {
   return badge.guardian?.firstName ?? ''
 }
 
-function visibleActivities(badge: EventBadgeResponse): string[] {
+function visibleActivities(badge: EventBadgeResponse): EventBadgeActivityResponse[] {
   return (badge.activities ?? []).slice(0, MAX_ACTIVITY_CHIPS)
 }
 
@@ -136,6 +140,7 @@ function printSheets(): void {
         <span>{{ $t('pages.admin.eventBadges.print') }}</span>
       </button>
     </div>
+    <p class="print-hint no-print">{{ $t('pages.admin.eventBadges.printHint') }}</p>
 
     <DataState
       class="no-print"
@@ -171,7 +176,16 @@ function printSheets(): void {
               :key="index"
               class="badge__activity"
             >
-              {{ activity }}
+              <span class="badge__activity-title">{{ activity.title }}</span>
+              <span v-if="activity.location" class="badge__activity-location">
+                <span
+                  class="badge__location-icon"
+                  :aria-label="$t('pages.admin.eventBadges.locationAria')"
+                >
+                  <AppIcon name="map-marker" />
+                </span>
+                {{ activity.location }}
+              </span>
             </li>
             <li v-if="hiddenActivityCount(badge)" class="badge__activity badge__activity--more">
               {{ $t('pages.admin.eventBadges.moreActivities', { n: hiddenActivityCount(badge) }) }}
@@ -220,18 +234,24 @@ function printSheets(): void {
   margin-bottom: 14px;
 }
 
+.print-hint {
+  max-width: 210mm;
+  margin: 0 auto 14px;
+  color: var(--ca-text-muted);
+  font-size: 13px;
+}
+
 .sheet {
   box-sizing: border-box;
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto 24px;
-  padding: 1mm;
+  padding: 21.3mm 8mm;
   background: #fff;
   box-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-auto-rows: 41mm;
-  gap: 1mm;
+  grid-template-columns: repeat(2, 97mm);
+  grid-auto-rows: 42.4mm;
   align-content: start;
 }
 
@@ -432,27 +452,46 @@ function printSheets(): void {
 }
 
 .badge__activity {
-  display: inline-flex;
-  align-items: center;
-  gap: calc(1.2mm * var(--fit));
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: calc(1.4mm * var(--fit));
+  max-width: 100%;
   font-size: calc(7pt * var(--fit));
-  line-height: 1;
-  padding: calc(1mm * var(--fit)) calc(2mm * var(--fit));
-  border-radius: 4mm;
+  line-height: 1.2;
+  padding: calc(0.8mm * var(--fit)) calc(2mm * var(--fit)) calc(0.8mm * var(--fit))
+    calc(4.3mm * var(--fit));
+  border-radius: calc(2.4mm * var(--fit));
   background: rgb(255 255 255 / 0.65);
   color: #374151;
 }
 
 .badge__activity::before {
   content: '';
-  flex-shrink: 0;
+  position: absolute;
+  top: calc(0.8mm * var(--fit) + 0.6em - 0.55mm * var(--fit));
+  left: calc(2mm * var(--fit));
   width: calc(1.1mm * var(--fit));
   height: calc(1.1mm * var(--fit));
   border-radius: 50%;
   background: var(--accent);
 }
 
+.badge__activity-title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.badge__location-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: calc(6.5pt * var(--fit));
+  color: var(--accent-ink);
+}
+
 .badge__activity--more {
+  padding-left: calc(2mm * var(--fit));
   font-weight: 700;
   color: var(--accent-ink);
 }
@@ -474,6 +513,7 @@ function printSheets(): void {
   .sheet {
     min-height: 0;
     margin: 0;
+    padding-bottom: 0;
     box-shadow: none;
     break-after: page;
   }

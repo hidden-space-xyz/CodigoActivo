@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -53,7 +54,8 @@ public sealed class GetEventBadgesQueryHandlerTests
         string activityTitle,
         DateTimeOffset startsAt,
         Guid statusId,
-        Guid? eventId = null
+        Guid? eventId = null,
+        string location = "Sala principal"
     )
     {
         return new()
@@ -64,7 +66,7 @@ public sealed class GetEventBadgesQueryHandlerTests
             Activity = new Activity
             {
                 Description = "Descripción de la actividad",
-                Location = "Sala principal",
+                Location = location,
                 EventId = eventId ?? QueriedEventId,
                 Title = activityTitle,
                 ActivityStartsAt = startsAt,
@@ -108,9 +110,9 @@ public sealed class GetEventBadgesQueryHandlerTests
             }
         );
         activities.HasAssignments(
-            BadgeAsg(adult, "Charla", When.AddHours(2), Confirmed),
-            BadgeAsg(adult, "Taller", When, Confirmed),
-            BadgeAsg(adult, "Taller", When, Confirmed),
+            BadgeAsg(adult, "Charla", When.AddHours(2), Confirmed, location: "Salón de actos"),
+            BadgeAsg(adult, "Taller", When, Confirmed, location: "Aula 1"),
+            BadgeAsg(adult, "Taller", When, Confirmed, location: "Sesión online por videollamada"),
             BadgeAsg(adult, "Otro evento", When, Confirmed, eventId: Guid.NewGuid()),
             BadgeAsg(child, "Taller infantil", When, Confirmed),
             BadgeAsg(child, "Cuentacuentos", When, Requested),
@@ -136,7 +138,13 @@ public sealed class GetEventBadgesQueryHandlerTests
         adultBadge.UserTypeColor.Should().Be("#EF4444");
         adultBadge.CreatedAt.Should().Be(createdAt);
         adultBadge.Guardian.Should().BeNull();
-        adultBadge.Activities.Should().Equal("Taller", "Taller", "Charla");
+        adultBadge
+            .Activities.Should()
+            .Equal(
+                new EventBadgeActivityResponse("Taller", "Aula 1"),
+                new EventBadgeActivityResponse("Taller", "Sesión online por videollamada"),
+                new EventBadgeActivityResponse("Charla", "Salón de actos")
+            );
 
         var childBadge = report.Badges[1];
         childBadge.UserId.Should().Be(child.Id);
@@ -145,7 +153,9 @@ public sealed class GetEventBadgesQueryHandlerTests
         childBadge.Guardian.FirstName.Should().Be("Marta");
         childBadge.Guardian.LastName.Should().Be("Miembro");
         childBadge.Guardian.Phone.Should().Be("600-Marta");
-        childBadge.Activities.Should().Equal("Taller infantil");
+        childBadge
+            .Activities.Should()
+            .Equal(new EventBadgeActivityResponse("Taller infantil", "Sala principal"));
     }
 
     [Fact]

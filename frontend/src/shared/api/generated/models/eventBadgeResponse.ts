@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { EventBadgeActivityResponse } from './eventBadgeActivityResponse';
 import type { EventBadgeGuardianResponse } from './eventBadgeGuardianResponse';
 
 export interface EventBadgeResponse {
@@ -19,5 +20,5 @@ export interface EventBadgeResponse {
   createdAt?: string;
   guardian?: EventBadgeGuardianResponse;
   /** @nullable */
-  activities?: string[] | null;
+  activities?: EventBadgeActivityResponse[] | null;
 }

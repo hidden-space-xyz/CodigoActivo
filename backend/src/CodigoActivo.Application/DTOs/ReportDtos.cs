@@ -123,6 +123,13 @@ public record EventAttendeeResponse(
 public record EventBadgeGuardianResponse(string FirstName, string LastName, string? Phone);
 
 /// <summary>
+/// Contains one confirmed activity printed on an event badge, without its modality.
+/// </summary>
+/// <param name="Title">The title value.</param>
+/// <param name="Location">Concrete place or platform where the activity takes place.</param>
+public record EventBadgeActivityResponse(string Title, string Location);
+
+/// <summary>
 /// Contains the event badge data returned by the API.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
@@ -132,7 +139,7 @@ public record EventBadgeGuardianResponse(string FirstName, string LastName, stri
 /// <param name="UserTypeColor">The user type color value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="Guardian">The guardian value.</param>
-/// <param name="Activities">The activities value.</param>
+/// <param name="Activities">Confirmed activities in chronological order.</param>
 public record EventBadgeResponse(
     Guid UserId,
     string FirstName,
@@ -141,7 +148,7 @@ public record EventBadgeResponse(
     string UserTypeColor,
     DateTimeOffset CreatedAt,
     EventBadgeGuardianResponse? Guardian,
-    IReadOnlyList<string> Activities
+    IReadOnlyList<EventBadgeActivityResponse> Activities
 );
 
 /// <summary>

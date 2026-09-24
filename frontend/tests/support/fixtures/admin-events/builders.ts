@@ -175,7 +175,7 @@ export function buildBadge(overrides: Overrides<EventBadgeResponse> = {}): Event
       lastName: 'Lovelace',
       userTypeName: 'Member',
       userTypeColor: '#123456',
-      activities: ['Robotics'],
+      activities: [{ title: 'Robotics', location: 'Lab 1' }],
     },
     overrides,
   )

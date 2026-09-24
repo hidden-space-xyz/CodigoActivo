@@ -54,6 +54,7 @@ export * from './eventAttendeeAssignmentResponse';
 export * from './eventAttendeeGuardianResponse';
 export * from './eventAttendeeResponse';
 export * from './eventAttendeeResponsePagedResult';
+export * from './eventBadgeActivityResponse';
 export * from './eventBadgeGuardianResponse';
 export * from './eventBadgeResponse';
 export * from './eventBadgesResponse';

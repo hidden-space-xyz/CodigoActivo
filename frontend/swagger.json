@@ -5222,6 +5222,20 @@
         },
         "additionalProperties": false
       },
+      "EventBadgeActivityResponse": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "EventBadgeGuardianResponse": {
         "type": "object",
         "properties": {
@@ -5273,7 +5287,7 @@
           "activities": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EventBadgeActivityResponse"
             },
             "nullable": true
           }
