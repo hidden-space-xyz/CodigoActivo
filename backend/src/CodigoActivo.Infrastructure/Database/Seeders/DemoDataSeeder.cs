@@ -41,7 +41,7 @@ public sealed class DemoDataSeeder(
     private const int EventSpacingDays = 14;
     private const int FinishedEventCount = 15;
     private const int FeaturedEventIndex = 17;
-    private const int FeaturedAnnouncementIndex = 0;
+    private const int FeaturedNewsItemIndex = 0;
 
     private const string ModalityPresencial = "Presencial";
     private const string ModalityOnline = "Online";
@@ -116,7 +116,7 @@ public sealed class DemoDataSeeder(
             context.EventRatings.AddRange(graph.Ratings);
             await context.SaveChangesAsync(ct);
 
-            context.Announcements.AddRange(graph.Announcements);
+            context.News.AddRange(graph.News);
             context.Resources.AddRange(graph.Resources);
             context.Partners.AddRange(graph.Partners);
             await context.SaveChangesAsync(ct);
@@ -145,7 +145,7 @@ public sealed class DemoDataSeeder(
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();
         var termsDocuments = BuildTermsDocuments();
         var schedule = BuildSchedule(clock, now, files, categoryIdByName);
-        var news = BuildAnnouncements(now, files);
+        var news = BuildNews(now, files);
         var resources = BuildResources(now, files);
         var partners = BuildPartners(clock, now, files);
 
@@ -384,20 +384,20 @@ public sealed class DemoDataSeeder(
         );
     }
 
-    private static List<Announcement> BuildAnnouncements(DateTimeOffset now, List<FileEntity> files)
+    private static List<NewsItem> BuildNews(DateTimeOffset now, List<FileEntity> files)
     {
         return DemoNews
             .Select(
                 (seed, index) =>
                 {
                     var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-                    return new Announcement
+                    return new NewsItem
                     {
                         Id = Guid.NewGuid(),
                         Title = seed.Title,
                         Subtitle = seed.Subtitle,
                         Description = BuildRichText(seed.Description, null, null),
-                        Featured = index is FeaturedAnnouncementIndex,
+                        Featured = index is FeaturedNewsItemIndex,
                         ThumbnailId = NewFile(files, $"noticia-{label}-portada.jpg", now),
                         CreatedAt = now.AddDays(-(index * 6) - 3),
                         CreatedBy = DemoAuthorId,
@@ -2544,7 +2544,7 @@ internal sealed record DemoGraph(
     List<Activity> Activities,
     List<ActivityUserRoleAssignment> Assignments,
     List<EventRating> Ratings,
-    List<Announcement> Announcements,
+    List<NewsItem> News,
     List<Resource> Resources,
     List<Partner> Partners
 );

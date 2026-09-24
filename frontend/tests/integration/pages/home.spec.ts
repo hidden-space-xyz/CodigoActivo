@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { FOUNDING_YEAR } from '@/shared/config'
 
 import {
-  buildAnnouncementItem,
   buildEventItem,
+  buildNewsListItem,
   buildPartner,
   useHomeApi,
 } from '../../support/fixtures/auth-register/home'
@@ -46,7 +46,7 @@ describe('home page', () => {
     ])
   })
 
-  it('requests the featured-first announcements, events and sponsors', async () => {
+  it('requests the featured-first news items, events and sponsors', async () => {
     const { requests } = useHomeApi()
     await renderApp('/')
 
@@ -62,14 +62,14 @@ describe('home page', () => {
     )
   })
 
-  it('shows loading placeholders until announcements and events arrive', async () => {
+  it('shows loading placeholders until news items and events arrive', async () => {
     const releases: (() => void)[] = []
     const hold = (body: JsonBodyType) =>
       new Promise<Response>((resolve) => {
         releases.push(() => resolve(HttpResponse.json(body)))
       })
     server.use(
-      http.get('/api/announcements', () => hold(paged([buildAnnouncementItem()]))),
+      http.get('/api/news', () => hold(paged([buildNewsListItem()]))),
       http.get('/api/events', () => hold(paged([buildEventItem()]))),
       http.get('/api/partners', () => HttpResponse.json(paged([]))),
     )
@@ -86,24 +86,24 @@ describe('home page', () => {
     await vi.waitFor(() => expect(wrapper.find('.home-section__loading').exists()).toBe(false))
   })
 
-  it('shows the featured announcement and the recent ones with a link to all', async () => {
+  it('shows the featured news item and the recent ones with a link to all', async () => {
     useHomeApi({
-      announcements: [
-        buildAnnouncementItem({ id: 'a1', title: 'Destacado', featured: true }),
-        buildAnnouncementItem({ id: 'a2', title: 'Segundo' }),
-        buildAnnouncementItem({ id: 'a3', title: 'Tercero' }),
+      news: [
+        buildNewsListItem({ id: 'a1', title: 'Destacado', featured: true }),
+        buildNewsListItem({ id: 'a2', title: 'Segundo' }),
+        buildNewsListItem({ id: 'a3', title: 'Tercero' }),
       ],
     })
     const { wrapper, router } = await renderApp('/')
 
-    await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.home.announcements.title')))
+    await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.home.news.title')))
     const section = wrapper.findAll('.home-section')[0]
     expect(section?.text()).toContain('Destacado')
     expect(section?.findAll('.home-section__grid > *')).toHaveLength(2)
     expect(section?.get('.home-section__view-all').attributes('href')).toBe(
-      router.resolve({ name: 'announcements' }).href,
+      router.resolve({ name: 'news' }).href,
     )
-    expect(sectionTitles(wrapper)).toEqual([t('pages.home.announcements.title')])
+    expect(sectionTitles(wrapper)).toEqual([t('pages.home.news.title')])
   })
 
   it('shows the featured event without repeating it among the upcoming events', async () => {
@@ -127,7 +127,7 @@ describe('home page', () => {
 
   it('hides the grids when there is only a featured item', async () => {
     useHomeApi({
-      announcements: [buildAnnouncementItem({ featured: true })],
+      news: [buildNewsListItem({ featured: true })],
       featuredEvents: [buildEventItem()],
     })
     const { wrapper } = await renderApp('/')

@@ -1,4 +1,4 @@
-import type { AnnouncementSummary } from '@/entities/announcement/model/types'
+import type { NewsSummary } from '@/entities/news-item/model/types'
 import type { PastEvent, UpcomingEvent } from '@/entities/event/model/types'
 import type { LearningResourceSummary } from '@/entities/resource/model/types'
 
@@ -33,12 +33,10 @@ export function buildPastEvent(overrides: Partial<PastEvent> = {}): PastEvent {
   }
 }
 
-/** Announcement card model. */
-export function buildAnnouncementSummary(
-  overrides: Partial<AnnouncementSummary> = {},
-): AnnouncementSummary {
+/** News card model. */
+export function buildNewsSummary(overrides: Partial<NewsSummary> = {}): NewsSummary {
   return {
-    id: 'announcement-1',
+    id: 'news-item-1',
     title: 'Abrimos inscripciones',
     subtitle: 'Plazas limitadas',
     date: '15 mar 2026',

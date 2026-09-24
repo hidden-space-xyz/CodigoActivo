@@ -9,7 +9,7 @@ export interface DashboardSummaryResponse {
   events?: number;
   activities?: number;
   resources?: number;
-  announcements?: number;
+  news?: number;
   partners?: number;
   users?: number;
 }

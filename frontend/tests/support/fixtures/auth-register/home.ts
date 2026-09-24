@@ -1,17 +1,15 @@
 import type {
-  AnnouncementListItemResponse,
   EventListItemResponse,
+  NewsListItemResponse,
   PartnerResponse,
 } from '@/shared/api/generated/models'
 
 import { http, HttpResponse, paged, server } from '../../server'
 
-/** Announcement list item as returned by `GET /api/announcements`. */
-export function buildAnnouncementItem(
-  overrides: AnnouncementListItemResponse = {},
-): AnnouncementListItemResponse {
+/** News list item as returned by `GET /api/news`. */
+export function buildNewsListItem(overrides: NewsListItemResponse = {}): NewsListItemResponse {
   return {
-    id: 'announcement-1',
+    id: 'news-item-1',
     title: 'Nueva temporada',
     subtitle: 'Arrancan los talleres',
     createdAt: '2026-09-01T10:00:00Z',
@@ -52,22 +50,22 @@ export function buildPartner(overrides: PartnerResponse = {}): PartnerResponse {
 
 /** Data served by `useHomeApi`; every list defaults to empty. */
 export interface HomeApiData {
-  readonly announcements?: AnnouncementListItemResponse[]
+  readonly news?: NewsListItemResponse[]
   readonly featuredEvents?: EventListItemResponse[]
   readonly upcomingEvents?: EventListItemResponse[]
   readonly partners?: PartnerResponse[]
 }
 
 /**
- * Registers MSW handlers for every request the home page makes (announcements, featured and
+ * Registers MSW handlers for every request the home page makes (news items, featured and
  * upcoming events, sponsors) and records their query strings.
  */
 export function useHomeApi(data: HomeApiData = {}) {
   const requests: URLSearchParams[] = []
   server.use(
-    http.get('/api/announcements', ({ request }) => {
+    http.get('/api/news', ({ request }) => {
       requests.push(new URL(request.url).searchParams)
-      return HttpResponse.json(paged(data.announcements ?? []))
+      return HttpResponse.json(paged(data.news ?? []))
     }),
     http.get('/api/events', ({ request }) => {
       const params = new URL(request.url).searchParams

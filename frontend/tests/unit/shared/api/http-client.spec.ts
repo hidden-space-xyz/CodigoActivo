@@ -121,7 +121,7 @@ describe('httpClient', () => {
     ])
   })
 
-  it('uses the header name announced by the CSRF endpoint', async () => {
+  it('uses the header name provided by the CSRF endpoint', async () => {
     let custom: string | null = null
     server.use(
       http.get('/api/auth/csrf', () =>

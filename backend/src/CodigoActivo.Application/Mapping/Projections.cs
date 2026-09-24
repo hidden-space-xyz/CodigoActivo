@@ -82,40 +82,39 @@ public static class Projections
         };
 
     /// <summary>
-    /// Stores the shared announcement value.
+    /// Stores the shared news item value.
     /// </summary>
-    public static readonly Expression<Func<Announcement, AnnouncementResponse>> Announcement =
-        announcement => new AnnouncementResponse
+    public static readonly Expression<Func<NewsItem, NewsItemResponse>> NewsItem =
+        newsItem => new NewsItemResponse
         {
-            Id = announcement.Id,
-            Title = announcement.Title,
-            Subtitle = announcement.Subtitle,
-            Description = announcement.Description,
-            CreatedAt = announcement.CreatedAt,
-            UpdatedAt = announcement.UpdatedAt,
-            CreatedBy = announcement.CreatedBy,
-            UpdatedBy = announcement.UpdatedBy,
-            ThumbnailId = announcement.ThumbnailId,
-            Featured = announcement.Featured,
+            Id = newsItem.Id,
+            Title = newsItem.Title,
+            Subtitle = newsItem.Subtitle,
+            Description = newsItem.Description,
+            CreatedAt = newsItem.CreatedAt,
+            UpdatedAt = newsItem.UpdatedAt,
+            CreatedBy = newsItem.CreatedBy,
+            UpdatedBy = newsItem.UpdatedBy,
+            ThumbnailId = newsItem.ThumbnailId,
+            Featured = newsItem.Featured,
         };
 
     /// <summary>
-    /// Stores the shared announcement list item value.
+    /// Stores the shared news list item value.
     /// </summary>
-    public static readonly Expression<
-        Func<Announcement, AnnouncementListItemResponse>
-    > AnnouncementListItem = announcement => new AnnouncementListItemResponse
-    {
-        Id = announcement.Id,
-        Title = announcement.Title,
-        Subtitle = announcement.Subtitle,
-        CreatedAt = announcement.CreatedAt,
-        UpdatedAt = announcement.UpdatedAt,
-        CreatedBy = announcement.CreatedBy,
-        UpdatedBy = announcement.UpdatedBy,
-        ThumbnailId = announcement.ThumbnailId,
-        Featured = announcement.Featured,
-    };
+    public static readonly Expression<Func<NewsItem, NewsListItemResponse>> NewsListItem =
+        newsItem => new NewsListItemResponse
+        {
+            Id = newsItem.Id,
+            Title = newsItem.Title,
+            Subtitle = newsItem.Subtitle,
+            CreatedAt = newsItem.CreatedAt,
+            UpdatedAt = newsItem.UpdatedAt,
+            CreatedBy = newsItem.CreatedBy,
+            UpdatedBy = newsItem.UpdatedBy,
+            ThumbnailId = newsItem.ThumbnailId,
+            Featured = newsItem.Featured,
+        };
 
     /// <summary>
     /// Stores the shared resource value.

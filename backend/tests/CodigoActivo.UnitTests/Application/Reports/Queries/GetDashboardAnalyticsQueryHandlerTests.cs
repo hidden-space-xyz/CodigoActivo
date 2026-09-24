@@ -18,8 +18,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IAnnouncementRepository announcements =
-        Substitute.For<IAnnouncementRepository>();
+    private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IEventCategoryTypeRepository eventCategoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
@@ -36,7 +35,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
             activities,
             users,
             resources,
-            announcements,
+            news,
             partners,
             eventCategoryTypes,
             new FakeQueryExecutor(),
@@ -55,9 +54,9 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         resources.Query().Returns(list.AsQueryable());
     }
 
-    private void HasAnnouncements(params Announcement[] list)
+    private void HasNews(params NewsItem[] list)
     {
-        announcements.Query().Returns(list.AsQueryable());
+        news.Query().Returns(list.AsQueryable());
     }
 
     private void HasPartners(params Partner[] list)
@@ -264,14 +263,14 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
             }
         );
 
-        HasAnnouncements(
-            new Announcement
+        HasNews(
+            new NewsItem
             {
                 Subtitle = "Subtítulo de la noticia",
                 Title = "Noticia de prueba",
                 CreatedAt = Utc(2026, 2, 1),
             },
-            new Announcement
+            new NewsItem
             {
                 Subtitle = "Subtítulo de la noticia",
                 Title = "Noticia de prueba",
@@ -334,7 +333,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         Series(r.Inscriptions, "confirmed")[5].Should().Be(1);
         Series(r.Inscriptions, "requested")[2].Should().Be(1);
 
-        Series(r.ContentPublished, "announcements")[1].Should().Be(1);
+        Series(r.ContentPublished, "news")[1].Should().Be(1);
         Series(r.ContentPublished, "resources")[2].Should().Be(1);
 
         Slice(r.UsersByType, "member").Should().Be(2);
@@ -374,7 +373,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         events.HasEvents();
         HasActivityRows();
         HasResources();
-        HasAnnouncements();
+        HasNews();
         HasPartners();
         HasCategoryTypes();
     }

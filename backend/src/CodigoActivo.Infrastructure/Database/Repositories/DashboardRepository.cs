@@ -23,7 +23,7 @@ public class DashboardRepository(CodigoActivoDbContext context) : IDashboardRepo
                 (SELECT count(*)::int FROM events) AS events,
                 (SELECT count(*)::int FROM activities) AS activities,
                 (SELECT count(*)::int FROM resources) AS resources,
-                (SELECT count(*)::int FROM announcements) AS announcements,
+                (SELECT count(*)::int FROM news) AS news,
                 (SELECT count(*)::int FROM partners) AS partners,
                 (SELECT count(*)::int FROM users) AS users
             """;

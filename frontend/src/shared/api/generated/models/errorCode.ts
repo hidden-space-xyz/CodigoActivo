@@ -9,8 +9,8 @@ export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
 
 
 export const ErrorCode = {
-  AnnouncementNotFound: 'AnnouncementNotFound',
-  AnnouncementThumbnailNotFound: 'AnnouncementThumbnailNotFound',
+  NewsItemNotFound: 'NewsItemNotFound',
+  NewsItemThumbnailNotFound: 'NewsItemThumbnailNotFound',
   ActivityNotFound: 'ActivityNotFound',
   ActivityModalityTypeNotFound: 'ActivityModalityTypeNotFound',
   ActivitySignupClosed: 'ActivitySignupClosed',

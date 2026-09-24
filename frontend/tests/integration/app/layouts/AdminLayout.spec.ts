@@ -41,7 +41,7 @@ describe('AdminLayout', () => {
     expect(links.map((link) => link.attributes('href'))).toEqual([
       '/admin/dashboard',
       '/admin/events',
-      '/admin/announcements',
+      '/admin/news',
       '/admin/partners',
       '/admin/resources',
       '/admin/users',

@@ -187,9 +187,9 @@ public sealed class EventAttendeeListQuery : PageQuery
 public sealed class EventRatingListQuery : PageQuery;
 
 /// <summary>
-/// Carries the criteria used to announcement list.
+/// Carries the criteria used to news list.
 /// </summary>
-public sealed class AnnouncementListQuery : PageQuery
+public sealed class NewsListQuery : PageQuery
 {
     /// <summary>
     /// Gets or sets the text matched against the title or the subtitle.

@@ -17,13 +17,13 @@ public sealed record GetSitemapXmlQuery : IQuery<string>;
 /// Executes the query to retrieve sitemap xml.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="announcements">Repository used to persist and retrieve announcements.</param>
+/// <param name="news">Repository used to persist and retrieve news items.</param>
 /// <param name="resources">Repository used to persist and retrieve resources.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="application">The application value.</param>
 public sealed class GetSitemapXmlQueryHandler(
     IEventRepository events,
-    IAnnouncementRepository announcements,
+    INewsItemRepository news,
     IResourceRepository resources,
     IQueryExecutor executor,
     ApplicationOptions application
@@ -36,7 +36,7 @@ public sealed class GetSitemapXmlQueryHandler(
         "/",
         "/about",
         "/events",
-        "/announcements",
+        "/news",
         "/resources",
         "/register",
     ];
@@ -60,8 +60,8 @@ public sealed class GetSitemapXmlQueryHandler(
             events.Query().Select(e => new SitemapEntry(e.Id, e.CreatedAt, e.UpdatedAt)),
             ct
         );
-        var announcementEntries = await executor.ToListAsync(
-            announcements.Query().Select(a => new SitemapEntry(a.Id, a.CreatedAt, a.UpdatedAt)),
+        var newsItemEntries = await executor.ToListAsync(
+            news.Query().Select(a => new SitemapEntry(a.Id, a.CreatedAt, a.UpdatedAt)),
             ct
         );
         var resourceEntries = await executor.ToListAsync(
@@ -79,7 +79,7 @@ public sealed class GetSitemapXmlQueryHandler(
         }
 
         AddEntityUrls(urlSet, baseUrl, "events", eventEntries);
-        AddEntityUrls(urlSet, baseUrl, "announcements", announcementEntries);
+        AddEntityUrls(urlSet, baseUrl, "news", newsItemEntries);
         AddEntityUrls(urlSet, baseUrl, "resources", resourceEntries);
 
         return Serialize(new XDocument(new XDeclaration("1.0", "utf-8", null), urlSet));

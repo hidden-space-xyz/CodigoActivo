@@ -78,20 +78,20 @@ export const routes: readonly RouteRecordRaw[] = [
     props: true,
   },
   {
-    path: '/announcements',
-    name: 'announcements',
-    component: () => import('@/pages/announcements').then((m) => m.AnnouncementsPage),
+    path: '/news',
+    name: 'news',
+    component: () => import('@/pages/news').then((m) => m.NewsPage),
     meta: {
       seo: {
-        titleKey: 'seo.routes.announcements.title',
-        descriptionKey: 'seo.routes.announcements.description',
+        titleKey: 'seo.routes.news.title',
+        descriptionKey: 'seo.routes.news.description',
       },
     },
   },
   {
-    path: '/announcements/:announcementId',
-    name: 'announcement-detail',
-    component: () => import('@/pages/announcement-detail').then((m) => m.AnnouncementDetailPage),
+    path: '/news/:newsItemId',
+    name: 'news-detail',
+    component: () => import('@/pages/news-detail').then((m) => m.NewsDetailPage),
     props: true,
   },
   {
@@ -168,8 +168,8 @@ export const routes: readonly RouteRecordRaw[] = [
     () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
     { layout: 'blank', seo: { titleKey: 'seo.routes.eventRoster.title', noindex: true } },
   ),
-  adminRoute('/admin/announcements', 'admin-announcements', () =>
-    import('@/pages/admin/announcements').then((m) => m.AnnouncementsPage),
+  adminRoute('/admin/news', 'admin-news', () =>
+    import('@/pages/admin/news').then((m) => m.NewsPage),
   ),
   adminRoute('/admin/partners', 'admin-partners', () =>
     import('@/pages/admin/partners').then((m) => m.PartnersPage),

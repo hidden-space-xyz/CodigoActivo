@@ -25,7 +25,7 @@ internal static class ApiOutputCacheConfiguration
                 policy =>
                     policy
                         .Expire(CacheLifetime)
-                        .Tag(CacheTags.Events, CacheTags.Announcements, CacheTags.Resources)
+                        .Tag(CacheTags.Events, CacheTags.News, CacheTags.Resources)
             );
         });
 

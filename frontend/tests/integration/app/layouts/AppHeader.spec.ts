@@ -31,7 +31,7 @@ function menuLinks(menu: HTMLElement): string[] {
 }
 
 const primaryLabels = () =>
-  ['nav.home', 'nav.announcements', 'nav.events', 'nav.resources', 'nav.about'].map((key) => t(key))
+  ['nav.home', 'nav.news', 'nav.events', 'nav.resources', 'nav.about'].map((key) => t(key))
 
 describe('AppHeader', () => {
   it('shows the public navigation with login and registration for guests', async () => {

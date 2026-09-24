@@ -1,10 +1,10 @@
 import type {
   ActivityResponse,
-  AnnouncementListItemResponse,
-  AnnouncementResponse,
   DashboardAnalyticsResponse,
   EventListItemResponse,
   EventResponse,
+  NewsItemResponse,
+  NewsListItemResponse,
   ResourceListItemResponse,
   ResourceResponse,
 } from '@/shared/api/generated/models'
@@ -99,12 +99,10 @@ export function buildResourceResponse(overrides: ResourceResponse = {}): Resourc
   }
 }
 
-/** Announcement list item. */
-export function buildAnnouncementListItem(
-  overrides: AnnouncementListItemResponse = {},
-): AnnouncementListItemResponse {
+/** News list item. */
+export function buildNewsListItem(overrides: NewsListItemResponse = {}): NewsListItemResponse {
   return {
-    id: 'announcement-1',
+    id: 'news-item-1',
     title: 'Abrimos inscripciones',
     subtitle: 'Nueva temporada',
     createdAt: '2026-02-01T10:00:00Z',
@@ -114,15 +112,13 @@ export function buildAnnouncementListItem(
   }
 }
 
-/** Full announcement. */
-export function buildAnnouncementResponse(
-  overrides: AnnouncementResponse = {},
-): AnnouncementResponse {
+/** Full news item. */
+export function buildNewsItemResponse(overrides: NewsItemResponse = {}): NewsItemResponse {
   return {
-    ...buildAnnouncementListItem(),
+    ...buildNewsListItem(),
     description: richText('Ya puedes apuntarte.'),
     updatedAt: '2026-02-03T10:00:00Z',
-    thumbnailId: 'thumb-announcement',
+    thumbnailId: 'thumb-news-item',
     ...overrides,
   }
 }

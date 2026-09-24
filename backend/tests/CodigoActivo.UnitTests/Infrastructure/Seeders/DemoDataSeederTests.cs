@@ -58,7 +58,7 @@ public sealed class DemoDataSeederTests
         graph.Activities.Should().HaveCount(100);
         graph.Assignments.Should().HaveCount(500);
         graph.Ratings.Should().HaveCount(36);
-        graph.Announcements.Should().HaveCount(10);
+        graph.News.Should().HaveCount(10);
         graph.Resources.Should().HaveCount(20);
         graph.Partners.Should().HaveCount(10);
         graph.CategoryTypes.Should().HaveCount(8);
@@ -110,9 +110,9 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultFeaturesExactlyOneAnnouncement()
+    public void BuildGraphDefaultFeaturesExactlyOneNewsItem()
     {
-        graph.Announcements.Should().ContainSingle(a => a.Featured);
+        graph.News.Should().ContainSingle(a => a.Featured);
     }
 
     [Fact]
@@ -380,7 +380,7 @@ public sealed class DemoDataSeederTests
 
         graph.Events.Should().OnlyContain(e => fileIds.Contains(e.ThumbnailId));
         graph.Activities.Should().OnlyContain(a => fileIds.Contains(a.ThumbnailId));
-        graph.Announcements.Should().OnlyContain(a => fileIds.Contains(a.ThumbnailId));
+        graph.News.Should().OnlyContain(a => fileIds.Contains(a.ThumbnailId));
         graph.Resources.Should().OnlyContain(r => fileIds.Contains(r.ThumbnailId));
         graph.Partners.Should().OnlyContain(p => fileIds.Contains(p.ThumbnailId));
     }
@@ -405,7 +405,7 @@ public sealed class DemoDataSeederTests
     {
         var richText = graph
             .Events.Select(e => e.Description)
-            .Concat(graph.Announcements.Select(a => a.Description))
+            .Concat(graph.News.Select(a => a.Description))
             .Concat(graph.Resources.Where(r => r.Url is null).Select(r => r.Description))
             .Concat(graph.TermsDocuments.Select(t => t.Description));
 

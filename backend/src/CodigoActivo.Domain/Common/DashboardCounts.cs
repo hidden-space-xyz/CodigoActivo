@@ -21,9 +21,9 @@ public sealed record DashboardCounts
     public int Resources { get; init; }
 
     /// <summary>
-    /// Gets or sets the announcements value.
+    /// Gets or sets the news value.
     /// </summary>
-    public int Announcements { get; init; }
+    public int News { get; init; }
 
     /// <summary>
     /// Gets or sets the partners value.

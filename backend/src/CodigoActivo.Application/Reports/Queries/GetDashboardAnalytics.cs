@@ -23,7 +23,7 @@ public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="resources">Repository used to persist and retrieve resources.</param>
-/// <param name="announcements">Repository used to persist and retrieve announcements.</param>
+/// <param name="news">Repository used to persist and retrieve news items.</param>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="eventCategoryTypes">Repository used to persist and retrieve event category types.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -34,7 +34,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     IActivityRepository activities,
     IUserRepository users,
     IResourceRepository resources,
-    IAnnouncementRepository announcements,
+    INewsItemRepository news,
     IPartnerRepository partners,
     IEventCategoryTypeRepository eventCategoryTypes,
     IQueryExecutor executor,
@@ -172,10 +172,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
             ct
         );
 
-        var announcementDates = await executor.ToListAsync(
-            announcements.Query().Select(a => a.CreatedAt),
-            ct
-        );
+        var newsItemDates = await executor.ToListAsync(news.Query().Select(a => a.CreatedAt), ct);
 
         var partnerDates = await executor.ToListAsync(
             partners.Query().Select(p => p.CreatedAt),
@@ -262,7 +259,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
             ("events", eventRows.Select(e => e.CreatedAt).ToList()),
             ("activities", activityRows.Select(a => a.CreatedAt).ToList()),
             ("resources", resourceDates.ToList()),
-            ("announcements", announcementDates.ToList()),
+            ("news", newsItemDates.ToList()),
             ("partners", partnerDates.ToList()),
         };
         var kpis = kpiSources
@@ -296,7 +293,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
 
         var contentPublished = new DashboardTimeSeriesResponse(
             buckets,
-            [Flow("announcements", announcementDates), Flow("resources", resourceDates)]
+            [Flow("news", newsItemDates), Flow("resources", resourceDates)]
         );
 
         var usersByType = FixedSlices(

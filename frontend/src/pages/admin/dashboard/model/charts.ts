@@ -99,10 +99,10 @@ export const GENDER_STYLE: StyleMap = {
   },
 }
 
-/** Styles for published announcements and resources in the content bar chart. */
+/** Styles for published news items and resources in the content bar chart. */
 export const CONTENT_STYLE: StyleMap = {
-  announcements: {
-    label: i18n.global.t('pages.admin.dashboard.series.announcements'),
+  news: {
+    label: i18n.global.t('pages.admin.dashboard.series.news'),
     color: (p) => p.orange,
     soft: (p) => p.orangeSoft,
   },

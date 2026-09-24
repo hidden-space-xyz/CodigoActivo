@@ -1,6 +1,6 @@
 import type {
-  AnnouncementResponse,
   EventCategoryTypeResponse,
+  NewsItemResponse,
   PartnerResponse,
   ResourceResponse,
   ResourceTypeResponse,
@@ -67,15 +67,15 @@ export function buildResource(overrides: ResourceResponse = {}): ResourceRespons
   }
 }
 
-/** Admin announcement detail. */
-export function buildAnnouncement(overrides: AnnouncementResponse = {}): AnnouncementResponse {
+/** Admin news item detail. */
+export function buildNewsItem(overrides: NewsItemResponse = {}): NewsItemResponse {
   return {
-    id: 'announcement-1',
+    id: 'news-item-1',
     title: 'Hackathon',
     subtitle: 'Join us',
     description: richText('Details'),
     createdAt: '2025-04-01T08:00:00Z',
-    thumbnailId: 'thumb-announcement-1',
+    thumbnailId: 'thumb-news-item-1',
     featured: false,
     ...overrides,
   }

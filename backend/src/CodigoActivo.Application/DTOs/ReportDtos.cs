@@ -232,14 +232,14 @@ public record EventRosterResponse(
 /// <param name="Events">The events value.</param>
 /// <param name="Activities">The activities value.</param>
 /// <param name="Resources">The resources value.</param>
-/// <param name="Announcements">The announcements value.</param>
+/// <param name="News">The news value.</param>
 /// <param name="Partners">The partners value.</param>
 /// <param name="Users">The users value.</param>
 public record DashboardSummaryResponse(
     int Events,
     int Activities,
     int Resources,
-    int Announcements,
+    int News,
     int Partners,
     int Users
 );

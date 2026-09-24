@@ -61,8 +61,8 @@ const TILES: readonly TileMeta[] = [
     icon: 'book',
   },
   {
-    key: 'announcements',
-    label: t('pages.admin.dashboard.kpi.announcements'),
+    key: 'news',
+    label: t('pages.admin.dashboard.kpi.news'),
     icon: 'megaphone',
   },
 ]
