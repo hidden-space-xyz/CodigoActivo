@@ -82,6 +82,10 @@ public record CsrfTokenResponse(string Token, string HeaderName);
 /// <param name="Gender">The gender value.</param>
 /// <param name="PromotionalConsent">Whether the adult agrees to receive promotional content.</param>
 /// <param name="Minors">The minors value.</param>
+/// <param name="SecondaryPhone">
+/// Optional second contact phone of the adult; blank means none and it must differ from
+/// <paramref name="Phone"/>.
+/// </param>
 public record RegisterRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
@@ -91,7 +95,8 @@ public record RegisterRequest(
     [Required] [MaxLength(12)] [NotBlank] [SpanishNationalId] string NationalId,
     [EnumDataType(typeof(Gender))] Gender Gender,
     bool PromotionalConsent,
-    [MaxLength(20)] IReadOnlyList<RegisterMinorRequest>? Minors
+    [MaxLength(20)] IReadOnlyList<RegisterMinorRequest>? Minors,
+    [Phone] [MaxLength(40)] string? SecondaryPhone = null
 );
 
 /// <summary>

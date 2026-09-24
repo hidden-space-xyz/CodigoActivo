@@ -27,6 +27,7 @@ public static class MappingExtensions
             user.LastName,
             user.Email,
             user.Phone,
+            user.SecondaryPhone,
             user.BirthDate,
             user.NationalId,
             user.PromotionalConsent,

@@ -79,6 +79,7 @@ export const ErrorCode = {
   UserContactInfoRequired: 'UserContactInfoRequired',
   UserNationalIdRequired: 'UserNationalIdRequired',
   UserEmailAlreadyInUse: 'UserEmailAlreadyInUse',
+  SecondaryPhoneSameAsPrimary: 'SecondaryPhoneSameAsPrimary',
   InvalidCredentials: 'InvalidCredentials',
   UserAccountBlocked: 'UserAccountBlocked',
   UserAccountIsDependent: 'UserAccountIsDependent',

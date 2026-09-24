@@ -14,4 +14,6 @@ export interface EventRosterGuardianResponse {
   email?: string | null;
   /** @nullable */
   phone?: string | null;
+  /** @nullable */
+  secondaryPhone?: string | null;
 }

@@ -63,7 +63,8 @@ public sealed class RegisterCommandHandlerTests
         string nationalId = "12345678Z",
         Gender gender = Gender.Female,
         bool promotionalConsent = false,
-        IReadOnlyList<RegisterMinorRequest>? minors = null
+        IReadOnlyList<RegisterMinorRequest>? minors = null,
+        string? secondaryPhone = null
     )
     {
         return new(
@@ -75,7 +76,8 @@ public sealed class RegisterCommandHandlerTests
             nationalId,
             gender,
             promotionalConsent,
-            minors
+            minors,
+            secondaryPhone
         );
     }
 
@@ -180,6 +182,54 @@ public sealed class RegisterCommandHandlerTests
         minor.NationalId.Should().BeNull();
         minor.PromotionalConsent.Should().BeFalse();
         minor.BirthDate.Should().Be(MinorBirthDate);
+    }
+
+    [Theory]
+    [InlineData("  +34 600 111 222  ", "+34 600 111 222")]
+    [InlineData("   ", null)]
+    [InlineData(null, null)]
+    public async Task HandleAsyncSecondaryPhoneIsStoredTrimmedOrLeftUnset(
+        string? secondaryPhone,
+        string? expected
+    )
+    {
+        var added = await CaptureAddedUsersAsync();
+        ExistsReturns(false);
+        users
+            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(NewUser());
+        users
+            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(
+                NewRegister(secondaryPhone: secondaryPhone, minors: [NewMinor()])
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        added[0].Phone.Should().Be("+34123456789");
+        added[0].SecondaryPhone.Should().Be(expected);
+        added[1].SecondaryPhone.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncSecondaryPhoneEqualToPhoneReturnsBadRequest()
+    {
+        ExistsReturns(false);
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(NewRegister(secondaryPhone: " +34123456789 ")),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.SecondaryPhoneSameAsPrimary);
+        await AssertNotSavedAsync();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Theory]

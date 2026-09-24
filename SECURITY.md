@@ -41,9 +41,10 @@ authentication are not supported.
   signups, a member can infer an individual's status — including a rejection — from these counts; whether
   this granularity is acceptable for the member audience is a pending decision for the project owner, not
   resolved by this document.
-- The email is the only login identifier and the only unique personal value. The DNI/NIE and the phone
-  are not unique, so no route checks them against other accounts and neither registration nor profile
-  updates reveal whether someone else uses them. `POST /api/auth/login` resolves the account by email only.
+- The email is the only login identifier and the only unique personal value. The DNI/NIE, the phone and
+  the optional secondary phone are not unique, so no route checks them against other accounts and neither
+  registration nor profile updates reveal whether someone else uses them; the secondary phone only has to
+  differ from the same account's phone (`SecondaryPhoneSameAsPrimary`). `POST /api/auth/login` resolves the account by email only.
 - **Known limitation**: `POST /api/auth/register` accepts anonymous requests, so an attacker who knows
   someone else's email can register with it; the account is created pending verification and the email
   stays reserved until an administrator deletes it. The 409 (`RegisterEmailAlreadyInUse`) also lets a
@@ -55,8 +56,9 @@ authentication are not supported.
   creates the first administrator from `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a
   user exists.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
-  password whenever the update would replace the account's email or phone. A missing or wrong password
-  returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave both untouched need none.
+  password whenever the update would replace the account's email, phone or secondary phone. A missing or
+  wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
+  untouched need none.
   Changing the DNI/NIE needs no password. Only a different email can be refused as already in use
   (`UserEmailAlreadyInUse`). A new address is stored as given and is not confirmed by an emailed code. The stored account,
   never the request, decides the rest: an account that is not already a dependent is refused a guardian
@@ -333,7 +335,7 @@ email after commit, always to the guardian address for a dependent minor. Delive
 registration, recovery, activity decisions or security changes.
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
-returned to email, or reset by an administrator), its administrator flag or its email or phone queues a
+returned to email, or reset by an administrator), its administrator flag or its email or phones queues a
 notification to the affected account after commit, from the handler, whoever asked for the change. The notice
 names the change and its timestamp and carries no code, secret or link that performs an action; an email or
 phone change is announced to the **previous** address and only ever quotes the new one masked. These messages are

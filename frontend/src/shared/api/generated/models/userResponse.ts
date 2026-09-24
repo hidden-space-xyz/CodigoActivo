@@ -20,6 +20,8 @@ export interface UserResponse {
   /** @nullable */
   phone?: string | null;
   /** @nullable */
+  secondaryPhone?: string | null;
+  /** @nullable */
   birthDate?: string | null;
   /** @nullable */
   nationalId?: string | null;

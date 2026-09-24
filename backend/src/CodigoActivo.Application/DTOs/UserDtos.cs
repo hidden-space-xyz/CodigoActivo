@@ -12,6 +12,7 @@ namespace CodigoActivo.Application.DTOs;
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="SecondaryPhone">Optional second contact phone; dependents never have one.</param>
 /// <param name="BirthDate">User's date of birth; only dependents have one.</param>
 /// <param name="NationalId">Normalized DNI or NIE; only independent accounts have one.</param>
 /// <param name="PromotionalConsent">Whether the user agreed to receive promotional content.</param>
@@ -32,6 +33,7 @@ public record UserResponse(
     string LastName,
     string? Email,
     string? Phone,
+    string? SecondaryPhone,
     DateOnly? BirthDate,
     string? NationalId,
     bool PromotionalConsent,
@@ -56,6 +58,7 @@ public record UserResponse(
             Guid.Empty,
             string.Empty,
             string.Empty,
+            null,
             null,
             null,
             null,
@@ -157,8 +160,12 @@ public record AccountDeletionStatusResponse(bool Allowed);
 /// repeating the guardian it already has; the guardian is never reassigned here.
 /// </param>
 /// <param name="CurrentPassword">
-/// Password of the acting caller. Required when the update changes the email or the phone of the
-/// target account; ignored otherwise.
+/// Password of the acting caller. Required when the update changes the email, the phone or the
+/// secondary phone of the target account; ignored otherwise.
+/// </param>
+/// <param name="SecondaryPhone">
+/// Optional second contact phone; blank removes it and it must differ from
+/// <paramref name="Phone"/>. Ignored for a dependent.
 /// </param>
 public record UpdateUserRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
@@ -170,7 +177,8 @@ public record UpdateUserRequest(
     bool PromotionalConsent,
     [EnumDataType(typeof(Gender))] Gender Gender,
     Guid? ParentId,
-    [MaxLength(128)] string? CurrentPassword
+    [MaxLength(128)] string? CurrentPassword,
+    [Phone] [MaxLength(40)] string? SecondaryPhone = null
 );
 
 /// <summary>

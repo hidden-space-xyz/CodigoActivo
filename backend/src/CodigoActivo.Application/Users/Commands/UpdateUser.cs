@@ -47,9 +47,10 @@ public sealed class UpdateUserCommandHandler(
     /// keep it a minor only when it changes, so a dependent that has already come of age stays
     /// editable with its stored birth date. Only the email must be unique; the phone and the DNI or
     /// NIE are never checked against other accounts, so an update cannot reveal who uses them.
-    /// Replacing the email or the phone of the account first re-authenticates the acting caller, so
-    /// a hijacked session alone cannot take the account over or redirect its contact details; the
-    /// DNI or NIE needs no password. Dependents are created only through
+    /// Replacing the email, the phone or the secondary phone of the account first re-authenticates
+    /// the acting caller, so a hijacked session alone cannot take the account over or redirect its
+    /// contact details; the DNI or NIE needs no password. The secondary phone is optional and must
+    /// differ from the phone. Dependents are created only through
     /// <c>POST /api/users/{id}/children</c>, and they leave their guardian only when the guardian
     /// deletes them.
     /// </summary>
@@ -71,6 +72,7 @@ public sealed class UpdateUserCommandHandler(
 
         var previousEmail = user.Email;
         var previousPhone = user.Phone;
+        var previousSecondaryPhone = user.SecondaryPhone;
 
         var rules = user.ParentId is null
             ? await ApplyStandaloneAccountRulesAsync(command, user, ct)
@@ -89,7 +91,9 @@ public sealed class UpdateUserCommandHandler(
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
         var emailChanged = !string.Equals(previousEmail, user.Email, StringComparison.Ordinal);
-        var phoneChanged = !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal);
+        var phoneChanged =
+            !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal)
+            || !string.Equals(previousSecondaryPhone, user.SecondaryPhone, StringComparison.Ordinal);
         if ((emailChanged || phoneChanged) && previousEmail is not null)
         {
             await securityNotifier.NotifyIdentifiersChangedAsync(
@@ -126,10 +130,10 @@ public sealed class UpdateUserCommandHandler(
             return Error.BadRequest(ErrorCode.UserNationalIdRequired);
         }
 
-        var identifiers = await ApplyLoginIdentifierRulesAsync(command, user, ct);
-        if (identifiers.IsFailure)
+        var contact = await ApplyContactRulesAsync(command, user, ct);
+        if (contact.IsFailure)
         {
-            return identifiers;
+            return contact;
         }
 
         user.NationalId = nationalId;
@@ -160,7 +164,7 @@ public sealed class UpdateUserCommandHandler(
         return Result.Success();
     }
 
-    private async Task<Result> ApplyLoginIdentifierRulesAsync(
+    private async Task<Result> ApplyContactRulesAsync(
         UpdateUserCommand command,
         User user,
         CancellationToken ct
@@ -169,15 +173,22 @@ public sealed class UpdateUserCommandHandler(
         var request = command.Request;
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
+        var secondaryPhone = request.SecondaryPhone.NormalizeOrNull();
         if (email is null || phone is null)
         {
             return Error.BadRequest(ErrorCode.UserContactInfoRequired);
         }
 
-        var replacesLoginIdentifiers =
+        if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
+        {
+            return Error.BadRequest(ErrorCode.SecondaryPhoneSameAsPrimary);
+        }
+
+        var replacesContact =
             !string.Equals(email, user.Email, StringComparison.Ordinal)
-            || !string.Equals(phone, user.Phone, StringComparison.Ordinal);
-        if (replacesLoginIdentifiers && !await VerifyActingPasswordAsync(command, ct))
+            || !string.Equals(phone, user.Phone, StringComparison.Ordinal)
+            || !string.Equals(secondaryPhone, user.SecondaryPhone, StringComparison.Ordinal);
+        if (replacesContact && !await VerifyActingPasswordAsync(command, ct))
         {
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
         }
@@ -189,6 +200,7 @@ public sealed class UpdateUserCommandHandler(
 
         user.Email = email;
         user.Phone = phone;
+        user.SecondaryPhone = secondaryPhone;
         return Result.Success();
     }
 

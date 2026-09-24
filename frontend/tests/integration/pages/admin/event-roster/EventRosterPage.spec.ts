@@ -104,7 +104,14 @@ describe('EventRosterPage', () => {
       buildRosterActivity({
         participants: [
           buildRosterParticipant({
-            guardian: { firstName: 'Mary', lastName: null, phone: '611000000', email: null },
+            secondaryPhone: '600000011',
+            guardian: {
+              firstName: 'Mary',
+              lastName: null,
+              phone: '611000000',
+              secondaryPhone: '611000011',
+              email: null,
+            },
           }),
           buildRosterParticipant({
             userId: 'user-2',
@@ -160,7 +167,7 @@ describe('EventRosterPage', () => {
     const age = t('pages.admin.eventRoster.ageYears', { age: ageFrom('2000-01-01') })
     expect(rows).toEqual([
       [t('pages.admin.eventRoster.rolePluralVowel', { name: 'Monitora' })],
-      ['', 'Ada Lovelace', age, '600000001|ada@example.test', 'Mary|611000000'],
+      ['', 'Ada Lovelace', age, '600000001|600000011|ada@example.test', 'Mary|611000000|611000011'],
       [t('pages.admin.eventRoster.rolePluralConsonant', { name: 'Tutor' })],
       ['', 'Tim Berners', '—', '—', '—'],
       ['', 'Grace Hopper', age, '600000001|ada@example.test', '—'],

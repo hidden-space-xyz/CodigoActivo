@@ -30,6 +30,9 @@ const passwordsMismatch = computed(() => model.confirmPassword !== model.passwor
 const showMismatch = computed(
   () => (submitted.value || confirmTouched.value) && passwordsMismatch.value,
 )
+const secondaryPhoneRepeated = computed(
+  () => !!model.secondaryPhone.trim() && model.secondaryPhone.trim() === model.phone.trim(),
+)
 const nationalIdTouched = ref(false)
 const nationalIdValid = computed(() => isValidNationalId(model.nationalId))
 const nationalIdsMismatch = computed(
@@ -42,6 +45,7 @@ const showNationalIdMismatch = computed(
 const isValid = computed(() => {
   if (!model.firstName.trim() || !model.lastName.trim()) return false
   if (!emailValid.value || !model.phone.trim()) return false
+  if (secondaryPhoneRepeated.value) return false
   if (passwordTooShort.value || passwordsMismatch.value) return false
   if (!nationalIdValid.value || nationalIdsMismatch.value) return false
   if (!model.gender) return false
@@ -136,6 +140,41 @@ function removeMinor(index: number): void {
           />
         </div>
         <div class="reg__field">
+          <label class="reg__label" for="reg-secondary-phone">{{
+            $t('common.secondaryPhoneOptional')
+          }}</label>
+          <el-input
+            id="reg-secondary-phone"
+            v-model="model.secondaryPhone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            :maxlength="40"
+            :class="{ 'ca-invalid': submitted && secondaryPhoneRepeated }"
+          />
+          <small v-if="submitted && secondaryPhoneRepeated" class="reg__error">{{
+            $t('validation.secondaryPhoneSameAsPrimary')
+          }}</small>
+        </div>
+        <div class="reg__field">
+          <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
+          <el-select
+            id="reg-gender"
+            v-model="model.gender"
+            :class="{ 'ca-invalid': submitted && !model.gender }"
+          >
+            <el-option
+              v-for="option in genders"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+          <small v-if="submitted && !model.gender" class="reg__error">{{
+            $t('validation.genderRequired')
+          }}</small>
+        </div>
+        <div class="reg__field">
           <label class="reg__label" for="reg-password">{{ $t('common.password') }}</label>
           <el-input
             id="reg-password"
@@ -203,24 +242,6 @@ function removeMinor(index: number): void {
           />
           <small v-if="showNationalIdMismatch" class="reg__error">{{
             $t('validation.nationalIdsMismatch')
-          }}</small>
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
-          <el-select
-            id="reg-gender"
-            v-model="model.gender"
-            :class="{ 'ca-invalid': submitted && !model.gender }"
-          >
-            <el-option
-              v-for="option in genders"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            />
-          </el-select>
-          <small v-if="submitted && !model.gender" class="reg__error">{{
-            $t('validation.genderRequired')
           }}</small>
         </div>
       </div>

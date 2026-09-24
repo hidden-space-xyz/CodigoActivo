@@ -1050,6 +1050,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("promotional_consent");
 
+                    b.Property<string>("SecondaryPhone")
+                        .HasColumnType("text")
+                        .HasColumnName("secondary_phone");
+
                     b.Property<int>("TwoFactorFailedAttempts")
                         .HasColumnType("integer")
                         .HasColumnName("two_factor_failed_attempts");

@@ -9,13 +9,15 @@ export interface UpdateProfileInput {
   lastName: string
   email: string
   phone: string
+  /** Optional second contact phone, different from `phone`; `null` removes it. */
+  secondaryPhone: string | null
   nationalId: string
   /** Agreement to receive promotional content. */
   promotionalConsent: boolean
   gender: Gender
   /**
-   * Current password, required by the API only when the email or the phone changes, because both
-   * identify the account at login and carry its recovery and second-factor messages.
+   * Current password, required by the API only when the email, the phone or the secondary phone
+   * changes, so a stolen session alone cannot redirect the account or its contact details.
    */
   currentPassword: string | null
 }

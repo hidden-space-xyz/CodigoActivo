@@ -7,6 +7,8 @@ export interface AccountProfile {
   readonly lastName: string
   readonly email: string
   readonly phone: string
+  /** Optional second contact phone; `''` when none is set. */
+  readonly secondaryPhone: string
   /** Normalized DNI or NIE identifying the adult. */
   readonly nationalId: string
   /** Whether the user agreed to receive promotional content. */

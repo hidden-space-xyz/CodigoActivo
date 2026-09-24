@@ -75,11 +75,13 @@ public record EventAttendeeAssignmentResponse(
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="SecondaryPhone">Optional second contact phone of the guardian.</param>
 public record EventAttendeeGuardianResponse(
     string FirstName,
     string LastName,
     string? Email,
-    string? Phone
+    string? Phone,
+    string? SecondaryPhone
 );
 
 /// <summary>
@@ -90,6 +92,7 @@ public record EventAttendeeGuardianResponse(
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="SecondaryPhone">Optional second contact phone of the attendee.</param>
 /// <param name="BirthDate">User's date of birth; only dependents have one.</param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="UserTypeName">The user type name value.</param>
@@ -102,6 +105,7 @@ public record EventAttendeeResponse(
     string? LastName,
     string? Email,
     string? Phone,
+    string? SecondaryPhone,
     DateOnly? BirthDate,
     Gender Gender,
     string UserTypeName,
@@ -159,11 +163,13 @@ public record EventBadgesResponse(
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="SecondaryPhone">Optional second contact phone of the guardian.</param>
 public record EventRosterGuardianResponse(
     string FirstName,
     string LastName,
     string? Email,
-    string? Phone
+    string? Phone,
+    string? SecondaryPhone
 );
 
 /// <summary>
@@ -175,6 +181,7 @@ public record EventRosterGuardianResponse(
 /// <param name="BirthDate">User's date of birth; only dependents have one.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="SecondaryPhone">Optional second contact phone of the participant.</param>
 /// <param name="RoleName">The role name value.</param>
 /// <param name="Guardian">The guardian value.</param>
 public record EventRosterParticipantResponse(
@@ -184,6 +191,7 @@ public record EventRosterParticipantResponse(
     DateOnly? BirthDate,
     string? Email,
     string? Phone,
+    string? SecondaryPhone,
     string RoleName,
     EventRosterGuardianResponse? Guardian
 );

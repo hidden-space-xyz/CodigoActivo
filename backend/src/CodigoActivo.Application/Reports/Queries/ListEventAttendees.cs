@@ -62,6 +62,7 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
                 u.LastName,
                 u.Email,
                 u.Phone,
+                u.SecondaryPhone,
                 u.BirthDate,
                 u.Gender,
                 u.UserType.Name,
@@ -72,7 +73,8 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
                         u.Parent.FirstName,
                         u.Parent.LastName,
                         u.Parent.Email,
-                        u.Parent.Phone
+                        u.Parent.Phone,
+                        u.Parent.SecondaryPhone
                     ),
                 u.Assignments.Where(a => a.Activity.EventId == eventId)
                     .Where(a => activityId == null || a.ActivityId == activityId)
@@ -131,6 +133,7 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
             row.LastName,
             row.Email,
             row.Phone,
+            row.SecondaryPhone,
             row.BirthDate,
             row.Gender,
             row.UserTypeName,
@@ -146,6 +149,7 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
         string? LastName,
         string? Email,
         string? Phone,
+        string? SecondaryPhone,
         DateOnly? BirthDate,
         Gender Gender,
         string UserTypeName,

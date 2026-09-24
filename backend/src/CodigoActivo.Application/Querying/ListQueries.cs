@@ -320,7 +320,7 @@ public sealed class UserListQuery : PageQuery
     public string? Email { get; set; }
 
     /// <summary>
-    /// Gets or sets the phone value.
+    /// Gets or sets text the phone or the secondary phone must contain.
     /// </summary>
     public string? Phone { get; set; }
 

@@ -12,6 +12,7 @@ describe('registration form factories', () => {
       lastName: '',
       email: '',
       phone: '',
+      secondaryPhone: '',
       password: '',
       confirmPassword: '',
       nationalId: '',

@@ -21,6 +21,8 @@ export interface RegistrationForm {
   lastName: string
   email: string
   phone: string
+  /** Optional second contact phone; blank means none. */
+  secondaryPhone: string
   password: string
   confirmPassword: string
   nationalId: string
@@ -44,6 +46,7 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     lastName: '',
     email: '',
     phone: '',
+    secondaryPhone: '',
     password: '',
     confirmPassword: '',
     nationalId: '',

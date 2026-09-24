@@ -55,6 +55,7 @@ const dependentWithContact = toUser(
     firstName: 'Tim',
     email: 'tim@example.test',
     phone: '622222222',
+    secondaryPhone: '633333333',
     birthDate: '2015-05-05',
     nationalId: '87654321X',
     promotionalConsent: true,
@@ -83,6 +84,7 @@ describe('UserFormDialog', () => {
 
     await typeInto('#user-first-name', ' Augusta ')
     await typeInto('#user-phone', ' 611111111 ')
+    await typeInto('#user-secondary-phone', ' 622222222 ')
     await click(consentBox(dialog))
     await typeInto('#user-current-password', 'admin-password')
     await click(findButton(t('common.save'), dialog))
@@ -92,6 +94,7 @@ describe('UserFormDialog', () => {
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '611111111',
+      secondaryPhone: '622222222',
       birthDate: null,
       nationalId: '12345678Z',
       promotionalConsent: true,
@@ -163,6 +166,31 @@ describe('UserFormDialog', () => {
     })
   })
 
+  it('demands the password when the secondary phone changes and refuses one equal to the phone', async () => {
+    const { wrapper, dialog } = await renderDialog(
+      toUser(buildUserResponse({ secondaryPhone: '622222222' })),
+    )
+
+    expect(inputValue('#user-secondary-phone')).toBe('622222222')
+    expect(dialog.querySelector('#user-current-password')).toBeNull()
+    await typeInto('#user-secondary-phone', ' 600000000 ')
+    expect(dialog.querySelector('#user-current-password')).not.toBeNull()
+    await typeInto('#user-current-password', 'admin-password')
+    await click(findButton(t('common.save'), dialog))
+
+    expect(dialog.textContent).toContain(t('validation.secondaryPhoneSameAsPrimary'))
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    await typeInto('#user-secondary-phone', '  ')
+    await click(findButton(t('common.save'), dialog))
+
+    expect(dialog.textContent).not.toContain(t('validation.secondaryPhoneSameAsPrimary'))
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      secondaryPhone: null,
+      currentPassword: 'admin-password',
+    })
+  })
+
   it('shows the rejection reported by the parent under the password field', async () => {
     const { dialog } = await renderDialog(adult, t('errors.UserCurrentPasswordIncorrect'))
 
@@ -205,6 +233,7 @@ describe('UserFormDialog', () => {
       lastName: 'Lovelace',
       email: null,
       phone: null,
+      secondaryPhone: null,
       birthDate: '2016-02-01',
       nationalId: null,
       promotionalConsent: false,
@@ -279,6 +308,7 @@ describe('UserFormDialog', () => {
 
     expect(dialog.querySelector('#user-email')).toBeNull()
     expect(dialog.querySelector('#user-phone')).toBeNull()
+    expect(dialog.querySelector('#user-secondary-phone')).toBeNull()
     expect(dialog.textContent).toContain(t('features.manageUsers.dependentContact'))
     expect(dialog.textContent).not.toContain('tim@example.test')
 
@@ -289,6 +319,7 @@ describe('UserFormDialog', () => {
       lastName: 'Lovelace',
       email: null,
       phone: null,
+      secondaryPhone: null,
       birthDate: '2015-05-05',
       nationalId: null,
       promotionalConsent: false,

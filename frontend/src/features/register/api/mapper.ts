@@ -20,8 +20,8 @@ function toRegisterMinorRequest(minor: MinorForm): RegisterMinorRequest {
 }
 
 /**
- * Builds the register request from the form, trimming names, email and phone, normalizing the DNI
- * or NIE and dropping both confirmation fields. Throws if the adult or any minor has no gender; the
+ * Builds the register request from the form, trimming names, email and phones, sending a blank
+ * secondary phone as `null`, normalizing the DNI or NIE and dropping both confirmation fields. Throws if the adult or any minor has no gender; the
  * form validates this first.
  */
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
@@ -32,6 +32,7 @@ export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
     lastName: form.lastName.trim(),
     email: form.email.trim(),
     phone: form.phone.trim(),
+    secondaryPhone: form.secondaryPhone.trim() || null,
     password: form.password,
     nationalId: normalizeNationalId(form.nationalId),
     gender,

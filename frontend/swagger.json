@@ -5150,6 +5150,7 @@
           "UserContactInfoRequired",
           "UserNationalIdRequired",
           "UserEmailAlreadyInUse",
+          "SecondaryPhoneSameAsPrimary",
           "InvalidCredentials",
           "UserAccountBlocked",
           "UserAccountIsDependent",
@@ -5247,6 +5248,10 @@
           "phone": {
             "type": "string",
             "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5271,6 +5276,10 @@
             "nullable": true
           },
           "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "secondaryPhone": {
             "type": "string",
             "nullable": true
           },
@@ -5907,6 +5916,10 @@
           "phone": {
             "type": "string",
             "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5936,6 +5949,10 @@
             "nullable": true
           },
           "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "secondaryPhone": {
             "type": "string",
             "nullable": true
           },
@@ -6537,6 +6554,10 @@
               "$ref": "#/components/schemas/RegisterMinorRequest"
             },
             "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -7137,6 +7158,10 @@
           "currentPassword": {
             "type": "string",
             "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -7161,6 +7186,10 @@
             "nullable": true
           },
           "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "secondaryPhone": {
             "type": "string",
             "nullable": true
           },

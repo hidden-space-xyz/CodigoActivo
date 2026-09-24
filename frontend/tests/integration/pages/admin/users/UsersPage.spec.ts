@@ -35,7 +35,11 @@ const EMAIL_TITLE = 'features.sendEmail.header'
 const GRANT_TITLE = 'features.manageUsers.grantAdmin.header'
 const RESET_2FA_TITLE = 'features.manageUsers.resetTwoFactor.header'
 
-const ada = buildUserResponse({ dependentCount: 2, promotionalConsent: true })
+const ada = buildUserResponse({
+  dependentCount: 2,
+  promotionalConsent: true,
+  secondaryPhone: '611111111',
+})
 const tim = without(
   without(
     buildUserResponse({
@@ -279,7 +283,7 @@ describe('admin users page', () => {
     server.use(
       userDetail(() => {
         detailRequests.push('user-1')
-        return HttpResponse.json(buildUserResponse())
+        return HttpResponse.json(buildUserResponse({ secondaryPhone: '611111111' }))
       }),
       http.put('/api/users/:userId', async ({ request, params }) => {
         updated = { id: params.userId, body: await request.json() }
@@ -303,6 +307,7 @@ describe('admin users page', () => {
         lastName: 'King',
         email: 'ada@example.test',
         phone: '600000000',
+        secondaryPhone: '611111111',
         birthDate: null,
         nationalId: '12345678Z',
         promotionalConsent: true,
@@ -601,6 +606,7 @@ describe('admin users page', () => {
       .findAllComponents(ColumnFilterSelect)[2]
       ?.vm.$emit('update:modelValue', 'type-participant')
     await flushPromises()
+    expect(wrapper.find('.phone-cell__secondary').text()).toBe('611111111')
 
     await click(findButton(t('pages.admin.users.export.label')))
 
@@ -618,6 +624,7 @@ describe('admin users page', () => {
         t('common.lastName'),
         t('common.email'),
         t('common.phone'),
+        t('common.secondaryPhone'),
         t('common.nationalId'),
         t('common.birthDate'),
         t('common.gender'),
@@ -630,12 +637,12 @@ describe('admin users page', () => {
     )
     expect(lines[1]).toMatch(
       new RegExp(
-        `^Ada;Lovelace;ada@example.test;600000000;12345678Z;[^;]+;${t('entities.user.gender.Female')};Active;Participant;${t('common.no')};${t('common.yes')};$`,
+        `^Ada;Lovelace;ada@example.test;600000000;611111111;12345678Z;[^;]+;${t('entities.user.gender.Female')};Active;Participant;${t('common.no')};${t('common.yes')};$`,
       ),
     )
     expect(lines[2]).toMatch(
       new RegExp(
-        `^Tim;Lovelace;;;;[^;]+;${t('entities.user.gender.Male')};;;${t('common.yes')};${t('common.no')};Ada Lovelace$`,
+        `^Tim;Lovelace;;;;;[^;]+;${t('entities.user.gender.Male')};;;${t('common.yes')};${t('common.no')};Ada Lovelace$`,
       ),
     )
   })
@@ -653,7 +660,7 @@ describe('admin users page', () => {
     await click(findButton(t('pages.admin.users.export.label')))
     await expectNotification(tp('pages.admin.users.export.toast.exported', 1, { n: 1 }))
     expect((await blob?.text())?.split('\r\n')[1]).toMatch(
-      /^Ghost;User;ghost@example.test;600000000;12345678Z;[^;]+;;Active;/,
+      /^Ghost;User;ghost@example.test;600000000;;12345678Z;[^;]+;;Active;/,
     )
 
     server.use(
