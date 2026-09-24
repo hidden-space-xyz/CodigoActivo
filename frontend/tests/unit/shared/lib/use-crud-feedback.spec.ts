@@ -64,4 +64,15 @@ describe('useCrudFeedback', () => {
     expect(toast.textContent).not.toContain('Internal detail')
     expect(toast.textContent).not.toContain(t('table.ref', { id: '' }).trim())
   })
+
+  it('shows a given message as is', async () => {
+    const { result } = await withSetup(() => useCrudFeedback())
+
+    result.error('The event no longer exists')
+
+    const toast = await notification()
+    expect(toast.querySelector('.el-notification__title')?.textContent).toBe(t('common.error'))
+    expect(toast.textContent).toContain('The event no longer exists')
+    expect(toast.textContent).not.toContain(t('errors.generic'))
+  })
 })

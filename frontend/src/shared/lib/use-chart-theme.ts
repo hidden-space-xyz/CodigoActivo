@@ -160,7 +160,7 @@ export function wrapLabel(text: string, maxPerLine = 26, maxLines = 2): string[]
   }
   if (lines.length < maxLines && current) lines.push(current)
 
-  const truncated = lines.join(' ').length < text.replace(/\s+/g, ' ').length
+  const truncated = lines.join(' ').length < words.join(' ').length
   if (truncated && lines.length > 0) {
     const last = lines[lines.length - 1] ?? ''
     lines[lines.length - 1] =

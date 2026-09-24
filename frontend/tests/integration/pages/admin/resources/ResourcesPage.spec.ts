@@ -258,9 +258,7 @@ describe('admin resources page', () => {
     expect(isDialogOpen(t('features.manageResources.editHeader'))).toBe(false)
   })
 
-  // Suspected bug: ResourcesPage passes the translated "not found" text to `feedback.error`, which
-  // treats its argument as an error object and shows the generic error message instead.
-  it.skip('reports a resource that no longer exists with the not-found message', async () => {
+  it('reports a resource that no longer exists with the not-found message', async () => {
     serveResources()
     server.use(detail(() => apiError(404)))
     await renderPage()

@@ -236,9 +236,7 @@ describe('wrapLabel', () => {
     expect(wrapLabel('hello world again', 10, 1)).toEqual(['hello…'])
   })
 
-  // Suspected bug: the truncation check compares against the whitespace-collapsed text without
-  // trimming it, so leading or trailing spaces add an ellipsis although no word was cut off.
-  it.skip('does not add an ellipsis for surrounding whitespace', () => {
+  it('does not add an ellipsis for surrounding whitespace', () => {
     expect(wrapLabel(' Hackathon ')).toEqual(['Hackathon'])
   })
 

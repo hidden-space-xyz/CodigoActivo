@@ -18,8 +18,9 @@ function errorMessage(detail: string, trace: string): VNode {
 }
 
 /**
- * Top-right toast notifications for mutation outcomes. `error` shows the localized API error
- * message plus, for `ApiError`s with a trace id, a reference users can report. Call it in `setup`.
+ * Top-right toast notifications for mutation outcomes. `error` shows a given message as is, or the
+ * localized API error message plus, for `ApiError`s with a trace id, a reference users can report.
+ * Call it in `setup`.
  */
 export function useCrudFeedback() {
   const { t } = useI18n()
@@ -45,7 +46,7 @@ export function useCrudFeedback() {
   }
 
   function error(err: unknown, summary = t('common.error')): void {
-    const detail = getErrorMessage(err)
+    const detail = typeof err === 'string' ? err : getErrorMessage(err)
     const traceId = err instanceof ApiError ? err.traceId : undefined
 
     ElNotification({

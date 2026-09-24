@@ -283,7 +283,7 @@ describe('admin users page', () => {
     server.use(
       userDetail(() => {
         detailRequests.push('user-1')
-        return HttpResponse.json(buildUserResponse({ secondaryPhone: '611111111' }))
+        return HttpResponse.json(ada)
       }),
       http.put('/api/users/:userId', async ({ request, params }) => {
         updated = { id: params.userId, body: await request.json() }
@@ -339,10 +339,7 @@ describe('admin users page', () => {
     expect(isDialogOpen(t(EDIT_TITLE))).toBe(true)
   })
 
-  // Suspected bug: UsersPage opens the dialog before the detail request resolves, and
-  // UserFormDialog only copies `user` into the form when `visible` changes, so the freshly loaded
-  // detail never reaches the form fields.
-  it.skip('shows the freshly loaded user detail in the edit form', async () => {
+  it('shows the freshly loaded user detail in the edit form', async () => {
     serveUsers([ada])
     server.use(userDetail(() => HttpResponse.json(buildUserResponse({ firstName: 'Augusta Ada' }))))
     await renderPage()
