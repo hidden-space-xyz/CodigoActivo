@@ -16,9 +16,9 @@ public static class CacheTags
     public const string EventCategoryTypes = "event-category-types";
 
     /// <summary>
-    /// Identifies the announcements configuration or policy value.
+    /// Identifies the news configuration or policy value.
     /// </summary>
-    public const string Announcements = "announcements";
+    public const string News = "news";
 
     /// <summary>
     /// Identifies the resources configuration or policy value.
@@ -58,7 +58,7 @@ public static class CacheTags
         Events,
         Activities,
         Resources,
-        Announcements,
+        News,
         Partners,
         Users,
     ];
@@ -78,7 +78,7 @@ public static class CacheTags
     public static readonly IReadOnlyList<string> OutputCached =
     [
         Events,
-        Announcements,
+        News,
         Resources,
         Partners,
         Activities,
@@ -92,7 +92,7 @@ public static class CacheTags
     [
         Events,
         EventCategoryTypes,
-        Announcements,
+        News,
         Resources,
         Partners,
         Activities,

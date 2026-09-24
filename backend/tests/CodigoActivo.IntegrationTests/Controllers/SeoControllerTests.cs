@@ -19,7 +19,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
 
     private sealed record SeededContent(
         Guid EventId,
-        Guid AnnouncementId,
+        Guid NewsItemId,
         Guid InternalResourceId,
         Guid ExternalResourceId
     );
@@ -61,11 +61,11 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
                     CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
-            db.Announcements.Add(
-                new Announcement
+            db.News.Add(
+                new NewsItem
                 {
-                    Id = content.AnnouncementId,
-                    Title = "Anuncio",
+                    Id = content.NewsItemId,
+                    Title = "Novedad",
                     Subtitle = "Sub",
                     Description = "{}",
                     ThumbnailId = thumbnailId,
@@ -118,7 +118,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
         body.Should().Contain("http://www.sitemaps.org/schemas/sitemap/0.9");
         body.Should().Contain($"<loc>{BaseUrl}/about</loc>");
         body.Should().Contain($"<loc>{BaseUrl}/events/{content.EventId}</loc>");
-        body.Should().Contain($"<loc>{BaseUrl}/announcements/{content.AnnouncementId}</loc>");
+        body.Should().Contain($"<loc>{BaseUrl}/news/{content.NewsItemId}</loc>");
         body.Should().Contain($"<loc>{BaseUrl}/resources/{content.InternalResourceId}</loc>");
         body.Should().NotContain(content.ExternalResourceId.ToString());
         body.Should().Contain("<lastmod>2026-05-01</lastmod>");

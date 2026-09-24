@@ -41,7 +41,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         counts.Events.Should().Be(0);
         counts.Activities.Should().Be(0);
         counts.Resources.Should().Be(0);
-        counts.Announcements.Should().Be(0);
+        counts.News.Should().Be(0);
         counts.Partners.Should().Be(0);
         counts.Users.Should().Be(0);
     }
@@ -59,7 +59,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         counts.Events.Should().Be(2);
         counts.Activities.Should().Be(3);
         counts.Resources.Should().Be(1);
-        counts.Announcements.Should().Be(4);
+        counts.News.Should().Be(4);
         counts.Partners.Should().Be(5);
         counts.Users.Should().Be(6);
     }
@@ -96,7 +96,7 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
                 CreatedBy = AuthorId,
             }
         );
-        AddAnnouncements(ctx);
+        AddNews(ctx);
         AddPartners(ctx);
     }
 
@@ -122,15 +122,15 @@ public sealed class DashboardRepositoryTests(PostgresContainerFixture postgres) 
         );
     }
 
-    private static void AddAnnouncements(CodigoActivoDbContext ctx)
+    private static void AddNews(CodigoActivoDbContext ctx)
     {
-        ctx.Announcements.AddRange(
+        ctx.News.AddRange(
             Enumerable
                 .Range(0, 4)
-                .Select(i => new Announcement
+                .Select(i => new NewsItem
                 {
                     Id = Guid.NewGuid(),
-                    Title = $"Anuncio {i.ToString(CultureInfo.InvariantCulture)}",
+                    Title = $"Novedad {i.ToString(CultureInfo.InvariantCulture)}",
                     Subtitle = "Sub",
                     Description = "{}",
                     ThumbnailId = ThumbId,

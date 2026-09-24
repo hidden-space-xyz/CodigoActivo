@@ -292,44 +292,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "announcements",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    title = table.Column<string>(type: "text", nullable: false),
-                    subtitle = table.Column<string>(type: "text", nullable: false),
-                    description = table.Column<string>(type: "jsonb", nullable: false),
-                    featured = table.Column<bool>(type: "boolean", nullable: false),
-                    thumbnail_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_announcements", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_announcements_files_thumbnail_id",
-                        column: x => x.thumbnail_id,
-                        principalTable: "files",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_announcements_users_created_by",
-                        column: x => x.created_by,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_announcements_users_updated_by",
-                        column: x => x.updated_by,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "events",
                 columns: table => new
                 {
@@ -366,6 +328,44 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "fk_events_users_updated_by",
+                        column: x => x.updated_by,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "news",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    title = table.Column<string>(type: "text", nullable: false),
+                    subtitle = table.Column<string>(type: "text", nullable: false),
+                    description = table.Column<string>(type: "jsonb", nullable: false),
+                    featured = table.Column<bool>(type: "boolean", nullable: false),
+                    thumbnail_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_news", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_news_files_thumbnail_id",
+                        column: x => x.thumbnail_id,
+                        principalTable: "files",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_news_users_created_by",
+                        column: x => x.created_by,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_news_users_updated_by",
                         column: x => x.updated_by,
                         principalTable: "users",
                         principalColumn: "id",
@@ -740,26 +740,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "assignment_status_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_announcements_created_at",
-                table: "announcements",
-                column: "created_at");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_announcements_created_by",
-                table: "announcements",
-                column: "created_by");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_announcements_thumbnail_id",
-                table: "announcements",
-                column: "thumbnail_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_announcements_updated_by",
-                table: "announcements",
-                column: "updated_by");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_assignment_status_types_name",
                 table: "assignment_status_types",
                 column: "name",
@@ -840,6 +820,26 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_files_uploaded_by",
                 table: "files",
                 column: "uploaded_by");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_news_created_at",
+                table: "news",
+                column: "created_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_news_created_by",
+                table: "news",
+                column: "created_by");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_news_thumbnail_id",
+                table: "news",
+                column: "thumbnail_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_news_updated_by",
+                table: "news",
+                column: "updated_by");
 
             migrationBuilder.CreateIndex(
                 name: "ix_partners_created_by",
@@ -952,9 +952,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "activity_user_role_assignments");
 
             migrationBuilder.DropTable(
-                name: "announcements");
-
-            migrationBuilder.DropTable(
                 name: "email_outbox_content_parts");
 
             migrationBuilder.DropTable(
@@ -971,6 +968,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "event_terms_documents");
+
+            migrationBuilder.DropTable(
+                name: "news");
 
             migrationBuilder.DropTable(
                 name: "partners");

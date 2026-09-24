@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useServerTable, type ServerTableColumn, type ServerTablePage } from '@/shared/lib'
 
-/** Common shape of announcements and resources shown in the admin content table and edit dialog. */
+/** Common shape of news items and resources shown in the admin content table and edit dialog. */
 export interface ContentItem {
   id?: string
   title?: string | null

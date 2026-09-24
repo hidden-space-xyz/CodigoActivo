@@ -109,9 +109,9 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<ResourceType> ResourceTypes => Set<ResourceType>();
 
     /// <summary>
-    /// Gets the announcements value.
+    /// Gets the news value.
     /// </summary>
-    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<NewsItem> News => Set<NewsItem>();
 
     /// <summary>
     /// Gets the files value.

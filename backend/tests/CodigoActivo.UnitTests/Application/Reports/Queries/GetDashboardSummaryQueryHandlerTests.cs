@@ -30,7 +30,7 @@ public sealed class GetDashboardSummaryQueryHandlerTests
                     Events = 1,
                     Activities = 2,
                     Resources = 3,
-                    Announcements = 4,
+                    News = 4,
                     Partners = 5,
                     Users = 6,
                 }

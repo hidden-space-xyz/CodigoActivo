@@ -733,7 +733,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         dashboard!.Events.Should().Be(0);
         dashboard.Activities.Should().Be(0);
         dashboard.Resources.Should().Be(0);
-        dashboard.Announcements.Should().Be(0);
+        dashboard.News.Should().Be(0);
         dashboard.Partners.Should().Be(0);
         dashboard.Users.Should().Be(5);
     }

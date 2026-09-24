@@ -278,8 +278,8 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
                     UploadedBy = TestSeedData.Users.AdminId,
                 }
             );
-            db.Announcements.Add(
-                new Announcement
+            db.News.Add(
+                new NewsItem
                 {
                     Id = Guid.NewGuid(),
                     Title = "Con imagen",

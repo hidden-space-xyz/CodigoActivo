@@ -25,12 +25,12 @@ internal static class SeoTestData
         };
     }
 
-    public static Announcement NewAnnouncement(DateTimeOffset createdAt)
+    public static NewsItem NewNewsItem(DateTimeOffset createdAt)
     {
         return new()
         {
             Id = Guid.NewGuid(),
-            Title = "Anuncio",
+            Title = "Novedad",
             Subtitle = "Sub",
             Description = "{}",
             ThumbnailId = Guid.NewGuid(),

@@ -38,7 +38,7 @@ describe('KpiCards', () => {
       t('pages.admin.dashboard.kpi.inscriptions'),
       t('pages.admin.dashboard.kpi.events'),
       t('pages.admin.dashboard.kpi.resources'),
-      t('pages.admin.dashboard.kpi.announcements'),
+      t('pages.admin.dashboard.kpi.news'),
     ])
     expect(tiles.map((tile) => tile.find('.kpi-card__value').text())).toEqual([
       '1200',

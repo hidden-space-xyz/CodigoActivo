@@ -13,19 +13,18 @@ namespace CodigoActivo.UnitTests.Application.Seo.Queries;
 public sealed class GetSitemapXmlQueryHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IAnnouncementRepository announcements =
-        Substitute.For<IAnnouncementRepository>();
+    private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
     private readonly GetSitemapXmlQueryHandler sut;
 
     public GetSitemapXmlQueryHandlerTests()
     {
         events.Query().Returns(Array.Empty<Event>().AsQueryable());
-        announcements.Query().Returns(Array.Empty<Announcement>().AsQueryable());
+        news.Query().Returns(Array.Empty<NewsItem>().AsQueryable());
         resources.Query().Returns(Array.Empty<Resource>().AsQueryable());
         sut = new GetSitemapXmlQueryHandler(
             events,
-            announcements,
+            news,
             resources,
             new FakeQueryExecutor(),
             new ApplicationOptions { BaseUrl = BaseUrl + "/" }
@@ -45,7 +44,7 @@ public sealed class GetSitemapXmlQueryHandlerTests
         xml.Should().Contain($"<loc>{BaseUrl}/</loc>");
         xml.Should().Contain($"<loc>{BaseUrl}/about</loc>");
         xml.Should().Contain($"<loc>{BaseUrl}/events</loc>");
-        xml.Should().Contain($"<loc>{BaseUrl}/announcements</loc>");
+        xml.Should().Contain($"<loc>{BaseUrl}/news</loc>");
         xml.Should().Contain($"<loc>{BaseUrl}/resources</loc>");
         xml.Should().Contain($"<loc>{BaseUrl}/register</loc>");
         xml.Should().NotContain("<lastmod>");
@@ -89,15 +88,15 @@ public sealed class GetSitemapXmlQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUpdatedAtMissingFallsBackToCreatedAt()
     {
-        var announcement = NewAnnouncement(new DateTimeOffset(2026, 3, 4, 23, 0, 0, TimeSpan.Zero));
-        announcements.Query().Returns(new[] { announcement }.AsQueryable());
+        var newsItem = NewNewsItem(new DateTimeOffset(2026, 3, 4, 23, 0, 0, TimeSpan.Zero));
+        news.Query().Returns(new[] { newsItem }.AsQueryable());
 
         var xml = await sut.HandleAsync(
             new GetSitemapXmlQuery(),
             TestContext.Current.CancellationToken
         );
 
-        xml.Should().Contain($"<loc>{BaseUrl}/announcements/{announcement.Id}</loc>");
+        xml.Should().Contain($"<loc>{BaseUrl}/news/{newsItem.Id}</loc>");
         xml.Should().Contain("<lastmod>2026-03-04</lastmod>");
     }
 }

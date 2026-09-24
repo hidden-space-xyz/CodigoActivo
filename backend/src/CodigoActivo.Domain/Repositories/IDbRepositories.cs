@@ -277,9 +277,9 @@ public interface IResourceRepository : IDbRepository<Resource>;
 public interface IResourceTypeRepository : IDbRepository<ResourceType>;
 
 /// <summary>
-/// Persists and retrieves announcement data from the database.
+/// Persists and retrieves news item data from the database.
 /// </summary>
-public interface IAnnouncementRepository : IDbRepository<Announcement>
+public interface INewsItemRepository : IDbRepository<NewsItem>
 {
     /// <summary>
     /// Sets the featured state.

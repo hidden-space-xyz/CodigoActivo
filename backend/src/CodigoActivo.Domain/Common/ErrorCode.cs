@@ -9,14 +9,14 @@ namespace CodigoActivo.Domain.Common;
 public enum ErrorCode
 {
     /// <summary>
-    /// Selects the announcement not found option.
+    /// Selects the news item not found option.
     /// </summary>
-    AnnouncementNotFound,
+    NewsItemNotFound,
 
     /// <summary>
-    /// Selects the announcement thumbnail not found option.
+    /// Selects the news item thumbnail not found option.
     /// </summary>
-    AnnouncementThumbnailNotFound,
+    NewsItemThumbnailNotFound,
 
     /// <summary>
     /// Selects the activity not found option.

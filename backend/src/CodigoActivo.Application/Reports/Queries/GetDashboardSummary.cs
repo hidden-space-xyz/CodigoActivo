@@ -41,7 +41,7 @@ public sealed class GetDashboardSummaryQueryHandler(
                     counts.Events,
                     counts.Activities,
                     counts.Resources,
-                    counts.Announcements,
+                    counts.News,
                     counts.Partners,
                     counts.Users
                 );

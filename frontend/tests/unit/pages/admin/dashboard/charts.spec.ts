@@ -76,8 +76,8 @@ describe('dashboard chart styles', () => {
     expect(GENDER_STYLE.Other?.color(TEST_PALETTE)).toBe('orange')
     expect(GENDER_STYLE.Other?.soft(TEST_PALETTE)).toBe('orange-soft')
 
-    expect(CONTENT_STYLE.announcements?.color(TEST_PALETTE)).toBe('orange')
-    expect(CONTENT_STYLE.announcements?.soft(TEST_PALETTE)).toBe('orange-soft')
+    expect(CONTENT_STYLE.news?.color(TEST_PALETTE)).toBe('orange')
+    expect(CONTENT_STYLE.news?.soft(TEST_PALETTE)).toBe('orange-soft')
     expect(CONTENT_STYLE.resources?.color(TEST_PALETTE)).toBe('azure')
     expect(CONTENT_STYLE.resources?.soft(TEST_PALETTE)).toBe('azure-soft')
 

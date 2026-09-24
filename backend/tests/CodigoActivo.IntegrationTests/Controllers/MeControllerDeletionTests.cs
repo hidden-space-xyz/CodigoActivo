@@ -372,7 +372,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     public async Task DeletionAuthoredContentReturnsConflictAndKeepsEverything()
     {
         var (client, code) = await SignedInMemberWithCodeAsync();
-        var announcementId = Guid.NewGuid();
+        var newsItemId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
@@ -385,10 +385,10 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     UploadedBy = TestSeedData.Users.AdminId,
                 }
             );
-            db.Announcements.Add(
-                new Announcement
+            db.News.Add(
+                new NewsItem
                 {
-                    Id = announcementId,
+                    Id = newsItemId,
                     Title = "Nota",
                     Subtitle = "Sub",
                     Description = "{}",
@@ -404,7 +404,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeConflictAsync(ErrorCode.UserDeleteAuthoredContentExists);
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
-        (await FindAsync<Announcement>(announcementId)).Should().NotBeNull();
+        (await FindAsync<NewsItem>(newsItemId)).Should().NotBeNull();
     }
 
     [Fact]

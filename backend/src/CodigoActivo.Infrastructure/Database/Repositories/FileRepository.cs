@@ -34,7 +34,7 @@ public class FileRepository(CodigoActivoDbContext context)
                 UNION ALL
                 SELECT 1 FROM activities WHERE thumbnail_id = {fileId}
                 UNION ALL
-                SELECT 1 FROM announcements WHERE thumbnail_id = {fileId}
+                SELECT 1 FROM news WHERE thumbnail_id = {fileId}
                 UNION ALL
                 SELECT 1 FROM resources WHERE thumbnail_id = {fileId}
                 UNION ALL
@@ -42,7 +42,7 @@ public class FileRepository(CodigoActivoDbContext context)
                 UNION ALL
                 SELECT 1 FROM events WHERE description::text LIKE {pattern}
                 UNION ALL
-                SELECT 1 FROM announcements WHERE description::text LIKE {pattern}
+                SELECT 1 FROM news WHERE description::text LIKE {pattern}
                 UNION ALL
                 SELECT 1 FROM resources WHERE description::text LIKE {pattern}
                 UNION ALL
@@ -81,7 +81,7 @@ public class FileRepository(CodigoActivoDbContext context)
             )
             .Concat(
                 Context
-                    .Announcements.Where(a => candidates.Contains(a.ThumbnailId))
+                    .News.Where(a => candidates.Contains(a.ThumbnailId))
                     .Select(a => a.ThumbnailId)
             )
             .Concat(
@@ -104,7 +104,7 @@ public class FileRepository(CodigoActivoDbContext context)
                 FROM events
                 UNION ALL
                 SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
-                FROM announcements
+                FROM news
                 UNION ALL
                 SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
                 FROM resources

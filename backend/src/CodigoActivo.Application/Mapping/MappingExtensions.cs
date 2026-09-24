@@ -78,21 +78,21 @@ public static class MappingExtensions
     /// <summary>
     /// Maps the domain value to its API response model.
     /// </summary>
-    /// <param name="announcement">The announcement value.</param>
-    /// <returns>The resulting announcement value.</returns>
-    public static AnnouncementResponse ToResponse(this Announcement announcement)
+    /// <param name="newsItem">The news item value.</param>
+    /// <returns>The resulting news item value.</returns>
+    public static NewsItemResponse ToResponse(this NewsItem newsItem)
     {
-        return new AnnouncementResponse(
-            announcement.Id,
-            announcement.Title,
-            announcement.Subtitle,
-            announcement.Description,
-            announcement.CreatedAt,
-            announcement.UpdatedAt,
-            announcement.CreatedBy,
-            announcement.UpdatedBy,
-            announcement.ThumbnailId,
-            announcement.Featured
+        return new NewsItemResponse(
+            newsItem.Id,
+            newsItem.Title,
+            newsItem.Subtitle,
+            newsItem.Description,
+            newsItem.CreatedAt,
+            newsItem.UpdatedAt,
+            newsItem.CreatedBy,
+            newsItem.UpdatedBy,
+            newsItem.ThumbnailId,
+            newsItem.Featured
         );
     }
 

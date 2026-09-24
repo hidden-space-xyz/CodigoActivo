@@ -326,7 +326,7 @@ Changing an account's password (by the user or through recovery), its second fac
 returned to email, or reset by an administrator), its administrator flag or its email or phones queues a
 notification to the affected account after commit, from the handler, whoever asked for the change. The notice
 names the change and its timestamp and carries no code, secret or link that performs an action; an email or
-phone change is announced to the **previous** address and only ever quotes the new one masked. These messages are
+phone change is reported to the **previous** address and only ever quotes the new one masked. These messages are
 ordinary automatic mail, not credential mail, so they spend the shared budget without touching the credential
 reserve that login codes rely on.
 

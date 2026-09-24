@@ -213,70 +213,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("activity_user_role_assignments", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Announcement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("Featured")
-                        .HasColumnType("boolean")
-                        .HasColumnName("featured");
-
-                    b.Property<string>("Subtitle")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("subtitle");
-
-                    b.Property<Guid>("ThumbnailId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("thumbnail_id");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id")
-                        .HasName("pk_announcements");
-
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("ix_announcements_created_at");
-
-                    b.HasIndex("CreatedBy")
-                        .HasDatabaseName("ix_announcements_created_by");
-
-                    b.HasIndex("ThumbnailId")
-                        .HasDatabaseName("ix_announcements_thumbnail_id");
-
-                    b.HasIndex("UpdatedBy")
-                        .HasDatabaseName("ix_announcements_updated_by");
-
-                    b.ToTable("announcements", (string)null);
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Entities.AssignmentStatusType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -719,6 +655,70 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_files_uploaded_by");
 
                     b.ToTable("files", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.NewsItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("Featured")
+                        .HasColumnType("boolean")
+                        .HasColumnName("featured");
+
+                    b.Property<string>("Subtitle")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("subtitle");
+
+                    b.Property<Guid>("ThumbnailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("thumbnail_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_news");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_news_created_at");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_news_created_by");
+
+                    b.HasIndex("ThumbnailId")
+                        .HasDatabaseName("ix_news_thumbnail_id");
+
+                    b.HasIndex("UpdatedBy")
+                        .HasDatabaseName("ix_news_updated_by");
+
+                    b.ToTable("news", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Partner", b =>
@@ -1295,31 +1295,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Announcement", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_announcements_users_created_by");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
-                        .WithMany()
-                        .HasForeignKey("ThumbnailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_announcements_files_thumbnail_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_announcements_users_updated_by");
-
-                    b.Navigation("Thumbnail");
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
@@ -1459,6 +1434,31 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_files_users_uploaded_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.NewsItem", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_news_users_created_by");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
+                        .WithMany()
+                        .HasForeignKey("ThumbnailId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_news_files_thumbnail_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_news_users_updated_by");
+
+                    b.Navigation("Thumbnail");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Partner", b =>

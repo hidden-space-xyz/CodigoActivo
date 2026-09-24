@@ -2,7 +2,7 @@
 import { useSeo } from '@/shared/lib'
 
 import { organizationJsonLd } from '../model/organizationJsonLd'
-import AnnouncementsSection from './sections/AnnouncementsSection.vue'
+import NewsSection from './sections/NewsSection.vue'
 import HomeEventsSection from './sections/HomeEventsSection.vue'
 import HeroSection from './sections/HeroSection.vue'
 import SponsorsSection from './sections/SponsorsSection.vue'
@@ -14,7 +14,7 @@ useSeo(() => ({ jsonLd: organizationJsonLd() }))
   <div>
     <HeroSection />
 
-    <AnnouncementsSection />
+    <NewsSection />
 
     <HomeEventsSection />
 

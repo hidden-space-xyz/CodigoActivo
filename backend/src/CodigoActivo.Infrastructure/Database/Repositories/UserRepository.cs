@@ -175,7 +175,7 @@ public class UserRepository(CodigoActivoDbContext context)
                     ct
                 )
             || await Context
-                .Announcements.AsNoTracking()
+                .News.AsNoTracking()
                 .AnyAsync(
                     a =>
                         household.Contains(a.CreatedBy)

@@ -183,29 +183,23 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     public async Task UpdateAfterAnonymousDetailCachedAnonymousDetailShowsNewTitle()
     {
         var thumbnailId = await SeedThumbnailAsync();
-        var announcementId = await SeedAnnouncementAsync(thumbnailId, "Título original");
+        var newsItemId = await SeedNewsItemAsync(thumbnailId, "Título original");
         var anonymous = CreateClient();
 
-        using var warm = await anonymous.GetAsync(
-            TestUri.Rel($"/api/announcements/{announcementId}"),
-            Ct
-        );
-        var before = await warm.ReadJsonAsync<AnnouncementResponse>(Ct);
+        using var warm = await anonymous.GetAsync(TestUri.Rel($"/api/news/{newsItemId}"), Ct);
+        var before = await warm.ReadJsonAsync<NewsItemResponse>(Ct);
         before!.Title.Should().Be("Título original");
 
         var admin = await LoginAsAdminAsync();
         using var updated = await admin.PutJsonAsync(
-            $"/api/announcements/{announcementId}",
-            new UpdateAnnouncementRequest("Título corregido", "Subtítulo", "{}", thumbnailId),
+            $"/api/news/{newsItemId}",
+            new UpdateNewsItemRequest("Título corregido", "Subtítulo", "{}", thumbnailId),
             Ct
         );
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using var after = await anonymous.GetAsync(
-            TestUri.Rel($"/api/announcements/{announcementId}"),
-            Ct
-        );
-        var body = await after.ReadJsonAsync<AnnouncementResponse>(Ct);
+        using var after = await anonymous.GetAsync(TestUri.Rel($"/api/news/{newsItemId}"), Ct);
+        var body = await after.ReadJsonAsync<NewsItemResponse>(Ct);
         body!.Title.Should().Be("Título corregido");
     }
 
@@ -384,13 +378,13 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
     }
 
-    private async Task<Guid> SeedAnnouncementAsync(Guid thumbnailId, string title)
+    private async Task<Guid> SeedNewsItemAsync(Guid thumbnailId, string title)
     {
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            db.Announcements.Add(
-                new Announcement
+            db.News.Add(
+                new NewsItem
                 {
                     Id = id,
                     Title = title,

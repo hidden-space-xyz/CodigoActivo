@@ -2,8 +2,6 @@ using System.Globalization;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Announcements.Commands;
-using CodigoActivo.Application.Announcements.Queries;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Auth.Commands;
 using CodigoActivo.Application.Auth.Queries;
@@ -18,6 +16,8 @@ using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Files.Queries;
+using CodigoActivo.Application.News.Commands;
+using CodigoActivo.Application.News.Queries;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Participation.Queries;
@@ -479,7 +479,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
-        services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+        services.AddScoped<INewsItemRepository, NewsItemRepository>();
         services.AddScoped<IPartnerRepository, PartnerRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IUserTypeRepository, UserTypeRepository>();
@@ -542,7 +542,7 @@ public static class DependencyInjection
     {
         AddPartnerHandlers(services);
         AddSeoHandlers(services);
-        AddAnnouncementHandlers(services);
+        AddNewsHandlers(services);
         AddResourceHandlers(services);
         AddFileHandlers(services);
         AddEventHandlers(services);
@@ -569,15 +569,15 @@ public static class DependencyInjection
         services.AddScoped<GetRobotsTxtQueryHandler>();
     }
 
-    private static void AddAnnouncementHandlers(IServiceCollection services)
+    private static void AddNewsHandlers(IServiceCollection services)
     {
-        services.AddScoped<ListAnnouncementsQueryHandler>();
-        services.AddScoped<GetAnnouncementByIdQueryHandler>();
-        services.AddScoped<GetAnnouncementYearsQueryHandler>();
-        services.AddScoped<CreateAnnouncementCommandHandler>();
-        services.AddScoped<UpdateAnnouncementCommandHandler>();
-        services.AddScoped<DeleteAnnouncementCommandHandler>();
-        services.AddScoped<SetAnnouncementFeaturedCommandHandler>();
+        services.AddScoped<ListNewsQueryHandler>();
+        services.AddScoped<GetNewsItemByIdQueryHandler>();
+        services.AddScoped<GetNewsYearsQueryHandler>();
+        services.AddScoped<CreateNewsItemCommandHandler>();
+        services.AddScoped<UpdateNewsItemCommandHandler>();
+        services.AddScoped<DeleteNewsItemCommandHandler>();
+        services.AddScoped<SetNewsItemFeaturedCommandHandler>();
     }
 
     private static void AddResourceHandlers(IServiceCollection services)

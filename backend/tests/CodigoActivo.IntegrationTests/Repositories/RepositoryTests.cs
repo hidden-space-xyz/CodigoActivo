@@ -111,7 +111,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         };
     }
 
-    private static Announcement NewAnnouncement(string title = "Ann", bool featured = false)
+    private static NewsItem NewNewsItem(string title = "Ann", bool featured = false)
     {
         return new()
         {
@@ -393,10 +393,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         (
             await ctx
                 .Users.AsNoTracking()
-                .CountAsync(
-                    u => u.Phone == "+34600000000" && u.NationalId == "12345678Z",
-                    Ct
-                )
+                .CountAsync(u => u.Phone == "+34600000000" && u.NationalId == "12345678Z", Ct)
         )
             .Should()
             .Be(2);
@@ -677,20 +674,20 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using var ctx = postgres.CreateContext();
 
         var eventEmbeddedFileId = Guid.NewGuid();
-        var announcementEmbeddedFileId = Guid.NewGuid();
+        var newsItemEmbeddedFileId = Guid.NewGuid();
 
         var ev = NewEvent();
         ev.Description = $"{{\"img\":\"/api/files/{eventEmbeddedFileId}/content\"}}";
-        var announcement = NewAnnouncement();
-        announcement.Description =
-            $"{{\"img\":\"https://api.example.org/api/files/{announcementEmbeddedFileId}/content\"}}";
-        ctx.AddRange(ev, announcement);
+        var newsItem = NewNewsItem();
+        newsItem.Description =
+            $"{{\"img\":\"https://api.example.org/api/files/{newsItemEmbeddedFileId}/content\"}}";
+        ctx.AddRange(ev, newsItem);
         await ctx.SaveChangesAsync(Ct);
         var repo = new FileRepository(ctx);
 
         (await repo.IsInUseAsync(ThumbId, Ct)).Should().BeTrue();
         (await repo.IsInUseAsync(eventEmbeddedFileId, Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(announcementEmbeddedFileId, Ct)).Should().BeTrue();
+        (await repo.IsInUseAsync(newsItemEmbeddedFileId, Ct)).Should().BeTrue();
         (await repo.IsInUseAsync(Guid.NewGuid(), Ct)).Should().BeFalse();
     }
 
@@ -700,7 +697,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using var ctx = postgres.CreateContext();
 
         var embeddedInEventId = Guid.NewGuid();
-        var embeddedInAnnouncementId = Guid.NewGuid();
+        var embeddedInNewsItemId = Guid.NewGuid();
         var embeddedInResourceId = Guid.NewGuid();
         var embeddedButNotCandidateId = Guid.NewGuid();
         var unreferencedId = Guid.NewGuid();
@@ -709,12 +706,12 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         ev.Description =
             $"{{\"a\":\"/api/files/{embeddedInEventId}/content\","
             + $"\"b\":\"/api/files/{embeddedButNotCandidateId}/content\"}}";
-        var announcement = NewAnnouncement();
-        announcement.Description =
-            $"{{\"img\":\"https://api.example.org/api/files/{embeddedInAnnouncementId}/content\"}}";
+        var newsItem = NewNewsItem();
+        newsItem.Description =
+            $"{{\"img\":\"https://api.example.org/api/files/{embeddedInNewsItemId}/content\"}}";
         var resource = NewResource();
         resource.Description = $"{{\"img\":\"/api/files/{embeddedInResourceId}/content\"}}";
-        ctx.AddRange(ev, announcement, resource);
+        ctx.AddRange(ev, newsItem, resource);
         await ctx.SaveChangesAsync(Ct);
         var repo = new FileRepository(ctx);
 
@@ -722,7 +719,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             [
                 ThumbId,
                 embeddedInEventId,
-                embeddedInAnnouncementId,
+                embeddedInNewsItemId,
                 embeddedInResourceId,
                 unreferencedId,
             ],
@@ -734,7 +731,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             .BeEquivalentTo([
                 ThumbId,
                 embeddedInEventId,
-                embeddedInAnnouncementId,
+                embeddedInNewsItemId,
                 embeddedInResourceId,
             ]);
     }
@@ -848,31 +845,28 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task SetFeaturedAsyncAnotherAnnouncementWasFeaturedLeavesExactlyTargetFeatured()
+    public async Task SetFeaturedAsyncAnotherNewsItemWasFeaturedLeavesExactlyTargetFeatured()
     {
         await using var ctx = postgres.CreateContext();
-        var previous = NewAnnouncement("Anterior", featured: true);
-        var target = NewAnnouncement("Objetivo");
-        ctx.Announcements.AddRange(previous, target);
+        var previous = NewNewsItem("Anterior", featured: true);
+        var target = NewNewsItem("Objetivo");
+        ctx.News.AddRange(previous, target);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new AnnouncementRepository(ctx);
+        var repo = new NewsItemRepository(ctx);
 
         var result = await repo.SetFeaturedAsync(target.Id, Ct);
 
         result.Should().BeTrue();
         await using var probe = postgres.CreateContext();
-        var featuredIds = await probe
-            .Announcements.Where(a => a.Featured)
-            .Select(a => a.Id)
-            .ToListAsync(Ct);
+        var featuredIds = await probe.News.Where(a => a.Featured).Select(a => a.Id).ToListAsync(Ct);
         featuredIds.Should().Equal(target.Id);
     }
 
     [Fact]
-    public async Task SetFeaturedAsyncAnnouncementMissingReturnsFalse()
+    public async Task SetFeaturedAsyncNewsItemMissingReturnsFalse()
     {
         await using var ctx = postgres.CreateContext();
-        var repo = new AnnouncementRepository(ctx);
+        var repo = new NewsItemRepository(ctx);
 
         (await repo.SetFeaturedAsync(Guid.NewGuid(), Ct)).Should().BeFalse();
     }
@@ -886,10 +880,10 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         switch (source)
         {
-            case "announcement":
-                var announcement = NewAnnouncement("Nota del socio");
-                announcement.CreatedBy = ownerId;
-                ctx.Announcements.Add(announcement);
+            case "newsItem":
+                var newsItem = NewNewsItem("Nota del socio");
+                newsItem.CreatedBy = ownerId;
+                ctx.News.Add(newsItem);
                 break;
             case "event":
                 var ev = NewEvent("Evento retocado");
@@ -940,7 +934,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Theory]
-    [InlineData("announcement")]
+    [InlineData("newsItem")]
     [InlineData("event")]
     [InlineData("activity")]
     [InlineData("partner")]
@@ -963,9 +957,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var ctx = postgres.CreateContext();
         var (owner, child) = await SeedHouseholdAsync(ctx);
-        var announcement = NewAnnouncement("Nota del menor");
-        announcement.CreatedBy = child.Id;
-        ctx.Announcements.Add(announcement);
+        var newsItem = NewNewsItem("Nota del menor");
+        newsItem.CreatedBy = child.Id;
+        ctx.News.Add(newsItem);
         await ctx.SaveChangesAsync(Ct);
         ctx.ChangeTracker.Clear();
         var repo = new UserRepository(ctx);
@@ -984,7 +978,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var parentEvent = NewEvent("Evento ajeno");
         ctx.Events.Add(parentEvent);
         ctx.Activities.Add(NewActivity(parentEvent.Id, "Taller ajeno"));
-        ctx.Announcements.Add(NewAnnouncement("Nota ajena"));
+        ctx.News.Add(NewNewsItem("Nota ajena"));
         ctx.Partners.Add(NewPartner("Colaborador ajeno"));
         ctx.Resources.Add(NewResource("Recurso ajeno"));
         await ctx.SaveChangesAsync(Ct);
