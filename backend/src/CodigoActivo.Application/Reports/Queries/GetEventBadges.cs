@@ -67,6 +67,7 @@ public sealed class GetEventBadgesQueryHandler(
                         ),
                     a.ActivityId,
                     ActivityTitle = a.Activity.Title,
+                    ActivityLocation = a.Activity.Location,
                     a.Activity.ActivityStartsAt,
                 }),
             ct
@@ -88,7 +89,10 @@ public sealed class GetEventBadgesQueryHandler(
                         .. g.OrderBy(r => r.ActivityStartsAt)
                             .ThenBy(r => r.ActivityTitle, StringComparer.Ordinal)
                             .DistinctBy(r => r.ActivityId)
-                            .Select(r => r.ActivityTitle),
+                            .Select(r => new EventBadgeActivityResponse(
+                                r.ActivityTitle,
+                                r.ActivityLocation
+                            )),
                     ]
                 );
             })

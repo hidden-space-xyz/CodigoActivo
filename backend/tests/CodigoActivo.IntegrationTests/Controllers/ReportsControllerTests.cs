@@ -586,7 +586,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         admin.UserTypeName.Should().Be("Socio");
         admin.UserTypeColor.Should().Be("#EF4444");
         admin.Guardian.Should().BeNull();
-        admin.Activities.Should().Equal("Charla");
+        admin.Activities.Should().Equal(new EventBadgeActivityResponse("Charla", "Sala"));
 
         var child = report.Badges[1];
         child.UserId.Should().Be(TestSeedData.Users.MemberChildId);
@@ -597,7 +597,12 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         child.Guardian.FirstName.Should().Be("Marta");
         child.Guardian.LastName.Should().Be("Miembro");
         child.Guardian.Phone.Should().Be("+34600000002");
-        child.Activities.Should().BeEquivalentTo("Taller", "Charla");
+        child
+            .Activities.Should()
+            .BeEquivalentTo([
+                new EventBadgeActivityResponse("Taller", "Sala"),
+                new EventBadgeActivityResponse("Charla", "Sala"),
+            ]);
     }
 
     [Fact]

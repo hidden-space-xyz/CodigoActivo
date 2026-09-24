@@ -46,7 +46,10 @@ describe('EventBadgesPage', () => {
     const { wrapper } = await renderBadges([
       buildBadge({
         guardian: { firstName: 'Mary', lastName: 'Lovelace', phone: '600111222' },
-        activities: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'],
+        activities: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'].map((title, index) => ({
+          title,
+          location: index === 0 ? null : `Aula ${index}`,
+        })),
       }),
       buildBadge({
         userId: 'user-2',
@@ -69,15 +72,28 @@ describe('EventBadgesPage', () => {
     expect(ada?.find('.badge__type').text()).toBe('Member')
     expect(ada?.find('.badge__guardian-name').text()).toBe('Mary')
     expect(ada?.find('.badge__guardian-phone').text()).toContain('600111222')
-    expect(ada?.findAll('.badge__activity').map((chip) => chip.text())).toEqual([
+    const chips = ada?.findAll('.badge__activity') ?? []
+    expect(chips).toHaveLength(7)
+    expect(ada?.findAll('.badge__activity-title').map((title) => title.text())).toEqual([
       'A1',
       'A2',
       'A3',
       'A4',
       'A5',
       'A6',
-      t('pages.admin.eventBadges.moreActivities', { n: 2 }),
     ])
+    expect(chips[0]?.find('.badge__activity-location').exists()).toBe(false)
+    expect(ada?.findAll('.badge__activity-location').map((place) => place.text())).toEqual([
+      'Aula 1',
+      'Aula 2',
+      'Aula 3',
+      'Aula 4',
+      'Aula 5',
+    ])
+    expect(chips[1]?.find('.badge__location-icon').attributes('aria-label')).toBe(
+      t('pages.admin.eventBadges.locationAria'),
+    )
+    expect(chips[6]?.text()).toBe(t('pages.admin.eventBadges.moreActivities', { n: 2 }))
 
     expect(tim?.find('.badge__name').text()).toBe('Tim')
     expect(tim?.attributes('style')).toContain('--accent: #475569')
@@ -91,8 +107,8 @@ describe('EventBadgesPage', () => {
     expect(grace?.findAll('.badge__activity')).toHaveLength(1)
   })
 
-  it('splits badges into A4 sheets of sixteen', async () => {
-    const badges = Array.from({ length: 17 }, (_, index) =>
+  it('splits badges into APLI 01288 sheets of twelve', async () => {
+    const badges = Array.from({ length: 13 }, (_, index) =>
       buildBadge({ userId: `user-${index}`, firstName: `Person ${index}` }),
     )
 
@@ -100,7 +116,7 @@ describe('EventBadgesPage', () => {
 
     const sheets = wrapper.findAll('.sheet')
     expect(sheets).toHaveLength(2)
-    expect(sheets[0]?.findAll('.badge')).toHaveLength(16)
+    expect(sheets[0]?.findAll('.badge')).toHaveLength(12)
     expect(sheets[1]?.findAll('.badge')).toHaveLength(1)
     expect(sheets[0]?.find('.badge__event').text()).toBe('')
   })
@@ -114,6 +130,7 @@ describe('EventBadgesPage', () => {
         style.textContent?.includes('@page { size: A4 portrait; margin: 0; }'),
       )
     expect(pageRule()).toBe(true)
+    expect(wrapper.find('.print-hint').text()).toBe(t('pages.admin.eventBadges.printHint'))
 
     await wrapper.find('.print-btn').trigger('click')
     expect(print).toHaveBeenCalledTimes(1)
@@ -191,5 +208,49 @@ describe('EventBadgesPage', () => {
     expect(short?.find('.badge__activities').exists()).toBe(false)
     expect(styleVar(short?.element, '--fit')).toBe(1.5)
     expect(short?.attributes('style')).not.toContain('--name-fit')
+  })
+
+  it('shrinks an enlarged name back towards its base size before shrinking the activities', async () => {
+    const nameWeight: Record<string, number> = { 'Ana Lovelace': 40, 'Eva Lovelace': 70 }
+    const fitOf = (element: Element) => {
+      const badge = element.closest('.badge') ?? undefined
+      return {
+        fit: styleVar(badge, '--fit') || 1,
+        nameFit: styleVar(badge, '--name-fit') || 1,
+        weight: nameWeight[badge?.querySelector('.badge__name')?.textContent ?? ''] ?? 0,
+      }
+    }
+    vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (this: Element) {
+      return this.classList.contains('badge__name') ? 100 * fitOf(this).nameFit : 0
+    })
+    vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => 300)
+    vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(() => 150)
+    vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockImplementation(function (this: Element) {
+      if (!this.classList.contains('badge__body')) return 0
+      const { fit, nameFit, weight } = fitOf(this)
+      return 100 * fit + weight * nameFit
+    })
+    const originalStyle = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      if (element.classList.contains('badge__body')) {
+        return { paddingLeft: '10px', paddingRight: '10px' } as CSSStyleDeclaration
+      }
+      return originalStyle(element, pseudo)
+    })
+
+    const { wrapper } = await renderBadges([
+      buildBadge({ firstName: 'Ana' }),
+      buildBadge({ userId: 'user-2', firstName: 'Eva' }),
+    ])
+
+    const [partly, fully] = wrapper.findAll('.badge')
+    await vi.waitFor(() => expect(styleVar(fully?.element, '--fit')).toBeGreaterThan(0))
+    const partlyNameFit = styleVar(partly?.element, '--name-fit')
+    expect(partlyNameFit).toBeGreaterThan(1)
+    expect(partlyNameFit).toBeLessThan(1.6)
+    expect(styleVar(partly?.element, '--fit')).toBeGreaterThanOrEqual(1)
+    expect(styleVar(fully?.element, '--name-fit')).toBe(1)
+    expect(styleVar(fully?.element, '--fit')).toBeGreaterThan(0.6)
+    expect(styleVar(fully?.element, '--fit')).toBeLessThan(1)
   })
 })
