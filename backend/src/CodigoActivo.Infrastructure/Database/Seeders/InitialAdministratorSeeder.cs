@@ -67,7 +67,7 @@ public sealed class InitialAdministratorSeeder(
             Email = email,
             Phone = null,
             PasswordHash = passwordHasher.Hash(configuredPassword),
-            BirthDate = new DateOnly(2000, 1, 1),
+            NationalId = "00000000T",
             Gender = Gender.Other,
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
             UserTypeId = SeedIds.UserTypes.Member,

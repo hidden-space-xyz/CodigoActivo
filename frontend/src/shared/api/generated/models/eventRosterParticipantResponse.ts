@@ -12,7 +12,8 @@ export interface EventRosterParticipantResponse {
   firstName?: string | null;
   /** @nullable */
   lastName?: string | null;
-  birthDate?: string;
+  /** @nullable */
+  birthDate?: string | null;
   /** @nullable */
   email?: string | null;
   /** @nullable */

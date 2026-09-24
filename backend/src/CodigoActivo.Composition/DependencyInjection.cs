@@ -10,6 +10,7 @@ using CodigoActivo.Application.Auth.Queries;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Application.Emails.Queries;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
@@ -712,6 +713,8 @@ public static class DependencyInjection
         services.AddScoped<SendEmailToUserCommandHandler>();
         services.AddScoped<SendEmailToUsersCommandHandler>();
         services.AddScoped<SendEmailToEventAttendeesCommandHandler>();
+        services.AddScoped<GetUsersEmailAudienceQueryHandler>();
+        services.AddScoped<GetEventAttendeesEmailAudienceQueryHandler>();
         services.AddScoped<ManualEmailDispatcher>();
     }
 }

@@ -30,6 +30,23 @@ public sealed class StringExtensionsTests
     [InlineData(null, null)]
     [InlineData("", null)]
     [InlineData("   ", null)]
+    [InlineData(" - - ", null)]
+    [InlineData("12345678Z", "12345678Z")]
+    [InlineData(" 12345678-z ", "12345678Z")]
+    [InlineData("x 1234567 l", "X1234567L")]
+    [InlineData("y-1234-567-x", "Y1234567X")]
+    public void NormalizeNationalIdOrNullUppercasesAndDropsSpacesAndHyphens(
+        string? value,
+        string? expected
+    )
+    {
+        value.NormalizeNationalIdOrNull().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("   ", null)]
     [InlineData("ana.ruiz@example.org", "a***@example.org")]
     [InlineData("a@example.org", "a***@example.org")]
     [InlineData("no-at-sign", "***")]

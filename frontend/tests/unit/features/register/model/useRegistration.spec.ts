@@ -52,7 +52,8 @@ function fillAdult(registration: Registration): void {
     phone: '600000000',
     password: 'correct-horse-battery',
     confirmPassword: 'correct-horse-battery',
-    dateOfBirth: '1990-05-10',
+    nationalId: '12345678Z',
+    confirmNationalId: '12345678Z',
     gender: 'Female',
   })
 }

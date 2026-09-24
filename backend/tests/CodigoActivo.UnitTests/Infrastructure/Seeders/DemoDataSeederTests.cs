@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AwesomeAssertions;
+using CodigoActivo.Application.Validation;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Storage;
@@ -319,6 +320,26 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
+    public void BuildGraphDefaultAdultsHaveUniqueValidNationalIdsAndNoBirthDate()
+    {
+        var adults = graph.Users.Where(u => u.ParentId is null).ToList();
+        var validator = new SpanishNationalIdAttribute();
+
+        adults.Should().NotBeEmpty();
+        adults
+            .Should()
+            .AllSatisfy(adult =>
+            {
+                adult.BirthDate.Should().BeNull();
+                adult.NationalId.Should().NotBeNull().And.HaveLength(9);
+                validator.IsValid(adult.NationalId).Should().BeTrue();
+            });
+        adults.Select(u => u.NationalId).Should().OnlyHaveUniqueItems();
+        adults.Should().Contain(u => u.PromotionalConsent);
+        adults.Should().Contain(u => !u.PromotionalConsent);
+    }
+
+    [Fact]
     public void BuildGraphDefaultChildrenAreDependentParticipantsWithoutCredentials()
     {
         var userIds = graph.Users.Select(u => u.Id).ToHashSet();
@@ -334,7 +355,10 @@ public sealed class DemoDataSeederTests
                 child.PasswordHash.Should().BeNull();
                 child.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
                 child.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
-                child.BirthDate.Year.Should().BeGreaterThan(2008);
+                child.BirthDate.Should().NotBeNull();
+                child.BirthDate!.Value.Year.Should().BeGreaterThan(2008);
+                child.NationalId.Should().BeNull();
+                child.PromotionalConsent.Should().BeFalse();
                 userIds.Should().Contain(child.ParentId!.Value);
             });
     }

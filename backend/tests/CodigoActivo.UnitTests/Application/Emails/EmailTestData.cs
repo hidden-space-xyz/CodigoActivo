@@ -14,7 +14,12 @@ internal static class EmailTestData
 {
     public static readonly DateOnly Birth = new(1990, 1, 1);
 
-    public static User NewUser(string first, string? email, User? parent = null)
+    public static User NewUser(
+        string first,
+        string? email,
+        User? parent = null,
+        bool promotionalConsent = false
+    )
     {
         return new()
         {
@@ -22,7 +27,8 @@ internal static class EmailTestData
             FirstName = first,
             LastName = first + " Apellido",
             Email = email,
-            BirthDate = Birth,
+            BirthDate = parent is null ? null : Birth,
+            PromotionalConsent = promotionalConsent,
             Gender = Gender.Other,
             ParentId = parent?.Id,
             Parent = parent,

@@ -440,4 +440,113 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         Factory.EmailSender.Sent.Should().BeEmpty();
     }
+
+    [Theory]
+    [InlineData("", 4, 3)]
+    [InlineData("?promotionalConsent=true", 1, 0)]
+    [InlineData("?promotionalConsent=false", 3, 3)]
+    [InlineData("?id=22222222-2222-2222-2222-222222222222", 1, 0)]
+    [InlineData("?id=33333333-3333-3333-3333-333333333333", 0, 0)]
+    public async Task UsersAudienceAsAdminCountsTheRecipientsOfTheSameFilters(
+        string queryString,
+        int recipients,
+        int withoutConsent
+    )
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.GetAsync(
+            TestUri.Rel($"{UsersUrl}/audience{queryString}"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var audience = await response.ReadJsonAsync<EmailAudienceResponse>(Ct);
+        audience.Should().Be(new EmailAudienceResponse(recipients, withoutConsent));
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task UsersAudienceAsMemberReturnsForbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.GetAsync(TestUri.Rel($"{UsersUrl}/audience"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UsersAudienceAnonymousUserReturnsUnauthorized()
+    {
+        var client = CreateClient();
+
+        using var response = await client.GetAsync(TestUri.Rel($"{UsersUrl}/audience"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Theory]
+    [InlineData("", 2, 1)]
+    [InlineData("?statusId=b3a9d1f0-0000-0000-0000-000000000000", 0, 0)]
+    public async Task EventAttendeesAudienceAsAdminCountsTheRecipientsOfTheSameFilters(
+        string queryString,
+        int recipients,
+        int withoutConsent
+    )
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.GetAsync(
+            TestUri.Rel($"{AttendeesUrl}/audience{queryString}"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var audience = await response.ReadJsonAsync<EmailAudienceResponse>(Ct);
+        audience.Should().Be(new EmailAudienceResponse(recipients, withoutConsent));
+    }
+
+    [Fact]
+    public async Task EventAttendeesAudienceFilteredByStatusMatchesTheSendSelection()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.GetAsync(
+            TestUri.Rel(
+                $"{AttendeesUrl}/audience?statusId={SeedIds.AssignmentStatusTypes.Confirmed}"
+            ),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var audience = await response.ReadJsonAsync<EmailAudienceResponse>(Ct);
+        audience.Should().Be(new EmailAudienceResponse(1, 0));
+    }
+
+    [Fact]
+    public async Task EventAttendeesAudienceUnknownEventReturnsNotFound()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.GetAsync(
+            TestUri.Rel($"/api/emails/events/{Guid.NewGuid()}/attendees/audience"),
+            Ct
+        );
+
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
+    }
+
+    [Fact]
+    public async Task EventAttendeesAudienceAsMemberReturnsForbidden()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.GetAsync(TestUri.Rel($"{AttendeesUrl}/audience"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }

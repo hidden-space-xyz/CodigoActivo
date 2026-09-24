@@ -337,19 +337,21 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsyncSortByBirthDateDescendingOrdersYoungestFirst()
+    public async Task EventAttendeesAsyncSortByBirthDateListsDependentsBeforeAdultsWithoutOne()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{EventId}/attendees?sort=-birthDate"),
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?sort=birthDate"),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
-        page!.Items.Select(a => a.FirstName).Should().Equal("Mateo", "Pedro", "Bruno", "Ada");
+        page!.Items[0].FirstName.Should().Be("Mateo");
+        page.Items[0].BirthDate.Should().Be(new DateOnly(2015, 5, 5));
+        page.Items.Skip(1).Should().HaveCount(3).And.OnlyContain(a => a.BirthDate == null);
     }
 
     [Fact]
@@ -611,7 +613,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         admin.UserId.Should().Be(TestSeedData.Users.AdminId);
         admin.FirstName.Should().Be("Ada");
         admin.LastName.Should().Be("Admin");
-        admin.BirthDate.Should().Be(new DateOnly(1985, 3, 12));
+        admin.BirthDate.Should().BeNull();
         admin.Email.Should().Be(TestSeedData.AdminEmail);
         admin.Phone.Should().Be("+34600000001");
         admin.RoleName.Should().Be("Líder");

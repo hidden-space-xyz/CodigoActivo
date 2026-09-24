@@ -123,7 +123,11 @@ describe('account requests', () => {
     server.use(
       http.get('/api/users', ({ request }) => {
         url = new URL(request.url)
-        return HttpResponse.json(paged([buildUserResponse({ id: 'child-1', firstName: 'Byron' })]))
+        return HttpResponse.json(
+          paged([
+            buildUserResponse({ id: 'child-1', firstName: 'Byron', birthDate: '2015-03-02' }),
+          ]),
+        )
       }),
     )
 
@@ -134,7 +138,7 @@ describe('account requests', () => {
         id: 'child-1',
         firstName: 'Byron',
         lastName: 'Lovelace',
-        birthDate: '1990-05-10',
+        birthDate: '2015-03-02',
         gender: 'Female',
       },
     ])
@@ -161,7 +165,8 @@ describe('account requests', () => {
       lastName: 'King',
       email: 'ada@example.test',
       phone: '600000000',
-      birthDate: '1990-05-10',
+      nationalId: '12345678Z',
+      promotionalConsent: true,
       gender: 'Female',
       currentPassword: null,
     })
@@ -172,7 +177,9 @@ describe('account requests', () => {
       lastName: 'King',
       email: 'ada@example.test',
       phone: '600000000',
-      birthDate: '1990-05-10',
+      birthDate: null,
+      nationalId: '12345678Z',
+      promotionalConsent: true,
       gender: 'Female',
       parentId: null,
       currentPassword: null,

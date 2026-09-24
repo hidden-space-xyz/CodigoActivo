@@ -12,7 +12,9 @@ namespace CodigoActivo.Application.DTOs;
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
-/// <param name="BirthDate">User's date of birth.</param>
+/// <param name="BirthDate">User's date of birth; only dependents have one.</param>
+/// <param name="NationalId">Normalized DNI or NIE; only independent accounts have one.</param>
+/// <param name="PromotionalConsent">Whether the user agreed to receive promotional content.</param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="LastLoginAt">UTC timestamp of the user's most recent login.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
@@ -30,7 +32,9 @@ public record UserResponse(
     string LastName,
     string? Email,
     string? Phone,
-    DateOnly BirthDate,
+    DateOnly? BirthDate,
+    string? NationalId,
+    bool PromotionalConsent,
     Gender Gender,
     DateTimeOffset? LastLoginAt,
     DateTimeOffset CreatedAt,
@@ -54,7 +58,9 @@ public record UserResponse(
             string.Empty,
             null,
             null,
-            default,
+            null,
+            null,
+            false,
             default,
             null,
             default,
@@ -125,7 +131,17 @@ public record DeleteAccountRequest(
 /// <param name="LastName">User's family name.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
-/// <param name="BirthDate">User's date of birth.</param>
+/// <param name="BirthDate">
+/// User's date of birth. Required for a dependent; a changed value must keep them a minor,
+/// while the stored one stays valid after they come of age. An independent account must leave it
+/// unset.
+/// </param>
+/// <param name="NationalId">
+/// DNI or NIE. Required and unique for an independent account; ignored for a dependent.
+/// </param>
+/// <param name="PromotionalConsent">
+/// Whether the user agrees to receive promotional content; ignored for a dependent.
+/// </param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="ParentId">
 /// Identifier of the parent. Only accepted for an account that is already a dependent, and only
@@ -140,7 +156,9 @@ public record UpdateUserRequest(
     [Required] [MaxLength(120)] [NotBlank] string LastName,
     [EmailAddress] [MaxLength(256)] string? Email,
     [Phone] [MaxLength(40)] string? Phone,
-    [NotDefaultOrFutureDate] DateOnly BirthDate,
+    [NotDefaultOrFutureDate] DateOnly? BirthDate,
+    [MaxLength(12)] [SpanishNationalId] string? NationalId,
+    bool PromotionalConsent,
     [EnumDataType(typeof(Gender))] Gender Gender,
     Guid? ParentId,
     [MaxLength(128)] string? CurrentPassword

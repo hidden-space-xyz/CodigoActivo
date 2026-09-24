@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import type { SendEmailPayload } from '@/features/send-email/model/useSendEmail'
+import type { EmailAudience } from '@/features/send-email/model/types'
 import type { SendEmailResultResponse } from '@/shared/api/generated/models'
 
 import {
@@ -98,6 +99,48 @@ describe('useSendEmail', () => {
     )
     expect(received?.subject).toBe('Hello')
   })
+
+  it('loads the audience of the filtered users and defaults missing counts', async () => {
+    const urls: string[] = []
+    let body: Record<string, number> = { recipients: 5, withoutConsent: 2 }
+    server.use(
+      http.get('/api/emails/users/audience', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(body)
+      }),
+    )
+    const { result } = await withSetup(() => useSendEmail())
+
+    await expect(result.usersAudience({ promotionalConsent: false })).resolves.toEqual({
+      recipients: 5,
+      withoutConsent: 2,
+    })
+    body = {}
+    await expect(result.usersAudience({ id: 'user-7' })).resolves.toEqual({
+      recipients: 0,
+      withoutConsent: 0,
+    })
+    expect(urls.map(queryOf)).toEqual([{ promotionalConsent: 'false' }, { id: 'user-7' }])
+  })
+
+  it('loads the audience of the filtered event attendees', async () => {
+    let url = ''
+    server.use(
+      http.get('/api/emails/events/:eventId/attendees/audience', ({ request }) => {
+        url = request.url
+        return HttpResponse.json({ recipients: 3, withoutConsent: 1 })
+      }),
+    )
+    const { result } = await withSetup(() => useSendEmail())
+
+    await expect(result.eventAttendeesAudience('event-1', { search: 'ana' })).resolves.toEqual({
+      recipients: 3,
+      withoutConsent: 1,
+    })
+    expect(url).toBe(
+      'http://localhost:3000/api/emails/events/event-1/attendees/audience?search=ana',
+    )
+  })
 })
 
 interface Recipient {
@@ -105,9 +148,17 @@ interface Recipient {
   name: string
 }
 
-function setupDialog(overrides: { bulkPending?: () => boolean } = {}) {
+function setupDialog(
+  overrides: {
+    bulkPending?: () => boolean
+    fetchAudience?: (recipient: Recipient | null) => Promise<EmailAudience>
+  } = {},
+) {
   const sendAll = vi.fn()
   const onError = vi.fn()
+  const fetchAudience = vi.fn(
+    overrides.fetchAudience ?? (() => Promise.resolve({ recipients: 1, withoutConsent: 0 })),
+  )
   return withSetup(() =>
     useSendEmailDialog<Recipient>({
       idOf: (recipient) => recipient.id,
@@ -115,9 +166,10 @@ function setupDialog(overrides: { bulkPending?: () => boolean } = {}) {
       targetAll: () => 'everyone',
       bulkPending: overrides.bulkPending ?? (() => false),
       sendAll,
+      fetchAudience,
       onError,
     }),
-  ).then((rendered) => ({ ...rendered, sendAll, onError }))
+  ).then((rendered) => ({ ...rendered, sendAll, onError, fetchAudience }))
 }
 
 describe('useSendEmailDialog', () => {
@@ -134,6 +186,59 @@ describe('useSendEmailDialog', () => {
 
     result.open(null)
     expect(result.target.value).toBe('everyone')
+  })
+
+  it('loads the audience of whoever the dialog targets when it opens', async () => {
+    const { result, fetchAudience } = await setupDialog({
+      fetchAudience: (recipient) =>
+        Promise.resolve({ recipients: 2, withoutConsent: recipient ? 0 : 2 }),
+    })
+
+    expect(result.withoutConsent.value).toBeNull()
+    result.open(null)
+    expect(result.withoutConsent.value).toBeNull()
+    await flushPromises()
+    expect(result.withoutConsent.value).toBe(2)
+
+    result.open({ id: 'user-1', name: 'Ada' })
+    expect(result.withoutConsent.value).toBeNull()
+    await flushPromises()
+    expect(result.withoutConsent.value).toBe(0)
+    expect(fetchAudience.mock.calls).toEqual([[null], [{ id: 'user-1', name: 'Ada' }]])
+  })
+
+  it('ignores an audience answered after the dialog was opened again', async () => {
+    const pending: ((audience: EmailAudience) => void)[] = []
+    const { result } = await setupDialog({
+      fetchAudience: () =>
+        new Promise<EmailAudience>((resolve) => {
+          pending.push(resolve)
+        }),
+    })
+
+    result.open(null)
+    result.open({ id: 'user-1', name: 'Ada' })
+    pending[1]?.({ recipients: 1, withoutConsent: 1 })
+    await flushPromises()
+    pending[0]?.({ recipients: 9, withoutConsent: 9 })
+    await flushPromises()
+
+    expect(result.withoutConsent.value).toBe(1)
+  })
+
+  it('leaves the audience unknown when it cannot be loaded or has no recipient id', async () => {
+    const { result, fetchAudience } = await setupDialog({
+      fetchAudience: () => Promise.reject(new Error('offline')),
+    })
+
+    result.open(null)
+    await flushPromises()
+    expect(result.withoutConsent.value).toBeNull()
+
+    result.open({ name: 'Nobody' })
+    await flushPromises()
+    expect(result.withoutConsent.value).toBeNull()
+    expect(fetchAudience).toHaveBeenCalledTimes(1)
   })
 
   it('reports queued and skipped counts and closes after a send to one user', async () => {

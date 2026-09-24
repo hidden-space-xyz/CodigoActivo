@@ -66,6 +66,12 @@ async function renderTab(options: RenderOptions = {}) {
       options.urls?.push(url)
       return HttpResponse.json(paged(attendees, options.total ?? attendees.length))
     }),
+    http.get('/api/emails/users/audience', () =>
+      HttpResponse.json({ recipients: 1, withoutConsent: 0 }),
+    ),
+    http.get('/api/emails/events/:eventId/attendees/audience', () =>
+      HttpResponse.json({ recipients: 2, withoutConsent: 0 }),
+    ),
   )
   const rendered = await renderWithProviders(EventAttendeesTab, {
     props: {
@@ -313,6 +319,17 @@ describe('EventAttendeesTab', () => {
       }),
     )
     const { wrapper } = await renderTab()
+    const audiences: string[] = []
+    server.use(
+      http.get('/api/emails/events/:eventId/attendees/audience', ({ request }) => {
+        audiences.push(request.url)
+        return HttpResponse.json({ recipients: 2, withoutConsent: 1 })
+      }),
+      http.get('/api/emails/users/audience', ({ request }) => {
+        audiences.push(request.url)
+        return HttpResponse.json({ recipients: 1, withoutConsent: 0 })
+      }),
+    )
     const dialog = wrapper.findComponent(SendEmailDialog)
     const payload = { subject: 'Hello', body: 'World', attachments: [] }
 
@@ -324,12 +341,14 @@ describe('EventAttendeesTab', () => {
     expect(dialog.props('target')).toBe(
       tc('pages.admin.eventDetail.attendees.email.targetFiltered', 2),
     )
+    await vi.waitFor(() => expect(dialog.props('withoutConsent')).toBe(1))
     dialog.vm.$emit('submit', payload)
     await vi.waitFor(() => expect(dialog.props('visible')).toBe(false))
 
     button(t('pages.admin.eventDetail.attendees.email.rowLabel')).click()
     await flushPromises()
     expect(dialog.props('target')).toBe('Ada Lovelace')
+    await vi.waitFor(() => expect(dialog.props('withoutConsent')).toBe(0))
     dialog.vm.$emit('submit', payload)
     await vi.waitFor(() => expect(sent).toHaveLength(2))
 
@@ -338,6 +357,13 @@ describe('EventAttendeesTab', () => {
       query: { statusId: 'status-1' },
     })
     expect(sent[1]?.path).toBe('/api/emails/users/user-1')
+    expect(audiences.map((url) => new URL(url))).toMatchObject([
+      {
+        pathname: `/api/emails/events/${EVENT_ID}/attendees/audience`,
+        search: '?statusId=status-1',
+      },
+      { pathname: '/api/emails/users/audience', search: '?id=user-1' },
+    ])
   })
 
   it('reports email failures', async () => {

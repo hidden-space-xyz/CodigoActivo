@@ -33,9 +33,22 @@ public class User : IdentifiableEntity
     public string? PasswordHash { get; set; }
 
     /// <summary>
-    /// Gets or sets the birth date value.
+    /// Gets or sets the birth date value. Only dependents have one; independent accounts leave it
+    /// unset.
     /// </summary>
-    public DateOnly BirthDate { get; set; }
+    public DateOnly? BirthDate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the normalized Spanish national identity number (DNI or NIE): uppercase, without
+    /// spaces or hyphens. Required and unique for independent accounts; unset for dependents.
+    /// </summary>
+    public string? NationalId { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the user agreed to receive promotional content. Always
+    /// <see langword="false"/> for dependents.
+    /// </summary>
+    public bool PromotionalConsent { get; set; }
 
     /// <summary>
     /// Gets or sets the associated gender.

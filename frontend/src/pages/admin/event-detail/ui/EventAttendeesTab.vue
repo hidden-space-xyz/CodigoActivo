@@ -49,7 +49,7 @@ const attendees = useEventAttendeesTable(
   () => props.active,
 )
 const assignments = useAssignments(() => props.eventId)
-const { sendToEventAttendees } = useSendEmail()
+const { sendToEventAttendees, usersAudience, eventAttendeesAudience } = useSendEmail()
 const statusTypes = useAssignmentStatusTypesList()
 const roleTypes = useActivityRoleTypesList()
 const userTypes = useUserTypesList()
@@ -172,6 +172,7 @@ const {
   visible: emailDialogVisible,
   target: emailTarget,
   sending: emailSending,
+  withoutConsent: emailWithoutConsent,
   open: openEmail,
   submit: submitEmail,
 } = useSendEmailDialog<EventAttendeeResponse>({
@@ -190,6 +191,10 @@ const {
       },
       handlers,
     ),
+  fetchAudience: (attendee) =>
+    attendee
+      ? usersAudience({ id: attendee.userId ?? '' })
+      : eventAttendeesAudience(props.eventId, attendees.filterParams()),
   onError: (error) => feedback.error(error),
 })
 
@@ -553,6 +558,7 @@ function submitChangeRole(): void {
       v-model:visible="emailDialogVisible"
       :target="emailTarget"
       :sending="emailSending"
+      :without-consent="emailWithoutConsent"
       @submit="submitEmail"
     />
 

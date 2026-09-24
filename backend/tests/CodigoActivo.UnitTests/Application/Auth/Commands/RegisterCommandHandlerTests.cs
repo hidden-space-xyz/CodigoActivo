@@ -60,8 +60,9 @@ public sealed class RegisterCommandHandlerTests
         string email = "ana@test.com",
         string phone = "+34123456789",
         string password = "password123",
-        DateOnly? birthDate = null,
+        string nationalId = "12345678Z",
         Gender gender = Gender.Female,
+        bool promotionalConsent = false,
         IReadOnlyList<RegisterMinorRequest>? minors = null
     )
     {
@@ -71,8 +72,9 @@ public sealed class RegisterCommandHandlerTests
             email,
             phone,
             password,
-            birthDate ?? AdultBirthDate,
+            nationalId,
             gender,
+            promotionalConsent,
             minors
         );
     }
@@ -130,16 +132,72 @@ public sealed class RegisterCommandHandlerTests
             && user.UserTypeId == SeedIds.UserTypes.Participant;
     }
 
-    [Fact]
-    public async Task HandleAsyncAdultBirthDateIsMinorReturnsBadRequest()
+    [Theory]
+    [InlineData("   ")]
+    [InlineData("-")]
+    [InlineData(" - ")]
+    public async Task HandleAsyncBlankNationalIdReturnsBadRequest(string nationalId)
     {
         var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(birthDate: MinorBirthDate)),
+            new RegisterCommand(NewRegister(nationalId: nationalId)),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterAdultCannotBeMinor);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RequestValidationFailed);
         await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncNationalIdInUseReturnsConflict()
+    {
+        ExistsReturns(false);
+        users.NationalIdExistsAsync("X1234567L", null, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(NewRegister(nationalId: " x-1234567-l ")),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterNationalIdAlreadyInUse);
+        await AssertNotSavedAsync();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncNewAdultStoresNationalIdAndConsentButNoBirthDate()
+    {
+        var added = await CaptureAddedUsersAsync();
+        ExistsReturns(false);
+        users
+            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(NewUser());
+        users
+            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(
+                NewRegister(
+                    nationalId: " x-1234567-l ",
+                    promotionalConsent: true,
+                    minors: [NewMinor()]
+                )
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        added.Should().HaveCount(2);
+        var adult = added[0];
+        adult.NationalId.Should().Be("X1234567L");
+        adult.PromotionalConsent.Should().BeTrue();
+        adult.BirthDate.Should().BeNull();
+        var minor = added[1];
+        minor.NationalId.Should().BeNull();
+        minor.PromotionalConsent.Should().BeFalse();
+        minor.BirthDate.Should().Be(MinorBirthDate);
     }
 
     [Theory]

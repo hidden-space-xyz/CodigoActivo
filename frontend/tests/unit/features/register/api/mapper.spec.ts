@@ -13,23 +13,26 @@ function buildForm(overrides: Partial<RegistrationForm> = {}): RegistrationForm 
     phone: ' 600000000 ',
     password: ' spaced password ',
     confirmPassword: ' spaced password ',
-    dateOfBirth: '1990-05-10',
+    nationalId: ' x-1234567-l ',
+    confirmNationalId: 'X1234567L',
     gender: 'Female',
+    promotionalConsent: false,
     minors: [],
     ...overrides,
   }
 }
 
 describe('toRegisterRequest', () => {
-  it('trims the contact fields, keeps the password verbatim and drops the confirmation', () => {
+  it('trims the contact fields, normalizes the DNI/NIE and drops both confirmations', () => {
     expect(toRegisterRequest(buildForm())).toEqual({
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '600000000',
       password: ' spaced password ',
-      birthDate: '1990-05-10',
+      nationalId: 'X1234567L',
       gender: 'Female',
+      promotionalConsent: false,
       minors: [],
     })
   })

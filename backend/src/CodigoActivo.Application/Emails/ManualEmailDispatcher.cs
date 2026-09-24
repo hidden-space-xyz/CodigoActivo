@@ -15,7 +15,8 @@ namespace CodigoActivo.Application.Emails;
 /// </summary>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="FirstName">User's given name.</param>
-public sealed record Recipient(string? Email, string FirstName);
+/// <param name="PromotionalConsent">Whether the user agreed to receive promotional content.</param>
+public sealed record Recipient(string? Email, string FirstName, bool PromotionalConsent);
 
 /// <summary>
 /// Validates administrator-written email and stores it for delivery. The whole batch is queued at
@@ -39,7 +40,7 @@ public sealed class ManualEmailDispatcher(
     /// Gets the to recipient value.
     /// </summary>
     public static Expression<Func<User, Recipient>> ToRecipient { get; } =
-        u => new Recipient(u.Email, u.FirstName);
+        u => new Recipient(u.Email, u.FirstName, u.PromotionalConsent);
 
     /// <summary>
     /// Validates and queues the manual email for delivery.

@@ -25,6 +25,11 @@ public static class TestSeedData
     public const string PendingEmail = "pending@codigoactivo.test";
     public const string BlockedEmail = "blocked@codigoactivo.test";
 
+    public const string AdminNationalId = "11111111H";
+    public const string MemberNationalId = "22222222J";
+    public const string PendingNationalId = "33333333P";
+    public const string BlockedNationalId = "44444444A";
+
     public static readonly TestCredentials AdminCredentials = new(AdminEmail, Password);
     public static readonly TestCredentials MemberCredentials = new(MemberEmail, Password);
     public static readonly TestCredentials PendingCredentials = new(PendingEmail, Password);
@@ -52,7 +57,7 @@ public static class TestSeedData
             Email = AdminEmail,
             Phone = "+34600000001",
             PasswordHash = PasswordHash,
-            BirthDate = new DateOnly(1985, 3, 12),
+            NationalId = AdminNationalId,
             Gender = Gender.Female,
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
             UserTypeId = SeedIds.UserTypes.Member,
@@ -68,7 +73,8 @@ public static class TestSeedData
             Email = MemberEmail,
             Phone = "+34600000002",
             PasswordHash = PasswordHash,
-            BirthDate = new DateOnly(1992, 7, 30),
+            NationalId = MemberNationalId,
+            PromotionalConsent = true,
             Gender = Gender.Female,
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
             UserTypeId = SeedIds.UserTypes.Member,
@@ -96,7 +102,7 @@ public static class TestSeedData
             Email = PendingEmail,
             Phone = "+34600000003",
             PasswordHash = PasswordHash,
-            BirthDate = new DateOnly(1990, 1, 1),
+            NationalId = PendingNationalId,
             Gender = Gender.Male,
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
             UserTypeId = SeedIds.UserTypes.Member,
@@ -111,7 +117,7 @@ public static class TestSeedData
             Email = BlockedEmail,
             Phone = "+34600000004",
             PasswordHash = PasswordHash,
-            BirthDate = new DateOnly(1988, 9, 9),
+            NationalId = BlockedNationalId,
             Gender = Gender.Other,
             UserStatusTypeId = SeedIds.UserStatusTypes.Blocked,
             UserTypeId = SeedIds.UserTypes.Member,

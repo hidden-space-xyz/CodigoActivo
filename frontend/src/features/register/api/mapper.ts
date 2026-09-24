@@ -3,6 +3,7 @@ import type {
   RegisterRequest,
   RegisterResponse,
 } from '@/shared/api/generated/models'
+import { normalizeNationalId } from '@/shared/lib'
 
 import type { MinorForm, RegistrationForm } from '../model/registration-form'
 import type { RegistrationResult } from '../model/types'
@@ -19,8 +20,9 @@ function toRegisterMinorRequest(minor: MinorForm): RegisterMinorRequest {
 }
 
 /**
- * Builds the register request from the form, trimming names, email and phone and dropping
- * `confirmPassword`. Throws if the adult or any minor has no gender; the form validates this first.
+ * Builds the register request from the form, trimming names, email and phone, normalizing the DNI
+ * or NIE and dropping both confirmation fields. Throws if the adult or any minor has no gender; the
+ * form validates this first.
  */
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
   const { gender } = form
@@ -31,8 +33,9 @@ export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
     email: form.email.trim(),
     phone: form.phone.trim(),
     password: form.password,
-    birthDate: form.dateOfBirth,
+    nationalId: normalizeNationalId(form.nationalId),
     gender,
+    promotionalConsent: form.promotionalConsent,
     minors: form.minors.map(toRegisterMinorRequest),
   }
 }

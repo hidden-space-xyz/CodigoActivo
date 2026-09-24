@@ -325,6 +325,11 @@ public sealed class UserListQuery : PageQuery
     public string? Phone { get; set; }
 
     /// <summary>
+    /// Gets or sets text the stored DNI or NIE must contain.
+    /// </summary>
+    public string? NationalId { get; set; }
+
+    /// <summary>
     /// Gets or sets the identifier of the associated user type.
     /// </summary>
     public Guid? UserTypeId { get; set; }
@@ -338,6 +343,11 @@ public sealed class UserListQuery : PageQuery
     /// Gets or sets the is admin value.
     /// </summary>
     public bool? IsAdmin { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether users must have given, or withheld, promotional consent.
+    /// </summary>
+    public bool? PromotionalConsent { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the associated parent.

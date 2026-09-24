@@ -29,7 +29,13 @@ async function renderDialog(user: User | null, error = '') {
   return { ...rendered, dialog: openDialog(t(TITLE)) }
 }
 
-const adult = toUser(buildUserResponse({ birthDate: '1990-05-10' }))
+function consentBox(dialog: HTMLElement): HTMLInputElement {
+  const box = dialog.querySelector<HTMLInputElement>('#user-promotional-consent')
+  if (!box) throw new Error('No promotional consent box')
+  return box
+}
+
+const adult = toUser(buildUserResponse())
 const minor = toUser(
   buildUserResponse({
     id: 'child-1',
@@ -37,6 +43,7 @@ const minor = toUser(
     email: null,
     phone: null,
     birthDate: '2016-02-01',
+    nationalId: null,
     gender: 'Male',
     parentId: 'user-1',
     parentName: 'Ada Lovelace',
@@ -48,7 +55,9 @@ const dependentWithContact = toUser(
     firstName: 'Tim',
     email: 'tim@example.test',
     phone: '622222222',
-    birthDate: '1999-05-05',
+    birthDate: '2015-05-05',
+    nationalId: '87654321X',
+    promotionalConsent: true,
     gender: 'Male',
     parentId: 'user-1',
     parentName: 'Ada Lovelace',
@@ -74,6 +83,7 @@ describe('UserFormDialog', () => {
 
     await typeInto('#user-first-name', ' Augusta ')
     await typeInto('#user-phone', ' 611111111 ')
+    await click(consentBox(dialog))
     await typeInto('#user-current-password', 'admin-password')
     await click(findButton(t('common.save'), dialog))
 
@@ -82,10 +92,50 @@ describe('UserFormDialog', () => {
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '611111111',
-      birthDate: '1990-05-10',
+      birthDate: null,
+      nationalId: '12345678Z',
+      promotionalConsent: true,
       gender: 'Female',
       parentId: null,
       currentPassword: 'admin-password',
+    })
+  })
+
+  it('shows the DNI/NIE twice and the consent of an adult instead of a birth date', async () => {
+    const { wrapper, dialog } = await renderDialog(
+      toUser(buildUserResponse({ promotionalConsent: true })),
+    )
+
+    expect(wrapper.findComponent(ElDatePicker).exists()).toBe(false)
+    expect(inputValue('#user-national-id')).toBe('12345678Z')
+    expect(inputValue('#user-national-id-confirm')).toBe('12345678Z')
+    for (const id of ['#user-national-id', '#user-national-id-confirm']) {
+      expect(dialog.querySelector(id)?.getAttribute('autocapitalize')).toBe('characters')
+    }
+    expect(consentBox(dialog).checked).toBe(true)
+    expect(dialog.textContent).toContain(t('common.promotionalConsentOption'))
+  })
+
+  it('requires a valid DNI/NIE typed twice and sends it normalized', async () => {
+    const { wrapper, dialog } = await renderDialog(adult)
+
+    await typeInto('#user-national-id', 'X1234567A')
+    await click(findButton(t('common.save'), dialog))
+    expect(dialog.textContent).toContain(t('validation.nationalIdInvalid'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
+
+    await typeInto('#user-national-id', 'x-1234567-l')
+    await click(findButton(t('common.save'), dialog))
+    expect(dialog.textContent).not.toContain(t('validation.nationalIdInvalid'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    await typeInto('#user-national-id-confirm', 'X 1234567 L')
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      birthDate: null,
+      nationalId: 'X1234567L',
     })
   })
 
@@ -141,10 +191,13 @@ describe('UserFormDialog', () => {
     })
   })
 
-  it('lets minors omit contact details and keeps their guardian', async () => {
+  it('lets minors omit contact details, DNI/NIE and consent and keeps their guardian', async () => {
     const { wrapper, dialog } = await renderDialog(minor)
 
     expect(dialog.textContent).toContain(t('features.manageUsers.dependentContact'))
+    expect(wrapper.findComponent(ElDatePicker).exists()).toBe(true)
+    expect(dialog.querySelector('#user-national-id')).toBeNull()
+    expect(dialog.querySelector('#user-promotional-consent')).toBeNull()
     await click(findButton(t('common.save'), dialog))
 
     expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
@@ -153,52 +206,75 @@ describe('UserFormDialog', () => {
       email: null,
       phone: null,
       birthDate: '2016-02-01',
+      nationalId: null,
+      promotionalConsent: false,
       gender: 'Male',
       parentId: 'user-1',
       currentPassword: null,
     })
   })
 
-  it('refuses a minor birth date for an account that depends on nobody', async () => {
-    const { wrapper, dialog } = await renderDialog(adult)
-    const picker = wrapper.findComponent(ElDatePicker)
-
-    picker.vm.$emit('update:modelValue', new Date(2016, 1, 1))
-    await flushPromises()
-    expect(dialog.querySelector('#user-current-password')).toBeNull()
-
-    await click(findButton(t('common.save'), dialog))
-
-    expect(dialog.textContent).toContain(t('features.manageUsers.minorNotAllowed'))
-    expect(wrapper.emitted('submit')).toBeUndefined()
-  })
-
-  it('keeps a dependent under its guardian when its birth date turns adult', async () => {
+  it('refuses a birth date that turns a dependent into an adult', async () => {
     const { wrapper, dialog } = await renderDialog(minor)
     const picker = wrapper.findComponent(ElDatePicker)
 
     picker.vm.$emit('update:modelValue', new Date(1999, 4, 5))
     await flushPromises()
-    expect(dialog.textContent).not.toContain(t('features.manageUsers.minorNotAllowed'))
-    expect(dialog.textContent).toContain(t('features.manageUsers.dependentContact'))
     expect(dialog.querySelector('#user-current-password')).toBeNull()
 
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).not.toContain(t('features.manageUsers.contactRequired'))
-    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({
-      firstName: 'Tim',
-      lastName: 'Lovelace',
-      email: null,
-      phone: null,
-      birthDate: '1999-05-05',
-      gender: 'Male',
-      parentId: 'user-1',
-      currentPassword: null,
-    })
+    expect(dialog.textContent).toContain(t('features.manageUsers.childBirthDateNotMinor'))
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    picker.vm.$emit('update:modelValue', new Date(2017, 2, 3))
+    await flushPromises()
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ birthDate: '2017-03-03' })
   })
 
-  it('never lets a dependent carry contact details the server would ignore', async () => {
+  it('keeps a dependent that came of age editable until its birth date changes', async () => {
+    const { wrapper, dialog } = await renderDialog(
+      toUser(
+        buildUserResponse({
+          id: 'child-3',
+          firstName: 'Tom',
+          email: null,
+          phone: null,
+          birthDate: '2000-03-04',
+          nationalId: null,
+          gender: 'Male',
+          parentId: 'user-1',
+          parentName: 'Ada Lovelace',
+        }),
+      ),
+    )
+    const picker = wrapper.findComponent(ElDatePicker)
+
+    await typeInto('#user-first-name', 'Thomas')
+    await click(findButton(t('common.save'), dialog))
+
+    expect(dialog.textContent).not.toContain(t('features.manageUsers.childBirthDateNotMinor'))
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
+      firstName: 'Thomas',
+      birthDate: '2000-03-04',
+      parentId: 'user-1',
+    })
+
+    picker.vm.$emit('update:modelValue', new Date(2001, 2, 4))
+    await click(findButton(t('common.save'), dialog))
+
+    expect(dialog.textContent).toContain(t('features.manageUsers.childBirthDateNotMinor'))
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+
+    picker.vm.$emit('update:modelValue', new Date(2012, 6, 8))
+    await click(findButton(t('common.save'), dialog))
+
+    expect(wrapper.emitted('submit')?.[1]?.[0]).toMatchObject({ birthDate: '2012-07-08' })
+  })
+
+  it('never lets a dependent carry details the server would ignore', async () => {
     const { wrapper, dialog } = await renderDialog(dependentWithContact)
 
     expect(dialog.querySelector('#user-email')).toBeNull()
@@ -213,7 +289,9 @@ describe('UserFormDialog', () => {
       lastName: 'Lovelace',
       email: null,
       phone: null,
-      birthDate: '1999-05-05',
+      birthDate: '2015-05-05',
+      nationalId: null,
+      promotionalConsent: false,
       gender: 'Male',
       parentId: 'user-1',
       currentPassword: null,
@@ -236,25 +314,30 @@ describe('UserFormDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('validates names, birth date and gender for an empty form', async () => {
+  it('validates names, DNI/NIE and gender for an empty form', async () => {
     const { wrapper, dialog } = await renderDialog(null)
 
     expect(inputValue('#user-first-name')).toBe('')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('features.manageUsers.birthDateInvalid'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdInvalid'))
+    expect(dialog.textContent).not.toContain(t('features.manageUsers.birthDateInvalid'))
     expect(dialog.textContent).toContain(t('validation.genderRequired'))
     expect(dialog.querySelectorAll('.ca-invalid').length).toBeGreaterThanOrEqual(4)
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('rejects birth dates in the future and disables them in the picker', async () => {
-    const { wrapper, dialog } = await renderDialog(adult)
+  it('requires a dependent birth date and rejects future ones, disabled in the picker', async () => {
+    const { wrapper, dialog } = await renderDialog(minor)
     const picker = wrapper.findComponent(ElDatePicker)
     const disabledDate = picker.props('disabledDate') as unknown as (date: Date) => boolean
 
     expect(disabledDate(new Date(2030, 0, 1))).toBe(true)
     expect(disabledDate(new Date(2000, 0, 1))).toBe(false)
+
+    picker.vm.$emit('update:modelValue', null)
+    await click(findButton(t('common.save'), dialog))
+    expect(dialog.textContent).toContain(t('features.manageUsers.birthDateInvalid'))
 
     picker.vm.$emit('update:modelValue', new Date(2030, 0, 1))
     await click(findButton(t('common.save'), dialog))

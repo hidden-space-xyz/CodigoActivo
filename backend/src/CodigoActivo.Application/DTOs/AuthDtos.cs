@@ -75,8 +75,9 @@ public record CsrfTokenResponse(string Token, string HeaderName);
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="Phone">Phone number to validate or locate.</param>
 /// <param name="Password">Plain-text password to hash or verify.</param>
-/// <param name="BirthDate">User's date of birth.</param>
+/// <param name="NationalId">Spanish DNI or NIE of the adult; unique across accounts.</param>
 /// <param name="Gender">The gender value.</param>
+/// <param name="PromotionalConsent">Whether the adult agrees to receive promotional content.</param>
 /// <param name="Minors">The minors value.</param>
 public record RegisterRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
@@ -84,8 +85,9 @@ public record RegisterRequest(
     [Required] [EmailAddress] [MaxLength(256)] string Email,
     [Required] [Phone] [MaxLength(40)] string Phone,
     [Required] [MinLength(12)] [MaxLength(128)] [NotBlank] string Password,
-    [NotDefaultOrFutureDate] DateOnly BirthDate,
+    [Required] [MaxLength(12)] [NotBlank] [SpanishNationalId] string NationalId,
     [EnumDataType(typeof(Gender))] Gender Gender,
+    bool PromotionalConsent,
     [MaxLength(20)] IReadOnlyList<RegisterMinorRequest>? Minors
 );
 

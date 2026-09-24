@@ -12,6 +12,8 @@ import {
   formatSignedPercent,
   formatTimeRange,
   fullName,
+  isValidNationalId,
+  normalizeNationalId,
   parseDateOnly,
   toDateInput,
   toDateOnly,
@@ -256,4 +258,27 @@ describe('formatTimeRange', () => {
     expect(formatTimeRange(start)).toBe('10:30')
     expect(formatTimeRange(undefined, start)).toBe('—')
   })
+})
+
+describe('normalizeNationalId', () => {
+  it('uppercases and drops spaces and hyphens', () => {
+    expect(normalizeNationalId(' x-1234 567-l ')).toBe('X1234567L')
+    expect(normalizeNationalId('12345678z')).toBe('12345678Z')
+  })
+})
+
+describe('isValidNationalId', () => {
+  it.each(['12345678Z', '00000000T', 'X1234567L', 'Y1234567X', 'Z1234567R', ' 1234-5678 z '])(
+    'accepts %s with its control letter',
+    (value) => {
+      expect(isValidNationalId(value)).toBe(true)
+    },
+  )
+
+  it.each(['12345678A', 'X1234567A', '1234567Z', '123456789Z', 'W1234567L', 'ABCDEFGHI', ''])(
+    'rejects %s',
+    (value) => {
+      expect(isValidNationalId(value)).toBe(false)
+    },
+  )
 })

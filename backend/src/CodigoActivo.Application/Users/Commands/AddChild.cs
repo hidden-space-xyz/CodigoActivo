@@ -53,14 +53,12 @@ public sealed class AddChildCommandHandler(
             return Error.NotFound(ErrorCode.ParentUserNotFound);
         }
 
-        var today = clock.Today;
-
-        if (parent.BirthDate.IsMinor(today))
+        if (parent.ParentId is not null)
         {
             return Error.BadRequest(ErrorCode.UserParentIsMinor);
         }
 
-        if (!request.BirthDate.IsMinor(today))
+        if (!request.BirthDate.IsMinor(clock.Today))
         {
             return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
         }

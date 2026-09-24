@@ -42,7 +42,8 @@ describe('useAccount', () => {
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '600000000',
-      birthDate: '1990-05-10',
+      nationalId: '12345678Z',
+      promotionalConsent: false,
       gender: 'Female',
       statusName: 'Activo',
       isAdmin: false,
@@ -100,14 +101,18 @@ describe('useAccount', () => {
       lastName: 'Lovelace',
       email: 'augusta@example.test',
       phone: '611111111',
-      birthDate: '1990-05-10',
+      nationalId: 'X1234567L',
+      promotionalConsent: true,
       gender: 'Female' as const,
       currentPassword: 'Str0ngPass!23',
     }
 
     await result.updateProfile.mutateAsync(input)
 
-    expect(received).toEqual({ body: { ...input, parentId: null }, csrf: TEST_CSRF_TOKEN })
+    expect(received).toEqual({
+      body: { ...input, birthDate: null, parentId: null },
+      csrf: TEST_CSRF_TOKEN,
+    })
     expect(queryClient.getQueryData(accountQueryKeys.me())).toMatchObject({ firstName: 'Augusta' })
     await vi.waitFor(() => expect(useSession().displayName).toBe('Augusta'))
   })

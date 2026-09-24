@@ -164,6 +164,63 @@ public sealed class ValidationAttributesTests : IDisposable
         result!.MemberNames.Should().Equal(nameof(Holder.BirthDate));
     }
 
+    [Fact]
+    public void GetValidationResultNotDefaultOrFutureDateNullableWithoutValueSucceeds()
+    {
+        DateOnly? unset = null;
+
+        Validate(unset).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("12345678Z")]
+    [InlineData("00000000T")]
+    [InlineData("X1234567L")]
+    [InlineData("Y1234567X")]
+    [InlineData("Z1234567R")]
+    [InlineData("12345678z")]
+    [InlineData(" 12345678-Z ")]
+    [InlineData("1234 5678 Z")]
+    [InlineData("x-1234567-l")]
+    public void IsValidSpanishNationalIdAcceptsDniAndNieWithTheirControlLetter(string value)
+    {
+        new SpanishNationalIdAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("12345678A")]
+    [InlineData("X1234567A")]
+    [InlineData("1234567Z")]
+    [InlineData("123456789Z")]
+    [InlineData("W1234567L")]
+    [InlineData("X12345678L")]
+    [InlineData("1234567AZ")]
+    [InlineData("12345678")]
+    [InlineData("ABCDEFGHI")]
+    [InlineData("１２３４５６７８Z")]
+    [InlineData("-")]
+    [InlineData(" - ")]
+    [InlineData(" - - ")]
+    public void IsValidSpanishNationalIdRejectsWrongFormatOrControlLetter(string value)
+    {
+        new SpanishNationalIdAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void IsValidSpanishNationalIdLeavesMissingValuesToRequired(string? value)
+    {
+        new SpanishNationalIdAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsValidSpanishNationalIdRejectsNonStringValues()
+    {
+        new SpanishNationalIdAttribute().IsValid(12345678).Should().BeFalse();
+    }
+
     private ValidationResult? Validate(object? value)
     {
         var context = new ValidationContext(new Holder { BirthDate = Today }, services, items: null)

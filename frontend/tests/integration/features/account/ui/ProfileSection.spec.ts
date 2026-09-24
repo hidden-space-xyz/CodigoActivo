@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { genderLabel } from '@/entities/user'
 import ProfileSection from '@/features/account/ui/ProfileSection.vue'
 import type { UserResponse } from '@/shared/api/generated/models'
-import { formatDate } from '@/shared/lib'
 
 import {
   buttonByText,
@@ -90,9 +89,10 @@ describe('ProfileSection', () => {
       [t('common.name')]: 'Ada Lovelace',
       [t('common.email')]: 'ada@example.test',
       [t('common.phone')]: '600000000',
-      [t('common.birthDate')]: formatDate('1990-05-10'),
+      [t('common.nationalId')]: '12345678Z',
       [t('common.gender')]: genderLabel('Female'),
       [t('common.status')]: 'Activo',
+      [t('common.promotionalConsent')]: t('common.no'),
     })
   })
 
@@ -148,12 +148,21 @@ describe('ProfileSection', () => {
     const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
     expect(dialog.querySelector<HTMLInputElement>('#p-firstname')?.value).toBe('Ada')
     expect(dialog.querySelector<HTMLInputElement>('#p-email')?.value).toBe('ada@example.test')
-    expect(dialog.querySelector<HTMLInputElement>('#p-dob')?.value).toBe('1990-05-10')
+    expect(dialog.querySelector<HTMLInputElement>('#p-national-id')?.value).toBe('12345678Z')
+    expect(dialog.querySelector<HTMLInputElement>('#p-national-id-confirm')?.value).toBe(
+      '12345678Z',
+    )
+    for (const id of ['#p-national-id', '#p-national-id-confirm']) {
+      expect(dialog.querySelector(id)?.getAttribute('autocapitalize')).toBe('characters')
+    }
+    expect(dialog.querySelector<HTMLInputElement>('#p-promotional-consent')?.checked).toBe(false)
     await fill(dialog, '#p-firstname', '  Augusta ')
     await fill(dialog, '#p-lastname', ' King ')
     await fill(dialog, '#p-email', ' augusta@example.test ')
     await fill(dialog, '#p-phone', ' 611111111 ')
-    await fill(dialog, '#p-dob', '1990-06-11')
+    await fill(dialog, '#p-national-id', 'x-1234567-l')
+    await fill(dialog, '#p-national-id-confirm', 'X1234567L')
+    await click(dialog.querySelector('#p-promotional-consent') as Element)
     await selectGender(wrapper, 'Other')
     await fill(dialog, '#p-current', 'old-password')
     await click(buttonByText(dialog, t('common.save')))
@@ -166,7 +175,9 @@ describe('ProfileSection', () => {
         lastName: 'King',
         email: 'augusta@example.test',
         phone: '611111111',
-        birthDate: '1990-06-11',
+        birthDate: null,
+        nationalId: 'X1234567L',
+        promotionalConsent: true,
         gender: 'Other',
         parentId: null,
         currentPassword: 'old-password',
@@ -266,7 +277,7 @@ describe('ProfileSection', () => {
     expect(updated).not.toHaveBeenCalled()
   })
 
-  it('refuses a birth date that would turn the account into a minor', async () => {
+  it('asks no birth date and requires a valid DNI/NIE typed twice', async () => {
     serveProfile()
     const updated = vi.fn()
     server.use(
@@ -279,16 +290,33 @@ describe('ProfileSection', () => {
 
     await click(buttonByText(document.body, t('features.account.profile.editData')))
     const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
-    await fill(dialog, '#p-dob', '2016-02-01')
-    await click(buttonByText(dialog, t('common.save')))
+    expect(dialog.querySelector('#p-dob')).toBeNull()
 
-    expect(dialog.textContent).toContain(t('features.account.profile.birthDateMinor'))
+    await fill(dialog, '#p-national-id', '12345678A')
+    await click(buttonByText(dialog, t('common.save')))
+    expect(dialog.textContent).toContain(t('validation.nationalIdInvalid'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
     expect(updated).not.toHaveBeenCalled()
 
-    await fill(dialog, '#p-dob', '1990-05-10')
+    await fill(dialog, '#p-national-id', 'X1234567L')
+    await fill(dialog, '#p-national-id-confirm', 'X1234567A')
+    await click(buttonByText(dialog, t('common.save')))
+    expect(dialog.textContent).not.toContain(t('validation.nationalIdInvalid'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
+    expect(updated).not.toHaveBeenCalled()
+
+    await fill(dialog, '#p-national-id-confirm', ' x 1234567 l ')
     await click(buttonByText(dialog, t('common.save')))
 
     await vi.waitFor(() => expect(updated).toHaveBeenCalledTimes(1))
+  })
+
+  it('shows the promotional consent the user gave', async () => {
+    serveProfile(buildUserResponse({ promotionalConsent: true }))
+
+    await renderSection()
+
+    expect(infoRows()[t('common.promotionalConsent')]).toBe(t('common.yes'))
   })
 
   it('opens an empty edit form when the profile is unavailable', async () => {
@@ -297,7 +325,14 @@ describe('ProfileSection', () => {
     await click(buttonByText(document.body, t('features.account.profile.editData')))
     const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
 
-    for (const id of ['p-firstname', 'p-lastname', 'p-email', 'p-phone', 'p-dob']) {
+    for (const id of [
+      'p-firstname',
+      'p-lastname',
+      'p-email',
+      'p-phone',
+      'p-national-id',
+      'p-national-id-confirm',
+    ]) {
       expect(dialog.querySelector<HTMLInputElement>(`#${id}`)?.value).toBe('')
     }
     await click(buttonByText(dialog, t('common.cancel')))

@@ -39,6 +39,9 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         administrator.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
         administrator.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
         administrator.CreatedAt.Should().Be(CreatedAt);
+        administrator.BirthDate.Should().BeNull();
+        administrator.NationalId.Should().Be("00000000T");
+        administrator.PromotionalConsent.Should().BeFalse();
     }
 
     [Fact]

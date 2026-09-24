@@ -18,8 +18,10 @@ export interface RegisterRequest {
   phone?: string | null;
   /** @nullable */
   password?: string | null;
-  birthDate?: string;
+  /** @nullable */
+  nationalId?: string | null;
   gender?: Gender;
+  promotionalConsent?: boolean;
   /** @nullable */
   minors?: RegisterMinorRequest[] | null;
 }

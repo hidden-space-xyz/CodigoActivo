@@ -18,7 +18,7 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
             email = "enum.binding@codigoactivo.test",
             phone = "+34600000098",
             password = "Str0ngPass!23",
-            birthDate = "1996-01-15",
+            nationalId = "87654321X",
             gender,
         };
     }

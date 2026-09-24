@@ -1318,6 +1318,13 @@
             }
           },
           {
+            "name": "nationalId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "userTypeId",
             "in": "query",
             "schema": {
@@ -1335,6 +1342,13 @@
           },
           {
             "name": "isAdmin",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "promotionalConsent",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -1576,6 +1590,239 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SendEmailResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/emails/users/audience": {
+      "get": {
+        "tags": [
+          "Emails"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "phone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nationalId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userTypeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userStatusTypeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "isAdmin",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "promotionalConsent",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "parentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "birthDateFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "birthDateTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailAudienceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/emails/events/{eventId}/attendees/audience": {
+      "get": {
+        "tags": [
+          "Emails"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userTypeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Gender"
+            }
+          },
+          {
+            "name": "activityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "roleTypeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "statusId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailAudienceResponse"
                 }
               }
             }
@@ -3313,6 +3560,13 @@
             }
           },
           {
+            "name": "nationalId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "userTypeId",
             "in": "query",
             "schema": {
@@ -3330,6 +3584,13 @@
           },
           {
             "name": "isAdmin",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "promotionalConsent",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -4777,6 +5038,20 @@
         },
         "additionalProperties": false
       },
+      "EmailAudienceResponse": {
+        "type": "object",
+        "properties": {
+          "recipients": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "withoutConsent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ErrorCode": {
         "enum": [
           "AnnouncementNotFound",
@@ -4843,18 +5118,21 @@
           "UserCurrentPasswordIncorrect",
           "UserParentReassignmentForbidden",
           "UserParentNotAllowedForAdult",
-          "UserCannotBecomeMinor",
+          "UserBirthDateNotAllowedForAdult",
+          "UserChildBirthDateRequired",
           "UserContactInfoRequired",
+          "UserNationalIdRequired",
           "UserEmailAlreadyInUse",
           "UserPhoneAlreadyInUse",
+          "UserNationalIdAlreadyInUse",
           "InvalidCredentials",
           "UserAccountBlocked",
           "UserAccountIsDependent",
           "UserAccountPendingVerification",
           "CurrentUserNotFound",
-          "RegisterAdultCannotBeMinor",
           "RegisterContactInfoRequired",
           "RegisterEmailOrPhoneAlreadyInUse",
+          "RegisterNationalIdAlreadyInUse",
           "RegisterMinorBirthDateNotMinor",
           "OtpInvalidOrExpired",
           "OtpResendNotAllowed",
@@ -4974,7 +5252,8 @@
           },
           "birthDate": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "nullable": true
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
@@ -5625,7 +5904,8 @@
           },
           "birthDate": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "nullable": true
           },
           "email": {
             "type": "string",
@@ -6217,12 +6497,15 @@
             "type": "string",
             "nullable": true
           },
-          "birthDate": {
+          "nationalId": {
             "type": "string",
-            "format": "date"
+            "nullable": true
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
+          },
+          "promotionalConsent": {
+            "type": "boolean"
           },
           "minors": {
             "type": "array",
@@ -6809,7 +7092,15 @@
           },
           "birthDate": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "nullable": true
+          },
+          "nationalId": {
+            "type": "string",
+            "nullable": true
+          },
+          "promotionalConsent": {
+            "type": "boolean"
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
@@ -6851,7 +7142,15 @@
           },
           "birthDate": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "nullable": true
+          },
+          "nationalId": {
+            "type": "string",
+            "nullable": true
+          },
+          "promotionalConsent": {
+            "type": "boolean"
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"

@@ -12,6 +12,7 @@ internal static class UserTestData
     public static readonly DateOnly Today = new(2026, 7, 4);
     public static readonly DateOnly MinorDob = Today.AddYears(-10);
     public static readonly DateOnly AdultDob = Today.AddYears(-40);
+    public const string AdultNationalId = "12345678Z";
 
     public static User NewUser(
         string first = "Ana",
@@ -26,7 +27,8 @@ internal static class UserTestData
         Guid? statusId = null,
         string typeName = "Socio",
         string statusName = "Active",
-        string? passwordHash = null
+        string? passwordHash = null,
+        string? nationalId = AdultNationalId
     )
     {
         return new()
@@ -37,7 +39,8 @@ internal static class UserTestData
             Email = email,
             Phone = phone,
             PasswordHash = passwordHash,
-            BirthDate = dob ?? AdultDob,
+            BirthDate = dob ?? (parentId is null ? null : MinorDob),
+            NationalId = parentId is null ? nationalId : null,
             Gender = Gender.Male,
             ParentId = parentId,
             UserStatusTypeId = statusId ?? Guid.NewGuid(),

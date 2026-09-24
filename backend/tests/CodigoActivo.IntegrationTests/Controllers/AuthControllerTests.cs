@@ -15,15 +15,16 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 {
     private const string NewAdultEmail = "new.adult@codigoactivo.test";
 
-    private static readonly DateOnly AdultBirthDate = new(1996, 1, 15);
+    private const string NewAdultNationalId = "87654321X";
 
     private static RegisterRequest NewAdultRequest(
         string email = NewAdultEmail,
         string phone = "+34600000099",
         string password = "Str0ngPass!23",
         string firstName = "Nadia",
-        DateOnly? birthDate = null,
+        string nationalId = NewAdultNationalId,
         Gender gender = Gender.Female,
+        bool promotionalConsent = false,
         IReadOnlyList<RegisterMinorRequest>? minors = null
     )
     {
@@ -33,8 +34,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             email,
             phone,
             password,
-            birthDate ?? AdultBirthDate,
+            nationalId,
             gender,
+            promotionalConsent,
             minors
         );
     }
@@ -49,6 +51,13 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
         return (body!.Adult.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
+    }
+
+    private Task<int> CountNewAdultsAsync()
+    {
+        return Factory.QueryAsync(db =>
+            Task.FromResult(db.Users.Count(u => u.Email == NewAdultEmail))
+        );
     }
 
     [Fact]
@@ -147,7 +156,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 email = NewAdultEmail,
                 phone = "+34600000099",
                 password = "Str0ngPass!23",
-                birthDate = "1996-01-15",
+                nationalId = NewAdultNationalId,
             },
             Ct
         );
@@ -169,7 +178,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 email = NewAdultEmail,
                 phone = "+34600000099",
                 password = "Str0ngPass!23",
-                birthDate = "1996-01-15",
+                nationalId = NewAdultNationalId,
                 gender = "Female",
                 minors = new[]
                 {
@@ -210,20 +219,47 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Theory]
-    [InlineData(2026, 7, 5)]
-    [InlineData(2027, 1, 1)]
-    [InlineData(1, 1, 1)]
-    public async Task RegisterBirthDateInTheFutureOrUnsetReturnsValidationError(
-        int year,
-        int month,
-        int day
+    [InlineData("12345678A")]
+    [InlineData("X1234567A")]
+    [InlineData("1234567Z")]
+    [InlineData("ABCDEFGHI")]
+    [InlineData("   ")]
+    [InlineData("1234-5678-9012-Z")]
+    [InlineData("-")]
+    [InlineData(" - ")]
+    [InlineData(" - - ")]
+    public async Task RegisterNationalIdMalformedOrWithWrongLetterReturnsValidationError(
+        string nationalId
     )
     {
         var client = CreateClient();
 
         var response = await client.PostJsonAsync(
             "/api/auth/register",
-            NewAdultRequest(birthDate: new DateOnly(year, month, day)),
+            NewAdultRequest(nationalId: nationalId),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        (await CountNewAdultsAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RegisterNationalIdMissingReturnsValidationError()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                firstName = "Nadia",
+                lastName = "Nueva",
+                email = NewAdultEmail,
+                phone = "+34600000099",
+                password = "Str0ngPass!23",
+                gender = "Female",
+            },
             Ct
         );
 
@@ -231,17 +267,51 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RegisterBirthDateIsTheClocksTodayPassesValidation()
+    public async Task RegisterNationalIdOfAnotherAccountReturnsConflict()
     {
         var client = CreateClient();
 
         var response = await client.PostJsonAsync(
             "/api/auth/register",
-            NewAdultRequest(birthDate: Factory.Clock.Today),
+            NewAdultRequest(nationalId: " 22222222-j "),
             Ct
         );
 
-        await response.ShouldBeBadRequestAsync(ErrorCode.RegisterAdultCannotBeMinor);
+        await response.ShouldBeConflictAsync(ErrorCode.RegisterNationalIdAlreadyInUse);
+        (await CountNewAdultsAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RegisterStoresNormalizedNationalIdAndConsentAndIgnoresABirthDate()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                firstName = "Nadia",
+                lastName = "Nueva",
+                email = NewAdultEmail,
+                phone = "+34600000099",
+                password = "Str0ngPass!23",
+                nationalId = " 87654321-x ",
+                gender = "Female",
+                promotionalConsent = true,
+                birthDate = "2020-01-15",
+            },
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
+        body!.Adult.NationalId.Should().Be(NewAdultNationalId);
+        body.Adult.PromotionalConsent.Should().BeTrue();
+        body.Adult.BirthDate.Should().BeNull();
+        var stored = await FindAsync<User>(body.Adult.Id);
+        stored!.NationalId.Should().Be(NewAdultNationalId);
+        stored.PromotionalConsent.Should().BeTrue();
+        stored.BirthDate.Should().BeNull();
     }
 
     [Fact]

@@ -17,6 +17,11 @@ const props = defineProps<{
   target: string
   /** Disables sending and closing while an email is in flight. */
   sending: boolean
+  /**
+   * Recipients without promotional consent; above zero shows a non-blocking warning. `null` while
+   * the audience is loading or when it could not be loaded, which hides the warning.
+   */
+  withoutConsent?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -47,6 +52,8 @@ watch(
     attachmentError.value = ''
   },
 )
+
+const recipientsWithoutConsent = computed(() => props.withoutConsent ?? 0)
 
 const subjectInvalid = computed(() => subject.value.trim() === '')
 const bodyInvalid = computed(() => body.value.trim() === '')
@@ -124,6 +131,21 @@ function send(): void {
     @update:model-value="close"
   >
     <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>
+
+    <el-alert
+      v-if="recipientsWithoutConsent > 0"
+      class="consent-warning"
+      type="warning"
+      show-icon
+      :closable="false"
+      :title="
+        $t(
+          'features.sendEmail.withoutConsentWarning',
+          { count: recipientsWithoutConsent },
+          recipientsWithoutConsent,
+        )
+      "
+    />
 
     <form class="form" @submit.prevent="send">
       <div class="form__field">
@@ -226,6 +248,10 @@ function send(): void {
 .target {
   font-size: 13.5px;
   color: var(--ca-text-muted);
+  margin: 0 0 14px;
+}
+
+.consent-warning {
   margin: 0 0 14px;
 }
 

@@ -5,6 +5,7 @@ using CodigoActivo.API.Security;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Application.Emails.Queries;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Application.Validation;
 using Microsoft.AspNetCore.Mvc;
@@ -139,6 +140,47 @@ public class EmailsController : ApiControllerBase
                 ),
                 ct
             )
+        );
+    }
+
+    /// <summary>
+    /// Previews who an email to users would reach with the same filters as the send endpoint.
+    /// </summary>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the audience summary, or an error response.</returns>
+    [HttpGet("users/audience")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<EmailAudienceResponse>> GetUsersAudienceAsync(
+        [FromQuery] UserListQuery query,
+        [FromServices] GetUsersEmailAudienceQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await handler.HandleAsync(new GetUsersEmailAudienceQuery(query), ct));
+    }
+
+    /// <summary>
+    /// Previews who an email to event attendees would reach with the same filters as the send
+    /// endpoint.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the audience summary, or an error response.</returns>
+    [HttpGet("events/{eventId:guid}/attendees/audience")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<EmailAudienceResponse>> GetEventAttendeesAudienceAsync(
+        Guid eventId,
+        [FromQuery] EventAttendeeListQuery query,
+        [FromServices] GetEventAttendeesEmailAudienceQueryHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(
+            await handler.HandleAsync(new GetEventAttendeesEmailAudienceQuery(eventId, query), ct)
         );
     }
 

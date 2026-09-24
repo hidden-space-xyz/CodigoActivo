@@ -82,7 +82,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Last",
             "a@test.com",
             "555",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             null
@@ -103,7 +105,9 @@ public sealed class UpdateUserCommandHandlerTests
             "L",
             "a@test.com",
             "555",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             Guid.NewGuid(),
             null
@@ -129,7 +133,9 @@ public sealed class UpdateUserCommandHandlerTests
             "L",
             email,
             phone,
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             null
@@ -153,7 +159,9 @@ public sealed class UpdateUserCommandHandlerTests
             "L",
             "dup@test.com",
             "555",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -180,7 +188,9 @@ public sealed class UpdateUserCommandHandlerTests
             "L",
             "a@test.com",
             "555",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -211,7 +221,9 @@ public sealed class UpdateUserCommandHandlerTests
             "  Name  ",
             "  NEW@test.com  ",
             "  999  ",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -260,7 +272,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "brandnew@test.com",
             "555-0100",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -286,7 +300,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "ana@test.com",
             "555-0199",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -312,7 +328,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "ana@test.com",
             "555-0100",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -338,7 +356,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "brandnew@test.com",
             "555-0100",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -368,7 +388,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "  ANA@test.com  ",
             "  555-0100  ",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             null
@@ -400,7 +422,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "attacker@test.com",
             "555-0100",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             currentPassword
@@ -426,7 +450,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "ana@test.com",
             "555-0199",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             null
@@ -451,7 +477,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Lopez",
             "other@test.com",
             "555-0100",
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Female,
             null,
             ActingPassword
@@ -465,7 +493,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncStandaloneAccountGivenAMinorBirthDateReturnsBadRequest()
+    public async Task HandleAsyncStandaloneAccountGivenABirthDateReturnsBadRequest()
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
@@ -477,7 +505,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Doe",
             "ana@test.com",
             "555-0100",
-            MinorDob,
+            AdultDob,
+            AdultNationalId,
+            false,
             Gender.Male,
             null,
             ActingPassword
@@ -485,18 +515,18 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCannotBecomeMinor);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserBirthDateNotAllowedForAdult);
         user.Email.Should().Be("ana@test.com");
         user.Phone.Should().Be("555-0100");
         user.PasswordHash.Should().Be("hash");
         user.OtpCodeHash.Should().Be("ABCDEF");
         user.ParentId.Should().BeNull();
-        user.BirthDate.Should().Be(AdultDob);
+        user.BirthDate.Should().BeNull();
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncStandaloneAccountGivenAParentAndAMinorBirthDateIsRefusedAsAMinor()
+    public async Task HandleAsyncStandaloneAccountGivenAParentAndABirthDateIsRefusedForTheBirthDate()
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id);
@@ -507,6 +537,8 @@ public sealed class UpdateUserCommandHandlerTests
             null,
             null,
             MinorDob,
+            null,
+            false,
             Gender.Male,
             Guid.NewGuid(),
             ActingPassword
@@ -514,9 +546,133 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCannotBecomeMinor);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserBirthDateNotAllowedForAdult);
         user.ParentId.Should().BeNull();
         await AssertNotSavedAsync();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    [InlineData(" - ")]
+    public async Task HandleAsyncStandaloneAccountWithoutNationalIdReturnsBadRequest(
+        string? nationalId
+    )
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id);
+        users.FindReturns(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0100",
+            null,
+            nationalId,
+            true,
+            Gender.Female,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserNationalIdRequired);
+        user.NationalId.Should().Be(AdultNationalId);
+        user.PromotionalConsent.Should().BeFalse();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncStandaloneAccountNationalIdOfAnotherUserReturnsConflict()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user, actingUser);
+        users.NationalIdExistsAsync("X1234567L", id, Arg.Any<CancellationToken>()).Returns(true);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "other@test.com",
+            "555-0100",
+            null,
+            " x-1234567-l ",
+            true,
+            Gender.Female,
+            null,
+            ActingPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserNationalIdAlreadyInUse);
+        user.NationalId.Should().Be(AdultNationalId);
+        user.Email.Should().Be("ana@test.com");
+        actingUser.PasswordFailedAttempts.Should().Be(0);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncStandaloneAccountStoresNormalizedNationalIdAndConsentWithoutPassword()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0100",
+            null,
+            " x-1234567-l ",
+            true,
+            Gender.Female,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.NationalId.Should().Be("X1234567L");
+        user.PromotionalConsent.Should().BeTrue();
+        user.BirthDate.Should().BeNull();
+        result.Value.NationalId.Should().Be("X1234567L");
+        result.Value.PromotionalConsent.Should().BeTrue();
+        await users
+            .Received(1)
+            .NationalIdExistsAsync("X1234567L", id, Arg.Any<CancellationToken>());
+        await AssertActingUserNotLoadedAsync();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncStandaloneAccountWithdrawingConsentIsSaved()
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        user.PromotionalConsent = true;
+        users.FindReturns(user);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0100",
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.PromotionalConsent.Should().BeFalse();
+        user.NationalId.Should().Be(AdultNationalId);
     }
 
     [Fact]
@@ -533,6 +689,8 @@ public sealed class UpdateUserCommandHandlerTests
             "ignored@test.com",
             "222",
             MinorDob.AddDays(1),
+            AdultNationalId,
+            true,
             Gender.Female,
             null,
             null
@@ -548,6 +706,11 @@ public sealed class UpdateUserCommandHandlerTests
         user.Email.Should()
             .BeNull("a dependent's contact details are never taken from the request");
         user.Phone.Should().BeNull();
+        user.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
+        user.PromotionalConsent.Should().BeFalse();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .NationalIdExistsAsync(default!, default, TestContext.Current.CancellationToken);
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -566,6 +729,8 @@ public sealed class UpdateUserCommandHandlerTests
             null,
             null,
             MinorDob,
+            null,
+            false,
             Gender.Male,
             parentId,
             null
@@ -592,6 +757,8 @@ public sealed class UpdateUserCommandHandlerTests
             null,
             null,
             MinorDob,
+            null,
+            false,
             Gender.Male,
             newParentId,
             ActingPassword
@@ -605,21 +772,52 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncDependentReachingAdulthoodKeepsItsGuardianAndCredentials()
+    public async Task HandleAsyncDependentGivenAnAdultBirthDateReturnsBadRequest()
     {
         var id = Guid.NewGuid();
         var parentId = Guid.NewGuid();
         var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
         users.FindReturns(user);
+        var request = new UpdateUserRequest(
+            "Grown",
+            "Doe",
+            null,
+            null,
+            AdultDob,
+            null,
+            false,
+            Gender.Male,
+            parentId,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserChildBirthDateNotMinor);
+        user.FirstName.Should().Be("Ana");
+        user.BirthDate.Should().Be(MinorDob);
+        user.ParentId.Should().Be(parentId);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdultDependentKeepingItsStoredBirthDateIsAccepted()
+    {
+        var id = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: AdultDob);
+        users.FindReturns(user);
         users.HasUsers(user);
         var request = new UpdateUserRequest(
             "Grown",
             "Doe",
-            "grown@test.com",
-            "555-0199",
-            AdultDob,
-            Gender.Male,
             null,
+            null,
+            AdultDob,
+            null,
+            false,
+            Gender.Female,
+            parentId,
             null
         );
 
@@ -627,31 +825,56 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("Grown");
+        user.Gender.Should().Be(Gender.Female);
         user.BirthDate.Should().Be(AdultDob);
         user.ParentId.Should().Be(parentId);
-        user.Email.Should()
-            .BeNull("an adult dependent is still a dependent without login identifiers");
-        user.Phone.Should().BeNull();
-        user.PasswordHash.Should().BeNull();
-        emailSender.Sent.Should().BeEmpty();
-        await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsyncDependentReachingAdulthoodNeedsNoContactOrPassword()
+    public async Task HandleAsyncAdultDependentGivenAnotherAdultBirthDateReturnsBadRequest()
     {
         var id = Guid.NewGuid();
         var parentId = Guid.NewGuid();
-        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
+        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: AdultDob);
         users.FindReturns(user);
-        users.HasUsers(user);
         var request = new UpdateUserRequest(
             "Grown",
             "Doe",
             null,
             null,
-            AdultDob,
+            AdultDob.AddDays(1),
+            null,
+            false,
+            Gender.Male,
+            parentId,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserChildBirthDateNotMinor);
+        user.FirstName.Should().Be("Ana");
+        user.BirthDate.Should().Be(AdultDob);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdultDependentGivenAMinorBirthDateIsAccepted()
+    {
+        var id = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: AdultDob);
+        users.FindReturns(user);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Kid",
+            "Doe",
+            null,
+            null,
+            MinorDob,
+            null,
+            false,
             Gender.Male,
             parentId,
             null
@@ -660,9 +883,36 @@ public sealed class UpdateUserCommandHandlerTests
         var result = await HandleAsync(id, request);
 
         result.IsSuccess.Should().BeTrue();
+        user.BirthDate.Should().Be(MinorDob);
         user.ParentId.Should().Be(parentId);
-        await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncDependentWithoutBirthDateReturnsBadRequest()
+    {
+        var id = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
+        users.FindReturns(user);
+        var request = new UpdateUserRequest(
+            "Kid",
+            "Doe",
+            null,
+            null,
+            null,
+            AdultNationalId,
+            true,
+            Gender.Male,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserChildBirthDateRequired);
+        user.BirthDate.Should().Be(MinorDob);
+        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -683,7 +933,9 @@ public sealed class UpdateUserCommandHandlerTests
             "Doe",
             null,
             null,
-            AdultDob,
+            null,
+            AdultNationalId,
+            false,
             Gender.Male,
             Guid.NewGuid(),
             ActingPassword

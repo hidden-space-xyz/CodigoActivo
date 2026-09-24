@@ -41,6 +41,11 @@ authentication are not supported.
   signups, a member can infer an individual's status — including a rejection — from these counts; whether
   this granularity is acceptable for the member audience is a pending decision for the project owner, not
   resolved by this document.
+- **Known limitation**: `POST /api/auth/register` accepts anonymous requests, so an attacker who knows
+  someone else's DNI/NIE, email or phone can register with it; the account is created pending verification
+  and the unique DNI/NIE, email and phone it claims stay reserved until an administrator deletes it. The
+  409 (`RegisterNationalIdAlreadyInUse`, `RegisterEmailOrPhoneAlreadyInUse`) also lets a caller probe
+  whether a given DNI/NIE, email or phone is already registered.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the last administrator
@@ -50,16 +55,20 @@ authentication are not supported.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
   password whenever the update would replace the account's login identifiers: a different email or phone.
   A missing or wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave
-  both identifiers untouched need none. A new address is stored as given and is not confirmed by an emailed
-  code. The stored account, never the request, decides the rest: an account that is not already a dependent
-  is refused a guardian (`UserParentNotAllowedForAdult`) and a minor birth date (`UserCannotBecomeMinor`)
-  and keeps its credentials, so no request can demote an account into somebody's dependent; a dependent
-  only accepts its own guardian repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is
-  never reassigned. Giving a dependent an adult birth date changes nothing else: the request's email and
-  phone are ignored, the row keeps its guardian, the `Dependent` status and no password, so it still cannot
-  log in (`UserAccountIsDependent`) and `forgot-password` still ignores it. Dependents are created only
-  through `POST /api/users/{id}/children`, must be minors at creation, and leave their guardian only when
-  the guardian deletes them.
+  both identifiers untouched need none. The DNI/NIE is not a login identifier, so changing it needs no
+  password. A new address is stored as given and is not confirmed by an emailed code. The stored account,
+  never the request, decides the rest: an account that is not already a dependent is refused a guardian
+  (`UserParentNotAllowedForAdult`) and any birth date (`UserBirthDateNotAllowedForAdult`), must supply a
+  unique DNI/NIE (`UserNationalIdRequired`, `UserNationalIdAlreadyInUse`) and may set `promotionalConsent`,
+  so no request can demote an account into somebody's dependent; a dependent only accepts its own guardian
+  repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is never reassigned, must supply a
+  birth date (`UserChildBirthDateRequired`) that stays a minor's only when it changes from the stored value
+  (`UserChildBirthDateNotMinor`), so a dependent who already turned 18 stays editable with their stored
+  birth date, and never stores a DNI/NIE or promotional consent; turning 18 changes nothing about the
+  account itself, which keeps the `Dependent` status and no password, so it still cannot log in
+  (`UserAccountIsDependent`) and `forgot-password` still ignores it. Dependents are created only through
+  `POST /api/users/{id}/children`, must be minors at creation, and leave their guardian only when the
+  guardian deletes them.
 
 ### Two-factor authentication
 
@@ -350,6 +359,14 @@ skipped, not what SMTP later did with them. Single-recipient messages allow 30 r
 per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2 active, no waiting
 queue). All requests remain subject to nginx's general API limit, application recipient/attachment limits and
 the five-minute nginx upstream timeout.
+
+`GET /api/emails/users/audience` and `GET /api/emails/events/{eventId}/attendees/audience` let an
+administrator preview a send before committing to it: given the same filters as `POST /api/emails/users` or
+`POST /api/emails/events/{eventId}/attendees`, they return `{ recipients, withoutConsent }` computed by the
+same shared selection (`ManualEmailAudience`) the send commands use, so the preview always matches what a
+send would reach — distinct addressable recipients deduplicated case-insensitively, and how many of them
+have `promotionalConsent` set to `false`. These preview endpoints carry none of the send limits above beyond
+nginx's general API limit.
 
 ## Demo mode
 
