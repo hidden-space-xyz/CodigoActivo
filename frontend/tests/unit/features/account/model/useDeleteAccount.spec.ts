@@ -46,6 +46,29 @@ describe('useDeleteAccount', () => {
     expect(authenticator.result.email.value).toBe('ada@example.test')
   })
 
+  it('lets members delete without asking the API whether they may', async () => {
+    const { result } = await withSetup(() => useDeleteAccount(), { user: {} })
+
+    expect(result.canDelete.value).toBe(true)
+    expect(result.isLastAdmin.value).toBe(false)
+  })
+
+  it('lets an administrator delete only once the API confirms another one remains', async () => {
+    server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: true })))
+    const { result } = await withSetup(() => useDeleteAccount(), { user: { isAdmin: true } })
+
+    await vi.waitFor(() => expect(result.canDelete.value).toBe(true))
+    expect(result.isLastAdmin.value).toBe(false)
+  })
+
+  it('flags the last administrator and withholds the deletion', async () => {
+    server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: false })))
+    const { result } = await withSetup(() => useDeleteAccount(), { user: { isAdmin: true } })
+
+    await vi.waitFor(() => expect(result.isLastAdmin.value).toBe(true))
+    expect(result.canDelete.value).toBe(false)
+  })
+
   it('asks the API for the confirmation code with the current password', async () => {
     const calls = serveDeletion()
     const { result } = await withSetup(() => useDeleteAccount(), { user: {} })

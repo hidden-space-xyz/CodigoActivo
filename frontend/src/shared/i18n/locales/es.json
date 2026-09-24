@@ -260,6 +260,7 @@
     "UserDeleteAdminForbidden": "No puedes eliminar a un usuario administrador.",
     "UserSelfDeleteRequiresVerification": "Para eliminar tu propia cuenta debes confirmarlo con tu contraseña y tu segundo factor desde «Mi cuenta».",
     "UserDeleteAuthoredContentExists": "No se puede eliminar la cuenta porque hay contenido publicado creado por este usuario. Contacta con la organización.",
+    "UserDeleteLastAdminForbidden": "No puedes eliminar tu cuenta porque eres la única persona administradora.",
     "UserCannotRemoveLastAdmin": "No puedes quitar el rango de administrador al único administrador.",
     "UserTypeNotFound": "El tipo de usuario no es válido.",
     "ParentUserNotFound": "No se encontró el usuario responsable.",
@@ -1245,7 +1246,7 @@
       "deleteAccount": {
         "title": "Eliminar mi cuenta",
         "lead": "Al eliminar tu cuenta borramos para siempre tus datos personales, los de los menores a tu cargo, vuestras inscripciones, vuestras valoraciones y vuestros diplomas. No podremos recuperarlos después.",
-        "adminNote": "Las cuentas de administración no se pueden eliminar desde aquí. Pide a otra persona administradora que retire tu rango antes de darte de baja.",
+        "lastAdminNote": "Eres la única persona administradora, así que no puedes eliminar tu cuenta. Concede el rango de administrador a otra persona antes de darte de baja.",
         "action": "Eliminar mi cuenta",
         "dialogHeader": "Eliminar mi cuenta",
         "passwordIntro": "Para confirmar que eres tú, escribe tu contraseña actual. Después te pediremos tu código de verificación en dos pasos.",

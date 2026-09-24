@@ -116,15 +116,31 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAdministratorReturnsForbidden()
+    public async Task HandleAsyncLastAdministratorReturnsForbidden()
     {
         var user = Signed(isAdmin: true);
+        users.CountsAdministrators(1);
 
         var result = await DeleteAsync(user.Id);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteLastAdminForbidden);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
+        await AssertCacheKeptAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdministratorWithAnotherAdministratorRemovesTheAccount()
+    {
+        var user = Signed(isAdmin: true);
+        users.CountsAdministrators(2);
+        users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await DeleteAsync(user.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        users.Received(1).Remove(user);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

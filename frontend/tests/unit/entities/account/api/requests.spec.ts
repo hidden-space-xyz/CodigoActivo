@@ -10,6 +10,7 @@ import {
   disableAuthenticatorRequest,
   getAccountCertificatesRequest,
   getAccountChildrenRequest,
+  getAccountDeletionAllowedRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
   requestAccountDeletionCodeRequest,
@@ -198,6 +199,15 @@ describe('account requests', () => {
 
     await expect(deleteAccountChildRequest('child-1')).resolves.toBeUndefined()
     expect(deleted).toEqual(['child-1'])
+  })
+
+  it('asks whether the own account may be deleted, refusing when the answer is missing', async () => {
+    const answers = [{ allowed: true }, { allowed: false }, {}]
+    server.use(http.get('/api/me/deletion', () => HttpResponse.json(answers.shift())))
+
+    await expect(getAccountDeletionAllowedRequest()).resolves.toBe(true)
+    await expect(getAccountDeletionAllowedRequest()).resolves.toBe(false)
+    await expect(getAccountDeletionAllowedRequest()).resolves.toBe(false)
   })
 
   it('asks for the deletion code and deletes the own account with the password and the code', async () => {

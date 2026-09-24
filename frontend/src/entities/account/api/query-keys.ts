@@ -5,4 +5,5 @@ export const accountQueryKeys = {
   children: () => [...accountQueryKeys.all, 'children'] as const,
   history: () => [...accountQueryKeys.all, 'history'] as const,
   certificates: () => [...accountQueryKeys.all, 'certificates'] as const,
+  deletionAllowed: () => [...accountQueryKeys.all, 'deletion-allowed'] as const,
 }

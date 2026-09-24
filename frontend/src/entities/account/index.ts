@@ -25,6 +25,7 @@ export {
   disableAuthenticatorRequest,
   getAccountChildrenRequest,
   getAccountCertificatesRequest,
+  getAccountDeletionAllowedRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
   requestAccountDeletionCodeRequest,

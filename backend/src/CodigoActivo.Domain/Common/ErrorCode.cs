@@ -284,6 +284,11 @@ public enum ErrorCode
     UserDeleteAuthoredContentExists,
 
     /// <summary>
+    /// Selects the user delete last admin forbidden option.
+    /// </summary>
+    UserDeleteLastAdminForbidden,
+
+    /// <summary>
     /// Selects the user cannot remove last admin option.
     /// </summary>
     UserCannotRemoveLastAdmin,

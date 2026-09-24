@@ -670,6 +670,7 @@ public static class DependencyInjection
         services.AddScoped<AddChildCommandHandler>();
         services.AddScoped<ChangePasswordCommandHandler>();
         services.AddScoped<ResetTwoFactorCommandHandler>();
+        services.AddScoped<GetAccountDeletionStatusQueryHandler>();
         services.AddScoped<RequestAccountDeletionCodeCommandHandler>();
         services.AddScoped<DeleteOwnAccountCommandHandler>();
     }

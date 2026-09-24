@@ -2809,7 +2809,24 @@
         }
       }
     },
-    "/api/me/deletion/code": {
+    "/api/me/deletion": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Me"
@@ -2818,7 +2835,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AccountDeletionCodeRequest"
+                "$ref": "#/components/schemas/DeleteAccountRequest"
               }
             }
           }
@@ -2830,7 +2847,7 @@
         }
       }
     },
-    "/api/me/deletion": {
+    "/api/me/deletion/code": {
       "post": {
         "tags": [
           "Me"
@@ -2839,7 +2856,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeleteAccountRequest"
+                "$ref": "#/components/schemas/AccountDeletionCodeRequest"
               }
             }
           }
@@ -3972,6 +3989,15 @@
           "currentPassword": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccountDeletionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "allowed": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -5109,6 +5135,7 @@
           "UserDeleteAdminForbidden",
           "UserSelfDeleteRequiresVerification",
           "UserDeleteAuthoredContentExists",
+          "UserDeleteLastAdminForbidden",
           "UserCannotRemoveLastAdmin",
           "UserTypeNotFound",
           "ParentUserNotFound",

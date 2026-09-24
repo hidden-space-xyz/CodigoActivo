@@ -1,9 +1,14 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import { deleteAccountRequest, requestAccountDeletionCodeRequest } from '@/entities/account'
+import {
+  accountQueryKeys,
+  deleteAccountRequest,
+  getAccountDeletionAllowedRequest,
+  requestAccountDeletionCodeRequest,
+} from '@/entities/account'
 import type { DeleteAccountInput } from '@/entities/account'
 import { logoutRequest, useSession } from '@/entities/session'
 import { TwoFactorMethod } from '@/shared/api/generated/models'
@@ -14,7 +19,8 @@ import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
  * unlocks the operation and a second-factor code authorizes it, either emailed on demand with
  * `requestCode` or read from the user's authenticator application. Once the API confirms, the
  * session and every cached query are dropped and the browser lands on the home page, because the
- * account behind them no longer exists.
+ * account behind them no longer exists. Only administrators ask the API whether they may delete
+ * their account, since the last administrator may not; until it answers, `canDelete` stays false.
  */
 export function useDeleteAccount() {
   const { t } = useI18n()
@@ -27,6 +33,15 @@ export function useDeleteAccount() {
   const isAuthenticator = computed(() => method.value === TwoFactorMethod.Authenticator)
   const email = computed(() => session.user?.email ?? '')
   const errorMessage = ref('')
+
+  const isAdmin = computed(() => session.isAdmin)
+  const deletionAllowed = useQuery({
+    queryKey: accountQueryKeys.deletionAllowed(),
+    queryFn: getAccountDeletionAllowedRequest,
+    enabled: isAdmin,
+  })
+  const canDelete = computed(() => !isAdmin.value || deletionAllowed.data.value === true)
+  const isLastAdmin = computed(() => isAdmin.value && deletionAllowed.data.value === false)
 
   function reset(): void {
     errorMessage.value = ''
@@ -66,6 +81,8 @@ export function useDeleteAccount() {
     method,
     isAuthenticator,
     email,
+    canDelete,
+    isLastAdmin,
     errorMessage,
     reset,
     requestCode,
