@@ -63,6 +63,7 @@ public sealed class GetEventRosterQueryHandler(
                     a.User.BirthDate,
                     a.User.Email,
                     a.User.Phone,
+                    a.User.SecondaryPhone,
                     a.ActivityRoleTypeId,
                     RoleName = a.ActivityRoleType.Name,
                     Guardian = a.User.Parent == null
@@ -71,7 +72,8 @@ public sealed class GetEventRosterQueryHandler(
                             a.User.Parent.FirstName,
                             a.User.Parent.LastName,
                             a.User.Parent.Email,
-                            a.User.Parent.Phone
+                            a.User.Parent.Phone,
+                            a.User.Parent.SecondaryPhone
                         ),
                 }),
             ct
@@ -100,6 +102,7 @@ public sealed class GetEventRosterQueryHandler(
                                 r.BirthDate,
                                 r.Email,
                                 r.Phone,
+                                r.SecondaryPhone,
                                 r.RoleName,
                                 r.Guardian
                             )),

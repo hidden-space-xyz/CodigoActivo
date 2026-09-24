@@ -36,7 +36,13 @@ const guardianAttendee = buildAttendee({
   gender: undefined,
   userTypeName: null,
   userTypeColor: null,
-  guardian: { firstName: 'Mary', lastName: 'Berners', email: null, phone: null },
+  guardian: {
+    firstName: 'Mary',
+    lastName: 'Berners',
+    email: null,
+    phone: null,
+    secondaryPhone: '611111112',
+  },
   assignments: [
     buildAssignment({
       activityId: 'act-2',
@@ -58,7 +64,10 @@ interface RenderOptions {
 }
 
 async function renderTab(options: RenderOptions = {}) {
-  const attendees = options.attendees ?? [buildAttendee(), guardianAttendee]
+  const attendees = options.attendees ?? [
+    buildAttendee({ secondaryPhone: '600000011' }),
+    guardianAttendee,
+  ]
   if (options.catalog !== false) useCatalogHandlers()
   server.use(
     http.get('/api/reports/events/:eventId/attendees', ({ request }) => {
@@ -130,6 +139,8 @@ describe('EventAttendeesTab', () => {
     )
     expect(text).toContain('ada@example.test')
     expect(text).toContain('600000001')
+    expect(text).toContain('600000011')
+    expect(text).toContain('611111112')
     expect(text).toContain(
       t('pages.admin.eventDetail.attendees.guardian', { firstName: 'Mary', lastName: 'Berners' }),
     )
@@ -287,10 +298,12 @@ describe('EventAttendeesTab', () => {
     const content = (await csv?.text()) ?? ''
     const lines = content.replace('﻿', '').split('\r\n')
     expect(lines[0]).toBe(
-      'Nombre;Apellidos;Email;Numero;Genero;NombreDelTutor;ApellidosDelTutor;EmailDelTutor;NumeroDelTutor',
+      'Nombre;Apellidos;Email;Numero;NumeroSecundario;Genero;NombreDelTutor;ApellidosDelTutor;EmailDelTutor;NumeroDelTutor;NumeroSecundarioDelTutor',
     )
-    expect(lines[1]).toBe(`Ada;Lovelace;ada@example.test;600000001;${genderLabel('Female')};;;;`)
-    expect(lines[2]).toBe('Tim;Berners;;;;Mary;Berners;;')
+    expect(lines[1]).toBe(
+      `Ada;Lovelace;ada@example.test;600000001;600000011;${genderLabel('Female')};;;;;`,
+    )
+    expect(lines[2]).toBe('Tim;Berners;;;;;Mary;Berners;;;611111112')
   })
 
   it('reports export failures', async () => {

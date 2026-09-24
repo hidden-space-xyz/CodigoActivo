@@ -137,11 +137,13 @@ const exportHeaders = [
   t('pages.admin.eventDetail.attendees.export.columns.lastName'),
   t('pages.admin.eventDetail.attendees.export.columns.email'),
   t('pages.admin.eventDetail.attendees.export.columns.phone'),
+  t('pages.admin.eventDetail.attendees.export.columns.secondaryPhone'),
   t('pages.admin.eventDetail.attendees.export.columns.gender'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianFirstName'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianLastName'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianEmail'),
   t('pages.admin.eventDetail.attendees.export.columns.guardianPhone'),
+  t('pages.admin.eventDetail.attendees.export.columns.guardianSecondaryPhone'),
 ]
 
 function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
@@ -150,11 +152,13 @@ function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
     attendee.lastName,
     attendee.email,
     attendee.phone,
+    attendee.secondaryPhone,
     attendee.gender ? genderLabel(attendee.gender) : null,
     attendee.guardian?.firstName,
     attendee.guardian?.lastName,
     attendee.guardian?.email,
     attendee.guardian?.phone,
+    attendee.guardian?.secondaryPhone,
   ]
 }
 
@@ -477,10 +481,17 @@ function submitChangeRole(): void {
                   <AppIcon name="phone" />
                   {{ attendee.guardian.phone || '—' }}
                 </span>
+                <span v-if="attendee.guardian.secondaryPhone">
+                  <AppIcon name="phone" />
+                  {{ attendee.guardian.secondaryPhone }}
+                </span>
               </template>
               <template v-else>
                 <span><AppIcon name="envelope" /> {{ attendee.email || '—' }}</span>
                 <span><AppIcon name="phone" /> {{ attendee.phone || '—' }}</span>
+                <span v-if="attendee.secondaryPhone">
+                  <AppIcon name="phone" /> {{ attendee.secondaryPhone }}
+                </span>
               </template>
               <Button
                 v-if="attendee.email"

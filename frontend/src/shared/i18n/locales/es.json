@@ -18,6 +18,8 @@
     "email": "Correo",
     "emailLong": "Correo electrónico",
     "phone": "Teléfono",
+    "secondaryPhone": "Teléfono secundario",
+    "secondaryPhoneOptional": "Teléfono secundario (opcional)",
     "password": "Contraseña",
     "confirmPassword": "Repite la contraseña",
     "birthDate": "Fecha de nacimiento",
@@ -55,6 +57,7 @@
     "passwordsMismatch": "Las contraseñas no coinciden.",
     "nationalIdInvalid": "Introduce un DNI o NIE válido, con su letra.",
     "nationalIdsMismatch": "Los dos DNI/NIE no coinciden.",
+    "secondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
     "genderRequired": "Selecciona un género."
   },
   "nav": {
@@ -275,6 +278,7 @@
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
+    "SecondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
     "InvalidCredentials": "El correo electrónico o la contraseña no son correctos.",
     "UserAccountBlocked": "Tu cuenta está bloqueada. Contacta al administrador.",
     "UserAccountIsDependent": "Esta cuenta depende de un responsable y no puede iniciar sesión directamente.",
@@ -633,7 +637,7 @@
           "typeTitle": "Tipo de usuario: {name}",
           "role": "Rol",
           "search": {
-            "placeholder": "Buscar por nombre, correo o teléfono"
+            "placeholder": "Buscar por nombre, correo o teléfonos"
           },
           "filters": {
             "activity": "Actividad"
@@ -675,11 +679,13 @@
               "lastName": "Apellidos",
               "email": "Email",
               "phone": "Numero",
+              "secondaryPhone": "NumeroSecundario",
               "gender": "Genero",
               "guardianFirstName": "NombreDelTutor",
               "guardianLastName": "ApellidosDelTutor",
               "guardianEmail": "EmailDelTutor",
-              "guardianPhone": "NumeroDelTutor"
+              "guardianPhone": "NumeroDelTutor",
+              "guardianSecondaryPhone": "NumeroSecundarioDelTutor"
             },
             "toast": {
               "exported": "{n} asistente exportado. | {n} asistentes exportados."
@@ -1073,7 +1079,7 @@
       "childBirthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad.",
       "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
       "identifierChange": {
-        "message": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o su teléfono. Por seguridad, confirma tu contraseña.",
+        "message": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o sus teléfonos. Por seguridad, confirma tu contraseña.",
         "passwordLabel": "Tu contraseña",
         "passwordRequired": "Introduce tu contraseña."
       },
@@ -1179,7 +1185,7 @@
         "changePassword": "Cambiar contraseña",
         "editDialogHeader": "Editar mis datos",
         "identifierChange": {
-          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar el teléfono, confirma por seguridad tu contraseña actual.",
+          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar tus teléfonos, confirma por seguridad tu contraseña actual.",
           "passwordLabel": "Tu contraseña actual",
           "passwordRequired": "Introduce tu contraseña actual."
         },

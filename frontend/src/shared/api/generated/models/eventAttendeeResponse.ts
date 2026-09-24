@@ -19,6 +19,8 @@ export interface EventAttendeeResponse {
   /** @nullable */
   phone?: string | null;
   /** @nullable */
+  secondaryPhone?: string | null;
+  /** @nullable */
   birthDate?: string | null;
   gender?: Gender;
   /** @nullable */

@@ -47,6 +47,7 @@ describe('register requests', () => {
         lastName: 'Lovelace',
         email: 'ada@example.test',
         phone: '600000000',
+        secondaryPhone: null,
         password: 'correct-horse-battery',
         nationalId: '12345678Z',
         gender: 'Female',

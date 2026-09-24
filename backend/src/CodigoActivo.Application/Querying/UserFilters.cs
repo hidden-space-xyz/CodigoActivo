@@ -62,7 +62,10 @@ public static class UserFilters
             u => u.NationalId,
             query.NationalId.NormalizeNationalIdOrNull()
         );
-        return source.WhereContains(u => u.Phone, query.Phone);
+        return source.WhereContains(
+            u => (u.Phone ?? "") + " " + (u.SecondaryPhone ?? ""),
+            query.Phone
+        );
     }
 
     /// <summary>
@@ -128,6 +131,8 @@ public static class UserFilters
                 + (u.Email ?? "")
                 + " "
                 + (u.Phone ?? "")
+                + " "
+                + (u.SecondaryPhone ?? "")
                 + (
                     u.Parent == null
                         ? ""
@@ -139,6 +144,8 @@ public static class UserFilters
                             + (u.Parent.Email ?? "")
                             + " "
                             + (u.Parent.Phone ?? "")
+                            + " "
+                            + (u.Parent.SecondaryPhone ?? "")
                 ),
             query.Search
         );

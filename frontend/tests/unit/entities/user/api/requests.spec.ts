@@ -71,6 +71,7 @@ describe('user requests', () => {
       lastName: 'Hopper',
       email: 'grace@example.test',
       phone: '611111111',
+      secondaryPhone: '622222222',
       birthDate: null,
       nationalId: 'X1234567L',
       promotionalConsent: true,

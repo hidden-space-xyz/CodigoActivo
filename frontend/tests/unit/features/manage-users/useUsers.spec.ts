@@ -127,6 +127,7 @@ describe('useUsers', () => {
         lastName: 'King',
         email: null,
         phone: null,
+        secondaryPhone: null,
         birthDate: null,
         nationalId: '12345678Z',
         promotionalConsent: true,
@@ -141,7 +142,7 @@ describe('useUsers', () => {
     await result.resetTwoFactor.mutateAsync({ id: 'user-1', currentPassword: 'secret' })
 
     expect(requests).toEqual([
-      'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"birthDate":null,"nationalId":"12345678Z","promotionalConsent":true,"gender":"Female","parentId":null,"currentPassword":null}',
+      'PUT {"firstName":"Ada","lastName":"King","email":null,"phone":null,"secondaryPhone":null,"birthDate":null,"nationalId":"12345678Z","promotionalConsent":true,"gender":"Female","parentId":null,"currentPassword":null}',
       'DELETE user-2',
       'TYPE ?userTypeId=type-member',
       'ADMIN {"isAdmin":true,"currentPassword":"secret"}',

@@ -81,7 +81,7 @@ describe('ProfileSection', () => {
   })
 
   it('shows the personal data of the signed-in user', async () => {
-    serveProfile()
+    serveProfile(buildUserResponse({ secondaryPhone: '622222222', status: { name: 'Activo' } }))
 
     await renderSection()
 
@@ -89,6 +89,7 @@ describe('ProfileSection', () => {
       [t('common.name')]: 'Ada Lovelace',
       [t('common.email')]: 'ada@example.test',
       [t('common.phone')]: '600000000',
+      [t('common.secondaryPhone')]: '622222222',
       [t('common.nationalId')]: '12345678Z',
       [t('common.gender')]: genderLabel('Female'),
       [t('common.status')]: 'Activo',
@@ -106,6 +107,7 @@ describe('ProfileSection', () => {
     expect(infoRows()).toMatchObject({
       [t('common.email')]: '—',
       [t('common.phone')]: '—',
+      [t('common.secondaryPhone')]: '—',
       [t('common.gender')]: '—',
       [t('common.status')]: '—',
     })
@@ -160,6 +162,7 @@ describe('ProfileSection', () => {
     await fill(dialog, '#p-lastname', ' King ')
     await fill(dialog, '#p-email', ' augusta@example.test ')
     await fill(dialog, '#p-phone', ' 611111111 ')
+    await fill(dialog, '#p-secondary-phone', ' 622222222 ')
     await fill(dialog, '#p-national-id', 'x-1234567-l')
     await fill(dialog, '#p-national-id-confirm', 'X1234567L')
     await click(dialog.querySelector('#p-promotional-consent') as Element)
@@ -175,6 +178,7 @@ describe('ProfileSection', () => {
         lastName: 'King',
         email: 'augusta@example.test',
         phone: '611111111',
+        secondaryPhone: '622222222',
         birthDate: null,
         nationalId: 'X1234567L',
         promotionalConsent: true,
@@ -222,6 +226,53 @@ describe('ProfileSection', () => {
       expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
     )
     expect(openDialogs()).toHaveLength(1)
+  })
+
+  it('asks for the current password when the secondary phone changes and sends a blank one as null', async () => {
+    serveProfile(buildUserResponse({ secondaryPhone: '622222222' }))
+    const bodies: unknown[] = []
+    server.use(
+      http.put('/api/users/:userId', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(buildUserResponse())
+      }),
+    )
+    await renderSection()
+
+    await click(buttonByText(document.body, t('features.account.profile.editData')))
+    const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
+    expect(dialog.querySelector<HTMLInputElement>('#p-secondary-phone')?.value).toBe('622222222')
+    expect(dialog.querySelector('#p-current')).toBeNull()
+    await fill(dialog, '#p-secondary-phone', '   ')
+    expect(dialog.querySelector('#p-current')).not.toBeNull()
+    await fill(dialog, '#p-current', 'old-password')
+    await click(buttonByText(dialog, t('common.save')))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ secondaryPhone: null, currentPassword: 'old-password' })
+  })
+
+  it('refuses a secondary phone equal to the phone', async () => {
+    serveProfile()
+    const updated = vi.fn()
+    server.use(
+      http.put('/api/users/:userId', () => {
+        updated()
+        return HttpResponse.json(buildUserResponse())
+      }),
+    )
+    await renderSection()
+
+    await click(buttonByText(document.body, t('features.account.profile.editData')))
+    const dialog = dialogByTitle(t('features.account.profile.editDialogHeader'))
+    await fill(dialog, '#p-secondary-phone', ' 600000000 ')
+    await fill(dialog, '#p-current', 'old-password')
+    expect(dialog.textContent).not.toContain(t('validation.secondaryPhoneSameAsPrimary'))
+    await click(buttonByText(dialog, t('common.save')))
+
+    expect(dialog.textContent).toContain(t('validation.secondaryPhoneSameAsPrimary'))
+    expect(dialog.querySelector('#p-secondary-phone')?.closest('.ca-invalid')).not.toBeNull()
+    expect(updated).not.toHaveBeenCalled()
   })
 
   it('asks for the current password when the server refuses it without a visible change', async () => {
@@ -330,6 +381,7 @@ describe('ProfileSection', () => {
       'p-lastname',
       'p-email',
       'p-phone',
+      'p-secondary-phone',
       'p-national-id',
       'p-national-id-confirm',
     ]) {

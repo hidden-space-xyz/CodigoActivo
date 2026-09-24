@@ -60,9 +60,9 @@ describe('RegistrationForm', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
     expect(errors(wrapper)).toEqual([
       t('validation.emailInvalid'),
+      t('validation.genderRequired'),
       t('validation.passwordMin'),
       t('validation.nationalIdInvalid'),
-      t('validation.genderRequired'),
     ])
     expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(6)
   })
@@ -74,6 +74,24 @@ describe('RegistrationForm', () => {
 
     expect(errors(wrapper)).toEqual([])
     expect(wrapper.find('.ca-invalid').exists()).toBe(false)
+  })
+
+  it('refuses a secondary phone equal to the phone', async () => {
+    const { form, wrapper } = await renderForm()
+    await fillAdult(wrapper)
+    await wrapper.find('#reg-secondary-phone').setValue(' 600000000 ')
+
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    expect(errors(wrapper)).toEqual([t('validation.secondaryPhoneSameAsPrimary')])
+    expect(wrapper.find('#reg-secondary-phone').element.closest('.ca-invalid')).not.toBeNull()
+
+    await wrapper.find('#reg-secondary-phone').setValue('611111111')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+    expect(form.secondaryPhone).toBe('611111111')
   })
 
   it('reports mismatched passwords once the confirmation loses focus', async () => {

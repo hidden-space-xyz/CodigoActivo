@@ -359,6 +359,11 @@ public enum ErrorCode
     UserEmailAlreadyInUse,
 
     /// <summary>
+    /// Selects the option for a secondary phone equal to the main phone of the same account.
+    /// </summary>
+    SecondaryPhoneSameAsPrimary,
+
+    /// <summary>
     /// Selects the invalid credentials option.
     /// </summary>
     InvalidCredentials,

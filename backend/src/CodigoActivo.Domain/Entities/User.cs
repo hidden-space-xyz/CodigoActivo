@@ -28,6 +28,12 @@ public class User : IdentifiableEntity
     public string? Phone { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional second contact phone of an independent account. It is never
+    /// equal to <see cref="Phone"/> and is always unset for dependents.
+    /// </summary>
+    public string? SecondaryPhone { get; set; }
+
+    /// <summary>
     /// Gets or sets the password hash value.
     /// </summary>
     public string? PasswordHash { get; set; }
@@ -40,7 +46,7 @@ public class User : IdentifiableEntity
 
     /// <summary>
     /// Gets or sets the normalized Spanish national identity number (DNI or NIE): uppercase, without
-    /// spaces or hyphens. Required and unique for independent accounts; unset for dependents.
+    /// spaces or hyphens. Required for independent accounts but not unique; unset for dependents.
     /// </summary>
     public string? NationalId { get; set; }
 

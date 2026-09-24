@@ -234,6 +234,7 @@ const exportHeaders = [
   t('common.lastName'),
   t('common.email'),
   t('common.phone'),
+  t('common.secondaryPhone'),
   t('common.nationalId'),
   t('common.birthDate'),
   t('common.gender'),
@@ -250,6 +251,7 @@ function exportRow(user: User): CsvValue[] {
     user.lastName,
     user.email,
     user.phone,
+    user.secondaryPhone,
     user.nationalId,
     formatDate(user.birthDate),
     user.gender ? genderLabel(user.gender) : null,
@@ -383,7 +385,14 @@ function confirmDelete(user: User): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #default="{ row }">{{ row.phone || '—' }}</template>
+        <template #default="{ row }">
+          <div class="phone-cell">
+            <span>{{ row.phone || '—' }}</span>
+            <span v-if="row.secondaryPhone" class="phone-cell__secondary">{{
+              row.secondaryPhone
+            }}</span>
+          </div>
+        </template>
       </el-table-column>
       <el-table-column prop="nationalId" sortable="custom" min-width="150">
         <template #header>
@@ -652,6 +661,17 @@ function confirmDelete(user: User): void {
 .relation-filter__label {
   font-size: 13px;
   font-weight: 600;
+}
+
+.phone-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phone-cell__secondary {
+  font-size: 12.5px;
+  color: var(--ca-text-muted);
 }
 
 .family-cell {

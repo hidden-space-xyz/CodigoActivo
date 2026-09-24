@@ -158,14 +158,18 @@ function participantsLabel(count: number): string {
 }
 
 function contactLines(participant: EventRosterParticipantResponse): string[] {
-  return [participant.phone, participant.email].filter((value): value is string => !!value)
+  return [participant.phone, participant.secondaryPhone, participant.email].filter(
+    (value): value is string => !!value,
+  )
 }
 
 function guardianContactLines(participant: EventRosterParticipantResponse): string[] {
   const guardian = participant.guardian
   if (!guardian) return []
   const name = [guardian.firstName, guardian.lastName].filter(Boolean).join(' ')
-  return [name, guardian.phone ?? '', guardian.email ?? ''].filter(Boolean)
+  return [name, guardian.phone ?? '', guardian.secondaryPhone ?? '', guardian.email ?? ''].filter(
+    Boolean,
+  )
 }
 function printSheets(): void {
   window.print()

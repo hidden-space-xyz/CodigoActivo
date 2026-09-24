@@ -24,4 +24,6 @@ export interface RegisterRequest {
   promotionalConsent?: boolean;
   /** @nullable */
   minors?: RegisterMinorRequest[] | null;
+  /** @nullable */
+  secondaryPhone?: string | null;
 }

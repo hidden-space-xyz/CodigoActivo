@@ -346,6 +346,7 @@ public sealed class UpdateUserCommandHandlerTests
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        user.SecondaryPhone = "555-0200";
         users.FindReturns(user);
         users.HasUsers(user);
         var request = new UpdateUserRequest(
@@ -358,7 +359,8 @@ public sealed class UpdateUserCommandHandlerTests
             false,
             Gender.Female,
             null,
-            null
+            null,
+            "  555-0200  "
         );
 
         var result = await HandleAsync(id, request);
@@ -366,6 +368,8 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.Email.Should().Be("ana@test.com");
         user.Phone.Should().Be("555-0100");
+        user.SecondaryPhone.Should().Be("555-0200");
+        result.Value.SecondaryPhone.Should().Be("555-0200");
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -427,6 +431,111 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
         user.Phone.Should().Be("555-0100");
+        await AssertNotSavedAsync();
+    }
+
+    [Theory]
+    [InlineData(null, "555-0300")]
+    [InlineData("555-0200", "555-0300")]
+    [InlineData("555-0200", "   ")]
+    public async Task HandleAsyncAdultChangedSecondaryPhoneWithoutPasswordReturnsBadRequest(
+        string? stored,
+        string requested
+    )
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        user.SecondaryPhone = stored;
+        users.FindReturns(user, actingUser);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0100",
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            null,
+            requested
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.SecondaryPhone.Should().Be(stored);
+        await AssertNotSavedAsync();
+    }
+
+    [Theory]
+    [InlineData(null, "  555-0300  ", "555-0300")]
+    [InlineData("555-0200", "   ", null)]
+    [InlineData("555-0200", null, null)]
+    public async Task HandleAsyncAdultChangedSecondaryPhoneWithPasswordIsSavedAndWarnsTheOwner(
+        string? stored,
+        string? requested,
+        string? expected
+    )
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        user.SecondaryPhone = stored;
+        users.FindReturns(user, actingUser);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            "555-0100",
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            ActingPassword,
+            requested
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.SecondaryPhone.Should().Be(expected);
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("555-0100", "555-0100")]
+    [InlineData("555-0199", "  555-0199  ")]
+    public async Task HandleAsyncAdultSecondaryPhoneEqualToPhoneReturnsBadRequest(
+        string phone,
+        string secondaryPhone
+    )
+    {
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        users.FindReturns(user, actingUser);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "ana@test.com",
+            phone,
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            "wrong-password",
+            secondaryPhone
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.SecondaryPhoneSameAsPrimary);
+        user.Phone.Should().Be("555-0100");
+        user.SecondaryPhone.Should().BeNull();
+        actingUser.PasswordFailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
     }
 
@@ -626,7 +735,8 @@ public sealed class UpdateUserCommandHandlerTests
             true,
             Gender.Female,
             null,
-            null
+            null,
+            "333"
         );
 
         var result = await HandleAsync(id, request);
@@ -639,6 +749,7 @@ public sealed class UpdateUserCommandHandlerTests
         user.Email.Should()
             .BeNull("a dependent's contact details are never taken from the request");
         user.Phone.Should().BeNull();
+        user.SecondaryPhone.Should().BeNull();
         user.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
         user.PromotionalConsent.Should().BeFalse();
         await AssertActingUserNotLoadedAsync();

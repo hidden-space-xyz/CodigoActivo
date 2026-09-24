@@ -25,7 +25,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         string nationalId = NewAdultNationalId,
         Gender gender = Gender.Female,
         bool promotionalConsent = false,
-        IReadOnlyList<RegisterMinorRequest>? minors = null
+        IReadOnlyList<RegisterMinorRequest>? minors = null,
+        string? secondaryPhone = null
     )
     {
         return new RegisterRequest(
@@ -37,7 +38,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             nationalId,
             gender,
             promotionalConsent,
-            minors
+            minors,
+            secondaryPhone
         );
     }
 
@@ -299,6 +301,39 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeConflictAsync(ErrorCode.RegisterEmailAlreadyInUse);
+        (await CountNewAdultsAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RegisterSecondaryPhoneIsStoredAndReturned()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(secondaryPhone: " +34700000099 "),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
+        body!.Adult.Phone.Should().Be("+34600000099");
+        body.Adult.SecondaryPhone.Should().Be("+34700000099");
+        (await FindAsync<User>(body.Adult.Id))!.SecondaryPhone.Should().Be("+34700000099");
+    }
+
+    [Fact]
+    public async Task RegisterSecondaryPhoneEqualToPhoneReturnsBadRequest()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(secondaryPhone: "+34600000099"),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.SecondaryPhoneSameAsPrimary);
         (await CountNewAdultsAsync()).Should().Be(0);
     }
 

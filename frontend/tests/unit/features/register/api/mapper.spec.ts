@@ -11,6 +11,7 @@ function buildForm(overrides: Partial<RegistrationForm> = {}): RegistrationForm 
     lastName: ' Lovelace  ',
     email: ' ada@example.test ',
     phone: ' 600000000 ',
+    secondaryPhone: '   ',
     password: ' spaced password ',
     confirmPassword: ' spaced password ',
     nationalId: ' x-1234567-l ',
@@ -29,12 +30,19 @@ describe('toRegisterRequest', () => {
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '600000000',
+      secondaryPhone: null,
       password: ' spaced password ',
       nationalId: 'X1234567L',
       gender: 'Female',
       promotionalConsent: false,
       minors: [],
     })
+  })
+
+  it('trims a filled secondary phone', () => {
+    expect(toRegisterRequest(buildForm({ secondaryPhone: ' 622222222 ' })).secondaryPhone).toBe(
+      '622222222',
+    )
   })
 
   it('maps every minor with trimmed names and without the client key', () => {

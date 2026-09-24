@@ -24,7 +24,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         Guid? parentId = null,
         string? currentPassword = null,
         string? nationalId = TestSeedData.MemberNationalId,
-        bool promotionalConsent = true
+        bool promotionalConsent = true,
+        string? secondaryPhone = null
     )
     {
         return new UpdateUserRequest(
@@ -37,7 +38,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             promotionalConsent,
             gender,
             parentId,
-            currentPassword
+            currentPassword,
+            secondaryPhone
         );
     }
 
@@ -615,6 +617,45 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.NationalId.Should().Be(TestSeedData.PendingNationalId);
         stored.Phone.Should().Be("+34600000003");
+    }
+
+    [Fact]
+    public async Task UpdateStandaloneAccountSecondaryPhoneIsStoredAndMatchedByThePhoneFilter()
+    {
+        var member = await LoginAsMemberAsync();
+
+        var response = await member.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(secondaryPhone: " +34700000009 ", currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.ReadJsonAsync<UserResponse>(Ct);
+        body!.Phone.Should().Be("+34600000002");
+        body.SecondaryPhone.Should().Be("+34700000009");
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .SecondaryPhone.Should()
+            .Be("+34700000009");
+        var admin = await LoginAsAdminAsync();
+        var list = await admin.GetAsync(TestUri.Rel("/api/users?phone=700000009"), Ct);
+        var page = await list.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
+        page!.Items.Select(u => u.Id).Should().Equal(TestSeedData.Users.MemberId);
+    }
+
+    [Fact]
+    public async Task UpdateStandaloneAccountSecondaryPhoneEqualToPhoneReturnsBadRequest()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(secondaryPhone: "+34600000002", currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.SecondaryPhoneSameAsPrimary);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.SecondaryPhone.Should().BeNull();
     }
 
     [Fact]

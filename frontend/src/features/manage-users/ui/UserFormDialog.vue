@@ -33,14 +33,14 @@ const emit = defineEmits<{
   /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
   /**
-   * Fired with the validated changes. A dependent always reports `null` email, phone and DNI/NIE
+   * Fired with the validated changes. A dependent always reports `null` email, phones and DNI/NIE
    * and no promotional consent, because the server keeps the guardian's details, plus a birth date
    * that keeps it a minor whenever it changes, so an unchanged birth date of a dependent that has
    * come of age is still accepted; a standalone account reports a `null` birth date, its normalized
    * DNI/NIE and its consent, and blank contact values are sent as `null`. The user's current
    * `parentId` is preserved. `currentPassword` carries the signed-in user's password when the
-   * change replaces the email or the phone of the account or the server already refused one, and
-   * is `null` otherwise.
+   * change replaces the email, the phone or the secondary phone of the account or the server already
+   * refused one, and is `null` otherwise.
    */
   submit: [body: UpdateUserInput]
 }>()
@@ -50,6 +50,7 @@ interface UserForm {
   lastName: string
   email: string
   phone: string
+  secondaryPhone: string
   birthDate: Date | null
   nationalId: string
   confirmNationalId: string
@@ -63,6 +64,7 @@ const form = reactive<UserForm>({
   lastName: '',
   email: '',
   phone: '',
+  secondaryPhone: '',
   birthDate: null,
   nationalId: '',
   confirmNationalId: '',
@@ -111,11 +113,19 @@ const contactMissing = computed(
 )
 const storedEmail = computed(() => props.user?.email ?? '')
 const storedPhone = computed(() => props.user?.phone ?? '')
+const storedSecondaryPhone = computed(() => props.user?.secondaryPhone ?? '')
+const secondaryPhoneRepeated = computed(
+  () =>
+    !isDependent.value &&
+    !!form.secondaryPhone.trim() &&
+    form.secondaryPhone.trim() === form.phone.trim(),
+)
 const replacesIdentifiers = computed(() => {
   if (isDependent.value) return false
   return (
     form.email.trim().toLowerCase() !== storedEmail.value.toLowerCase() ||
-    form.phone.trim() !== storedPhone.value
+    form.phone.trim() !== storedPhone.value ||
+    form.secondaryPhone.trim() !== storedSecondaryPhone.value
   )
 })
 const passwordRejected = ref(false)
@@ -132,6 +142,7 @@ watch(
     form.lastName = props.user?.lastName ?? ''
     form.email = props.user?.email ?? ''
     form.phone = props.user?.phone ?? ''
+    form.secondaryPhone = props.user?.secondaryPhone ?? ''
     form.birthDate = parseDateOnly(props.user?.birthDate)
     form.nationalId = props.user?.nationalId ?? ''
     form.confirmNationalId = form.nationalId
@@ -163,6 +174,7 @@ function save(): void {
     nationalIdsMismatch.value ||
     emailInvalid.value ||
     contactMissing.value ||
+    secondaryPhoneRepeated.value ||
     passwordMissing.value ||
     !form.gender
   ) {
@@ -175,6 +187,7 @@ function save(): void {
     lastName: form.lastName.trim(),
     email: dependent || !form.email.trim() ? null : form.email.trim(),
     phone: dependent || !form.phone.trim() ? null : form.phone.trim(),
+    secondaryPhone: dependent || !form.secondaryPhone.trim() ? null : form.secondaryPhone.trim(),
     birthDate: dependent && form.birthDate ? toDateOnly(form.birthDate) : null,
     nationalId: dependent ? null : normalizeNationalId(form.nationalId),
     promotionalConsent: !dependent && form.promotionalConsent,
@@ -300,20 +313,35 @@ function save(): void {
             $t('validation.emailFormat')
           }}</small>
         </div>
-        <div class="form__field">
-          <label for="user-phone">{{ $t('common.phone') }}</label>
-          <el-input
-            id="user-phone"
-            v-model="form.phone"
-            type="tel"
-            :maxlength="40"
-            :class="{
-              'ca-invalid': submitted && contactMissing && !form.phone.trim(),
-            }"
-          />
-          <small v-if="submitted && contactMissing" class="form__error">{{
-            $t('features.manageUsers.contactRequired')
-          }}</small>
+        <div class="form__row">
+          <div class="form__field">
+            <label for="user-phone">{{ $t('common.phone') }}</label>
+            <el-input
+              id="user-phone"
+              v-model="form.phone"
+              type="tel"
+              :maxlength="40"
+              :class="{
+                'ca-invalid': submitted && contactMissing && !form.phone.trim(),
+              }"
+            />
+            <small v-if="submitted && contactMissing" class="form__error">{{
+              $t('features.manageUsers.contactRequired')
+            }}</small>
+          </div>
+          <div class="form__field">
+            <label for="user-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
+            <el-input
+              id="user-secondary-phone"
+              v-model="form.secondaryPhone"
+              type="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': submitted && secondaryPhoneRepeated }"
+            />
+            <small v-if="submitted && secondaryPhoneRepeated" class="form__error">{{
+              $t('validation.secondaryPhoneSameAsPrimary')
+            }}</small>
+          </div>
         </div>
         <div class="form__consent">
           <el-checkbox id="user-promotional-consent" v-model="form.promotionalConsent" />

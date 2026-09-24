@@ -25,6 +25,7 @@ export function buildUserResponse(overrides: UserResponse = {}): UserResponse {
     lastName: 'Lovelace',
     email: 'ada@example.test',
     phone: '600000000',
+    secondaryPhone: null,
     birthDate: null,
     nationalId: '12345678Z',
     promotionalConsent: false,

@@ -31,6 +31,7 @@ const editForm = reactive<{
   lastName: string
   email: string
   phone: string
+  secondaryPhone: string
   nationalId: string
   confirmNationalId: string
   promotionalConsent: boolean
@@ -41,6 +42,7 @@ const editForm = reactive<{
   lastName: '',
   email: '',
   phone: '',
+  secondaryPhone: '',
   nationalId: '',
   confirmNationalId: '',
   promotionalConsent: false,
@@ -52,11 +54,16 @@ const passwordRejected = ref(false)
 const replacesIdentifiers = computed(() => {
   return (
     editForm.email.trim().toLowerCase() !== (user.value?.email ?? '').toLowerCase() ||
-    editForm.phone.trim() !== (user.value?.phone ?? '')
+    editForm.phone.trim() !== (user.value?.phone ?? '') ||
+    editForm.secondaryPhone.trim() !== (user.value?.secondaryPhone ?? '')
   )
 })
 const requiresPassword = computed(() => replacesIdentifiers.value || passwordRejected.value)
 const passwordMissing = computed(() => requiresPassword.value && !editForm.currentPassword)
+const secondaryPhoneRepeated = computed(
+  () =>
+    !!editForm.secondaryPhone.trim() && editForm.secondaryPhone.trim() === editForm.phone.trim(),
+)
 const nationalIdValid = computed(() => isValidNationalId(editForm.nationalId))
 const nationalIdsMismatch = computed(
   () =>
@@ -71,6 +78,7 @@ function openEdit(): void {
   editForm.lastName = user.value?.lastName ?? ''
   editForm.email = user.value?.email ?? ''
   editForm.phone = user.value?.phone ?? ''
+  editForm.secondaryPhone = user.value?.secondaryPhone ?? ''
   editForm.nationalId = user.value?.nationalId ?? ''
   editForm.confirmNationalId = editForm.nationalId
   editForm.promotionalConsent = user.value?.promotionalConsent ?? false
@@ -83,13 +91,20 @@ function saveEdit(): void {
   editSubmitted.value = true
   editError.value = ''
   const gender = editForm.gender
-  if (!gender || passwordMissing.value || !nationalIdValid.value || nationalIdsMismatch.value)
+  if (
+    !gender ||
+    passwordMissing.value ||
+    secondaryPhoneRepeated.value ||
+    !nationalIdValid.value ||
+    nationalIdsMismatch.value
+  )
     return
   const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
     lastName: editForm.lastName.trim(),
     email: editForm.email.trim(),
     phone: editForm.phone.trim(),
+    secondaryPhone: editForm.secondaryPhone.trim() || null,
     nationalId: normalizeNationalId(editForm.nationalId),
     promotionalConsent: editForm.promotionalConsent,
     gender,
@@ -183,6 +198,10 @@ function savePassword(): void {
         <dd>{{ user.phone || '—' }}</dd>
       </div>
       <div class="acc-info__row">
+        <dt>{{ $t('common.secondaryPhone') }}</dt>
+        <dd>{{ user.secondaryPhone || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
         <dt>{{ $t('common.nationalId') }}</dt>
         <dd>{{ user.nationalId || '—' }}</dd>
       </div>
@@ -231,6 +250,37 @@ function savePassword(): void {
             <el-input id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required />
           </div>
           <div class="acc-form__field">
+            <label for="p-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
+            <el-input
+              id="p-secondary-phone"
+              v-model="editForm.secondaryPhone"
+              type="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': editSubmitted && secondaryPhoneRepeated }"
+            />
+            <small v-if="editSubmitted && secondaryPhoneRepeated" class="acc-form__error">{{
+              $t('validation.secondaryPhoneSameAsPrimary')
+            }}</small>
+          </div>
+          <div class="acc-form__field">
+            <label for="p-gender">{{ $t('common.gender') }}</label>
+            <el-select
+              id="p-gender"
+              v-model="editForm.gender"
+              :class="{ 'ca-invalid': editSubmitted && !editForm.gender }"
+            >
+              <el-option
+                v-for="option in genders"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+            <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
+              $t('validation.genderRequired')
+            }}</small>
+          </div>
+          <div class="acc-form__field">
             <label for="p-national-id">{{ $t('common.nationalId') }}</label>
             <el-input
               id="p-national-id"
@@ -260,24 +310,6 @@ function savePassword(): void {
             />
             <small v-if="editSubmitted && nationalIdsMismatch" class="acc-form__error">{{
               $t('validation.nationalIdsMismatch')
-            }}</small>
-          </div>
-          <div class="acc-form__field">
-            <label for="p-gender">{{ $t('common.gender') }}</label>
-            <el-select
-              id="p-gender"
-              v-model="editForm.gender"
-              :class="{ 'ca-invalid': editSubmitted && !editForm.gender }"
-            >
-              <el-option
-                v-for="option in genders"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
-            <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
-              $t('validation.genderRequired')
             }}</small>
           </div>
           <div class="acc-form__consent acc-form__field--wide">

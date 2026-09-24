@@ -62,6 +62,7 @@ public sealed class RegisterCommandHandler(
 
         var email = request.Email.NormalizeEmailOrNull();
         var phone = request.Phone.NormalizeOrNull();
+        var secondaryPhone = request.SecondaryPhone.NormalizeOrNull();
         var nationalId = request.NationalId.NormalizeNationalIdOrNull();
         if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
         {
@@ -71,6 +72,11 @@ public sealed class RegisterCommandHandler(
         if (nationalId is null)
         {
             return Error.BadRequest(ErrorCode.RequestValidationFailed);
+        }
+
+        if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
+        {
+            return Error.BadRequest(ErrorCode.SecondaryPhoneSameAsPrimary);
         }
 
         if (await users.ExistsAsync(u => u.Email == email, ct))
@@ -100,6 +106,7 @@ public sealed class RegisterCommandHandler(
             Gender = request.Gender,
             Email = email,
             Phone = phone,
+            SecondaryPhone = secondaryPhone,
             PasswordHash = hasher.Hash(request.Password),
             UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
             IsAdmin = false,

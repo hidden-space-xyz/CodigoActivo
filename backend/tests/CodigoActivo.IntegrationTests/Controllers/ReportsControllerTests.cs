@@ -23,6 +23,17 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
     private static readonly DateTimeOffset At = new(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
 
+    private Task SeedSecondaryPhonesAsync()
+    {
+        return Factory.SeedAsync(async db =>
+        {
+            (await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct))!.SecondaryPhone =
+                "+34700000001";
+            (await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct))!.SecondaryPhone =
+                "+34700000002";
+        });
+    }
+
     private Task SeedEventGraphAsync()
     {
         return Factory.SeedAsync(db =>
@@ -435,6 +446,34 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EventAttendeesAsyncSecondaryPhonesAreReturnedAndSearchable()
+    {
+        await SeedEventGraphAsync();
+        await SeedSecondaryPhonesAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees"),
+            Ct
+        );
+        var search = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/attendees?search=700000002"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
+        var admin = page!.Items.Single(a => a.UserId == TestSeedData.Users.AdminId);
+        admin.SecondaryPhone.Should().Be("+34700000001");
+        var child = page.Items.Single(a => a.UserId == TestSeedData.Users.MemberChildId);
+        child.SecondaryPhone.Should().BeNull();
+        child.Guardian!.SecondaryPhone.Should().Be("+34700000002");
+        search.StatusCode.Should().Be(HttpStatusCode.OK);
+        var found = await search.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
+        found!.Items.Select(a => a.UserId).Should().Equal(TestSeedData.Users.MemberChildId);
+    }
+
+    [Fact]
     public async Task EventAttendeesAsyncSearchFilterMatchesGuardianData()
     {
         await SeedEventGraphAsync();
@@ -633,6 +672,27 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         child.Guardian.LastName.Should().Be("Miembro");
         child.Guardian.Email.Should().Be(TestSeedData.MemberEmail);
         child.Guardian.Phone.Should().Be("+34600000002");
+    }
+
+    [Fact]
+    public async Task EventRosterAsyncSecondaryPhonesAreReturnedForParticipantsAndGuardians()
+    {
+        await SeedEventGraphAsync();
+        await SeedSecondaryPhonesAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/roster"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var report = await response.ReadJsonAsync<EventRosterResponse>(Ct);
+        var admin = report!.Activities.Single(a => a.ActivityId == ActivityBId).Participants[0];
+        admin.SecondaryPhone.Should().Be("+34700000001");
+        var child = report.Activities.Single(a => a.ActivityId == ActivityAId).Participants[0];
+        child.SecondaryPhone.Should().BeNull();
+        child.Guardian!.SecondaryPhone.Should().Be("+34700000002");
     }
 
     [Fact]
