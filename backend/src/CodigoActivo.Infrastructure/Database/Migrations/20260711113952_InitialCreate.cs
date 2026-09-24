@@ -51,6 +51,21 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "email_outbox_contents",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    subject = table.Column<byte[]>(type: "bytea", nullable: false),
+                    html_body = table.Column<byte[]>(type: "bytea", nullable: false),
+                    text_body = table.Column<byte[]>(type: "bytea", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_email_outbox_contents", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "event_category_types",
                 columns: table => new
                 {
@@ -76,6 +91,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_resource_types", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "terms_documents",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    description = table.Column<string>(type: "jsonb", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_terms_documents", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -107,6 +135,57 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "email_outbox_content_parts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    content_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    disposition = table.Column<string>(type: "text", nullable: false),
+                    file_name = table.Column<string>(type: "text", nullable: false),
+                    content_type = table.Column<string>(type: "text", nullable: false),
+                    inline_content_id = table.Column<string>(type: "text", nullable: true),
+                    payload = table.Column<byte[]>(type: "bytea", nullable: false),
+                    display_order = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_email_outbox_content_parts", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_email_outbox_content_parts_email_outbox_contents_content_id",
+                        column: x => x.content_id,
+                        principalTable: "email_outbox_contents",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "email_outbox_messages",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    content_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    kind = table.Column<string>(type: "text", nullable: false),
+                    priority = table.Column<int>(type: "integer", nullable: false),
+                    to_address = table.Column<string>(type: "text", nullable: false),
+                    to_name = table.Column<string>(type: "text", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    attempt_count = table.Column<int>(type: "integer", nullable: false),
+                    next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    last_error = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_email_outbox_messages", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_email_outbox_messages_email_outbox_contents_content_id",
+                        column: x => x.content_id,
+                        principalTable: "email_outbox_contents",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "users",
                 columns: table => new
                 {
@@ -115,8 +194,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     last_name = table.Column<string>(type: "text", nullable: false),
                     email = table.Column<string>(type: "text", nullable: true),
                     phone = table.Column<string>(type: "text", nullable: true),
+                    secondary_phone = table.Column<string>(type: "text", nullable: true),
                     password_hash = table.Column<string>(type: "text", nullable: true),
-                    birth_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    birth_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    national_id = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: true),
+                    promotional_consent = table.Column<bool>(type: "boolean", nullable: false),
+                    gender = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     last_login_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -129,7 +212,20 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     otp_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     password_reset_code_hash = table.Column<string>(type: "text", nullable: true),
                     password_reset_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    password_reset_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    password_reset_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    two_factor_method = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    authenticator_key = table.Column<string>(type: "text", nullable: true),
+                    authenticator_last_used_step = table.Column<long>(type: "bigint", nullable: true),
+                    pending_authenticator_key = table.Column<string>(type: "text", nullable: true),
+                    pending_authenticator_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    login_code_hash = table.Column<string>(type: "text", nullable: true),
+                    login_code_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    login_code_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    login_challenge_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    two_factor_failed_attempts = table.Column<int>(type: "integer", nullable: false),
+                    two_factor_locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    password_failed_attempts = table.Column<int>(type: "integer", nullable: false),
+                    password_locked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -173,6 +269,26 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "user_sessions",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_user_sessions", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_user_sessions_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -223,6 +339,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     description = table.Column<string>(type: "jsonb", nullable: false),
                     event_starts_at = table.Column<DateOnly>(type: "date", nullable: false),
                     event_ends_at = table.Column<DateOnly>(type: "date", nullable: false),
+                    early_signup_starts_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     signup_starts_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     signup_ends_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     featured = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
@@ -416,6 +533,87 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "event_ratings",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    score = table.Column<int>(type: "integer", nullable: false),
+                    most_liked = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    least_liked = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    suggestions = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_event_ratings", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_event_ratings_events_event_id",
+                        column: x => x.event_id,
+                        principalTable: "events",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "event_terms_acceptances",
+                columns: table => new
+                {
+                    event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    terms_document_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    accepted = table.Column<bool>(type: "boolean", nullable: false),
+                    decided_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_event_terms_acceptances", x => new { x.event_id, x.user_id, x.terms_document_id });
+                    table.ForeignKey(
+                        name: "fk_event_terms_acceptances_events_event_id",
+                        column: x => x.event_id,
+                        principalTable: "events",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_event_terms_acceptances_terms_documents_terms_document_id",
+                        column: x => x.terms_document_id,
+                        principalTable: "terms_documents",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_event_terms_acceptances_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "event_terms_documents",
+                columns: table => new
+                {
+                    event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    terms_document_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_required = table.Column<bool>(type: "boolean", nullable: false),
+                    display_order = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_event_terms_documents", x => new { x.event_id, x.terms_document_id });
+                    table.ForeignKey(
+                        name: "fk_event_terms_documents_events_event_id",
+                        column: x => x.event_id,
+                        principalTable: "events",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_event_terms_documents_terms_documents_terms_document_id",
+                        column: x => x.terms_document_id,
+                        principalTable: "terms_documents",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "activity_role_capacities",
                 columns: table => new
                 {
@@ -485,14 +683,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "activity_modality_type_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_activities_activity_starts_at",
+                table: "activities",
+                column: "activity_starts_at");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_activities_created_by",
                 table: "activities",
                 column: "created_by");
 
             migrationBuilder.CreateIndex(
-                name: "ix_activities_event_id",
+                name: "ix_activities_event_id_activity_starts_at",
                 table: "activities",
-                column: "event_id");
+                columns: new[] { "event_id", "activity_starts_at" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_activities_thumbnail_id",
@@ -537,6 +740,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "assignment_status_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_announcements_created_at",
+                table: "announcements",
+                column: "created_at");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_announcements_created_by",
                 table: "announcements",
                 column: "created_by");
@@ -558,6 +766,21 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_email_outbox_content_parts_content_id",
+                table: "email_outbox_content_parts",
+                column: "content_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_email_outbox_messages_content_id",
+                table: "email_outbox_messages",
+                column: "content_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_email_outbox_messages_priority_next_attempt_at",
+                table: "email_outbox_messages",
+                columns: new[] { "priority", "next_attempt_at" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_event_categories_event_category_type_id",
                 table: "event_categories",
                 column: "event_category_type_id");
@@ -569,9 +792,39 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_event_ratings_event_id",
+                table: "event_ratings",
+                column: "event_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_terms_acceptances_terms_document_id",
+                table: "event_terms_acceptances",
+                column: "terms_document_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_terms_acceptances_user_id",
+                table: "event_terms_acceptances",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_terms_documents_terms_document_id",
+                table: "event_terms_documents",
+                column: "terms_document_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_events_created_by",
                 table: "events",
                 column: "created_by");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_events_event_ends_at",
+                table: "events",
+                column: "event_ends_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_events_event_starts_at",
+                table: "events",
+                column: "event_starts_at");
 
             migrationBuilder.CreateIndex(
                 name: "ix_events_thumbnail_id",
@@ -599,6 +852,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "thumbnail_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_partners_tier_from_date",
+                table: "partners",
+                columns: new[] { "tier", "from_date" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_partners_updated_by",
                 table: "partners",
                 column: "updated_by");
@@ -608,6 +866,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 table: "resource_types",
                 column: "name",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_resources_created_at",
+                table: "resources",
+                column: "created_at");
 
             migrationBuilder.CreateIndex(
                 name: "ix_resources_created_by",
@@ -630,6 +893,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "updated_by");
 
             migrationBuilder.CreateIndex(
+                name: "ix_terms_documents_name",
+                table: "terms_documents",
+                column: "name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_user_sessions_user_id",
+                table: "user_sessions",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_user_status_types_name",
                 table: "user_status_types",
                 column: "name",
@@ -648,15 +922,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_users_first_name_last_name",
+                table: "users",
+                columns: new[] { "first_name", "last_name" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_users_parent_id",
                 table: "users",
                 column: "parent_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_users_phone",
-                table: "users",
-                column: "phone",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_user_status_type_id",
@@ -682,13 +955,31 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "announcements");
 
             migrationBuilder.DropTable(
+                name: "email_outbox_content_parts");
+
+            migrationBuilder.DropTable(
+                name: "email_outbox_messages");
+
+            migrationBuilder.DropTable(
                 name: "event_categories");
+
+            migrationBuilder.DropTable(
+                name: "event_ratings");
+
+            migrationBuilder.DropTable(
+                name: "event_terms_acceptances");
+
+            migrationBuilder.DropTable(
+                name: "event_terms_documents");
 
             migrationBuilder.DropTable(
                 name: "partners");
 
             migrationBuilder.DropTable(
                 name: "resources");
+
+            migrationBuilder.DropTable(
+                name: "user_sessions");
 
             migrationBuilder.DropTable(
                 name: "activities");
@@ -700,7 +991,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "assignment_status_types");
 
             migrationBuilder.DropTable(
+                name: "email_outbox_contents");
+
+            migrationBuilder.DropTable(
                 name: "event_category_types");
+
+            migrationBuilder.DropTable(
+                name: "terms_documents");
 
             migrationBuilder.DropTable(
                 name: "resource_types");

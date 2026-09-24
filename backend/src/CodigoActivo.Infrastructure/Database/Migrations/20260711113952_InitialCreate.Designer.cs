@@ -20,7 +20,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -89,17 +89,20 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("ActivityModalityTypeId")
                         .HasDatabaseName("ix_activities_activity_modality_type_id");
 
+                    b.HasIndex("ActivityStartsAt")
+                        .HasDatabaseName("ix_activities_activity_starts_at");
+
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_activities_created_by");
-
-                    b.HasIndex("EventId")
-                        .HasDatabaseName("ix_activities_event_id");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_activities_thumbnail_id");
 
                     b.HasIndex("UpdatedBy")
                         .HasDatabaseName("ix_activities_updated_by");
+
+                    b.HasIndex("EventId", "ActivityStartsAt")
+                        .HasDatabaseName("ix_activities_event_id_activity_starts_at");
 
                     b.ToTable("activities", (string)null);
                 });
@@ -264,6 +267,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_announcements");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_announcements_created_at");
+
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_announcements_created_by");
 
@@ -309,6 +315,149 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignment_status_types", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("HtmlBody")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("html_body");
+
+                    b.Property<byte[]>("Subject")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("subject");
+
+                    b.Property<byte[]>("TextBody")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("text_body");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_contents");
+
+                    b.ToTable("email_outbox_contents", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ContentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_type");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("disposition");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("InlineContentId")
+                        .HasColumnType("text")
+                        .HasColumnName("inline_content_id");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("payload");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_content_parts");
+
+                    b.HasIndex("ContentId")
+                        .HasDatabaseName("ix_email_outbox_content_parts_content_id");
+
+                    b.ToTable("email_outbox_content_parts", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<Guid>("ContentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<string>("ToAddress")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("to_address");
+
+                    b.Property<string>("ToName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("to_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_messages");
+
+                    b.HasIndex("ContentId")
+                        .HasDatabaseName("ix_email_outbox_messages_content_id");
+
+                    b.HasIndex("Priority", "NextAttemptAt")
+                        .HasDatabaseName("ix_email_outbox_messages_priority_next_attempt_at");
+
+                    b.ToTable("email_outbox_messages", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
@@ -328,6 +477,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("description");
+
+                    b.Property<DateTimeOffset?>("EarlySignupStartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("early_signup_starts_at");
 
                     b.Property<DateOnly>("EventEndsAt")
                         .HasColumnType("date")
@@ -378,6 +531,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_events_created_by");
+
+                    b.HasIndex("EventEndsAt")
+                        .HasDatabaseName("ix_events_event_ends_at");
+
+                    b.HasIndex("EventStartsAt")
+                        .HasDatabaseName("ix_events_event_starts_at");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_events_thumbnail_id");
@@ -433,6 +592,106 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_category_types_name");
 
                     b.ToTable("event_category_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("LeastLiked")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("least_liked");
+
+                    b.Property<string>("MostLiked")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("most_liked");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
+
+                    b.Property<string>("Suggestions")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("suggestions");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_ratings");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_event_ratings_event_id");
+
+                    b.ToTable("event_ratings", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsAcceptance", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("TermsDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terms_document_id");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("accepted");
+
+                    b.Property<DateTimeOffset>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.HasKey("EventId", "UserId", "TermsDocumentId")
+                        .HasName("pk_event_terms_acceptances");
+
+                    b.HasIndex("TermsDocumentId")
+                        .HasDatabaseName("ix_event_terms_acceptances_terms_document_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_event_terms_acceptances_user_id");
+
+                    b.ToTable("event_terms_acceptances", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsDocument", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("TermsDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terms_document_id");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_required");
+
+                    b.HasKey("EventId", "TermsDocumentId")
+                        .HasName("pk_event_terms_documents");
+
+                    b.HasIndex("TermsDocumentId")
+                        .HasDatabaseName("ix_event_terms_documents_terms_document_id");
+
+                    b.ToTable("event_terms_documents", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
@@ -525,6 +784,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("UpdatedBy")
                         .HasDatabaseName("ix_partners_updated_by");
 
+                    b.HasIndex("Tier", "FromDate")
+                        .HasDatabaseName("ix_partners_tier_from_date");
+
                     b.ToTable("partners", (string)null);
                 });
 
@@ -581,6 +843,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resources");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_resources_created_at");
+
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_resources_created_by");
 
@@ -633,6 +898,33 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("resource_types", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.TermsDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_terms_documents");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_terms_documents_name");
+
+                    b.ToTable("terms_documents", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -640,7 +932,15 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateOnly>("BirthDate")
+                    b.Property<string>("AuthenticatorKey")
+                        .HasColumnType("text")
+                        .HasColumnName("authenticator_key");
+
+                    b.Property<long?>("AuthenticatorLastUsedStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("authenticator_last_used_step");
+
+                    b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 
@@ -657,6 +957,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("gender");
+
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean")
                         .HasColumnName("is_admin");
@@ -669,6 +975,27 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("last_name");
+
+                    b.Property<Guid?>("LoginChallengeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("login_challenge_id");
+
+                    b.Property<DateTimeOffset?>("LoginCodeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("login_code_expires_at");
+
+                    b.Property<string>("LoginCodeHash")
+                        .HasColumnType("text")
+                        .HasColumnName("login_code_hash");
+
+                    b.Property<DateTimeOffset?>("LoginCodeLastSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("login_code_last_sent_at");
+
+                    b.Property<string>("NationalId")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("national_id");
 
                     b.Property<string>("OtpCodeHash")
                         .HasColumnType("text")
@@ -686,9 +1013,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
 
+                    b.Property<int>("PasswordFailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("password_failed_attempts");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<DateTimeOffset?>("PasswordLockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_locked_at");
 
                     b.Property<string>("PasswordResetCodeHash")
                         .HasColumnType("text")
@@ -702,9 +1037,39 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_reset_last_sent_at");
 
+                    b.Property<DateTimeOffset?>("PendingAuthenticatorExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pending_authenticator_expires_at");
+
+                    b.Property<string>("PendingAuthenticatorKey")
+                        .HasColumnType("text")
+                        .HasColumnName("pending_authenticator_key");
+
                     b.Property<string>("Phone")
                         .HasColumnType("text")
                         .HasColumnName("phone");
+
+                    b.Property<bool>("PromotionalConsent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("promotional_consent");
+
+                    b.Property<string>("SecondaryPhone")
+                        .HasColumnType("text")
+                        .HasColumnName("secondary_phone");
+
+                    b.Property<int>("TwoFactorFailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("two_factor_failed_attempts");
+
+                    b.Property<DateTimeOffset?>("TwoFactorLockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("two_factor_locked_until");
+
+                    b.Property<string>("TwoFactorMethod")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("two_factor_method");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -728,17 +1093,44 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("ParentId")
                         .HasDatabaseName("ix_users_parent_id");
 
-                    b.HasIndex("Phone")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_phone");
-
                     b.HasIndex("UserStatusTypeId")
                         .HasDatabaseName("ix_users_user_status_type_id");
 
                     b.HasIndex("UserTypeId")
                         .HasDatabaseName("ix_users_user_type_id");
 
+                    b.HasIndex("FirstName", "LastName")
+                        .HasDatabaseName("ix_users_first_name_last_name");
+
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_sessions");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_sessions_user_id");
+
+                    b.ToTable("user_sessions", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.UserStatusType", b =>
@@ -895,7 +1287,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_activity_user_role_assignments_assignment_status_types_assi");
 
                     b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("Assignments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -933,6 +1325,30 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_announcements_users_updated_by");
 
                     b.Navigation("Thumbnail");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
+                        .WithMany("Parts")
+                        .HasForeignKey("ContentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_email_outbox_content_parts_email_outbox_contents_content_id");
+
+                    b.Navigation("Content");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxMessage", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
+                        .WithMany()
+                        .HasForeignKey("ContentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_email_outbox_messages_email_outbox_contents_content_id");
+
+                    b.Navigation("Content");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
@@ -979,6 +1395,67 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Event");
 
                     b.Navigation("EventCategoryType");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRating", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
+                        .WithMany("Ratings")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_ratings_events_event_id");
+
+                    b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsAcceptance", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.TermsDocument", null)
+                        .WithMany()
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_terms_documents_terms_document_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_users_user_id");
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsDocument", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
+                        .WithMany("TermsDocuments")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_documents_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.Entities.TermsDocument", "TermsDocument")
+                        .WithMany()
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_documents_terms_documents_terms_document_id");
+
+                    b.Navigation("Event");
+
+                    b.Navigation("TermsDocument");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
@@ -1079,6 +1556,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("UserType");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserSession", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_sessions_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
                 {
                     b.Navigation("Assignments");
@@ -1101,11 +1590,20 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Assignments");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
+                {
+                    b.Navigation("Parts");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
                 {
                     b.Navigation("Activities");
 
                     b.Navigation("Categories");
+
+                    b.Navigation("Ratings");
+
+                    b.Navigation("TermsDocuments");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>
@@ -1120,6 +1618,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
                 {
+                    b.Navigation("Assignments");
+
                     b.Navigation("Children");
                 });
 
