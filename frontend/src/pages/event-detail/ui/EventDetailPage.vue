@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { useEventDetail } from '@/entities/event'
 import { useSession } from '@/entities/session'
-import { EventSignupStatsPanel } from '@/features/event-signup-stats'
+import { LeaderRosterPanel, useLeaderRoster } from '@/features/event-leader-roster'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
 import { BaseButton, ColorTag } from '@/shared/ui'
 import RichTextContent from '@/shared/ui/RichTextContent.vue'
 import { i18n } from '@/shared/i18n'
-import { MEMBER_USER_TYPE_ID } from '@/shared/config'
 import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
 import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
 
@@ -24,12 +23,13 @@ const { t } = useI18n()
 const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
 const session = useSession()
 
-const tab = ref<'info' | 'activities' | 'stats'>('info')
+const tab = ref<'info' | 'activities' | 'attendees'>('info')
 
-/** Only admins and members may see the signup statistics tab. */
-const canSeeStats = computed(
-  () => session.isAdmin || session.user?.userTypeId === MEMBER_USER_TYPE_ID,
-)
+const { hasActivities: canSeeAttendees } = useLeaderRoster(() => props.eventId)
+
+watch(canSeeAttendees, (visible) => {
+  if (!visible && tab.value === 'attendees') tab.value = 'info'
+})
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
@@ -155,14 +155,14 @@ useSeo(seo)
             {{ $t('pages.eventDetail.tabs.activities') }}
           </button>
           <button
-            v-if="canSeeStats"
+            v-if="canSeeAttendees"
             type="button"
             class="detail-tab"
-            :class="{ 'detail-tab--active': tab === 'stats' }"
-            :title="$t('pages.eventDetail.tabs.viewStats')"
-            @click="tab = 'stats'"
+            :class="{ 'detail-tab--active': tab === 'attendees' }"
+            :title="$t('pages.eventDetail.tabs.viewAttendees')"
+            @click="tab = 'attendees'"
           >
-            {{ $t('pages.eventDetail.tabs.stats') }}
+            {{ $t('pages.eventDetail.tabs.attendees') }}
           </button>
         </div>
       </nav>
@@ -206,9 +206,9 @@ useSeo(seo)
         </div>
       </section>
 
-      <section v-else-if="canSeeStats" class="detail-body">
+      <section v-else-if="canSeeAttendees" class="detail-body">
         <div class="ca-container--narrow">
-          <EventSignupStatsPanel :event-id="eventId" />
+          <LeaderRosterPanel :event-id="eventId" />
         </div>
       </section>
     </template>

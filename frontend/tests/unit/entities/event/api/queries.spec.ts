@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   useEventDetail,
+  useEventLeaderRoster,
   useHomeEvents,
   usePastEventCategories,
   usePastEventsPaged,
@@ -167,5 +168,35 @@ describe('useEventDetail', () => {
 
     await vi.waitFor(() => expect(result.notFound.value).toBe(true))
     expect(result.isError.value).toBe(false)
+  })
+})
+
+describe('useEventLeaderRoster', () => {
+  it('stays idle without a user and keys the data by user', async () => {
+    const requests: string[] = []
+    server.use(
+      http.get('/api/events/:id/leader-roster', ({ params }) => {
+        requests.push(String(params.id))
+        return HttpResponse.json([{ activityId: `led-by-${requests.length}` }])
+      }),
+    )
+    const userId = ref<string | null>(null)
+
+    const { result, queryClient } = await renderComposable(() =>
+      useEventLeaderRoster(() => 'e1', userId),
+    )
+    await flushPromises()
+    expect(requests).toEqual([])
+    expect(result.data.value).toBeUndefined()
+
+    userId.value = 'u1'
+    await vi.waitFor(() => expect(result.data.value?.[0]?.id).toBe('led-by-1'))
+    expect(queryClient.getQueryData(['events', 'leader-roster', 'e1', 'u1'])).toEqual(
+      result.data.value,
+    )
+
+    userId.value = 'u2'
+    await vi.waitFor(() => expect(result.data.value?.[0]?.id).toBe('led-by-2'))
+    expect(requests).toEqual(['e1', 'e1'])
   })
 })

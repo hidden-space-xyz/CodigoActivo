@@ -153,6 +153,39 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AssignConcurrentSignupsWithDifferentRolesKeepASingleAssignment()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        await client.FetchCsrfTokenAsync(Ct);
+        var path = $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign";
+
+        var responses = await Task.WhenAll(
+            client.PatchJsonAsync(path, new AssignRequest(SeedIds.ActivityRoleTypes.Leader), Ct),
+            client.PatchJsonAsync(
+                path,
+                new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+                Ct
+            )
+        );
+
+        responses
+            .Select(r => r.StatusCode)
+            .Should()
+            .BeEquivalentTo([HttpStatusCode.OK, HttpStatusCode.Conflict]);
+        await responses
+            .Single(r => r.StatusCode == HttpStatusCode.Conflict)
+            .ShouldBeConflictAsync(ErrorCode.ActivityAssignmentAlreadyExists);
+        var stored = await Factory.QueryAsync(db =>
+            db.ActivityUserRoleAssignments.CountAsync(
+                a => a.ActivityId == activityId && a.UserId == TestSeedData.Users.MemberId,
+                Ct
+            )
+        );
+        stored.Should().Be(1);
+    }
+
+    [Fact]
     public async Task AssignActivityMissingReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();

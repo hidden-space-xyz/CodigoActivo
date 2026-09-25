@@ -2,8 +2,8 @@ import {
   deleteApiEventsEventId,
   getApiEvents,
   getApiEventsEventId,
+  getApiEventsEventIdLeaderRoster,
   getApiEventsEventIdRatings,
-  getApiEventsEventIdSignupStats,
   getApiEventsEventIdTerms,
   getApiEventsPastCategories,
   getApiEventsPastYears,
@@ -34,9 +34,9 @@ import type { PagedListPage } from '@/shared/lib'
 import type {
   EventCategoryTag,
   EventDetail,
-  EventSignupStats,
   EventTermsState,
   HomeEvents,
+  LeaderRosterActivity,
   PastEvent,
   PastEventFilters,
   UpcomingEvent,
@@ -44,8 +44,8 @@ import type {
 import {
   toCategoryTag,
   toEventDetail,
-  toEventSignupStats,
   toEventTermsState,
+  toLeaderRosterActivity,
   toPastEvent,
   toUpcomingEvent,
 } from './mapper'
@@ -109,10 +109,15 @@ export async function getEventTermsStateRequest(eventId: string): Promise<EventT
   return toEventTermsState(data)
 }
 
-/** Loads the event's signup statistics (admin/member only; the backend enforces the check). */
-export async function getEventSignupStatsRequest(eventId: string): Promise<EventSignupStats> {
-  const { data } = await getApiEventsEventIdSignupStats(eventId)
-  return toEventSignupStats(data)
+/**
+ * Loads the event's activities that the signed-in user leads with a confirmed assignment, with
+ * their confirmed attendees. The backend decides what the caller may see; anyone else gets `[]`.
+ */
+export async function getEventLeaderRosterRequest(
+  eventId: string,
+): Promise<readonly LeaderRosterActivity[]> {
+  const { data } = await getApiEventsEventIdLeaderRoster(eventId)
+  return (data ?? []).map(toLeaderRosterActivity)
 }
 
 /**

@@ -78,9 +78,7 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncUserNotFoundReturnsUnauthorized()
     {
         User? missing = null;
-        users
-            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(missing);
+        users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(missing);
 
         var result = await LoginAsync("nobody@test.com");
 
@@ -93,9 +91,7 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncUnknownIdentifierStillPaysTheSameHashingWorkAsAKnownOne()
     {
         User? missing = null;
-        users
-            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(missing);
+        users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(missing);
 
         var result = await LoginAsync("nobody@test.com");
 
@@ -180,9 +176,7 @@ public sealed class LoginCommandHandlerTests
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
         user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
-        await users
-            .Received(1)
-            .GetByEmailAsync("ana@test.com", Arg.Any<CancellationToken>());
+        await users.Received(1).GetByEmailAsync("ana@test.com", Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -93,7 +93,11 @@ public sealed class UpdateUserCommandHandler(
         var emailChanged = !string.Equals(previousEmail, user.Email, StringComparison.Ordinal);
         var phoneChanged =
             !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal)
-            || !string.Equals(previousSecondaryPhone, user.SecondaryPhone, StringComparison.Ordinal);
+            || !string.Equals(
+                previousSecondaryPhone,
+                user.SecondaryPhone,
+                StringComparison.Ordinal
+            );
         if ((emailChanged || phoneChanged) && previousEmail is not null)
         {
             await securityNotifier.NotifyIdentifiersChangedAsync(

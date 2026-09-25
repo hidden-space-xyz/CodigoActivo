@@ -7,7 +7,7 @@ import type { PastEventFilters } from '../model/types'
 import { eventQueryKeys } from './query-keys'
 import {
   getEventByIdRequest,
-  getEventSignupStatsRequest,
+  getEventLeaderRosterRequest,
   getEventTermsStateRequest,
   getHomeEventsRequest,
   getPastEventCategoriesRequest,
@@ -120,12 +120,21 @@ export function useEventTermsState(
   })
 }
 
-/** An event's signup statistics, broken down by activity, role and status. */
-export function useEventSignupStats(eventId: MaybeRefOrGetter<string>) {
+/**
+ * Activities of an event that `userId` leads with a confirmed assignment, with their confirmed
+ * attendees. Disabled while `userId` is `null`; the key includes the user so one account's
+ * attendee data is never served to another session.
+ */
+export function useEventLeaderRoster(
+  eventId: MaybeRefOrGetter<string>,
+  userId: MaybeRefOrGetter<string | null>,
+) {
   const id = computed(() => toValue(eventId))
+  const user = computed(() => toValue(userId))
 
   return useQuery({
-    queryKey: computed(() => eventQueryKeys.signupStats(id.value)),
-    queryFn: () => getEventSignupStatsRequest(id.value),
+    queryKey: computed(() => eventQueryKeys.leaderRoster(id.value, user.value)),
+    queryFn: () => getEventLeaderRosterRequest(id.value),
+    enabled: computed(() => user.value !== null),
   })
 }

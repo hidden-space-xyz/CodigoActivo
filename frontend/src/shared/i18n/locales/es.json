@@ -998,8 +998,8 @@
         "info": "Información",
         "viewActivities": "Ver actividades",
         "activities": "Actividades",
-        "viewStats": "Ver estadísticas",
-        "stats": "Estadísticas"
+        "viewAttendees": "Ver los asistentes de tus actividades",
+        "attendees": "Asistentes"
       },
       "activities": {
         "loading": "Cargando actividades…",
@@ -1023,24 +1023,6 @@
         "lead": "Ya estás apuntado a otra actividad que coincide en el tiempo con esta:",
         "question": "¿Quieres apuntarte de todos modos?",
         "enrollAnyway": "Apuntarme igualmente"
-      },
-      "stats": {
-        "title": "Estadísticas de inscripción",
-        "subtitle": "Inscripciones por actividad, rol y estado",
-        "loading": "Cargando estadísticas…",
-        "loadError": "No se pudieron cargar las estadísticas.",
-        "empty": "Este evento todavía no tiene actividades.",
-        "roleFilter": "Rol",
-        "allRoles": "Todos los roles",
-        "table": {
-          "activity": "Actividad",
-          "role": "Rol",
-          "requested": "Solicitadas",
-          "confirmed": "Confirmadas",
-          "denied": "Rechazadas",
-          "total": "Total"
-        },
-        "totalsRow": "Total del evento"
       },
       "toast": {
         "signupSuccess": "Te has apuntado a la actividad.",
@@ -1209,6 +1191,37 @@
         "missingRequired": "Debes marcar todos los documentos obligatorios para continuar.",
         "close": "Cerrar"
       }
+    },
+    "leaderRoster": {
+      "notice": {
+        "title": "Datos personales confidenciales",
+        "body": "Como líder confirmado/a, ves a las personas confirmadas en las actividades que lideras. Usa estos datos solo para organizar la actividad y no los compartas. Cada listado deja de estar disponible cuando termina su actividad."
+      },
+      "loadError": "No se pudo cargar el listado de asistentes.",
+      "empty": "No lideras ninguna actividad en curso de este evento.",
+      "attendeesCount": "{n} asistente confirmado | {n} asistentes confirmados",
+      "peopleCount": "{n} persona | {n} personas",
+      "users": {
+        "title": "Usuarios",
+        "hint": "Con cuenta propia: contacta directamente con ellos."
+      },
+      "dependents": {
+        "title": "Dependientes",
+        "hint": "Menores inscritos por su tutor/a, con la edad que tendrán el día de la actividad. Contacta siempre con el tutor/a."
+      },
+      "columns": {
+        "firstName": "Nombre",
+        "lastName": "Apellidos",
+        "age": "Edad",
+        "email": "Correo",
+        "phone": "Teléfono",
+        "signedUpAt": "Inscripción",
+        "guardian": "Tutor/a",
+        "guardianEmail": "Correo del tutor/a",
+        "guardianPhone": "Teléfono del tutor/a"
+      },
+      "adult": "Adulto/a",
+      "ageYears": "{age} año | {age} años"
     },
     "sendEmail": {
       "header": "Enviar correo",

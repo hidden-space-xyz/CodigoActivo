@@ -34,13 +34,16 @@ authentication are not supported.
   removes its rows by cascade.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
-  such as `UserType` are not authorization roles, with one handler-level exception:
-  `GET /api/events/{eventId}/signup-stats` requires a session and returns `AccessDenied` (403) unless the
-  caller is an administrator or has the member `UserType`. Its response is aggregate counts per activity,
-  activity role and signup status; it never lists the signed-up individuals. For an activity with very few
-  signups, a member can infer an individual's status — including a rejection — from these counts; whether
-  this granularity is acceptable for the member audience is a pending decision for the project owner, not
-  resolved by this document.
+  such as `UserType` are not authorization roles. Activity leadership grants one read, decided on every
+  request from the session user's own assignments: `GET /api/events/{eventId}/leader-roster` returns only
+  the event's activities that have not ended and in which the caller holds a confirmed leader assignment,
+  each with its confirmed attendees by role. Anyone else, administrators and guardians of a leading minor
+  included, gets an empty list; the client sends no activity id. Each attendee carries only names and
+  signup time, plus their own email and primary phone (independent accounts) or their age on the
+  activity's day, computed on the server, and the guardian's names, email and primary phone (dependents):
+  never ids, DNI/NIE, birth dates or secondary phones. The SPA keys the cached list by user id. A person
+  holds at most one assignment per activity, enforced by a unique index, so concurrent signups cannot
+  leave a spare leader row and an administrator's status or role change always hits the row they see.
 - The email is the only login identifier and the only unique personal value. The DNI/NIE, the phone and
   the optional secondary phone are not unique, so no route checks them against other accounts and neither
   registration nor profile updates reveal whether someone else uses them; the secondary phone only has to

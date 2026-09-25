@@ -38,12 +38,12 @@ import type {
   EventListItemResponsePagedResult,
   EventRatingListItemResponsePagedResult,
   EventResponse,
-  EventSignupStatsResponse,
   EventTermsStateResponse,
   GetApiEventsCategoryTypeParams,
   GetApiEventsEventIdRatingsParams,
   GetApiEventsParams,
   GetApiEventsTermsDocumentParams,
+  LeaderRosterActivityResponse,
   SaveEventRatingRequest,
   TermsDocumentResponse,
   TermsDocumentResponsePagedResult,
@@ -1113,29 +1113,29 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEventsEventIdTermsMutationOptions(options), queryClient);
     }
-    export type getApiEventsEventIdSignupStatsResponse200 = {
-  data: EventSignupStatsResponse
+    export type getApiEventsEventIdLeaderRosterResponse200 = {
+  data: LeaderRosterActivityResponse[]
   status: 200
 }
 
-export type getApiEventsEventIdSignupStatsResponseSuccess = (getApiEventsEventIdSignupStatsResponse200) & {
+export type getApiEventsEventIdLeaderRosterResponseSuccess = (getApiEventsEventIdLeaderRosterResponse200) & {
   headers: Headers;
 };
 ;
 
-export type getApiEventsEventIdSignupStatsResponse = (getApiEventsEventIdSignupStatsResponseSuccess)
+export type getApiEventsEventIdLeaderRosterResponse = (getApiEventsEventIdLeaderRosterResponseSuccess)
 
-export const getGetApiEventsEventIdSignupStatsUrl = (eventId: string,) => {
-
-
+export const getGetApiEventsEventIdLeaderRosterUrl = (eventId: string,) => {
 
 
-  return `/api/events/${eventId}/signup-stats`
+
+
+  return `/api/events/${eventId}/leader-roster`
 }
 
-export const getApiEventsEventIdSignupStats = async (eventId: string, options?: Parameters<typeof httpClient>[1]): Promise<getApiEventsEventIdSignupStatsResponse> => {
+export const getApiEventsEventIdLeaderRoster = async (eventId: string, options?: Parameters<typeof httpClient>[1]): Promise<getApiEventsEventIdLeaderRosterResponse> => {
 
-  return httpClient<getApiEventsEventIdSignupStatsResponse>(getGetApiEventsEventIdSignupStatsUrl(eventId),
+  return httpClient<getApiEventsEventIdLeaderRosterResponse>(getGetApiEventsEventIdLeaderRosterUrl(eventId),
   {
     ...options,
     method: 'GET'
@@ -1148,13 +1148,13 @@ export const getApiEventsEventIdSignupStats = async (eventId: string, options?: 
 
 
 
-export const getGetApiEventsEventIdSignupStatsMutationKey = () => ['getApiEventsEventIdSignupStats'] as const;
+export const getGetApiEventsEventIdLeaderRosterMutationKey = () => ['getApiEventsEventIdLeaderRoster'] as const;
 
-export const getGetApiEventsEventIdSignupStatsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdSignupStats>>, TError,GetApiEventsEventIdSignupStatsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdSignupStats>>, TError,GetApiEventsEventIdSignupStatsMutationVariables, TContext> => {
+export const getGetApiEventsEventIdLeaderRosterMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdLeaderRoster>>, TError,GetApiEventsEventIdLeaderRosterMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdLeaderRoster>>, TError,GetApiEventsEventIdLeaderRosterMutationVariables, TContext> => {
 
-const mutationKey = getGetApiEventsEventIdSignupStatsMutationKey();
+const mutationKey = getGetApiEventsEventIdLeaderRosterMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1164,10 +1164,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsEventIdSignupStats>>, GetApiEventsEventIdSignupStatsMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsEventIdLeaderRoster>>, GetApiEventsEventIdLeaderRosterMutationVariables> = (props) => {
           const {eventId} = props ?? {};
 
-          return  getApiEventsEventIdSignupStats(eventId,requestOptions)
+          return  getApiEventsEventIdLeaderRoster(eventId,requestOptions)
         }
 
 
@@ -1177,20 +1177,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type GetApiEventsEventIdSignupStatsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsEventIdSignupStats>>>
+    export type GetApiEventsEventIdLeaderRosterMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsEventIdLeaderRoster>>>
 
-    export type GetApiEventsEventIdSignupStatsMutationError = unknown
-    export type GetApiEventsEventIdSignupStatsMutationVariables = {eventId: string}
+    export type GetApiEventsEventIdLeaderRosterMutationError = unknown
+    export type GetApiEventsEventIdLeaderRosterMutationVariables = {eventId: string}
 
-    export const useGetApiEventsEventIdSignupStats = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdSignupStats>>, TError,GetApiEventsEventIdSignupStatsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+    export const useGetApiEventsEventIdLeaderRoster = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdLeaderRoster>>, TError,GetApiEventsEventIdLeaderRosterMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiEventsEventIdSignupStats>>,
+        Awaited<ReturnType<typeof getApiEventsEventIdLeaderRoster>>,
         TError,
-        GetApiEventsEventIdSignupStatsMutationVariables,
+        GetApiEventsEventIdLeaderRosterMutationVariables,
         TContext
       > => {
-      return useMutation(getGetApiEventsEventIdSignupStatsMutationOptions(options), queryClient);
+      return useMutation(getGetApiEventsEventIdLeaderRosterMutationOptions(options), queryClient);
     }
     export type patchApiEventsEventIdFeatureResponse200 = {
   data: EventResponse

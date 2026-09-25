@@ -740,6 +740,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "assignment_status_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_activity_user_role_assignments_user_id_activity_id",
+                table: "activity_user_role_assignments",
+                columns: new[] { "user_id", "activity_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_assignment_status_types_name",
                 table: "assignment_status_types",
                 column: "name",
