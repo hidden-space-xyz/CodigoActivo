@@ -203,9 +203,7 @@ public sealed class RegisterCommandHandlerTests
             .Returns([]);
 
         var result = await sut.HandleAsync(
-            new RegisterCommand(
-                NewRegister(secondaryPhone: secondaryPhone, minors: [NewMinor()])
-            ),
+            new RegisterCommand(NewRegister(secondaryPhone: secondaryPhone, minors: [NewMinor()])),
             TestContext.Current.CancellationToken
         );
 

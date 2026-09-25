@@ -113,7 +113,16 @@ public sealed class AssignActivityCommandHandler(
             CreatedAt = clock.UtcNow,
         };
         await activities.AddAssignmentAsync(assignment, ct);
-        await uow.SaveChangesAsync(ct);
+        try
+        {
+            await uow.SaveChangesAsync(ct);
+        }
+        catch (UniqueConstraintViolationException ex)
+            when (ex.EntityType == typeof(ActivityUserRoleAssignment))
+        {
+            return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
+        }
+
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
         var requestedStatus = await GetRequestedStatusAsync(ct);

@@ -2044,7 +2044,7 @@
         }
       }
     },
-    "/api/events/{eventId}/signup-stats": {
+    "/api/events/{eventId}/leader-roster": {
       "get": {
         "tags": [
           "Events"
@@ -2066,7 +2066,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EventSignupStatsResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaderRosterActivityResponse"
+                  }
                 }
               }
             }
@@ -5893,133 +5896,6 @@
         ],
         "type": "string"
       },
-      "EventSignupStatsActivityResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "startsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "cells": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSignupStatsCellResponse"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventSignupStatsCellResponse": {
-        "type": "object",
-        "properties": {
-          "activityRoleTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "assignmentStatusId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventSignupStatsResponse": {
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSignupStatsRoleResponse"
-            },
-            "nullable": true
-          },
-          "statuses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSignupStatsStatusResponse"
-            },
-            "nullable": true
-          },
-          "activities": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSignupStatsActivityResponse"
-            },
-            "nullable": true
-          },
-          "totals": {
-            "$ref": "#/components/schemas/EventSignupStatsTotalsResponse"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventSignupStatsRoleResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventSignupStatsStatusResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventSignupStatsTotalsResponse": {
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "requested": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "confirmed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "denied": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
       "EventSummaryResponse": {
         "type": "object",
         "properties": {
@@ -6268,6 +6144,141 @@
               "$ref": "#/components/schemas/SignupRoleResponse"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeaderRosterActivityResponse": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "activityStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activityEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderRosterRoleResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeaderRosterDependentResponse": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "guardian": {
+            "$ref": "#/components/schemas/LeaderRosterGuardianResponse"
+          },
+          "signedUpAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeaderRosterGuardianResponse": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeaderRosterRoleResponse": {
+        "type": "object",
+        "properties": {
+          "roleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderRosterUserResponse"
+            },
+            "nullable": true
+          },
+          "dependents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderRosterDependentResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeaderRosterUserResponse": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "signedUpAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false

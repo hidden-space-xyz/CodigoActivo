@@ -167,7 +167,16 @@ public sealed class AssignHouseholdCommandHandler(
             );
         }
 
-        await uow.SaveChangesAsync(ct);
+        try
+        {
+            await uow.SaveChangesAsync(ct);
+        }
+        catch (UniqueConstraintViolationException ex)
+            when (ex.EntityType == typeof(ActivityUserRoleAssignment))
+        {
+            return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
+        }
+
         if (created.Count > 0)
         {
             await cacheInvalidator.InvalidateAsync(CacheTags.Activities);

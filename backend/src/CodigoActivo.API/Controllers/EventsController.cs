@@ -149,24 +149,23 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the signup statistics endpoint for events. Only members and administrators may
-    /// access this data.
+    /// Lists the event's activities that the current user leads with a confirmed assignment and
+    /// that have not ended yet, each with its currently confirmed attendees. Any other user,
+    /// administrators included, receives an empty list.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the event's signup statistics, or an error response.</returns>
-    [HttpGet("{eventId:guid}/signup-stats")]
+    /// <returns>An HTTP response containing the led activities with their attendees.</returns>
+    [HttpGet("{eventId:guid}/leader-roster")]
     [Authorize]
-    public async Task<ActionResult<EventSignupStatsResponse>> SignupStatsAsync(
+    public async Task<ActionResult<IReadOnlyList<LeaderRosterActivityResponse>>> LeaderRosterAsync(
         Guid eventId,
-        [FromServices] GetEventSignupStatsQueryHandler handler,
+        [FromServices] GetLeaderRosterQueryHandler handler,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new GetEventSignupStatsQuery(eventId, UserId, IsAdmin), ct)
-        );
+        return Ok(await handler.HandleAsync(new GetLeaderRosterQuery(eventId, UserId), ct));
     }
 
     /// <summary>

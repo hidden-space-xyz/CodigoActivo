@@ -9,8 +9,8 @@ import {
   getEventBadgesRequest,
   getEventRatingsPageRequest,
   getEventRosterRequest,
+  getEventLeaderRosterRequest,
   getEventsAdminPageRequest,
-  getEventSignupStatsRequest,
   getEventSummaryRequest,
   getEventTermsStateRequest,
   toggleEventFeatureRequest,
@@ -188,42 +188,130 @@ describe('event requests', () => {
     })
   })
 
-  it('loads the signup statistics, keeping role/status ids on each cell', async () => {
+  it('loads the leader roster, keeping the API order and splitting users from dependents', async () => {
     server.use(
-      http.get('/api/events/e1/signup-stats', () =>
-        HttpResponse.json({
-          eventId: 'e1',
-          roles: [{ id: 'role-1', name: 'Líder' }],
-          statuses: [{ id: 'status-1', name: 'Confirmada' }],
-          activities: [
-            {
-              activityId: 'act-1',
-              title: 'Robótica',
-              startsAt: '2026-10-10T09:00:00Z',
-              cells: [{ activityRoleTypeId: 'role-1', assignmentStatusId: 'status-1', count: 3 }],
-            },
-            { activityId: 'act-2', title: 'Sin inscritos', startsAt: '2026-10-11T09:00:00Z' },
-          ],
-          totals: { total: 3, requested: 0, confirmed: 3, denied: 0 },
-        }),
+      http.get('/api/events/e1/leader-roster', () =>
+        HttpResponse.json([
+          {
+            activityId: 'act-1',
+            title: 'Robótica',
+            location: 'Aula 3',
+            activityStartsAt: '2026-10-10T09:00:00Z',
+            activityEndsAt: '2026-10-10T11:00:00Z',
+            roles: [
+              {
+                roleTypeId: 'role-leader',
+                roleName: 'Líder',
+                users: [
+                  {
+                    firstName: 'Marta',
+                    lastName: 'Molina',
+                    email: 'marta@example.test',
+                    phone: '600 000 001',
+                    signedUpAt: '2026-09-01T10:00:00Z',
+                  },
+                ],
+                dependents: [],
+              },
+              {
+                roleTypeId: 'role-participant',
+                roleName: 'Participante',
+                dependents: [
+                  {
+                    firstName: 'Nora',
+                    lastName: 'Gil',
+                    age: 11,
+                    guardian: {
+                      firstName: 'Gabriela',
+                      lastName: 'Gil',
+                      email: 'gabriela@example.test',
+                      phone: '600 000 002',
+                    },
+                    signedUpAt: '2026-09-02T10:00:00Z',
+                  },
+                  { signedUpAt: '2026-09-03T10:00:00Z' },
+                ],
+              },
+            ],
+          },
+          { activityId: 'act-2' },
+        ]),
+      ),
+      http.get('/api/events/e2/leader-roster', () => HttpResponse.json([])),
+    )
+
+    await expect(getEventLeaderRosterRequest('e1')).resolves.toEqual([
+      {
+        id: 'act-1',
+        title: 'Robótica',
+        location: 'Aula 3',
+        startsAt: '2026-10-10T09:00:00Z',
+        endsAt: '2026-10-10T11:00:00Z',
+        roles: [
+          {
+            id: 'role-leader',
+            name: 'Líder',
+            users: [
+              {
+                firstName: 'Marta',
+                lastName: 'Molina',
+                email: 'marta@example.test',
+                phone: '600 000 001',
+                signedUpAt: '2026-09-01T10:00:00Z',
+              },
+            ],
+            dependents: [],
+          },
+          {
+            id: 'role-participant',
+            name: 'Participante',
+            users: [],
+            dependents: [
+              {
+                firstName: 'Nora',
+                lastName: 'Gil',
+                age: 11,
+                guardian: {
+                  firstName: 'Gabriela',
+                  lastName: 'Gil',
+                  email: 'gabriela@example.test',
+                  phone: '600 000 002',
+                },
+                signedUpAt: '2026-09-02T10:00:00Z',
+              },
+              {
+                firstName: '',
+                lastName: '',
+                age: null,
+                guardian: { firstName: '', lastName: '', email: '', phone: '' },
+                signedUpAt: '2026-09-03T10:00:00Z',
+              },
+            ],
+          },
+        ],
+      },
+      { id: 'act-2', title: '', location: '', startsAt: '', endsAt: '', roles: [] },
+    ])
+    await expect(getEventLeaderRosterRequest('e2')).resolves.toEqual([])
+  })
+
+  it('fills in missing user fields of the leader roster', async () => {
+    server.use(
+      http.get('/api/events/e1/leader-roster', () =>
+        HttpResponse.json([{ activityId: 'act-1', roles: [{ users: [{}] }] }]),
       ),
     )
 
-    await expect(getEventSignupStatsRequest('e1')).resolves.toEqual({
-      eventId: 'e1',
-      roles: [{ id: 'role-1', name: 'Líder' }],
-      statuses: [{ id: 'status-1', name: 'Confirmada' }],
-      activities: [
-        {
-          id: 'act-1',
-          title: 'Robótica',
-          startsAt: '2026-10-10T09:00:00Z',
-          cells: [{ roleId: 'role-1', statusId: 'status-1', count: 3 }],
-        },
-        { id: 'act-2', title: 'Sin inscritos', startsAt: '2026-10-11T09:00:00Z', cells: [] },
-      ],
-      totals: { total: 3, requested: 0, confirmed: 3, denied: 0 },
-    })
+    const [activity] = await getEventLeaderRosterRequest('e1')
+
+    expect(activity?.roles).toEqual([
+      {
+        id: '',
+        name: '',
+        users: [{ firstName: '', lastName: '', email: '', phone: '', signedUpAt: '' }],
+        dependents: [],
+      },
+    ])
   })
 
   describe('getHomeEventsRequest', () => {

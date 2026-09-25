@@ -196,6 +196,73 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncConcurrentDuplicateSignupReturnsConflict()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        users.TargetUser(userId, SeedIds.UserTypes.Member);
+        AssignmentExists(false);
+        statuses.RequestedStatusNamed("Solicitado");
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(ActivityUserRoleAssignment),
+                    new InvalidOperationException("duplicate")
+                )
+            );
+
+        var result = await sut.HandleAsync(
+            new AssignActivityCommand(
+                activityId,
+                userId,
+                userId,
+                new AssignRequest(SeedIds.ActivityRoleTypes.Leader),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
+        result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentAlreadyExists);
+        await cacheInvalidator.DidNotReceiveWithAnyArgs().InvalidateAsync(default!);
+    }
+
+    [Fact]
+    public async Task HandleAsyncUniqueViolationOfAnotherTablePropagates()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        users.TargetUser(userId, SeedIds.UserTypes.Member);
+        AssignmentExists(false);
+        statuses.RequestedStatusNamed("Solicitado");
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(EventTermsAcceptance),
+                    new InvalidOperationException("duplicate")
+                )
+            );
+
+        var act = () =>
+            sut.HandleAsync(
+                new AssignActivityCommand(
+                    activityId,
+                    userId,
+                    userId,
+                    new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+                    IsAdmin: false
+                ),
+                TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<UniqueConstraintViolationException>();
+    }
+
+    [Fact]
     public async Task HandleAsyncLeaderRoleForNonSocioUserReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();

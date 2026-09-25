@@ -1,13 +1,14 @@
 export type {
   EventCategoryTag,
-  EventSignupStatsActivity,
   EventTermsDocumentState,
   EventTermsSummary,
+  LeaderRosterActivity,
+  LeaderRosterDependent,
   UpcomingEvent,
 } from './model/types'
 export {
   useEventDetail,
-  useEventSignupStats,
+  useEventLeaderRoster,
   useEventTermsState,
   useHomeEvents,
   usePastEventCategories,
@@ -25,8 +26,8 @@ export {
   getEventBadgesRequest,
   getEventRatingsPageRequest,
   getEventRosterRequest,
+  getEventLeaderRosterRequest,
   getEventsAdminPageRequest,
-  getEventSignupStatsRequest,
   getEventSummaryRequest,
   getEventTermsStateRequest,
   toggleEventFeatureRequest,

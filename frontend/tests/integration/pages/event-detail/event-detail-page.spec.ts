@@ -1,12 +1,11 @@
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AuthUser } from '@/entities/session/model/types'
-import { EventSignupStatsPanel } from '@/features/event-signup-stats'
+import { LeaderRosterPanel } from '@/features/event-leader-roster'
 import { EventDetailPage } from '@/pages/event-detail'
 import EventActivitiesTimeline from '@/pages/event-detail/ui/EventActivitiesTimeline.vue'
-import type { EventResponse } from '@/shared/api/generated/models'
-import { MEMBER_USER_TYPE_ID } from '@/shared/config'
+import type { EventResponse, LeaderRosterActivityResponse } from '@/shared/api/generated/models'
 import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib'
 
 import {
@@ -15,14 +14,13 @@ import {
   LONG_AGO,
   omit,
 } from '../../../support/fixtures/public-dashboard/builders'
+import {
+  buildLeaderRosterActivity,
+  serveLeaderRoster,
+} from '../../../support/fixtures/public-dashboard/leader-roster'
 import { serveSignupApi } from '../../../support/fixtures/public-dashboard/signup-api'
 import { renderWithProviders, t } from '../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../support/server'
-
-vi.mock(
-  'chart.js',
-  async () => (await import('../../../support/fixtures/public-dashboard/chart-mock')).chartJsModule,
-)
 
 function serveEvent(event: EventResponse | 'not-found') {
   server.use(
@@ -32,14 +30,19 @@ function serveEvent(event: EventResponse | 'not-found') {
   )
 }
 
-async function renderPage(user?: Partial<AuthUser>) {
+/**
+ * Renders the page for a guest, or for `user` with `roster` as the activities they lead (none by
+ * default), since every signed-in visit asks for the leader roster.
+ */
+async function renderPage(user?: Partial<AuthUser>, roster: LeaderRosterActivityResponse[] = []) {
+  const requests = user ? serveLeaderRoster(roster) : []
   const rendered = await renderWithProviders(EventDetailPage, {
     props: { eventId: 'event-1' },
     route: '/events/event-1',
     ...(user ? { user } : {}),
   })
   await vi.waitFor(() => expect(rendered.wrapper.text()).not.toContain(t('common.loading')))
-  return rendered
+  return { ...rendered, requests }
 }
 
 function jsonLd(): Record<string, unknown> | null {
@@ -188,67 +191,65 @@ describe('event detail page', () => {
     expect(wrapper.findComponent(EventActivitiesTimeline).exists()).toBe(true)
   })
 
-  describe('signup statistics tab visibility', () => {
-    function serveEmptyStats() {
-      server.use(
-        http.get('/api/events/:eventId/signup-stats', () =>
-          HttpResponse.json({
-            eventId: 'event-1',
-            roles: [],
-            statuses: [],
-            activities: [],
-            totals: { total: 0, requested: 0, confirmed: 0, denied: 0 },
-          }),
-        ),
-      )
-    }
+  describe('attendees tab visibility', () => {
+    const tabLabels = (wrapper: VueWrapper) =>
+      wrapper.findAll('.detail-tab').map((tab) => tab.text())
 
-    it('does not show the tab to a guest without a session', async () => {
+    it('never asks for the roster nor shows the tab to a guest', async () => {
       serveEvent(buildEventResponse())
-      serveSignupApi()
+      const requests = serveLeaderRoster([buildLeaderRosterActivity()])
 
       const { wrapper } = await renderPage()
 
-      expect(wrapper.findAll('.detail-tab')).toHaveLength(2)
-      expect(wrapper.text()).not.toContain(t('pages.eventDetail.tabs.stats'))
+      expect(requests).toEqual([])
+      expect(tabLabels(wrapper)).not.toContain(t('pages.eventDetail.tabs.attendees'))
     })
 
-    it('does not show the tab to a participant user', async () => {
+    it('does not show the tab to a user who leads no running activity', async () => {
       serveEvent(buildEventResponse())
-      serveSignupApi()
 
-      const { wrapper } = await renderPage({ userTypeId: 'type-participant', isAdmin: false })
+      const { wrapper, requests } = await renderPage({ isAdmin: true }, [])
 
-      expect(wrapper.findAll('.detail-tab')).toHaveLength(2)
-      expect(wrapper.text()).not.toContain(t('pages.eventDetail.tabs.stats'))
+      await vi.waitFor(() => expect(requests).toEqual(['event-1']))
+      await flushPromises()
+      expect(tabLabels(wrapper)).toEqual([
+        t('pages.eventDetail.tabs.info'),
+        t('pages.eventDetail.tabs.activities'),
+      ])
     })
 
-    it('shows the tab and the panel to a member user', async () => {
+    it('shows the tab and the attendee list to a confirmed leader', async () => {
       serveEvent(buildEventResponse())
-      serveSignupApi()
-      serveEmptyStats()
 
-      const { wrapper } = await renderPage({ userTypeId: MEMBER_USER_TYPE_ID, isAdmin: false })
+      const { wrapper } = await renderPage({}, [buildLeaderRosterActivity()])
 
-      const tabs = wrapper.findAll('.detail-tab')
-      expect(tabs).toHaveLength(3)
-      expect(tabs[2]?.text()).toBe(t('pages.eventDetail.tabs.stats'))
+      await vi.waitFor(() =>
+        expect(tabLabels(wrapper)).toContain(t('pages.eventDetail.tabs.attendees')),
+      )
+      const tab = wrapper.findAll('.detail-tab')[2]!
+      expect(tab.attributes('title')).toBe(t('pages.eventDetail.tabs.viewAttendees'))
 
-      await tabs[2]?.trigger('click')
-      expect(wrapper.findComponent(EventSignupStatsPanel).exists()).toBe(true)
-      await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.eventDetail.stats.empty')))
+      await tab.trigger('click')
+      expect(tab.classes()).toContain('detail-tab--active')
+      expect(wrapper.findComponent(LeaderRosterPanel).props()).toEqual({ eventId: 'event-1' })
+      await vi.waitFor(() =>
+        expect(wrapper.find('.lr-activity h2').text()).toBe('Taller de robótica'),
+      )
     })
 
-    it('shows the tab to an admin who is not a member', async () => {
+    it('goes back to the information tab when the list stops being available', async () => {
       serveEvent(buildEventResponse())
-      serveSignupApi()
-      serveEmptyStats()
+      const { wrapper, queryClient } = await renderPage({}, [buildLeaderRosterActivity()])
+      await vi.waitFor(() => expect(wrapper.findAll('.detail-tab')).toHaveLength(3))
+      await wrapper.findAll('.detail-tab')[2]!.trigger('click')
 
-      const { wrapper } = await renderPage({ userTypeId: 'type-participant', isAdmin: true })
+      serveLeaderRoster([])
+      await queryClient.invalidateQueries({ queryKey: ['events', 'leader-roster'] })
 
-      const tabs = wrapper.findAll('.detail-tab')
-      expect(tabs).toHaveLength(3)
-      expect(tabs[2]?.text()).toBe(t('pages.eventDetail.tabs.stats'))
+      await vi.waitFor(() => expect(wrapper.findAll('.detail-tab')).toHaveLength(2))
+      expect(wrapper.findAll('.detail-tab')[0]?.classes()).toContain('detail-tab--active')
+      expect(wrapper.findComponent(LeaderRosterPanel).exists()).toBe(false)
+      expect(wrapper.find('.detail-body__panel').exists()).toBe(true)
     })
   })
 

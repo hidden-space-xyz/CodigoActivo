@@ -1,6 +1,7 @@
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CodigoActivo.Infrastructure.Database.Context;
 
@@ -138,9 +139,29 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<EmailOutboxContentPart> EmailOutboxContentParts => Set<EmailOutboxContentPart>();
 
-    Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
+    async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
     {
-        return base.SaveChangesAsync(ct);
+        try
+        {
+            return await base.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException
+                    is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } violation
+            )
+        {
+            throw new UniqueConstraintViolationException(EntityTypeOf(violation.TableName), ex);
+        }
+    }
+
+    private Type? EntityTypeOf(string? tableName)
+    {
+        return Model
+            .GetEntityTypes()
+            .FirstOrDefault(entityType =>
+                string.Equals(entityType.GetTableName(), tableName, StringComparison.Ordinal)
+            )
+            ?.ClrType;
     }
 
     /// <inheritdoc />

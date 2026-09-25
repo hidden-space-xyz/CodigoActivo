@@ -23,6 +23,8 @@ public class ActivityUserRoleAssignmentConfiguration
             x.ActivityRoleTypeId,
         });
 
+        builder.HasIndex(x => new { x.UserId, x.ActivityId }).IsUnique();
+
         builder
             .HasOne(x => x.User)
             .WithMany(u => u.Assignments)

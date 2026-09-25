@@ -210,6 +210,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("AssignmentStatusId")
                         .HasDatabaseName("ix_activity_user_role_assignments_assignment_status_id");
 
+                    b.HasIndex("UserId", "ActivityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_activity_user_role_assignments_user_id_activity_id");
+
                     b.ToTable("activity_user_role_assignments", (string)null);
                 });
 

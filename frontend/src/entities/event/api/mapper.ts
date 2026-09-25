@@ -2,10 +2,12 @@ import type {
   EventCategoryTypeResponse,
   EventListItemResponse,
   EventResponse,
-  EventSignupStatsResponse,
   EventTermsDocumentResponse,
   EventTermsDocumentStateResponse,
   EventTermsStateResponse,
+  LeaderRosterActivityResponse,
+  LeaderRosterDependentResponse,
+  LeaderRosterUserResponse,
 } from '@/shared/api/generated/models'
 import { i18n, type TranslationKey } from '@/shared/i18n'
 import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } from '@/shared/lib'
@@ -13,12 +15,14 @@ import { formatDateRange, formatDateTime, formatDateTimeRange, parseDateOnly } f
 import type {
   EventCategoryTag,
   EventDetail,
-  EventSignupStats,
   EventStatus,
   EventStatusKind,
   EventTermsDocumentState,
   EventTermsState,
   EventTermsSummary,
+  LeaderRosterActivity,
+  LeaderRosterDependent,
+  LeaderRosterUser,
   PastEvent,
   UpcomingEvent,
 } from '../model/types'
@@ -160,31 +164,47 @@ export function toEventTermsState(response: EventTermsStateResponse): EventTerms
   }
 }
 
-/** Maps the event's signup statistics, keeping only the role/status ids on each cell. */
-export function toEventSignupStats(response: EventSignupStatsResponse): EventSignupStats {
+function toLeaderRosterUser(user: LeaderRosterUserResponse): LeaderRosterUser {
   return {
-    eventId: response.eventId ?? '',
-    roles: (response.roles ?? []).map((role) => ({ id: role.id ?? '', name: role.name ?? '' })),
-    statuses: (response.statuses ?? []).map((status) => ({
-      id: status.id ?? '',
-      name: status.name ?? '',
-    })),
-    activities: (response.activities ?? []).map((activity) => ({
-      id: activity.activityId ?? '',
-      title: activity.title ?? '',
-      startsAt: activity.startsAt ?? null,
-      cells: (activity.cells ?? []).map((cell) => ({
-        roleId: cell.activityRoleTypeId ?? '',
-        statusId: cell.assignmentStatusId ?? '',
-        count: cell.count ?? 0,
-      })),
-    })),
-    totals: {
-      total: response.totals?.total ?? 0,
-      requested: response.totals?.requested ?? 0,
-      confirmed: response.totals?.confirmed ?? 0,
-      denied: response.totals?.denied ?? 0,
+    firstName: user.firstName ?? '',
+    lastName: user.lastName ?? '',
+    email: user.email ?? '',
+    phone: user.phone ?? '',
+    signedUpAt: user.signedUpAt ?? '',
+  }
+}
+
+function toLeaderRosterDependent(dependent: LeaderRosterDependentResponse): LeaderRosterDependent {
+  return {
+    firstName: dependent.firstName ?? '',
+    lastName: dependent.lastName ?? '',
+    age: dependent.age ?? null,
+    guardian: {
+      firstName: dependent.guardian?.firstName ?? '',
+      lastName: dependent.guardian?.lastName ?? '',
+      email: dependent.guardian?.email ?? '',
+      phone: dependent.guardian?.phone ?? '',
     },
+    signedUpAt: dependent.signedUpAt ?? '',
+  }
+}
+
+/** Maps one led activity with its confirmed attendees, keeping the API's role and name order. */
+export function toLeaderRosterActivity(
+  activity: LeaderRosterActivityResponse,
+): LeaderRosterActivity {
+  return {
+    id: activity.activityId ?? '',
+    title: activity.title ?? '',
+    location: activity.location ?? '',
+    startsAt: activity.activityStartsAt ?? '',
+    endsAt: activity.activityEndsAt ?? '',
+    roles: (activity.roles ?? []).map((role) => ({
+      id: role.roleTypeId ?? '',
+      name: role.roleName ?? '',
+      users: (role.users ?? []).map(toLeaderRosterUser),
+      dependents: (role.dependents ?? []).map(toLeaderRosterDependent),
+    })),
   }
 }
 

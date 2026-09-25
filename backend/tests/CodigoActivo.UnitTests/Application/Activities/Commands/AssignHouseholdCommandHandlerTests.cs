@@ -436,4 +436,71 @@ public sealed class AssignHouseholdCommandHandlerTests
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task HandleAsyncConcurrentDuplicateSignupReturnsConflict()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        users.HouseholdUsers(SocioParent(actingUserId));
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        statuses.RequestedStatusNamed("Solicitado");
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(ActivityUserRoleAssignment),
+                    new InvalidOperationException("duplicate")
+                )
+            );
+
+        var result = await sut.HandleAsync(
+            new AssignHouseholdCommand(
+                activityId,
+                actingUserId,
+                new AssignHouseholdRequest([new(actingUserId, SeedIds.ActivityRoleTypes.Leader)]),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
+        result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentAlreadyExists);
+        await cacheInvalidator.DidNotReceiveWithAnyArgs().InvalidateAsync(default!);
+    }
+
+    [Fact]
+    public async Task HandleAsyncUniqueViolationOfAnotherTablePropagates()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        users.HouseholdUsers(SocioParent(actingUserId));
+        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
+        statuses.RequestedStatusNamed("Solicitado");
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(EventTermsAcceptance),
+                    new InvalidOperationException("duplicate")
+                )
+            );
+
+        var act = () =>
+            sut.HandleAsync(
+                new AssignHouseholdCommand(
+                    activityId,
+                    actingUserId,
+                    new AssignHouseholdRequest([
+                        new(actingUserId, SeedIds.ActivityRoleTypes.Participant),
+                    ]),
+                    IsAdmin: false
+                ),
+                TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<UniqueConstraintViolationException>();
+    }
 }

@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
@@ -90,7 +91,7 @@ public sealed class GetEventRosterQueryHandler(
                     activity.ActivityStartsAt,
                     activity.ActivityEndsAt,
                     [
-                        .. g.OrderBy(r => RosterRolePriority(r.ActivityRoleTypeId))
+                        .. g.OrderBy(r => ActivityRoleOrder.Of(r.ActivityRoleTypeId))
                             .ThenBy(r => TextSearch.Normalize(r.FirstName), StringComparer.Ordinal)
                             .ThenBy(r => TextSearch.Normalize(r.LastName), StringComparer.Ordinal)
                             .ThenBy(r => r.UserId)
@@ -115,17 +116,6 @@ public sealed class GetEventRosterQueryHandler(
             .ToList();
 
         return new EventRosterResponse(ev.Id, ev.Title, rosterActivities);
-    }
-
-    private static int RosterRolePriority(Guid roleTypeId)
-    {
-        return roleTypeId switch
-        {
-            _ when roleTypeId == SeedIds.ActivityRoleTypes.Leader => 0,
-            _ when roleTypeId == SeedIds.ActivityRoleTypes.Volunteer => 1,
-            _ when roleTypeId == SeedIds.ActivityRoleTypes.Participant => 2,
-            _ => 3,
-        };
     }
 
     private Task<EventHeader?> GetEventHeaderAsync(Guid eventId, CancellationToken ct)

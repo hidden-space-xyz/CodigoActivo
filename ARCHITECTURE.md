@@ -37,7 +37,11 @@ project-reference discipline.
 - Entities live in `CodigoActivo.Domain/Entities`; invariants are normally guard clauses in Application
   handlers, though `User` also owns account-state transitions.
 - Repository interfaces live in `Domain/Repositories`. All repositories in one request share the scoped
-  `CodigoActivoDbContext`; `IUnitOfWork.SaveChangesAsync` commits staged changes once.
+  `CodigoActivoDbContext`; `IUnitOfWork.SaveChangesAsync` commits staged changes once and turns a
+  PostgreSQL unique violation into `UniqueConstraintViolationException`, naming the entity whose table
+  rejected the commit, so a handler can answer a lost race instead of failing. A person holds at most one
+  assignment per activity (unique index on `user_id`, `activity_id`); the signup commands answer a
+  concurrent duplicate with `ActivityAssignmentAlreadyExists` (409).
 - Pure service contracts (`IClock`, `IPasswordHasher`, `ITotpService`, `ISecretProtector`, email and file
   storage ports) live in Domain; application-specific contracts such as cache invalidation stay in
   Application.

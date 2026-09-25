@@ -75,51 +75,54 @@ export interface EventTermsState {
   readonly signupBlocked: boolean
 }
 
-/** Role type an activity assignment cell in the signup statistics belongs to. */
-interface EventSignupStatsRole {
-  readonly id: string
-  readonly name: string
+/** Confirmed attendee with an account of their own, whom the leader contacts directly. */
+export interface LeaderRosterUser {
+  readonly firstName: string
+  readonly lastName: string
+  readonly email: string
+  readonly phone: string
+  readonly signedUpAt: string
 }
 
-/** Assignment status a signup statistics cell belongs to. */
-interface EventSignupStatsStatus {
-  readonly id: string
-  readonly name: string
-}
-
-/** One non-zero role/status count for an activity in the signup statistics. */
-interface EventSignupStatsCell {
-  readonly roleId: string
-  readonly statusId: string
-  readonly count: number
-}
-
-/** Signup statistics of one activity, with only the non-zero role/status cells from the API. */
-export interface EventSignupStatsActivity {
-  readonly id: string
-  readonly title: string
-  readonly startsAt: string | null
-  readonly cells: readonly EventSignupStatsCell[]
-}
-
-/** Event-wide signup totals by status. */
-interface EventSignupStatsTotals {
-  readonly total: number
-  readonly requested: number
-  readonly confirmed: number
-  readonly denied: number
+/** Guardian of a dependent attendee: the leader's contact for that minor. */
+interface LeaderRosterGuardian {
+  readonly firstName: string
+  readonly lastName: string
+  readonly email: string
+  readonly phone: string
 }
 
 /**
- * Signup statistics for every activity of an event, for the admin/member statistics panel. Cells
- * missing from `activities[].cells` count as zero; the client fills them in before charting.
+ * Confirmed minor signed up by their guardian. The API sends the age instead of the birth date;
+ * `age` is `null` when no birth date is stored.
  */
-export interface EventSignupStats {
-  readonly eventId: string
-  readonly roles: readonly EventSignupStatsRole[]
-  readonly statuses: readonly EventSignupStatsStatus[]
-  readonly activities: readonly EventSignupStatsActivity[]
-  readonly totals: EventSignupStatsTotals
+export interface LeaderRosterDependent {
+  readonly firstName: string
+  readonly lastName: string
+  readonly age: number | null
+  readonly guardian: LeaderRosterGuardian
+  readonly signedUpAt: string
+}
+
+/** Confirmed attendees of one role, split by kind because each kind carries different data. */
+interface LeaderRosterRole {
+  readonly id: string
+  readonly name: string
+  readonly users: readonly LeaderRosterUser[]
+  readonly dependents: readonly LeaderRosterDependent[]
+}
+
+/**
+ * Activity the signed-in user leads with a confirmed assignment and that has not ended, with its
+ * confirmed attendees grouped by role (leaders, volunteers, participants).
+ */
+export interface LeaderRosterActivity {
+  readonly id: string
+  readonly title: string
+  readonly location: string
+  readonly startsAt: string
+  readonly endsAt: string
+  readonly roles: readonly LeaderRosterRole[]
 }
 
 /** Public detail page model, mapped from `EventResponse` with display labels pre-formatted. */
