@@ -30,9 +30,9 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         return Factory.CreateClient();
     }
 
-    protected Task<HttpClient> LoginAsync(TestCredentials credentials)
+    protected Task<HttpClient> LoginAsync(TestCredentials credentials, bool keepSignedIn = false)
     {
-        return LoginAsync(Factory, credentials);
+        return LoginAsync(Factory, credentials, keepSignedIn);
     }
 
     /// <summary>
@@ -42,13 +42,14 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
     /// </summary>
     protected async Task<HttpClient> LoginAsync(
         WebApplicationFactory<Program> host,
-        TestCredentials credentials
+        TestCredentials credentials,
+        bool keepSignedIn = false
     )
     {
         var client = host.CreateClient();
         await PassPasswordStepAsync(client, credentials);
         var code = Factory.EmailSender.LastLoginCodeSentTo(credentials.Identifier);
-        await CompleteTwoFactorAsync(client, code);
+        await CompleteTwoFactorAsync(client, code, keepSignedIn);
         Factory.EmailSender.ForgetLoginCodes();
         return client;
     }
@@ -80,11 +81,15 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
     /// <summary>
     /// Presents the second factor for the pending challenge of the client.
     /// </summary>
-    protected static async Task<UserResponse> CompleteTwoFactorAsync(HttpClient client, string code)
+    protected static async Task<UserResponse> CompleteTwoFactorAsync(
+        HttpClient client,
+        string code,
+        bool keepSignedIn = false
+    )
     {
         using var response = await client.PostJsonAsync(
             "/api/auth/login/two-factor",
-            new TwoFactorLoginRequest(code),
+            new TwoFactorLoginRequest(code, keepSignedIn),
             Ct
         );
         if (response.StatusCode is not HttpStatusCode.OK)

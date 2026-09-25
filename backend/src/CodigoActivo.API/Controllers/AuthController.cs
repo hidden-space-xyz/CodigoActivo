@@ -210,7 +210,8 @@ public class AuthController : ApiControllerBase
 
     /// <summary>
     /// Completes the login with the second factor and opens the session. The session cookie is
-    /// persistent, so it survives closing the browser until its <c>user_sessions</c> row expires.
+    /// persistent, surviving the browser until its <c>user_sessions</c> row expires, only when the
+    /// request asks to keep the user signed in; otherwise the browser drops it when it closes.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -252,7 +253,11 @@ public class AuthController : ApiControllerBase
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,
-            new AuthenticationProperties { IsPersistent = true, AllowRefresh = false }
+            new AuthenticationProperties
+            {
+                IsPersistent = request.KeepSignedIn,
+                AllowRefresh = false,
+            }
         );
         return Ok(result.Value);
     }

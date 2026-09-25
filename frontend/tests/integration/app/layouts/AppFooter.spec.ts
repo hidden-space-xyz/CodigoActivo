@@ -22,6 +22,16 @@ describe('AppFooter', () => {
     ])
   })
 
+  it('links to the cookie policy from the legal navigation', async () => {
+    const { wrapper, router } = await renderWithProviders(AppFooter)
+
+    const legal = wrapper.get('nav.footer__legal')
+    expect(legal.attributes('aria-label')).toBe(t('layout.footerLegal'))
+    const link = legal.get('a')
+    expect(link.text()).toBe(t('layout.footerCookies'))
+    expect(link.attributes('href')).toBe(router.resolve({ name: 'cookie-policy' }).href)
+  })
+
   it('opens social profiles in a new tab', async () => {
     const { wrapper } = await renderWithProviders(AppFooter)
 

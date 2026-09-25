@@ -27,7 +27,14 @@ public record LoginChallengeResponse(TwoFactorMethod Method, string? MaskedEmail
 /// Contains the client-supplied data used to complete a login with the second factor.
 /// </summary>
 /// <param name="Code">Code from the email or the authenticator application.</param>
-public record TwoFactorLoginRequest([Required] [MaxLength(16)] [NotBlank] string Code);
+/// <param name="KeepSignedIn">
+/// Whether the user explicitly asked to stay signed in on this device; only then does the session
+/// cookie outlive the browser session.
+/// </param>
+public record TwoFactorLoginRequest(
+    [Required] [MaxLength(16)] [NotBlank] string Code,
+    bool KeepSignedIn = false
+);
 
 /// <summary>
 /// Contains the client-supplied data used to start enrolling an authenticator application.

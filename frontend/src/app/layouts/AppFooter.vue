@@ -71,6 +71,12 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
         </div>
       </div>
     </div>
+
+    <nav class="footer__legal" :aria-label="$t('layout.footerLegal')">
+      <RouterLink :to="{ name: 'cookie-policy' }" class="footer__legal-link">
+        {{ $t('layout.footerCookies') }}
+      </RouterLink>
+    </nav>
   </footer>
 </template>
 
@@ -186,6 +192,34 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
   transition: color 0.15s ease;
 }
 
+.footer__legal {
+  max-width: var(--ca-container);
+  margin: 28px auto 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--ca-border);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+}
+
+.footer__legal-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-family: var(--ca-font-mono);
+  font-size: 12px;
+  color: var(--ca-text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footer__legal-link:hover {
+  color: var(--ca-orange-ink);
+}
+
 @media (max-width: 1024px) {
   .footer__inner {
     grid-template-columns: 1fr;
@@ -223,7 +257,8 @@ import { AppIcon, BrandLogo } from '@/shared/ui'
     gap: 6px;
   }
 
-  .footer__channel-link {
+  .footer__channel-link,
+  .footer__legal-link {
     min-height: var(--ca-tap);
   }
 }

@@ -38,9 +38,17 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         return client;
     }
 
-    private static Task<HttpResponseMessage> PresentAsync(HttpClient client, string code)
+    private static Task<HttpResponseMessage> PresentAsync(
+        HttpClient client,
+        string code,
+        bool keepSignedIn = false
+    )
     {
-        return client.PostJsonAsync(TwoFactorUrl, new TwoFactorLoginRequest(code), Ct);
+        return client.PostJsonAsync(
+            TwoFactorUrl,
+            new TwoFactorLoginRequest(code, keepSignedIn),
+            Ct
+        );
     }
 
     private Task SeedAuthenticatorAsync(
@@ -87,7 +95,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task TwoFactorSessionCookieIsPersistentWhileTheChallengeCookieIsNot()
+    public async Task TwoFactorByDefaultIssuesBrowserSessionCookiesOnly()
     {
         var client = CreateClient();
 
@@ -107,10 +115,10 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var sessionCookie = CookieNamed(response, "CodigoActivo.Session");
-        sessionCookie.Expires.Should().NotBeNull("the session survives closing the browser");
-        (sessionCookie.Expires!.Value - DateTimeOffset.UtcNow)
-            .Should()
-            .BeCloseTo(SessionLifetimeOptions.DefaultLifetime, TimeSpan.FromMinutes(10));
+        sessionCookie
+            .Expires.Should()
+            .BeNull("without the user's request the session ends with the browser");
+        sessionCookie.MaxAge.Should().BeNull();
 
         var stored = await Factory.QueryAsync(db =>
             db.UserSessions.SingleAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
@@ -121,6 +129,27 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
                 Factory.Clock.UtcNow + SessionLifetimeOptions.DefaultLifetime,
                 "the session row holds the absolute expiry and never slides"
             );
+    }
+
+    [Fact]
+    public async Task TwoFactorWithKeepSignedInIssuesPersistentSessionCookie()
+    {
+        var client = await StartMemberChallengeAsync();
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+
+        using var response = await PresentAsync(client, code, keepSignedIn: true);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var sessionCookie = CookieNamed(response, "CodigoActivo.Session");
+        sessionCookie.Expires.Should().NotBeNull("the user asked to stay signed in");
+        (sessionCookie.Expires!.Value - DateTimeOffset.UtcNow)
+            .Should()
+            .BeCloseTo(SessionLifetimeOptions.DefaultLifetime, TimeSpan.FromMinutes(10));
+
+        var stored = await Factory.QueryAsync(db =>
+            db.UserSessions.SingleAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+        );
+        stored.ExpiresAt.Should().Be(Factory.Clock.UtcNow + SessionLifetimeOptions.DefaultLifetime);
     }
 
     [Fact]

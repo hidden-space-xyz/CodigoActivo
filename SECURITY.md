@@ -14,9 +14,10 @@ authentication are not supported.
 
 ### Authentication and authorization
 
-- Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, persistent (it survives
-  closing the browser), non-sliding, expiring after 30 days by default. In Production it is `Secure` and uses
-  a `__Host-` name. The ticket is not
+- Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
+  30 days by default. It is a browser-session cookie unless the user ticks «Mantener la sesión iniciada en este
+  dispositivo» on the second-factor step (`keepSignedIn`), which makes it persistent; a claims refresh keeps
+  that choice. In Production it is `Secure` and uses a `__Host-` name. The ticket is not
   self-sufficient: completing the second factor also writes a `user_sessions` row whose id travels in the
   ticket's `sid` claim, dropping that user's already-expired rows; a background worker additionally deletes
   every expired row on the `SessionCleanup:IntervalMinutes` schedule. The row carries the expiry that decides
@@ -193,7 +194,11 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
   normalized scheme is HTTPS. Do not add CDNs, analytics or embeds without a legal basis and consent review.
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
-  `localStorage` and is never sent to the server. `Referrer-Policy: same-origin` keeps page URLs out of
+  `localStorage` and is never sent to the server, and `sessionStorage` only holds the stale-build reload mark.
+  They are exempt from consent under article 22.2 of the Spanish LSSI, except the persistent session, whose
+  opt-in checkbox is the user's consent, so the site shows no cookie banner. The `/cookies` page
+  (`frontend/src/pages/cookie-policy`) lists every cookie and storage key with its purpose and duration;
+  change it with them. `Referrer-Policy: same-origin` keeps page URLs out of
   requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
   destinations. API responses whose body is `application/json` or `application/problem+json` also carry
   `X-Robots-Tag: noindex, nofollow`, so search engines do not index API payloads.

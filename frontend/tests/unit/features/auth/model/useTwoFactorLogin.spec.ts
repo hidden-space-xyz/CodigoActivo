@@ -109,8 +109,26 @@ describe('useTwoFactorLogin', () => {
     result.submit()
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/events'))
 
-    expect(received).toEqual([{ body: { code: '123456' }, csrf: TEST_CSRF_TOKEN }])
+    expect(received).toEqual([
+      { body: { code: '123456', keepSignedIn: false }, csrf: TEST_CSRF_TOKEN },
+    ])
     expect(useSession().displayName).toBe('Grace')
+  })
+
+  it('asks for a persistent session only when the user opts in', async () => {
+    serveChallenge()
+    const received = serveVerify()
+    const { result, router } = await mountReady()
+    expect(result.form.keepSignedIn).toBe(false)
+    result.form.code = '123456'
+    result.form.keepSignedIn = true
+
+    result.submit()
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
+
+    expect(received).toEqual([
+      { body: { code: '123456', keepSignedIn: true }, csrf: TEST_CSRF_TOKEN },
+    ])
   })
 
   it('goes home after verifying without a redirect', async () => {
