@@ -54,6 +54,25 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         );
     }
 
+    private async Task<SetCookieHeaderValue> RefreshMemberClaimsAsync(HttpClient client)
+    {
+        await Factory.SeedAsync(async db =>
+        {
+            var user = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.MemberId, Ct);
+            user.FirstName = "Martita";
+        });
+
+        using var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var reissued = response
+            .Headers.GetValues("Set-Cookie")
+            .Where(value => value.StartsWith("CodigoActivo.Session=", StringComparison.Ordinal))
+            .ToList();
+        reissued.Should().ContainSingle("the refreshed claims are written back to the cookie");
+        return SetCookieHeaderValue.Parse(reissued[0]);
+    }
+
     [Fact]
     public async Task MeTicketWithoutSidClaimIsRejected()
     {
@@ -226,34 +245,33 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task MeAfterAClaimsRefreshReissuesAPersistentCookieAndKeepsTheRowExpiry()
     {
-        var client = await LoginAsMemberAsync();
+        var client = await LoginAsync(TestSeedData.MemberCredentials, keepSignedIn: true);
         var opened = (await SessionsForAsync(TestSeedData.Users.MemberId))
             .Should()
             .ContainSingle()
             .Subject;
-        await Factory.SeedAsync(async db =>
-        {
-            var user = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.MemberId, Ct);
-            user.FirstName = "Martita";
-        });
 
-        using var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        var reissued = await RefreshMemberClaimsAsync(client);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var reissued = response
-            .Headers.GetValues("Set-Cookie")
-            .Where(value => value.StartsWith("CodigoActivo.Session=", StringComparison.Ordinal))
-            .ToList();
-        reissued.Should().ContainSingle("the refreshed claims are written back to the cookie");
-        SetCookieHeaderValue
-            .Parse(reissued[0])
-            .Expires.Should()
-            .NotBeNull("the re-issued cookie stays persistent");
+        reissued.Expires.Should().NotBeNull("the re-issued cookie stays persistent");
         (await SessionsForAsync(TestSeedData.Users.MemberId))
             .Should()
             .ContainSingle()
             .Which.ExpiresAt.Should()
             .Be(opened.ExpiresAt, "the absolute expiry of the session row never slides");
+    }
+
+    [Fact]
+    public async Task MeAfterAClaimsRefreshKeepsABrowserSessionCookieWithoutExpiry()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var reissued = await RefreshMemberClaimsAsync(client);
+
+        reissued
+            .Expires.Should()
+            .BeNull("a refresh never turns a browser-session cookie persistent");
+        reissued.MaxAge.Should().BeNull();
     }
 
     [Fact]

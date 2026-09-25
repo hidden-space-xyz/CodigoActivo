@@ -41,10 +41,14 @@ export async function getLoginChallengeRequest(): Promise<LoginChallenge | null>
 
 /**
  * Presents the second factor (`POST /api/auth/login/two-factor`). On success the session cookie
- * is set, so the cached CSRF token is dropped for the next unsafe request.
+ * is set, so the cached CSRF token is dropped for the next unsafe request. The cookie outlives the
+ * browser session only when `keepSignedIn` carries the user's explicit request.
  */
-export async function verifyTwoFactorLoginRequest(code: string): Promise<AuthUser> {
-  const response = await postApiAuthLoginTwoFactor({ code })
+export async function verifyTwoFactorLoginRequest(
+  code: string,
+  keepSignedIn: boolean,
+): Promise<AuthUser> {
+  const response = await postApiAuthLoginTwoFactor({ code, keepSignedIn })
   resetCsrfToken()
   return toAuthUser(response.data)
 }

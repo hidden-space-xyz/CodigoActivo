@@ -105,7 +105,7 @@ describe('session requests', () => {
     )
 
     const challenge = await loginRequest({ identifier: 'grace@example.test', password: 'secret' })
-    const user = await verifyTwoFactorLoginRequest('123456')
+    const user = await verifyTwoFactorLoginRequest('123456', true)
     await logoutRequest()
 
     expect(challenge).toEqual({ method: 'Email', maskedEmail: 'a***@example.test' })
@@ -116,7 +116,11 @@ describe('session requests', () => {
         body: { identifier: 'grace@example.test', password: 'secret' },
         token: 'token-1',
       },
-      { url: '/api/auth/login/two-factor', body: { code: '123456' }, token: 'token-1' },
+      {
+        url: '/api/auth/login/two-factor',
+        body: { code: '123456', keepSignedIn: true },
+        token: 'token-1',
+      },
       { url: '/api/auth/logout', body: null, token: 'token-2' },
     ])
     expect(csrf.count).toBe(2)
@@ -133,7 +137,7 @@ describe('session requests', () => {
     await expect(loginRequest({ identifier: 'x', password: 'y' })).rejects.toMatchObject({
       status: 401,
     })
-    await expect(verifyTwoFactorLoginRequest('000000')).rejects.toMatchObject({
+    await expect(verifyTwoFactorLoginRequest('000000', false)).rejects.toMatchObject({
       code: 'TwoFactorCodeInvalid',
     })
     await logoutRequest()

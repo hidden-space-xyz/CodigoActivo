@@ -95,6 +95,17 @@ export const routes: readonly RouteRecordRaw[] = [
     props: true,
   },
   {
+    path: '/cookies',
+    name: 'cookie-policy',
+    component: () => import('@/pages/cookie-policy').then((m) => m.CookiePolicyPage),
+    meta: {
+      seo: {
+        titleKey: 'seo.routes.cookiePolicy.title',
+        descriptionKey: 'seo.routes.cookiePolicy.description',
+      },
+    },
+  },
+  {
     path: '/register',
     name: 'register',
     component: () => import('@/pages/register').then((m) => m.RegisterPage),

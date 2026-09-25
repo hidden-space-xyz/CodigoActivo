@@ -6908,6 +6908,9 @@
           "code": {
             "type": "string",
             "nullable": true
+          },
+          "keepSignedIn": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
